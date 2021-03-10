@@ -1,0 +1,8 @@
+femmt/.idea/
+femmt/__pycache__/
+gpgit/
+*.pyc
+*.pdf
+build/
+dist/
+femmt.egg-info/
