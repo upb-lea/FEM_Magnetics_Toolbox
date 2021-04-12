@@ -3,6 +3,11 @@ femmt/__pycache__/
 gpgit/
 *.pyc
 *.pdf
+*.msh
+*.res
+*.pre
+*.pos
+*.dat
 build/
 dist/
 femmt.egg-info/
