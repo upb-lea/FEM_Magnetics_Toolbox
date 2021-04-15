@@ -13,7 +13,7 @@ with open('CHANGELOG.md') as history_file:
 #with open('requirements.txt', 'r') as f:
 #    requirements = f.read().splitlines()
 
-setup_requirements = []
+setup_requirements = ['setuptools_scm']
 
 test_requirements = []
 
@@ -34,13 +34,11 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Environment :: MacOS X'
     ],
-    description="FEMMT - FEM Magnetics Toolbox",
+    description="FEM Magnetics Toolbox",
     install_requires=['numpy>=1.19.5',
-					  'persistent>=4.6.4',
-                      'scipy>=1.6.0',
-					  'setuptools>=49.2.1',
-					  'pymongo>=3.11.3',
-					  'matplotlib>=3.3.4'],
+					  'onelab>=1.0',
+                      'gmsh>=4.8.3',
+					  'setuptools>=49.2.1'],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
