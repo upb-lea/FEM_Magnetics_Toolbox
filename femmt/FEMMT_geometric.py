@@ -252,10 +252,37 @@ gmsh.model.mesh.generate(2)
 
 path = str(pathlib.Path(__file__).parent.absolute())
 gmsh.write(path + "\\geometry.msh")
-gmsh.fltk.run()
+#gmsh.fltk.run()
 gmsh.finalize()
 
+#-------------------------------------File Communication----------------------------------
+# All shared control variables and parameters are passed to a Prolog file
+text_file = open("Parameter.pro", "w")
 
+# Number of conductors
+text_file.write("NbrCond = %s;\n" % geo.n_conductors)
+
+# Frequency and reduced Frequency
+text_file.write("Rc = Sqrt[1/Pi]*1e-3;\n")
+text_file.write("Flag_imposedRr = %s;\n" % geo.imposed_reduced_frequency)
+if geo.imposed_reduced_frequency == 1:
+    text_file.write("Rr = %s;\n" % geo.red_freq)
+    text_file.write("    delta = Rc/Rr;\n")
+    text_file.write("    Freq  = 1/(delta*delta*mu0*SigmaCu*Pi);\n")
+else:
+    text_file.write("Freq = %s;\n" % geo.frequency)
+    text_file.write("delta = 1/Sqrt[mu0*SigmaCu*Freq*Pi];\n")
+    text_file.write("Rr = Rc/delta;\n")
+
+# Coordinates of the rectangular winding window
+if geo.axi_symmetric == 1:
+    text_file.write("Xw1 = %s;\n" % geo.p_window[4, 0])
+    text_file.write("Xw2 = %s;\n" % geo.p_window[5, 0])
+else:
+    raise NotImplementedError("Only axi symmetric case implemented :(")
+
+
+text_file.close()
 
 #----------------------------------------Simulation---------------------------------------
 # create a new onelab client
@@ -302,3 +329,34 @@ solver = c.getPath('ind_axi_python_controlled' + '.pro')
 # run getdp as a subclient
 c.runSubClient('myGetDP',  mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
 
+
+# Visualization
+gmsh.initialize()
+epsilon = 1e-9
+# Mesh
+gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
+
+# Ohmic losses (weightend effective value of current density)
+gmsh.open("res/j2F.pos")
+gmsh.option.setNumber("View[0].ScaleType", 2)
+gmsh.option.setNumber("View[0].RangeType", 2)
+gmsh.option.setNumber("View[0].SaturateValues", 1)
+gmsh.option.setNumber("View[0].CustomMin", gmsh.option.getNumber("View[0].Min") + epsilon)
+gmsh.option.setNumber("View[0].CustomMax", gmsh.option.getNumber("View[0].Max"))
+gmsh.option.setNumber("View[0].ColormapNumber", 1)
+gmsh.option.setNumber("View[0].IntervalsType", 2)
+gmsh.option.setNumber("View[0].NbIso", 40)
+
+# Magnetic flux density
+gmsh.open("res/Magb.pos")
+gmsh.option.setNumber("View[1].ScaleType", 1)
+gmsh.option.setNumber("View[1].RangeType", 1)
+gmsh.option.setNumber("View[1].CustomMin", gmsh.option.getNumber("View[1].Min") + epsilon)
+gmsh.option.setNumber("View[1].CustomMax", gmsh.option.getNumber("View[1].Max"))
+gmsh.option.setNumber("View[1].ColormapNumber", 1)
+gmsh.option.setNumber("View[1].IntervalsType", 2)
+gmsh.option.setNumber("View[1].NbIso", 40)
+
+print(gmsh.option.getNumber("View[0].Max"))
+gmsh.fltk.run()
+gmsh.finalize()

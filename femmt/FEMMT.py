@@ -7,8 +7,12 @@ core_type = "EI"  # Basic shape of magnetic conductor
 conductor_type = "foil"  # Horizontal packing of conductors
 y_symmetric = 1  # Mirror-symmetry across y-axis
 axi_symmetric = 1  # Axial-symmetric model (idealized full-cylindrical)
+frequency = 200000  # in Hz
+imposed_reduced_frequency = 0  # if == 0 --> impose frequency f
+if imposed_reduced_frequency == 1:
+    red_freq = 4
 # Further geometry settings
-s = 0.4  # Parameter for mesh-accuracy
+s = 0.6  # Parameter for mesh-accuracy
 n_air_gaps = 3  # Number of air gaps - Needs a re-visit for non axi-symmetric case
 n_conductors = 6  # Number of (homogenised) conductors in one window
 core_cond_isolation = 0.001  # gap between Core and Conductor
