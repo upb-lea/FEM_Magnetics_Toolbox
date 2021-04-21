@@ -1,5 +1,44 @@
 import numpy as np
 
+# -- Control Flags --
+flag_imposed_reduced_frequency = 0  # if == 0 --> impose frequency f
+flag_excitation_type = 'current'  # 'current', 'current_density', 'voltage'
+flag_non_linear_core = 1
+
+# -- Geometry --
+n_conductors = 6  # Number of (homogenised) conductors in one window
+n_air_gaps = 0  # Number of air gaps - Needs a re-visit for non axi-symmetric case
+s = 0.3 # Parameter for mesh-accuracy
+# Dimensions in meter
+core_cond_isolation = 0.001  # gap between Core and Conductor
+cond_cond_isolation = 0.0002  # gap between Core and Conductor
+core_w = 0.02  # Axi symmetric case | core_w := core radius
+window_w = 0.01  # Winding window width
+window_h = 0.03  # Winding window height
+
+
+# -- Materials --
+# frequency = 0: mu_rel only used if flag_non_linear_core == 0
+# frequency > 0: mu_rel is used
+mu_rel = 3000   # relative Core Permeability
+core_material = 95  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
+
+
+# -- Excitation --
+# Imposed current, current density or voltage
+if flag_excitation_type == 'current':
+    current = 10
+if flag_excitation_type == 'current_density':
+    raise NotImplementedError
+if flag_excitation_type == 'voltage':
+    voltage = 2
+# Frequency and reduced Frequency
+frequency = 0  # in Hz
+if flag_imposed_reduced_frequency == 1:
+    red_freq = 4
+
+
+
 # General properties
 core_type = "EI"  # Basic shape of magnetic conductor
 #conductor_type = "stacked"  # Vertical packing of conductors
@@ -7,20 +46,8 @@ core_type = "EI"  # Basic shape of magnetic conductor
 conductor_type = "foil"  # Horizontal packing of conductors
 y_symmetric = 1  # Mirror-symmetry across y-axis
 axi_symmetric = 1  # Axial-symmetric model (idealized full-cylindrical)
-frequency = 200000  # in Hz
-imposed_reduced_frequency = 0  # if == 0 --> impose frequency f
-if imposed_reduced_frequency == 1:
-    red_freq = 4
-# Further geometry settings
-s = 0.6  # Parameter for mesh-accuracy
-n_air_gaps = 3  # Number of air gaps - Needs a re-visit for non axi-symmetric case
-n_conductors = 6  # Number of (homogenised) conductors in one window
-core_cond_isolation = 0.001  # gap between Core and Conductor
-cond_cond_isolation = 0.0002  # gap between Core and Conductor
-# Dimensions in meter
-core_w = 0.02  # Axi symmetric case | core_w := core radius
-window_w = 0.01  # Winding window width
-window_h = 0.03  # Winding window height
+
+
 
 
 # Pre-Settings

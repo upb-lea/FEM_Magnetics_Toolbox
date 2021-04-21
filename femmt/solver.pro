@@ -108,7 +108,7 @@ Formulation {
     Quantity {
        { Name a  ; Type Local  ; NameOfSpace Hcurl_a_2D ; }
 
-       { Name ur ; Type Local  ; NameOfSpace Hregion_u_2D  ; }
+       { Name ur ; Type Local  ; NameOfSpace Hregion_u_2D  ; }  // = nabla*el.potential = grad*phi
        { Name I  ; Type Global ; NameOfSpace Hregion_u_2D[I] ; }
        { Name U  ; Type Global ; NameOfSpace Hregion_u_2D[U] ; }
 
