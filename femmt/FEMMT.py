@@ -3,11 +3,11 @@ import numpy as np
 # -- Control Flags --
 flag_imposed_reduced_frequency = 0  # if == 0 --> impose frequency f
 flag_excitation_type = 'current'  # 'current', 'current_density', 'voltage'
-flag_non_linear_core = 1
+flag_non_linear_core = 0
 
 # -- Geometry --
 n_conductors = 6  # Number of (homogenised) conductors in one window
-n_air_gaps = 0  # Number of air gaps - Needs a re-visit for non axi-symmetric case
+n_air_gaps = 1  # Number of air gaps - Needs a re-visit for non axi-symmetric case
 s = 0.3 # Parameter for mesh-accuracy
 # Dimensions in meter
 core_cond_isolation = 0.001  # gap between Core and Conductor
@@ -27,7 +27,7 @@ core_material = 95  # 95 := TDK-N95 | Currently only works with Numbers correspo
 # -- Excitation --
 # Imposed current, current density or voltage
 if flag_excitation_type == 'current':
-    current = 10
+    current = 300
 if flag_excitation_type == 'current_density':
     raise NotImplementedError
 if flag_excitation_type == 'voltage':
