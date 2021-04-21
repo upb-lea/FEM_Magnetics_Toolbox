@@ -303,18 +303,18 @@ text_file.close()
 # create a new onelab client
 c = onelab.client(__file__)
 
-
 if os.path.isfile(path + "/config.py"):
+    print("if")
     import config
     with open('config.py') as f:
         if 'mygetdp' in f.read():
-            if os.path.isfile(config.mygetdp + ".exe") or os.path.isfile(config.mygetdp + ".sh"):
+            if os.path.isfile(config.mygetdp + ".exe") or os.path.isfile(config.mygetdp):
                 mygetdp = config.mygetdp
         else:
             mygetdp = call_for_path("mygetdp")
 else:
+    print("else")
     mygetdp = call_for_path("mygetdp")
-
 
 # create a onelab variable for the model name
 inductor = c.defineString('Inductor model', value='inductor')
