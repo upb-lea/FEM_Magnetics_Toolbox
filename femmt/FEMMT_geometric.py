@@ -1,8 +1,9 @@
 from functions import inner_points, min_max_inner_points, call_for_path
 from onelab import onelab
-import gmsh, pathlib, sys, os
+import gmsh, pygmsh, pathlib, sys, os
 import FEMMT as geo
 import numpy as np
+
 
 
 # Initialization
@@ -136,15 +137,26 @@ if geo.core_type == "EI":
             for i in range(0, geo.p_conductor.shape[0]):
                 p_cond.append(gmsh.model.geo.addPoint(geo.p_conductor[i][0], geo.p_conductor[i][1], 0, geo.c_conductor))
             # Curves of Conductors
-            for i in range(0, int(len(p_cond) / 4)):
-                l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 0], p_cond[4 * i + 2]))
-                l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 2], p_cond[4 * i + 3]))
-                l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 3], p_cond[4 * i + 1]))
-                l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 1], p_cond[4 * i + 0]))
-                # Iterative plane creation
-                curve_loop_cond.append(gmsh.model.geo.addCurveLoop(
-                    [l_cond[i * 4 + 0], l_cond[i * 4 + 1], l_cond[i * 4 + 2], l_cond[i * 4 + 3]]))
-                plane_surface_cond.append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[i]]))
+            if geo.conductor_type == "litz":
+                for i in range(0, int(len(p_cond) / 5)):
+                    l_cond.append(gmsh.model.geo.addCircleArc(p_cond[5 * i + 1], p_cond[5 * i + 0], p_cond[5 * i + 2]))
+                    l_cond.append(gmsh.model.geo.addCircleArc(p_cond[5 * i + 2], p_cond[5 * i + 0], p_cond[5 * i + 3]))
+                    l_cond.append(gmsh.model.geo.addCircleArc(p_cond[5 * i + 3], p_cond[5 * i + 0], p_cond[5 * i + 4]))
+                    l_cond.append(gmsh.model.geo.addCircleArc(p_cond[5 * i + 4], p_cond[5 * i + 0], p_cond[5 * i + 1]))
+                    # Iterative plane creation
+                    curve_loop_cond.append(gmsh.model.geo.addCurveLoop(
+                        [l_cond[i * 4 + 0], l_cond[i * 4 + 1], l_cond[i * 4 + 2], l_cond[i * 4 + 3]]))
+                    plane_surface_cond.append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[i]]))
+            else:
+                for i in range(0, int(len(p_cond) / 4)):
+                    l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 0], p_cond[4 * i + 2]))
+                    l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 2], p_cond[4 * i + 3]))
+                    l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 3], p_cond[4 * i + 1]))
+                    l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 1], p_cond[4 * i + 0]))
+                    # Iterative plane creation
+                    curve_loop_cond.append(gmsh.model.geo.addCurveLoop(
+                        [l_cond[i * 4 + 0], l_cond[i * 4 + 1], l_cond[i * 4 + 2], l_cond[i * 4 + 3]]))
+                    plane_surface_cond.append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[i]]))
             # =====================
             # Air (Points are partwise double designated)
             l_air_tmp = l_core_air[:7]
@@ -175,7 +187,7 @@ ps_cond = []
 if geo.n_conductors == 2 and geo.conductor_type == "stacked":
     ps_cond[0] = gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[0]], tag=4000)
     ps_cond[1] = gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[1]], tag=4001)
-if geo.conductor_type == "foil":
+if geo.conductor_type == "foil" or geo.conductor_type == "litz":
         for i in range(0, geo.n_conductors):
             ps_cond.append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[i]], tag=4000+i))
 # Air
@@ -358,3 +370,4 @@ gmsh.option.setNumber("View[1].NbIso", 40)
 print(gmsh.option.getNumber("View[0].Max"))
 gmsh.fltk.run()
 gmsh.finalize()
+

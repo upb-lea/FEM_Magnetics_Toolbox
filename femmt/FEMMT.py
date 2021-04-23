@@ -5,8 +5,18 @@ flag_imposed_reduced_frequency = 0  # if == 0 --> impose frequency f
 flag_excitation_type = 'current'  # 'current', 'current_density', 'voltage'
 flag_non_linear_core = 0
 
+
 # -- Geometry --
-n_conductors = 6  # Number of (homogenised) conductors in one window
+core_type = "EI"  # Basic shape of magnetic conductor
+#conductor_type = "stacked"  # Vertical packing of conductors
+#conductor_type = "full"  # One massive Conductor in each window
+#conductor_type = "foil"  # Horizontal packing of conductors
+conductor_type = "litz"  # Horizontal packing of conductors
+#conductor_type = None
+p_conductor = np.empty(0)  # Case: no conductors only theorretical
+y_symmetric = 1  # Mirror-symmetry across y-axis
+axi_symmetric = 1  # Axial-symmetric model (idealized full-cylindrical)
+n_conductors = 39  # Number of (homogenised) conductors in one window
 n_air_gaps = 1  # Number of air gaps - Needs a re-visit for non axi-symmetric case
 s = 0.3 # Parameter for mesh-accuracy
 # Dimensions in meter
@@ -15,7 +25,7 @@ cond_cond_isolation = 0.0002  # gap between Core and Conductor
 core_w = 0.02  # Axi symmetric case | core_w := core radius
 window_w = 0.01  # Winding window width
 window_h = 0.03  # Winding window height
-
+conductor_radius = 0.001
 
 # -- Materials --
 # frequency = 0: mu_rel only used if flag_non_linear_core == 0
@@ -27,27 +37,15 @@ core_material = 95  # 95 := TDK-N95 | Currently only works with Numbers correspo
 # -- Excitation --
 # Imposed current, current density or voltage
 if flag_excitation_type == 'current':
-    current = 300
+    current = 20
 if flag_excitation_type == 'current_density':
     raise NotImplementedError
 if flag_excitation_type == 'voltage':
     voltage = 2
 # Frequency and reduced Frequency
-frequency = 0  # in Hz
+frequency = 200000  # in Hz
 if flag_imposed_reduced_frequency == 1:
     red_freq = 4
-
-
-
-# General properties
-core_type = "EI"  # Basic shape of magnetic conductor
-#conductor_type = "stacked"  # Vertical packing of conductors
-#conductor_type = "full"  # One massive Conductor in each window
-conductor_type = "foil"  # Horizontal packing of conductors
-y_symmetric = 1  # Mirror-symmetry across y-axis
-axi_symmetric = 1  # Axial-symmetric model (idealized full-cylindrical)
-
-
 
 
 # Pre-Settings
@@ -167,13 +165,39 @@ if core_type == "EI":
             p_conductor = np.empty((4*n_conductors, 4))
             left_bound = core_cond_isolation + core_w/2
             right_bound = r_inner - core_cond_isolation
-            x_interpol = np.linspace(left_bound, right_bound, n_conductors+1)
+            x_interpol = np.linspace(left_bound, right_bound, n_conductors+1)  # instead should fill window from inside to outside with fixed copper thickness
             for i in range(0, n_conductors):
                 # Foils
                 p_conductor[4 * i + 0][:] = [x_interpol[i] + cond_cond_isolation, -window_h / 2 + core_cond_isolation, 0, c_conductor]
                 p_conductor[4 * i + 1][:] = [x_interpol[i+1] - cond_cond_isolation, -window_h / 2 + core_cond_isolation, 0, c_conductor]
                 p_conductor[4 * i + 2][:] = [x_interpol[i] + cond_cond_isolation, window_h / 2 - core_cond_isolation, 0, c_conductor]
                 p_conductor[4 * i + 3][:] = [x_interpol[i+1] - cond_cond_isolation, window_h / 2 - core_cond_isolation, 0, c_conductor]
+
+        if conductor_type == "litz":
+            p_conductor = []  # center points are stored
+            left_bound = core_cond_isolation + core_w/2
+            right_bound = r_inner - core_cond_isolation
+            top_bound = window_h/2
+            bot_bound = -window_h/2
+
+            y = bot_bound+core_cond_isolation+conductor_radius
+            x = left_bound + core_cond_isolation + conductor_radius
+            i = 0
+            # Case n_conductors higher that "allowed" is missing
+            while y < top_bound:
+                while x < right_bound and i < n_conductors:
+                    p_conductor.append([x, y, 0, c_conductor])
+                    p_conductor.append([x-conductor_radius, y, 0, c_conductor])
+                    p_conductor.append([x, y+conductor_radius, 0, c_conductor])
+                    p_conductor.append([x+conductor_radius, y, 0, c_conductor])
+                    p_conductor.append([x, y-conductor_radius, 0, c_conductor])
+                    i += 1
+                    x += conductor_radius * 2 + cond_cond_isolation
+                y += conductor_radius * 2 + cond_cond_isolation
+                x = left_bound + core_cond_isolation + conductor_radius
+            p_conductor = np.asarray(p_conductor)
+            if int(p_conductor.shape[0]/5) < n_conductors:
+                print("Could not resolve all conductors")
 
     for i in range(0, n_air_gaps):
         # Left leg (-1)

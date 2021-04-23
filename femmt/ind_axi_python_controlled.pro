@@ -292,10 +292,8 @@ Resolution {
       SaveSolution[A] ;
 
       PostOperation[Map_local] ;
-      //PostOperation[Get_global] ;
+      PostOperation[Get_global] ;
     }
-
-
   }
 }
 
@@ -363,11 +361,11 @@ PostProcessing {
       //    Integral { [ Lz*Idir[]*NbWires[]/SurfCoil[]* CompZ[{a}] ] ;
       //      In Inds  ; Jacobian Vol ; Integration II ; } } }
 
-      //{ Name Inductance_from_Flux ; Value { Term { Type Global; [ $Flux * 1e3/Val_EE ] ;
+      //{ Name Inductance_from_Flux ; Value { Term { Type Global; [ $Flux * 1/Val_EE ] ;
       //  In DomainDummy ; } } }
 
       { Name Inductance_from_MagEnergy ;
-        Value { Term { Type Global; [ 2 * $MagEnergy * 1e3/(Val_EE*Val_EE) ] ; In Domain ; } } }
+        Value { Term { Type Global; [ 2 * $MagEnergy * 1/(Val_EE*Val_EE) ] ; In Domain ; } } }
 
      }
   }
@@ -423,6 +421,9 @@ PostOperation Get_global UsingPost MagDyn_a {
   Print[ SoF[ Domain ], OnGlobal, Format TimeTable,  File > Sprintf("res/SF_iron%g.dat", Flag_IronCore)] ; // Complex power
 }
 
+
+
+// ---- Not Used ----
 PostOperation Get_allTS UsingPost MagDyn_a {
   //Print[ Inductance_from_MagEnergy, OnRegion DomainDummy, Format Table, LastTimeStepOnly,
   //  File StrCat[DirRes,"Inductance"];
