@@ -1,4 +1,5 @@
 import numpy as np
+from functions import NbrStrands
 
 # -- Control Flags --
 flag_imposed_reduced_frequency = 0  # if == 0 --> impose frequency f
@@ -12,40 +13,61 @@ core_type = "EI"  # Basic shape of magnetic conductor
 #conductor_type = "full"  # One massive Conductor in each window
 #conductor_type = "foil"  # Horizontal packing of conductors
 conductor_type = "litz"  # Horizontal packing of conductors
+#conductor_type = "solid"  # Horizontal packing of conductors
 #conductor_type = None
 p_conductor = np.empty(0)  # Case: no conductors only theorretical
 y_symmetric = 1  # Mirror-symmetry across y-axis
 axi_symmetric = 1  # Axial-symmetric model (idealized full-cylindrical)
-n_conductors = 39  # Number of (homogenised) conductors in one window
+n_conductors = 33  # Number of (homogenised) conductors in one window
 n_air_gaps = 1  # Number of air gaps - Needs a re-visit for non axi-symmetric case
-s = 0.3 # Parameter for mesh-accuracy
+s = 0.2  # Parameter for mesh-accuracy
 # Dimensions in meter
 core_cond_isolation = 0.001  # gap between Core and Conductor
 cond_cond_isolation = 0.0002  # gap between Core and Conductor
 core_w = 0.02  # Axi symmetric case | core_w := core radius
 window_w = 0.01  # Winding window width
 window_h = 0.03  # Winding window height
-conductor_radius = 0.001
+if conductor_type == 'solid':
+    conductor_radius = 0.0011879
+
+# Litz Approximation
+FF = 0.9  # hexagonal packing: ~90.7% are theoretical maximum
+n_layers = 6
+n_strands = NbrStrands(n_layers)
+strand_radius = 0.1e-3
+if conductor_type == 'litz':
+    conductor_radius = np.sqrt(n_strands/FF)*strand_radius  # Must be calculated from strand
+A_cell = np.pi * conductor_radius**2  #* FF  # Surface of the litz approximated hexagonal cell
+
+
 
 # -- Materials --
 # frequency = 0: mu_rel only used if flag_non_linear_core == 0
 # frequency > 0: mu_rel is used
+mu0 = 4e-7*np.pi
 mu_rel = 3000   # relative Core Permeability
 core_material = 95  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
-
+sigma = 6e7
 
 # -- Excitation --
 # Imposed current, current density or voltage
 if flag_excitation_type == 'current':
-    current = 20
+    current = 3
 if flag_excitation_type == 'current_density':
     raise NotImplementedError
 if flag_excitation_type == 'voltage':
     voltage = 2
 # Frequency and reduced Frequency
-frequency = 200000  # in Hz
+frequency = 50000  # in Hz
 if flag_imposed_reduced_frequency == 1:
     red_freq = 4
+else:
+    if frequency != 0:
+        delta = np.sqrt(2 / (2 * frequency * np.pi * sigma * mu0))
+        red_freq = strand_radius / delta
+    else:
+        delta = 1e20  # random huge value
+        red_freq = 0
 
 
 # Pre-Settings
@@ -75,7 +97,7 @@ if y_symmetric == 1:
     i = 0
     while i in range(0, n_air_gaps):
         position_tag = 0
-        airgap_h = 0.001#np.random.rand(1)*0.005 + 0.001
+        airgap_h = 0.0005  #np.random.rand(1)*0.005 + 0.001
         airgap_position = np.random.rand(1)*(window_h-airgap_h)-(window_h/2-airgap_h/2)
         c_airgap = airgap_h / 3 * s
         # Overlapping Control
@@ -165,7 +187,7 @@ if core_type == "EI":
             p_conductor = np.empty((4*n_conductors, 4))
             left_bound = core_cond_isolation + core_w/2
             right_bound = r_inner - core_cond_isolation
-            x_interpol = np.linspace(left_bound, right_bound, n_conductors+1)  # instead should fill window from inside to outside with fixed copper thickness
+            x_interpol = np.linspace(left_bound, right_bound, n_conductors+1)  # instead should FF window from inside to outside with fixed copper thickness
             for i in range(0, n_conductors):
                 # Foils
                 p_conductor[4 * i + 0][:] = [x_interpol[i] + cond_cond_isolation, -window_h / 2 + core_cond_isolation, 0, c_conductor]
@@ -173,7 +195,7 @@ if core_type == "EI":
                 p_conductor[4 * i + 2][:] = [x_interpol[i] + cond_cond_isolation, window_h / 2 - core_cond_isolation, 0, c_conductor]
                 p_conductor[4 * i + 3][:] = [x_interpol[i+1] - cond_cond_isolation, window_h / 2 - core_cond_isolation, 0, c_conductor]
 
-        if conductor_type == "litz":
+        if conductor_type == "litz" or conductor_type == "solid":
             p_conductor = []  # center points are stored
             left_bound = core_cond_isolation + core_w/2
             right_bound = r_inner - core_cond_isolation

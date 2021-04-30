@@ -137,7 +137,7 @@ if geo.core_type == "EI":
             for i in range(0, geo.p_conductor.shape[0]):
                 p_cond.append(gmsh.model.geo.addPoint(geo.p_conductor[i][0], geo.p_conductor[i][1], 0, geo.c_conductor))
             # Curves of Conductors
-            if geo.conductor_type == "litz":
+            if geo.conductor_type == "litz" or geo.conductor_type == "solid":
                 for i in range(0, int(len(p_cond) / 5)):
                     l_cond.append(gmsh.model.geo.addCircleArc(p_cond[5 * i + 1], p_cond[5 * i + 0], p_cond[5 * i + 2]))
                     l_cond.append(gmsh.model.geo.addCircleArc(p_cond[5 * i + 2], p_cond[5 * i + 0], p_cond[5 * i + 3]))
@@ -187,16 +187,19 @@ ps_cond = []
 if geo.n_conductors == 2 and geo.conductor_type == "stacked":
     ps_cond[0] = gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[0]], tag=4000)
     ps_cond[1] = gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[1]], tag=4001)
-if geo.conductor_type == "foil" or geo.conductor_type == "litz":
-        for i in range(0, geo.n_conductors):
-            ps_cond.append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[i]], tag=4000+i))
+if geo.conductor_type == "foil" or geo.conductor_type == "solid":
+    for i in range(0, geo.n_conductors):
+        ps_cond.append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[i]], tag=4000+i))
+if geo.conductor_type == "litz":
+    for i in range(0, geo.n_conductors):
+        ps_cond.append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[i]], tag=6000+i))
 # Air
 ps_air = gmsh.model.geo.addPhysicalGroup(2, plane_surface_air, tag=1000)
 # Boundary
 pc_bound = gmsh.model.geo.addPhysicalGroup(1, l_bound_tmp, tag=1111)
 
 gmsh.model.setPhysicalName(2, ps_core, "CORE")
-#gmsh.model.setPhysicalName(2, ps_cond, "COND")
+gmsh.model.setPhysicalName(2, ps_cond[0], "COND1")
 gmsh.model.setPhysicalName(2, ps_air, "AIR")
 gmsh.model.setPhysicalName(1, pc_bound, "BOUND")
 
@@ -241,7 +244,7 @@ gmsh.finalize()
 
 
 # ------------------------------------- File Communication ----------------------------------
-# All shared control variables and parameters are passed to a Prolog file
+# All shared control variables and parameters are passed to a temporary Prolog file
 text_file = open("Parameter.pro", "w")
 
 
@@ -250,17 +253,27 @@ if geo.flag_excitation_type == 'current':
     text_file.write(f"Flag_ImposedVoltage = 0;\n")
 if geo.flag_excitation_type == 'voltage':
     text_file.write(f"Flag_ImposedVoltage = 1;\n")
-
-
+if geo.conductor_type == 'litz':
+    text_file.write(f"Flag_HomogenisedModel = 1;\n")
+else:
+    text_file.write(f"Flag_HomogenisedModel = 0;\n")
+text_file.write("Flag_imposedRr = %s;\n" % geo.flag_imposed_reduced_frequency)
 # -- Geometry --
 # Number of conductors
-text_file.write("NbrCond = %s;\n" % geo.n_conductors)
+text_file.write(f"NbrCond = {geo.n_conductors};\n")
+# For stranded Conductors:
+text_file.write(f"NbrstrandedCond = {geo.n_conductors};\n")  # redundant
+text_file.write(f"NbrStrands = {geo.n_strands};\n")
+text_file.write(f"Rc = {geo.conductor_radius};\n")
+text_file.write(f"Fill = {geo.FF};\n")
+text_file.write(f"NbrLayers = {geo.n_layers};\n")
+text_file.write(f"AreaCell = {geo.A_cell};\n")
 # Coordinates of the rectangular winding window
 if geo.axi_symmetric == 1:
     text_file.write("Xw1 = %s;\n" % geo.p_window[4, 0])
     text_file.write("Xw2 = %s;\n" % geo.p_window[5, 0])
 else:
-    raise NotImplementedError("Only axi symmetric case implemented :(")
+    raise NotImplementedError("Only axi-symmetric case implemented :(")
 
 
 # -- Materials --
@@ -271,7 +284,7 @@ text_file.write(f"nu0 = 1 / mu0;\n")
 
 # Material Properties
 # Conductor Material
-text_file.write(f"SigmaCu = 6e7;\n")
+text_file.write(f"SigmaCu = {geo.sigma};\n")
 
 # Core Material
 if geo.frequency == 0:
@@ -296,24 +309,14 @@ if geo.flag_excitation_type == 'voltage':
     text_file.write(f"Val_EE = {geo.voltage};\n")
 
 # Frequency and reduced Frequency
-text_file.write("Rc = Sqrt[1/Pi]*1e-3;\n")
-text_file.write("Flag_imposedRr = %s;\n" % geo.flag_imposed_reduced_frequency)
-if geo.flag_imposed_reduced_frequency == 1:
-    text_file.write("Rr = %s;\n" % geo.red_freq)
-    text_file.write("delta = Rc/Rr;\n")
-    text_file.write("Freq  = 1/(delta*delta*mu0*SigmaCu*Pi);\n")
-else:
-    text_file.write("Freq = %s;\n" % geo.frequency)
-    text_file.write("delta = 1/Sqrt[mu0*SigmaCu*Freq*Pi];\n")
-    text_file.write("Rr = Rc/delta;\n")
+text_file.write("Freq = %s;\n" % geo.frequency)
+text_file.write(f"delta = {geo.delta};\n")
+text_file.write(f"Rr = {geo.red_freq};\n")
 
 
 text_file.close()
 
-
-# ---------------------------------------- Simulation ---------------------------------------
-# create a new onelab client
-c = onelab.client(__file__)
+# -------------------------------------- Onelab Setup -------------------------------------
 
 if os.path.isfile(path + "/config.py"):
     print("if")
@@ -328,9 +331,40 @@ else:
     print("else")
     mygetdp = call_for_path("mygetdp")
 
-# create a onelab variable for the model name
-inductor = c.defineString('Inductor model', value='inductor')
+# -------------------------------------- Pre-Simulation --------------------------------------
+if geo.conductor_type == 'litz':
+    if os.path.isfile(path + f"/pre/coeff/pB_RS_la{geo.FF}_1layer.dat"):
+        print("Coefficients for stands approximation are found.")
 
+    else:
+        print("Create coefficients for strands approximation")
+        # need reduced frequency X for pre-simulation
+        X = geo.red_freq
+        print(f"Exact Reduced frequency X = {X}")
+
+        # Rounding X to fit it with corresbonding parameters from the database
+        X = np.around(X, decimals=3)
+        print(f"Rounded Reduced frequency X = {X}")
+
+        """
+        # create a new onelab client
+        c = onelab.client(__file__)
+    
+    
+        # get model file names with correct path
+        input_file = c.getPath('cell_dat.pro')
+        solver = c.getPath('ind_axi_python_controlled' + '.pro')
+    
+        # Run simulations as sub clients (non blocking??)
+        c.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
+        """
+
+
+
+
+# ---------------------------------------- Simulation ---------------------------------------
+# create a new onelab client
+c = onelab.client(__file__)
 
 # get model file names with correct path
 msh_file = c.getPath('geometry.msh')
@@ -346,28 +380,53 @@ epsilon = 1e-9
 # Mesh
 gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
 
-# Ohmic losses (weightend effective value of current density)
-gmsh.open("res/j2F.pos")
-gmsh.option.setNumber("View[0].ScaleType", 2)
-gmsh.option.setNumber("View[0].RangeType", 2)
-gmsh.option.setNumber("View[0].SaturateValues", 1)
-gmsh.option.setNumber("View[0].CustomMin", gmsh.option.getNumber("View[0].Min") + epsilon)
-gmsh.option.setNumber("View[0].CustomMax", gmsh.option.getNumber("View[0].Max"))
-gmsh.option.setNumber("View[0].ColormapNumber", 1)
-gmsh.option.setNumber("View[0].IntervalsType", 2)
-gmsh.option.setNumber("View[0].NbIso", 40)
+if geo.conductor_type != 'litz':
+    # Ohmic losses (weightend effective value of current density)
+    gmsh.open("res/j2F.pos")
+    gmsh.option.setNumber("View[0].ScaleType", 2)
+    gmsh.option.setNumber("View[0].RangeType", 2)
+    gmsh.option.setNumber("View[0].SaturateValues", 1)
+    gmsh.option.setNumber("View[0].CustomMin", gmsh.option.getNumber("View[0].Min") + epsilon)
+    gmsh.option.setNumber("View[0].CustomMax", gmsh.option.getNumber("View[0].Max"))
+    gmsh.option.setNumber("View[0].ColormapNumber", 1)
+    gmsh.option.setNumber("View[0].IntervalsType", 2)
+    gmsh.option.setNumber("View[0].NbIso", 40)
 
-# Magnetic flux density
-gmsh.open("res/Magb.pos")
-gmsh.option.setNumber("View[1].ScaleType", 1)
-gmsh.option.setNumber("View[1].RangeType", 1)
-gmsh.option.setNumber("View[1].CustomMin", gmsh.option.getNumber("View[1].Min") + epsilon)
-gmsh.option.setNumber("View[1].CustomMax", gmsh.option.getNumber("View[1].Max"))
-gmsh.option.setNumber("View[1].ColormapNumber", 1)
-gmsh.option.setNumber("View[1].IntervalsType", 2)
-gmsh.option.setNumber("View[1].NbIso", 40)
+    # Magnetic flux density
+    gmsh.open("res/Magb.pos")
+    gmsh.option.setNumber("View[1].ScaleType", 1)
+    gmsh.option.setNumber("View[1].RangeType", 1)
+    gmsh.option.setNumber("View[1].CustomMin", gmsh.option.getNumber("View[1].Min") + epsilon)
+    gmsh.option.setNumber("View[1].CustomMax", gmsh.option.getNumber("View[1].Max"))
+    gmsh.option.setNumber("View[1].ColormapNumber", 1)
+    gmsh.option.setNumber("View[1].IntervalsType", 2)
+    gmsh.option.setNumber("View[1].NbIso", 40)
 
-print(gmsh.option.getNumber("View[0].Max"))
+    print(gmsh.option.getNumber("View[0].Max"))
+
+if geo.conductor_type == 'litz':
+    # Ohmic losses (weightend effective value of current density)
+    gmsh.open("res/jH.pos")
+    gmsh.option.setNumber("View[0].ScaleType", 1)
+    #gmsh.option.setNumber("View[0].RangeType", 2)
+    #gmsh.option.setNumber("View[0].SaturateValues", 1)
+    #gmsh.option.setNumber("View[0].CustomMin", gmsh.option.getNumber("View[0].Min") + epsilon)
+    #gmsh.option.setNumber("View[0].CustomMax", gmsh.option.getNumber("View[0].Max"))
+    gmsh.option.setNumber("View[0].ColormapNumber", 1)
+    gmsh.option.setNumber("View[0].IntervalsType", 2)
+    gmsh.option.setNumber("View[0].NbIso", 40)
+
+    # Magnetic flux density
+    gmsh.open("res/MagbH.pos")
+    gmsh.option.setNumber("View[1].ScaleType", 1)
+    gmsh.option.setNumber("View[1].RangeType", 1)
+    gmsh.option.setNumber("View[1].CustomMin", gmsh.option.getNumber("View[1].Min") + epsilon)
+    gmsh.option.setNumber("View[1].CustomMax", gmsh.option.getNumber("View[1].Max"))
+    gmsh.option.setNumber("View[1].ColormapNumber", 1)
+    gmsh.option.setNumber("View[1].IntervalsType", 2)
+    gmsh.option.setNumber("View[1].NbIso", 40)
+
+
 gmsh.fltk.run()
 gmsh.finalize()
 

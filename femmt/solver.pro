@@ -141,14 +141,14 @@ Formulation {
         In DomainC ; Jacobian Vol ; Integration II ; }
       GlobalTerm { [ Dof{I}, {U} ] ; In DomainC ; }
 
-      Galerkin { [ -Ns[]/Sc[] * Dof{ir}, {a} ] ;
-        In DomainS ; Jacobian Vol ; Integration II ; }
-      Galerkin { DtDof [ CoefGeo*Ns[]/Sc[] * Dof{a}, {ir} ] ;
-        In DomainS ; Jacobian Vol ; Integration II ; }
+      //Galerkin { [ -Ns[]/Sc[] * Dof{ir}, {a} ] ;
+      //  In DomainS ; Jacobian Vol ; Integration II ; }
+      //Galerkin { DtDof [ CoefGeo*Ns[]/Sc[] * Dof{a}, {ir} ] ;
+      //  In DomainS ; Jacobian Vol ; Integration II ; }
 
-      Galerkin { [ Ns[]/Sc[] / sigma[] * Ns[]/Sc[]* Dof{ir} , {ir} ] ; // resistance term
-        In DomainS ; Jacobian Vol ; Integration II ; }
-      GlobalTerm { [ Dof{Us}/CoefGeo , {Is} ] ; In DomainS ; }
+      //Galerkin { [ Ns[]/Sc[] / sigma[] * Ns[]/Sc[]* Dof{ir} , {ir} ] ; // resistance term
+      //  In DomainS ; Jacobian Vol ; Integration II ; }
+      //GlobalTerm { [ Dof{Us}/CoefGeo , {Is} ] ; In DomainS ; }
 
       If(Flag_Circuit)
         GlobalTerm { NeverDt[ Dof{Uz}                , {Iz} ] ; In Resistance_Cir ; }
@@ -170,4 +170,57 @@ Formulation {
       EndIf
     }
   }
+
+
+  { Name MagDyn_a_Homog ; Type FemEquation ;
+    Quantity {
+      { Name a  ; Type Local  ; NameOfSpace Hcurl_a_2D ; }
+
+      { Name ir ; Type Local  ; NameOfSpace Hregion_i_2D ; }
+      { Name Us ; Type Global ; NameOfSpace Hregion_i_2D[Us] ; }
+      { Name Is ; Type Global ; NameOfSpace Hregion_i_2D[Is] ; }
+
+      { Name Uz ; Type Global ; NameOfSpace Hregion_Z [Uz] ; }
+      { Name Iz ; Type Global ; NameOfSpace Hregion_Z [Iz] ; }
+    }
+
+    Equation {
+
+      Galerkin { [ nu[] * Dof{d a} , {d a} ]  ;
+        In Domain_Lin ; Jacobian Vol ; Integration II ; }
+
+      If(Flag_NL)
+        Galerkin { [ nu[{d a}] * Dof{d a} , {d a} ]  ;
+          In Domain_NonLin ; Jacobian Vol ; Integration II ; }
+        Galerkin { JacNL [ dhdb_NL[{d a}] * Dof{d a} , {d a} ] ;
+          In Domain_NonLin ; Jacobian Vol ; Integration II ; }
+      EndIf
+
+      Galerkin { [ -1/AreaCell * Dof{ir}, {a} ] ;
+        In DomainS ; Jacobian Vol ; Integration II ; }
+      Galerkin { DtDof [ 1/AreaCell * Dof{a}, {ir} ] ;
+        In DomainS ; Jacobian Vol ; Integration II ; }
+      GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ]     ; In DomainS ; }
+
+      // Circuit equations
+      If(Flag_Circuit)
+        GlobalTerm { NeverDt[ Dof{Uz}                , {Iz} ] ; In Resistance_Cir ; }
+        GlobalTerm { NeverDt[ Resistance[] * Dof{Iz} , {Iz} ] ; In Resistance_Cir ; }
+
+        GlobalTerm { [ Dof{Uz}                      , {Iz} ] ; In Inductance_Cir ; }
+        GlobalTerm { DtDof [ Inductance[] * Dof{Iz} , {Iz} ] ; In Inductance_Cir ; }
+
+        GlobalTerm { [ Dof{Iz}        , {Iz} ] ; In Capacitance1_Cir ; }
+        GlobalTerm { NeverDt[ Dof{Iz} , {Iz} ] ; In Capacitance2_Cir ; }
+        GlobalTerm { DtDof [ Capacitance[] * Dof{Uz} , {Iz} ] ; In Capacitance_Cir ; }
+
+        GlobalEquation {
+          Type Network ; NameOfConstraint ElectricalCircuit ;
+          { Node {Is};  Loop {Us};  Equation {Us}; In DomainS ; }
+          { Node {Iz};  Loop {Uz};  Equation {Uz}; In DomainZt_Cir ; }
+        }
+      EndIf
+    }
+  }
+
 }

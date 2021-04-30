@@ -2,8 +2,14 @@ import numpy as np
 
 
 def inner_points(a, b, input_points):
-    # This function returns the input points that have a common coordinate as the two
-    # interval borders a and b
+    """
+    Returns the input points that have a common coordinate as the two
+    interval borders a and b
+    :param a:
+    :param b:
+    :param input_points:
+    :return:
+    """
     [min, max] = [None, None]
     output = input_points
     dim = None
@@ -37,8 +43,15 @@ def inner_points(a, b, input_points):
 
 
 def min_max_inner_points(a, b, input_points):
-    # This function returns the input points that have a common coordinate and
-    # the minimum distance from the interval borders.
+    """
+    Returns the input points that have a common coordinate and
+    the minimum distance from the interval borders.
+    :param a:
+    :param b:
+    :param input_points:
+    :return:
+    """
+
     [min, max] = [None, None]
     buffer = input_points
     dim = None
@@ -84,3 +97,14 @@ def call_for_path(destination, config_file="config.py"):
     text_file.write(f"{destination} = '{path}'\n")
     text_file.close()
     return path
+
+
+def NbrStrands(NbrLayers):
+    """
+    Returns the number of strands in a hexagonal litz winding with a
+    specified number of layers (NbrLayers). CAUTION: Zero number of
+    layers corresponds to a single strand.
+    :param NbrLayers:
+    :return:
+    """
+    return 3*(NbrLayers+1)**2 - 3*(NbrLayers+1) + 1
