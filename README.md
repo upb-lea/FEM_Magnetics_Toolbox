@@ -16,6 +16,12 @@ git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
 
 
 ## Usage
+Date: 04.05.2021
+How to use the FEM Magnetics Toolbox:
+* Import the class with "from FEMMT import MagneticComponent"
+* Createte instance with for example "geo = MagneticComponent()"
+* Call a method with for example "geo.single_simulation() or geo.freq_sweep_simulation(start=0, end=250000, steps=6)" 
+
 
 
 ## Roadmap
