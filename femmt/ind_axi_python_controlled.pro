@@ -20,16 +20,12 @@ Flag_Circuit = Flag_ImposedVoltage;
 NbrTurns = 1; // does not make sense for this way of homogenisation
 //Len = 1000*(2*Pi*(Xw1+Xw2)/2)*NbrTurns ; // average length
 AreaCond = Pi*Rc^2;
-Dex = 2.2*Rc;
-Dey = Dex; // only valid for squared packing
-
+//Dex = 2.2*Rc;
+//Dey = Dex; // only valid for squared packing
 
 
 //AreaCell = 1; //Dex*Dey;  // what is the meaning of this factor?
-//Rdc = Len/SigmaCu/AreaCond; // Fill Factor is missing
-
-
-
+//Rdc = Len/SigmaCu/AreaCond; // fill factor is missing
 
 
 // ----------------------
@@ -161,17 +157,18 @@ Function {
 
 
   // new files, finer mesh, max X=8
-  la = 0.65; // fill factor
-  //file_ZSkinRe  = Sprintf("coeff/pI_RS_la%.2g_%.2glayer.dat", la, NbrLayers);
-  //file_ZSkinIm  = Sprintf("coeff/qI_RS_la%.2g_%.2glayer.dat", la, NbrLayers);
-  //file_NuProxRe = Sprintf("coeff/qB_RS_la%.2g_%.2glayer.dat", la, NbrLayers);
-  //file_NuProxIm = Sprintf("coeff/pB_RS_la%.2g_%.2glayer.dat", la, NbrLayers);
+  la = Fill ;
+  file_ZSkinRe  = Sprintf("pre/coeff/pI_RS_la%.2g_%.2glayer.dat", la, NbrLayers);
+  file_ZSkinIm  = Sprintf("pre/coeff/qI_RS_la%.2g_%.2glayer.dat", la, NbrLayers);
+  file_NuProxRe = Sprintf("pre/coeff/qB_RS_la%.2g_%.2glayer.dat", la, NbrLayers);
+  file_NuProxIm = Sprintf("pre/coeff/pB_RS_la%.2g_%.2glayer.dat", la, NbrLayers);
 
   // new files, finer mesh, max X=8
-  file_ZSkinRe  = Sprintf("coeff/pI_RS_la%.2g.dat", la);
-  file_ZSkinIm  = Sprintf("coeff/qI_RS_la%.2g.dat", la);
-  file_NuProxRe = Sprintf("coeff/qB_RS_la%.2g.dat", la);
-  file_NuProxIm = Sprintf("coeff/pB_RS_la%.2g.dat", la);
+  // la = 0.65; // fill factor
+  // file_ZSkinRe  = Sprintf("coeff/pI_RS_la%.2g.dat", la);
+  // file_ZSkinIm  = Sprintf("coeff/qI_RS_la%.2g.dat", la);
+  // file_NuProxRe = Sprintf("coeff/qB_RS_la%.2g.dat", la);
+  // file_NuProxIm = Sprintf("coeff/pB_RS_la%.2g.dat", la);
 
   // Homogenization coefficients: round conductor & square packing
   // Frequency domain
@@ -455,6 +452,14 @@ PostProcessing {
             [ CoefGeo * ({d a}*Conj[nuOm[{d a}]*{d a}] + kkk[]*SquNorm[-1/AreaCell*{ir}]) ] ;
             In Domain ; Jacobian Vol ; Integration II ; } } } //Complex power
 
+      { Name MagEnergy ; Value {
+          Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
+            In Domain ; Jacobian Vol ; Integration II ; } } }
+
+      { Name Inductance_from_MagEnergy ;
+        Value { Term { Type Global; [ 2 * $MagEnergy * 1/(Val_EE*Val_EE) ] ; In Domain ; } } }
+
+
       { Name U ; Value {
           Term { [ {Us} ]  ; In DomainS ; }
           Term { [ {Uz} ]  ; In DomainZt_Cir ; }
@@ -562,10 +567,11 @@ PostOperation Get_global UsingPost MagDyn_a {
   PostOperation Get_global_homog UsingPost MagDyn_a_Homog {
   // Complex power: S = P + i*Q, P=active power, Q=reactive power
 
-  Print[ SoH[Domain], OnGlobal, Format TimeTable,
-    File Sprintf("res/SH_f%g.dat", Freq) ] ;
-  Print[ j2H[StrandedWinding], OnGlobal, Format Table,
-    File Sprintf("res/j2H_f%g.dat", Freq) ] ;
+  Print[ SoH[Domain], OnGlobal, Format TimeTable, File Sprintf("res/SH_f%g.dat", Freq) ] ;
+  // Print[ j2H[StrandedWinding], OnGlobal, Format Table, File Sprintf("res/j2H_f%g.dat", Freq) ] ;
+  Print[ j2H[StrandedWinding], OnGlobal, Format TimeTable, File > StrCat["res/j2H.dat"] ] ;
+  //Print[ Inductance_from_MagEnergy, OnGlobal, Format Table, File Sprintf("res/Inductance.dat") ];
+  //Print[ Inductance_from_MagEnergy, OnRegion Domain, Format Table, File Sprintf("res/Inductance.dat") ];
 
   If(!Flag_Circuit)
     Print[ U, OnRegion StrandedWinding, Format Table, File Sprintf("res/U_f%g.dat", Freq) ] ;
@@ -579,7 +585,7 @@ PostOperation Get_global UsingPost MagDyn_a {
 
 // ---- Not Used ----
 PostOperation Get_allTS UsingPost MagDyn_a {
-  //Print[ Inductance_from_MagEnergy, OnRegion DomainDummy, Format Table, LastTimeStepOnly,
+  // Print[ Inductance_from_MagEnergy, OnRegion DomainDummy, Format Table, LastTimeStepOnly,
   //  File StrCat[DirRes,"Inductance"];
 
   If(!Flag_Circuit)

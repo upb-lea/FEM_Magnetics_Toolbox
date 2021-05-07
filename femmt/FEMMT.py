@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pathlib
 import sys
+import fileinput
 from onelab import onelab
 from functions import inner_points, min_max_inner_points, call_for_path, NbrStrands
 
@@ -34,21 +35,21 @@ class MagneticComponent:
 
         # - Conductor -
         self.n_conductors = 33  # Number of (homogenised) conductors in one window
-        self.conductor_type = "litz"  # Stranded wires
+        self.conductor_type = "solid"  # Stranded wires
         """
         conductor_type = "stacked"  # Vertical packing of conductors
         conductor_type = "full"  # One massive Conductor in each window
         conductor_type = "foil"  # Horizontal packing of conductors
-        conductor_type = "solid"  # Massive wires
+        conductor_type = "litz"  # Massive wires
         """
 
         if self.conductor_type == 'solid':
             self.conductor_radius = 0.0011879
         # Litz Approximation
         self.FF = 0.9  # hexagonal packing: ~90.7% are theoretical maximum
-        self.n_layers = 6
+        self.n_layers = 10
         self.n_strands = NbrStrands(self.n_layers)
-        self.strand_radius = 0.1e-3
+        self.strand_radius = 0.06e-3
         if self.conductor_type == 'litz':
             self.conductor_radius = np.sqrt(self.n_strands/self.FF)*self.strand_radius  # Must be calculated from strand
         self.A_cell = np.pi * self.conductor_radius**2  #* FF  # Surface of the litz approximated hexagonal cell
@@ -66,8 +67,10 @@ class MagneticComponent:
         self.c_window = self.window_w/10 * self.s
         self.c_conductor = self.window_w/10 * self.s
 
+        # -- Parent folder path --
+        self.path = str(pathlib.Path(__file__).parent.absolute())
+
         # -- Further Attributes --
-        self.path = None
         self.c_airgap = None
         self.n_windows = None
         self.p_outer = None
@@ -81,30 +84,52 @@ class MagneticComponent:
         self.current = None
         self.voltage = None
         self.frequency = None
-        self.flag_imposed_reduced_frequency = None
         self.red_freq = None
         self.delta = None
-        self.red_freq = None
-        self.delta = None
-        self.red_freq = None
 
-    def high_level_geo_gen(self):
+        self.onelab = None
 
+    # ==== Back-End Methods =====
+    def onelab_setup(self):
+        """
+        Either reads onelab parent folder path from config.py or asks the user to provide it.
+        Creates a config.py at first use.
+        :return:
+        """
+        if os.path.isfile(self.path + "/config.py"):
+            import config
+            with open('config.py') as f:
+                if 'onelab' in f.read():
+                    if os.path.exists(config.onelab):
+                        self.onelab = config.onelab
+                else:
+                    self.onelab = call_for_path("onelab")
+        else:
+            self.onelab = call_for_path("onelab")
+
+    def high_level_geo_gen(self, core_type="EI", axi_symmetric=1):
+        """
+
+        :return:
+        """
         # ==============================
         # High-Level Geometry Generation
         # ==============================
 
         # -- Core-type --
-        if self.core_type == "EI":
+        if self.core_type == core_type:
             self.n_windows = 2
 
         # -- Symmetry -- [Choose between asymmetric, symmetric and axi symmetric]
         if self.y_symmetric == 0:
             self.axi_symmetric = 0
         if self.axi_symmetric == 1:
-            self.y_symmetric = 1
+            self.y_symmetric = axi_symmetric
 
+        if self.core_type == "EI" and self.axi_symmetric == 1:
+            self.ei_axi()
 
+    def ei_axi(self):
         # -- Air Gap Data -- [random air gap generation]
         if self.y_symmetric == 0:
             raise(NotImplementedError, "Not up to date! Air Gap generation must be adopted from symmetric case")
@@ -129,8 +154,8 @@ class MagneticComponent:
                     airgap_h = 0.0005
                     airgap_position = 0.5*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
                 else:
-                    np.random.rand(1)*0.005 + 0.001
-                    np.random.rand(1)*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
+                    airgap_h = np.random.rand(1)*0.005 + 0.001
+                    airgap_position = np.random.rand(1)*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
                 self.c_airgap = airgap_h / 3 * self.s
                 # Overlapping Control
                 for j in range(0, air_gaps.shape[0]):
@@ -192,12 +217,6 @@ class MagneticComponent:
                 self.p_conductor = np.empty(0)
 
                 if self.conductor_type == "full":
-                    # left window
-                    # p_conductor[4*i+0][:] = [-r_inner + core_cond_isolation, -window_h/2 + core_cond_isolation, 0, c_conductor]
-                    # p_conductor[4*i+1][:] = [-core_cond_isolation - core_w/2, -window_h/2 + core_cond_isolation, 0, c_conductor]
-                    # p_conductor[4*i+2][:] = [-r_inner + core_cond_isolation, window_h/2 - core_cond_isolation, 0, c_conductor]
-                    # p_conductor[4*i+3][:] = [-core_cond_isolation - core_w/2, window_h/2 - core_cond_isolation, 0, c_conductor]
-                    # right window
                     # full window conductor
                     self.p_conductor[0][:] = [self.core_cond_isolation + self.core_w/2, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
                     self.p_conductor[1][:] = [r_inner - self.core_cond_isolation, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
@@ -226,9 +245,9 @@ class MagneticComponent:
                         self.p_conductor[4 * i + 2][:] = [x_interpol[i] + self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
                         self.p_conductor[4 * i + 3][:] = [x_interpol[i+1] - self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
 
-                if self.conductor_type == "litz" or conductor_type == "solid":
+                if self.conductor_type == "litz" or self.conductor_type == "solid":
                     self.p_conductor = []  # center points are stored
-                    left_bound = self.core_cond_isolation + self.core_w/2
+                    left_bound = self.core_w/2
                     right_bound = r_inner - self.core_cond_isolation
                     top_bound = self.window_h/2
                     bot_bound = -self.window_h/2
@@ -512,9 +531,6 @@ class MagneticComponent:
         # Mesh generation
         gmsh.model.mesh.generate(2)
 
-        # Parent folder path
-        self.path = str(pathlib.Path(__file__).parent.absolute())
-
         # Check operating system
         if sys.platform == "linux" or sys.platform == "linux2":
             gmsh.write(self.path + "/geometry.msh")
@@ -530,20 +546,21 @@ class MagneticComponent:
         # Terminate gmsh
         gmsh.finalize()
 
-    def excitation(self, f, I):
+    def excitation(self, f, i, nonlinear=1, ex_type='current', imposed_red_f=0):
 
         # -- Excitation --
-        self.flag_imposed_reduced_frequency = 0 # if == 0 --> impose frequency f
-        self.flag_excitation_type = 'current'  # 'current', 'current_density', 'voltage'
-        self.flag_non_linear_core = 0
+        self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
+        self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
+        self.flag_non_linear_core = nonlinear
 
         # Imposed current, current density or voltage
         if self.flag_excitation_type == 'current':
-            self.current = I
+            self.current = i
         if self.flag_excitation_type == 'current_density':
             raise NotImplementedError
         if self.flag_excitation_type == 'voltage':
-            self.voltage = 2
+            raise NotImplementedError
+            # self.voltage = 2
 
         # -- Frequency --
         self.frequency = f  # in Hz
@@ -627,50 +644,74 @@ class MagneticComponent:
 
         text_file.close()
 
-    def simulate(self):
-        # -------------------------------------- Onelab Setup -------------------------------------
-        if os.path.isfile(self.path + "/config.py"):
-            print("if")
-            import config
-            with open('config.py') as f:
-                if 'mygetdp' in f.read():
-                    if os.path.isfile(config.mygetdp + ".exe") or os.path.isfile(config.mygetdp):
-                        mygetdp = config.mygetdp
-                else:
-                    mygetdp = call_for_path("mygetdp")
-        else:
-            print("else")
-            mygetdp = call_for_path("mygetdp")
+    def pre_simulate(self):
+        """
 
-        # -------------------------------------- Pre-Simulation --------------------------------------
+        :return:
+        """
         if self.conductor_type == 'litz':
-            if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_1layer.dat"):
+            if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat"):
                 print("Coefficients for stands approximation are found.")
 
             else:
                 print("Create coefficients for strands approximation")
                 # need reduced frequency X for pre-simulation
+                # Rounding X to fit it with corresponding parameters from the database
                 X = self.red_freq
-                print(f"Exact Reduced frequency X = {X}")
-
-                # Rounding X to fit it with corresbonding parameters from the database
                 X = np.around(X, decimals=3)
                 print(f"Rounded Reduced frequency X = {X}")
 
-                """
+                # Create new file with [0 1] for the first element entry
+
                 # create a new onelab client
+                # -- Pre-Simulation Settings --
+                text_file = open("pre/PreParameter.pro", "w")
+                text_file.write(f"NbrLayers = {self.n_layers};\n")
+                text_file.close()
+                self.onelab_setup()
                 c = onelab.client(__file__)
+                cell_geo = c.getPath('pre/cell.geo')
 
+                # Run gmsh as a sub client
+                mygmsh = self.onelab + 'gmsh'
+                c.runSubClient('myGmsh', mygmsh + ' ' + cell_geo + ' -2 -v 2')
 
-                # get model file names with correct path
-                input_file = c.getPath('cell_dat.pro')
-                solver = c.getPath('ind_axi_python_controlled' + '.pro')
+                modes = [1, 2]  # 1 = "skin", 2 = "proximity"
+                reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
+                for mode in modes:
+                    for rf in reduced_frequencies:
+                        # -- Pre-Simulation Settings --
+                        text_file = open("pre/PreParameter.pro", "w")
+                        text_file.write(f"Rr = {rf};\n")
+                        text_file.write(f"Mode = {mode};\n")
+                        text_file.write(f"NbrLayers = {self.n_layers};\n")
+                        text_file.close()
 
-                # Run simulations as sub clients (non blocking??)
-                c.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
-                """
+                        # get model file names with correct path
+                        input_file = c.getPath('pre/cell_dat.pro')
+                        cell = c.getPath('pre/cell.pro')
 
-        # ---------------------------------------- Simulation ---------------------------------------
+                        # Run simulations as sub clients
+                        mygetdp = self.onelab + 'getdp'
+                        c.runSubClient('myGetDP', mygetdp +  ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
+
+                # Formatting stuff
+                files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat",
+                         self.path + f"/pre/coeff/pI_RS_la{self.FF}_{self.n_layers}layer.dat",
+                         self.path + f"/pre/coeff/qB_RS_la{self.FF}_{self.n_layers}layer.dat",
+                         self.path + f"/pre/coeff/qI_RS_la{self.FF}_{self.n_layers}layer.dat"]
+                for i in range(0, 4):
+                    with fileinput.FileInput(files[i], inplace=True) as file:
+                        for line in file:
+                            print(line.replace(' 0\n', '\n'), end='')
+
+    def simulate(self):
+        """
+
+        :return:
+        """
+        self.onelab_setup()
+        # -- Simulation --
         # create a new onelab client
         c = onelab.client(__file__)
 
@@ -679,6 +720,7 @@ class MagneticComponent:
         solver = c.getPath('ind_axi_python_controlled' + '.pro')
 
         # Run simulations as sub clients (non blocking??)
+        mygetdp = self.onelab + 'getdp'
         c.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
 
     def visualize(self):
@@ -737,33 +779,47 @@ class MagneticComponent:
         gmsh.fltk.run()
         gmsh.finalize()
 
-    def single_simulation(self):
+    # ==== Front-End Methods =====
+    def pre_simulation(self):
+        self.high_level_geo_gen()
+        self.excitation(f=100000, i=1)  # frequency and current
+        self.file_communication()
+        self.pre_simulate()
+
+    def single_simulation(self, freq, current):
         self.high_level_geo_gen()
         self.generate_mesh()
-        self.excitation(f=100000, I=3)  # frequency and current
+        self.excitation(f=freq, i=current)  # frequency and current
         self.file_communication()
+        self.pre_simulate()
         self.simulate()
         self.visualize()
 
-    def freq_sweep_simulation(self, start, end, steps):
+    def mesh(self):
         self.high_level_geo_gen()
         self.generate_mesh()
-        sweep_list = np.linspace(start, end, steps)
-        for i in range(0, len(sweep_list)):
-            self.excitation(f=sweep_list[i], I=3)  # frequency and current
+
+    def excitation_sweep(self, frequencies=[], currents=[], show_last=False):
+        """
+        Performs a sweep simulation for frequency-current pairs. Both values can
+        be passed in lists of the same length. Example Code:
+            1 geo = MagneticComponent()
+            2 geo.mesh()
+            3 fs = np.linspace(0, 250000, 6)
+            4 cs = [10, 2, 1, 0.5, 0.2, 0.1]
+            5 geo.excitation_sweep(frequencies=fs, currents=cs)
+        :param currents:
+        :param frequencies:
+        :param show_last:
+        :return:
+        """
+        if len(frequencies) != len(currents):
+            print('len(frequencies) != len(currents)')
+            raise Exception
+        for i in range(0, len(frequencies)):
+            self.excitation(f=frequencies[i], i=currents[i])  # frequency and current
             self.file_communication()
+            self.pre_simulate()
             self.simulate()
-        self.visualize()
-
-
-
-"""Theoretical inductivity
-lz = 0.5
-A = lz*(core_w-window_w)/2
-mu0 = 1.256*10**(-6)
-N = 10
-L_theo = None
-if n_air_gaps > 0:
-    L_theo = N**2 * mu0 * A / airgap_h * 1000
-print("Nicht mehr aktuell! Theoretical, idealized inductance: ", L_theo, "mH")
-"""
+        if show_last:
+            self.visualize()

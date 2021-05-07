@@ -1,18 +1,19 @@
 from FEMMT import MagneticComponent
-
+import numpy as np
 
 # Create Object
 geo = MagneticComponent()
 
-# Iterate on for example the frequency
+"""
+# Perform a single simulation
+geo.single_simulation(freq=100000,current=1)
+#geo.pre_simulation()
+"""
 
-geo.single_simulation()
-#geo.freq_sweep_simulation(start=50000, end=200000, steps=4)
-
-
-
-
-
-
-
-
+# ===============
+# Generate Mesh
+geo.mesh()
+# Iterate on frequency
+frequencies = np.linspace(0, 250000, 6)
+currents = [10, 2, 1, 0.5, 0.2, 0.1]
+geo.excitation_sweep(currents=currents, frequencies=frequencies)

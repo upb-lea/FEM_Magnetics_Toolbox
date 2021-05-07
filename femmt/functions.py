@@ -82,7 +82,6 @@ def min_max_inner_points(a, b, input_points):
     return [min, max]
 
 
-
 def call_for_path(destination, config_file="config.py"):
     """
     asks the user to enter the filepath of a destinated file WITHOUT the suffix
@@ -93,7 +92,7 @@ def call_for_path(destination, config_file="config.py"):
     :return:
     """
     text_file = open(config_file, "w")
-    path = input(f"Please enter the path of {destination} in ways of 'C:.../onelab-Windows64/getdp': ")
+    path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
     text_file.write(f"{destination} = '{path}'\n")
     text_file.close()
     return path
