@@ -9,7 +9,7 @@ from functions import inner_points, min_max_inner_points, call_for_path, NbrStra
 
 
 class MagneticComponent:
-    def __init__(self):
+    def __init__(self, n_layers=10, strand_radius=0.05e-3, conductor_type="litz"):
 
         # ==============================
         # Settings
@@ -18,7 +18,7 @@ class MagneticComponent:
         # -- Geometry Control Flags --
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
         self.axi_symmetric = 1  # Axial-symmetric model (idealized full-cylindrical)
-        self.s = 0.5  # Parameter for mesh-accuracy
+        self.s = 0.2  # Parameter for mesh-accuracy
 
         # -- Geometry --
 
@@ -35,24 +35,29 @@ class MagneticComponent:
 
         # - Conductor -
         self.n_conductors = 33  # Number of (homogenised) conductors in one window
-        self.conductor_type = "solid"  # Stranded wires
+        self.conductor_type = conductor_type  # Stranded wires
         """
         conductor_type = "stacked"  # Vertical packing of conductors
         conductor_type = "full"  # One massive Conductor in each window
         conductor_type = "foil"  # Horizontal packing of conductors
-        conductor_type = "litz"  # Massive wires
+        conductor_type = "solid" # Massive wires
+        conductor_type = "litz" # Litz wires
         """
 
         if self.conductor_type == 'solid':
             self.conductor_radius = 0.0011879
         # Litz Approximation
-        self.FF = 0.9  # hexagonal packing: ~90.7% are theoretical maximum
-        self.n_layers = 10
+        self.conductor_radius = 0.0012
+        self.n_layers = n_layers
         self.n_strands = NbrStrands(self.n_layers)
-        self.strand_radius = 0.06e-3
+        self.strand_radius = strand_radius
+        self.FF = 1
         if self.conductor_type == 'litz':
-            self.conductor_radius = np.sqrt(self.n_strands/self.FF)*self.strand_radius  # Must be calculated from strand
-        self.A_cell = np.pi * self.conductor_radius**2  #* FF  # Surface of the litz approximated hexagonal cell
+            self.FF = self.n_strands*self.strand_radius**2/self.conductor_radius**2 # hexagonal packing: ~90.7% are theoretical maximum
+            print(f"Exact fill factor: {self.FF}")
+            self.FF = np.around(self.FF, decimals=2)
+            print(f"Rounded fill factor: {self.FF}")
+        self.A_cell = np.pi * self.conductor_radius**2  # * self.FF  # Surface of the litz approximated hexagonal cell
 
         # -- Materials --
         # frequency = 0: mu_rel only used if flag_non_linear_core == 0
@@ -60,12 +65,12 @@ class MagneticComponent:
         self.mu0 = 4e-7*np.pi
         self.mu_rel = 3000   # relative Core Permeability
         self.core_material = 95  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
-        self.sigma = 6e7
+        self.sigma = 5.8e7
 
         # -- Characteristic lengths -- [for mesh sizes]
         self.c_core = self.core_w/10. * self.s
         self.c_window = self.window_w/10 * self.s
-        self.c_conductor = self.window_w/10 * self.s
+        self.c_conductor = self.window_w/30 * self.s
 
         # -- Parent folder path --
         self.path = str(pathlib.Path(__file__).parent.absolute())
@@ -89,7 +94,12 @@ class MagneticComponent:
 
         self.onelab = None
 
+        # FEMM variables
+        self.tot_loss_femm = None
+
     # ==== Back-End Methods =====
+    #def rewrite_parameter(self, ):
+
     def onelab_setup(self):
         """
         Either reads onelab parent folder path from config.py or asks the user to provide it.
@@ -131,39 +141,24 @@ class MagneticComponent:
 
     def ei_axi(self):
         # -- Air Gap Data -- [random air gap generation]
-        if self.y_symmetric == 0:
-            raise(NotImplementedError, "Not up to date! Air Gap generation must be adopted from symmetric case")
-            """
-            air_gaps = np.empty((n_air_gaps, 4))
-            for i in range(0, n_air_gaps):
-                if i < n_air_gaps/2:
-                    position_tag = -1
-                else:
-                    position_tag = 1
-                airgap_position = np.random.rand(1)*window_h-window_h/2
-                airgap_h = np.random.rand(1)*0.005
-                c_airgap = airgap_h / 3 * s
-                air_gaps[i, :] = np.array([position_tag, airgap_position, airgap_h, c_airgap])
-                """
-        if self.y_symmetric == 1:
-            air_gaps = np.empty((self.n_air_gaps, 4))
-            i = 0
-            while i in range(0, self.n_air_gaps):
-                position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
-                if self.n_air_gaps == 1:
-                    airgap_h = 0.0005
-                    airgap_position = 0.5*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
-                else:
-                    airgap_h = np.random.rand(1)*0.005 + 0.001
-                    airgap_position = np.random.rand(1)*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
-                self.c_airgap = airgap_h / 3 * self.s
-                # Overlapping Control
-                for j in range(0, air_gaps.shape[0]):
-                    if position_tag == air_gaps[j, 0] and air_gaps[j, 1] + air_gaps[j, 2] / 2 > airgap_position > air_gaps[j, 1] - air_gaps[j, 2] / 2:
-                        print("Overlapping air Gaps have been corrected")
-                else:
-                    air_gaps[i, :] = np.array([position_tag, airgap_position, airgap_h, self.c_airgap])
-                    i += 1
+        air_gaps = np.empty((self.n_air_gaps, 4))
+        i = 0
+        while i in range(0, self.n_air_gaps):
+            position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
+            if self.n_air_gaps == 1:
+                airgap_h = 0.001
+                airgap_position = 0.5*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
+            else:
+                airgap_h = np.random.rand(1)*0.005 + 0.001
+                airgap_position = np.random.rand(1)*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
+            self.c_airgap = airgap_h / 3 * self.s
+            # Overlapping Control
+            for j in range(0, air_gaps.shape[0]):
+                if position_tag == air_gaps[j, 0] and air_gaps[j, 1] + air_gaps[j, 2] / 2 > airgap_position > air_gaps[j, 1] - air_gaps[j, 2] / 2:
+                    print("Overlapping air Gaps have been corrected")
+            else:
+                air_gaps[i, :] = np.array([position_tag, airgap_position, airgap_h, self.c_airgap])
+                i += 1
 
         # -- Arrays for geometry data -- [all points with (x, y, z, mesh_accuracy)]
         self.p_outer = np.zeros((4, 4))
@@ -171,127 +166,128 @@ class MagneticComponent:
         self.p_air_gaps = np.zeros((4*self.n_air_gaps, 4))
 
         # -- Geometry data --
-        if self.core_type == "EI":
 
-            if self.y_symmetric == 0:
-                # Outer
-                self.p_outer[0][:] = [-(self.core_w + self.window_w), -(self.window_h / 2 + self.core_w), 0, self.c_core]
-                self.p_outer[1][:] = [self.core_w + self.window_w, -(self.window_h / 2 + self.core_w), 0, self.c_core]
-                self.p_outer[2][:] = [-(self.core_w + self.window_w), (self.window_h / 2 + self.core_w), 0, self.c_core]
-                self.p_outer[3][:] = [self.core_w + self.window_w, (self.window_h / 2 + self.core_w), 0, self.c_core]
-                # Window
-                self.p_window[0] = [-(self.core_w/2+self.window_w), -self.window_h/2, 0, self.c_window]
-                self.p_window[1] = [-self.core_w/2, -self.window_h/2, 0, self.c_window]
-                self.p_window[2] = [-(self.core_w/2+self.window_w)/2, self.window_h, 0, self.c_window]
-                self.p_window[3] = [-self.core_w/2, self.window_h/2, 0, self.c_window]
-                self.p_window[4] = [self.core_w/2, -self.window_h/2, 0, self.c_window]
-                self.p_window[5] = [(self.core_w/2+self.window_w), -self.window_h/2, 0, self.c_window]
-                self.p_window[6] = [self.core_w/2, self.window_h/2, 0, self.c_window]
-                self.p_window[7] = [(self.core_w/2+self.window_w), self.window_h/2, 0, self.c_window]
+        """
+        if self.y_symmetric == 0:
+            # Outer
+            self.p_outer[0][:] = [-(self.core_w + self.window_w), -(self.window_h / 2 + self.core_w), 0, self.c_core]
+            self.p_outer[1][:] = [self.core_w + self.window_w, -(self.window_h / 2 + self.core_w), 0, self.c_core]
+            self.p_outer[2][:] = [-(self.core_w + self.window_w), (self.window_h / 2 + self.core_w), 0, self.c_core]
+            self.p_outer[3][:] = [self.core_w + self.window_w, (self.window_h / 2 + self.core_w), 0, self.c_core]
+            # Window
+            self.p_window[0] = [-(self.core_w/2+self.window_w), -self.window_h/2, 0, self.c_window]
+            self.p_window[1] = [-self.core_w/2, -self.window_h/2, 0, self.c_window]
+            self.p_window[2] = [-(self.core_w/2+self.window_w)/2, self.window_h, 0, self.c_window]
+            self.p_window[3] = [-self.core_w/2, self.window_h/2, 0, self.c_window]
+            self.p_window[4] = [self.core_w/2, -self.window_h/2, 0, self.c_window]
+            self.p_window[5] = [(self.core_w/2+self.window_w), -self.window_h/2, 0, self.c_window]
+            self.p_window[6] = [self.core_w/2, self.window_h/2, 0, self.c_window]
+            self.p_window[7] = [(self.core_w/2+self.window_w), self.window_h/2, 0, self.c_window]
+        """
 
-            if self.y_symmetric == 1:
-                # Fitting the outer radius to ensure surface area
-                r_inner = self.window_w + self.core_w/2
-                r_outer = np.sqrt((self.core_w/2)**2 + r_inner**2)  # np.sqrt(window_w**2 + window_w * core_w + core_w**2/2)
 
-                # Outer Core
-                # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
-                self.p_outer[0][:] = [-r_outer, -(self.window_h / 2 + self.core_w/4), 0, self.c_core]
-                self.p_outer[1][:] = [r_outer, -(self.window_h / 2 + self.core_w/4), 0, self.c_core]
-                self.p_outer[2][:] = [-r_outer, (self.window_h / 2 + self.core_w/4), 0, self.c_core]
-                self.p_outer[3][:] = [r_outer, (self.window_h / 2 + self.core_w/4), 0, self.c_core]
+        # Fitting the outer radius to ensure surface area
+        r_inner = self.window_w + self.core_w/2
+        r_outer = np.sqrt((self.core_w/2)**2 + r_inner**2)  # np.sqrt(window_w**2 + window_w * core_w + core_w**2/2)
 
-                # Window
-                self.p_window[0] = [-r_inner, -self.window_h/2, 0, self.c_window]
-                self.p_window[1] = [-self.core_w/2, -self.window_h/2, 0, self.c_window]
-                self.p_window[2] = [-r_inner, self.window_h/2, 0, self.c_window]
-                self.p_window[3] = [-self.core_w/2, self.window_h/2, 0, self.c_window]
-                self.p_window[4] = [self.core_w/2, -self.window_h/2, 0, self.c_window]
-                self.p_window[5] = [r_inner, -self.window_h/2, 0, self.c_window]
-                self.p_window[6] = [self.core_w/2, self.window_h/2, 0, self.c_window]
-                self.p_window[7] = [r_inner, self.window_h/2, 0, self.c_window]
+        # Outer Core
+        # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
+        self.p_outer[0][:] = [-r_outer, -(self.window_h / 2 + self.core_w/4), 0, self.c_core]
+        self.p_outer[1][:] = [r_outer, -(self.window_h / 2 + self.core_w/4), 0, self.c_core]
+        self.p_outer[2][:] = [-r_outer, (self.window_h / 2 + self.core_w/4), 0, self.c_core]
+        self.p_outer[3][:] = [r_outer, (self.window_h / 2 + self.core_w/4), 0, self.c_core]
 
-                # - Conductors -
+        # Window
+        self.p_window[0] = [-r_inner, -self.window_h/2, 0, self.c_window]
+        self.p_window[1] = [-self.core_w/2, -self.window_h/2, 0, self.c_window]
+        self.p_window[2] = [-r_inner, self.window_h/2, 0, self.c_window]
+        self.p_window[3] = [-self.core_w/2, self.window_h/2, 0, self.c_window]
+        self.p_window[4] = [self.core_w/2, -self.window_h/2, 0, self.c_window]
+        self.p_window[5] = [r_inner, -self.window_h/2, 0, self.c_window]
+        self.p_window[6] = [self.core_w/2, self.window_h/2, 0, self.c_window]
+        self.p_window[7] = [r_inner, self.window_h/2, 0, self.c_window]
 
-                # Case: no conductors [only theoretical]
-                self.p_conductor = np.empty(0)
+        # - Conductors -
 
-                if self.conductor_type == "full":
-                    # full window conductor
-                    self.p_conductor[0][:] = [self.core_cond_isolation + self.core_w/2, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
-                    self.p_conductor[1][:] = [r_inner - self.core_cond_isolation, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
-                    self.p_conductor[2][:] = [self.core_cond_isolation + self.core_w/2, self.window_h/2 - self.core_cond_isolation, 0, self.c_conductor]
-                    self.p_conductor[3][:] = [r_inner - self.core_cond_isolation, self.window_h/2 - self.core_cond_isolation, 0, self.c_conductor]
+        # Case: no conductors [only theoretical]
+        self.p_conductor = np.empty(0)
 
-                if self.conductor_type == "stacked":
-                    # stacking from the ground
-                    self.p_conductor = np.empty((4*self.n_conductors, 4))
-                    for i in range(0, self.n_conductors):
-                        # two conductors above
-                        self.p_conductor[4*i+0][:] = [self.core_cond_isolation + self.core_w/2, (1-i)*self.core_cond_isolation + i*(-self.window_h/2 + self.core_cond_isolation), 0, self.c_conductor]
-                        self.p_conductor[4*i+1][:] = [r_inner - self.core_cond_isolation, (1-i)*self.core_cond_isolation + i*(-self.window_h/2 + self.core_cond_isolation), 0, self.c_conductor]
-                        self.p_conductor[4*i+2][:] = [self.core_cond_isolation + self.core_w/2, -i*self.core_cond_isolation + (1-i)*(self.window_h/2 - self.core_cond_isolation), 0, self.c_conductor]
-                        self.p_conductor[4*i+3][:] = [r_inner - self.core_cond_isolation, -i*self.core_cond_isolation + (1-i)*(self.window_h/2 - self.core_cond_isolation), 0, self.c_conductor]
+        if self.conductor_type == "full":
+            # full window conductor
+            self.p_conductor[0][:] = [self.core_cond_isolation + self.core_w/2, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
+            self.p_conductor[1][:] = [r_inner - self.core_cond_isolation, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
+            self.p_conductor[2][:] = [self.core_cond_isolation + self.core_w/2, self.window_h/2 - self.core_cond_isolation, 0, self.c_conductor]
+            self.p_conductor[3][:] = [r_inner - self.core_cond_isolation, self.window_h/2 - self.core_cond_isolation, 0, self.c_conductor]
 
-                if self.conductor_type == "foil":
-                    self.p_conductor = np.empty((4*self.n_conductors, 4))
-                    left_bound = self.core_cond_isolation + self.core_w/2
-                    right_bound = r_inner - self.core_cond_isolation
-                    x_interpol = np.linspace(left_bound, right_bound, self.n_conductors+1)  # instead should FF window from inside to outside with fixed copper thickness
-                    for i in range(0, self.n_conductors):
-                        # Foils
-                        self.p_conductor[4 * i + 0][:] = [x_interpol[i] + self.cond_cond_isolation, -self.window_h / 2 + self.core_cond_isolation, 0, self.c_conductor]
-                        self.p_conductor[4 * i + 1][:] = [x_interpol[i+1] - self.cond_cond_isolation, -self.window_h / 2 + self.core_cond_isolation, 0, self.c_conductor]
-                        self.p_conductor[4 * i + 2][:] = [x_interpol[i] + self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
-                        self.p_conductor[4 * i + 3][:] = [x_interpol[i+1] - self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
+        if self.conductor_type == "stacked":
+            # stacking from the ground
+            self.p_conductor = np.empty((4*self.n_conductors, 4))
+            for i in range(0, self.n_conductors):
+                # two conductors above
+                self.p_conductor[4*i+0][:] = [self.core_cond_isolation + self.core_w/2, (1-i)*self.core_cond_isolation + i*(-self.window_h/2 + self.core_cond_isolation), 0, self.c_conductor]
+                self.p_conductor[4*i+1][:] = [r_inner - self.core_cond_isolation, (1-i)*self.core_cond_isolation + i*(-self.window_h/2 + self.core_cond_isolation), 0, self.c_conductor]
+                self.p_conductor[4*i+2][:] = [self.core_cond_isolation + self.core_w/2, -i*self.core_cond_isolation + (1-i)*(self.window_h/2 - self.core_cond_isolation), 0, self.c_conductor]
+                self.p_conductor[4*i+3][:] = [r_inner - self.core_cond_isolation, -i*self.core_cond_isolation + (1-i)*(self.window_h/2 - self.core_cond_isolation), 0, self.c_conductor]
 
-                if self.conductor_type == "litz" or self.conductor_type == "solid":
-                    self.p_conductor = []  # center points are stored
-                    left_bound = self.core_w/2
-                    right_bound = r_inner - self.core_cond_isolation
-                    top_bound = self.window_h/2
-                    bot_bound = -self.window_h/2
+        if self.conductor_type == "foil":
+            self.p_conductor = np.empty((4*self.n_conductors, 4))
+            left_bound = self.core_cond_isolation + self.core_w/2
+            right_bound = r_inner - self.core_cond_isolation
+            x_interpol = np.linspace(left_bound, right_bound, self.n_conductors+1)  # instead should FF window from inside to outside with fixed copper thickness
+            for i in range(0, self.n_conductors):
+                # Foils
+                self.p_conductor[4 * i + 0][:] = [x_interpol[i] + self.cond_cond_isolation, -self.window_h / 2 + self.core_cond_isolation, 0, self.c_conductor]
+                self.p_conductor[4 * i + 1][:] = [x_interpol[i+1] - self.cond_cond_isolation, -self.window_h / 2 + self.core_cond_isolation, 0, self.c_conductor]
+                self.p_conductor[4 * i + 2][:] = [x_interpol[i] + self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
+                self.p_conductor[4 * i + 3][:] = [x_interpol[i+1] - self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
 
-                    y = bot_bound + self.core_cond_isolation + self.conductor_radius
-                    x = left_bound + self.core_cond_isolation + self.conductor_radius
-                    i = 0
-                    # Case n_conductors higher that "allowed" is missing
-                    while y < top_bound:
-                        while x < right_bound and i < self.n_conductors:
-                            self.p_conductor.append([x, y, 0, self.c_conductor])
-                            self.p_conductor.append([x-self.conductor_radius, y, 0, self.c_conductor])
-                            self.p_conductor.append([x, y+self.conductor_radius, 0, self.c_conductor])
-                            self.p_conductor.append([x+self.conductor_radius, y, 0, self.c_conductor])
-                            self.p_conductor.append([x, y-self.conductor_radius, 0, self.c_conductor])
-                            i += 1
-                            x += self.conductor_radius * 2 + self.cond_cond_isolation
-                        y += self.conductor_radius * 2 + self.cond_cond_isolation
-                        x = left_bound + self.core_cond_isolation + self.conductor_radius
-                    self.p_conductor = np.asarray(self.p_conductor)
-                    if int(self.p_conductor.shape[0]/5) < self.n_conductors:
-                        print("Could not resolve all conductors")
+        if self.conductor_type == "litz" or self.conductor_type == "solid":
+            self.p_conductor = []  # center points are stored
+            left_bound = self.core_w/2
+            right_bound = r_inner - self.core_cond_isolation
+            top_bound = self.window_h/2
+            bot_bound = -self.window_h/2
 
-            for i in range(0, self.n_air_gaps):
-                # Left leg (-1)
-                if air_gaps[i][0] == -1:
-                    self.p_air_gaps[i * 4] = [-(self.core_w + self.window_w), air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 1] = [-(self.core_w / 2 + self.window_w), air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 2] = [-(self.core_w + self.window_w), air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 3] = [-(self.core_w / 2 + self.window_w), air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+            y = bot_bound + self.core_cond_isolation + self.conductor_radius
+            x = left_bound + self.core_cond_isolation + self.conductor_radius
+            i = 0
+            # Case n_conductors higher that "allowed" is missing
+            while y < top_bound:
+                while x < right_bound and i < self.n_conductors:
+                    self.p_conductor.append([x, y, 0, self.c_conductor])
+                    self.p_conductor.append([x-self.conductor_radius, y, 0, self.c_conductor])
+                    self.p_conductor.append([x, y+self.conductor_radius, 0, self.c_conductor])
+                    self.p_conductor.append([x+self.conductor_radius, y, 0, self.c_conductor])
+                    self.p_conductor.append([x, y-self.conductor_radius, 0, self.c_conductor])
+                    i += 1
+                    x += self.conductor_radius * 2 + self.cond_cond_isolation
+                y += self.conductor_radius * 2 + self.cond_cond_isolation
+                x = left_bound + self.core_cond_isolation + self.conductor_radius
+            self.p_conductor = np.asarray(self.p_conductor)
+            if int(self.p_conductor.shape[0]/5) < self.n_conductors:
+                print("Could not resolve all conductors")
 
-                # Center leg (0)
-                if air_gaps[i][0] == 0:
-                    self.p_air_gaps[i * 4] = [-self.core_w/2, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 1] = [self.core_w/2, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 2] = [-self.core_w/2, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 3] = [self.core_w/2, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+        for i in range(0, self.n_air_gaps):
+            # Left leg (-1)
+            if air_gaps[i][0] == -1:
+                self.p_air_gaps[i * 4] = [-(self.core_w + self.window_w), air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [-(self.core_w / 2 + self.window_w), air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [-(self.core_w + self.window_w), air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [-(self.core_w / 2 + self.window_w), air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
 
-                # Right leg (+1)
-                if air_gaps[i][0] == 1:
-                    self.p_air_gaps[i * 4] = [self.core_w / 2 + self.window_w, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 1] = [self.core_w + self.window_w, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 2] = [self.core_w / 2 + self.window_w, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                    self.p_air_gaps[i * 4 + 3] = [self.core_w + self.window_w, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+            # Center leg (0)
+            if air_gaps[i][0] == 0:
+                self.p_air_gaps[i * 4] = [-self.core_w/2, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [self.core_w/2, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [-self.core_w/2, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [self.core_w/2, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+
+            # Right leg (+1)
+            if air_gaps[i][0] == 1:
+                self.p_air_gaps[i * 4] = [self.core_w / 2 + self.window_w, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [self.core_w + self.window_w, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [self.core_w / 2 + self.window_w, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [self.core_w + self.window_w, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
 
     def generate_mesh(self):
         # Initialization
@@ -546,7 +542,7 @@ class MagneticComponent:
         # Terminate gmsh
         gmsh.finalize()
 
-    def excitation(self, f, i, nonlinear=1, ex_type='current', imposed_red_f=0):
+    def excitation(self, f, i, nonlinear=0, ex_type='current', imposed_red_f=0):
 
         # -- Excitation --
         self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
@@ -598,6 +594,7 @@ class MagneticComponent:
         text_file.write(f"Rc = {self.conductor_radius};\n")
         text_file.write(f"Fill = {self.FF};\n")
         text_file.write(f"NbrLayers = {self.n_layers};\n")
+        # text_file.write(f"NbrLayers = 0;\n")
         text_file.write(f"AreaCell = {self.A_cell};\n")
         # Coordinates of the rectangular winding window
         if self.axi_symmetric == 1:
@@ -650,7 +647,9 @@ class MagneticComponent:
         :return:
         """
         if self.conductor_type == 'litz':
+
             if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat"):
+            # if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat"):
                 print("Coefficients for stands approximation are found.")
 
             else:
@@ -667,6 +666,9 @@ class MagneticComponent:
                 # -- Pre-Simulation Settings --
                 text_file = open("pre/PreParameter.pro", "w")
                 text_file.write(f"NbrLayers = {self.n_layers};\n")
+                # text_file.write(f"NbrLayers = 0;\n")
+                text_file.write(f"Fill = {self.FF};\n")
+                print("Here")
                 text_file.close()
                 self.onelab_setup()
                 c = onelab.client(__file__)
@@ -685,6 +687,8 @@ class MagneticComponent:
                         text_file.write(f"Rr = {rf};\n")
                         text_file.write(f"Mode = {mode};\n")
                         text_file.write(f"NbrLayers = {self.n_layers};\n")
+                        # text_file.write(f"NbrLayers = 0;\n")
+                        text_file.write(f"Fill = {self.FF};\n")
                         text_file.close()
 
                         # get model file names with correct path
@@ -693,13 +697,17 @@ class MagneticComponent:
 
                         # Run simulations as sub clients
                         mygetdp = self.onelab + 'getdp'
-                        c.runSubClient('myGetDP', mygetdp +  ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
+                        c.runSubClient('myGetDP', mygetdp + ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
 
                 # Formatting stuff
                 files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat",
                          self.path + f"/pre/coeff/pI_RS_la{self.FF}_{self.n_layers}layer.dat",
                          self.path + f"/pre/coeff/qB_RS_la{self.FF}_{self.n_layers}layer.dat",
                          self.path + f"/pre/coeff/qI_RS_la{self.FF}_{self.n_layers}layer.dat"]
+                #files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat",
+                #         self.path + f"/pre/coeff/pI_RS_la{self.FF}_0layer.dat",
+                #         self.path + f"/pre/coeff/qB_RS_la{self.FF}_0layer.dat",
+                #         self.path + f"/pre/coeff/qI_RS_la{self.FF}_0layer.dat"]
                 for i in range(0, 4):
                     with fileinput.FileInput(files[i], inplace=True) as file:
                         for line in file:
@@ -778,6 +786,147 @@ class MagneticComponent:
 
         gmsh.fltk.run()
         gmsh.finalize()
+
+    def femm_reference(self, freq, current, sigma, non_visualize=0):
+        """
+
+        :param non_visualize:
+        :param freq:
+        :param current:
+        :param sigma:
+        :return:
+        """
+        import femm
+        from matplotlib import pyplot as plt
+
+        # == Pre Geometry ==
+        self.high_level_geo_gen()
+        self.ei_axi()
+
+        if self.n_air_gaps != 1:
+            raise NotImplementedError
+
+        # == Init ==
+        femm.openfemm(non_visualize)
+        femm.newdocument(0)
+        femm.mi_probdef(freq, 'meters', 'axi', 1.e-8, 0, 30)
+
+        # == Materials ==
+        femm.mi_addmaterial('Ferrite', 3000, 3000, 0, 0, 0, 0, 0, 1, 0, 0, 0)
+        femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
+        if self.conductor_type == "litz":
+            femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 5, 0, 0, self.n_strands, 2*1000*self.strand_radius)  # type := 5. last argument
+        if self.conductor_type == "solid":
+            femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 0, 0, 0, 0, 0)
+
+        print(f"Strandsnumber: {self.n_strands}")
+        print(f"Strandsdiameter in mm: {2*1000*self.strand_radius}")
+
+        # == Circuit ==
+        # coil as seen from the terminals.
+        femm.mi_addcircprop('icoil', current, 1)
+
+        # == Geometry ==
+        # Add core
+        femm.mi_drawline(0, self.p_air_gaps[0, 1], self.p_air_gaps[1, 0], self.p_air_gaps[1, 1])
+        femm.mi_drawline(self.p_air_gaps[1, 0], self.p_air_gaps[1, 1],  self.p_window[4, 0], self.p_window[4, 1])
+        femm.mi_drawline(self.p_window[4, 0], self.p_window[4, 1], self.p_window[5, 0], self.p_window[5, 1])
+        femm.mi_drawline(self.p_window[5, 0], self.p_window[5, 1], self.p_window[7, 0], self.p_window[7, 1])
+        femm.mi_drawline(self.p_window[7, 0], self.p_window[7, 1], self.p_window[6, 0], self.p_window[6, 1])
+        femm.mi_drawline(self.p_window[6, 0], self.p_window[6, 1], self.p_air_gaps[3, 0], self.p_air_gaps[3, 1])
+        femm.mi_drawline(self.p_air_gaps[3, 0], self.p_air_gaps[3, 1], 0, self.p_air_gaps[2, 1])
+        femm.mi_drawline(0, self.p_air_gaps[2, 1], 0, self.p_outer[2, 1])
+        femm.mi_drawline(0, self.p_outer[2, 1], self.p_outer[3, 0], self.p_outer[3, 1])
+        femm.mi_drawline(self.p_outer[3, 0], self.p_outer[3, 1], self.p_outer[1, 0], self.p_outer[1, 1])
+        femm.mi_drawline(self.p_outer[1, 0], self.p_outer[1, 1], 0, self.p_outer[0, 1])
+        femm.mi_drawline(0, self.p_outer[0, 1], 0, self.p_air_gaps[0, 1])
+        # Add Coil
+        """
+        femm.mi_drawrectangle(self.p_window[4, 0]+self.core_cond_isolation, self.p_window[4, 1]+self.core_cond_isolation, self.p_window[7, 0]-self.core_cond_isolation, self.p_window[7, 1]-self.core_cond_isolation)
+        femm.mi_addblocklabel(self.p_window[7, 0]-2*self.core_cond_isolation, self.p_window[7, 1]-2*self.core_cond_isolation)
+        femm.mi_selectlabel(self.p_window[7, 0]-2*self.core_cond_isolation, self.p_window[7, 1]-2*self.core_cond_isolation)
+        femm.mi_setblockprop('Copper', 0, 1, 'icoil', 0, 0, 1)
+        femm.mi_clearselected()
+        """
+        if self.conductor_type == "litz" or self.conductor_type == "solid":
+            for i in range(0, int(self.p_conductor.shape[0] / 5)):
+                # 0: center | 1: left | 2: top | 3: right | 4.bottom
+                femm.mi_drawarc(self.p_conductor[5*i+1][0], self.p_conductor[5*i+1][1], self.p_conductor[5*i+3][0], self.p_conductor[5*i+3][1], 180, 2.5)
+                femm.mi_addarc(self.p_conductor[5*i+3][0], self.p_conductor[5*i+3][1], self.p_conductor[5*i+1][0], self.p_conductor[5*i+1][1],  180, 2.5)
+                femm.mi_addblocklabel(self.p_conductor[5*i][0], self.p_conductor[5*i][1])
+                femm.mi_selectlabel(self.p_conductor[5*i][0], self.p_conductor[5*i][1])
+                femm.mi_setblockprop('Copper', 1, 1, 'icoil', 0, 0, 1)
+                femm.mi_clearselected
+
+        # Define an "open" boundary condition using the built-in function:
+        femm.mi_makeABC()
+
+        # == Labels/Designations ==
+
+        # Label for core
+        femm.mi_addblocklabel(self.p_outer[3, 0]-0.001, self.p_outer[3, 1]-0.001)
+        femm.mi_selectlabel(self.p_outer[3, 0]-0.001, self.p_outer[3, 1]-0.001)
+        femm.mi_setblockprop('Ferrite', 1, 1, '<None>', 0, 0, 0)
+        femm.mi_clearselected()
+
+        # Labels for air
+        femm.mi_addblocklabel(0.001, 0)
+        femm.mi_selectlabel(0.001, 0)
+        femm.mi_setblockprop('Air', 1, 1, '<None>', 0, 0, 0)
+        femm.mi_clearselected()
+        femm.mi_addblocklabel(self.p_outer[3, 0]+0.001, self.p_outer[3, 1]+0.001)
+        femm.mi_selectlabel(self.p_outer[3, 0]+0.001, self.p_outer[3, 1]+0.001)
+        femm.mi_setblockprop('Air', 1, 1, '<None>', 0, 0, 0)
+        femm.mi_clearselected()
+
+        # Now, the finished input geometry can be displayed.
+        femm.mi_zoomnatural()
+        femm.mi_saveas('coil.fem')
+        femm.mi_analyze()
+        femm.mi_loadsolution()
+
+        # == Losses ==
+        tmp = femm.mo_getcircuitproperties('icoil')
+        self.tot_loss_femm = 0.5 * tmp[0] * tmp[1]
+        print(self.tot_loss_femm)
+
+
+        """
+        # If we were interested in the flux density at specific positions,
+        # we could inquire at specific points directly:
+        b0 = femm.mo_getb(0, 0)
+        print('Flux density at the center of the bar is %g T' % np.abs(b0[1]))
+        b1 = femm.mo_getb(0.01, 0.05)
+        print(f"Flux density at r=1cm, z=5cm is {np.abs(b1[1])} T")
+
+        # The program will report the terminal properties of the circuit:
+        # current, voltage, and flux linkage
+        vals = femm.mo_getcircuitproperties('icoil')
+
+
+        # [i, v, \[Phi]] = MOGetCircuitProperties["icoil"]
+
+        # If we were interested in inductance, it could be obtained by
+        # dividing flux linkage by current
+        L = 1000 * np.abs(vals[2]) / np.abs(vals[0])
+        print('The self-inductance of the coil is %g mH' % L)
+
+        # Or we could, for example, plot the results along a line using
+        zee = []
+        bee = []
+        for n in range(-100, 101):
+            b = femm.mo_getb(0.01, n)
+            zee.append(n)
+            bee.append(b[1])
+
+        plt.plot(zee, bee)
+        plt.ylabel('Flux Density, Tesla')
+        plt.xlabel('Distance along the z-axis, mm')
+        plt.title('Plot of flux density along the axis')
+        plt.show()
+        """
+        # When the analysis is completed, FEMM can be shut down.
+        # femm.closefemm()
 
     # ==== Front-End Methods =====
     def pre_simulation(self):

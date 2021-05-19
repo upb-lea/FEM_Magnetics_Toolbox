@@ -19,7 +19,7 @@ Flag_Circuit = Flag_ImposedVoltage;
 
 NbrTurns = 1; // does not make sense for this way of homogenisation
 //Len = 1000*(2*Pi*(Xw1+Xw2)/2)*NbrTurns ; // average length
-AreaCond = Pi*Rc^2;
+//AreaCond = Pi*Rc^2;
 //Dex = 2.2*Rc;
 //Dey = Dex; // only valid for squared packing
 
@@ -201,7 +201,7 @@ Function {
   nuOm[#{Winding}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
   nuOm[#{StrandedWinding}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
 
-  kkk[] =  SymFactor * skin_rhor[Rr] / Fill / SigmaCu ;
+  kkk[] =  SymFactor * skin_rhor[Rr] / SigmaCu / Fill ;
 
 
 
@@ -371,9 +371,15 @@ PostProcessing {
       //      In Domain ; Jacobian Vol  ; Integration II ; } } }
 
 
-      { Name j2F ; Value { Integral { // Joule losses
-            [ CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;
-            In DomainC ; Jacobian Vol ; Integration II ; } } }
+      If(Freq==0.0)
+          { Name j2F ; Value { Integral { // Joule losses
+             [ CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
+             In DomainC ; Jacobian Vol ; Integration II ; } } }
+      Else
+           { Name j2F ; Value { Integral { // Joule losses
+             [ 0.5*CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
+             In DomainC ; Jacobian Vol ; Integration II ; } } }
+      EndIf
 
       { Name b2F ; Value { Integral { // Magnetic Energy
             [ CoefGeo*nu[{d a}]*SquNorm[{d a}] ] ;
@@ -543,18 +549,18 @@ PostOperation Get_global UsingPost MagDyn_a {
   PostOperation Map_local_homog UsingPost MagDyn_a_Homog {
   // Magnetic Vector Potential and Magnetic Fields
   Print[ raz, OnElementsOf Domain, File StrCat[DirRes,"aH",ExtGmsh] ] ;
-  Print[ b,   OnElementsOf Domain, File StrCat[DirRes,"bH",ExtGmsh] ] ;
+  //Print[ b,   OnElementsOf Domain, File StrCat[DirRes,"bH",ExtGmsh] ] ;
   Print[ Magb,   OnElementsOf Domain, File StrCat[DirRes,"MagbH",ExtGmsh] ] ;
 
   // Current Density
-  Print[ j,   OnElementsOf DomainS, File StrCat[DirRes,"j",ExtGmsh] ] ;
-  Print[ jz,   OnElementsOf DomainS, File StrCat[DirRes,"jz",ExtGmsh] ] ;
+  //Print[ j,   OnElementsOf DomainS, File StrCat[DirRes,"j",ExtGmsh] ] ;
+  //Print[ jz,   OnElementsOf DomainS, File StrCat[DirRes,"jz",ExtGmsh] ] ;
 
   // Losses
   Print[ j2H,   OnElementsOf DomainS, File StrCat[DirRes,"jH",ExtGmsh] ] ;
   Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirRes,"jHprox",ExtGmsh] ] ;
   Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirRes,"jHskin",ExtGmsh] ] ;
-  Print[ nuOm,   OnElementsOf DomainS, File StrCat[DirRes,"nuOm",ExtGmsh] ] ;
+  //Print[ nuOm,   OnElementsOf DomainS, File StrCat[DirRes,"nuOm",ExtGmsh] ] ;
 
   Echo[ Str["View[PostProcessing.NbViews-1].Light=0;
              View[PostProcessing.NbViews-1].LineWidth = 2;
@@ -570,6 +576,8 @@ PostOperation Get_global UsingPost MagDyn_a {
   Print[ SoH[Domain], OnGlobal, Format TimeTable, File Sprintf("res/SH_f%g.dat", Freq) ] ;
   // Print[ j2H[StrandedWinding], OnGlobal, Format Table, File Sprintf("res/j2H_f%g.dat", Freq) ] ;
   Print[ j2H[StrandedWinding], OnGlobal, Format TimeTable, File > StrCat["res/j2H.dat"] ] ;
+  Print[ j2Hprox[StrandedWinding], OnGlobal, Format TimeTable, File > StrCat["res/j2Hprox.dat"] ] ;
+  Print[ j2Hskin[StrandedWinding], OnGlobal, Format TimeTable, File > StrCat["res/j2Hskin.dat"] ] ;
   //Print[ Inductance_from_MagEnergy, OnGlobal, Format Table, File Sprintf("res/Inductance.dat") ];
   //Print[ Inductance_from_MagEnergy, OnRegion Domain, Format Table, File Sprintf("res/Inductance.dat") ];
 

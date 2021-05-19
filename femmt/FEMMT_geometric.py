@@ -1,15 +1,22 @@
 from FEMMT import MagneticComponent
 import numpy as np
 
+
 # Create Object
-geo = MagneticComponent()
+geo = MagneticComponent(conductor_type="solid")
 
-"""
+# Reference simulation with FEMM
+geo.femm_reference(freq=1000000, current=2, sigma=58)
+
+
 # Perform a single simulation
-geo.single_simulation(freq=100000,current=1)
-#geo.pre_simulation()
-"""
+geo.single_simulation(freq=1000000, current=2)
 
+# Pre Simulation to create Litz Coefficients
+#geo.pre_simulation()
+
+
+"""
 # ===============
 # Generate Mesh
 geo.mesh()
@@ -17,3 +24,5 @@ geo.mesh()
 frequencies = np.linspace(0, 250000, 6)
 currents = [10, 2, 1, 0.5, 0.2, 0.1]
 geo.excitation_sweep(currents=currents, frequencies=frequencies)
+"""
+
