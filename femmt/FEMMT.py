@@ -1,7 +1,6 @@
-import os
 import gmsh
 import numpy as np
-
+import os
 import pathlib
 import sys
 import fileinput
