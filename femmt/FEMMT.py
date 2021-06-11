@@ -1,15 +1,26 @@
-import gmsh
+# Usual Python libraries
+import csv
+import fileinput
 import numpy as np
 import os
+import pandas as pd
 import pathlib
+import re
 import sys
-import fileinput
+import time
+import warnings
+from matplotlib import pyplot as plt
+# FEM and Mesh interfaces
+import femm
+import gmsh
 from onelab import onelab
-from functions import inner_points, min_max_inner_points, call_for_path, NbrStrands
+# Self written functions
+from functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
 
 
+# Master Class
 class MagneticComponent:
-    def __init__(self, n_layers=10, strand_radius=0.05e-3, conductor_type="litz"):
+    def __init__(self, conductor_type="litz"):
 
         # ==============================
         # Settings
@@ -18,7 +29,7 @@ class MagneticComponent:
         # -- Geometry Control Flags --
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
         self.axi_symmetric = 1  # Axial-symmetric model (idealized full-cylindrical)
-        self.s = 0.2  # Parameter for mesh-accuracy
+        self.s = 0.5  # Parameter for mesh-accuracy
 
         # -- Geometry --
 
@@ -46,18 +57,12 @@ class MagneticComponent:
 
         if self.conductor_type == 'solid':
             self.conductor_radius = 0.0011879
-        # Litz Approximation
-        self.conductor_radius = 0.0012
-        self.n_layers = n_layers
-        self.n_strands = NbrStrands(self.n_layers)
-        self.strand_radius = strand_radius
-        self.FF = 1
+            self.A_cell = np.pi * self.conductor_radius**2  # * self.FF  # Surface of the litz approximated hexagonal cell
+
         if self.conductor_type == 'litz':
-            self.FF = self.n_strands*self.strand_radius**2/self.conductor_radius**2 # hexagonal packing: ~90.7% are theoretical maximum
-            print(f"Exact fill factor: {self.FF}")
-            self.FF = np.around(self.FF, decimals=2)
-            print(f"Rounded fill factor: {self.FF}")
-        self.A_cell = np.pi * self.conductor_radius**2  # * self.FF  # Surface of the litz approximated hexagonal cell
+            self.update_litz_configuration(conductor_radius=0.0012, n_layers=10, strand_radius=0.05e-3)
+            #self.A_cell = np.pi * self.conductor_radius**2  # * self.FF  # Surface of the litz approximated hexagonal cell
+
 
         # -- Materials --
         # frequency = 0: mu_rel only used if flag_non_linear_core == 0
@@ -93,12 +98,55 @@ class MagneticComponent:
         self.delta = None
 
         self.onelab = None
+        self.sweep_frequencies = None
 
         # FEMM variables
         self.tot_loss_femm = None
 
     # ==== Back-End Methods =====
-    #def rewrite_parameter(self, ):
+    def update_litz_configuration(self, litz_parametrization_type='implicite_FF', strand_radius=None, ff=None, conductor_radius=None, n_layers=None):
+        """
+        - used to change litz configurations
+        - also used at first initialisation of the geometry
+        - needed to always make sure that the relation between litz parameters (strand radius, fill factor, number of
+          layers/strands and conductor/litz radius) is valid and consistent
+        - 4 parameters, 1 degree of freedom (dof)
+        :param litz_parametrization_type:
+        :param strand_radius:
+        :param ff:
+        :param conductor_radius:
+        :param n_layers:
+        :return:
+        """
+        # Litz Approximation
+        if litz_parametrization_type == 'implicite_FF':
+            self.conductor_radius = conductor_radius
+            self.n_layers = n_layers
+            self.n_strands = NbrStrands(self.n_layers)
+            self.strand_radius = strand_radius
+            ff_exact = self.n_strands*self.strand_radius**2/self.conductor_radius**2 # hexagonal packing: ~90.7% are theoretical maximum
+            print(f"Exact fill factor: {ff_exact}")
+            self.FF = np.around(ff_exact, decimals=2)
+            print(f"Updated Litz Configuration: \n"
+                  f"FF: {self.FF} \n"
+                  f"Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
+                  f"Strand radius: {self.strand_radius}"
+                  f"Conductor radius: {self.conductor_radius}")
+            #print(f"Rounded fill factor: {self.FF}")
+
+        if litz_parametrization_type == 'implicite_litz_radius':
+            self.FF = ff
+            self.n_layers = n_layers
+            self.n_strands = NbrStrands(self.n_layers)
+            self.strand_radius = strand_radius
+            self.conductor_radius = np.sqrt(self.n_strands*self.strand_radius**2/self.FF)
+            print(f"Updated Litz Configuration: \n "
+                  f"FF: {self.FF} \n "
+                  f"Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
+                  f"Strand radius: {self.strand_radius}"
+                  f"Conductor radius: {self.conductor_radius}")
+
+        self.A_cell = self.n_strands * self.strand_radius**2 * np.pi / self.FF
 
     def onelab_setup(self):
         """
@@ -119,7 +167,9 @@ class MagneticComponent:
 
     def high_level_geo_gen(self, core_type="EI", axi_symmetric=1):
         """
-
+        - high level geometry generation
+        - based on chosen core and conductor types and simulation mode
+        - calls "low level" methods, that creates all points needed for mesh generation
         :return:
         """
         # ==============================
@@ -140,6 +190,10 @@ class MagneticComponent:
             self.ei_axi()
 
     def ei_axi(self):
+        """
+        - creates all points needed for the radial axi-symetric EI core typology
+        :return:
+        """
         # -- Air Gap Data -- [random air gap generation]
         air_gaps = np.empty((self.n_air_gaps, 4))
         i = 0
@@ -252,8 +306,8 @@ class MagneticComponent:
             x = left_bound + self.core_cond_isolation + self.conductor_radius
             i = 0
             # Case n_conductors higher that "allowed" is missing
-            while y < top_bound:
-                while x < right_bound and i < self.n_conductors:
+            while y < top_bound-self.core_cond_isolation-self.conductor_radius and i < self.n_conductors:
+                while x < right_bound-self.core_cond_isolation-self.conductor_radius and i < self.n_conductors:
                     self.p_conductor.append([x, y, 0, self.c_conductor])
                     self.p_conductor.append([x-self.conductor_radius, y, 0, self.c_conductor])
                     self.p_conductor.append([x, y+self.conductor_radius, 0, self.c_conductor])
@@ -265,7 +319,8 @@ class MagneticComponent:
                 x = left_bound + self.core_cond_isolation + self.conductor_radius
             self.p_conductor = np.asarray(self.p_conductor)
             if int(self.p_conductor.shape[0]/5) < self.n_conductors:
-                print("Could not resolve all conductors")
+                print("Could not resolve all conductors.")
+                self.n_conductors = int(self.p_conductor.shape[0]/5)
 
         for i in range(0, self.n_air_gaps):
             # Left leg (-1)
@@ -290,6 +345,11 @@ class MagneticComponent:
                 self.p_air_gaps[i * 4 + 3] = [self.core_w + self.window_w, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
 
     def generate_mesh(self):
+        """
+        - interaction with gmsh
+        - mesh generation
+        :return:
+        """
         # Initialization
         gmsh.initialize()
         gmsh.option.setNumber("General.Terminal", 1)
@@ -543,7 +603,17 @@ class MagneticComponent:
         gmsh.finalize()
 
     def excitation(self, f, i, nonlinear=0, ex_type='current', imposed_red_f=0):
-
+        """
+        - excitation of the electromagnetic problem
+        - current, voltage or current density
+        - frequency or reduced frequency
+        :param f:
+        :param i:
+        :param nonlinear:
+        :param ex_type:
+        :param imposed_red_f:
+        :return:
+        """
         # -- Excitation --
         self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
@@ -571,6 +641,10 @@ class MagneticComponent:
                 self.red_freq = 0
 
     def file_communication(self):
+        """
+        Interaction between python and Prolog files.
+        :return:
+        """
         # ------------------------------------- File Communication ----------------------------------
         # All shared control variables and parameters are passed to a temporary Prolog file
         text_file = open("Parameter.pro", "w")
@@ -594,15 +668,17 @@ class MagneticComponent:
         text_file.write(f"Rc = {self.conductor_radius};\n")
         text_file.write(f"Fill = {self.FF};\n")
         text_file.write(f"NbrLayers = {self.n_layers};\n")
-        # text_file.write(f"NbrLayers = 0;\n")
+        #text_file.write(f"NbrLayers = 0;\n")
+        #text_file.write(f"AreaCell = {self.A_cell};\n")
         text_file.write(f"AreaCell = {self.A_cell};\n")
+        """
         # Coordinates of the rectangular winding window
         if self.axi_symmetric == 1:
             text_file.write("Xw1 = %s;\n" % self.p_window[4, 0])
             text_file.write("Xw2 = %s;\n" % self.p_window[5, 0])
         else:
             raise NotImplementedError("Only axi-symmetric case implemented :(")
-
+        """
         # -- Materials --
 
         # Nature Constants
@@ -641,81 +717,9 @@ class MagneticComponent:
 
         text_file.close()
 
-    def pre_simulate(self):
-        """
-
-        :return:
-        """
-        if self.conductor_type == 'litz':
-
-            if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat"):
-            # if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat"):
-                print("Coefficients for stands approximation are found.")
-
-            else:
-                print("Create coefficients for strands approximation")
-                # need reduced frequency X for pre-simulation
-                # Rounding X to fit it with corresponding parameters from the database
-                X = self.red_freq
-                X = np.around(X, decimals=3)
-                print(f"Rounded Reduced frequency X = {X}")
-
-                # Create new file with [0 1] for the first element entry
-
-                # create a new onelab client
-                # -- Pre-Simulation Settings --
-                text_file = open("pre/PreParameter.pro", "w")
-                text_file.write(f"NbrLayers = {self.n_layers};\n")
-                # text_file.write(f"NbrLayers = 0;\n")
-                text_file.write(f"Fill = {self.FF};\n")
-                print("Here")
-                text_file.close()
-                self.onelab_setup()
-                c = onelab.client(__file__)
-                cell_geo = c.getPath('pre/cell.geo')
-
-                # Run gmsh as a sub client
-                mygmsh = self.onelab + 'gmsh'
-                c.runSubClient('myGmsh', mygmsh + ' ' + cell_geo + ' -2 -v 2')
-
-                modes = [1, 2]  # 1 = "skin", 2 = "proximity"
-                reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
-                for mode in modes:
-                    for rf in reduced_frequencies:
-                        # -- Pre-Simulation Settings --
-                        text_file = open("pre/PreParameter.pro", "w")
-                        text_file.write(f"Rr = {rf};\n")
-                        text_file.write(f"Mode = {mode};\n")
-                        text_file.write(f"NbrLayers = {self.n_layers};\n")
-                        # text_file.write(f"NbrLayers = 0;\n")
-                        text_file.write(f"Fill = {self.FF};\n")
-                        text_file.close()
-
-                        # get model file names with correct path
-                        input_file = c.getPath('pre/cell_dat.pro')
-                        cell = c.getPath('pre/cell.pro')
-
-                        # Run simulations as sub clients
-                        mygetdp = self.onelab + 'getdp'
-                        c.runSubClient('myGetDP', mygetdp + ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
-
-                # Formatting stuff
-                files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat",
-                         self.path + f"/pre/coeff/pI_RS_la{self.FF}_{self.n_layers}layer.dat",
-                         self.path + f"/pre/coeff/qB_RS_la{self.FF}_{self.n_layers}layer.dat",
-                         self.path + f"/pre/coeff/qI_RS_la{self.FF}_{self.n_layers}layer.dat"]
-                #files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat",
-                #         self.path + f"/pre/coeff/pI_RS_la{self.FF}_0layer.dat",
-                #         self.path + f"/pre/coeff/qB_RS_la{self.FF}_0layer.dat",
-                #         self.path + f"/pre/coeff/qI_RS_la{self.FF}_0layer.dat"]
-                for i in range(0, 4):
-                    with fileinput.FileInput(files[i], inplace=True) as file:
-                        for line in file:
-                            print(line.replace(' 0\n', '\n'), end='')
-
     def simulate(self):
         """
-
+        Initializes a onelab client. Provides the GetDP based solver with the created mesh file.
         :return:
         """
         self.onelab_setup()
@@ -732,6 +736,12 @@ class MagneticComponent:
         c.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
 
     def visualize(self):
+        """
+        - a post simulation viewer
+        - allows to open ".pos"-files in gmsh
+        - For example current density, ohmic losses or the magnetic field density can be visualized
+        :return:
+        """
         # ---------------------------------------- Visualization in gmsh ---------------------------------------
         gmsh.initialize()
         epsilon = 1e-9
@@ -789,15 +799,14 @@ class MagneticComponent:
 
     def femm_reference(self, freq, current, sigma, non_visualize=0):
         """
-
+        Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
+        Helpful to validate changes (especially in the Prolog Code).
         :param non_visualize:
         :param freq:
         :param current:
         :param sigma:
         :return:
         """
-        import femm
-        from matplotlib import pyplot as plt
 
         # == Pre Geometry ==
         self.high_level_geo_gen()
@@ -928,14 +937,150 @@ class MagneticComponent:
         # When the analysis is completed, FEMM can be shut down.
         # femm.closefemm()
 
-    # ==== Front-End Methods =====
+    def data_logging(self, sim_choice):
+        """
+        !!! not ready implemented !!!
+
+        This method shall do the saving and loading of results! with date and time
+        :return:
+        """
+        frequencies = None
+        # Data Logging with date and time
+        datetime = time.strftime("%Y%m%d_%H%M%S")
+
+        target_femm = 'Pv_FEMM_' + datetime + '.json'
+        target_femmt = 'Pv_FEMMT_' + datetime + '.json'
+
+        # Either read old data or create
+        if sim_choice != 'show':
+          # pseudo 2D dataframe: ['strand number, strand radius'], 'frequency'  | const. litz radius --> FF
+          if not os.path.isfile(target_femm):
+              df_pv_femm = pd.DataFrame([], index=frequencies, columns=[])
+              df_pv_femmt = pd.DataFrame([], index=frequencies, columns=[])
+          else:
+              # Read Loss Data
+              df_pv_femm = pd.read_json(target_femm)
+              df_pv_femmt = pd.read_json(target_femmt)
+          # print(df_pv_femm, df_pv_femmt)
+
+    def get_loss_data(self, last_n_values, loss_type='litz_loss'):
+        """
+        Returns the last n values from the chosen loss type logged in the result folder.
+        :param last_n_values:
+        :param loss_type:
+        :return:
+        """
+        # Loss file location
+        if loss_type == 'litz_loss':
+            loss_file = 'j2H.dat'
+        if loss_type == 'solid_loss':
+            loss_file = 'j2F.dat'
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + '/res/' + loss_file, newline='') as f:
+            reader = csv.reader(f)
+            data = list(reader)
+        return data[-last_n_values:-1] + [data[-1]]
+
+    def pre_simulate(self):
+        """
+        Used to determine the litz-approximation coefficients.
+        :return:
+        """
+        if self.conductor_type == 'litz':
+
+            if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat"):
+            #if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat"):
+                print("Coefficients for stands approximation are found.")
+
+            else:
+                print("Create coefficients for strands approximation")
+                # need reduced frequency X for pre-simulation
+                # Rounding X to fit it with corresponding parameters from the database
+                X = self.red_freq
+                X = np.around(X, decimals=3)
+                print(f"Rounded Reduced frequency X = {X}")
+
+                # Create new file with [0 1] for the first element entry
+
+                # create a new onelab client
+                # -- Pre-Simulation Settings --
+                text_file = open("pre/PreParameter.pro", "w")
+                text_file.write(f"NbrLayers = {self.n_layers};\n")
+                #text_file.write(f"NbrLayers = 0;\n")
+                text_file.write(f"Fill = {self.FF};\n")
+                print("Here")
+                text_file.write(f"Rc = {self.strand_radius};\n")  # double named!!! must be changed
+                text_file.close()
+                self.onelab_setup()
+                c = onelab.client(__file__)
+                cell_geo = c.getPath('pre/cell.geo')
+
+                # Run gmsh as a sub client
+                mygmsh = self.onelab + 'gmsh'
+                c.runSubClient('myGmsh', mygmsh + ' ' + cell_geo + ' -2 -v 2')
+
+                modes = [1, 2]  # 1 = "skin", 2 = "proximity"
+                reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
+                for mode in modes:
+                    for rf in reduced_frequencies:
+                        # -- Pre-Simulation Settings --
+                        text_file = open("pre/PreParameter.pro", "w")
+                        text_file.write(f"Rr_cell = {rf};\n")
+                        text_file.write(f"Mode = {mode};\n")
+                        text_file.write(f"NbrLayers = {self.n_layers};\n")
+                        #text_file.write(f"NbrLayers = 0;\n")
+                        text_file.write(f"Fill = {self.FF};\n")
+                        text_file.write(f"Rc = {self.strand_radius};\n")  # double named!!! must be changed
+                        text_file.close()
+
+                        # get model file names with correct path
+                        input_file = c.getPath('pre/cell_dat.pro')
+                        cell = c.getPath('pre/cell.pro')
+
+                        # Run simulations as sub clients
+                        mygetdp = self.onelab + 'getdp'
+                        c.runSubClient('myGetDP', mygetdp + ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
+
+                # Formatting stuff
+                files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat",
+                         self.path + f"/pre/coeff/pI_RS_la{self.FF}_{self.n_layers}layer.dat",
+                         self.path + f"/pre/coeff/qB_RS_la{self.FF}_{self.n_layers}layer.dat",
+                         self.path + f"/pre/coeff/qI_RS_la{self.FF}_{self.n_layers}layer.dat"]
+                #files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat",
+                #         self.path + f"/pre/coeff/pI_RS_la{self.FF}_0layer.dat",
+                #         self.path + f"/pre/coeff/qB_RS_la{self.FF}_0layer.dat",
+                #         self.path + f"/pre/coeff/qI_RS_la{self.FF}_0layer.dat"]
+                for i in range(0, 4):
+                    with fileinput.FileInput(files[i], inplace=True) as file:
+                        for line in file:
+                            print(line.replace(' 0\n', '\n'), end='')
+
+                # Corrects pB coefficient error at 0Hz
+                # Must be changed in future in cell.pro
+                for i in range(0, 4):
+                    with fileinput.FileInput(files[i], inplace=True) as file:
+                        for line in file:
+                            print(line.replace(' 0\n', ' 1\n'), end='')
+
     def pre_simulation(self):
+        """
+        - Complete "pre-simulation" call
+        :return:
+        """
         self.high_level_geo_gen()
         self.excitation(f=100000, i=1)  # frequency and current
         self.file_communication()
         self.pre_simulate()
 
+    # ==== Front-End Methods =====
     def single_simulation(self, freq, current):
+        """
+        - can be used for a single simulation
+        - no sweeping at all
+        :param freq:
+        :param current:
+        :return:
+        """
         self.high_level_geo_gen()
         self.generate_mesh()
         self.excitation(f=freq, i=current)  # frequency and current
@@ -951,7 +1096,9 @@ class MagneticComponent:
     def excitation_sweep(self, frequencies=[], currents=[], show_last=False):
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
-        be passed in lists of the same length. Example Code:
+        be passed in lists of the same length. The mesh is only created ones (fast sweep)!
+
+        Example Code:
             1 geo = MagneticComponent()
             2 geo.mesh()
             3 fs = np.linspace(0, 250000, 6)
@@ -972,3 +1119,143 @@ class MagneticComponent:
             self.simulate()
         if show_last:
             self.visualize()
+
+    def litz_loss_comparison(self, FF, n_layers, strand_radius, sim_choice, sweep_parameter='fill_factor', nametag=''):
+        """
+
+        :param sweep_parameter:
+        :param FF:
+        :param n_layers:
+        :param strand_radius:
+        :param sim_choice:
+        :return:
+        """
+        # Excitation: fixed sweep parameters
+        frequencies = np.linspace(0, 250000, 6)
+        currents = [2, 2, 2, 2, 2, 2]
+
+        # Find Json logfile
+        target_femm = self.path + nametag + 'Pv_FEMM_' + sweep_parameter + '.json'
+        target_femmt = self.path + nametag + 'Pv_FEMMT_' + sweep_parameter + '.json'
+
+        # Update model to chosen litz parameters
+        self.update_litz_configuration(litz_parametrization_type='implicite_litz_radius', n_layers=n_layers,
+                                       strand_radius=strand_radius, ff=FF)
+        if self.FF < 0.4 or self.FF > 0.9:
+            print(f"Skip simulation with non realistic fill factor {self.FF}")
+
+        else:
+            # Either read old data or create new dataframe
+            if sim_choice != 'show':
+                if not os.path.isfile(target_femm):
+                    df_pv_femm = pd.DataFrame([], index=None, columns=[])
+                    df_pv_femm.insert(loc=0, column=f"Frequencies", value=frequencies)
+                else:
+                    df_pv_femm = pd.read_json(target_femm)
+                if not os.path.isfile(target_femmt):
+                    df_pv_femmt = pd.DataFrame([], index=None, columns=[])
+                    df_pv_femmt.insert(loc=0, column=f"Frequencies", value=frequencies)
+                else:
+                    df_pv_femmt = pd.read_json(target_femmt)
+
+            # Column tags
+            femmt_col_tag = f"onelab, {self.n_layers}, {self.strand_radius}, {self.FF}"
+            femm_col_tag = f"femm, {self.n_layers}, {self.strand_radius}, {self.FF}"
+
+            # Prevent from rewriting already used parametrization
+            # rename duplicated tag by adding randomness | string of length 6
+            femmt_col_tags = df_pv_femmt.columns.values.tolist()
+            femm_col_tags = df_pv_femm.columns.values.tolist()
+            random_id = id_generator()
+            if any(femmt_col_tag in s for s in femmt_col_tags):
+                femmt_col_tag = femmt_col_tag + random_id
+            if any(femm_col_tag in s for s in femm_col_tags):
+                femm_col_tag = femm_col_tag + random_id
+
+            # -- Reference simulation with FEMM --
+            if sim_choice == 'both' or sim_choice == 'femm':
+                pv_femm = []
+                # Iterate on frequency
+                for f in frequencies:
+                    self.femm_reference(freq=f, current=2, sigma=58, non_visualize=1)
+                    pv_femm.append(self.tot_loss_femm.real)
+                # Add new or rewrite old data // Maybe ask for replacement and wait for 30 s then go on...
+                df_pv_femm.insert(loc=1, column=femm_col_tag, value=np.transpose(pv_femm), allow_duplicates=True)
+                # Save dataframes in .json files
+                df_pv_femm.to_json(target_femm, date_format=None)
+
+            # -- Onelab simulation with FEMMT --
+            if sim_choice == 'both' or sim_choice == 'femmt':
+                # High level geometry generation + Generate Mesh
+                self.mesh()
+                # Iterate on frequency
+                self.excitation_sweep(currents=currents, frequencies=frequencies)
+
+                # Get losses from Onelab result file
+                data = self.get_loss_data(last_n_values=len(frequencies), loss_type='litz_loss')
+
+                pv_femmt = []
+                for lines in data:
+                    print(re.findall(r"[-+]?\d*\.\d+|\d+", lines[0]))
+                    fls = re.findall(r"[-+]?\d*\.\d+|\d+", lines[0])
+                    if len(fls) == 3:
+                        pv_femmt.append(float(fls[1]))
+                    else:
+                        pv_femmt.append(0.0)
+                        warnings.warn("There is something wrong with the Loss data!")
+
+                # Add new or rewrite old data
+                df_pv_femmt.insert(loc=1, column=femmt_col_tag, value=np.transpose(pv_femmt))
+
+                # Save dataframes in .json files
+                df_pv_femmt.to_json(target_femmt, date_format=None)
+
+    def load_litz_loss_logs(self, tag=''):
+        """
+        Used with litz_loss_comparison()
+        :param tag:
+        :return:
+        """
+
+        # Read Json to pandas dataframe
+        df_femm = pd.read_json(self.path + tag + 'Pv_FEMM_fill_factor.json', convert_axes=False)
+        df_femmt = pd.read_json(self.path + tag + 'Pv_FEMMT_fill_factor.json', convert_axes=False)
+
+        # Make frequencies the index
+        df_Pv_femm = df_femm.set_index('Frequencies')
+        df_Pv_femmt = df_femmt.set_index('Frequencies')
+
+        # Correct 0Hz error in femm
+        print(df_Pv_femm)
+        print(df_Pv_femm.iloc[:, 0])
+        df_Pv_femm.iloc[0] = df_Pv_femm.iloc[0] * 2
+
+        """
+        # Error plotting
+        error = pd.DataFrame([], columns=[])
+        for col in range(0, len(df_Pv_femmt.columns)):
+            error.insert(loc=0, column=f"FF{fillfactors[-col - 1]}",
+                         value=(df_Pv_femmt.iloc[:, col] - df_Pv_femm.iloc[:, col]).div(df_Pv_femmt.iloc[:, col]))
+        """
+
+        # Error plotting
+        error = pd.DataFrame([], columns=[])
+        for col in range(0, len(df_Pv_femmt.columns)):
+            error.insert(loc=0, column=df_Pv_femmt.columns[col].replace("onelab, ", ""),
+                         value=(df_Pv_femmt.iloc[:, col] - df_Pv_femm.iloc[:, col]).div(df_Pv_femmt.iloc[:, col]))
+
+        # print("Error: \n", error)
+        # print("FEMM: \n", df_Pv_femm)
+        # print("FEMMT: \n", df_Pv_femmt)
+
+        # Single Plots
+        # df_Pv_femm.plot(title="FEMM")
+        # df_Pv_femmt.plot(title="FEMMT")
+        error.plot(title=r"$\frac{P_{v,onelab}-P_{v,femm}}{P_{v,onelab}}$")
+
+        # Two Plots in one
+        ax = df_Pv_femm.plot(marker="p")
+        df_Pv_femmt.plot(ax=ax, marker="o")
+        # ax.text(25000, 1, 'FEMM', color='r', ha='right', rotation=0, wrap=True)
+        # ax.text(25000, 0.5, 'FEMMT', color='g', ha='right', rotation=0, wrap=True)
+        plt.show()
