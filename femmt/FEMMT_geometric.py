@@ -1,23 +1,40 @@
 from FEMMT import MagneticComponent
-import numpy as np
 
-# Folders must exits - currently not created automatically
-tag='/log/litz_eva/layers1'
+"""
+# Transformer
+geo = MagneticComponent(component_type="transformer")
 
+geo.update_conductors(n_turns=[6, 8],
+                      conductor_type=["solid", "solid"],
+                      conductor_radix=[0.0015, 0.001])
 
-layers = [4, 5, 6, 9, 10, 11, 12]  # [9]
-radix =  [0.05e-3]  # [0.04e-3, 0.05e-3, 0.06e-3]  #
-fillfactors = [0.5]  # [0.4, 0.5, 0.6, 0.7]
+geo.update_conductors(n_turns=[10, 10],
+                      conductor_type=["solid", "litz"],
+                      conductor_radix=[0.0015, 0.0015],
+                      layer_numbers=[10, 10],
+                      strand_radix=[0.05e-3, 0.05e-3])
+# 0.0011879
+# 0.0015
+"""
 
+# Inductor
+geo = MagneticComponent(component_type="inductor")
 
-# Create object instance
-geo = MagneticComponent(conductor_type="litz")
+geo.update_core(core_type="EI",
+                window_h=0.03)
 
-# Perform sweeps
-for layer in layers:
-    for radius in radix:
-        for ff in fillfactors:
-            geo.litz_loss_comparison(FF=ff, n_layers=layer, strand_radius=radius, sim_choice='both', nametag=tag)
+geo.update_air_gaps(n_air_gaps=0)
 
-# -- Load Results and plot'em --
-geo.load_litz_loss_logs(tag=tag)
+geo.update_conductors(n_turns=[6],
+                      conductor_type=["solid"],
+                      conductor_radix=[0.0015])
+
+"""
+geo.update_conductors(n_turns=[6],
+                      conductor_type=["litz"],
+                      conductor_radix=[0.0015],
+                      layer_numbers=[10],
+                      strand_radix=[0.05e-3])
+"""
+
+geo.single_simulation(freq=100000, current=[10])

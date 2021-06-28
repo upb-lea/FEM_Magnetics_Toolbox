@@ -20,51 +20,81 @@ from functions import id_generator, inner_points, min_max_inner_points, call_for
 
 # Master Class
 class MagneticComponent:
-    def __init__(self, conductor_type="litz"):
+    def __init__(self, component_type="inductor"):
+        """
 
+        :param component_type:
+        """
         # ==============================
         # Settings
         # ==============================
+        # -- Parent folder path --
+        self.path = str(pathlib.Path(__file__).parent.absolute())  # Path of FEMMT files
+        self.onelab = None  # Path to Onelab installation folder
 
-        # -- Geometry Control Flags --
+        # ==============================
+        # Geometry
+        # ==============================
+        # -- Control Flags --
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
-        self.axi_symmetric = 1  # Axial-symmetric model (idealized full-cylindrical)
+        self.dimensionality = "2D axi"  # Axial-symmetric model (idealized full-cylindrical)
         self.s = 0.5  # Parameter for mesh-accuracy
+        self.component_type = component_type  # "inductor" or "transformer"
 
-        # -- Geometry --
-
-        # - Core -
+        # -- Core --
         self.core_type = "EI"  # Basic shape of magnetic conductor
+        self.core_w = None  # Axi symmetric case | core_w := core radius
+        self.window_w = None  # Winding window width
+        self.window_h = None  # Winding window height
+        self.update_core(core_type="EI", core_w=0.02, window_w=0.01, window_h=0.03)  # some initial values
+
+        # -- Air gaps --
         self.n_air_gaps = 1  # Number of air gaps [==1: air gap in center | >1: random air gaps]
+        self.air_gaps = np.empty((self.n_air_gaps, 4))  # list with [position_tag, airgap_position, airgap_h, c_airgap]
 
-        # - Dimensions -
-        self.core_cond_isolation = 0.001  # gap between Core and Conductor
-        self.cond_cond_isolation = 0.0002  # gap between Core and Conductor
-        self.core_w = 0.02  # Axi symmetric case | core_w := core radius
-        self.window_w = 0.01  # Winding window width
-        self.window_h = 0.03  # Winding window height
+        # -- Isolation ---
+        self.core_cond_isolation = 0.001  # gap between Core and Conductors
+        self.cond_cond_isolation = 0.0002  # gap between two Conductors
 
-        # - Conductor -
-        self.n_conductors = 33  # Number of (homogenised) conductors in one window
-        self.conductor_type = conductor_type  # Stranded wires
-        """
-        conductor_type = "stacked"  # Vertical packing of conductors
-        conductor_type = "full"  # One massive Conductor in each window
-        conductor_type = "foil"  # Horizontal packing of conductors
-        conductor_type = "solid" # Massive wires
-        conductor_type = "litz" # Litz wires
-        """
+        # -- Conductor --
+        self.n_conductors = None  # Number of (homogenised) conductors in one window
+        if component_type == "inductor":
+            self.n_conductors = 1
+        if component_type == "transformer":
+            self.n_conductors = 2
+        self.conductor_type = [None] * self.n_conductors  # List of possible conductor types
+        self.turns = [None] * self.n_conductors
+        self.FF = [None] * self.n_conductors
+        self.n_layers = [None] * self.n_conductors
+        self.n_strands = [None] * self.n_conductors
+        self.strand_radius = [None] * self.n_conductors
+        self.conductor_radius = [None] * self.n_conductors
+        self.A_cell = [None] * self.n_conductors
+        self.update_conductors(n_turns=[None] * self.n_conductors,
+                               conductor_type=[None] * self.n_conductors,
+                               conductor_radix=[None] * self.n_conductors,
+                               layer_numbers=[None] * self.n_conductors,
+                               strand_radix=[None] * self.n_conductors)
 
-        if self.conductor_type == 'solid':
-            self.conductor_radius = 0.0011879
-            self.A_cell = np.pi * self.conductor_radius**2  # * self.FF  # Surface of the litz approximated hexagonal cell
+        # -- Geometric Parameters/Coordinates --
+        self.n_windows = None
+        self.p_outer = None
+        self.p_window = None
+        self.p_conductor = [[], []]
+        self.p_air_gaps = None
 
-        if self.conductor_type == 'litz':
-            self.update_litz_configuration(conductor_radius=0.0012, n_layers=10, strand_radius=0.05e-3)
-            #self.A_cell = np.pi * self.conductor_radius**2  # * self.FF  # Surface of the litz approximated hexagonal cell
+        # ==============================
+        # Meshing
+        # ==============================
+        # -- Characteristic lengths -- [for mesh sizes]
+        self.c_core = self.core_w/10. * self.s
+        self.c_window = self.window_w/10 * self.s
+        self.c_conductor = self.window_w/30 * self.s
+        self.c_airgap = None
 
-
-        # -- Materials --
+        # ==============================
+        # Materials
+        # ==============================
         # frequency = 0: mu_rel only used if flag_non_linear_core == 0
         # frequency > 0: mu_rel is used
         self.mu0 = 4e-7*np.pi
@@ -72,40 +102,141 @@ class MagneticComponent:
         self.core_material = 95  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
         self.sigma = 5.8e7
 
-        # -- Characteristic lengths -- [for mesh sizes]
-        self.c_core = self.core_w/10. * self.s
-        self.c_window = self.window_w/10 * self.s
-        self.c_conductor = self.window_w/30 * self.s
-
-        # -- Parent folder path --
-        self.path = str(pathlib.Path(__file__).parent.absolute())
-
-        # -- Further Attributes --
-        self.c_airgap = None
-        self.n_windows = None
-        self.p_outer = None
-        self.p_window = None
-        self.p_conductor = None
-        self.p_air_gaps = None
-
+        # ==============================
+        # Problem Definition
+        # ==============================
+        # -- Excitation Parameters --
         self.flag_imposed_reduced_frequency = None
         self.flag_excitation_type = None
         self.flag_non_linear_core = None
-        self.current = None
-        self.voltage = None
+        self.current = [None] * self.n_conductors  # Defined for every conductor
+        self.current_density = [None] * self.n_conductors  # Defined for every conductor
+        self.voltage = [None] * self.n_conductors  # Defined for every conductor
         self.frequency = None
-        self.red_freq = None
+        self.red_freq = [None] * self.n_conductors  # Defined for every conductor
         self.delta = None
 
-        self.onelab = None
+        # -- Used for Litz Validation --
         self.sweep_frequencies = None
 
-        # FEMM variables
+        # -- FEMM variables --
         self.tot_loss_femm = None
 
     # ==== Back-End Methods =====
-    def update_litz_configuration(self, litz_parametrization_type='implicite_FF', strand_radius=None, ff=None, conductor_radius=None, n_layers=None):
+    def update_core(self, core_type,  **kwargs):
         """
+        - One positional parameter core_type
+        - All core parameters can be passed or adjusted by keyword calling
+            - Allows single parameter changing
+            - Depending on core_type
+            - Strict keyword usage!
+        :param core_type:
+        :param kwargs:
+            - Case "2D, axisym., EI": 'core_w', 'window_w', 'window_h'
+            - Case "3D, EI": ...tba...
+        :return:
+        """
+        self.core_type = core_type
+        if self.core_type == "EI":
+            if self.dimensionality == "2D axi":
+                for key, value in kwargs.items():
+                    if key == 'core_w':
+                        self.core_w = value
+                    if key == 'window_w':
+                        self.window_w = value
+                    if key == 'window_h':
+                        self.window_h = value
+        if self.core_type == "EI":
+            if self.dimensionality == "3D":
+                # tba 3D Group
+                None
+
+    def update_air_gaps(self, method="random", **kwargs):
+        """
+        - "self.air_gaps" is a list with [position_tag, airgap_position, airgap_h, c_airgap]
+           - postition_tag: specifies the gapped "leg"
+           - airgap_position: specifies the coordinate of the air gap's center point along the specified leg
+           - air_gap_h: height/length of the air gap
+           - c_air_gap: mesh accuracy factor
+        :param method:
+        :return:
+        """
+
+        # Optional updating the number of air gaps
+        for key, value in kwargs.items():
+            if key == 'n_air_gaps':
+                self.n_air_gaps = value
+
+        # Update air gaps with chosen method
+        if method == "random" and self.dimensionality=="2D axi":
+            i = 0
+            while i in range(0, self.n_air_gaps):
+                position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
+                if self.n_air_gaps == 1:
+                    airgap_h = 0.001
+                    airgap_position = 0.5 * (self.window_h - airgap_h) - (self.window_h / 2 - airgap_h / 2)
+                else:
+                    airgap_h = np.random.rand(1) * 0.005 + 0.001
+                    airgap_position = np.random.rand(1) * (self.window_h - airgap_h) - (self.window_h / 2 - airgap_h / 2)
+                self.c_airgap = airgap_h / 3 * self.s
+                # Overlapping Control
+                for j in range(0, self.air_gaps.shape[0]):
+                    if position_tag == self.air_gaps[j, 0] and self.air_gaps[j, 1] + self.air_gaps[
+                        j, 2] / 2 > airgap_position > \
+                            self.air_gaps[j, 1] - self.air_gaps[j, 2] / 2:
+                        print("Overlapping air Gaps have been corrected")
+                else:
+                    self.air_gaps[i, :] = np.array([position_tag, airgap_position, airgap_h, self.c_airgap])
+                    i += 1
+
+    def update_conductors(self, n_turns=[], conductor_type=[], conductor_radix=[], layer_numbers=[], strand_radix=[]):
+        """
+        conductor_type = "stacked"  # Vertical packing of conductors
+        conductor_type = "full"     # One massive Conductor in each window
+        conductor_type = "foil"     # Horizontal packing of conductors
+        conductor_type = "solid"    # Massive wires
+        conductor_type = "litz"     # Litz wires
+        :param n_turns:
+        :param strand_radix:
+        :param layer_numbers:
+        :param conductor_radix:
+        :param conductor_radius:
+        :param n_conductors:
+        :param conductor_type:
+        :return:
+        """
+        if self.component_type == "inductor":
+            if len(n_turns) != 1 or len(conductor_type) != 1:
+                print(f"Wrong number of conductor parameters passed to inductor model!")
+                raise Warning
+        if self.component_type == "transformer":
+            if len(n_turns) != 2 or len(conductor_type) != 2:
+                print(f"Wrong number of conductor parameters passed to transformer model!")
+                raise Warning
+
+        self.turns = n_turns
+        self.conductor_type = conductor_type
+
+        for i in range(0, self.n_conductors):
+            print(i)
+            if self.conductor_type[i] == 'solid':
+                self.conductor_radius[i] = conductor_radix[i]
+                self.A_cell[i] = np.pi * self.conductor_radius[i]**2  # Area of the litz approximated hexagonal cell
+            if self.conductor_type[i] == 'litz':
+                self.update_litz_configuration(num=i,
+                                               litz_parametrization_type='implicite_FF',
+                                               ff=None,
+                                               conductor_radius=conductor_radix[i],
+                                               n_layers=layer_numbers[i],
+                                               strand_radius=strand_radix[i])
+                # Surface of the litz approximated hexagonal cell
+                # self.A_cell = np.pi * self.conductor_radius**2  # * self.FF
+
+    def update_litz_configuration(self, num=0, litz_parametrization_type='implicite_FF', strand_radius=None, ff=None,
+                                  conductor_radius=None, n_layers=None):
+        """
+        - updates the conductor with number num (simple transformer: num=0 -> primary winding,
+                                                                     num=1 -> secondary winding)
         - used to change litz configurations
         - also used at first initialisation of the geometry
         - needed to always make sure that the relation between litz parameters (strand radius, fill factor, number of
@@ -120,33 +251,34 @@ class MagneticComponent:
         """
         # Litz Approximation
         if litz_parametrization_type == 'implicite_FF':
-            self.conductor_radius = conductor_radius
-            self.n_layers = n_layers
-            self.n_strands = NbrStrands(self.n_layers)
-            self.strand_radius = strand_radius
-            ff_exact = self.n_strands*self.strand_radius**2/self.conductor_radius**2 # hexagonal packing: ~90.7% are theoretical maximum
+            self.conductor_radius[num] = conductor_radius
+            self.n_layers[num] = n_layers
+            self.n_strands[num] = NbrStrands(self.n_layers[num])
+            self.strand_radius[num] = strand_radius
+            # hexagonal packing: ~90.7% are theoretical maximum FF
+            ff_exact = self.n_strands[num]*self.strand_radius[num]**2/self.conductor_radius[num]**2
             print(f"Exact fill factor: {ff_exact}")
-            self.FF = np.around(ff_exact, decimals=2)
+            self.FF[num] = np.around(ff_exact, decimals=2)
             print(f"Updated Litz Configuration: \n"
-                  f"FF: {self.FF} \n"
-                  f"Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
-                  f"Strand radius: {self.strand_radius}"
-                  f"Conductor radius: {self.conductor_radius}")
-            #print(f"Rounded fill factor: {self.FF}")
+                  f"FF: {self.FF[num]} \n"
+                  f"Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
+                  f"Strand radius: {self.strand_radius[num]} \n"
+                  f"Conductor radius: {self.conductor_radius[num]}")
+            # print(f"Rounded fill factor: {self.FF}")
 
         if litz_parametrization_type == 'implicite_litz_radius':
-            self.FF = ff
-            self.n_layers = n_layers
-            self.n_strands = NbrStrands(self.n_layers)
-            self.strand_radius = strand_radius
-            self.conductor_radius = np.sqrt(self.n_strands*self.strand_radius**2/self.FF)
+            self.FF[num] = ff
+            self.n_layers[num] = n_layers
+            self.n_strands[num] = NbrStrands(self.n_layers)
+            self.strand_radius[num] = strand_radius
+            self.conductor_radius[num] = np.sqrt(self.n_strands[num]*self.strand_radius[num]**2/self.FF[num])
             print(f"Updated Litz Configuration: \n "
-                  f"FF: {self.FF} \n "
-                  f"Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
-                  f"Strand radius: {self.strand_radius}"
-                  f"Conductor radius: {self.conductor_radius}")
+                  f"FF: {self.FF[num]} \n "
+                  f"Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
+                  f"Strand radius: {self.strand_radius[num]} \n"
+                  f"Conductor radius: {self.conductor_radius[num]}")
 
-        self.A_cell = self.n_strands * self.strand_radius**2 * np.pi / self.FF
+        self.A_cell[num] = self.n_strands[num] * self.strand_radius[num]**2 * np.pi / self.FF[num]
 
     def onelab_setup(self):
         """
@@ -156,7 +288,7 @@ class MagneticComponent:
         """
         if os.path.isfile(self.path + "/config.py"):
             import config
-            with open('config.py') as f:
+            with open(self.path + '/config.py') as f:
                 if 'onelab' in f.read():
                     if os.path.exists(config.onelab):
                         self.onelab = config.onelab
@@ -165,7 +297,7 @@ class MagneticComponent:
         else:
             self.onelab = call_for_path("onelab")
 
-    def high_level_geo_gen(self, core_type="EI", axi_symmetric=1):
+    def high_level_geo_gen(self, core_type="EI", dimensionality="2D axi"):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
@@ -181,38 +313,22 @@ class MagneticComponent:
             self.n_windows = 2
 
         # -- Symmetry -- [Choose between asymmetric, symmetric and axi symmetric]
-        if self.y_symmetric == 0:
-            self.axi_symmetric = 0
-        if self.axi_symmetric == 1:
-            self.y_symmetric = axi_symmetric
+        self.dimensionality = dimensionality
+        if self.dimensionality == "2D axi":
+            self.y_symmetric = 1
 
-        if self.core_type == "EI" and self.axi_symmetric == 1:
+        if self.core_type == "EI" and self.dimensionality == "2D axi":
             self.ei_axi()
 
     def ei_axi(self):
         """
-        - creates all points needed for the radial axi-symetric EI core typology
+        - creates all points needed for the radial axi-symmetric EI core typology
         :return:
         """
         # -- Air Gap Data -- [random air gap generation]
-        air_gaps = np.empty((self.n_air_gaps, 4))
-        i = 0
-        while i in range(0, self.n_air_gaps):
-            position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
-            if self.n_air_gaps == 1:
-                airgap_h = 0.001
-                airgap_position = 0.5*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
-            else:
-                airgap_h = np.random.rand(1)*0.005 + 0.001
-                airgap_position = np.random.rand(1)*(self.window_h-airgap_h)-(self.window_h/2-airgap_h/2)
-            self.c_airgap = airgap_h / 3 * self.s
-            # Overlapping Control
-            for j in range(0, air_gaps.shape[0]):
-                if position_tag == air_gaps[j, 0] and air_gaps[j, 1] + air_gaps[j, 2] / 2 > airgap_position > air_gaps[j, 1] - air_gaps[j, 2] / 2:
-                    print("Overlapping air Gaps have been corrected")
-            else:
-                air_gaps[i, :] = np.array([position_tag, airgap_position, airgap_h, self.c_airgap])
-                i += 1
+
+
+        self.update_air_gaps()
 
         # -- Arrays for geometry data -- [all points with (x, y, z, mesh_accuracy)]
         self.p_outer = np.zeros((4, 4))
@@ -239,7 +355,6 @@ class MagneticComponent:
             self.p_window[7] = [(self.core_w/2+self.window_w), self.window_h/2, 0, self.c_window]
         """
 
-
         # Fitting the outer radius to ensure surface area
         r_inner = self.window_w + self.core_w/2
         r_outer = np.sqrt((self.core_w/2)**2 + r_inner**2)  # np.sqrt(window_w**2 + window_w * core_w + core_w**2/2)
@@ -262,87 +377,102 @@ class MagneticComponent:
         self.p_window[7] = [r_inner, self.window_h/2, 0, self.c_window]
 
         # - Conductors -
+        for num in range(0, self.n_conductors):
 
-        # Case: no conductors [only theoretical]
-        self.p_conductor = np.empty(0)
+            # Case: no conductors [only theoretical]
+            # self.p_conductor = np.empty((num, 0))
+            """
+            if self.conductor_type == "full":
+                # full window conductor
+                self.p_conductor[0][:] = [self.core_cond_isolation + self.core_w/2, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
+                self.p_conductor[1][:] = [r_inner - self.core_cond_isolation, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
+                self.p_conductor[2][:] = [self.core_cond_isolation + self.core_w/2, self.window_h/2 - self.core_cond_isolation, 0, self.c_conductor]
+                self.p_conductor[3][:] = [r_inner - self.core_cond_isolation, self.window_h/2 - self.core_cond_isolation, 0, self.c_conductor]
+    
+            if self.conductor_type == "stacked":
+                # stacking from the ground
+                self.p_conductor = np.empty((4*self.turns, 4))
+                for i in range(0, self.turns):
+                    # two conductors above
+                    self.p_conductor[4*i+0][:] = [self.core_cond_isolation + self.core_w/2, (1-i)*self.core_cond_isolation + i*(-self.window_h/2 + self.core_cond_isolation), 0, self.c_conductor]
+                    self.p_conductor[4*i+1][:] = [r_inner - self.core_cond_isolation, (1-i)*self.core_cond_isolation + i*(-self.window_h/2 + self.core_cond_isolation), 0, self.c_conductor]
+                    self.p_conductor[4*i+2][:] = [self.core_cond_isolation + self.core_w/2, -i*self.core_cond_isolation + (1-i)*(self.window_h/2 - self.core_cond_isolation), 0, self.c_conductor]
+                    self.p_conductor[4*i+3][:] = [r_inner - self.core_cond_isolation, -i*self.core_cond_isolation + (1-i)*(self.window_h/2 - self.core_cond_isolation), 0, self.c_conductor]
+    
+            if self.conductor_type == "foil":
+                self.p_conductor = np.empty((4*self.turns, 4))
+                left_bound = self.core_cond_isolation + self.core_w/2
+                right_bound = r_inner - self.core_cond_isolation
+                x_interpol = np.linspace(left_bound, right_bound, self.turns+1)  # instead should FF window from inside to outside with fixed copper thickness
+                for i in range(0, self.turns):
+                    # Foils
+                    self.p_conductor[4 * i + 0][:] = [x_interpol[i] + self.cond_cond_isolation, -self.window_h / 2 + self.core_cond_isolation, 0, self.c_conductor]
+                    self.p_conductor[4 * i + 1][:] = [x_interpol[i+1] - self.cond_cond_isolation, -self.window_h / 2 + self.core_cond_isolation, 0, self.c_conductor]
+                    self.p_conductor[4 * i + 2][:] = [x_interpol[i] + self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
+                    self.p_conductor[4 * i + 3][:] = [x_interpol[i+1] - self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
+            """
 
-        if self.conductor_type == "full":
-            # full window conductor
-            self.p_conductor[0][:] = [self.core_cond_isolation + self.core_w/2, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
-            self.p_conductor[1][:] = [r_inner - self.core_cond_isolation, -self.window_h/2 + self.core_cond_isolation, 0, self.c_conductor]
-            self.p_conductor[2][:] = [self.core_cond_isolation + self.core_w/2, self.window_h/2 - self.core_cond_isolation, 0, self.c_conductor]
-            self.p_conductor[3][:] = [r_inner - self.core_cond_isolation, self.window_h/2 - self.core_cond_isolation, 0, self.c_conductor]
+            if self.conductor_type[num] == "litz" or self.conductor_type[num] == "solid":
+                left_bound = self.core_w/2
+                right_bound = r_inner - self.core_cond_isolation
 
-        if self.conductor_type == "stacked":
-            # stacking from the ground
-            self.p_conductor = np.empty((4*self.n_conductors, 4))
-            for i in range(0, self.n_conductors):
-                # two conductors above
-                self.p_conductor[4*i+0][:] = [self.core_cond_isolation + self.core_w/2, (1-i)*self.core_cond_isolation + i*(-self.window_h/2 + self.core_cond_isolation), 0, self.c_conductor]
-                self.p_conductor[4*i+1][:] = [r_inner - self.core_cond_isolation, (1-i)*self.core_cond_isolation + i*(-self.window_h/2 + self.core_cond_isolation), 0, self.c_conductor]
-                self.p_conductor[4*i+2][:] = [self.core_cond_isolation + self.core_w/2, -i*self.core_cond_isolation + (1-i)*(self.window_h/2 - self.core_cond_isolation), 0, self.c_conductor]
-                self.p_conductor[4*i+3][:] = [r_inner - self.core_cond_isolation, -i*self.core_cond_isolation + (1-i)*(self.window_h/2 - self.core_cond_isolation), 0, self.c_conductor]
+                # xfmr: oben prim - unten sek
+                if num == 0:
+                    top_bound = self.window_h/2
+                    bot_bound = 0
+                if num == 1:
+                    top_bound = 0
+                    bot_bound = -self.window_h/2
 
-        if self.conductor_type == "foil":
-            self.p_conductor = np.empty((4*self.n_conductors, 4))
-            left_bound = self.core_cond_isolation + self.core_w/2
-            right_bound = r_inner - self.core_cond_isolation
-            x_interpol = np.linspace(left_bound, right_bound, self.n_conductors+1)  # instead should FF window from inside to outside with fixed copper thickness
-            for i in range(0, self.n_conductors):
-                # Foils
-                self.p_conductor[4 * i + 0][:] = [x_interpol[i] + self.cond_cond_isolation, -self.window_h / 2 + self.core_cond_isolation, 0, self.c_conductor]
-                self.p_conductor[4 * i + 1][:] = [x_interpol[i+1] - self.cond_cond_isolation, -self.window_h / 2 + self.core_cond_isolation, 0, self.c_conductor]
-                self.p_conductor[4 * i + 2][:] = [x_interpol[i] + self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
-                self.p_conductor[4 * i + 3][:] = [x_interpol[i+1] - self.cond_cond_isolation, self.window_h / 2 - self.core_cond_isolation, 0, self.c_conductor]
 
-        if self.conductor_type == "litz" or self.conductor_type == "solid":
-            self.p_conductor = []  # center points are stored
-            left_bound = self.core_w/2
-            right_bound = r_inner - self.core_cond_isolation
-            top_bound = self.window_h/2
-            bot_bound = -self.window_h/2
+                y = bot_bound + self.core_cond_isolation + self.conductor_radius[num]
+                x = left_bound + self.core_cond_isolation + self.conductor_radius[num]
+                i = 0
+                # Case n_conductors higher that "allowed" is missing
+                while y < top_bound-self.core_cond_isolation-self.conductor_radius[num] and i < self.turns[num]:
+                    while x < right_bound-self.core_cond_isolation-self.conductor_radius[num] and i < self.turns[num]:
+                        self.p_conductor[num].append([x, y, 0, self.c_conductor])
+                        self.p_conductor[num].append([x-self.conductor_radius[num], y, 0, self.c_conductor])
+                        self.p_conductor[num].append([x, y+self.conductor_radius[num], 0, self.c_conductor])
+                        self.p_conductor[num].append([x+self.conductor_radius[num], y, 0, self.c_conductor])
+                        self.p_conductor[num].append([x, y-self.conductor_radius[num], 0, self.c_conductor])
+                        i += 1
+                        x += self.conductor_radius[num] * 2 + self.cond_cond_isolation
+                    y += self.conductor_radius[num] * 2 + self.cond_cond_isolation
+                    x = left_bound + self.core_cond_isolation + self.conductor_radius[num]
+                self.p_conductor[num] = np.asarray(self.p_conductor[num])
+                if int(self.p_conductor[num].shape[0]/5) < self.turns[num]:
+                    print("Could not resolve all conductors.")
+                    self.turns[num] = int(self.p_conductor[num].shape[0]/5)
 
-            y = bot_bound + self.core_cond_isolation + self.conductor_radius
-            x = left_bound + self.core_cond_isolation + self.conductor_radius
-            i = 0
-            # Case n_conductors higher that "allowed" is missing
-            while y < top_bound-self.core_cond_isolation-self.conductor_radius and i < self.n_conductors:
-                while x < right_bound-self.core_cond_isolation-self.conductor_radius and i < self.n_conductors:
-                    self.p_conductor.append([x, y, 0, self.c_conductor])
-                    self.p_conductor.append([x-self.conductor_radius, y, 0, self.c_conductor])
-                    self.p_conductor.append([x, y+self.conductor_radius, 0, self.c_conductor])
-                    self.p_conductor.append([x+self.conductor_radius, y, 0, self.c_conductor])
-                    self.p_conductor.append([x, y-self.conductor_radius, 0, self.c_conductor])
-                    i += 1
-                    x += self.conductor_radius * 2 + self.cond_cond_isolation
-                y += self.conductor_radius * 2 + self.cond_cond_isolation
-                x = left_bound + self.core_cond_isolation + self.conductor_radius
-            self.p_conductor = np.asarray(self.p_conductor)
-            if int(self.p_conductor.shape[0]/5) < self.n_conductors:
-                print("Could not resolve all conductors.")
-                self.n_conductors = int(self.p_conductor.shape[0]/5)
-
+        # - Air gaps -
+        # "air_gaps" is a list with [position_tag, airgap_position, airgap_h, c_airgap]
+        #   - postition_tag: specifies the gapped "leg"
+        #   - airgap_position: specifies the coordinate of the air gap's center point along the specified leg
+        #   - air_gap_h: height/length of the air gap
+        #   - c_air_gap: mesh accuracy factor
+        # at this point the 4 corner points of each air gap are generated out of "air_gaps"
         for i in range(0, self.n_air_gaps):
             # Left leg (-1)
-            if air_gaps[i][0] == -1:
-                self.p_air_gaps[i * 4] = [-(self.core_w + self.window_w), air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 1] = [-(self.core_w / 2 + self.window_w), air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 2] = [-(self.core_w + self.window_w), air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 3] = [-(self.core_w / 2 + self.window_w), air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+            if self.air_gaps[i][0] == -1:
+                self.p_air_gaps[i * 4] = [-(self.core_w + self.window_w), self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [-(self.core_w / 2 + self.window_w), self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [-(self.core_w + self.window_w), self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [-(self.core_w / 2 + self.window_w), self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
 
             # Center leg (0)
-            if air_gaps[i][0] == 0:
-                self.p_air_gaps[i * 4] = [-self.core_w/2, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 1] = [self.core_w/2, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 2] = [-self.core_w/2, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 3] = [self.core_w/2, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+            if self.air_gaps[i][0] == 0:
+                self.p_air_gaps[i * 4] = [-self.core_w/2, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [self.core_w/2, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [-self.core_w/2, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [self.core_w/2, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
 
             # Right leg (+1)
-            if air_gaps[i][0] == 1:
-                self.p_air_gaps[i * 4] = [self.core_w / 2 + self.window_w, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 1] = [self.core_w + self.window_w, air_gaps[i][1] - air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 2] = [self.core_w / 2 + self.window_w, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 3] = [self.core_w + self.window_w, air_gaps[i][1] + air_gaps[i][2] / 2, 0, air_gaps[i][3]]
+            if self.air_gaps[i][0] == 1:
+                self.p_air_gaps[i * 4] = [self.core_w / 2 + self.window_w, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [self.core_w + self.window_w, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [self.core_w / 2 + self.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [self.core_w + self.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
 
     def generate_mesh(self):
         """
@@ -359,7 +489,7 @@ class MagneticComponent:
         if self.core_type == "EI":
             # --------------------------------------- Points --------------------------------------------
             if self.y_symmetric == 1:
-                if self.axi_symmetric == 1:
+                if self.dimensionality == "2D axi":
 
                     # Find points of air gaps (used later)
                     if self.n_air_gaps > 0:
@@ -370,20 +500,20 @@ class MagneticComponent:
                     # Points
                     p_core = []
                     p_island = []
-                    p_cond = []
+                    p_cond = [[], []]
                     # Curves
                     l_bound_core = []
                     l_bound_air = []
                     l_core_air = []
-                    l_cond = []
-                    curve_loop_cond = []
+                    l_cond = [[], []]
+                    curve_loop_cond = [[], []]
                     # Curve Loops
                     curve_loop_island = []
                     curve_loop_air = []
                     curve_loop_bound = []
                     # Plane Surfaces
                     plane_surface_core = []
-                    plane_surface_cond = []
+                    plane_surface_cond = [[], []]
                     plane_surface_air = []
 
                     # =====================
@@ -496,34 +626,36 @@ class MagneticComponent:
                     # =====================
                     # Conductors
                     # Points of Conductors
-                    for i in range(0, self.p_conductor.shape[0]):
-                        p_cond.append(
-                            gmsh.model.geo.addPoint(self.p_conductor[i][0], self.p_conductor[i][1], 0, self.c_conductor))
-                    # Curves of Conductors
-                    if self.conductor_type == "litz" or self.conductor_type == "solid":
-                        for i in range(0, int(len(p_cond) / 5)):
-                            l_cond.append(
-                                gmsh.model.geo.addCircleArc(p_cond[5 * i + 1], p_cond[5 * i + 0], p_cond[5 * i + 2]))
-                            l_cond.append(
-                                gmsh.model.geo.addCircleArc(p_cond[5 * i + 2], p_cond[5 * i + 0], p_cond[5 * i + 3]))
-                            l_cond.append(
-                                gmsh.model.geo.addCircleArc(p_cond[5 * i + 3], p_cond[5 * i + 0], p_cond[5 * i + 4]))
-                            l_cond.append(
-                                gmsh.model.geo.addCircleArc(p_cond[5 * i + 4], p_cond[5 * i + 0], p_cond[5 * i + 1]))
-                            # Iterative plane creation
-                            curve_loop_cond.append(gmsh.model.geo.addCurveLoop(
-                                [l_cond[i * 4 + 0], l_cond[i * 4 + 1], l_cond[i * 4 + 2], l_cond[i * 4 + 3]]))
-                            plane_surface_cond.append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[i]]))
-                    else:
-                        for i in range(0, int(len(p_cond) / 4)):
-                            l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 0], p_cond[4 * i + 2]))
-                            l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 2], p_cond[4 * i + 3]))
-                            l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 3], p_cond[4 * i + 1]))
-                            l_cond.append(gmsh.model.geo.addLine(p_cond[4 * i + 1], p_cond[4 * i + 0]))
-                            # Iterative plane creation
-                            curve_loop_cond.append(gmsh.model.geo.addCurveLoop(
-                                [l_cond[i * 4 + 0], l_cond[i * 4 + 1], l_cond[i * 4 + 2], l_cond[i * 4 + 3]]))
-                            plane_surface_cond.append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[i]]))
+                    for num in range(0, self.n_conductors):
+                        for i in range(0, self.p_conductor[num].shape[0]):
+                            p_cond[num].append(gmsh.model.geo.addPoint(self.p_conductor[num][i][0],
+                                                                  self.p_conductor[num][i][1], 0, self.c_conductor))
+                        # Curves of Conductors
+                        if self.conductor_type[num] == "litz" or self.conductor_type[num] == "solid":
+                            for i in range(0, int(len(p_cond[num]) / 5)):
+                                l_cond[num].append(
+                                    gmsh.model.geo.addCircleArc(p_cond[num][5 * i + 1], p_cond[num][5 * i + 0], p_cond[num][5 * i + 2]))
+                                l_cond[num].append(
+                                    gmsh.model.geo.addCircleArc(p_cond[num][5 * i + 2], p_cond[num][5 * i + 0], p_cond[num][5 * i + 3]))
+                                l_cond[num].append(
+                                    gmsh.model.geo.addCircleArc(p_cond[num][5 * i + 3], p_cond[num][5 * i + 0], p_cond[num][5 * i + 4]))
+                                l_cond[num].append(
+                                    gmsh.model.geo.addCircleArc(p_cond[num][5 * i + 4], p_cond[num][5 * i + 0], p_cond[num][5 * i + 1]))
+                                # Iterative plane creation
+                                curve_loop_cond[num].append(gmsh.model.geo.addCurveLoop(
+                                    [l_cond[num][i * 4 + 0], l_cond[num][i * 4 + 1], l_cond[num][i * 4 + 2], l_cond[num][i * 4 + 3]]))
+                                plane_surface_cond[num].append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[num][i]]))
+                        else:
+                            for i in range(0, int(len(p_cond[num]) / 4)):
+                                l_cond[num].append(gmsh.model.geo.addLine(p_cond[num][4 * i + 0], p_cond[num][4 * i + 2]))
+                                l_cond[num].append(gmsh.model.geo.addLine(p_cond[num][4 * i + 2], p_cond[num][4 * i + 3]))
+                                l_cond[num].append(gmsh.model.geo.addLine(p_cond[num][4 * i + 3], p_cond[num][4 * i + 1]))
+                                l_cond[num].append(gmsh.model.geo.addLine(p_cond[num][4 * i + 1], p_cond[num][4 * i + 0]))
+                                # Iterative plane creation
+                                curve_loop_cond[num].append(gmsh.model.geo.addCurveLoop(
+                                    [l_cond[num][i * 4 + 0], l_cond[num][i * 4 + 1], l_cond[num][i * 4 + 2], l_cond[num][i * 4 + 3]]))
+                                plane_surface_cond[num].append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[num][i]]))
+                    print(f"plane_surface_cond {plane_surface_cond}")
                     # =====================
                     # Air (Points are partwise double designated)
                     l_air_tmp = l_core_air[:7]
@@ -534,7 +666,8 @@ class MagneticComponent:
                             l_air_tmp.append(l_core_air[7 + 3 * i + 1])
                             l_air_tmp.append(l_core_air[7 + 3 * i + 2])
                     curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp))
-                    plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + curve_loop_cond))
+                    flatten_curve_loop_cond = [j for sub in curve_loop_cond for j in sub]
+                    plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))  # xfmr
 
                     # =====================
                     # Bound
@@ -549,23 +682,28 @@ class MagneticComponent:
         # Core
         ps_core = gmsh.model.geo.addPhysicalGroup(2, plane_surface_core, tag=2000)
         # Conductors
-        ps_cond = []
-        if self.n_conductors == 2 and self.conductor_type == "stacked":
-            ps_cond[0] = gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[0]], tag=4000)
-            ps_cond[1] = gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[1]], tag=4001)
-        if self.conductor_type == "foil" or self.conductor_type == "solid":
-            for i in range(0, self.n_conductors):
-                ps_cond.append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[i]], tag=4000 + i))
-        if self.conductor_type == "litz":
-            for i in range(0, self.n_conductors):
-                ps_cond.append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[i]], tag=6000 + i))
+        ps_cond = [[], []]  # xfmr
+        for num in range(0, self.n_conductors):
+            if self.turns == 2 and self.conductor_type == "stacked":
+                ps_cond[0] = gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[num][0]], tag=4000)  # ??? xfmr
+                ps_cond[1] = gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[num][1]], tag=4001)
+            if self.conductor_type[num] == "foil" or self.conductor_type[num] == "solid":
+                for i in range(0, self.turns[num]):
+                    ps_cond[num].append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[num][i]], tag=4000 + 1000*num + i))
+            if self.conductor_type[num] == "litz":
+                for i in range(0, self.turns[num]):
+                    ps_cond[num].append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[num][i]], tag=6000 + 1000*num + i))
+
+
         # Air
         ps_air = gmsh.model.geo.addPhysicalGroup(2, plane_surface_air, tag=1000)
         # Boundary
         pc_bound = gmsh.model.geo.addPhysicalGroup(1, l_bound_tmp, tag=1111)
-
+        print(f"Physical Conductor Surfaces: {ps_cond}")  # xfmr
         gmsh.model.setPhysicalName(2, ps_core, "CORE")
-        gmsh.model.setPhysicalName(2, ps_cond[0], "COND1")
+        for num in range(0, self.n_conductors):
+            for i in range(0, len(ps_cond[num])):
+                gmsh.model.setPhysicalName(2, ps_cond[num][i], f"COND{num+1}")
         gmsh.model.setPhysicalName(2, ps_air, "AIR")
         gmsh.model.setPhysicalName(1, pc_bound, "BOUND")
 
@@ -581,8 +719,9 @@ class MagneticComponent:
         for i in range(0, len(plane_surface_core)):
             gmsh.model.setColor([(2, plane_surface_core[i])], 50, 50, 50)
         gmsh.model.setColor([(2, plane_surface_air[0])], 0, 0, 230)
-        for i in range(0, len(plane_surface_cond)):
-            gmsh.model.setColor([(2, plane_surface_cond[i])], 150, 150, 0)
+        for num in range(0, self.n_conductors):
+            for i in range(0, len(plane_surface_cond[num])):
+                gmsh.model.setColor([(2, plane_surface_cond[num][i])], 150, 150, 0)
 
         # Mesh generation
         gmsh.model.mesh.generate(2)
@@ -619,61 +758,92 @@ class MagneticComponent:
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         self.flag_non_linear_core = nonlinear
 
-        # Imposed current, current density or voltage
-        if self.flag_excitation_type == 'current':
-            self.current = i
-        if self.flag_excitation_type == 'current_density':
-            raise NotImplementedError
-        if self.flag_excitation_type == 'voltage':
-            raise NotImplementedError
-            # self.voltage = 2
+        for num in range(0, self.n_conductors):
+            # Imposed current, current density or voltage
+            if self.flag_excitation_type == 'current':
+                self.current[num] = i[num]
+            if self.flag_excitation_type == 'current_density':
+                raise NotImplementedError
+            if self.flag_excitation_type == 'voltage':
+                raise NotImplementedError
+                # self.voltage = 2
 
-        # -- Frequency --
-        self.frequency = f  # in Hz
-        if self.flag_imposed_reduced_frequency == 1:
-            self.red_freq = 4
-        else:
-            if self.frequency != 0:
-                self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.sigma * self.mu0))
-                self.red_freq = self.strand_radius / self.delta
+            # -- Frequency --
+            self.frequency = f  # in Hz
+            if self.flag_imposed_reduced_frequency == 1:
+                self.red_freq[num] = 4
             else:
-                self.delta = 1e20  # random huge value
-                self.red_freq = 0
+                if self.frequency != 0:
+                    self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.sigma * self.mu0))
+
+                    if self.conductor_type[num] == "litz":
+                        self.red_freq[num] = self.strand_radius[num] / self.delta
+                    else:
+                        self.red_freq[num] = self.conductor_radius[num] / self.delta
+                else:
+                    self.delta = 1e20  # random huge value
+                    self.red_freq[num] = 0
 
     def file_communication(self):
         """
         Interaction between python and Prolog files.
         :return:
         """
-        # ------------------------------------- File Communication ----------------------------------
+        # --------------------------------- File Communication --------------------------------
         # All shared control variables and parameters are passed to a temporary Prolog file
-        text_file = open("Parameter.pro", "w")
+        text_file = open(self.path + "/Parameter.pro", "w")
 
-        # -- Control Flags --
-        if self.flag_excitation_type == 'current':
-            text_file.write(f"Flag_ImposedVoltage = 0;\n")
-        if self.flag_excitation_type == 'voltage':
-            text_file.write(f"Flag_ImposedVoltage = 1;\n")
-        if self.conductor_type == 'litz':
-            text_file.write(f"Flag_HomogenisedModel = 1;\n")
-        else:
-            text_file.write(f"Flag_HomogenisedModel = 0;\n")
-        text_file.write("Flag_imposedRr = %s;\n" % self.flag_imposed_reduced_frequency)
-        # -- Geometry --
-        # Number of conductors
-        text_file.write(f"NbrCond = {self.n_conductors};\n")
-        # For stranded Conductors:
-        text_file.write(f"NbrstrandedCond = {self.n_conductors};\n")  # redundant
-        text_file.write(f"NbrStrands = {self.n_strands};\n")
-        text_file.write(f"Rc = {self.conductor_radius};\n")
-        text_file.write(f"Fill = {self.FF};\n")
-        text_file.write(f"NbrLayers = {self.n_layers};\n")
-        #text_file.write(f"NbrLayers = 0;\n")
-        #text_file.write(f"AreaCell = {self.A_cell};\n")
-        text_file.write(f"AreaCell = {self.A_cell};\n")
+        # Magnetic Component Type
+        if self.component_type == 'inductor':
+            text_file.write(f"Flag_Transformer = 0;\n")
+        if self.component_type == 'transformer':
+            text_file.write(f"Flag_Transformer = 1;\n")
+
+        # Frequency
+        text_file.write("Freq = %s;\n" % self.frequency)
+        text_file.write(f"delta = {self.delta};\n")
+
+        # Conductor specific definitions
+        for num in range(0, self.n_conductors):
+            # -- Control Flags --
+            if self.flag_excitation_type == 'current':
+                text_file.write(f"Flag_ImposedVoltage = 0;\n")
+            if self.flag_excitation_type == 'voltage':
+                text_file.write(f"Flag_ImposedVoltage = 1;\n")
+            if self.conductor_type[num] == 'litz':  # xfmr
+                text_file.write(f"Flag_HomogenisedModel{num+1} = 1;\n")
+            else:
+                text_file.write(f"Flag_HomogenisedModel{num+1} = 0;\n")
+            text_file.write("Flag_imposedRr = %s;\n" % self.flag_imposed_reduced_frequency)
+
+            # -- Geometry --
+            # Number of conductors
+            text_file.write(f"NbrCond{num+1} = {self.turns[num]};\n")
+            # For stranded Conductors:
+            # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
+            if self.conductor_type[num] == "litz":
+                text_file.write(f"NbrStrands{num+1} = {self.n_strands[num]};\n")
+                text_file.write(f"Fill{num+1} = {self.FF[num]};\n")
+                text_file.write(f"NbrLayers{num+1} = {self.n_layers[num]};\n")
+            text_file.write(f"AreaCell{num+1} = {self.A_cell[num]};\n")
+            text_file.write(f"Rc{num+1} = {self.conductor_radius[num]};\n")
+
+            # -- Excitation --
+            # Imposed current, current density or voltage
+            if self.flag_excitation_type == 'current':
+                text_file.write(f"Val_EE_{num+1} = {self.current[num]};\n")
+            if self.flag_excitation_type == 'current_density':
+                text_file.write(f"Val_EE_{num+1} = {self.current_density[num]};\n")
+            if self.flag_excitation_type == 'voltage':
+                text_file.write(f"Val_EE_{num+1} = {self.voltage[num]};\n")
+            print(f"Cell surface area: {self.A_cell[num]} \n"
+                  f"Reduced frequency: {self.red_freq[num]}")
+            # Reduced Frequency
+            text_file.write(f"Rr{num+1} = {self.red_freq[num]};\n")
+
         """
         # Coordinates of the rectangular winding window
-        if self.axi_symmetric == 1:
+        if self.dimensionality == "2D axi":
             text_file.write("Xw1 = %s;\n" % self.p_window[4, 0])
             text_file.write("Xw2 = %s;\n" % self.p_window[5, 0])
         else:
@@ -700,20 +870,6 @@ class MagneticComponent:
         if self.frequency != 0:
             text_file.write(f"Flag_NL = 0;\n")
             text_file.write(f"mur = {self.mu_rel};\n")
-
-        # -- Excitation --
-        # Imposed current, current density or voltage
-        if self.flag_excitation_type == 'current':
-            text_file.write(f"Val_EE = {self.current};\n")
-        if self.flag_excitation_type == 'current_density':
-            text_file.write(f"Val_EE = {self.current_density};\n")
-        if self.flag_excitation_type == 'voltage':
-            text_file.write(f"Val_EE = {self.voltage};\n")
-
-        # Frequency and reduced Frequency
-        text_file.write("Freq = %s;\n" % self.frequency)
-        text_file.write(f"delta = {self.delta};\n")
-        text_file.write(f"Rr = {self.red_freq};\n")
 
         text_file.close()
 
@@ -748,51 +904,45 @@ class MagneticComponent:
         # Mesh
         gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
 
-        if self.conductor_type != 'litz':
+        view = 0
+
+        #if self.conductor_type[0] != 'litz':
+        if any(type != 'litz' for type in self.conductor_type):
             # Ohmic losses (weightend effective value of current density)
-            gmsh.open("res/j2F.pos")
-            gmsh.option.setNumber("View[0].ScaleType", 2)
-            gmsh.option.setNumber("View[0].RangeType", 2)
-            gmsh.option.setNumber("View[0].SaturateValues", 1)
-            gmsh.option.setNumber("View[0].CustomMin", gmsh.option.getNumber("View[0].Min") + epsilon)
-            gmsh.option.setNumber("View[0].CustomMax", gmsh.option.getNumber("View[0].Max"))
-            gmsh.option.setNumber("View[0].ColormapNumber", 1)
-            gmsh.option.setNumber("View[0].IntervalsType", 2)
-            gmsh.option.setNumber("View[0].NbIso", 40)
+            gmsh.open(self.path + "/res/j2F.pos")
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+            gmsh.option.setNumber(f"View[view].RangeType", 2)
+            gmsh.option.setNumber(f"View[view].SaturateValues", 1)
+            gmsh.option.setNumber(f"View[view].CustomMin", gmsh.option.getNumber(f"View[view].Min") + epsilon)
+            gmsh.option.setNumber(f"View[view].CustomMax", gmsh.option.getNumber(f"View[view].Max"))
+            gmsh.option.setNumber(f"View[view].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[view].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[view].NbIso", 40)
+            print(gmsh.option.getNumber("View[view].Max"))
+            view += 1
 
-            # Magnetic flux density
-            gmsh.open("res/Magb.pos")
-            gmsh.option.setNumber("View[1].ScaleType", 1)
-            gmsh.option.setNumber("View[1].RangeType", 1)
-            gmsh.option.setNumber("View[1].CustomMin", gmsh.option.getNumber("View[1].Min") + epsilon)
-            gmsh.option.setNumber("View[1].CustomMax", gmsh.option.getNumber("View[1].Max"))
-            gmsh.option.setNumber("View[1].ColormapNumber", 1)
-            gmsh.option.setNumber("View[1].IntervalsType", 2)
-            gmsh.option.setNumber("View[1].NbIso", 40)
-
-            print(gmsh.option.getNumber("View[0].Max"))
-
-        if self.conductor_type == 'litz':
+        if any(type == 'litz' for type in self.conductor_type):
             # Ohmic losses (weightend effective value of current density)
-            gmsh.open("res/jH.pos")
-            gmsh.option.setNumber("View[0].ScaleType", 1)
-            # gmsh.option.setNumber("View[0].RangeType", 2)
-            # gmsh.option.setNumber("View[0].SaturateValues", 1)
-            # gmsh.option.setNumber("View[0].CustomMin", gmsh.option.getNumber("View[0].Min") + epsilon)
-            # gmsh.option.setNumber("View[0].CustomMax", gmsh.option.getNumber("View[0].Max"))
-            gmsh.option.setNumber("View[0].ColormapNumber", 1)
-            gmsh.option.setNumber("View[0].IntervalsType", 2)
-            gmsh.option.setNumber("View[0].NbIso", 40)
-
-            # Magnetic flux density
-            gmsh.open("res/MagbH.pos")
-            gmsh.option.setNumber("View[1].ScaleType", 1)
-            gmsh.option.setNumber("View[1].RangeType", 1)
-            gmsh.option.setNumber("View[1].CustomMin", gmsh.option.getNumber("View[1].Min") + epsilon)
-            gmsh.option.setNumber("View[1].CustomMax", gmsh.option.getNumber("View[1].Max"))
-            gmsh.option.setNumber("View[1].ColormapNumber", 1)
-            gmsh.option.setNumber("View[1].IntervalsType", 2)
-            gmsh.option.setNumber("View[1].NbIso", 40)
+            gmsh.open(self.path + "/res/jH.pos")
+            gmsh.option.setNumber(f"View[view].ScaleType", 2)
+            gmsh.option.setNumber("View[view].RangeType", 2)
+            gmsh.option.setNumber("View[view].SaturateValues", 1)
+            gmsh.option.setNumber("View[view].CustomMin", gmsh.option.getNumber("View[view].Min") + epsilon)
+            gmsh.option.setNumber("View[view].CustomMax", gmsh.option.getNumber("View[view].Max"))
+            gmsh.option.setNumber(f"View[view].ColormapNumber", 1)
+            gmsh.option.setNumber(f"View[view].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[view].NbIso", 40)
+            view += 1
+        # Magnetic flux density
+        gmsh.open(self.path + "/res/Magb.pos")
+        gmsh.option.setNumber(f"View[view].ScaleType", 1)
+        gmsh.option.setNumber(f"View[view].RangeType", 1)
+        gmsh.option.setNumber(f"View[view].CustomMin", gmsh.option.getNumber(f"View[view].Min") + epsilon)
+        gmsh.option.setNumber(f"View[view].CustomMax", gmsh.option.getNumber(f"View[view].Max"))
+        gmsh.option.setNumber(f"View[view].ColormapNumber", 1)
+        gmsh.option.setNumber(f"View[view].IntervalsType", 2)
+        gmsh.option.setNumber(f"View[view].NbIso", 40)
+        view += 1
 
         gmsh.fltk.run()
         gmsh.finalize()
@@ -857,15 +1007,16 @@ class MagneticComponent:
         femm.mi_setblockprop('Copper', 0, 1, 'icoil', 0, 0, 1)
         femm.mi_clearselected()
         """
-        if self.conductor_type == "litz" or self.conductor_type == "solid":
-            for i in range(0, int(self.p_conductor.shape[0] / 5)):
-                # 0: center | 1: left | 2: top | 3: right | 4.bottom
-                femm.mi_drawarc(self.p_conductor[5*i+1][0], self.p_conductor[5*i+1][1], self.p_conductor[5*i+3][0], self.p_conductor[5*i+3][1], 180, 2.5)
-                femm.mi_addarc(self.p_conductor[5*i+3][0], self.p_conductor[5*i+3][1], self.p_conductor[5*i+1][0], self.p_conductor[5*i+1][1],  180, 2.5)
-                femm.mi_addblocklabel(self.p_conductor[5*i][0], self.p_conductor[5*i][1])
-                femm.mi_selectlabel(self.p_conductor[5*i][0], self.p_conductor[5*i][1])
-                femm.mi_setblockprop('Copper', 1, 1, 'icoil', 0, 0, 1)
-                femm.mi_clearselected
+        for num in range(0, self.n_conductors):
+            if self.conductor_type == "litz" or self.conductor_type == "solid":
+                for i in range(0, int(self.p_conductor[num].shape[0] / 5)):
+                    # 0: center | 1: left | 2: top | 3: right | 4.bottom
+                    femm.mi_drawarc(self.p_conductor[num][5*i+1][0], self.p_conductor[num][5*i+1][1], self.p_conductor[num][5*i+3][0], self.p_conductor[num][5*i+3][1], 180, 2.5)
+                    femm.mi_addarc(self.p_conductor[num][5*i+3][0], self.p_conductor[num][5*i+3][1], self.p_conductor[num][5*i+1][0], self.p_conductor[num][5*i+1][1],  180, 2.5)
+                    femm.mi_addblocklabel(self.p_conductor[num][5*i][0], self.p_conductor[num][5*i][1])
+                    femm.mi_selectlabel(self.p_conductor[num][5*i][0], self.p_conductor[num][5*i][1])
+                    femm.mi_setblockprop('Copper', 1, 1, 'icoil', 0, 0, 1)
+                    femm.mi_clearselected
 
         # Define an "open" boundary condition using the built-in function:
         femm.mi_makeABC()
@@ -939,7 +1090,7 @@ class MagneticComponent:
 
     def data_logging(self, sim_choice):
         """
-        !!! not ready implemented !!!
+        !!! not finally implemented !!!
 
         This method shall do the saving and loading of results! with date and time
         :return:
@@ -986,81 +1137,82 @@ class MagneticComponent:
         Used to determine the litz-approximation coefficients.
         :return:
         """
-        if self.conductor_type == 'litz':
+        for num in range(0, self.n_conductors):
+            if self.conductor_type[num] == 'litz':
 
-            if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat"):
-            #if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat"):
-                print("Coefficients for stands approximation are found.")
+                if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat"):
+                #if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat"):
+                    print("Coefficients for stands approximation are found.")
 
-            else:
-                print("Create coefficients for strands approximation")
-                # need reduced frequency X for pre-simulation
-                # Rounding X to fit it with corresponding parameters from the database
-                X = self.red_freq
-                X = np.around(X, decimals=3)
-                print(f"Rounded Reduced frequency X = {X}")
+                else:
+                    print("Create coefficients for strands approximation")
+                    # need reduced frequency X for pre-simulation
+                    # Rounding X to fit it with corresponding parameters from the database
+                    X = self.red_freq[num]
+                    X = np.around(X, decimals=3)
+                    print(f"Rounded Reduced frequency X = {X}")
 
-                # Create new file with [0 1] for the first element entry
+                    # Create new file with [0 1] for the first element entry
 
-                # create a new onelab client
-                # -- Pre-Simulation Settings --
-                text_file = open("pre/PreParameter.pro", "w")
-                text_file.write(f"NbrLayers = {self.n_layers};\n")
-                #text_file.write(f"NbrLayers = 0;\n")
-                text_file.write(f"Fill = {self.FF};\n")
-                print("Here")
-                text_file.write(f"Rc = {self.strand_radius};\n")  # double named!!! must be changed
-                text_file.close()
-                self.onelab_setup()
-                c = onelab.client(__file__)
-                cell_geo = c.getPath('pre/cell.geo')
+                    # create a new onelab client
+                    # -- Pre-Simulation Settings --
+                    text_file = open(self.path + "/pre/PreParameter.pro", "w")
+                    text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
+                    #text_file.write(f"NbrLayers = 0;\n")
+                    text_file.write(f"Fill = {self.FF[num]};\n")
+                    print("Here")
+                    text_file.write(f"Rc = {self.strand_radius[num]};\n")  # double named!!! must be changed
+                    text_file.close()
+                    self.onelab_setup()
+                    c = onelab.client(__file__)
+                    cell_geo = c.getPath('pre/cell.geo')
 
-                # Run gmsh as a sub client
-                mygmsh = self.onelab + 'gmsh'
-                c.runSubClient('myGmsh', mygmsh + ' ' + cell_geo + ' -2 -v 2')
+                    # Run gmsh as a sub client
+                    mygmsh = self.onelab + 'gmsh'
+                    c.runSubClient('myGmsh', mygmsh + ' ' + cell_geo + ' -2 -v 2')
 
-                modes = [1, 2]  # 1 = "skin", 2 = "proximity"
-                reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
-                for mode in modes:
-                    for rf in reduced_frequencies:
-                        # -- Pre-Simulation Settings --
-                        text_file = open("pre/PreParameter.pro", "w")
-                        text_file.write(f"Rr_cell = {rf};\n")
-                        text_file.write(f"Mode = {mode};\n")
-                        text_file.write(f"NbrLayers = {self.n_layers};\n")
-                        #text_file.write(f"NbrLayers = 0;\n")
-                        text_file.write(f"Fill = {self.FF};\n")
-                        text_file.write(f"Rc = {self.strand_radius};\n")  # double named!!! must be changed
-                        text_file.close()
+                    modes = [1, 2]  # 1 = "skin", 2 = "proximity"
+                    reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
+                    for mode in modes:
+                        for rf in reduced_frequencies:
+                            # -- Pre-Simulation Settings --
+                            text_file = open(self.path + "/pre/PreParameter.pro", "w")
+                            text_file.write(f"Rr_cell = {rf};\n")
+                            text_file.write(f"Mode = {mode};\n")
+                            text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
+                            #text_file.write(f"NbrLayers = 0;\n")
+                            text_file.write(f"Fill = {self.FF[num]};\n")
+                            text_file.write(f"Rc = {self.strand_radius[num]};\n")  # double named!!! must be changed
+                            text_file.close()
 
-                        # get model file names with correct path
-                        input_file = c.getPath('pre/cell_dat.pro')
-                        cell = c.getPath('pre/cell.pro')
+                            # get model file names with correct path
+                            input_file = c.getPath('pre/cell_dat.pro')
+                            cell = c.getPath('pre/cell.pro')
 
-                        # Run simulations as sub clients
-                        mygetdp = self.onelab + 'getdp'
-                        c.runSubClient('myGetDP', mygetdp + ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
+                            # Run simulations as sub clients
+                            mygetdp = self.onelab + 'getdp'
+                            c.runSubClient('myGetDP', mygetdp + ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
 
-                # Formatting stuff
-                files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_{self.n_layers}layer.dat",
-                         self.path + f"/pre/coeff/pI_RS_la{self.FF}_{self.n_layers}layer.dat",
-                         self.path + f"/pre/coeff/qB_RS_la{self.FF}_{self.n_layers}layer.dat",
-                         self.path + f"/pre/coeff/qI_RS_la{self.FF}_{self.n_layers}layer.dat"]
-                #files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat",
-                #         self.path + f"/pre/coeff/pI_RS_la{self.FF}_0layer.dat",
-                #         self.path + f"/pre/coeff/qB_RS_la{self.FF}_0layer.dat",
-                #         self.path + f"/pre/coeff/qI_RS_la{self.FF}_0layer.dat"]
-                for i in range(0, 4):
-                    with fileinput.FileInput(files[i], inplace=True) as file:
-                        for line in file:
-                            print(line.replace(' 0\n', '\n'), end='')
+                    # Formatting stuff
+                    files = [self.path + f"/pre/coeff/pB_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat",
+                             self.path + f"/pre/coeff/pI_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat",
+                             self.path + f"/pre/coeff/qB_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat",
+                             self.path + f"/pre/coeff/qI_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat"]
+                    #files = [self.path + f"/pre/coeff/pB_RS_la{self.FF}_0layer.dat",
+                    #         self.path + f"/pre/coeff/pI_RS_la{self.FF}_0layer.dat",
+                    #         self.path + f"/pre/coeff/qB_RS_la{self.FF}_0layer.dat",
+                    #         self.path + f"/pre/coeff/qI_RS_la{self.FF}_0layer.dat"]
+                    for i in range(0, 4):
+                        with fileinput.FileInput(files[i], inplace=True) as file:
+                            for line in file:
+                                print(line.replace(' 0\n', '\n'), end='')
 
-                # Corrects pB coefficient error at 0Hz
-                # Must be changed in future in cell.pro
-                for i in range(0, 4):
-                    with fileinput.FileInput(files[i], inplace=True) as file:
-                        for line in file:
-                            print(line.replace(' 0\n', ' 1\n'), end='')
+                    # Corrects pB coefficient error at 0Hz
+                    # Must be changed in future in cell.pro
+                    for i in range(0, 4):
+                        with fileinput.FileInput(files[i], inplace=True) as file:
+                            for line in file:
+                                print(line.replace(' 0\n', ' 1\n'), end='')
 
     def pre_simulation(self):
         """

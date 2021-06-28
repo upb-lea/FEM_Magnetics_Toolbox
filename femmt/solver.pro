@@ -36,9 +36,9 @@ FunctionSpace {
   { Name Hcurl_a_2D ; Type Form1P ; // Split for TD + homog: subspace isolating unknowns
     BasisFunction {
       { Name se ; NameOfCoef ae ; Function BF_PerpendicularEdge ;
-        Support Domain ; Entity NodesOf[ All, Not Winding ] ; }
+        Support Domain ; Entity NodesOf[ All, Not DomainC ] ; }
       { Name seh ; NameOfCoef aeh ; Function BF_PerpendicularEdge ;
-        Support Domain ; Entity NodesOf[ Winding ] ; }
+        Support Domain ; Entity NodesOf[ DomainC ] ; }
     }
     SubSpace {
       { Name aH ; NameOfBasisFunction {seh}; } // Subspace only used in TD homog
@@ -63,7 +63,6 @@ FunctionSpace {
       { NameOfCoef I ; EntityType Region ; NameOfConstraint Current_2D ; }
     }
   }
-
 
   { Name Hregion_i_2D ; Type Vector ;
     BasisFunction {
@@ -120,7 +119,10 @@ Formulation {
        { Name Iz ; Type Global ; NameOfSpace Hregion_Z [Iz] ; }
     }
 
+
     Equation {
+
+      // 1
       Galerkin { [ nu[] * Dof{d a} , {d a} ]  ;
         In Domain_Lin ; Jacobian Vol ; Integration II ; }
       If(Flag_NL)
@@ -130,16 +132,34 @@ Formulation {
           In Domain_NonLin ; Jacobian Vol ; Integration II ; }
       EndIf
 
+      // 2
       Galerkin { DtDof [ sigma[] * Dof{a} , {a} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
       Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {a} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
 
+      // 3
       Galerkin { DtDof [ sigma[] * Dof{a} , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
       Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
-      GlobalTerm { [ Dof{I}, {U} ] ; In DomainC ; }
+      If(!Flag_HomogenisedModel1)
+        GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
+      EndIf
+      If(Flag_Transformer)
+        If(!Flag_HomogenisedModel2)
+          GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
+        EndIf
+      EndIf
+
+      // 4
+      // together
+      Galerkin { [ -1/AreaCell[] * Dof{ir}, {a} ] ;
+        In DomainS ; Jacobian Vol ; Integration II ; }
+      Galerkin { DtDof [ 1/AreaCell[] * Dof{a}, {ir} ] ;
+        In DomainS ; Jacobian Vol ; Integration II ; }
+      //GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In DomainS ; }
+
 
       //Galerkin { [ -Ns[]/Sc[] * Dof{ir}, {a} ] ;
       //  In DomainS ; Jacobian Vol ; Integration II ; }
@@ -150,6 +170,7 @@ Formulation {
       //  In DomainS ; Jacobian Vol ; Integration II ; }
       //GlobalTerm { [ Dof{Us}/CoefGeo , {Is} ] ; In DomainS ; }
 
+      /* together
       If(Flag_Circuit)
         GlobalTerm { NeverDt[ Dof{Uz}                , {Iz} ] ; In Resistance_Cir ; }
         GlobalTerm { NeverDt[ Resistance[] * Dof{Iz} , {Iz} ] ; In Resistance_Cir ; }
@@ -168,59 +189,9 @@ Formulation {
           { Node {Iz}; Loop {Uz}; Equation {Uz}; In DomainZt_Cir ; }
         }
       EndIf
+      */
     }
   }
 
-
-  { Name MagDyn_a_Homog ; Type FemEquation ;
-    Quantity {
-      { Name a  ; Type Local  ; NameOfSpace Hcurl_a_2D ; }
-
-      { Name ir ; Type Local  ; NameOfSpace Hregion_i_2D ; }
-      { Name Us ; Type Global ; NameOfSpace Hregion_i_2D[Us] ; }
-      { Name Is ; Type Global ; NameOfSpace Hregion_i_2D[Is] ; }
-
-      { Name Uz ; Type Global ; NameOfSpace Hregion_Z [Uz] ; }
-      { Name Iz ; Type Global ; NameOfSpace Hregion_Z [Iz] ; }
-    }
-
-    Equation {
-
-      Galerkin { [ nu[] * Dof{d a} , {d a} ]  ;
-        In Domain_Lin ; Jacobian Vol ; Integration II ; }
-
-      If(Flag_NL)
-        Galerkin { [ nu[{d a}] * Dof{d a} , {d a} ]  ;
-          In Domain_NonLin ; Jacobian Vol ; Integration II ; }
-        Galerkin { JacNL [ dhdb_NL[{d a}] * Dof{d a} , {d a} ] ;
-          In Domain_NonLin ; Jacobian Vol ; Integration II ; }
-      EndIf
-
-      Galerkin { [ -1/AreaCell * Dof{ir}, {a} ] ;
-        In DomainS ; Jacobian Vol ; Integration II ; }
-      Galerkin { DtDof [ 1/AreaCell * Dof{a}, {ir} ] ;
-        In DomainS ; Jacobian Vol ; Integration II ; }
-      GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ]     ; In DomainS ; }
-
-      // Circuit equations
-      If(Flag_Circuit)
-        GlobalTerm { NeverDt[ Dof{Uz}                , {Iz} ] ; In Resistance_Cir ; }
-        GlobalTerm { NeverDt[ Resistance[] * Dof{Iz} , {Iz} ] ; In Resistance_Cir ; }
-
-        GlobalTerm { [ Dof{Uz}                      , {Iz} ] ; In Inductance_Cir ; }
-        GlobalTerm { DtDof [ Inductance[] * Dof{Iz} , {Iz} ] ; In Inductance_Cir ; }
-
-        GlobalTerm { [ Dof{Iz}        , {Iz} ] ; In Capacitance1_Cir ; }
-        GlobalTerm { NeverDt[ Dof{Iz} , {Iz} ] ; In Capacitance2_Cir ; }
-        GlobalTerm { DtDof [ Capacitance[] * Dof{Uz} , {Iz} ] ; In Capacitance_Cir ; }
-
-        GlobalEquation {
-          Type Network ; NameOfConstraint ElectricalCircuit ;
-          { Node {Is};  Loop {Us};  Equation {Us}; In DomainS ; }
-          { Node {Iz};  Loop {Uz};  Equation {Uz}; In DomainZt_Cir ; }
-        }
-      EndIf
-    }
-  }
 
 }
