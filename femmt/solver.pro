@@ -9,7 +9,7 @@ Jacobian {
   { Name Sur ; Case { { Region All ; Jacobian SurAxi ; } } }
 }
 
-// ... so oder so ähnlich für den nicht-axialsymmetrischen Fall
+// ... so oder so ähnlich für den nicht-radialaxialsymmetrischen Fall
 //Jacobian {
 //  { Name Vol;
 //    Case {
@@ -106,6 +106,8 @@ Formulation {
   { Name MagDyn_a ; Type FemEquation ;
     Quantity {
        { Name a  ; Type Local  ; NameOfSpace Hcurl_a_2D ; }
+       //{ Name tmp  ; Type Local  ; NameOfSpace Hcurl_a_2D ; }
+       //{ Name jc  ; Type Local  ; NameOfSpace Hcurl_a_2D ; }
 
        { Name ur ; Type Local  ; NameOfSpace Hregion_u_2D  ; }  // = nabla*el.potential = grad*phi
        { Name I  ; Type Global ; NameOfSpace Hregion_u_2D[I] ; }
@@ -119,6 +121,17 @@ Formulation {
        { Name Iz ; Type Global ; NameOfSpace Hregion_Z [Iz] ; }
     }
 
+    /*
+    Equation {
+      Galerkin { [  Dof{tmp} , {tmp} ]; In Domain; Integration II; Jacobian Vol;  }
+      Galerkin { [ nu[{d a}] * {d a} , {tmp} ]; In Domain; Integration II; Jacobian Vol;  }
+    }
+
+    Equation {
+      Galerkin { [  Dof{jc} , {jc} ]; In Domain; Integration II; Jacobian Vol;  }
+      Galerkin { [ sigma[]*(Dt[{a}]+{ur}/CoefGeo) , {jc} ]; In Domain; Integration II; Jacobian Vol;  }
+    }
+    */
 
     Equation {
 
@@ -144,11 +157,15 @@ Formulation {
       Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
       If(!Flag_HomogenisedModel1)
-        GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
+        If(Val_EE_1!=0)
+          GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
+        EndIf
       EndIf
       If(Flag_Transformer)
         If(!Flag_HomogenisedModel2)
-          GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
+          If(Val_EE_2!=0)
+            GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
+          EndIf
         EndIf
       EndIf
 
