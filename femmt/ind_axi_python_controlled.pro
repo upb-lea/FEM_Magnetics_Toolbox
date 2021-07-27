@@ -62,6 +62,7 @@ Group{
       StrandedWinding1  += Region[{(istrandedCOND1+isF-1)}] ;
   EndFor
 
+
   // Transformer
   If(Flag_Transformer) // xfmr
     nbturns2 = NbrCond2/SymFactor; // Secondary
@@ -135,6 +136,7 @@ Group{
 // ----------------------
 Function {
 
+
   AreaCell[#{StrandedWinding1}] = AreaCell1;
   If(Flag_Transformer)
     AreaCell[#{StrandedWinding2}] = AreaCell2;
@@ -146,7 +148,7 @@ Function {
 
   sigma[#{Winding1, Winding2}] = SigmaCu ;
   sigma[#{Air, Iron}] = 0.;
-  rho[] = 1/sigma[];
+  //rho[] = 1/sigma[];
 
   nu[#{Air}] = nu0;
   nu[#{Winding1, Winding2}] = nu0;
@@ -168,12 +170,14 @@ Function {
 
   EndIf
 
-
-  FSinusoidal1[] = Complex_MH[1,0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
-  //FSinusoidal2[] = Complex_MH[1, 180]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
-
+  // Excitation Current
+  FSinusoidal1[] = F_Cos_wt_p[]{2*Pi*Freq, Phase_1}; //Complex_MH[1,0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
   Fct_Src1[] = FSinusoidal1[];
-  Fct_Src2[] = FSinusoidal1[];
+
+  If(Flag_Transformer)
+    FSinusoidal2[] = F_Cos_wt_p[]{2*Pi*Freq, Phase_2}; //Complex_MH[1, 0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
+    Fct_Src2[] = FSinusoidal2[];
+  EndIf
 
   // Auxiliary functions for post-processing
   nuOm[#{Air}] = -nu[]*Complex[0.,1.];
@@ -262,20 +266,23 @@ Constraint {
   { Name Current_2D ;
     Case {
       // Inductor + Transformer
-      If(Flag_Circuit==0 && Flag_HomogenisedModel1==0)
-        { Region Winding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
+      If(Val_EE_1!=0)
+          If(Flag_Circuit==0 && Flag_HomogenisedModel1==0)
+            { Region Winding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
+          EndIf
+          If(Flag_Circuit==0 && Flag_HomogenisedModel1==1)
+            { Region StrandedWinding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
+          EndIf
       EndIf
-      If(Flag_Circuit==0 && Flag_HomogenisedModel1==1)
-        { Region StrandedWinding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
-      EndIf
-
       // Transformer
       If(Flag_Transformer)
-        If(Flag_Circuit==0 && Flag_HomogenisedModel2==0)
-          { Region Winding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
-        EndIf
-        If(Flag_Circuit==0 && Flag_HomogenisedModel2==1)
-          { Region StrandedWinding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
+        If(Val_EE_2!=0)
+            If(Flag_Circuit==0 && Flag_HomogenisedModel2==0)
+              { Region Winding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
+            EndIf
+            If(Flag_Circuit==0 && Flag_HomogenisedModel2==1)
+              { Region StrandedWinding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
+            EndIf
         EndIf
       EndIf
     }
@@ -380,6 +387,70 @@ PostProcessing {
       { Name b ; Value { Term { [ {d a} ] ; In Domain ; Jacobian Vol ; } } }
       { Name Magb ; Value { Term { [ Norm[ {d a} ] ]; In Domain ; Jacobian Vol ; } } }
       { Name h ; Value { Term { [ nu[{d a}]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
+
+      //{ Name normal ; Value { Term { [ Normal[] ] ; In Domain ; Jacobian Vol ; } } }
+      //{ Name tangent ; Value { Term { [ Tangent[] ] ; In Domain ; Jacobian Vol ; } } }
+
+      /*
+      //{ Name tmp ; Value {
+      //    Term { [  nu[{d a}] * {d a}  ]; In Domain ; Jacobian Vol ; }
+      //} }
+
+
+      // Error Estimations for adaptive mesh refinement
+      { Name integrated_error ; Value {
+          Integral { [ SquNorm[ -1 * { d tmp } - sigma[]*(Dt[{a}]+{ur}/CoefGeo)] +
+                       SquNorm[ -1 * { d tmp } - sigma[]*(Dt[{a}]+{ur}/CoefGeo)] +
+                       SquNorm[ Cross [ Normal[], nu[{d a}] * {d a} ] ]
+                     ];
+          In Domain ; Jacobian Vol ; Integration II ;
+      } } }
+
+      { Name errora ; Value {
+          Term { [   Sqrt [ SquNorm[  ElementVol[] * ( Cross [ Normal[], nu[{d a}] * {d a} ] ) ]
+                     ] ];
+          In Domain ; Jacobian Vol ;
+      } } }
+
+      { Name error ; Value {
+          Term { [   Sqrt [ SquNorm[ ElementVol[] * ( -1 * { d tmp } - sigma[]*(Dt[{a}]+{ur}/CoefGeo) ) ] +
+                            //SquNorm[ ElementVol[] * ( sigma[]*( Dt[{a}] + {ur} ) * Normal[] ) ] +
+                            SquNorm[  ElementVol[] * ( Cross [ Normal[], nu[{d a}] * {d a} ] ) ]
+                     ] ];
+          In Domain ; Jacobian Vol ;
+      } } }
+
+      { Name errorb ; Value {
+          Term { [   Sqrt [ SquNorm[ ( -1 * { d tmp } - sigma[]*(Dt[{a}]+{ur}/CoefGeo) ) ] +
+                            //SquNorm[ ( sigma[]*( Dt[{a}] + {ur} ) * Normal[] ) ] +
+                            SquNorm[ ( Cross [ Normal[], nu[{d a}] * {d a} ] ) ]
+                     ] ];
+          In Domain ; Jacobian Vol ; Integration II ;
+      } } }
+
+      { Name error1 ; Value {
+          Term { [ Norm[ -1 * { d tmp } - sigma[]*(Dt[{a}]+{ur}/CoefGeo)] ];
+          In Domain ; Jacobian Vol ; Integration II ;
+      } } }
+
+      //{ Name error2 ; Value {
+      //    Term { [ Norm[ {Div jc} ] ];
+      //    In DomainC ; Jacobian Vol ; Integration II ;
+      //} } }
+
+      { Name jc ; Value { Term { [ {jc} ] ; In Domain ; Jacobian Vol  ;} } }
+
+      { Name error4 ; Value {
+          Term { [ ElementVol[] * Norm[ Cross [ Normal[], nu[{d a}] * {d a} ] ] ];
+          In Domain ; Jacobian Vol ; Integration II ;
+      } } }
+
+      { Name error5 ; Value {
+          Term { [ Norm[ sigma[]*( Dt[{a}] + {ur} ) * Normal[] ] ];
+          In Domain ; Jacobian Vol ; Integration II ;
+      } } }
+      */
+
       { Name j ; Value {
         Term { [ -sigma[]*(Dt[{a}]+{ur}/CoefGeo) ] ; In DomainC ; Jacobian Vol ; }
         Term { [ -1/AreaCell[]*{ir} ] ; In DomainS ; Jacobian Vol ; }
@@ -389,10 +460,19 @@ PostProcessing {
           Term { [ CompZ[ -1/AreaCell[]*{ir} ] ] ; In DomainS ; Jacobian Vol ; }
       } }
 
+      { Name e ; Value {
+          Term { [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ; In Domain ; Jacobian Vol ; }
+      } }
+
+      { Name MagEz ; Value {
+          Term { [ Norm [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ] ; In Domain ; Jacobian Vol ; }
+      } }
+
 
       { Name J_rms ; Value {
-          //Term { [ CompZ[ -sigma[]*(Dt[{a}]+{ur}/CoefGeo) ] ] ; In DomainC ; Jacobian Vol ; }
-          Term { [ CompZ[ {ir}/AreaCell[] ] ] ; In DomainS ; Jacobian Vol ; }
+          Term { [ Norm[ CompZ[ -sigma[]*(Dt[{a}]+{ur}/CoefGeo) ] ] ] ; In DomainC ; Jacobian Vol ; }
+          Term { [ Norm[ CompZ[ {ir}/AreaCell[] ] ] ] ; In DomainS ; Jacobian Vol ; }
+          Term { [ Norm[ 0 ] ] ; In Domain_Lin_NoJs ; Jacobian Vol ; } //non_lin case is missing
       } }
 
       //{ Name b2av ; Value { Integral { [ CoefGeo*{d a}/AreaCell[] ] ;
@@ -420,6 +500,7 @@ PostProcessing {
              [ 0.5*CoefGeo*( Re[{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added by Till
              In DomainS ; Jacobian Vol ; Integration II ; } } }
       EndIf
+
 
       { Name j2Hprox ; Value { Integral { // Joule losses
             [ 0.5*CoefGeo*Re[{d a}*Conj[nuOm[]*{d a}]] ] ;// 0.5 added by Till
@@ -466,17 +547,51 @@ PostProcessing {
           Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
             In Domain ; Jacobian Vol ; Integration II ; } } }
 
+      { Name ElectEnergy ; Value {
+          Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
+            In Domain ; Jacobian Vol ; Integration II ; } } }
 
-      //{ Name Flux ; Value {
-      //    Integral { [ Lz*Idir[]*NbWires[]/SurfCoil[]* CompZ[{a}] ] ;
-      //      In Inds  ; Jacobian Vol ; Integration II ; } } }
 
-      //{ Name Inductance_from_Flux ; Value { Term { Type Global; [ $Flux * 1/Val_EE ] ;
-      //  In DomainDummy ; } } }
+      { Name Flux ; Value {
+          Integral { [ NbrCond1/AreaCell1 * Norm[{a}] ] ;
+            In Domain  ; Jacobian Vol ; Integration II ; } } }
+
+//      { Name Flux ; Value {
+//          Integral { [ SymmetryFactor*Lz*Idir[]*NbWires[]/SurfCoil[]* CompZ[{a}] ] ;
+//            In Inds  ; Jacobian Vol ; Integration I1 ; } } }
+
+/*
+      { Name Inductance_from_Flux ;
+        Value { Term { Type Global; [ $Flux / Val_EE_1 ] ; In Domain ; } } } // xfmr
+
+//      { Name Inductance_from_Flux ; Value {
+//          Integral { [ NbrCond1/AreaCell1 * CompZ[{a}] / Val_EE_1 ] ;
+//            In Winding1  ; Jacobian Vol ; Integration II ; } } }
+*/
 
       { Name Inductance_from_MagEnergy ;
         Value { Term { Type Global; [ 2 * $MagEnergy * 1/(Val_EE_1*Val_EE_1) ] ; In Domain ; } } } // xfmr
-     }
+
+    If(Val_EE_1!=0)
+         { Name L_11 ;
+            Value { Term { Type Global; [ 2 * $MagEnergy * 1/(Val_EE_1*Val_EE_1) ] ; In Domain ; } } } // xfmr
+    EndIf
+
+     If(Flag_Transformer)// xfmr
+
+     //    { Name L_12 ;
+     //       Value { Term { Type Global; [ 2 * $MagEnergy * 1/(Val_EE_1*Val_EE_2) ] ; In Domain ; } } } // xfmr
+
+     //    { Name L_21 ;
+     //      Value { Term { Type Global; [ 2 * $MagEnergy * 1/(Val_EE_2*Val_EE_1) ] ; In Domain ; } } } // xfmr
+
+        If(Val_EE_2!=0)
+            { Name L_22 ;
+               Value { Term { Type Global; [ 2 * $MagEnergy * 1/(Val_EE_2*Val_EE_2) ] ; In Domain ; } } } // xfmr
+        EndIf
+     EndIf
+
+    }
   }
 }
 
@@ -488,17 +603,30 @@ PostProcessing {
 
 // -- No Homogenisation --
 PostOperation Map_local UsingPost MagDyn_a {
-  Print[ raz,OnElementsOf Domain,  File StrCat[DirRes, "a", ExtGmsh], LastTimeStepOnly ] ;
-  Print[ ur,OnElementsOf Domain,  File StrCat[DirRes, "ur", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ raz,OnElementsOf Domain,  File StrCat[DirRes, "a", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ ur,OnElementsOf Domain,  File StrCat[DirRes, "ur", ExtGmsh], LastTimeStepOnly ] ;
+
+  //Print[ e,  OnElementsOf Domain,  File StrCat[DirRes, "e", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ MagEz,  OnElementsOf Domain,  File StrCat[DirRes, "MagEz", ExtGmsh],  LastTimeStepOnly ] ;
 
   //Print[ b,  OnElementsOf Domain,  File StrCat[DirRes, "b", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ h,  OnElementsOf Domain,  File StrCat[DirRes, "h", ExtGmsh],  LastTimeStepOnly ] ;
   Print[ Magb,  OnElementsOf Domain,  File StrCat[DirRes, "Magb", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ Flux,  OnElementsOf Domain,  File StrCat[DirRes, "Flux_field", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ MagEnergy,  OnElementsOf Domain,  File StrCat[DirRes, "MagEnergy", ExtGmsh],  LastTimeStepOnly ] ;
-
-  Print[ jz, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirRes, "jz", ExtGmsh], LastTimeStepOnly ] ;
-  Print[ j, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirRes, "j", ExtGmsh], LastTimeStepOnly ] ;
-  Print[ J_rms, OnElementsOf Region[{DomainC}], File StrCat[DirRes, "J_rms", ExtGmsh], LastTimeStepOnly ] ;
+  /*
+  Print[ error, OnElementsOf Region[{Domain}], File StrCat[DirRes, "error", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ error1, OnElementsOf Region[{Domain}], File StrCat[DirRes, "error1", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ jc, OnElementsOf Region[{Domain}], File StrCat[DirRes, "jc", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ error2, OnElementsOf Region[{Domain}], File StrCat[DirRes, "error2", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ error4, OnElementsOf Region[{Domain}], File StrCat[DirRes, "error4", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ error5, OnElementsOf Region[{Domain}], File StrCat[DirRes, "error5", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ normal, OnElementsOf Region[{Domain}], File StrCat[DirRes, "normal", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ tangent, OnElementsOf Region[{Domain}], File StrCat[DirRes, "tangent", ExtGmsh], LastTimeStepOnly ] ;
+  */
+  //Print[ jz, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirRes, "jz", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ j, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirRes, "j", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ J_rms, OnElementsOf Region[{Domain}], File StrCat[DirRes, "J_rms", ExtGmsh], LastTimeStepOnly ] ;
   Print[ j2F, OnElementsOf Region[{DomainC}], File StrCat[DirRes, "j2F", ExtGmsh], LastTimeStepOnly ] ;
 
   // together Losses
@@ -528,7 +656,23 @@ PostOperation Map_local UsingPost MagDyn_a {
   Print[ MagEnergy[Domain], OnGlobal, Format TimeTable,
     File > StrCat[DirRes,"ME.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
   //Print[ MagEnergy, OnRegion Domain, Format Table, File Sprintf("res/MagEnergy.dat") ];
-  Print[ Inductance_from_MagEnergy, OnRegion Domain, Format Table, File Sprintf("res/Inductance.dat") ];
+  //Print[ Inductance_from_MagEnergy, OnRegion Domain, Format Table, File Sprintf("res/Inductance.dat") ];
+
+  If(Val_EE_1!=0)
+    //Print[ L_11, OnRegion Domain, Format Table, File Sprintf("res/L_11.dat") ];
+    Print[ L_11, OnRegion Domain, Format TimeTable, File > Sprintf("res/L_11.dat")] ;
+  EndIf
+  If(Flag_Transformer)// xfmr
+      //Print[ L_12, OnRegion Domain, Format Table, File Sprintf("res/L_12.dat") ];
+      //Print[ L_21, OnRegion Domain, Format Table, File Sprintf("res/L_21.dat") ];
+      If(Val_EE_2!=0)
+        //Print[ L_22, OnRegion Domain, Format Table, File Sprintf("res/L_22.dat")] ;
+        Print[ L_22, OnRegion Domain, Format TimeTable, File > Sprintf("res/L_22.dat")] ;
+
+      EndIf
+  EndIf
+  //Print[ Inductance_from_Flux, OnRegion Domain, Format Table, File Sprintf("res/Inductance_from_Flux.dat") ];
+  //Print[ Flux[Winding1], OnGlobal, Format Table, File Sprintf("res/Flux.dat") ];
 }
 
 PostOperation Get_global UsingPost MagDyn_a {

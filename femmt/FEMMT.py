@@ -13,6 +13,7 @@ from matplotlib import pyplot as plt
 # FEM and Mesh interfaces
 import femm
 import gmsh
+# import adapt_mesh
 from onelab import onelab
 # Self written functions
 from functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
@@ -38,7 +39,7 @@ class MagneticComponent:
         # -- Control Flags --
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
         self.dimensionality = "2D axi"  # Axial-symmetric model (idealized full-cylindrical)
-        self.s = 0.5  # Parameter for mesh-accuracy
+        self.s = 1  # Parameter for mesh-accuracy
         self.component_type = component_type  # "inductor" or "transformer"
 
         # -- Core --
@@ -50,7 +51,7 @@ class MagneticComponent:
 
         # -- Air gaps --
         self.n_air_gaps = 1  # Number of air gaps [==1: air gap in center | >1: random air gaps]
-        self.air_gaps = np.empty((self.n_air_gaps, 4))  # list with [position_tag, airgap_position, airgap_h, c_airgap]
+        self.air_gaps = np.empty((self.n_air_gaps, 4))  # list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
 
         # -- Isolation ---
         self.core_cond_isolation = 0.001  # gap between Core and Conductors
@@ -84,15 +85,6 @@ class MagneticComponent:
         self.p_air_gaps = None
 
         # ==============================
-        # Meshing
-        # ==============================
-        # -- Characteristic lengths -- [for mesh sizes]
-        self.c_core = self.core_w/10. * self.s
-        self.c_window = self.window_w/10 * self.s
-        self.c_conductor = self.window_w/30 * self.s
-        self.c_airgap = None
-
-        # ==============================
         # Materials
         # ==============================
         # frequency = 0: mu_rel only used if flag_non_linear_core == 0
@@ -113,8 +105,20 @@ class MagneticComponent:
         self.current_density = [None] * self.n_conductors  # Defined for every conductor
         self.voltage = [None] * self.n_conductors  # Defined for every conductor
         self.frequency = None
+        self.phase_tmp = np.zeros(self.n_conductors)  # Default is zero, Defined for every conductor
         self.red_freq = [None] * self.n_conductors  # Defined for every conductor
         self.delta = None
+
+        # ==============================
+        # Meshing
+        # ==============================
+        # -- Characteristic lengths -- [for mesh sizes]
+        self.skin_mesh_factor = None
+        self.c_core = self.core_w/10. * self.s
+        self.c_window = self.window_w/10 * self.s
+        self.c_conductor = [None] * self.n_conductors  # self.delta  # self.s /20 #self.window_w/30 * self.s
+        self.c_center_conductor = [None] * self.n_conductors  # used for the mesh accuracy in the conductors
+        self.c_air_gap = []
 
         # -- Used for Litz Validation --
         self.sweep_frequencies = None
@@ -151,43 +155,73 @@ class MagneticComponent:
                 # tba 3D Group
                 None
 
-    def update_air_gaps(self, method="random", **kwargs):
+    def update_air_gaps(self, method="center", n_air_gaps=[], position_tag=[0], air_gap_position=[0], air_gap_h=[0.001],
+                        **kwargs):
         """
-        - "self.air_gaps" is a list with [position_tag, airgap_position, airgap_h, c_airgap]
-           - postition_tag: specifies the gapped "leg"
-           - airgap_position: specifies the coordinate of the air gap's center point along the specified leg
+        - "self.air_gaps" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
+           - position_tag: specifies the gapped "leg"
+           - air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
            - air_gap_h: height/length of the air gap
            - c_air_gap: mesh accuracy factor
-        :param method:
+        - "EI 2D axi": position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
+        :param n_air_gaps:
+        :param position_tag:
+        :param air_gap_h:
+        :param air_gap_position:
+        :param method: "random", "center", "percent", "manually"
         :return:
         """
+        self.n_air_gaps = n_air_gaps
+        self.air_gaps = np.empty((self.n_air_gaps, 4))
+        self.c_air_gap = [None] * self.n_air_gaps
 
+        """
         # Optional updating the number of air gaps
         for key, value in kwargs.items():
             if key == 'n_air_gaps':
                 self.n_air_gaps = value
+        """
 
         # Update air gaps with chosen method
-        if method == "random" and self.dimensionality=="2D axi":
+        if method == "center" and self.dimensionality == "2D axi":
+            if self.n_air_gaps > 1:
+                print(f"{self.n_air_gaps} are too many air gaps for the 'center' option!")
+                raise Warning
+            else:
+                self.c_air_gap[0] = air_gap_h[0] / 3 * self.s
+                self.air_gaps[0, :] = np.array([0, 0, air_gap_h[0], self.c_air_gap[0]])
+
+        if method == "random" and self.dimensionality == "2D axi":
+            position_tag = [0] * self.n_air_gaps
+
             i = 0
             while i in range(0, self.n_air_gaps):
-                position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
-                if self.n_air_gaps == 1:
-                    airgap_h = 0.001
-                    airgap_position = 0.5 * (self.window_h - airgap_h) - (self.window_h / 2 - airgap_h / 2)
-                else:
-                    airgap_h = np.random.rand(1) * 0.005 + 0.001
-                    airgap_position = np.random.rand(1) * (self.window_h - airgap_h) - (self.window_h / 2 - airgap_h / 2)
-                self.c_airgap = airgap_h / 3 * self.s
+                height = np.random.rand(1) * 0.001 + 0.001
+                position = np.random.rand(1) * (self.window_h - height) - (self.window_h / 2 - height / 2)
+                self.c_air_gap[i] = height / 3 * self.s
                 # Overlapping Control
                 for j in range(0, self.air_gaps.shape[0]):
-                    if position_tag == self.air_gaps[j, 0] and self.air_gaps[j, 1] + self.air_gaps[
-                        j, 2] / 2 > airgap_position > \
-                            self.air_gaps[j, 1] - self.air_gaps[j, 2] / 2:
-                        print("Overlapping air Gaps have been corrected")
+                    if self.air_gaps[j, 1]+self.air_gaps[j, 2]/2 > position > self.air_gaps[j, 1]-self.air_gaps[j, 2]/2:
+                        if position_tag[i] == self.air_gaps[j, 0]:
+                            print(f"Overlapping air Gaps have been corrected")
                 else:
-                    self.air_gaps[i, :] = np.array([position_tag, airgap_position, airgap_h, self.c_airgap])
+                    self.air_gaps[i, :] = np.array([position_tag[i], position, height, self.c_air_gap[i]])
                     i += 1
+
+        if (method == "manually" or method == "percent") and self.dimensionality == "2D axi":
+            for i in range(0, self.n_air_gaps):
+                if method == "percent":
+                    air_gap_position[i] = air_gap_position[i] / 100 * (self.window_h - air_gap_h[i]) - (
+                                self.window_h / 2 - air_gap_h[i] / 2)
+                # Overlapping Control
+                for j in range(0, self.air_gaps.shape[0]):
+                    if self.air_gaps[j, 1]+self.air_gaps[j, 2]/2 > air_gap_position[i] > self.air_gaps[j, 1]-self.air_gaps[j, 2]/2:
+                        if position_tag[i] == self.air_gaps[j, 0]:
+                            print(f"Overlapping Air Gap")
+                            raise Warning
+                else:
+                    self.c_air_gap[i] = air_gap_h[i] / 3 * self.s
+                    self.air_gaps[i, :] = np.array([position_tag[i], air_gap_position[i], air_gap_h[i], self.c_air_gap[i]])
 
     def update_conductors(self, n_turns=[], conductor_type=[], conductor_radix=[], layer_numbers=[], strand_radix=[]):
         """
@@ -242,6 +276,7 @@ class MagneticComponent:
         - needed to always make sure that the relation between litz parameters (strand radius, fill factor, number of
           layers/strands and conductor/litz radius) is valid and consistent
         - 4 parameters, 1 degree of freedom (dof)
+        :param num:
         :param litz_parametrization_type:
         :param strand_radius:
         :param ff:
@@ -297,7 +332,7 @@ class MagneticComponent:
         else:
             self.onelab = call_for_path("onelab")
 
-    def high_level_geo_gen(self, core_type="EI", dimensionality="2D axi"):
+    def high_level_geo_gen(self, core_type="EI", dimensionality="2D axi", frequency=None, skin_mesh_factor=1):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
@@ -307,6 +342,21 @@ class MagneticComponent:
         # ==============================
         # High-Level Geometry Generation
         # ==============================
+
+        # Update Skin Depth (needed for meshing)
+        self.skin_mesh_factor = skin_mesh_factor
+        if frequency != None:
+            if frequency == 0:
+                self.delta = 1e9
+            else:
+                self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.sigma * self.mu0))
+            for i in range(0, len(self.conductor_radius)):
+                self.c_conductor[i] = min([self.delta * self.skin_mesh_factor,
+                                    self.conductor_radius[i] / 4 * self.skin_mesh_factor])
+        for i in range(0, len(self.conductor_radius)):
+            self.c_center_conductor[i] = self.conductor_radius[i] / 4 * self.skin_mesh_factor
+
+        print(f"Werte Leiter: {self.c_conductor, self.c_center_conductor}")
 
         # -- Core-type --
         if self.core_type == core_type:
@@ -326,9 +376,7 @@ class MagneticComponent:
         :return:
         """
         # -- Air Gap Data -- [random air gap generation]
-
-
-        self.update_air_gaps()
+        #self.update_air_gaps()
 
         # -- Arrays for geometry data -- [all points with (x, y, z, mesh_accuracy)]
         self.p_outer = np.zeros((4, 4))
@@ -416,12 +464,17 @@ class MagneticComponent:
                 left_bound = self.core_w/2
                 right_bound = r_inner - self.core_cond_isolation
 
-                # xfmr: oben prim - unten sek
-                if num == 0:
+                if self.component_type == "transformer":
+                    # xfmr: oben prim - unten sek
+                    if num == 0:
+                        top_bound = self.window_h/2
+                        bot_bound = 0
+                    if num == 1:
+                        top_bound = 0
+                        bot_bound = -self.window_h/2
+
+                if self.component_type == "inductor":
                     top_bound = self.window_h/2
-                    bot_bound = 0
-                if num == 1:
-                    top_bound = 0
                     bot_bound = -self.window_h/2
 
 
@@ -431,11 +484,11 @@ class MagneticComponent:
                 # Case n_conductors higher that "allowed" is missing
                 while y < top_bound-self.core_cond_isolation-self.conductor_radius[num] and i < self.turns[num]:
                     while x < right_bound-self.core_cond_isolation-self.conductor_radius[num] and i < self.turns[num]:
-                        self.p_conductor[num].append([x, y, 0, self.c_conductor])
-                        self.p_conductor[num].append([x-self.conductor_radius[num], y, 0, self.c_conductor])
-                        self.p_conductor[num].append([x, y+self.conductor_radius[num], 0, self.c_conductor])
-                        self.p_conductor[num].append([x+self.conductor_radius[num], y, 0, self.c_conductor])
-                        self.p_conductor[num].append([x, y-self.conductor_radius[num], 0, self.c_conductor])
+                        self.p_conductor[num].append([x, y, 0, self.c_center_conductor[num]])
+                        self.p_conductor[num].append([x-self.conductor_radius[num], y, 0, self.c_conductor[num]])
+                        self.p_conductor[num].append([x, y+self.conductor_radius[num], 0, self.c_conductor[num]])
+                        self.p_conductor[num].append([x+self.conductor_radius[num], y, 0, self.c_conductor[num]])
+                        self.p_conductor[num].append([x, y-self.conductor_radius[num], 0, self.c_conductor[num]])
                         i += 1
                         x += self.conductor_radius[num] * 2 + self.cond_cond_isolation
                     y += self.conductor_radius[num] * 2 + self.cond_cond_isolation
@@ -444,11 +497,11 @@ class MagneticComponent:
                 if int(self.p_conductor[num].shape[0]/5) < self.turns[num]:
                     print("Could not resolve all conductors.")
                     self.turns[num] = int(self.p_conductor[num].shape[0]/5)
-
+                print(f"Conductors: {self.p_conductor}")
         # - Air gaps -
-        # "air_gaps" is a list with [position_tag, airgap_position, airgap_h, c_airgap]
-        #   - postition_tag: specifies the gapped "leg"
-        #   - airgap_position: specifies the coordinate of the air gap's center point along the specified leg
+        # "air_gaps" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
+        #   - position_tag: specifies the gapped "leg"
+        #   - air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
         #   - air_gap_h: height/length of the air gap
         #   - c_air_gap: mesh accuracy factor
         # at this point the 4 corner points of each air gap are generated out of "air_gaps"
@@ -474,14 +527,308 @@ class MagneticComponent:
                 self.p_air_gaps[i * 4 + 2] = [self.core_w / 2 + self.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
                 self.p_air_gaps[i * 4 + 3] = [self.core_w + self.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
 
-    def generate_mesh(self):
+    def triangle_max_edge(self, x):
+        a = np.sum((x[:, 0, :] - x[:, 1, :]) ** 2, 1) ** 0.5
+        b = np.sum((x[:, 0, :] - x[:, 2, :]) ** 2, 1) ** 0.5
+        c = np.sum((x[:, 1, :] - x[:, 2, :]) ** 2, 1) ** 0.5
+        return np.maximum(a, np.maximum(b, c))
+
+    def triangle_mean_edge(self, x):
+        a = np.sum((x[:, 0, :] - x[:, 1, :]) ** 2, 1) ** 0.5
+        b = np.sum((x[:, 0, :] - x[:, 2, :]) ** 2, 1) ** 0.5
+        c = np.sum((x[:, 1, :] - x[:, 2, :]) ** 2, 1) ** 0.5
+        return (a + b + c)/3
+
+    def compute_size_field_old(self, nodes, triangles, err, N):
+        x = nodes[triangles]
+        a = 2.
+        d = 2.
+        fact = (a ** ((2. + a) / (1. + a)) + a ** (1. / (1. + a))) * np.sum(err ** (2. / (1. + a)))
+        ri = err ** (2. / (2. * (1 + a))) * a ** (1. / (d * (1. + a))) * ((1. + a) * N / fact) ** (1. / d)
+        return self.triangle_max_edge(x) / ri
+
+    def compute_size_field(self, nodes, triangles, err, N):
+        x = nodes[triangles]
+        threshold = 0.01
+        print(f"Error{err}")
+        err[err > 0.1] = 0.5
+        err[err < 0.1] = 0.9
+        print(f"Error{err}")
+        return self.triangle_max_edge(x) * err
+        # return self.triangle_max_edge(x) - err**(0.1) * self.triangle_max_edge(x)
+
+    class Mesh:
+        def __init__(self):
+            self.vtags, vxyz, _ = gmsh.model.mesh.getNodes()
+            self.vxyz = vxyz.reshape((-1, 3))
+            vmap = dict({j: i for i, j in enumerate(self.vtags)})
+            self.triangles_tags, evtags = gmsh.model.mesh.getElementsByType(2)
+            evid = np.array([vmap[j] for j in evtags])
+            self.triangles = evid.reshape((self.triangles_tags.shape[-1], -1))
+
+    def refine_mesh(self, local=0):
+        """
+
+        :return:
+        """
+
+        # --------------------------------------
+        if local == 1:
+            self.generate_mesh(refine=1)
+
+        # --------------------------------------
+        if local == 0:
+            # Refine current mesh
+            gmsh.model.mesh.refine()
+            gmsh.model.mesh.generate(2)
+            # --------------------------------------
+            # Mesh generation
+            #gmsh.model.mesh.generate(2)
+            # Check operating system
+            if sys.platform == "linux" or sys.platform == "linux2":
+                gmsh.write(self.path + "/geometry.msh")
+            elif sys.platform == "darwin":
+                # OS X
+                gmsh.write(self.path + "/geometry.msh")
+            elif sys.platform == "win32":
+                gmsh.write(self.path + "/geometry.msh")  # Win10 can handle slash
+
+            # Terminate gmsh
+            gmsh.finalize()
+
+    def find_neighbours(self, file="res/J_rms.pos"):
+        # Open loss/error results
+        dest_file = open(self.path + "error.dat", "w")
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + '/res/J_rms.pos') as f:
+            read = 0
+            for line in f:
+                if line == "$ElementNodeData\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    # words = line.split(sep=' ')
+                    words = line.replace(' ', ', ')
+                    for word in words:
+                        dest_file.write(word)
+        dest_file.close()
+
+    def alternative_local_error(self, loss_file='/res/J_rms.pos'):
+        """
+
+        :return:
+        """
+        # Open loss/error results
+        error_file = open(self.path + "/mesh_error.dat", "w")
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + loss_file) as f:
+            read = 0
+            for line in f:
+                if line == "$ElementNodeData\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    # words = line.split(sep=' ')
+                    words = line.replace(' ', ', ')
+                    for word in words:
+                        error_file.write(word)
+        error_file.close()
+
+        # Load local Error values
+        data = pd.read_csv(self.path + "/mesh_error.dat")
+        local_error = data.iloc[:, 2].to_numpy()
+        local_error = np.insert(local_error, 0, 0., axis=0)
+
+        local_error = local_error / np.max(local_error) + 0.001
+        print(f"Längen: {len(local_error), local_error} ")  # first of the 3 loss values
+
+        # ---- Open post-processing results ----
+
+        # Elements ----
+        elements = []
+        values = []
+        # error_file = open(self.path + "/mesh_error.dat", "w")
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + '/res/J_rms.pos') as file:
+            read = 0
+            for line in file:
+                if line == "$Elements\n" or line == "$EndElements\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    words = line.split(sep=' ')
+                    elements.append(words)
+
+        # Convert Elements to Dataframe
+        element_frame = pd.DataFrame(elements)
+        # Dropout not needed columns
+        element_frame.drop(element_frame.columns[[1, 2, 3, 4, 8]], axis=1, inplace=True)
+        element_frame.columns = ['NumElement', 'Node1', 'Node2', 'Node3']
+        print(f"Number of Elements: {len(elements)}\n"
+              # f"Elements: {elements}\n"
+              f"Element Dataframe: {element_frame}")
+        element_frame.to_csv(path_or_buf="elements.txt")
+
+        # Values ----
+        with open(self.path + '/res/J_rms.pos') as file:
+            read = 0
+            for line in file:
+                if line == "$ElementNodeData\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    words = re.split(' |\n', line)
+                    values.append(words)
+
+        # Convert Values to Dataframe
+        value_frame = pd.DataFrame(values)
+        # Dropout not needed columns
+        value_frame.drop(value_frame.columns[[1, 5]], axis=1, inplace=True)
+        value_frame.columns = ['NumElement', 'Node1', 'Node2', 'Node3']
+        # value_frame['NumElement', 'Node1', 'Node2', 'Node3'] = pd.to_numeric(value_frame['NumElement', 'Node1', 'Node2', 'Node3'], downcast="float")
+        value_frame['NumElement'] = pd.to_numeric(value_frame['NumElement'], downcast="float")
+        value_frame['Node1'] = pd.to_numeric(value_frame['Node1'], downcast="float")
+        value_frame['Node2'] = pd.to_numeric(value_frame['Node2'], downcast="float")
+        value_frame['Node3'] = pd.to_numeric(value_frame['Node3'], downcast="float")
+        print(f"Number of Values: {len(values)}\n"
+              # f"Values: {values}\n"
+              f"Values Dataframe: {value_frame}")
+
+        # ---- Neighbour algorithm || Error calculation ----
+        local_error = np.zeros(len(element_frame.index))
+
+        nodes = ['Node1', 'Node2', 'Node3']
+        for i in value_frame.index:
+            mean_cell = 0
+            # Mean loss per cell
+            for node in nodes:
+                mean_cell += value_frame[node][i] / len(nodes)
+            # Local Variance
+            for node in nodes:
+                local_error[i] += (value_frame[node][i] - mean_cell) ** 2
+
+        # Distribute Local Error on neighbour cells
+        nodes_neighbours_found = []
+        distribution_factor = 2
+
+        """
+        local_error_copy = local_error
+        print(local_error)
+
+        # every element
+        for i in element_frame.index:
+            # every element's node
+            for node in nodes:
+                # Node already considered?
+                if not element_frame[node][i] in nodes_neighbours_found:
+                    nodes_neighbours_found += element_frame[node][i]
+                    # Value[Node] == 0 ? : skip
+                    if not value_frame[node][i] == 0:
+                        # search in every element for Node
+                        for j in element_frame.index:
+                            for node in nodes:
+                                if value_frame[node][j] == 0:
+                                    # add some error in neighboured Nodes
+                                    if element_frame[node][j] == element_frame[node][i]:
+                                        local_error_copy[j] += local_error[i] * distribution_factor
+
+
+        local_error = local_error_copy
+        """
+        print(local_error)
+        # Error Normalization
+        return local_error / np.max(local_error) + 0.0001
+
+        # print(f"Local Error: {local_error[3387]}\n"
+        #      f"Length of Local Error: {len(local_error)}")
+        """
+        # Load local Error values
+        data = pd.read_csv(self.path + "/mesh_error.dat")
+        local_error = data.iloc[:, 2].to_numpy()
+        local_error = np.insert(local_error, 0, 0., axis=0)
+
+        local_error = local_error/np.max(local_error) + 0.001
+        print(len(local_error), local_error)  # first of the 3 loss values
+        """
+
+    def local_error(self, loss_file='/res/error.pos'):
+        """
+        - Method shall return the normalized numeric local error of the last adaptive simulation step
+        - Local error can be used to optimize the mesh in the next iteration step
+        :return:
+        """
+        # Open loss/error results
+        error_file = open(self.path + "/mesh_error.dat", "w")
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + loss_file) as f:
+            read = 0
+            for line in f:
+                if line == "$ElementNodeData\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    # words = line.split(sep=' ')
+                    words = line.replace(' ', ', ')
+                    for word in words:
+                        error_file.write(word)
+        error_file.close()
+
+        # Load local Error values
+        data = pd.read_csv(self.path + "/mesh_error.dat")
+        print(f"Data: {data}")
+        local_error = data.iloc[:, 2].to_numpy()
+        local_error = np.insert(local_error, 0, 1e-5, axis=0)
+
+        return local_error / np.max(local_error)
+        print(f"Längen: {len(local_error), local_error} ")
+
+    def create_background_mesh(self):
+        gmsh.open(self.path + "/geometry.msh")  # Open current mesh
+        N = 50000  # Number of elements after remeshing
+        mesh = self.Mesh()  # Create virtual mesh
+        """
+        print(f"Mesh nodes: {mesh.vxyz} \n "
+              f"Mesh nodes.shape: {mesh.vxyz.shape} \n "
+              f"Mesh node tags: {mesh.vtags} \n"
+              f"Mesh triangles: {mesh.triangles} \n"
+              f"Mesh triangles.shape: {mesh.triangles.shape} \n"
+              f"Mesh triangle tags: {mesh.triangles_tags} \n"
+              )
+        """  # some printing options
+
+        err_view = gmsh.view.add("element-wise error")
+        gmsh.view.addModelData(err_view, 0, "geometry", "ElementData", mesh.triangles_tags, local_error[:, None])
+        gmsh.view.write(err_view, "err.pos")
+
+        # Refinement
+        sf_ele = self.compute_size_field(mesh.vxyz, mesh.triangles, local_error, N)
+        np.savetxt("sf_ele.txt", sf_ele)
+        sf_view = gmsh.view.add("mesh size field")
+        gmsh.view.addModelData(sf_view, 0, "geometry", "ElementData", mesh.triangles_tags, sf_ele[:, None])
+        gmsh.view.write(sf_view, "sf.pos")
+
+    def generate_mesh(self, refine=0, alternative_error=0):
         """
         - interaction with gmsh
         - mesh generation
+            - Skin depth based forward meshing
+            [- adaptive refinement
+                - with the help of mesh-size-fields/background meshes
+                - with an appropriate local error metric ]
         :return:
         """
-        # Initialization
+       # Initialization
         gmsh.initialize()
+
+        if refine == 1:
+            # Choose applied Error Function
+            if alternative_error == 1:
+                local_error = self.alternative_local_error()  # something like current density
+            else:
+                local_error = self.local_error()  # Here a "real" numeric error should be applied
+
+            self.create_background_mesh()
+
         gmsh.option.setNumber("General.Terminal", 1)
         gmsh.model.add("geometry")
         # ------------------------------------------ Geometry -------------------------------------------
@@ -629,7 +976,7 @@ class MagneticComponent:
                     for num in range(0, self.n_conductors):
                         for i in range(0, self.p_conductor[num].shape[0]):
                             p_cond[num].append(gmsh.model.geo.addPoint(self.p_conductor[num][i][0],
-                                                                  self.p_conductor[num][i][1], 0, self.c_conductor))
+                                                                  self.p_conductor[num][i][1], 0, self.p_conductor[num][i][3]))
                         # Curves of Conductors
                         if self.conductor_type[num] == "litz" or self.conductor_type[num] == "solid":
                             for i in range(0, int(len(p_cond[num]) / 5)):
@@ -646,6 +993,7 @@ class MagneticComponent:
                                     [l_cond[num][i * 4 + 0], l_cond[num][i * 4 + 1], l_cond[num][i * 4 + 2], l_cond[num][i * 4 + 3]]))
                                 plane_surface_cond[num].append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[num][i]]))
                         else:
+                            # Rectangle conductor cut
                             for i in range(0, int(len(p_cond[num]) / 4)):
                                 l_cond[num].append(gmsh.model.geo.addLine(p_cond[num][4 * i + 0], p_cond[num][4 * i + 2]))
                                 l_cond[num].append(gmsh.model.geo.addLine(p_cond[num][4 * i + 2], p_cond[num][4 * i + 3]))
@@ -694,7 +1042,6 @@ class MagneticComponent:
                 for i in range(0, self.turns[num]):
                     ps_cond[num].append(gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[num][i]], tag=6000 + 1000*num + i))
 
-
         # Air
         ps_air = gmsh.model.geo.addPhysicalGroup(2, plane_surface_air, tag=1000)
         # Boundary
@@ -706,6 +1053,49 @@ class MagneticComponent:
                 gmsh.model.setPhysicalName(2, ps_cond[num][i], f"COND{num+1}")
         gmsh.model.setPhysicalName(2, ps_air, "AIR")
         gmsh.model.setPhysicalName(1, pc_bound, "BOUND")
+
+        # Remove Points from Model
+        #for i in range(9,39):
+        #    gmsh.model.geo.remove(dimTags=[(0, i)])
+        print(f"P_cond: {p_cond}")
+
+        # Forward Meshing
+        # Inter Conductors
+        for num in range(0, self.n_conductors):
+            p_inter = []
+            x_inter = []
+            y_inter = []
+            j = 0
+
+            if self.turns[num] > 1:
+                while self.p_conductor[num][5*j][1] == self.p_conductor[num][5*j+5][1]:
+                    x_inter.append(0.5*(self.p_conductor[num][5*j][0]+self.p_conductor[num][5*j+5][0]))
+                    j += 1
+                    if j == self.turns[num]-1:
+                        break
+                j += 1
+                print(f"j = {j}")
+                if int(self.turns[num]/j) > 1:
+                    for i in range(0, int(self.turns[num]/j)):
+                        if 5*j*i+5*j >= len(self.p_conductor[num][:]):
+                            break
+                        y_inter.append(0.5*(self.p_conductor[num][5*j*i][1]+self.p_conductor[num][5*j*i+5*j][1]))
+                    for x in x_inter:
+                        for y in y_inter:
+                            p_inter.append(gmsh.model.geo.addPoint(x, y, 0, self.c_center_conductor[num]))
+            print(f"x_inter = {x_inter}")
+            print(f"y_inter = {y_inter}")
+            print(f"p_inter = {p_inter}")
+
+        # Synchronize
+        gmsh.model.geo.synchronize()
+        # Conductor Center
+        for num in range(0, self.n_conductors):
+            for i in range(0, int(len(p_cond[num]) / 5)):
+                gmsh.model.mesh.embed(0, [p_cond[num][5 * i + 0]], 2, plane_surface_cond[num][i])
+
+        # Inter Conductors
+        gmsh.model.mesh.embed(0, p_inter, 2, plane_surface_air[0])
 
         # Synchronize again
         gmsh.model.geo.synchronize()
@@ -722,9 +1112,17 @@ class MagneticComponent:
         for num in range(0, self.n_conductors):
             for i in range(0, len(plane_surface_cond[num])):
                 gmsh.model.setColor([(2, plane_surface_cond[num][i])], 150, 150, 0)
-
-        # Mesh generation
-        gmsh.model.mesh.generate(2)
+        # -----------------------------------------
+        if refine == 1:
+            print("\n ------- \nRefined Mesh Creation ")
+            # mesh the new gmsh.model using the size field
+            bg_field = gmsh.model.mesh.field.add("PostView")
+            gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
+            gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
+            gmsh.model.mesh.generate(2)
+            gmsh.write("geometry.msh")
+        else:
+            gmsh.model.mesh.generate(2)
 
         # Check operating system
         if sys.platform == "linux" or sys.platform == "linux2":
@@ -741,11 +1139,12 @@ class MagneticComponent:
         # Terminate gmsh
         gmsh.finalize()
 
-    def excitation(self, f, i, nonlinear=0, ex_type='current', imposed_red_f=0):
+    def excitation(self, f, i, phases=[], nonlinear=0, ex_type='current', imposed_red_f=0, ):
         """
         - excitation of the electromagnetic problem
         - current, voltage or current density
         - frequency or reduced frequency
+        :param phases:
         :param f:
         :param i:
         :param nonlinear:
@@ -758,10 +1157,13 @@ class MagneticComponent:
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         self.flag_non_linear_core = nonlinear
 
+        phases = np.asarray(phases)
         for num in range(0, self.n_conductors):
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
                 self.current[num] = i[num]
+                if len(phases) != 0:
+                    self.phase_tmp = phases/180
             if self.flag_excitation_type == 'current_density':
                 raise NotImplementedError
             if self.flag_excitation_type == 'voltage':
@@ -832,6 +1234,7 @@ class MagneticComponent:
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
                 text_file.write(f"Val_EE_{num+1} = {self.current[num]};\n")
+                text_file.write(f"Phase_{num+1} = Pi*{self.phase_tmp[num]};\n")
             if self.flag_excitation_type == 'current_density':
                 text_file.write(f"Val_EE_{num+1} = {self.current_density[num]};\n")
             if self.flag_excitation_type == 'voltage':
@@ -960,7 +1363,7 @@ class MagneticComponent:
 
         # == Pre Geometry ==
         self.high_level_geo_gen()
-        self.ei_axi()
+        #self.ei_axi()
 
         if self.n_air_gaps != 1:
             raise NotImplementedError
@@ -973,17 +1376,18 @@ class MagneticComponent:
         # == Materials ==
         femm.mi_addmaterial('Ferrite', 3000, 3000, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
-        if self.conductor_type == "litz":
-            femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 5, 0, 0, self.n_strands, 2*1000*self.strand_radius)  # type := 5. last argument
-        if self.conductor_type == "solid":
+        if self.conductor_type[0] == "litz":
+            femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 5, 0, 0, self.n_strands[0], 2*1000*self.strand_radius[0])  # type := 5. last argument
+            print(f"Strandsnumber: {self.n_strands[0]}")
+            print(f"Strandsdiameter in mm: {2 * 1000 * self.strand_radius[0]}")
+        if self.conductor_type[0] == "solid":
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 0, 0, 0, 0, 0)
 
-        print(f"Strandsnumber: {self.n_strands}")
-        print(f"Strandsdiameter in mm: {2*1000*self.strand_radius}")
+
 
         # == Circuit ==
         # coil as seen from the terminals.
-        femm.mi_addcircprop('icoil', current, 1)
+        femm.mi_addcircprop('icoil', current[0], 1)
 
         # == Geometry ==
         # Add core
@@ -1008,14 +1412,15 @@ class MagneticComponent:
         femm.mi_clearselected()
         """
         for num in range(0, self.n_conductors):
-            if self.conductor_type == "litz" or self.conductor_type == "solid":
+            if self.conductor_type[0] == "litz" or self.conductor_type[0] == "solid":
                 for i in range(0, int(self.p_conductor[num].shape[0] / 5)):
                     # 0: center | 1: left | 2: top | 3: right | 4.bottom
                     femm.mi_drawarc(self.p_conductor[num][5*i+1][0], self.p_conductor[num][5*i+1][1], self.p_conductor[num][5*i+3][0], self.p_conductor[num][5*i+3][1], 180, 2.5)
                     femm.mi_addarc(self.p_conductor[num][5*i+3][0], self.p_conductor[num][5*i+3][1], self.p_conductor[num][5*i+1][0], self.p_conductor[num][5*i+1][1],  180, 2.5)
                     femm.mi_addblocklabel(self.p_conductor[num][5*i][0], self.p_conductor[num][5*i][1])
                     femm.mi_selectlabel(self.p_conductor[num][5*i][0], self.p_conductor[num][5*i][1])
-                    femm.mi_setblockprop('Copper', 1, 1, 'icoil', 0, 0, 1)
+                    femm.mi_setblockprop('Copper', 0, 1e-4, 'icoil', 0, 0, 1)
+                    # femm.mi_setblockprop('Copper', 1, 0, 'icoil', 0, 0, 1)
                     femm.mi_clearselected
 
         # Define an "open" boundary condition using the built-in function:
@@ -1026,17 +1431,17 @@ class MagneticComponent:
         # Label for core
         femm.mi_addblocklabel(self.p_outer[3, 0]-0.001, self.p_outer[3, 1]-0.001)
         femm.mi_selectlabel(self.p_outer[3, 0]-0.001, self.p_outer[3, 1]-0.001)
-        femm.mi_setblockprop('Ferrite', 1, 1, '<None>', 0, 0, 0)
+        femm.mi_setblockprop('Ferrite', 1, 0, '<None>', 0, 0, 0)
         femm.mi_clearselected()
 
         # Labels for air
         femm.mi_addblocklabel(0.001, 0)
         femm.mi_selectlabel(0.001, 0)
-        femm.mi_setblockprop('Air', 1, 1, '<None>', 0, 0, 0)
+        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
         femm.mi_clearselected()
         femm.mi_addblocklabel(self.p_outer[3, 0]+0.001, self.p_outer[3, 1]+0.001)
         femm.mi_selectlabel(self.p_outer[3, 0]+0.001, self.p_outer[3, 1]+0.001)
-        femm.mi_setblockprop('Air', 1, 1, '<None>', 0, 0, 0)
+        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
         femm.mi_clearselected()
 
         # Now, the finished input geometry can be displayed.
@@ -1220,12 +1625,12 @@ class MagneticComponent:
         :return:
         """
         self.high_level_geo_gen()
-        self.excitation(f=100000, i=1)  # frequency and current
+        self.excitation(f=100000, i=1)  # arbitrary values: frequency and current
         self.file_communication()
         self.pre_simulate()
 
     # ==== Front-End Methods =====
-    def single_simulation(self, freq, current):
+    def single_simulation(self, freq, current, phi=[], skin_mesh_factor=1):
         """
         - can be used for a single simulation
         - no sweeping at all
@@ -1233,19 +1638,43 @@ class MagneticComponent:
         :param current:
         :return:
         """
-        self.high_level_geo_gen()
+        self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         self.generate_mesh()
-        self.excitation(f=freq, i=current)  # frequency and current
+        self.excitation(f=freq, i=current, phases=phi)  # frequency and current
         self.file_communication()
         self.pre_simulate()
         self.simulate()
         self.visualize()
 
-    def mesh(self):
-        self.high_level_geo_gen()
+    def adaptive_single_simulation(self, freq, current, phi=[], max_iter=1, local=0):
+        """
+        - can be used for a single simulation
+        - no sweeping at all
+        :param freq:
+        :param current:
+        :return:
+        """
+        self.high_level_geo_gen(frequency=freq)
+        self.generate_mesh()
+        self.excitation(f=freq, i=current, phases=phi)  # frequency and current
+        self.file_communication()
+        self.pre_simulate()
+        self.simulate()
+        self.visualize()
+
+        for i in range(0, max_iter):
+            self.refine_mesh(local=local)
+            self.excitation(f=freq, i=current, phases=phi)  # frequency and current
+            self.file_communication()
+            self.pre_simulate()
+            self.simulate()
+            self.visualize()
+
+    def mesh(self, frequency=None, skin_mesh_factor=1):
+        self.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
         self.generate_mesh()
 
-    def excitation_sweep(self, frequencies=[], currents=[], show_last=False):
+    def excitation_sweep(self, frequencies=[], currents=[], phi=[0, 180], show_last=False):
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -1261,11 +1690,11 @@ class MagneticComponent:
         :param show_last:
         :return:
         """
-        if len(frequencies) != len(currents):
-            print('len(frequencies) != len(currents)')
-            raise Exception
+        #if len(frequencies) != len(currents):
+        #    print('len(frequencies) != len(currents)')
+        #    raise Exception
         for i in range(0, len(frequencies)):
-            self.excitation(f=frequencies[i], i=currents[i])  # frequency and current
+            self.excitation(f=frequencies[i], i=currents[i], phases=phi)  # frequency and current
             self.file_communication()
             self.pre_simulate()
             self.simulate()
@@ -1275,6 +1704,7 @@ class MagneticComponent:
     def litz_loss_comparison(self, FF, n_layers, strand_radius, sim_choice, sweep_parameter='fill_factor', nametag=''):
         """
 
+        :param nametag:
         :param sweep_parameter:
         :param FF:
         :param n_layers:
@@ -1293,74 +1723,75 @@ class MagneticComponent:
         # Update model to chosen litz parameters
         self.update_litz_configuration(litz_parametrization_type='implicite_litz_radius', n_layers=n_layers,
                                        strand_radius=strand_radius, ff=FF)
-        if self.FF < 0.4 or self.FF > 0.9:
-            print(f"Skip simulation with non realistic fill factor {self.FF}")
+        for fill_factors in self.FF:
+            if fill_factors < 0.4 or fill_factors > 0.9:
+                print(f"Skip simulation with non realistic fill factor {fill_factors}")
 
-        else:
-            # Either read old data or create new dataframe
-            if sim_choice != 'show':
-                if not os.path.isfile(target_femm):
-                    df_pv_femm = pd.DataFrame([], index=None, columns=[])
-                    df_pv_femm.insert(loc=0, column=f"Frequencies", value=frequencies)
-                else:
-                    df_pv_femm = pd.read_json(target_femm)
-                if not os.path.isfile(target_femmt):
-                    df_pv_femmt = pd.DataFrame([], index=None, columns=[])
-                    df_pv_femmt.insert(loc=0, column=f"Frequencies", value=frequencies)
-                else:
-                    df_pv_femmt = pd.read_json(target_femmt)
-
-            # Column tags
-            femmt_col_tag = f"onelab, {self.n_layers}, {self.strand_radius}, {self.FF}"
-            femm_col_tag = f"femm, {self.n_layers}, {self.strand_radius}, {self.FF}"
-
-            # Prevent from rewriting already used parametrization
-            # rename duplicated tag by adding randomness | string of length 6
-            femmt_col_tags = df_pv_femmt.columns.values.tolist()
-            femm_col_tags = df_pv_femm.columns.values.tolist()
-            random_id = id_generator()
-            if any(femmt_col_tag in s for s in femmt_col_tags):
-                femmt_col_tag = femmt_col_tag + random_id
-            if any(femm_col_tag in s for s in femm_col_tags):
-                femm_col_tag = femm_col_tag + random_id
-
-            # -- Reference simulation with FEMM --
-            if sim_choice == 'both' or sim_choice == 'femm':
-                pv_femm = []
-                # Iterate on frequency
-                for f in frequencies:
-                    self.femm_reference(freq=f, current=2, sigma=58, non_visualize=1)
-                    pv_femm.append(self.tot_loss_femm.real)
-                # Add new or rewrite old data // Maybe ask for replacement and wait for 30 s then go on...
-                df_pv_femm.insert(loc=1, column=femm_col_tag, value=np.transpose(pv_femm), allow_duplicates=True)
-                # Save dataframes in .json files
-                df_pv_femm.to_json(target_femm, date_format=None)
-
-            # -- Onelab simulation with FEMMT --
-            if sim_choice == 'both' or sim_choice == 'femmt':
-                # High level geometry generation + Generate Mesh
-                self.mesh()
-                # Iterate on frequency
-                self.excitation_sweep(currents=currents, frequencies=frequencies)
-
-                # Get losses from Onelab result file
-                data = self.get_loss_data(last_n_values=len(frequencies), loss_type='litz_loss')
-
-                pv_femmt = []
-                for lines in data:
-                    print(re.findall(r"[-+]?\d*\.\d+|\d+", lines[0]))
-                    fls = re.findall(r"[-+]?\d*\.\d+|\d+", lines[0])
-                    if len(fls) == 3:
-                        pv_femmt.append(float(fls[1]))
+            else:
+                # Either read old data or create new dataframe
+                if sim_choice != 'show':
+                    if not os.path.isfile(target_femm):
+                        df_pv_femm = pd.DataFrame([], index=None, columns=[])
+                        df_pv_femm.insert(loc=0, column=f"Frequencies", value=frequencies)
                     else:
-                        pv_femmt.append(0.0)
-                        warnings.warn("There is something wrong with the Loss data!")
+                        df_pv_femm = pd.read_json(target_femm)
+                    if not os.path.isfile(target_femmt):
+                        df_pv_femmt = pd.DataFrame([], index=None, columns=[])
+                        df_pv_femmt.insert(loc=0, column=f"Frequencies", value=frequencies)
+                    else:
+                        df_pv_femmt = pd.read_json(target_femmt)
 
-                # Add new or rewrite old data
-                df_pv_femmt.insert(loc=1, column=femmt_col_tag, value=np.transpose(pv_femmt))
+                # Column tags
+                femmt_col_tag = f"onelab, {self.n_layers}, {self.strand_radius}, {self.FF}"
+                femm_col_tag = f"femm, {self.n_layers}, {self.strand_radius}, {self.FF}"
 
-                # Save dataframes in .json files
-                df_pv_femmt.to_json(target_femmt, date_format=None)
+                # Prevent from rewriting already used parametrization
+                # rename duplicated tag by adding randomness | string of length 6
+                femmt_col_tags = df_pv_femmt.columns.values.tolist()
+                femm_col_tags = df_pv_femm.columns.values.tolist()
+                random_id = id_generator()
+                if any(femmt_col_tag in s for s in femmt_col_tags):
+                    femmt_col_tag = femmt_col_tag + random_id
+                if any(femm_col_tag in s for s in femm_col_tags):
+                    femm_col_tag = femm_col_tag + random_id
+
+                # -- Reference simulation with FEMM --
+                if sim_choice == 'both' or sim_choice == 'femm':
+                    pv_femm = []
+                    # Iterate on frequency
+                    for f in frequencies:
+                        self.femm_reference(freq=f, current=2, sigma=58, non_visualize=1)
+                        pv_femm.append(self.tot_loss_femm.real)
+                    # Add new or rewrite old data // Maybe ask for replacement and wait for 30 s then go on...
+                    df_pv_femm.insert(loc=1, column=femm_col_tag, value=np.transpose(pv_femm), allow_duplicates=True)
+                    # Save dataframes in .json files
+                    df_pv_femm.to_json(target_femm, date_format=None)
+
+                # -- Onelab simulation with FEMMT --
+                if sim_choice == 'both' or sim_choice == 'femmt':
+                    # High level geometry generation + Generate Mesh
+                    self.mesh()
+                    # Iterate on frequency
+                    self.excitation_sweep(currents=currents, frequencies=frequencies)
+
+                    # Get losses from Onelab result file
+                    data = self.get_loss_data(last_n_values=len(frequencies), loss_type='litz_loss')
+
+                    pv_femmt = []
+                    for lines in data:
+                        print(re.findall(r"[-+]?\d*\.\d+|\d+", lines[0]))
+                        fls = re.findall(r"[-+]?\d*\.\d+|\d+", lines[0])
+                        if len(fls) == 3:
+                            pv_femmt.append(float(fls[1]))
+                        else:
+                            pv_femmt.append(0.0)
+                            warnings.warn("There is something wrong with the Loss data!")
+
+                    # Add new or rewrite old data
+                    df_pv_femmt.insert(loc=1, column=femmt_col_tag, value=np.transpose(pv_femmt))
+
+                    # Save dataframes in .json files
+                    df_pv_femmt.to_json(target_femmt, date_format=None)
 
     def load_litz_loss_logs(self, tag=''):
         """
@@ -1411,3 +1842,80 @@ class MagneticComponent:
         # ax.text(25000, 1, 'FEMM', color='r', ha='right', rotation=0, wrap=True)
         # ax.text(25000, 0.5, 'FEMMT', color='g', ha='right', rotation=0, wrap=True)
         plt.show()
+
+    def get_inductances(self, I0, op_frequency=0, mesh_accuracy=0.5):
+        """
+
+        :param I0:
+        :param op_frequency:
+        :return:
+        """
+
+        # Remove "old" Inductance Logs
+        try:
+            os.remove(self.path + "/res/L_11.dat")
+            os.remove(self.path + "/res/L_22.dat")
+        except:
+            print("Could not find Inductance logs")
+
+        # -- Inductance Estimation --
+        self.mesh(frequency=op_frequency, skin_mesh_factor=mesh_accuracy)
+        # 2nd-open
+        frequencies = [op_frequency] * 4
+        currents = [[1, 0], [0, 1], [I0, self.turns[0] / self.turns[1] * I0], [self.turns[1] / self.turns[0] * I0, I0]]
+        self.excitation_sweep(frequencies=frequencies, currents=currents, show_last=1)
+
+        # Open loss/error results
+        inductance_matrix = open(self.path + "/res/Inductance_Matrix.dat", "w")
+        # Read the logged inductance values
+        with open(self.path + "/res/L_11.dat") as f:
+            next_line = False
+            count_lines = 0
+            for line in f:
+                if next_line:
+                    next_line = False
+                    count_lines += 1
+                    words = line.split(sep=' ')
+                    if count_lines == 1:
+                        L_11 = float(words[2])
+                    if count_lines == 2:
+                        L_k1 = float(words[2])
+                if "L_11" in line:
+                    next_line = True
+                if count_lines == 2:
+                    break
+        # Read the logged inductance values
+        with open(self.path + "/res/L_22.dat") as f:
+            next_line = False
+            count_lines = 0
+            for line in f:
+                if next_line:
+                    next_line = False
+                    words = line.split(sep=' ')
+                    L_22 = float(words[2])
+                    count_lines += 1
+                if "L_22" in line:
+                    next_line = True
+                if count_lines == 1:
+                    break
+
+        # Calculation of inductance matrix
+        L_s1 = 0.5*(L_11-self.turns[0]**2/self.turns[1]**2*L_22+L_k1)
+        L_m1 = L_11 - L_s1
+        L_m = self.turns[1]/self.turns[0]*L_m1
+        L_m2 = self.turns[1]/self.turns[0]*L_m
+        L_s2 = L_22 - L_m2
+
+        print(f"L_11 = {L_11}\n"
+              f"L_22 = {L_22}\n"
+              f"L_m = {L_m}\n"
+              f"L_s1 = {L_s1}\n"
+              f"L_s2 = {L_s2}\n")
+        """
+        if read == 1 and ' ' in line:
+            # words = line.split(sep=' ')
+            words = line.replace(' ', ', ')
+            for word in words:
+                inductance_matrix.write(word)
+        """
+        inductance_matrix.close()
