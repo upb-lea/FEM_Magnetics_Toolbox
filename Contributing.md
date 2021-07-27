@@ -23,6 +23,12 @@ Run setup.py as the following from your operating system command line
 python3 setup.py bdist_wheel 
 ```
 Please find the generated pip package inside the /dist-folder
+
+### Test the pip package from local installation before uploading 
+```
+python3 -m pip install femmt-x.x.x-py3-none-any.whl  
+```
+
 ### Upload pip package to pypi
 Run this from your operating system command line
 ```
