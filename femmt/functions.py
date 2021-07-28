@@ -1,5 +1,6 @@
 import numpy as np
-
+import random
+import string
 
 def inner_points(a, b, input_points):
     """
@@ -96,6 +97,10 @@ def call_for_path(destination, config_file="config.py"):
     text_file.write(f"{destination} = '{path}'\n")
     text_file.close()
     return path
+
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 
 def NbrStrands(NbrLayers):
