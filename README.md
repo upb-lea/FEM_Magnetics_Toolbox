@@ -1,5 +1,5 @@
 # FEM_Magnetics_Toolbox
-Python toolbox to generate preconfigured figures for FEM simulation tools
+Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics
 
 Functionality examples
  * work with pre-defined standard core structures [not implemented yet]
@@ -35,8 +35,9 @@ How to use the FEM Magnetics Toolbox:
 * Define/Update conductor(s) with "geo.update_conductors(n_turns=[8, 12], conductor_type=["solid", "solid"], conductor_radix=[0.0015, 0.001])
 * Start a single simulation with "geo.single_simulation(freq=100000, current=[5, 10], phi=[0, 0], skin_mesh_factor=accuracy)"
 
-Mninimal example for a single simulation with displayed result in ONELAB:
+Installed as a pip-package: Mninimal example for a single simulation with displayed result in ONELAB: 
 ```
+# minimal example for installation from pip-package
 import femmt as fmt
 
 # Create Object
@@ -50,6 +51,22 @@ geo.update_conductors(n_turns=[22], conductor_type=["solid"], conductor_radix=[0
 # Perform a single simulation
 geo.single_simulation(freq=1000000, current=[10])
 ```
+
+```
+# minimal example for github clone
+from FEMMT import MagneticComponent
+
+# Create Object
+geo = MagneticComponent(component_type="inductor")
+# Update Geometry
+geo.update_core(core_type="EI", window_h=0.03)
+geo.update_air_gaps(method="center", n_air_gaps=1, air_gap_h=[0.001])
+geo.update_conductors(n_turns=[22], conductor_type=["solid"], conductor_radix=[0.0015])
+
+# Perform a single simulation
+geo.single_simulation(freq=1000000, current=[10])
+```
+
 
 ## Roadmap
 Planned features in 2021
