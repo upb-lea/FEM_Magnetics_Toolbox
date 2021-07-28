@@ -39,7 +39,7 @@ class MagneticComponent:
         # -- Control Flags --
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
         self.dimensionality = "2D axi"  # Axial-symmetric model (idealized full-cylindrical)
-        self.s = 1  # Parameter for mesh-accuracy
+        self.s = 0.5  # Parameter for mesh-accuracy
         self.component_type = component_type  # "inductor" or "transformer"
 
         # -- Core --
@@ -115,7 +115,7 @@ class MagneticComponent:
         # -- Characteristic lengths -- [for mesh sizes]
         self.skin_mesh_factor = None
         self.c_core = self.core_w/10. * self.s
-        self.c_window = self.window_w/10 * self.s
+        self.c_window = self.window_w/20 * self.s
         self.c_conductor = [None] * self.n_conductors  # self.delta  # self.s /20 #self.window_w/30 * self.s
         self.c_center_conductor = [None] * self.n_conductors  # used for the mesh accuracy in the conductors
         self.c_air_gap = []
@@ -255,7 +255,7 @@ class MagneticComponent:
             print(i)
             if self.conductor_type[i] == 'solid':
                 self.conductor_radius[i] = conductor_radix[i]
-                self.A_cell[i] = np.pi * self.conductor_radius[i]**2  # Area of the litz approximated hexagonal cell
+                self.A_cell[i] = np.pi * self.conductor_radius[i]**2  # Cross section of the solid conductor
             if self.conductor_type[i] == 'litz':
                 self.update_litz_configuration(num=i,
                                                litz_parametrization_type='implicite_FF',
@@ -1374,7 +1374,7 @@ class MagneticComponent:
         femm.mi_probdef(freq, 'meters', 'axi', 1.e-8, 0, 30)
 
         # == Materials ==
-        femm.mi_addmaterial('Ferrite', 3000, 3000, 0, 0, 0, 0, 0, 1, 0, 0, 0)
+        femm.mi_addmaterial('Ferrite', self.mu_rel, self.mu_rel, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         if self.conductor_type[0] == "litz":
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 5, 0, 0, self.n_strands[0], 2*1000*self.strand_radius[0])  # type := 5. last argument
@@ -1387,7 +1387,9 @@ class MagneticComponent:
 
         # == Circuit ==
         # coil as seen from the terminals.
-        femm.mi_addcircprop('icoil', current[0], 1)
+        femm.mi_addcircprop('Primary', current[0], 1)
+        if self.component_type == 'transformer':
+            femm.mi_addcircprop('Secondary', current[1], 1)
 
         # == Geometry ==
         # Add core
@@ -1419,12 +1421,25 @@ class MagneticComponent:
                     femm.mi_addarc(self.p_conductor[num][5*i+3][0], self.p_conductor[num][5*i+3][1], self.p_conductor[num][5*i+1][0], self.p_conductor[num][5*i+1][1],  180, 2.5)
                     femm.mi_addblocklabel(self.p_conductor[num][5*i][0], self.p_conductor[num][5*i][1])
                     femm.mi_selectlabel(self.p_conductor[num][5*i][0], self.p_conductor[num][5*i][1])
-                    femm.mi_setblockprop('Copper', 0, 1e-4, 'icoil', 0, 0, 1)
-                    # femm.mi_setblockprop('Copper', 1, 0, 'icoil', 0, 0, 1)
+                    if num == 0:
+                        femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 0, 1)
+                    if num == 1:
+                        #femm.mi_setblockprop('Copper', 0, 1e-4, 'Secondary', 0, 0, 1)
+                        femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 0, 1)
                     femm.mi_clearselected
 
         # Define an "open" boundary condition using the built-in function:
         femm.mi_makeABC()
+        """
+        # Alternative BC
+        region_add = 1.1
+
+        femm.mi_drawrectangle(0, region_add*self.p_outer[0][1], region_add*self.p_outer[3][0], region_add*self.p_outer[3][1])
+        # mi_addboundprop('Asymptotic', 0, 0, 0, 0, 0, 0, 1 / (para.mu_0 * bound.width), 0, 2); % Mixed
+        femm.mi_addboundprop('Asymptotic', 0, 0, 0, 0, 1, 50, 0, 0, 1)
+        femm.mi_selectsegment(region_add*self.p_outer[3][0], region_add*self.p_outer[3][1])
+        femm.mi_setsegmentprop('Asymptotic', 1, 1, 0, 0)
+        """
 
         # == Labels/Designations ==
 
@@ -1451,7 +1466,7 @@ class MagneticComponent:
         femm.mi_loadsolution()
 
         # == Losses ==
-        tmp = femm.mo_getcircuitproperties('icoil')
+        tmp = femm.mo_getcircuitproperties('Primary')
         self.tot_loss_femm = 0.5 * tmp[0] * tmp[1]
         print(self.tot_loss_femm)
 
@@ -1861,8 +1876,11 @@ class MagneticComponent:
         # -- Inductance Estimation --
         self.mesh(frequency=op_frequency, skin_mesh_factor=mesh_accuracy)
         # 2nd-open
-        frequencies = [op_frequency] * 4
-        currents = [[1, 0], [0, 1], [I0, self.turns[0] / self.turns[1] * I0], [self.turns[1] / self.turns[0] * I0, I0]]
+        #frequencies = [op_frequency] * 4
+        #currents = [[I0, 0], [0, I0], [I0, self.turns[0] / self.turns[1] * I0], [self.turns[1] / self.turns[0] * I0, I0]]
+        frequencies = [op_frequency] * 2
+        currents = [[I0, 0], [0, I0]]
+
         self.excitation_sweep(frequencies=frequencies, currents=currents, show_last=1)
 
         # Open loss/error results
@@ -1899,18 +1917,42 @@ class MagneticComponent:
                 if count_lines == 1:
                     break
 
+
+        # Read the logged Flux_Linkages
+        with open(geo.path + "/res/Flux_Linkage_1.dat") as f:
+            for line in f:
+                words = line.split(sep=' ')
+                Flux_Linkage_1 = float(words[2])
+                break
+        with open(geo.path + "/res/Flux_Linkage_2.dat") as f:
+            for line in f:
+                words = line.split(sep=' ')
+                Flux_Linkage_2 = float(words[2])
+                break
+
+        print(f"Flux_Linkage_1 = {Flux_Linkage_1}\n"
+              f"Flux_Linkage_2 = {Flux_Linkage_2}\n")
+
+        """
+        # Old way
         # Calculation of inductance matrix
         L_s1 = 0.5*(L_11-self.turns[0]**2/self.turns[1]**2*L_22+L_k1)
         L_m1 = L_11 - L_s1
         L_m = self.turns[1]/self.turns[0]*L_m1
         L_m2 = self.turns[1]/self.turns[0]*L_m
         L_s2 = L_22 - L_m2
+        """
+
+        K_12 =  Flux_Linkage_1 / Flux_Linkage_2
+        M = L_22 * K_12
+
 
         print(f"L_11 = {L_11}\n"
               f"L_22 = {L_22}\n"
-              f"L_m = {L_m}\n"
-              f"L_s1 = {L_s1}\n"
-              f"L_s2 = {L_s2}\n")
+              f"L_m = {M}\n"
+              #f"L_s1 = {L_s1}\n"
+              #f"L_s2 = {L_s2}\n"
+              )
         """
         if read == 1 and ' ' in line:
             # words = line.split(sep=' ')
