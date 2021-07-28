@@ -21,7 +21,7 @@ git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
 * FEMM can be used as an alternative FEM solver for 2D simulations
 
 ## Basics of Usage
-![](https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/Documentation/Transformer_Screenshot.png?raw=true)
+![](https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/Transformer_Screenshot.png?raw=true)
 Date: 2021-07-27
 How to use the FEM Magnetics Toolbox:
 * Import the class with "from FEMMT import MagneticComponent"
@@ -37,10 +37,10 @@ How to use the FEM Magnetics Toolbox:
 
 Mninimal example for a single simulation with displayed result in ONELAB:
 ```
-from FEMMT import MagneticComponent
+import femmt as fmt
 
 # Create Object
-geo = MagneticComponent(component_type="inductor")
+geo = fmt.MagneticComponent(component_type="inductor")
 
 # Update Geometry
 geo.update_core(core_type="EI", window_h=0.03)
