@@ -16,7 +16,8 @@ git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
 
 
 ## Basics of Usage
-Date: 27.07.2021
+![](https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/Documentation/Transformer_Screenshot.png?raw=true)
+Date: 2021-07-27
 How to use the FEM Magnetics Toolbox:
 * Import the class with "from FEMMT import MagneticComponent"
 * Create instance with for example "geo = MagneticComponent(component_type="transformer")"
