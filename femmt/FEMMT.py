@@ -10,13 +10,15 @@ import sys
 import time
 import warnings
 from matplotlib import pyplot as plt
-# FEM and Mesh interfaces
-import femm
 import gmsh
 # import adapt_mesh
 from onelab import onelab
-# Self written functions
+import json
+# Self written functions. It is necessary to write a . before the function, du to handling this package also as a pip-package
 from functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
+# FEM and Mesh interfaces, only for windows machines
+if os.name == 'nt':
+    import femm
 
 
 # Master Class
@@ -317,18 +319,20 @@ class MagneticComponent:
 
     def onelab_setup(self):
         """
-        Either reads onelab parent folder path from config.py or asks the user to provide it.
-        Creates a config.py at first use.
-        :return:
+        Either reads onelab parent folder path from config.p or asks the user to provide it.
+        Creates a config.p at first run.
+        :return: -
         """
-        if os.path.isfile(self.path + "/config.py"):
-            import config
-            with open(self.path + '/config.py') as f:
-                if 'onelab' in f.read():
-                    if os.path.exists(config.onelab):
-                        self.onelab = config.onelab
-                else:
-                    self.onelab = call_for_path("onelab")
+        if os.path.isfile(self.path + "/config.json") and os.stat(self.path + "/config.json") != 0:
+            json_file = open(self.path + '/config.json','rb') #with open(self.path + '/config.p') as f:
+            loaded_dict = json.load(json_file)
+            json_file.close()
+            path = loaded_dict['onelab']
+
+            if os.path.exists(path):
+                self.onelab = path
+            else:
+                self.onelab = call_for_path("onelab")
         else:
             self.onelab = call_for_path("onelab")
 

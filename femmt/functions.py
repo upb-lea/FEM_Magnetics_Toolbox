@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import string
+import json
 
 def inner_points(a, b, input_points):
     """
@@ -83,7 +84,7 @@ def min_max_inner_points(a, b, input_points):
     return [min, max]
 
 
-def call_for_path(destination, config_file="config.py"):
+def call_for_path(destination, config_file="config.json"):
     """
     asks the user to enter the filepath of a destinated file WITHOUT the suffix
     stores a the filepath as a python string declaration in a config file
@@ -92,10 +93,17 @@ def call_for_path(destination, config_file="config.py"):
     :param config_file:
     :return:
     """
-    text_file = open(config_file, "w")
+    # pickle_file = open(config_file, "w")
+    # path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
+    # pickle.dumps(path, pickle_file) # f"{destination} = '{path}'\n")
+    # pickle_file.close()
+
     path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
-    text_file.write(f"{destination} = '{path}'\n")
-    text_file.close()
+    dict = {"onelab": path}
+    file = open(config_file, 'w', encoding='utf-8')
+    json.dump(dict, file, ensure_ascii=False)
+    file.close()
+
     return path
 
 
