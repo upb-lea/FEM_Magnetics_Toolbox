@@ -14,8 +14,10 @@ import gmsh
 # import adapt_mesh
 from onelab import onelab
 import json
+import random
+import string
 # Self written functions. It is necessary to write a . before the function, du to handling this package also as a pip-package
-from functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
+#from .femmt_functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
 # FEM and Mesh interfaces, only for windows machines
 if os.name == 'nt':
     import femm
@@ -1923,3 +1925,123 @@ class MagneticComponent:
                 inductance_matrix.write(word)
         """
         inductance_matrix.close()
+
+
+
+def inner_points(a, b, input_points):
+    """
+    Returns the input points that have a common coordinate as the two
+    interval borders a and b
+    :param a:
+    :param b:
+    :param input_points:
+    :return:
+    """
+    [min, max] = [None, None]
+    output = input_points
+    dim = None
+    # Find equal dimension
+    for i in range(0, 3):
+        if a[i] == b[i] and a[i] != 0:
+            dim = i
+    if dim == None:
+        raise Exception("Given points do not have a common dimension")
+    n = 0
+    while n < output.shape[0]:
+        if a[dim] != output[n, dim]:
+            output = np.delete(output, n, 0)
+        else:
+            n += 1
+    if output.shape[0] == 0:
+        raise Exception("Not implemented Error: No air gaps between interval borders")
+    if output.shape[0] % 2 == 1:
+        raise Exception("Odd number of input points")
+    if dim == 2:
+        raise Exception("Not implemented Error: Only 2D is implemeted")
+    dim2 = (dim+1) % 2
+    if output.shape[0] >= 2:
+        argmax = np.argmax(output[:, dim2])
+        output = np.delete(output, argmax, 0)
+        argmin = np.argmin(output[:, dim2])
+        output = np.delete(output, argmin, 0)
+        if output.shape[0] == 0:
+            print("Only one air gap in this leg. No island needed.")
+    return output
+
+
+def min_max_inner_points(a, b, input_points):
+    """
+    Returns the input points that have a common coordinate and
+    the minimum distance from the interval borders.
+    :param a:
+    :param b:
+    :param input_points:
+    :return:
+    """
+
+    [min, max] = [None, None]
+    buffer = input_points
+    dim = None
+    # Find equal dimension
+    for i in range(0, 3):
+        if a[i] == b[i] and a[i] != 0:
+            dim = i
+    if dim == None:
+        raise Exception("Given points do not have a common dimension")
+    n = 0
+    while n < buffer.shape[0]:
+        if a[dim] != buffer[n, dim]:
+            buffer = np.delete(buffer, n, 0)
+        else:
+            n += 1
+    if buffer.shape[0] == 0:
+        print("No air gaps between interval borders")
+    if buffer.shape[0] % 2 == 1:
+        raise Exception("Odd number of input points")
+    if dim == 2:
+        raise Exception("Not implemented Error: Only 2D is implemeted")
+    dim2 = (dim+1) % 2
+    if buffer.shape[0] >= 2:
+        argmax = np.argmax(buffer[:, 1])
+        max = buffer[argmax]
+        argmin = np.argmin(buffer[:, 1])
+        min = buffer[argmin]
+    return [min, max]
+
+
+def call_for_path(destination, config_file="config.json"):
+    """
+    asks the user to enter the filepath of a destinated file WITHOUT the suffix
+    stores a the filepath as a python string declaration in a config file
+    returns the filepath
+    :param destination:
+    :param config_file:
+    :return:
+    """
+    # pickle_file = open(config_file, "w")
+    # path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
+    # pickle.dumps(path, pickle_file) # f"{destination} = '{path}'\n")
+    # pickle_file.close()
+
+    path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
+    dict = {"onelab": path}
+    file = open(config_file, 'w', encoding='utf-8')
+    json.dump(dict, file, ensure_ascii=False)
+    file.close()
+
+    return path
+
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
+def NbrStrands(NbrLayers):
+    """
+    Returns the number of strands in a hexagonal litz winding with a
+    specified number of layers (NbrLayers). CAUTION: Zero number of
+    layers corresponds to a single strand.
+    :param NbrLayers:
+    :return:
+    """
+    return 3*(NbrLayers+1)**2 - 3*(NbrLayers+1) + 1

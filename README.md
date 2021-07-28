@@ -37,10 +37,10 @@ How to use the FEM Magnetics Toolbox:
 
 Mninimal example for a single simulation with displayed result in ONELAB:
 ```
-from FEMMT import MagneticComponent
+import femmt as fmt
 
 # Create Object
-geo = MagneticComponent(component_type="inductor")
+geo = fmt.MagneticComponent(component_type="inductor")
 
 # Update Geometry
 geo.update_core(core_type="EI", window_h=0.03)
