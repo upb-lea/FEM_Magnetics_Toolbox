@@ -16,27 +16,39 @@ from onelab import onelab
 import json
 import random
 import string
-# Self written functions. It is necessary to write a . before the function, du to handling this package also as a pip-package
-#from .femmt_functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
-# FEM and Mesh interfaces, only for windows machines
+# Self written functions. It is necessary to write a . before the function, due to handling
+# this package also as a pip-package
+# from .femmt_functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
+
+# Optional usage of FEMM tool by David Meeker
+# 2D Mesh and FEM interfaces (only for windows machines)
 if os.name == 'nt':
     import femm
 
 
-# Master Class
+#  ===== Main Class  =====
 class MagneticComponent:
+    """
+    - Initialization of all class variables
+    - Common variables for all instances
+    """
+    # -- Parent folder path --
+    path = str(pathlib.Path(__file__).parent.absolute())  # Path of FEMMT files
+    onelab = None  # Path to Onelab installation folder
+    path_mesh = "mesh/"
+    path_res = "results/"
+    path_res_fields = "results/fields/"
+    path_res_values = "results/values/"
+    path_res_circuit = "results/circuit/"
+    path_res_FEMM = "FEMM/"
+
     def __init__(self, component_type="inductor"):
         """
-
-        :param component_type:
+        - Initialization of all instance variables
+        - One or more "MagneticComponents" can be created
+        - Each "MagneticComponent" owns its own instance variable values
+        :param component_type: Available options are "inductor" and "transformer"
         """
-        # ==============================
-        # Settings
-        # ==============================
-        # -- Parent folder path --
-        self.path = str(pathlib.Path(__file__).parent.absolute())  # Path of FEMMT files
-        self.onelab = None  # Path to Onelab installation folder
-
         # ==============================
         # Geometry
         # ==============================
@@ -55,7 +67,7 @@ class MagneticComponent:
 
         # -- Air gaps --
         self.n_air_gaps = 1  # Number of air gaps [==1: air gap in center | >1: random air gaps]
-        self.air_gaps = np.empty((self.n_air_gaps, 4))  # list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
+        self.air_gaps = np.empty((self.n_air_gaps, 4))  # list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
 
         # -- Isolation ---
         self.core_cond_isolation = 0.001  # gap between Core and Conductors
@@ -130,195 +142,10 @@ class MagneticComponent:
         # -- FEMM variables --
         self.tot_loss_femm = None
 
-    # ==== Back-End Methods =====
-    def update_core(self, core_type,  **kwargs):
-        """
-        - One positional parameter core_type
-        - All core parameters can be passed or adjusted by keyword calling
-            - Allows single parameter changing
-            - Depending on core_type
-            - Strict keyword usage!
-        :param core_type:
-        :param kwargs:
-            - Case "2D, axisym., EI": 'core_w', 'window_w', 'window_h'
-            - Case "3D, EI": ...tba...
-        :return:
-        """
-        self.core_type = core_type
-        if self.core_type == "EI":
-            if self.dimensionality == "2D axi":
-                for key, value in kwargs.items():
-                    if key == 'core_w':
-                        self.core_w = value
-                    if key == 'window_w':
-                        self.window_w = value
-                    if key == 'window_h':
-                        self.window_h = value
-        if self.core_type == "EI":
-            if self.dimensionality == "3D":
-                # tba 3D Group
-                None
+    # ==== Back-End Methods ====
+    # Methods that are usually not directly called from outside
 
-    def update_air_gaps(self, method="center", n_air_gaps=[], position_tag=[0], air_gap_position=[0], air_gap_h=[0.001],
-                        **kwargs):
-        """
-        - "self.air_gaps" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
-           - position_tag: specifies the gapped "leg"
-           - air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
-           - air_gap_h: height/length of the air gap
-           - c_air_gap: mesh accuracy factor
-        - "EI 2D axi": position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
-        :param n_air_gaps:
-        :param position_tag:
-        :param air_gap_h:
-        :param air_gap_position:
-        :param method: "random", "center", "percent", "manually"
-        :return:
-        """
-        self.n_air_gaps = n_air_gaps
-        self.air_gaps = np.empty((self.n_air_gaps, 4))
-        self.c_air_gap = [None] * self.n_air_gaps
-
-        """
-        # Optional updating the number of air gaps
-        for key, value in kwargs.items():
-            if key == 'n_air_gaps':
-                self.n_air_gaps = value
-        """
-
-        # Update air gaps with chosen method
-        if method == "center" and self.dimensionality == "2D axi":
-            if self.n_air_gaps > 1:
-                print(f"{self.n_air_gaps} are too many air gaps for the 'center' option!")
-                raise Warning
-            else:
-                self.c_air_gap[0] = air_gap_h[0] / 3 * self.s
-                self.air_gaps[0, :] = np.array([0, 0, air_gap_h[0], self.c_air_gap[0]])
-
-        if method == "random" and self.dimensionality == "2D axi":
-            position_tag = [0] * self.n_air_gaps
-
-            i = 0
-            while i in range(0, self.n_air_gaps):
-                height = np.random.rand(1) * 0.001 + 0.001
-                position = np.random.rand(1) * (self.window_h - height) - (self.window_h / 2 - height / 2)
-                self.c_air_gap[i] = height / 3 * self.s
-                # Overlapping Control
-                for j in range(0, self.air_gaps.shape[0]):
-                    if self.air_gaps[j, 1]+self.air_gaps[j, 2]/2 > position > self.air_gaps[j, 1]-self.air_gaps[j, 2]/2:
-                        if position_tag[i] == self.air_gaps[j, 0]:
-                            print(f"Overlapping air Gaps have been corrected")
-                else:
-                    self.air_gaps[i, :] = np.array([position_tag[i], position, height, self.c_air_gap[i]])
-                    i += 1
-
-        if (method == "manually" or method == "percent") and self.dimensionality == "2D axi":
-            for i in range(0, self.n_air_gaps):
-                if method == "percent":
-                    air_gap_position[i] = air_gap_position[i] / 100 * (self.window_h - air_gap_h[i]) - (
-                                self.window_h / 2 - air_gap_h[i] / 2)
-                # Overlapping Control
-                for j in range(0, self.air_gaps.shape[0]):
-                    if self.air_gaps[j, 1]+self.air_gaps[j, 2]/2 > air_gap_position[i] > self.air_gaps[j, 1]-self.air_gaps[j, 2]/2:
-                        if position_tag[i] == self.air_gaps[j, 0]:
-                            print(f"Overlapping Air Gap")
-                            raise Warning
-                else:
-                    self.c_air_gap[i] = air_gap_h[i] / 3 * self.s
-                    self.air_gaps[i, :] = np.array([position_tag[i], air_gap_position[i], air_gap_h[i], self.c_air_gap[i]])
-
-    def update_conductors(self, n_turns=[], conductor_type=[], conductor_radix=[], layer_numbers=[], strand_radix=[]):
-        """
-        conductor_type = "stacked"  # Vertical packing of conductors
-        conductor_type = "full"     # One massive Conductor in each window
-        conductor_type = "foil"     # Horizontal packing of conductors
-        conductor_type = "solid"    # Massive wires
-        conductor_type = "litz"     # Litz wires
-        :param n_turns:
-        :param strand_radix:
-        :param layer_numbers:
-        :param conductor_radix:
-        :param conductor_radius:
-        :param n_conductors:
-        :param conductor_type:
-        :return:
-        """
-        if self.component_type == "inductor":
-            if len(n_turns) != 1 or len(conductor_type) != 1:
-                print(f"Wrong number of conductor parameters passed to inductor model!")
-                raise Warning
-        if self.component_type == "transformer":
-            if len(n_turns) != 2 or len(conductor_type) != 2:
-                print(f"Wrong number of conductor parameters passed to transformer model!")
-                raise Warning
-
-        self.turns = n_turns
-        self.conductor_type = conductor_type
-
-        for i in range(0, self.n_conductors):
-            print(i)
-            if self.conductor_type[i] == 'solid':
-                self.conductor_radius[i] = conductor_radix[i]
-                self.A_cell[i] = np.pi * self.conductor_radius[i]**2  # Cross section of the solid conductor
-            if self.conductor_type[i] == 'litz':
-                self.update_litz_configuration(num=i,
-                                               litz_parametrization_type='implicite_FF',
-                                               ff=None,
-                                               conductor_radius=conductor_radix[i],
-                                               n_layers=layer_numbers[i],
-                                               strand_radius=strand_radix[i])
-                # Surface of the litz approximated hexagonal cell
-                # self.A_cell = np.pi * self.conductor_radius**2  # * self.FF
-
-    def update_litz_configuration(self, num=0, litz_parametrization_type='implicite_FF', strand_radius=None, ff=None,
-                                  conductor_radius=None, n_layers=None):
-        """
-        - updates the conductor with number num (simple transformer: num=0 -> primary winding,
-                                                                     num=1 -> secondary winding)
-        - used to change litz configurations
-        - also used at first initialisation of the geometry
-        - needed to always make sure that the relation between litz parameters (strand radius, fill factor, number of
-          layers/strands and conductor/litz radius) is valid and consistent
-        - 4 parameters, 1 degree of freedom (dof)
-        :param num:
-        :param litz_parametrization_type:
-        :param strand_radius:
-        :param ff:
-        :param conductor_radius:
-        :param n_layers:
-        :return:
-        """
-        # Litz Approximation
-        if litz_parametrization_type == 'implicite_FF':
-            self.conductor_radius[num] = conductor_radius
-            self.n_layers[num] = n_layers
-            self.n_strands[num] = NbrStrands(self.n_layers[num])
-            self.strand_radius[num] = strand_radius
-            # hexagonal packing: ~90.7% are theoretical maximum FF
-            ff_exact = self.n_strands[num]*self.strand_radius[num]**2/self.conductor_radius[num]**2
-            print(f"Exact fill factor: {ff_exact}")
-            self.FF[num] = np.around(ff_exact, decimals=2)
-            print(f"Updated Litz Configuration: \n"
-                  f"FF: {self.FF[num]} \n"
-                  f"Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
-                  f"Strand radius: {self.strand_radius[num]} \n"
-                  f"Conductor radius: {self.conductor_radius[num]}")
-            # print(f"Rounded fill factor: {self.FF}")
-
-        if litz_parametrization_type == 'implicite_litz_radius':
-            self.FF[num] = ff
-            self.n_layers[num] = n_layers
-            self.n_strands[num] = NbrStrands(self.n_layers)
-            self.strand_radius[num] = strand_radius
-            self.conductor_radius[num] = np.sqrt(self.n_strands[num]*self.strand_radius[num]**2/self.FF[num])
-            print(f"Updated Litz Configuration: \n "
-                  f"FF: {self.FF[num]} \n "
-                  f"Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
-                  f"Strand radius: {self.strand_radius[num]} \n"
-                  f"Conductor radius: {self.conductor_radius[num]}")
-
-        self.A_cell[num] = self.n_strands[num] * self.strand_radius[num]**2 * np.pi / self.FF[num]
-
+    # === Setup ===
     def onelab_setup(self):
         """
         Either reads onelab parent folder path from config.p or asks the user to provide it.
@@ -338,6 +165,7 @@ class MagneticComponent:
         else:
             self.onelab = call_for_path("onelab")
 
+    # === Geometry ===
     def high_level_geo_gen(self, core_type="EI", dimensionality="2D axi", frequency=None, skin_mesh_factor=1):
         """
         - high level geometry generation
@@ -533,286 +361,7 @@ class MagneticComponent:
                 self.p_air_gaps[i * 4 + 2] = [self.core_w / 2 + self.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
                 self.p_air_gaps[i * 4 + 3] = [self.core_w + self.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
 
-    def triangle_max_edge(self, x):
-        a = np.sum((x[:, 0, :] - x[:, 1, :]) ** 2, 1) ** 0.5
-        b = np.sum((x[:, 0, :] - x[:, 2, :]) ** 2, 1) ** 0.5
-        c = np.sum((x[:, 1, :] - x[:, 2, :]) ** 2, 1) ** 0.5
-        return np.maximum(a, np.maximum(b, c))
-
-    def triangle_mean_edge(self, x):
-        a = np.sum((x[:, 0, :] - x[:, 1, :]) ** 2, 1) ** 0.5
-        b = np.sum((x[:, 0, :] - x[:, 2, :]) ** 2, 1) ** 0.5
-        c = np.sum((x[:, 1, :] - x[:, 2, :]) ** 2, 1) ** 0.5
-        return (a + b + c)/3
-
-    def compute_size_field_old(self, nodes, triangles, err, N):
-        x = nodes[triangles]
-        a = 2.
-        d = 2.
-        fact = (a ** ((2. + a) / (1. + a)) + a ** (1. / (1. + a))) * np.sum(err ** (2. / (1. + a)))
-        ri = err ** (2. / (2. * (1 + a))) * a ** (1. / (d * (1. + a))) * ((1. + a) * N / fact) ** (1. / d)
-        return self.triangle_max_edge(x) / ri
-
-    def compute_size_field(self, nodes, triangles, err, N):
-        x = nodes[triangles]
-        threshold = 0.01
-        print(f"Error{err}")
-        err[err > 0.1] = 0.5
-        err[err < 0.1] = 0.9
-        print(f"Error{err}")
-        return self.triangle_max_edge(x) * err
-        # return self.triangle_max_edge(x) - err**(0.1) * self.triangle_max_edge(x)
-
-    class Mesh:
-        def __init__(self):
-            self.vtags, vxyz, _ = gmsh.model.mesh.getNodes()
-            self.vxyz = vxyz.reshape((-1, 3))
-            vmap = dict({j: i for i, j in enumerate(self.vtags)})
-            self.triangles_tags, evtags = gmsh.model.mesh.getElementsByType(2)
-            evid = np.array([vmap[j] for j in evtags])
-            self.triangles = evid.reshape((self.triangles_tags.shape[-1], -1))
-
-    def refine_mesh(self, local=0):
-        """
-
-        :return:
-        """
-
-        # --------------------------------------
-        if local == 1:
-            self.generate_mesh(refine=1)
-
-        # --------------------------------------
-        if local == 0:
-            # Refine current mesh
-            gmsh.model.mesh.refine()
-            gmsh.model.mesh.generate(2)
-            # --------------------------------------
-            # Mesh generation
-            #gmsh.model.mesh.generate(2)
-            # Check operating system
-            if sys.platform == "linux" or sys.platform == "linux2":
-                gmsh.write(self.path + "/geometry.msh")
-            elif sys.platform == "darwin":
-                # OS X
-                gmsh.write(self.path + "/geometry.msh")
-            elif sys.platform == "win32":
-                gmsh.write(self.path + "/geometry.msh")  # Win10 can handle slash
-
-            # Terminate gmsh
-            gmsh.finalize()
-
-    def find_neighbours(self, file="res/J_rms.pos"):
-        # Open loss/error results
-        dest_file = open(self.path + "error.dat", "w")
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + '/res/J_rms.pos') as f:
-            read = 0
-            for line in f:
-                if line == "$ElementNodeData\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    # words = line.split(sep=' ')
-                    words = line.replace(' ', ', ')
-                    for word in words:
-                        dest_file.write(word)
-        dest_file.close()
-
-    def alternative_local_error(self, loss_file='/res/J_rms.pos'):
-        """
-
-        :return:
-        """
-        # Open loss/error results
-        error_file = open(self.path + "/mesh_error.dat", "w")
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + loss_file) as f:
-            read = 0
-            for line in f:
-                if line == "$ElementNodeData\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    # words = line.split(sep=' ')
-                    words = line.replace(' ', ', ')
-                    for word in words:
-                        error_file.write(word)
-        error_file.close()
-
-        # Load local Error values
-        data = pd.read_csv(self.path + "/mesh_error.dat")
-        local_error = data.iloc[:, 2].to_numpy()
-        local_error = np.insert(local_error, 0, 0., axis=0)
-
-        local_error = local_error / np.max(local_error) + 0.001
-        print(f"Längen: {len(local_error), local_error} ")  # first of the 3 loss values
-
-        # ---- Open post-processing results ----
-
-        # Elements ----
-        elements = []
-        values = []
-        # error_file = open(self.path + "/mesh_error.dat", "w")
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + '/res/J_rms.pos') as file:
-            read = 0
-            for line in file:
-                if line == "$Elements\n" or line == "$EndElements\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    words = line.split(sep=' ')
-                    elements.append(words)
-
-        # Convert Elements to Dataframe
-        element_frame = pd.DataFrame(elements)
-        # Dropout not needed columns
-        element_frame.drop(element_frame.columns[[1, 2, 3, 4, 8]], axis=1, inplace=True)
-        element_frame.columns = ['NumElement', 'Node1', 'Node2', 'Node3']
-        print(f"Number of Elements: {len(elements)}\n"
-              # f"Elements: {elements}\n"
-              f"Element Dataframe: {element_frame}")
-        element_frame.to_csv(path_or_buf="elements.txt")
-
-        # Values ----
-        with open(self.path + '/res/J_rms.pos') as file:
-            read = 0
-            for line in file:
-                if line == "$ElementNodeData\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    words = re.split(' |\n', line)
-                    values.append(words)
-
-        # Convert Values to Dataframe
-        value_frame = pd.DataFrame(values)
-        # Dropout not needed columns
-        value_frame.drop(value_frame.columns[[1, 5]], axis=1, inplace=True)
-        value_frame.columns = ['NumElement', 'Node1', 'Node2', 'Node3']
-        # value_frame['NumElement', 'Node1', 'Node2', 'Node3'] = pd.to_numeric(value_frame['NumElement', 'Node1', 'Node2', 'Node3'], downcast="float")
-        value_frame['NumElement'] = pd.to_numeric(value_frame['NumElement'], downcast="float")
-        value_frame['Node1'] = pd.to_numeric(value_frame['Node1'], downcast="float")
-        value_frame['Node2'] = pd.to_numeric(value_frame['Node2'], downcast="float")
-        value_frame['Node3'] = pd.to_numeric(value_frame['Node3'], downcast="float")
-        print(f"Number of Values: {len(values)}\n"
-              # f"Values: {values}\n"
-              f"Values Dataframe: {value_frame}")
-
-        # ---- Neighbour algorithm || Error calculation ----
-        local_error = np.zeros(len(element_frame.index))
-
-        nodes = ['Node1', 'Node2', 'Node3']
-        for i in value_frame.index:
-            mean_cell = 0
-            # Mean loss per cell
-            for node in nodes:
-                mean_cell += value_frame[node][i] / len(nodes)
-            # Local Variance
-            for node in nodes:
-                local_error[i] += (value_frame[node][i] - mean_cell) ** 2
-
-        # Distribute Local Error on neighbour cells
-        nodes_neighbours_found = []
-        distribution_factor = 2
-
-        """
-        local_error_copy = local_error
-        print(local_error)
-
-        # every element
-        for i in element_frame.index:
-            # every element's node
-            for node in nodes:
-                # Node already considered?
-                if not element_frame[node][i] in nodes_neighbours_found:
-                    nodes_neighbours_found += element_frame[node][i]
-                    # Value[Node] == 0 ? : skip
-                    if not value_frame[node][i] == 0:
-                        # search in every element for Node
-                        for j in element_frame.index:
-                            for node in nodes:
-                                if value_frame[node][j] == 0:
-                                    # add some error in neighboured Nodes
-                                    if element_frame[node][j] == element_frame[node][i]:
-                                        local_error_copy[j] += local_error[i] * distribution_factor
-
-
-        local_error = local_error_copy
-        """
-        print(local_error)
-        # Error Normalization
-        return local_error / np.max(local_error) + 0.0001
-
-        # print(f"Local Error: {local_error[3387]}\n"
-        #      f"Length of Local Error: {len(local_error)}")
-        """
-        # Load local Error values
-        data = pd.read_csv(self.path + "/mesh_error.dat")
-        local_error = data.iloc[:, 2].to_numpy()
-        local_error = np.insert(local_error, 0, 0., axis=0)
-
-        local_error = local_error/np.max(local_error) + 0.001
-        print(len(local_error), local_error)  # first of the 3 loss values
-        """
-
-    def local_error(self, loss_file='/res/error.pos'):
-        """
-        - Method shall return the normalized numeric local error of the last adaptive simulation step
-        - Local error can be used to optimize the mesh in the next iteration step
-        :return:
-        """
-        # Open loss/error results
-        error_file = open(self.path + "/mesh_error.dat", "w")
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + loss_file) as f:
-            read = 0
-            for line in f:
-                if line == "$ElementNodeData\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    # words = line.split(sep=' ')
-                    words = line.replace(' ', ', ')
-                    for word in words:
-                        error_file.write(word)
-        error_file.close()
-
-        # Load local Error values
-        data = pd.read_csv(self.path + "/mesh_error.dat")
-        print(f"Data: {data}")
-        local_error = data.iloc[:, 2].to_numpy()
-        local_error = np.insert(local_error, 0, 1e-5, axis=0)
-
-        return local_error / np.max(local_error)
-        print(f"Längen: {len(local_error), local_error} ")
-
-    def create_background_mesh(self):
-        gmsh.open(self.path + "/geometry.msh")  # Open current mesh
-        N = 50000  # Number of elements after remeshing
-        mesh = self.Mesh()  # Create virtual mesh
-        """
-        print(f"Mesh nodes: {mesh.vxyz} \n "
-              f"Mesh nodes.shape: {mesh.vxyz.shape} \n "
-              f"Mesh node tags: {mesh.vtags} \n"
-              f"Mesh triangles: {mesh.triangles} \n"
-              f"Mesh triangles.shape: {mesh.triangles.shape} \n"
-              f"Mesh triangle tags: {mesh.triangles_tags} \n"
-              )
-        """  # some printing options
-
-        err_view = gmsh.view.add("element-wise error")
-        gmsh.view.addModelData(err_view, 0, "geometry", "ElementData", mesh.triangles_tags, local_error[:, None])
-        gmsh.view.write(err_view, "err.pos")
-
-        # Refinement
-        sf_ele = self.compute_size_field(mesh.vxyz, mesh.triangles, local_error, N)
-        np.savetxt("sf_ele.txt", sf_ele)
-        sf_view = gmsh.view.add("mesh size field")
-        gmsh.view.addModelData(sf_view, 0, "geometry", "ElementData", mesh.triangles_tags, sf_ele[:, None])
-        gmsh.view.write(sf_view, "sf.pos")
-
+    # === Meshing ===
     def generate_mesh(self, refine=0, alternative_error=0):
         """
         - interaction with gmsh
@@ -823,7 +372,7 @@ class MagneticComponent:
                 - with an appropriate local error metric ]
         :return:
         """
-       # Initialization
+        # Initialization
         gmsh.initialize()
 
         if refine == 1:
@@ -833,10 +382,10 @@ class MagneticComponent:
             else:
                 local_error = self.local_error()  # Here a "real" numeric error should be applied
 
-            self.create_background_mesh()
+            self.create_background_mesh(local_error)
 
         gmsh.option.setNumber("General.Terminal", 1)
-        gmsh.model.add("geometry")
+        gmsh.model.add(self.path_mesh + "geometry")
         # ------------------------------------------ Geometry -------------------------------------------
         # Core generation
         if self.core_type == "EI":
@@ -1126,18 +675,21 @@ class MagneticComponent:
             gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
             gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
             gmsh.model.mesh.generate(2)
-            gmsh.write("geometry.msh")
+            gmsh.write(self.path_mesh + "geometry.msh")
         else:
             gmsh.model.mesh.generate(2)
 
+        # Mesh direction
+        if not os.path.isdir(self.path + "/" + self.path_mesh):
+            os.mkdir(self.path + "/" + self.path_mesh)
+
         # Check operating system
         if sys.platform == "linux" or sys.platform == "linux2":
-            gmsh.write(self.path + "/geometry.msh")
-        elif sys.platform == "darwin":
-            # OS X
-            gmsh.write(self.path + "/geometry.msh")
+            gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")
+        elif sys.platform == "darwin":  # OS X
+            gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")
         elif sys.platform == "win32":
-            gmsh.write(self.path + "/geometry.msh")  # Win10 can handle slash
+            gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")  # Win10 can handle slash
 
         # Open gmsh GUI for visualization
         # gmsh.fltk.run()
@@ -1145,6 +697,293 @@ class MagneticComponent:
         # Terminate gmsh
         gmsh.finalize()
 
+    def mesh(self, frequency=None, skin_mesh_factor=1):
+        self.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
+        self.generate_mesh()
+
+    # == Adaptive Meshing ==
+    # !!! Experimental Code !!!
+    def triangle_max_edge(self, x):
+        a = np.sum((x[:, 0, :] - x[:, 1, :]) ** 2, 1) ** 0.5
+        b = np.sum((x[:, 0, :] - x[:, 2, :]) ** 2, 1) ** 0.5
+        c = np.sum((x[:, 1, :] - x[:, 2, :]) ** 2, 1) ** 0.5
+        return np.maximum(a, np.maximum(b, c))
+
+    def triangle_mean_edge(self, x):
+        a = np.sum((x[:, 0, :] - x[:, 1, :]) ** 2, 1) ** 0.5
+        b = np.sum((x[:, 0, :] - x[:, 2, :]) ** 2, 1) ** 0.5
+        c = np.sum((x[:, 1, :] - x[:, 2, :]) ** 2, 1) ** 0.5
+        return (a + b + c)/3
+
+    def compute_size_field_old(self, nodes, triangles, err, N):
+        x = nodes[triangles]
+        a = 2.
+        d = 2.
+        fact = (a ** ((2. + a) / (1. + a)) + a ** (1. / (1. + a))) * np.sum(err ** (2. / (1. + a)))
+        ri = err ** (2. / (2. * (1 + a))) * a ** (1. / (d * (1. + a))) * ((1. + a) * N / fact) ** (1. / d)
+        return self.triangle_max_edge(x) / ri
+
+    def compute_size_field(self, nodes, triangles, err, N):
+        x = nodes[triangles]
+        threshold = 0.01
+        print(f"Error{err}")
+        err[err > 0.1] = 0.5
+        err[err < 0.1] = 0.9
+        print(f"Error{err}")
+        return self.triangle_max_edge(x) * err
+        # return self.triangle_max_edge(x) - err**(0.1) * self.triangle_max_edge(x)
+
+    class Mesh:
+        def __init__(self):
+            self.vtags, vxyz, _ = gmsh.model.mesh.getNodes()
+            self.vxyz = vxyz.reshape((-1, 3))
+            vmap = dict({j: i for i, j in enumerate(self.vtags)})
+            self.triangles_tags, evtags = gmsh.model.mesh.getElementsByType(2)
+            evid = np.array([vmap[j] for j in evtags])
+            self.triangles = evid.reshape((self.triangles_tags.shape[-1], -1))
+
+    def refine_mesh(self, local=0):
+        """
+
+        :return:
+        """
+
+        # --------------------------------------
+        if local == 1:
+            self.generate_mesh(refine=1)
+
+        # --------------------------------------
+        if local == 0:
+            # Refine current mesh
+            gmsh.model.mesh.refine()
+            gmsh.model.mesh.generate(2)
+            # --------------------------------------
+            # Mesh generation
+            #gmsh.model.mesh.generate(2)
+            # Check operating system
+            if sys.platform == "linux" or sys.platform == "linux2":
+                gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")
+            elif sys.platform == "darwin":
+                # OS X
+                gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")
+            elif sys.platform == "win32":
+                gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")  # Win10 can handle slash
+
+            # Terminate gmsh
+            gmsh.finalize()
+
+    def find_neighbours(self, file="results/J_rms.pos"):
+        # Open loss/error results
+        dest_file = open(self.path + "error.dat", "w")
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + "/" + self.path_res_fields + 'J_rms.pos') as f:
+            read = 0
+            for line in f:
+                if line == "$ElementNodeData\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    # words = line.split(sep=' ')
+                    words = line.replace(' ', ', ')
+                    for word in words:
+                        dest_file.write(word)
+        dest_file.close()
+
+    def alternative_local_error(self, loss_file='/results/fields/J_rms.pos'):
+        """
+
+        :return:
+        """
+        # Open loss/error results
+        error_file = open(self.path + "/mesh_error.dat", "w")
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + loss_file) as f:
+            read = 0
+            for line in f:
+                if line == "$ElementNodeData\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    # words = line.split(sep=' ')
+                    words = line.replace(' ', ', ')
+                    for word in words:
+                        error_file.write(word)
+        error_file.close()
+
+        # Load local Error values
+        data = pd.read_csv(self.path + "/mesh_error.dat")
+        local_error = data.iloc[:, 2].to_numpy()
+        local_error = np.insert(local_error, 0, 0., axis=0)
+
+        local_error = local_error / np.max(local_error) + 0.001
+        print(f"Längen: {len(local_error), local_error} ")  # first of the 3 loss values
+
+        # ---- Open post-processing results ----
+
+        # Elements ----
+        elements = []
+        values = []
+        # error_file = open(self.path + "/mesh_error.dat", "w")
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + "/" + self.path_res_fields + 'J_rms.pos') as file:
+            read = 0
+            for line in file:
+                if line == "$Elements\n" or line == "$EndElements\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    words = line.split(sep=' ')
+                    elements.append(words)
+
+        # Convert Elements to Dataframe
+        element_frame = pd.DataFrame(elements)
+        # Dropout not needed columns
+        element_frame.drop(element_frame.columns[[1, 2, 3, 4, 8]], axis=1, inplace=True)
+        element_frame.columns = ['NumElement', 'Node1', 'Node2', 'Node3']
+        print(f"Number of Elements: {len(elements)}\n"
+              # f"Elements: {elements}\n"
+              f"Element Dataframe: {element_frame}")
+        element_frame.to_csv(path_or_buf="elements.txt")
+
+        # Values ----
+        with open(self.path + "/" + self.path_res_fields + 'J_rms.pos') as file:
+            read = 0
+            for line in file:
+                if line == "$ElementNodeData\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    words = re.split(' |\n', line)
+                    values.append(words)
+
+        # Convert Values to Dataframe
+        value_frame = pd.DataFrame(values)
+        # Dropout not needed columns
+        value_frame.drop(value_frame.columns[[1, 5]], axis=1, inplace=True)
+        value_frame.columns = ['NumElement', 'Node1', 'Node2', 'Node3']
+        # value_frame['NumElement', 'Node1', 'Node2', 'Node3'] = pd.to_numeric(value_frame['NumElement', 'Node1', 'Node2', 'Node3'], downcast="float")
+        value_frame['NumElement'] = pd.to_numeric(value_frame['NumElement'], downcast="float")
+        value_frame['Node1'] = pd.to_numeric(value_frame['Node1'], downcast="float")
+        value_frame['Node2'] = pd.to_numeric(value_frame['Node2'], downcast="float")
+        value_frame['Node3'] = pd.to_numeric(value_frame['Node3'], downcast="float")
+        print(f"Number of Values: {len(values)}\n"
+              # f"Values: {values}\n"
+              f"Values Dataframe: {value_frame}")
+
+        # ---- Neighbour algorithm || Error calculation ----
+        local_error = np.zeros(len(element_frame.index))
+
+        nodes = ['Node1', 'Node2', 'Node3']
+        for i in value_frame.index:
+            mean_cell = 0
+            # Mean loss per cell
+            for node in nodes:
+                mean_cell += value_frame[node][i] / len(nodes)
+            # Local Variance
+            for node in nodes:
+                local_error[i] += (value_frame[node][i] - mean_cell) ** 2
+
+        # Distribute Local Error on neighbour cells
+        nodes_neighbours_found = []
+        distribution_factor = 2
+
+        """
+        local_error_copy = local_error
+        print(local_error)
+
+        # every element
+        for i in element_frame.index:
+            # every element's node
+            for node in nodes:
+                # Node already considered?
+                if not element_frame[node][i] in nodes_neighbours_found:
+                    nodes_neighbours_found += element_frame[node][i]
+                    # Value[Node] == 0 ? : skip
+                    if not value_frame[node][i] == 0:
+                        # search in every element for Node
+                        for j in element_frame.index:
+                            for node in nodes:
+                                if value_frame[node][j] == 0:
+                                    # add some error in neighboured Nodes
+                                    if element_frame[node][j] == element_frame[node][i]:
+                                        local_error_copy[j] += local_error[i] * distribution_factor
+
+
+        local_error = local_error_copy
+        """
+        print(local_error)
+        # Error Normalization
+        return local_error / np.max(local_error) + 0.0001
+
+        # print(f"Local Error: {local_error[3387]}\n"
+        #      f"Length of Local Error: {len(local_error)}")
+        """
+        # Load local Error values
+        data = pd.read_csv(self.path + "/mesh_error.dat")
+        local_error = data.iloc[:, 2].to_numpy()
+        local_error = np.insert(local_error, 0, 0., axis=0)
+
+        local_error = local_error/np.max(local_error) + 0.001
+        print(len(local_error), local_error)  # first of the 3 loss values
+        """
+
+    def local_error(self, loss_file='/results/fields/error.pos'):
+        """
+        - Method shall return the normalized numeric local error of the last adaptive simulation step
+        - Local error can be used to optimize the mesh in the next iteration step
+        :return:
+        """
+        # Open loss/error results
+        error_file = open(self.path + "/mesh_error.dat", "w")
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + loss_file) as f:
+            read = 0
+            for line in f:
+                if line == "$ElementNodeData\n":
+                    read = (read + 1) % 2
+                    print(line, read)
+                if read == 1 and ' ' in line:
+                    # words = line.split(sep=' ')
+                    words = line.replace(' ', ', ')
+                    for word in words:
+                        error_file.write(word)
+        error_file.close()
+
+        # Load local Error values
+        data = pd.read_csv(self.path + "/mesh_error.dat")
+        print(f"Data: {data}")
+        local_error = data.iloc[:, 2].to_numpy()
+        local_error = np.insert(local_error, 0, 1e-5, axis=0)
+
+        return local_error / np.max(local_error)
+        print(f"Längen: {len(local_error), local_error} ")
+
+    def create_background_mesh(self, local_error):
+        gmsh.open(self.path + "/" + self.path_mesh + "geometry.msh")  # Open current mesh
+        N = 50000  # Number of elements after remeshing
+        mesh = self.Mesh()  # Create virtual mesh
+        """
+        print(f"Mesh nodes: {mesh.vxyz} \n "
+              f"Mesh nodes.shape: {mesh.vxyz.shape} \n "
+              f"Mesh node tags: {mesh.vtags} \n"
+              f"Mesh triangles: {mesh.triangles} \n"
+              f"Mesh triangles.shape: {mesh.triangles.shape} \n"
+              f"Mesh triangle tags: {mesh.triangles_tags} \n"
+              )
+        """  # some printing options
+
+        err_view = gmsh.view.add("element-wise error")
+        gmsh.view.addModelData(err_view, 0, self.path_mesh + "/" + self.path_mesh + "geometry", "ElementData", mesh.triangles_tags, local_error[:, None])
+        gmsh.view.write(err_view, "err.pos")
+
+        # Refinement
+        sf_ele = self.compute_size_field(mesh.vxyz, mesh.triangles, local_error, N)
+        np.savetxt("sf_ele.txt", sf_ele)
+        sf_view = gmsh.view.add("mesh size field")
+        gmsh.view.addModelData(sf_view, 0, self.path_mesh + "/" + self.path_mesh + "geometry", "ElementData", mesh.triangles_tags, sf_ele[:, None])
+        gmsh.view.write(sf_view, "sf.pos")
+
+    # === GetDP Interaction / Simulation / Exciation ===
     def excitation(self, f, i, phases=[], nonlinear=0, ex_type='current', imposed_red_f=0, ):
         """
         - excitation of the electromagnetic problem
@@ -1200,6 +1039,11 @@ class MagneticComponent:
         # --------------------------------- File Communication --------------------------------
         # All shared control variables and parameters are passed to a temporary Prolog file
         text_file = open(self.path + "/Parameter.pro", "w")
+
+        text_file.write(f"DirRes = \"{self.path_res}\";\n")
+        text_file.write(f"DirResFields = \"{self.path_res_fields}\";\n")
+        text_file.write(f"DirResVals = \"{self.path_res_values}\";\n")
+        text_file.write(f"DirResCirc = \"{self.path_res_circuit}\";\n")
 
         # Magnetic Component Type
         if self.component_type == 'inductor':
@@ -1293,13 +1137,14 @@ class MagneticComponent:
         c = onelab.client(__file__)
 
         # get model file names with correct path
-        msh_file = c.getPath('geometry.msh')
+        msh_file = c.getPath(self.path_mesh + 'geometry.msh')
         solver = c.getPath('ind_axi_python_controlled' + '.pro')
 
         # Run simulations as sub clients (non blocking??)
         mygetdp = self.onelab + 'getdp'
         c.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
 
+    # === Post-Processing ===
     def visualize(self):
         """
         - a post simulation viewer
@@ -1312,13 +1157,12 @@ class MagneticComponent:
         epsilon = 1e-9
         # Mesh
         gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
-
         view = 0
 
         #if self.conductor_type[0] != 'litz':
         if any(type != 'litz' for type in self.conductor_type):
             # Ohmic losses (weightend effective value of current density)
-            gmsh.open(self.path + "/res/j2F.pos")
+            gmsh.open(self.path + "/" + self.path_res_fields + "j2F.pos")
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[view].RangeType", 2)
             gmsh.option.setNumber(f"View[view].SaturateValues", 1)
@@ -1332,7 +1176,7 @@ class MagneticComponent:
 
         if any(type == 'litz' for type in self.conductor_type):
             # Ohmic losses (weightend effective value of current density)
-            gmsh.open(self.path + "/res/jH.pos")
+            gmsh.open(self.path + "/" + self.path_res_fields + "jH.pos")
             gmsh.option.setNumber(f"View[view].ScaleType", 2)
             gmsh.option.setNumber("View[view].RangeType", 2)
             gmsh.option.setNumber("View[view].SaturateValues", 1)
@@ -1343,7 +1187,7 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[view].NbIso", 40)
             view += 1
         # Magnetic flux density
-        gmsh.open(self.path + "/res/Magb.pos")
+        gmsh.open(self.path + "/" + self.path_res_fields + "Magb.pos")
         gmsh.option.setNumber(f"View[view].ScaleType", 1)
         gmsh.option.setNumber(f"View[view].RangeType", 1)
         gmsh.option.setNumber(f"View[view].CustomMin", gmsh.option.getNumber(f"View[view].Min") + epsilon)
@@ -1356,16 +1200,66 @@ class MagneticComponent:
         gmsh.fltk.run()
         gmsh.finalize()
 
-    def femm_reference(self, freq, current, sigma, non_visualize=0):
+    def data_logging(self, sim_choice):
+        """
+        !!! not finally implemented !!!
+
+        This method shall do the saving and loading of results! with date and time
+        :return:
+        """
+        frequencies = None
+        # Data Logging with date and time
+        datetime = time.strftime("%Y%m%d_%H%M%S")
+
+        target_femm = 'Pv_FEMM_' + datetime + '.json'
+        target_femmt = 'Pv_FEMMT_' + datetime + '.json'
+
+        # Either read old data or create
+        if sim_choice != 'show':
+          # pseudo 2D dataframe: ['strand number, strand radius'], 'frequency'  | const. litz radius --> FF
+          if not os.path.isfile(target_femm):
+              df_pv_femm = pd.DataFrame([], index=frequencies, columns=[])
+              df_pv_femmt = pd.DataFrame([], index=frequencies, columns=[])
+          else:
+              # Read Loss Data
+              df_pv_femm = pd.read_json(target_femm)
+              df_pv_femmt = pd.read_json(target_femmt)
+          # print(df_pv_femm, df_pv_femmt)
+
+    def get_loss_data(self, last_n_values, loss_type='litz_loss'):
+        """
+        Returns the last n values from the chosen loss type logged in the result folder.
+        :param last_n_values:
+        :param loss_type:
+        :return:
+        """
+        # Loss file location
+        if loss_type == 'litz_loss':
+            loss_file = 'j2H.dat'
+        if loss_type == 'solid_loss':
+            loss_file = 'j2F.dat'
+        # Read the logged losses corresponding to the frequencies
+        with open(self.path + "/" + self.path_res_values + loss_file, newline='') as f:
+            reader = csv.reader(f)
+            data = list(reader)
+        return data[-last_n_values:-1] + [data[-1]]
+
+    # === Alternative FEMM Solver ===
+    def femm_reference(self, freq, current, sigma, sign=[1], non_visualize=0):
         """
         Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
         Helpful to validate changes (especially in the Prolog Code).
+        :param sign:
         :param non_visualize:
         :param freq:
         :param current:
         :param sigma:
         :return:
         """
+        if sign is None:
+            sign = [1, 1]
+        if not os.path.isdir(self.path + "/" + self.path_res_FEMM):
+            os.mkdir(self.path + "/" + self.path_res_FEMM)
 
         # == Pre Geometry ==
         self.high_level_geo_gen()
@@ -1389,13 +1283,11 @@ class MagneticComponent:
         if self.conductor_type[0] == "solid":
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 0, 0, 0, 0, 0)
 
-
-
         # == Circuit ==
         # coil as seen from the terminals.
-        femm.mi_addcircprop('Primary', current[0], 1)
+        femm.mi_addcircprop('Primary', current[0]*sign[0], 1)
         if self.component_type == 'transformer':
-            femm.mi_addcircprop('Secondary', current[1], 1)
+            femm.mi_addcircprop('Secondary', current[1]*sign[1], 1)
 
         # == Geometry ==
         # Add core
@@ -1467,7 +1359,7 @@ class MagneticComponent:
 
         # Now, the finished input geometry can be displayed.
         femm.mi_zoomnatural()
-        femm.mi_saveas('coil.fem')
+        femm.mi_saveas(self.path_res_FEMM + 'coil.fem')
         femm.mi_analyze()
         femm.mi_loadsolution()
 
@@ -1475,7 +1367,6 @@ class MagneticComponent:
         tmp = femm.mo_getcircuitproperties('Primary')
         self.tot_loss_femm = 0.5 * tmp[0] * tmp[1]
         print(self.tot_loss_femm)
-
 
         """
         # If we were interested in the flux density at specific positions,
@@ -1514,50 +1405,7 @@ class MagneticComponent:
         # When the analysis is completed, FEMM can be shut down.
         # femm.closefemm()
 
-    def data_logging(self, sim_choice):
-        """
-        !!! not finally implemented !!!
-
-        This method shall do the saving and loading of results! with date and time
-        :return:
-        """
-        frequencies = None
-        # Data Logging with date and time
-        datetime = time.strftime("%Y%m%d_%H%M%S")
-
-        target_femm = 'Pv_FEMM_' + datetime + '.json'
-        target_femmt = 'Pv_FEMMT_' + datetime + '.json'
-
-        # Either read old data or create
-        if sim_choice != 'show':
-          # pseudo 2D dataframe: ['strand number, strand radius'], 'frequency'  | const. litz radius --> FF
-          if not os.path.isfile(target_femm):
-              df_pv_femm = pd.DataFrame([], index=frequencies, columns=[])
-              df_pv_femmt = pd.DataFrame([], index=frequencies, columns=[])
-          else:
-              # Read Loss Data
-              df_pv_femm = pd.read_json(target_femm)
-              df_pv_femmt = pd.read_json(target_femmt)
-          # print(df_pv_femm, df_pv_femmt)
-
-    def get_loss_data(self, last_n_values, loss_type='litz_loss'):
-        """
-        Returns the last n values from the chosen loss type logged in the result folder.
-        :param last_n_values:
-        :param loss_type:
-        :return:
-        """
-        # Loss file location
-        if loss_type == 'litz_loss':
-            loss_file = 'j2H.dat'
-        if loss_type == 'solid_loss':
-            loss_file = 'j2F.dat'
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + '/res/' + loss_file, newline='') as f:
-            reader = csv.reader(f)
-            data = list(reader)
-        return data[-last_n_values:-1] + [data[-1]]
-
+    # === Litz Approximation ===
     def pre_simulate(self):
         """
         Used to determine the litz-approximation coefficients.
@@ -1651,6 +1499,196 @@ class MagneticComponent:
         self.pre_simulate()
 
     # ==== Front-End Methods =====
+    # === Geometry Definitions ===
+    def update_core(self, core_type,  **kwargs):
+        """
+        - One positional parameter core_type
+        - All core parameters can be passed or adjusted by keyword calling
+            - Allows single parameter changing
+            - Depending on core_type
+            - Strict keyword usage!
+        :param core_type:
+        :param kwargs:
+            - Case "2D, axisym., EI": 'core_w', 'window_w', 'window_h'
+            - Case "3D, EI": ...tba...
+        :return:
+        """
+        self.core_type = core_type
+        if self.core_type == "EI":
+            if self.dimensionality == "2D axi":
+                for key, value in kwargs.items():
+                    if key == 'core_w':
+                        self.core_w = value
+                    if key == 'window_w':
+                        self.window_w = value
+                    if key == 'window_h':
+                        self.window_h = value
+        if self.core_type == "EI":
+            if self.dimensionality == "3D":
+                # tba 3D Group
+                None
+
+    def update_air_gaps(self, method="center", n_air_gaps=[], position_tag=[0], air_gap_position=[0], air_gap_h=[0.001],
+                        **kwargs):
+        """
+        - "self.air_gaps" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
+           - position_tag: specifies the gapped "leg"
+           - air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
+           - air_gap_h: height/length of the air gap
+           - c_air_gap: mesh accuracy factor
+        - "EI 2D axi": position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
+        :param n_air_gaps:
+        :param position_tag:
+        :param air_gap_h:
+        :param air_gap_position:
+        :param method: "random", "center", "percent", "manually"
+        :return:
+        """
+        self.n_air_gaps = n_air_gaps
+        self.air_gaps = np.empty((self.n_air_gaps, 4))
+        self.c_air_gap = [None] * self.n_air_gaps
+
+        """
+        # Optional updating the number of air gaps
+        for key, value in kwargs.items():
+            if key == 'n_air_gaps':
+                self.n_air_gaps = value
+        """
+
+        # Update air gaps with chosen method
+        if method == "center" and self.dimensionality == "2D axi":
+            if self.n_air_gaps > 1:
+                print(f"{self.n_air_gaps} are too many air gaps for the 'center' option!")
+                raise Warning
+            else:
+                self.c_air_gap[0] = air_gap_h[0] / 3 * self.s
+                self.air_gaps[0, :] = np.array([0, 0, air_gap_h[0], self.c_air_gap[0]])
+
+        if method == "random" and self.dimensionality == "2D axi":
+            position_tag = [0] * self.n_air_gaps
+
+            i = 0
+            while i in range(0, self.n_air_gaps):
+                height = np.random.rand(1) * 0.001 + 0.001
+                position = np.random.rand(1) * (self.window_h - height) - (self.window_h / 2 - height / 2)
+                self.c_air_gap[i] = height / 3 * self.s
+                # Overlapping Control
+                for j in range(0, self.air_gaps.shape[0]):
+                    if self.air_gaps[j, 1]+self.air_gaps[j, 2]/2 > position > self.air_gaps[j, 1]-self.air_gaps[j, 2]/2:
+                        if position_tag[i] == self.air_gaps[j, 0]:
+                            print(f"Overlapping air Gaps have been corrected")
+                else:
+                    self.air_gaps[i, :] = np.array([position_tag[i], position, height, self.c_air_gap[i]])
+                    i += 1
+
+        if (method == "manually" or method == "percent") and self.dimensionality == "2D axi":
+            for i in range(0, self.n_air_gaps):
+                if method == "percent":
+                    air_gap_position[i] = air_gap_position[i] / 100 * (self.window_h - air_gap_h[i]) - (
+                                self.window_h / 2 - air_gap_h[i] / 2)
+                # Overlapping Control
+                for j in range(0, self.air_gaps.shape[0]):
+                    if self.air_gaps[j, 1]+self.air_gaps[j, 2]/2 > air_gap_position[i] > self.air_gaps[j, 1]-self.air_gaps[j, 2]/2:
+                        if position_tag[i] == self.air_gaps[j, 0]:
+                            print(f"Overlapping Air Gap")
+                            raise Warning
+                else:
+                    self.c_air_gap[i] = air_gap_h[i] / 3 * self.s
+                    self.air_gaps[i, :] = np.array([position_tag[i], air_gap_position[i], air_gap_h[i], self.c_air_gap[i]])
+
+    def update_conductors(self, n_turns=[], conductor_type=[], conductor_radix=[], layer_numbers=[], strand_radix=[]):
+        """
+        conductor_type = "stacked"  # Vertical packing of conductors
+        conductor_type = "full"     # One massive Conductor in each window
+        conductor_type = "foil"     # Horizontal packing of conductors
+        conductor_type = "solid"    # Massive wires
+        conductor_type = "litz"     # Litz wires
+        :param n_turns:
+        :param strand_radix:
+        :param layer_numbers:
+        :param conductor_radix:
+        :param conductor_radius:
+        :param n_conductors:
+        :param conductor_type:
+        :return:
+        """
+        if self.component_type == "inductor":
+            if len(n_turns) != 1 or len(conductor_type) != 1:
+                print(f"Wrong number of conductor parameters passed to inductor model!")
+                raise Warning
+        if self.component_type == "transformer":
+            if len(n_turns) != 2 or len(conductor_type) != 2:
+                print(f"Wrong number of conductor parameters passed to transformer model!")
+                raise Warning
+
+        self.turns = n_turns
+        self.conductor_type = conductor_type
+
+        for i in range(0, self.n_conductors):
+            print(i)
+            if self.conductor_type[i] == 'solid':
+                self.conductor_radius[i] = conductor_radix[i]
+                self.A_cell[i] = np.pi * self.conductor_radius[i]**2  # Cross section of the solid conductor
+            if self.conductor_type[i] == 'litz':
+                self.update_litz_configuration(num=i,
+                                               litz_parametrization_type='implicite_FF',
+                                               ff=None,
+                                               conductor_radius=conductor_radix[i],
+                                               n_layers=layer_numbers[i],
+                                               strand_radius=strand_radix[i])
+                # Surface of the litz approximated hexagonal cell
+                # self.A_cell = np.pi * self.conductor_radius**2  # * self.FF
+
+    def update_litz_configuration(self, num=0, litz_parametrization_type='implicite_FF', strand_radius=None, ff=None,
+                                  conductor_radius=None, n_layers=None):
+        """
+        - updates the conductor with number num (simple transformer: num=0 -> primary winding,
+                                                                     num=1 -> secondary winding)
+        - used to change litz configurations
+        - also used at first initialisation of the geometry
+        - needed to always make sure that the relation between litz parameters (strand radius, fill factor, number of
+          layers/strands and conductor/litz radius) is valid and consistent
+        - 4 parameters, 1 degree of freedom (dof)
+        :param num:
+        :param litz_parametrization_type:
+        :param strand_radius:
+        :param ff:
+        :param conductor_radius:
+        :param n_layers:
+        :return:
+        """
+        # Litz Approximation
+        if litz_parametrization_type == 'implicite_FF':
+            self.conductor_radius[num] = conductor_radius
+            self.n_layers[num] = n_layers
+            self.n_strands[num] = NbrStrands(self.n_layers[num])
+            self.strand_radius[num] = strand_radius
+            # hexagonal packing: ~90.7% are theoretical maximum FF
+            ff_exact = self.n_strands[num]*self.strand_radius[num]**2/self.conductor_radius[num]**2
+            print(f"Exact fill factor: {ff_exact}")
+            self.FF[num] = np.around(ff_exact, decimals=2)
+            print(f"Updated Litz Configuration: \n"
+                  f"FF: {self.FF[num]} \n"
+                  f"Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
+                  f"Strand radius: {self.strand_radius[num]} \n"
+                  f"Conductor radius: {self.conductor_radius[num]}")
+            # print(f"Rounded fill factor: {self.FF}")
+
+        if litz_parametrization_type == 'implicite_litz_radius':
+            self.FF[num] = ff
+            self.n_layers[num] = n_layers
+            self.n_strands[num] = NbrStrands(self.n_layers)
+            self.strand_radius[num] = strand_radius
+            self.conductor_radius[num] = np.sqrt(self.n_strands[num]*self.strand_radius[num]**2/self.FF[num])
+            print(f"Updated Litz Configuration: \n "
+                  f"FF: {self.FF[num]} \n "
+                  f"Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
+                  f"Strand radius: {self.strand_radius[num]} \n"
+                  f"Conductor radius: {self.conductor_radius[num]}")
+
+        self.A_cell[num] = self.n_strands[num] * self.strand_radius[num]**2 * np.pi / self.FF[num]
+
+    # === Standard Simulations ===
     def single_simulation(self, freq, current, phi=[], skin_mesh_factor=1):
         """
         - can be used for a single simulation
@@ -1667,33 +1705,143 @@ class MagneticComponent:
         self.simulate()
         self.visualize()
 
-    def adaptive_single_simulation(self, freq, current, phi=[], max_iter=1, local=0):
+    def get_inductances(self, I0, op_frequency=0, mesh_accuracy=0.5):
         """
-        - can be used for a single simulation
-        - no sweeping at all
-        :param freq:
-        :param current:
+
+        :param mesh_accuracy:
+        :param I0:
+        :param op_frequency:
         :return:
         """
-        self.high_level_geo_gen(frequency=freq)
-        self.generate_mesh()
-        self.excitation(f=freq, i=current, phases=phi)  # frequency and current
-        self.file_communication()
-        self.pre_simulate()
-        self.simulate()
-        self.visualize()
 
-        for i in range(0, max_iter):
-            self.refine_mesh(local=local)
-            self.excitation(f=freq, i=current, phases=phi)  # frequency and current
-            self.file_communication()
-            self.pre_simulate()
-            self.simulate()
-            self.visualize()
+        # Remove "old" Inductance Logs
+        try:
+            os.remove(self.path + "/" + self.path_res_values + "L_11.dat")
+            os.remove(self.path + "/" + self.path_res_values + "L_22.dat")
+        except:
+            print("Could not find Inductance logs")
 
-    def mesh(self, frequency=None, skin_mesh_factor=1):
-        self.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
-        self.generate_mesh()
+        # -- Inductance Estimation --
+        self.mesh(frequency=op_frequency, skin_mesh_factor=mesh_accuracy)
+        # 2nd-open
+        #frequencies = [op_frequency] * 4
+        #currents = [[I0, 0], [0, I0], [I0, self.turns[0] / self.turns[1] * I0], [self.turns[1] / self.turns[0] * I0, I0]]
+        frequencies = [op_frequency] * 2
+        currents = [[I0, 0], [0, I0]]
+        phases = [[0, 180], [0, 180]]
+
+        self.excitation_sweep(frequencies=frequencies, currents=currents, phi=phases[0], show_last=1)
+
+        print(f"\n"
+              f"                             == Inductances ==                             \n")
+
+        # Read the logged Flux_Linkages
+        with open(self.path + "/" + self.path_res_values + "Flux_Linkage_1.dat") as f:
+            line = f.readlines()[-2:]
+            # Fluxes induced in Winding 1
+            Phi_11 = float(line[0].split(sep=' ')[2])
+            Phi_12 = float(line[1].split(sep=' ')[2])
+
+        with open(self.path + "/" + self.path_res_values + "Flux_Linkage_2.dat") as f:
+            line = f.readlines()[-2:]
+            # Fluxes induced in Winding 2
+            Phi_21 = float(line[0].split(sep=' ')[2])
+            Phi_22 = float(line[1].split(sep=' ')[2])
+
+        print(f"\n"
+              f"Fluxes: \n"
+              f"Phi_11 = {Phi_11}     Induced by I_1 in Winding1 \n"
+              f"Phi_21 = {Phi_21}     Induced by I_1 in Winding2 \n"
+              f"Phi_12 = {Phi_12}     Induced by I_2 in Winding1 \n"
+              f"Phi_22 = {Phi_22}     Induced by I_2 in Winding2 \n")
+
+        """
+        # Old way
+        # Calculation of inductance matrix
+        L_s1 = 0.5*(L_11-self.turns[0]**2/self.turns[1]**2*L_22+L_k1)
+        L_m1 = L_11 - L_s1
+        L_m = self.turns[1]/self.turns[0]*L_m1
+        L_m2 = self.turns[1]/self.turns[0]*L_m
+        L_s2 = L_22 - L_m2
+        """
+
+        # Turns Ratio n=N1/N2 with relative winding sense
+        if phases[0][0] != phases[0][1]:
+            n = -1 * self.turns[0] / self.turns[1]
+        else:
+            n = self.turns[0] / self.turns[1]
+        print(f"\n"
+              f"Turns Ratio:\n"
+              f"n = {n}\n"
+              )
+
+        # Coupling Factors
+        K_21 = Phi_21 / Phi_22
+        K_12 = Phi_12 / Phi_11
+        k = n/np.abs(n) * (K_21*K_12)**0.5
+        print(f"Coupling Factors:\n"
+              f"K_12 = Phi_21 / Phi_22 = {K_12}\n"
+              f"K_21 = Phi_12 / Phi_11 = {K_21}\n"
+              f"k = M / Sqrt(L_11 * L_22) = {k}\n"
+              )
+
+        # Read the logged inductance values
+        with open(self.path + "/" + self.path_res_values + "L_11.dat") as f:
+            line = f.readlines()[-1]
+            words = line.split(sep=' ')
+            L_11 = float(words[2])
+        with open(self.path + "/" + self.path_res_values + "L_22.dat") as f:
+            line = f.readlines()[-1]
+            words = line.split(sep=' ')
+            L_22 = float(words[2])
+        print(f"\n"
+              f"Self Inductances:\n"
+              f"L_11 = {L_11}\n"
+              f"L_22 = {L_22}\n"
+              )
+
+        # Main/Counter Inductance
+        M = k * (L_11*L_22)**0.5
+        M_ = L_11 * K_12  # Only to proof correctness - ideally: M = M_ = M__
+        M__ = L_22 * K_21  # Only to proof correctness - ideally: M = M_ = M__
+        print(f"\n"
+              f"Main/Counter Inductance:\n"  
+              f"M = k * Sqrt(L_11 * L_22) = {M}\n"
+              f"M_ = L_11 * K_12 = {M_}\n"
+              f"M__ = L_22 * K_21 = {M__}\n"
+              )
+
+        # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' ü
+        L_s1 = L_11 - M * n
+        L_s2 = L_22 - M / n
+        L_h = M * n
+        print(f"\n"
+              f"T-ECD (primary side transformed):\n"
+              f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+              f"    - Transformation Ratio: ü\n"
+              f"    - Primary Side Stray Inductance: L_s1\n"
+              f"    - Secondary Side Stray Inductance: L_s2\n"
+              f"    - Primary Side Main Inductance: L_h\n"
+              f"ü := n = {n}\n"
+              f"L_s1 = L_11 - M * n = {L_s1}\n"
+              f"L_s2 = L_22 - M / n = {L_s2}\n"
+              f"L_h = M * n = {L_h}\n"
+              )
+
+        # Stray Inductance concentrated on Primary Side
+        ü_conc = M / L_22
+        L_s_conc = (1 - k**2) * L_11
+        L_h_conc = M**2 / L_11
+        print(f"\n"
+              f"T-ECD (primary side concentrated):\n"
+              f"[Underdetermined System: ü := M / L_22  -->  L_s2 = L_22 - M / n = 0]\n"
+              f"    - Transformation Ratio: ü\n"
+              f"    - (Primary) Stray Inductance: L_s1\n"
+              f"    - Primary Side Main Inductance: L_h\n"
+              f"ü := M / L_22 = k * Sqrt(L_11 / L_22) = {ü_conc}\n"
+              f"L_s1 = (1 - k^2) * L_11 = {L_s_conc}\n"
+              f"L_h = M^2 / L_22 = k^2 * L_11 = {L_h_conc}\n"
+              )
 
     def excitation_sweep(self, frequencies=[], currents=[], phi=[0, 180], show_last=False):
         """
@@ -1720,6 +1868,31 @@ class MagneticComponent:
             self.pre_simulate()
             self.simulate()
         if show_last:
+            self.visualize()
+
+    # === Special/Experimental Simulations ===
+    def adaptive_single_simulation(self, freq, current, phi=[], max_iter=1, local=0):
+        """
+        - can be used for a single simulation
+        - no sweeping at all
+        :param freq:
+        :param current:
+        :return:
+        """
+        self.high_level_geo_gen(frequency=freq)
+        self.generate_mesh()
+        self.excitation(f=freq, i=current, phases=phi)  # frequency and current
+        self.file_communication()
+        self.pre_simulate()
+        self.simulate()
+        self.visualize()
+
+        for i in range(0, max_iter):
+            self.refine_mesh(local=local)
+            self.excitation(f=freq, i=current, phases=phi)  # frequency and current
+            self.file_communication()
+            self.pre_simulate()
+            self.simulate()
             self.visualize()
 
     def litz_loss_comparison(self, FF, n_layers, strand_radius, sim_choice, sweep_parameter='fill_factor', nametag=''):
@@ -1864,112 +2037,9 @@ class MagneticComponent:
         # ax.text(25000, 0.5, 'FEMMT', color='g', ha='right', rotation=0, wrap=True)
         plt.show()
 
-    def get_inductances(self, I0, op_frequency=0, mesh_accuracy=0.5):
-        """
 
-        :param I0:
-        :param op_frequency:
-        :return:
-        """
-
-        # Remove "old" Inductance Logs
-        try:
-            os.remove(self.path + "/res/L_11.dat")
-            os.remove(self.path + "/res/L_22.dat")
-        except:
-            print("Could not find Inductance logs")
-
-        # -- Inductance Estimation --
-        self.mesh(frequency=op_frequency, skin_mesh_factor=mesh_accuracy)
-        # 2nd-open
-        #frequencies = [op_frequency] * 4
-        #currents = [[I0, 0], [0, I0], [I0, self.turns[0] / self.turns[1] * I0], [self.turns[1] / self.turns[0] * I0, I0]]
-        frequencies = [op_frequency] * 2
-        currents = [[I0, 0], [0, I0]]
-
-        self.excitation_sweep(frequencies=frequencies, currents=currents, show_last=1)
-
-        # Open loss/error results
-        inductance_matrix = open(self.path + "/res/Inductance_Matrix.dat", "w")
-        # Read the logged inductance values
-        with open(self.path + "/res/L_11.dat") as f:
-            next_line = False
-            count_lines = 0
-            for line in f:
-                if next_line:
-                    next_line = False
-                    count_lines += 1
-                    words = line.split(sep=' ')
-                    if count_lines == 1:
-                        L_11 = float(words[2])
-                    if count_lines == 2:
-                        L_k1 = float(words[2])
-                if "L_11" in line:
-                    next_line = True
-                if count_lines == 2:
-                    break
-        # Read the logged inductance values
-        with open(self.path + "/res/L_22.dat") as f:
-            next_line = False
-            count_lines = 0
-            for line in f:
-                if next_line:
-                    next_line = False
-                    words = line.split(sep=' ')
-                    L_22 = float(words[2])
-                    count_lines += 1
-                if "L_22" in line:
-                    next_line = True
-                if count_lines == 1:
-                    break
-
-
-        # Read the logged Flux_Linkages
-        with open(geo.path + "/res/Flux_Linkage_1.dat") as f:
-            for line in f:
-                words = line.split(sep=' ')
-                Flux_Linkage_1 = float(words[2])
-                break
-        with open(geo.path + "/res/Flux_Linkage_2.dat") as f:
-            for line in f:
-                words = line.split(sep=' ')
-                Flux_Linkage_2 = float(words[2])
-                break
-
-        print(f"Flux_Linkage_1 = {Flux_Linkage_1}\n"
-              f"Flux_Linkage_2 = {Flux_Linkage_2}\n")
-
-        """
-        # Old way
-        # Calculation of inductance matrix
-        L_s1 = 0.5*(L_11-self.turns[0]**2/self.turns[1]**2*L_22+L_k1)
-        L_m1 = L_11 - L_s1
-        L_m = self.turns[1]/self.turns[0]*L_m1
-        L_m2 = self.turns[1]/self.turns[0]*L_m
-        L_s2 = L_22 - L_m2
-        """
-
-        K_12 =  Flux_Linkage_1 / Flux_Linkage_2
-        M = L_22 * K_12
-
-
-        print(f"L_11 = {L_11}\n"
-              f"L_22 = {L_22}\n"
-              f"L_m = {M}\n"
-              #f"L_s1 = {L_s1}\n"
-              #f"L_s2 = {L_s2}\n"
-              )
-        """
-        if read == 1 and ' ' in line:
-            # words = line.split(sep=' ')
-            words = line.replace(' ', ', ')
-            for word in words:
-                inductance_matrix.write(word)
-        """
-        inductance_matrix.close()
-
-
-
+#  ===== Static Functions  =====
+#  Used somewhere in the
 def inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate as the two
