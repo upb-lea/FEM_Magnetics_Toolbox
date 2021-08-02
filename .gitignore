@@ -13,3 +13,4 @@ dist/
 femmt.egg-info/
 .eggs/
 femmt/config.json
+femmt/Parameter.pro
