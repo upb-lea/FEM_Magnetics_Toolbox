@@ -11,3 +11,5 @@ gpgit/
 build/
 dist/
 femmt.egg-info/
+.eggs/
+femmt/config.json
