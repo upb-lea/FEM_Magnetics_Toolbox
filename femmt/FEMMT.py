@@ -16,13 +16,29 @@ from onelab import onelab
 import json
 import random
 import string
+import subprocess
+import pkg_resources
 # Self written functions. It is necessary to write a . before the function, due to handling
 # this package also as a pip-package
 # from .femmt_functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
 
+
+def install_femm_if_missing():
+    required = {'pyfemm'}
+    installed = {pkg.key for pkg in pkg_resources.working_set}
+    missing = required - installed
+
+    if missing:
+        print("Missing 'pyfemm' installation.")
+        print("Installing 'pyfemm' ...")
+        python = sys.executable
+        subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
+        print("'pyfemm' is now installed!")
+
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
 if os.name == 'nt':
+    install_femm_if_missing()
     import femm
 
 
