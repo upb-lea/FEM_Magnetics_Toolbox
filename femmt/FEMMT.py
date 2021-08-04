@@ -152,8 +152,13 @@ class MagneticComponent:
         Creates a config.p at first run.
         :return: -
         """
-        if os.path.isfile(self.path + "/config.json") and os.stat(self.path + "/config.json") != 0:
-            json_file = open(self.path + '/config.json','rb') #with open(self.path + '/config.p') as f:
+        # find out path of femmt (installed module or directly opened in git)?
+        module_file_path = pathlib.Path(__file__).parent.absolute()
+        config_file_path = module_file_path / 'config.json'
+
+        # check if config.json is available and not empty
+        if pathlib.Path.is_file(config_file_path) and pathlib.Path.stat(config_file_path).st_size != 0:
+            json_file = config_file_path.open('rb')
             loaded_dict = json.load(json_file)
             json_file.close()
             path = loaded_dict['onelab']
@@ -2135,9 +2140,12 @@ def call_for_path(destination, config_file="config.json"):
     # pickle.dumps(path, pickle_file) # f"{destination} = '{path}'\n")
     # pickle_file.close()
 
+    # Find out the path of installed module, or in case of running directly from git, find the path of git repository
+    module_file_path = pathlib.Path(__file__).parent.absolute()
+
     path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
     dict = {"onelab": path}
-    file = open(config_file, 'w', encoding='utf-8')
+    file = open(module_file_path / config_file, 'w', encoding='utf-8')
     json.dump(dict, file, ensure_ascii=False)
     file.close()
 

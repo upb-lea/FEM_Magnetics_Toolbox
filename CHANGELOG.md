@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+### Fixed
+- fix #2: config.json was not read correct
+
 ## [0.1.0] - 2021-07-28
 ### Added
 #### Structure
