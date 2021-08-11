@@ -6,8 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
 
+## [0.1.1] - 2021-08-11
+### Updated
+- updated inductance calculations
+- code clean up
 
 ### Fixed
 - fix #2: config.json was not read correct
@@ -38,18 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/SolidComp.py
 - add femmt/CompRes.py
 
-
-
-
-
-### Changed
-
-
-### Removed
-
-
-
-[Unreleased]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.1...HEAD
+[0.1.1]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.0...0.1.0
 
 
