@@ -2181,3 +2181,124 @@ def NbrStrands(NbrLayers):
     :return:
     """
     return 3*(NbrLayers+1)**2 - 3*(NbrLayers+1) + 1
+
+
+def fft(period_vector_t_i, sample_factor=1000, plot='no', rad='no', f0=None, title='FFT'):
+    """
+    A fft for a input signal. Input signal is in vector format and should include one period.
+
+    Output vector includes only frequencies with amplitudes > 1% of input signal
+
+    Minimal example:
+    example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
+    out = fft(example_waveform, plot=True, rad='yes', f0=25000, title='FFT input current')
+
+    :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
+    :param sample_factor: f_sampling/f_period, defaults to 1000
+    :param plot: insert anything else than "no" to show a plot to visualize input and output
+    :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
+    :param f0: set when rad != 'no'
+    :param title: plot window title, defaults to 'FFT'
+    :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
+    """
+    t = period_vector_t_i[0]
+    i = period_vector_t_i[1]
+
+    if rad != 'no':
+        period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
+
+    # time domain
+    t_interp = np.linspace(0, t[-1], sample_factor)
+    i_interp = np.interp(t_interp, t, i)
+
+    f0 = round(1 / t[-1])
+    Fs = f0 * sample_factor
+
+    # frequency domain
+    f = np.linspace(0, (sample_factor - 1) * f0, sample_factor)
+    x = np.fft.fft(i_interp)
+    x_mag = np.abs(x) / sample_factor
+    phi_rad = np.angle(x)
+
+    f_corrected = f[0:int(sample_factor / 2 + 1)]
+    x_mag_corrected = 2 * x_mag[0:int(sample_factor / 2 + 1)]
+    x_mag_corrected[0] = x_mag_corrected[0] / 2
+    phi_rad_corrected = phi_rad[0:int(sample_factor / 2 + 1)]
+
+    f_out = []
+    x_out = []
+    phi_rad_out = []
+    for x in range(len(x_mag_corrected)):
+        if x_mag_corrected[x] > 0.01 * max(i):
+            f_out.append(f_corrected[x])
+            x_out.append(x_mag_corrected[x])
+            phi_rad_out.append(phi_rad_corrected[x])
+
+    if plot != 'no':
+        print(f"{title = }")
+        print(f"{t[-1] = }")
+        print(f"{f0 = }")
+        print(f"{Fs = }")
+        print(f"{sample_factor = }")
+        print(f"f_out = {np.around(f_out, 0)}")
+        print(f"x_out = {np.around(x_out, 1)}")
+        print(f"phi_rad_out = {np.around(phi_rad_out, 1)}")
+
+        reconstructed_signal = 0
+        for i_range in range(len(f_out)):
+            reconstructed_signal += x_out[i_range] * np.cos(
+                2 * np.pi * f_out[i_range] * t_interp + phi_rad_out[i_range])
+
+        fig, [ax1, ax2] = plt.subplots(num=title, nrows=2, ncols=1)
+        ax1.plot(t, i, label='original signal')
+        ax1.plot(t_interp, reconstructed_signal, label='reconstructed signal')
+        ax1.grid()
+        ax1.set_title('Signal')
+        ax1.set_xlabel('time in s')
+        ax1.set_ylabel('Amplitude')
+        ax1.legend()
+        ax2.stem(f_out, x_out)
+        ax2.grid()
+        ax2.set_title('FFT')
+        ax2.set_xlabel('Frequency in Hz')
+        ax2.set_ylabel('Amplitude')
+        plt.tight_layout()
+        plt.show()
+
+    return np.array([f_out, x_out, phi_rad_out])
+
+
+def compare_fft_list(list, rad='no', f0=None):
+    """
+    generate fft curves from input curves and compare them to each other
+
+    minimal example:
+    example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
+    example_waveform_2 = np.array([[0, 0.55, 3.14, 3.69, 6.28],[-138.37, 257.58, 138.37, -257.58, -138.37]])
+    compare_fft_list([example_waveform, example_waveform_2], rad='yes', f0=25000)
+
+    :param list: list of fft-compatible numpy-arrays [element, element, ... ], each element format like [[time-vector[,[current-vector]]. One period only
+    :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
+    :param f0: set when rad != 'no'
+    :return: plot
+    """
+
+    out = []
+    for x in range(len(list)):
+        out.append([fft(list[x], sample_factor=1000, plot='no', rad=rad, f0=f0)])
+
+    fig, axs = plt.subplots(2, len(list), sharey=True)
+    for x in range(len(list)):
+        axs[0, x].plot(list[x][0], list[x][1], label='original signal')
+        axs[0, x].grid()
+        axs[0, x].set_xlabel('time in s')
+        axs[0, x].set_ylabel('Amplitude')
+        axs[1, x].stem(out[x][0][0], out[x][0][1])
+        axs[1, x].grid()
+        axs[1, x].set_xlabel('frequency in Hz')
+        axs[1, x].set_ylabel('Amplitude')
+
+        # ax1.plot(t_interp, reconstructed_signal, label='reconstructed signal')
+
+    plt.tight_layout()
+    plt.show()
