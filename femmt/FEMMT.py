@@ -18,6 +18,7 @@ import random
 import string
 import subprocess
 import pkg_resources
+from typing import Union
 # Self written functions. It is necessary to write a . before the function, due to handling
 # this package also as a pip-package
 # from .femmt_functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
@@ -2183,7 +2184,8 @@ def NbrStrands(NbrLayers):
     return 3*(NbrLayers+1)**2 - 3*(NbrLayers+1) + 1
 
 
-def fft(period_vector_t_i, sample_factor=1000, plot='no', rad='no', f0=None, title='FFT'):
+def fft(period_vector_t_i, sample_factor: float = 1000, plot: str = 'no', rad: str ='no', f0: Union[float, None]=None,
+        title: str='FFT'):
     """
     A fft for a input signal. Input signal is in vector format and should include one period.
 
@@ -2195,17 +2197,20 @@ def fft(period_vector_t_i, sample_factor=1000, plot='no', rad='no', f0=None, tit
 
     :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
     :param sample_factor: f_sampling/f_period, defaults to 1000
-    :param plot: insert anything else than "no" to show a plot to visualize input and output
+    :param plot: insert anything else than "no" or 'False' to show a plot to visualize input and output
     :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
-    :param f0: set when rad != 'no'
+    :param f0: set when rad != 'no' and rad != False
     :param title: plot window title, defaults to 'FFT'
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     """
     t = period_vector_t_i[0]
     i = period_vector_t_i[1]
 
-    if rad != 'no':
-        period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
+    if rad != 'no' and rad!=False:
+        if f0 is None:
+            raise ValueError("if rad!='no', a fundamental frequency f0 must be set")
+        else:
+            period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
 
     # time domain
     t_interp = np.linspace(0, t[-1], sample_factor)
@@ -2228,13 +2233,13 @@ def fft(period_vector_t_i, sample_factor=1000, plot='no', rad='no', f0=None, tit
     f_out = []
     x_out = []
     phi_rad_out = []
-    for x in range(len(x_mag_corrected)):
-        if x_mag_corrected[x] > 0.01 * max(i):
-            f_out.append(f_corrected[x])
-            x_out.append(x_mag_corrected[x])
-            phi_rad_out.append(phi_rad_corrected[x])
+    for count, value in enumerate(x_mag_corrected):
+        if x_mag_corrected[count] > 0.01 * max(i):
+            f_out.append(f_corrected[count])
+            x_out.append(x_mag_corrected[count])
+            phi_rad_out.append(phi_rad_corrected[count])
 
-    if plot != 'no':
+    if plot != 'no' and plot != False:
         print(f"{title = }")
         print(f"{t[-1] = }")
         print(f"{f0 = }")
@@ -2268,7 +2273,7 @@ def fft(period_vector_t_i, sample_factor=1000, plot='no', rad='no', f0=None, tit
     return np.array([f_out, x_out, phi_rad_out])
 
 
-def compare_fft_list(list, rad='no', f0=None):
+def compare_fft_list(list: list, rad: float = 'no', f0: Union[float,None] = None) -> None:
     """
     generate fft curves from input curves and compare them to each other
 
@@ -2284,19 +2289,19 @@ def compare_fft_list(list, rad='no', f0=None):
     """
 
     out = []
-    for x in range(len(list)):
-        out.append([fft(list[x], sample_factor=1000, plot='no', rad=rad, f0=f0)])
+    for count, value in enumerate(list):
+        out.append([fft(list[count], sample_factor=1000, plot='no', rad=rad, f0=f0)])
 
     fig, axs = plt.subplots(2, len(list), sharey=True)
-    for x in range(len(list)):
-        axs[0, x].plot(list[x][0], list[x][1], label='original signal')
-        axs[0, x].grid()
-        axs[0, x].set_xlabel('time in s')
-        axs[0, x].set_ylabel('Amplitude')
-        axs[1, x].stem(out[x][0][0], out[x][0][1])
-        axs[1, x].grid()
-        axs[1, x].set_xlabel('frequency in Hz')
-        axs[1, x].set_ylabel('Amplitude')
+    for count, value in enumerate(list):
+        axs[0, count].plot(list[count][0], list[count][1], label='original signal')
+        axs[0, count].grid()
+        axs[0, count].set_xlabel('time in s')
+        axs[0, count].set_ylabel('Amplitude')
+        axs[1, count].stem(out[count][0][0], out[count][0][1])
+        axs[1, count].grid()
+        axs[1, count].set_xlabel('frequency in Hz')
+        axs[1, count].set_ylabel('Amplitude')
 
         # ax1.plot(t_interp, reconstructed_signal, label='reconstructed signal')
 
