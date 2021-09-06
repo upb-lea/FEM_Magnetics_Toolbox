@@ -2,6 +2,7 @@
 import csv
 import fileinput
 import numpy as np
+import numpy.typing as npt
 import os
 import pandas as pd
 import pathlib
@@ -2184,8 +2185,8 @@ def NbrStrands(NbrLayers):
     return 3*(NbrLayers+1)**2 - 3*(NbrLayers+1) + 1
 
 
-def fft(period_vector_t_i, sample_factor: float = 1000, plot: str = 'no', rad: str ='no', f0: Union[float, None]=None,
-        title: str='FFT'):
+def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', rad: str ='no',
+        f0: Union[float, None]=None, title: str='FFT') -> npt.NDArray[list]:
     """
     A fft for a input signal. Input signal is in vector format and should include one period.
 
