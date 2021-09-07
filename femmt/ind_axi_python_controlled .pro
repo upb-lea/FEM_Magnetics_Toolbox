@@ -10,36 +10,25 @@ ExtGmsh = ".pos";
 // ----------------------
 // All Variables - remove or create in python
 // ----------------------
-Nb_max_iter             = 100;
-relaxation_factor       = 1.;
-stop_criterion          = 1e-8;
-Flag_Circuit            = Flag_ImposedVoltage;
-// ----------------------
-// half inductor with axisymmetry
-// 1 means full zylinder
-SymFactor               = 1. ;
-CoefGeo = 2*Pi*SymFactor ; // axisymmetry + symmetry factor
+Nb_max_iter = 100;
+relaxation_factor = 1.;
+stop_criterion = 1e-8;
+SymFactor = 1. ; //half inductor with axisymmetry
+Flag_Circuit = Flag_ImposedVoltage;
 
-
-
-Flag_Conducting_Core = 1;
-sigma_core = 0.5;
 
 // ----------------------
 // Physical numbers
 // ----------------------
-OUTBND              = 1111;
-AIR                 = 1000;
-AIR_EXT             = 1001;
-IRON                = 2000;
-iCOND1              = 4000;
-istrandedCOND1      = 6000;
-If(Flag_Transformer)
-  iCOND2            = 5000;
-  istrandedCOND2    = 7000;
+OUTBND  = 1111;
+AIR    = 1000;
+IRON   = 2000;
+iCOND1 = 4000;
+istrandedCOND1 = 6000; // sTill
+If(Flag_Transformer)// xfmr
+  iCOND2 = 5000;
+  istrandedCOND2 = 7000; // sTill
 EndIf
-
-
 
 // ----------------------
 // Groups
@@ -48,28 +37,29 @@ Group{
   // ----------------------
   // Physical Domains
   // ----------------------
-  Air  = Region[{AIR, AIR_EXT}];
+  Air  = Region[{AIR}];
   Iron = Region[{IRON}];
-
-  // Non Conducting Domain:
-  DomainCC = Region[{Air}];
-  If(!Flag_Conducting_Core)
-    DomainCC += Region[{Iron}];
+  Flag_Conducting_Core = 1;
+  sigma_core = 0.0001;
+  If(Flag_Conducting_Core)
+    DomainCC = Region[{Air}] ; // Non Conducting Domain
   EndIf
+  If(!Flag_Conducting_Core)
+    DomainCC = Region[{Air, Iron}] ; // Non Conducting Domain
+  EndIf
+  OuterBoundary = Region[{OUTBND}]; // including symmetry
 
-  // Boundary Conditions
-  // including symmetry
-  OuterBoundary = Region[{OUTBND}];
 
   // Current Conducting Domains
   Winding1 =  Region[{}] ;
   Winding2 =  Region[{}] ;
-  StrandedWinding1 =  Region[{}] ;
-  StrandedWinding2 =  Region[{}] ;
+
+  StrandedWinding1 =  Region[{}] ; // sTill
+  StrandedWinding2 =  Region[{}] ; // sTill
 
 
-  // Primary (Inductor + Transformer)
-  nbturns1 = NbrCond1/SymFactor;
+  // Inductor + Transformer
+  nbturns1 = NbrCond1/SymFactor; // Primary
   For iF In {1:nbturns1}
       Turn1~{iF} = Region[{(iCOND1+iF-1)}] ;
       Winding1  += Region[{(iCOND1+iF-1)}] ;
@@ -80,9 +70,9 @@ Group{
   EndFor
 
 
-  // Secondary (Transformer)
-  If(Flag_Transformer)
-    nbturns2 = NbrCond2/SymFactor;
+  // Transformer
+  If(Flag_Transformer) // xfmr
+    nbturns2 = NbrCond2/SymFactor; // Secondary
     For iF In {1:nbturns2}
         Turn2~{iF} = Region[{(iCOND2+iF-1)}] ;
         Winding2  += Region[{(iCOND2+iF-1)}] ;
@@ -96,35 +86,30 @@ Group{
 
   DomainC = Region[{Winding1, Winding2}] ;
   If(Flag_Conducting_Core)
-    DomainC += Region[{Iron}] ;
+    DomainC += Region[{Iron}] ; // sTill
   EndIf
   DomainS = Region[{StrandedWinding1, StrandedWinding2}] ;
-  DomainCC += Region[{DomainS}] ;
+  DomainCC += Region[{DomainS}] ; // sTill
 
   If(Flag_NL)
-    Domain_Lin      = Region[{Air, Winding1, Winding2, StrandedWinding1, StrandedWinding2}];
+    Domain_Lin      = Region[{Air, Winding1, Winding2, StrandedWinding1, StrandedWinding2}]; // sTill
     Domain_Lin_NoJs = Region[{Air}];
     Domain_NonLin   = Region[{Iron}];
   Else
-    Domain_Lin      = Region[{Air, Iron, Winding1, Winding2, StrandedWinding1, StrandedWinding2}];
+    Domain_Lin      = Region[{Air, Iron, Winding1, Winding2, StrandedWinding1, StrandedWinding2}]; // sTill
     Domain_Lin_NoJs = Region[{Air, Iron}];
     Domain_NonLin   = Region[{}];
   EndIf
 
   Domain = Region[{DomainC, DomainCC}] ;
 
-
-  DomainCond1 = Region[{Winding1, StrandedWinding1}];
-  DomainCond2 = Region[{Winding2, StrandedWinding2}];
-
-  // Dummy region number for postpro with functions
-  DomainDummy = Region[ 12345 ] ;
+  DomainDummy = Region[ 12345 ] ; // Dummy region number for postpro with functions
 
 
   // ----------------------
   // Circuit Domains
   // ----------------------
-  Input  = # 12345 ;
+  Input = # 12345 ;
   iZH    = 10000 ;
   iLH    = 20000 ; // Zskin in homog. coil
   iLHp   = 30000 ;
@@ -161,29 +146,26 @@ Group{
 // ----------------------
 Function {
 
-  // Strand sizes
+
   AreaCell[#{StrandedWinding1}] = AreaCell1;
   If(Flag_Transformer)
     AreaCell[#{StrandedWinding2}] = AreaCell2;
   EndIf
-  // in non-stranded domains, def. AreaCell to 1 (neutral element of mutiplication)
   AreaCell[#{Air, Iron, Winding1, Winding2}] = 1.;
 
 
-  // Material Properties
+  CoefGeo = 2*Pi*SymFactor ; // axisymmetry + symmetry factor
 
-  // sigma: conductivity (= imaginary part of complex permitivity)
-  //rho[] = 1/sigma[];
   sigma[#{Winding1, Winding2}] = SigmaCu ;
   If(Flag_Conducting_Core)
     sigma[#{Iron}] = sigma_core;
   EndIf
-  If(!Flag_Conducting_Core)
+  If(!Flag_Conducting_Core):
     sigma[#{Air, Iron}] = 0.;
   EndIf
 
-  // nu: reluctivity
-  // nu = 1/mu
+  //rho[] = 1/sigma[];
+
   nu[#{Air}] = nu0;
   nu[#{Winding1, Winding2}] = nu0;
 
@@ -221,7 +203,7 @@ Function {
   // Auxiliary functions for post-processing
   nuOm[#{Air}] = -nu[]*Complex[0.,1.];
   nuOm[#{Iron}] = -nu[$1]*Complex[0.,1.];
-  //nuOm[#{Winding1, Winding2}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
+  nuOm[#{Winding1, Winding2}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
 
 
   // Skin Coefficient - will be multiplied with current "ir", which is zero except in windings
@@ -290,8 +272,6 @@ Function {
 }
 
 
-
-
 // ----------------------
 // definition of constraints
 // ----------------------
@@ -304,12 +284,10 @@ Constraint {
   }
 
   // Massive/stranded conductor constraints
-  // Imprinted Currents
   { Name Current_2D ;
     Case {
       // Inductor + Transformer
-      //If(Val_EE_1!=0)
-      If(1)
+      If(Val_EE_1!=0)
           If(Flag_Circuit==0 && Flag_HomogenisedModel1==0)
             { Region Winding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
           EndIf
@@ -319,8 +297,7 @@ Constraint {
       EndIf
       // Transformer
       If(Flag_Transformer)
-        //If(Val_EE_2!=0)
-        If(1)
+        If(Val_EE_2!=0)
             If(Flag_Circuit==0 && Flag_HomogenisedModel2==0)
               { Region Winding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
             EndIf
@@ -336,9 +313,6 @@ Constraint {
   // ---- Only For Voltage Excitation ----
   { Name Voltage_2D ;
     Case{
-      If(Flag_Conducting_Core)
-        { Region Iron ; Value 0; }
-      EndIf
     }
   }
 
@@ -405,7 +379,7 @@ Resolution {
 
       If(!Flag_NL)
           Generate[A] ; Solve[A] ;
-      Else
+          Else
           IterativeLoop[Nb_max_iter, stop_criterion, relaxation_factor]{
               GenerateJac[A] ; SolveJac[A] ;
           }
@@ -441,7 +415,6 @@ PostProcessing {
 
       // Magnetic Field
       { Name h ; Value { Term { [ nu[{d a}]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Magh ; Value { Term { [ Norm[ nu[{d a}]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
 
       // Magnetic Flux Density
       { Name b ; Value { Term { [ {d a} ] ; In Domain ; Jacobian Vol ; } } }
@@ -515,6 +488,8 @@ PostProcessing {
            { Name j2F_density ; Value { Integral {
              [ 0.5*CoefGeo/ElementVol[]*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
              In DomainC ; Jacobian Vol ; Integration II ; } } }
+
+
       EndIf
 
       // DomainS (Stranded Conductors)
@@ -524,7 +499,7 @@ PostProcessing {
              In DomainS ; Jacobian Vol ; Integration II ; } } }
       Else
            { Name j2H ; Value { Integral {
-             [ 0.5*CoefGeo*( Re[{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added
+             [ 0.5*CoefGeo*( Re[{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added by Till
              In DomainS ; Jacobian Vol ; Integration II ; } } }
            { Name j2Hprox ; Value { Integral {
             [ 0.5*CoefGeo*Re[{d a}*Conj[nuOm[]*{d a}]] ] ;// 0.5 added by Till
@@ -549,24 +524,24 @@ PostProcessing {
 
       // Voltage (Voltage_i = dFlux_Linkage_i / dt)
       { Name Voltage_1 ; Value {
-        Integral { [ CoefGeo / AreaCell1 * CompZ[Dt[{a}]] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+        Integral { [ CoefGeo / AreaCell1 * CompZ[Dt[{a}]] ]; In Winding1; Jacobian Vol; Integration II; } } }
       If(Flag_Transformer)
         { Name Voltage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * CompZ[Dt[{a}]] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+          Integral { [ CoefGeo / AreaCell2 * CompZ[Dt[{a}]] ]; In Winding2; Jacobian Vol; Integration II; } } }
       EndIf
 
       // Flux (Linkage)
       { Name Flux_Linkage_1 ; Value {
-        Integral { [ CoefGeo / AreaCell1 * CompZ[{a}] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+        Integral { [ CoefGeo / AreaCell1 * CompZ[{a}] ]; In Winding1; Jacobian Vol; Integration II; } } }
       If(Flag_Transformer)
         { Name Flux_Linkage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * CompZ[{a}] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+          Integral { [ CoefGeo / AreaCell2 * CompZ[{a}] ]; In Winding2; Jacobian Vol; Integration II; } } }
       EndIf
 
       // (Self) Inductances
       If(Val_EE_1!=0)
         { Name L_11 ; Value { Integral {
-          [ Sign1 * CoefGeo / AreaCell1 * CompZ[{a}] / Val_EE_1 ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+          [ Sign1 * CoefGeo / AreaCell1 * CompZ[{a}] / Val_EE_1 ]; In Winding1; Jacobian Vol; Integration II; } } }
         { Name L_11_from_MagEnergy ; Value { Integral {
           [ 2 * CoefGeo*nu[{d a}]*({d a}*{d a})/2 / (Val_EE_1*Val_EE_1) ]; In Domain; Jacobian Vol; Integration II; } } }
       EndIf
@@ -574,7 +549,7 @@ PostProcessing {
       If(Flag_Transformer)
         If(Val_EE_2!=0)
           { Name L_22 ; Value { Integral {
-            [ Sign2 * CoefGeo / AreaCell2 * CompZ[{a}] / Val_EE_2 ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+            [ Sign2 * CoefGeo / AreaCell2 * CompZ[{a}] / Val_EE_2 ]; In Winding2; Jacobian Vol; Integration II; } } }
           { Name L_22_from_MagEnergy ; Value { Integral {
             [ 2 * CoefGeo*nu[{d a}]*({d a}*{d a})/2 / (Val_EE_2*Val_EE_2) ]; In Domain; Jacobian Vol; Integration II; } } }
         EndIf
@@ -618,7 +593,6 @@ PostOperation Map_local UsingPost MagDyn_a {
 
   // Magnetic Field
   //Print[ h,  OnElementsOf Domain,  File StrCat[DirResFields, "h", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ Magh,  OnElementsOf Domain,  File StrCat[DirResFields, "Magh", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Core Loss Density
   If(Flag_Core_Loss)
@@ -647,9 +621,8 @@ PostOperation Map_local UsingPost MagDyn_a {
   Print[ j2F, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
   Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
   Print[ j2H,   OnElementsOf DomainS, File StrCat[DirResFields,"jH",ExtGmsh] ] ;
-  //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
-  //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
-
+  // Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
+  // Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
 
 
   // Settings
@@ -673,16 +646,6 @@ PostOperation Get_global UsingPost MagDyn_a {
   Print[ j2F[ DomainC ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F.dat"]] ;// Joule losses
   //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // Complex power
   Print[ j2H[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H.dat"] ] ;
-  Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
-  Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
-  Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
-  Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
-
-  Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
-  Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];
-  Print[ j2Hskin[StrandedWinding2],   OnGlobal , Format Table];
-  Print[ j2Hprox[StrandedWinding2],   OnGlobal , Format Table];
-
   //Print[ SoH[ DomainS ], OnGlobal, Format TimeTable, File Sprintf("results/SH_f%g.dat", Freq) ] ;
   If(Flag_Core_Loss)
     Print[ piGSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"piGSE.dat"]] ;// Core losses
@@ -701,29 +664,29 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ MagEnergy, OnRegion Domain, Format Table, File Sprintf("results/MagEnergy.dat") ];
 
   // Flux (Linkage)
-  Print[ Flux_Linkage_1[DomainCond1], OnGlobal, Format Table, File > StrCat[DirResVals,"Flux_Linkage_1.dat"]];
-  Print[ Flux_Linkage_1[DomainCond1], OnGlobal, Format Table];
+  Print[ Flux_Linkage_1[Winding1], OnGlobal, Format Table, File > StrCat[DirResVals,"Flux_Linkage_1.dat"]];
+  Print[ Flux_Linkage_1[Winding1], OnGlobal, Format Table];
   If(Flag_Transformer)
-    Print[ Flux_Linkage_2[DomainCond2], OnGlobal, Format Table, File > StrCat[DirResVals,"Flux_Linkage_2.dat"]];
-    Print[ Flux_Linkage_2[DomainCond2], OnGlobal, Format Table];
+    Print[ Flux_Linkage_2[Winding2], OnGlobal, Format Table, File > StrCat[DirResVals,"Flux_Linkage_2.dat"]];
+    Print[ Flux_Linkage_2[Winding2], OnGlobal, Format Table];
   EndIf
 
   // Inductances
   If(Val_EE_1!=0)
-    Print[ L_11[DomainCond1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_11.dat"]] ;
+    Print[ L_11[Winding1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_11.dat"]] ;
     Print[ L_11_from_MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_11_from_MagEnergy.dat"]] ;
   EndIf
   If(Flag_Transformer)
       If(Val_EE_2!=0)
-        Print[ L_22[DomainCond2], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_22.dat"]] ;
+        Print[ L_22[Winding2], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_22.dat"]] ;
         Print[ L_22_from_MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_22_from_MagEnergy.dat"]] ;
       EndIf
   EndIf
 
   // Voltage
-  Print[ Voltage_1[DomainCond1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Voltage_1.dat"]];
+  Print[ Voltage_1[Winding1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Voltage_1.dat"]];
   If(Flag_Transformer)
-    Print[ Voltage_2[DomainCond2], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Voltage_2.dat"]];
+    Print[ Voltage_2[Winding2], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Voltage_2.dat"]];
   EndIf
 
   // Circuit Quantities

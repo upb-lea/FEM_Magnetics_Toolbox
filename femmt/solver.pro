@@ -33,23 +33,19 @@ Integration {
 
 FunctionSpace {
 
-  { Name Hcurl_a_2D ; Type Form1P ; // Split for TD + homog: subspace isolating unknowns
+  // Magnetic Vector Potential
+  { Name Hcurl_a_2D ; Type Form1P ;
     BasisFunction {
-      { Name se ; NameOfCoef ae ; Function BF_PerpendicularEdge ;
-        Support Domain ; Entity NodesOf[ All, Not DomainC ] ; }
-      { Name seh ; NameOfCoef aeh ; Function BF_PerpendicularEdge ;
-        Support Domain ; Entity NodesOf[ DomainC ] ; }
-    }
-    SubSpace {
-      { Name aH ; NameOfBasisFunction {seh}; } // Subspace only used in TD homog
-    }
-
+      { Name se1 ; NameOfCoef ae1 ; Function BF_PerpendicularEdge ;
+        Support Region[{Domain}] ; Entity NodesOf [ All ] ; }
+   }
     Constraint {
-      { NameOfCoef ae  ; EntityType NodesOf ; NameOfConstraint MVP_2D ; }
-     }
+      { NameOfCoef ae1 ; EntityType NodesOf ; NameOfConstraint MVP_2D ; }
+    }
   }
 
-  { Name Hregion_u_2D ; Type Form1P ; // Gradient of Electric scalar potential (2D)
+  // Gradient of Electric scalar potential (2D)
+  { Name Hregion_u_2D ; Type Form1P ;
     BasisFunction {
       { Name sr ; NameOfCoef ur ; Function BF_RegionZ ;
         Support DomainC ; Entity DomainC ; }
@@ -64,6 +60,7 @@ FunctionSpace {
     }
   }
 
+  // Imprinted Current Density
   { Name Hregion_i_2D ; Type Vector ;
     BasisFunction {
       { Name sr ; NameOfCoef ir ; Function BF_RegionZ ;
@@ -156,6 +153,13 @@ Formulation {
         In DomainC ; Jacobian Vol ; Integration II ; }
       Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
+
+
+      If(Flag_Conducting_Core)
+        GlobalTerm { [ Dof{I}, {U} ] ; In Iron ; }
+      EndIf
+
+
       If(!Flag_HomogenisedModel1)
         If(Val_EE_1!=0)
           GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
@@ -177,6 +181,23 @@ Formulation {
         In DomainS ; Jacobian Vol ; Integration II ; }
       //GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In DomainS ; }
 
+
+      /*
+      If(Flag_HomogenisedModel1)
+        If(Val_EE_1!=0)
+          GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding1 ; }
+          //GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
+        EndIf
+      EndIf
+      If(Flag_Transformer)
+        If(Flag_HomogenisedModel2)
+          If(Val_EE_2!=0)
+            //GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
+            GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding2 ; }
+          EndIf
+        EndIf
+      EndIf
+      */
 
       //Galerkin { [ -Ns[]/Sc[] * Dof{ir}, {a} ] ;
       //  In DomainS ; Jacobian Vol ; Integration II ; }
