@@ -2,6 +2,7 @@
 import csv
 import fileinput
 import numpy as np
+import numpy.typing as npt
 import os
 import pandas as pd
 import pathlib
@@ -16,13 +17,30 @@ from onelab import onelab
 import json
 import random
 import string
+import subprocess
+import pkg_resources
+from typing import Union
 # Self written functions. It is necessary to write a . before the function, due to handling
 # this package also as a pip-package
 # from .femmt_functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
 
+
+def install_femm_if_missing():
+    required = {'pyfemm'}
+    installed = {pkg.key for pkg in pkg_resources.working_set}
+    missing = required - installed
+
+    if missing:
+        print("Missing 'pyfemm' installation.")
+        print("Installing 'pyfemm' ...")
+        python = sys.executable
+        subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
+        print("'pyfemm' is now installed!")
+
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
 if os.name == 'nt':
+    install_femm_if_missing()
     import femm
 
 
@@ -199,8 +217,13 @@ class MagneticComponent:
         Creates a config.p at first run.
         :return: -
         """
-        if os.path.isfile(self.path + "/config.json") and os.stat(self.path + "/config.json") != 0:
-            json_file = open(self.path + '/config.json','rb') #with open(self.path + '/config.p') as f:
+        # find out path of femmt (installed module or directly opened in git)?
+        module_file_path = pathlib.Path(__file__).parent.absolute()
+        config_file_path = module_file_path / 'config.json'
+
+        # check if config.json is available and not empty
+        if pathlib.Path.is_file(config_file_path) and pathlib.Path.stat(config_file_path).st_size != 0:
+            json_file = config_file_path.open('rb')
             loaded_dict = json.load(json_file)
             json_file.close()
             path = loaded_dict['onelab']
@@ -2650,9 +2673,12 @@ def call_for_path(destination, config_file="config.json"):
     # pickle.dumps(path, pickle_file) # f"{destination} = '{path}'\n")
     # pickle_file.close()
 
+    # Find out the path of installed module, or in case of running directly from git, find the path of git repository
+    module_file_path = pathlib.Path(__file__).parent.absolute()
+
     path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
     dict = {"onelab": path}
-    file = open(config_file, 'w', encoding='utf-8')
+    file = open(module_file_path / config_file, 'w', encoding='utf-8')
     json.dump(dict, file, ensure_ascii=False)
     file.close()
 
@@ -2673,6 +2699,7 @@ def NbrStrands(NbrLayers):
     """
     return 3*(NbrLayers+1)**2 - 3*(NbrLayers+1) + 1
 
+
 def NbrLayers(NbrStrands):
     """
     Returns the number of layers in a hexagonal litz winding with a
@@ -2682,3 +2709,129 @@ def NbrLayers(NbrStrands):
     :return:
     """
     return np.sqrt(0.25+(NbrStrands-1)/3)-0.5
+
+
+def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', rad: str ='no',
+        f0: Union[float, None]=None, title: str='FFT') -> npt.NDArray[list]:
+    """
+    A fft for a input signal. Input signal is in vector format and should include one period.
+
+    Output vector includes only frequencies with amplitudes > 1% of input signal
+
+    Minimal example:
+    example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
+    out = fft(example_waveform, plot=True, rad='yes', f0=25000, title='FFT input current')
+
+    :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
+    :param sample_factor: f_sampling/f_period, defaults to 1000
+    :param plot: insert anything else than "no" or 'False' to show a plot to visualize input and output
+    :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
+    :param f0: set when rad != 'no' and rad != False
+    :param title: plot window title, defaults to 'FFT'
+    :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
+    """
+    t = period_vector_t_i[0]
+    i = period_vector_t_i[1]
+
+    if rad != 'no' and rad!=False:
+        if f0 is None:
+            raise ValueError("if rad!='no', a fundamental frequency f0 must be set")
+        else:
+            period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
+
+    # time domain
+    t_interp = np.linspace(0, t[-1], sample_factor)
+    i_interp = np.interp(t_interp, t, i)
+
+    f0 = round(1 / t[-1])
+    Fs = f0 * sample_factor
+
+    # frequency domain
+    f = np.linspace(0, (sample_factor - 1) * f0, sample_factor)
+    x = np.fft.fft(i_interp)
+    x_mag = np.abs(x) / sample_factor
+    phi_rad = np.angle(x)
+
+    f_corrected = f[0:int(sample_factor / 2 + 1)]
+    x_mag_corrected = 2 * x_mag[0:int(sample_factor / 2 + 1)]
+    x_mag_corrected[0] = x_mag_corrected[0] / 2
+    phi_rad_corrected = phi_rad[0:int(sample_factor / 2 + 1)]
+
+    f_out = []
+    x_out = []
+    phi_rad_out = []
+    for count, value in enumerate(x_mag_corrected):
+        if x_mag_corrected[count] > 0.01 * max(i):
+            f_out.append(f_corrected[count])
+            x_out.append(x_mag_corrected[count])
+            phi_rad_out.append(phi_rad_corrected[count])
+
+    if plot != 'no' and plot != False:
+        print(f"{title = }")
+        print(f"{t[-1] = }")
+        print(f"{f0 = }")
+        print(f"{Fs = }")
+        print(f"{sample_factor = }")
+        print(f"f_out = {np.around(f_out, 0)}")
+        print(f"x_out = {np.around(x_out, 1)}")
+        print(f"phi_rad_out = {np.around(phi_rad_out, 1)}")
+
+        reconstructed_signal = 0
+        for i_range in range(len(f_out)):
+            reconstructed_signal += x_out[i_range] * np.cos(
+                2 * np.pi * f_out[i_range] * t_interp + phi_rad_out[i_range])
+
+        fig, [ax1, ax2] = plt.subplots(num=title, nrows=2, ncols=1)
+        ax1.plot(t, i, label='original signal')
+        ax1.plot(t_interp, reconstructed_signal, label='reconstructed signal')
+        ax1.grid()
+        ax1.set_title('Signal')
+        ax1.set_xlabel('time in s')
+        ax1.set_ylabel('Amplitude')
+        ax1.legend()
+        ax2.stem(f_out, x_out)
+        ax2.grid()
+        ax2.set_title('FFT')
+        ax2.set_xlabel('Frequency in Hz')
+        ax2.set_ylabel('Amplitude')
+        plt.tight_layout()
+        plt.show()
+
+    return np.array([f_out, x_out, phi_rad_out])
+
+
+def compare_fft_list(list: list, rad: float = 'no', f0: Union[float,None] = None) -> None:
+    """
+    generate fft curves from input curves and compare them to each other
+
+    minimal example:
+    example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
+    example_waveform_2 = np.array([[0, 0.55, 3.14, 3.69, 6.28],[-138.37, 257.58, 138.37, -257.58, -138.37]])
+    compare_fft_list([example_waveform, example_waveform_2], rad='yes', f0=25000)
+
+    :param list: list of fft-compatible numpy-arrays [element, element, ... ], each element format like [[time-vector[,[current-vector]]. One period only
+    :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
+    :param f0: set when rad != 'no'
+    :return: plot
+    """
+
+    out = []
+    for count, value in enumerate(list):
+        out.append([fft(list[count], sample_factor=1000, plot='no', rad=rad, f0=f0)])
+
+    fig, axs = plt.subplots(2, len(list), sharey=True)
+    for count, value in enumerate(list):
+        axs[0, count].plot(list[count][0], list[count][1], label='original signal')
+        axs[0, count].grid()
+        axs[0, count].set_xlabel('time in s')
+        axs[0, count].set_ylabel('Amplitude')
+        axs[1, count].stem(out[count][0][0], out[count][0][1])
+        axs[1, count].grid()
+        axs[1, count].set_xlabel('frequency in Hz')
+        axs[1, count].set_ylabel('Amplitude')
+
+        # ax1.plot(t_interp, reconstructed_signal, label='reconstructed signal')
+
+    plt.tight_layout()
+    plt.show()
+
