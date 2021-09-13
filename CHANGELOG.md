@@ -6,9 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.2] - 08.08.2021
+## [0.1.2] - 2021-08-08
 ### Updated
 - updated strand approximation
+### Added
 - add option for dedicated stray path
 - add complex permeability and permitivity for core materials for Core Loss estimation
 - add iGSE and GSE for Core Loss estimation
@@ -48,7 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/CompRes.py
 
 [Unreleased]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.1...HEAD
+[0.1.2]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.0...0.1.0
+
 
 
