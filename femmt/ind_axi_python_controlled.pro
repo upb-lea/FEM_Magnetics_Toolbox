@@ -18,12 +18,12 @@ Flag_Circuit            = Flag_ImposedVoltage;
 // half inductor with axisymmetry
 // 1 means full zylinder
 SymFactor               = 1. ;
-CoefGeo = 2*Pi*SymFactor ; // axisymmetry + symmetry factor
+CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor
+e_0                     = 8.8541878128e-12;
 
 
-
-Flag_Conducting_Core = 1;
-sigma_core = 0.5;
+Flag_Conducting_Core    = 1;
+sigma_core              = e_r_imag * 2*Pi*Freq * e_0;
 
 // ----------------------
 // Physical numbers
@@ -189,7 +189,7 @@ Function {
 
   // Hysteresis Loss
   // Imaginary Part Of Permeability
-  mu_imag[#{Iron}] = mu0 * 304;
+  mu_imag[#{Iron}] = mu0 * mu_r_imag;
 
   If(!Flag_NL)
     nu[#{Iron}]   = nu0/mur;
@@ -470,10 +470,9 @@ PostProcessing {
       EndIf
 
       // Magnetic Flux Density
-      { Name p_hyst ; Value { Integral { [ CoefGeo * 2*Pi*Freq * mu_imag[] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-      { Name p_hyst_density ; Value { Integral { [ CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-
-
+      //TODO:
+      { Name p_hyst ; Value { Integral { [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+      { Name p_hyst_density ; Value { Integral { [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
 
 
       // Energy
@@ -608,7 +607,7 @@ PostProcessing {
 PostOperation Map_local UsingPost MagDyn_a {
 
   // Potentials
-  Print[ raz,OnElementsOf Domain,  File StrCat[DirResFields, "raz", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ raz,OnElementsOf Domain,  File StrCat[DirResFields, "raz", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ a,OnElementsOf Domain,  File StrCat[DirResFields, "a", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ ur,OnElementsOf Domain,  File StrCat[DirResFields, "ur", ExtGmsh], LastTimeStepOnly ] ;
 
