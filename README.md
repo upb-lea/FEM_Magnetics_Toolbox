@@ -6,6 +6,7 @@ Functionality examples
  * use python to perform parametersweeps, e.g. perform several automated simultations of different air gap sizes
  * read the results automatet with python from the FEM simulation tool
 
+__Note: Alpha Version!__
 
 ## Installation
 ```
@@ -51,7 +52,7 @@ geo.update_conductors(n_turns=[22], conductor_type=["solid"], conductor_radix=[0
 # Perform a single simulation
 geo.single_simulation(freq=1000000, current=[10])
 ```
-
+git clone: Mninimal example for a single simulation with displayed result in ONELAB: 
 ```
 # minimal example for github clone
 from FEMMT import MagneticComponent
