@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Updated
+- updated the winding generation
+### Fixed
+- fix #5: changed typo to L_h_conc = self.M**2 / self.L_22
+### Added
+- add class Virtual_Winding_Window()
+- add horizontal interleaved winding scheme
 
 ## [0.1.2] - 2021-08-08
 ### Updated
