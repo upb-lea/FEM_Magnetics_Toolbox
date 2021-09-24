@@ -37,6 +37,7 @@ def install_femm_if_missing():
         subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
         print("'pyfemm' is now installed!")
 
+
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
 if os.name == 'nt':
@@ -100,40 +101,31 @@ class MagneticComponent:
         # -- Dedicated Stray Path --
         self.dedicated_stray_path = False
         self.start_i = None
+        #TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the "stray air gap" is
+        # different in axialsymmetric approximation
         self.end_i = None
         self.added_bar = None
 
-        # -- Conductor --
+        # -- Windings --
         self.n_windings = None  # Number of conductors/windings
+
         if component_type == "inductor":
             self.n_windings = 1
+            self.windings = [self.Winding()]
+
         if component_type == "transformer":
             self.n_windings = 2
+            self.windings = [self.Winding(), self.Winding()]
 
+        if component_type == "three_phase_transformer":
+            self.n_windings = 3
+            self.windings = [self.Winding(), self.Winding(), self.Winding()]
+            raise NotImplemented
+
+
+        # -- Virtual Winding Windows --
         self.virtual_winding_windows = None
-        self.vw_type = "center"  # "full_window" is the only case implemented yet; vwc = "center"
-
-        self.conductor_type = [None] * self.n_windings  # List of possible conductor types
-        self.FF = [None] * self.n_windings
-        self.n_layers = [None] * self.n_windings
-        self.n_strands = [None] * self.n_windings
-        self.strand_radius = [None] * self.n_windings
-        self.conductor_radius = [None] * self.n_windings
-        self.A_cell = [None] * self.n_windings
-        self.conductor_update_count = 0
-
-        """
-        self.update_conductors(n_turns=[None] * self.n_windings,
-                               conductor_type=[None] * self.n_windings,
-                               conductor_radix=[None] * self.n_windings,
-                               scheme=[None] * self.n_windings,
-                               winding=[None] * self.n_windings,
-                               layer_numbers=[None] * self.n_windings,
-                               strand_radix=[None] * self.n_windings,
-                               wrap_para=[None] * self.n_windings)
-        """
-        self.thickness = [None] * self.n_windings
-        self.wrap_para = [None] * self.n_windings
+        self.vw_type = None  # "center" and "full_window" are the only cases implemented yet; #TODO: ersetzen
 
         # -- Isolation ---
         self.core_cond_isolation = [None] * self.n_windings  # gap between Core and each Conductor
@@ -158,12 +150,12 @@ class MagneticComponent:
         # frequency = 0: mu_rel only used if flag_non_linear_core == 0
         # frequency > 0: mu_rel is used
         self.cond_sigma = 5.8e7  # perfect copper
-        self.mu0 = 4e-7*np.pi
+        self.mu0 = np.pi*4e-7
         # TDk N95 as standard material:
         self.core_re_mu_rel = 3000  # Real part of relative Core Permeability  [B-Field and frequency-dependend]
         self.core_im_mu_rel = 1750 * np.sin(10 *np.pi/180)   # Imaginary part of relative Core Permeability  [B-Field and frequency-dependend]
         self.core_im_epsilon_rel = 6e+4 * np.sin(20 *np.pi/180)  # Imaginary part of complex equivalent permeability  [only frequency-dependend]
-        self.core_material = 95  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
+        self.core_material = 95_100  # 95  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
 
         # ==============================
         # Problem Definition
@@ -212,6 +204,10 @@ class MagneticComponent:
         self.L_22 = None
         self.M = None
         self.Pv = None
+        # - Primary Concentrated
+        self.ü_conc = None
+        self.L_s_conc = None
+        self.L_h_conc = None
 
         # -- FEMM variables --
         self.tot_loss_femm = None
@@ -268,15 +264,14 @@ class MagneticComponent:
             else:
                 self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.cond_sigma * self.mu0))
             for i in range(0, self.n_windings):
-                if self.conductor_type[i] == "solid":
+                if self.windings[i].conductor_type == "solid":
                     self.c_conductor[i] = min([self.delta * self.skin_mesh_factor,
-                                               self.conductor_radius[i] / 4 * self.skin_mesh_factor])
-                    self.c_center_conductor[i] = self.conductor_radius[i] / 4 * self.skin_mesh_factor
+                                               self.windings[i].conductor_radius / 4 * self.skin_mesh_factor])
+                    self.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.skin_mesh_factor
                     #print(f"Werte Leiter: {self.c_conductor, self.c_center_conductor}")
-                elif self.conductor_type[i] == "litz":
-                    #print(self.conductor_radius)
-                    self.c_conductor[i] = self.conductor_radius[i] / 4 * self.skin_mesh_factor
-                    self.c_center_conductor[i] = self.conductor_radius[i] / 4 * self.skin_mesh_factor
+                elif self.windings[i].conductor_type == "litz":
+                    self.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.skin_mesh_factor
+                    self.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.skin_mesh_factor
                     #print(f"Werte Leiter: {self.c_conductor, self.c_center_conductor}")
                 else:
                     self.c_conductor[i] = 0.0001  # revisit
@@ -293,7 +288,7 @@ class MagneticComponent:
         if self.core_type == "EI" and self.dimensionality == "2D axi":
             self.ei_axi()
 
-    class Virtual_Winding_Window:
+    class VirtualWindingWindow:
         """
         A virtual winding window is the area, where either some kind of interleaved conductors or a one winding
         (primary, secondary,...) is placed in a certain way.
@@ -308,11 +303,29 @@ class MagneticComponent:
             # Arrangement of the Conductors in the virtual winding window
             # Obviously depends on the chosen conductor type
             self.winding = None  # "interleaved" | "primary"/"secondary"
-            self.scheme = None  # "bifilar", "vertical", "horizontal", "block_wise" | "hexa", "square"
-            self.turns = [None] # Must be an ordered list with the number of turns of the conductors in the window
-                                # [N_primary, N_secondary,...]
+            self.scheme = None   # "bifilar", "vertical", "horizontal", ["hexa", "square"] | "hexa", "square"
+            self.turns = [None]  # Must be an ordered list with the number of turns of the conductors in the window
+                                 # [N_primary, N_secondary,...]
 
-
+    class Winding:
+        """
+        A winding defines a conductor which is wound around a magnetic component such as transformer or inductance.
+        The winding is defined by its conductor and the way it is placed in the magnetic component. To allow different
+        arrangements of the conductors in several winding windows (hexagonal or square packing, interleaved, ...) in
+        this class only the conductor parameters are specified. Then, by calling class:Winding in
+        class:VirtualWindingWindow the arrangement of the conductors is specified.
+        """
+        def __init__(self):
+            self.turns = None
+            self.conductor_type = None  # List of possible conductor types
+            self.ff = None
+            self.n_layers = None
+            self.n_strands = None
+            self.strand_radius = None
+            self.conductor_radius = None
+            self.a_cell = None
+            self.thickness = None
+            self.wrap_para = None
 
     def ei_axi(self):
         """
@@ -386,7 +399,10 @@ class MagneticComponent:
                 self.p_air_gaps[i * 4 + 2] = [-self.core_w/2, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
                 self.p_air_gaps[i * 4 + 3] = [ self.core_w/2, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
 
-        # Virtual Windows
+
+        # - Virtual Windows -
+        #TODO: make this part of the class VWW...
+        # self.vw_type must be an input or so to that class
         separation_hor = 0 #self.window_h * 0.5
         separation_vert = self.window_w * 0.5
 
@@ -395,6 +411,10 @@ class MagneticComponent:
             # Concentrated windings
 
             if self.vw_type == "full_window":
+                """
+                The winding window is completely used by one VWW.
+                In case of a transformer, an interleaved winding scheme must be used.
+                """
                 # top window
                 min =-self.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
                 max = self.window_h / 2 - self.core_cond_isolation[0]  # top
@@ -410,6 +430,7 @@ class MagneticComponent:
 
             if self.vw_type == "center":
                 """
+                The winding window is split into two VWWs.
                 The primary winding is placed in the upper half,
                 the secondary winding is placed in the lower half of the winding window
                 """
@@ -434,7 +455,6 @@ class MagneticComponent:
                     self.virtual_winding_windows[vww].top_bound = virtual_windows[vww][1]
                     self.virtual_winding_windows[vww].left_bound = virtual_windows[vww][2]
                     self.virtual_winding_windows[vww].right_bound = virtual_windows[vww][3]
-
 
             if self.vw_type == "something_else":
                 # bottom left window
@@ -465,8 +485,9 @@ class MagneticComponent:
         if self.dedicated_stray_path == True:
             """
             If dedicated stray path is the chosen typology the are two winding windows
-            These can either be split up into more virtual windows or (in case of bifilar windinds) not
+            These can either be split up into more virtual windows or (in case of bifilar windings) not
             """
+            #TODO: Unterteilung in weitere virtuelle Fenster
 
             # top window
             island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
@@ -489,6 +510,7 @@ class MagneticComponent:
                 self.virtual_winding_windows[vww].left_bound = virtual_windows[vww][2]
                 self.virtual_winding_windows[vww].right_bound = virtual_windows[vww][3]
 
+
         # - Conductors -
         for n_win in range(0, len(self.virtual_winding_windows)):
             """
@@ -497,7 +519,7 @@ class MagneticComponent:
               stray path
             - There can be as many virtual winding windows as the user wants to define...
             - To automatically fill a virtual winding window with windings, #TODO: self.interleaving[n_win] can be chosen
-              to "bifilar", "vertical", "horizontal", "block_wise" or completely with one of the windings by "primary"
+              to "bifilar", "vertical", "horizontal", ["hexa", "square"] or completely with one of the windings by "primary"
               or "secondary"
             """
             # Boarders of the VWW:
@@ -515,7 +537,7 @@ class MagneticComponent:
                     - Can only be used for conductors of identical radius (in terms of litz radius for stranded wires)
                     - Excess windings are placed below the bifilar ones
                     """
-                    if self.conductor_radius[0] != self.conductor_radius[1]:
+                    if self.windings[0].conductor_radius != self.windings[1].conductor_radius:
                         print("For bifilar winding scheme both conductors must be of the same radius!")
                     else:
                         print("Bifilar winding scheme is applied")
@@ -524,29 +546,29 @@ class MagneticComponent:
                         """
                         for
                             if self.virtual_winding_windows[num].scheme == "hexa":
-                                y = bot_bound + self.conductor_radius[num]
-                                x = left_bound + self.conductor_radius[num]
+                                y = bot_bound + self.windings[num].conductor_radius
+                                x = left_bound + self.windings[num].conductor_radius
                                 i = 0
                                 base_line = True
                                 # Case n_conductors higher that "allowed" is missing
-                                while x < right_bound - self.conductor_radius[num] and i < self.turns[num]:
-                                    while y < top_bound - self.conductor_radius[num] and i < self.turns[num]:
+                                while x < right_bound - self.windings[num].conductor_radius and i < self.windings[num].turns:
+                                    while y < top_bound - self.windings[num].conductor_radius and i < self.windings[num].turns:
                                         self.p_conductor[num].append([x, y, 0, self.c_center_conductor[num]])
-                                        self.p_conductor[num].append([x - self.conductor_radius[num], y, 0, self.c_conductor[num]])
-                                        self.p_conductor[num].append([x, y + self.conductor_radius[num], 0, self.c_conductor[num]])
-                                        self.p_conductor[num].append([x + self.conductor_radius[num], y, 0, self.c_conductor[num]])
-                                        self.p_conductor[num].append([x, y - self.conductor_radius[num], 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append([x - self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append([x, y + self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append([x + self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append([x, y - self.windings[num].conductor_radius, 0, self.c_conductor[num]])
                                         i += 1
-                                        y += self.conductor_radius[num] * 2 + self.cond_cond_isolation[num]  # from bottom to top
-                                    x += 2 * np.cos(np.pi / 6) * (self.conductor_radius[num] + self.cond_cond_isolation[
+                                        y += self.windings[num].conductor_radius * 2 + self.cond_cond_isolation[num]  # from bottom to top
+                                    x += 2 * np.cos(np.pi / 6) * (self.windings[num].conductor_radius + self.cond_cond_isolation[
                                         num] / 2)  # * np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
                                     # depending on what line, hexa scheme starts shifted
                                     # reset y to "new" bottom
                                     base_line = (not base_line)
                                     if base_line:
-                                        y = bot_bound + self.conductor_radius[num]
+                                        y = bot_bound + self.windings[num].conductor_radius
                                     else:
-                                        y = bot_bound + 2 * self.conductor_radius[num] + self.cond_cond_isolation[num] / 2
+                                        y = bot_bound + 2 * self.windings[num].conductor_radius + self.cond_cond_isolation[num] / 2
                         """
 
                 if self.virtual_winding_windows[n_win].scheme == "vertical":
@@ -564,48 +586,47 @@ class MagneticComponent:
                     #- If the turns ratio is != 1, the scheme always begins with the "higher-turns-number's" conductor
 
                     # assume 2 winding transformer and dedicated stray path:
-                    if (self.dedicated_stray_path == True) and (self.n_windings == 2):
+                    if (self.dedicated_stray_path == True) or (self.n_windings == 2):
                         # Initialize the list, that counts the already placed conductors
                         N_completed=[0, 0]
 
                         # Initialize the starting conductor
-                        if self.turns[0][n_win] >= self.turns[1][n_win]:
+                        if self.windings[0].turns[n_win] >= self.windings[1].turns[n_win]:
                             col_cond = 0
                         else:
                             col_cond = 1
 
                         # Initialize the x and y coordinate
-                        x = left_bound + self.conductor_radius[col_cond]
-                        y = bot_bound + self.conductor_radius[col_cond]
+                        x = left_bound + self.windings[col_cond].conductor_radius
+                        y = bot_bound + self.windings[col_cond].conductor_radius
 
 
                         # Continue placing as long as not all conductors have been placed
-                        while (self.turns[0][n_win]-N_completed[0] != 0) or (self.turns[1][n_win]-N_completed[1] != 0):
-                            #print(self.turns[col_cond][n_win])
+                        while (self.windings[0].turns[n_win]-N_completed[0] != 0) or (self.windings[1].turns[n_win]-N_completed[1] != 0):
                             #print(N_completed[col_cond])
-                            if self.turns[col_cond][n_win]-N_completed[col_cond] != 0:
+                            if self.windings[col_cond].turns[n_win]-N_completed[col_cond] != 0:
                                 # is this winding not already finished?
-                                if x < right_bound - self.conductor_radius[col_cond]:
-                                    while y < top_bound - self.conductor_radius[col_cond] and \
-                                            N_completed[col_cond] < self.turns[col_cond][n_win]:
+                                if x < right_bound - self.windings[col_cond].conductor_radius:
+                                    while y < top_bound - self.windings[col_cond].conductor_radius and \
+                                            N_completed[col_cond] < self.windings[col_cond].turns[n_win]:
 
                                         self.p_conductor[col_cond].append([x, y, 0, self.c_center_conductor[col_cond]])
-                                        self.p_conductor[col_cond].append([x - self.conductor_radius[col_cond], y, 0, self.c_conductor[col_cond]])
-                                        self.p_conductor[col_cond].append([x, y + self.conductor_radius[col_cond], 0, self.c_conductor[col_cond]])
-                                        self.p_conductor[col_cond].append([x + self.conductor_radius[col_cond], y, 0, self.c_conductor[col_cond]])
-                                        self.p_conductor[col_cond].append([x, y - self.conductor_radius[col_cond], 0, self.c_conductor[col_cond]])
+                                        self.p_conductor[col_cond].append([x - self.windings[col_cond].conductor_radius, y, 0, self.c_conductor[col_cond]])
+                                        self.p_conductor[col_cond].append([x, y + self.windings[col_cond].conductor_radius, 0, self.c_conductor[col_cond]])
+                                        self.p_conductor[col_cond].append([x + self.windings[col_cond].conductor_radius, y, 0, self.c_conductor[col_cond]])
+                                        self.p_conductor[col_cond].append([x, y - self.windings[col_cond].conductor_radius, 0, self.c_conductor[col_cond]])
                                         N_completed[col_cond] += 1
                                         #print(self.p_conductor)
                                         #print(N_completed)
                                         #print(col_cond)
-                                        print(x, right_bound-self.conductor_radius[col_cond])
+                                        print(x, right_bound-self.windings[col_cond].conductor_radius)
 
-                                        y += self.conductor_radius[col_cond] * 2 + self.cond_cond_isolation[col_cond]  # one from bot to top
+                                        y += self.windings[col_cond].conductor_radius * 2 + self.cond_cond_isolation[col_cond]  # one from bot to top
                                         #print(y)
-                                    x += self.conductor_radius[col_cond] + self.conductor_radius[(col_cond + 1) % 2] + self.cond_cond_isolation[2]  # from left to right
+                                    x += self.windings[col_cond].conductor_radius + self.windings[(col_cond + 1) % 2].conductor_radius + self.cond_cond_isolation[2]  # from left to right
                                     # Reset y
                                     col_cond = (col_cond + 1) % 2
-                                    y = bot_bound + self.conductor_radius[col_cond]
+                                    y = bot_bound + self.windings[col_cond].conductor_radius
                                     #print(col_cond)
                                 else:
                                     break
@@ -613,17 +634,180 @@ class MagneticComponent:
                                 # is this winding already finished? - continue with the other one
                                 col_cond = (col_cond + 1) % 2
                                 # Correct the reset of y and correct x displacement
-                                x += self.conductor_radius[col_cond] - self.conductor_radius[(col_cond + 1) % 2] \
+                                x += self.windings[col_cond].conductor_radius - self.windings[(col_cond + 1) % 2].conductor_radius \
                                      - self.cond_cond_isolation[2] + self.cond_cond_isolation[col_cond]
-                                y = bot_bound + self.conductor_radius[col_cond]
+                                y = bot_bound + self.windings[col_cond].conductor_radius
                                 #print(col_cond)
 
-                if self.virtual_winding_windows[n_win].scheme == "block_wise":
+                """Blockwise concentrated"""
+                if isinstance(self.virtual_winding_windows[n_win].scheme, list):
                     """
-                    - "block_wise" interleaving means a concentrated winding scheme of ("hexagonal", "square") in (user-defined virtual) 
-                      winding window(s) 
+                    - interleaving with a list means a concentrated winding scheme of ("hexagonal", "square" or mixed) 
+                      in virtual winding window
+                    - only valid for two winding case 
+                    - vertical stacking
+                    - block winding
+
+                    how many turns fit in arow?
+                    von top nach bot
+                    while (not placed all cond.):
+                        1. start with the primary winding from bot / left
+                        2. continue with the secondary from top / right
+                        3.CHECK solation conditions
                     """
-                    #TODO:Ausformulieren nach Inkscape aufeinanderzugehende Wicklungen
+                    # CHECK for two winding transformer
+                    if len(self.virtual_winding_windows[n_win].scheme) != 2:
+                        print(f"Interleaving with a list is only valid for the two winding case.\n"
+                              f"Therefore the scheme must be a list of lentgh 2 but is of length "
+                              f"{len(self.virtual_winding_windows[n_win].scheme)}")
+                        raise Warning
+
+
+                    for num in range(0, len(self.virtual_winding_windows[n_win].scheme)):
+
+                        # Cases
+                        if num == 0:
+                            y = bot_bound + self.windings[num].conductor_radius
+                        if num == 1:
+                            y = top_bound - self.windings[num].conductor_radius
+
+                        # Initialization
+                        x = left_bound + self.windings[num].conductor_radius
+                        i = 0
+
+                        if self.virtual_winding_windows[n_win].scheme[num] == "square":
+                                                       
+                            # Primary winding from bottom to top
+                            if num == 0:
+                                while y < top_bound - self.windings[num].conductor_radius and \
+                                        i < self.windings[num].turns[n_win]:
+                                    while x < right_bound - self.windings[num].conductor_radius and \
+                                            i < self.windings[num].turns[n_win]:
+                                        self.p_conductor[num].append([x, y, 0, self.c_center_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x - self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x, y + self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x + self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x, y - self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        i += 1
+                                        x += self.windings[num].conductor_radius * 2 + self.cond_cond_isolation[
+                                            num]  # from left to right
+                                    y += self.windings[num].conductor_radius * 2 + self.cond_cond_isolation[
+                                        num]  # one step from bot to top
+                                    x = left_bound + self.windings[num].conductor_radius  # always the same
+
+                            # Secondary winding from top to bottom
+                            if num == 1:
+                                while y > bot_bound + self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
+                                    while x < right_bound - self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
+                                        self.p_conductor[num].append([x, y, 0, self.c_center_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x - self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x, y + self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x + self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x, y - self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        i += 1
+
+                                        x += self.windings[num].conductor_radius * 2 + self.cond_cond_isolation[
+                                            num]  # from left to right
+                                    y += -(self.windings[num].conductor_radius * 2) - self.cond_cond_isolation[
+                                        num]  # one step from bot to top
+                                    x = left_bound + self.windings[num].conductor_radius  # always the same
+
+                        if self.virtual_winding_windows[n_win].scheme[num] == "hexa":
+
+                            # Primary winding from bottom to top
+                            if num == 0:
+
+                                base_line = True
+
+                                while y < top_bound - self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
+                                    while x < right_bound - self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
+                                        print(f"i: {i}")
+    
+                                        self.p_conductor[num].append([x, y, 0, self.c_center_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x - self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x, y + self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x + self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x, y - self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        i += 1
+
+                                        x += 2 * np.cos(np.pi / 6) * (
+                                                    self.windings[num].conductor_radius + self.cond_cond_isolation[
+                                                num] / 2)
+                                        # depending on what line, hexa scheme starts shifted
+                                        # reset y to "new" bottom
+                                        base_line = (not base_line)
+                                        if base_line:
+                                            y -=  (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
+                                        else:
+                                            y +=  (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
+
+                                    # Undo last base_line reset
+                                    if base_line:
+                                        y +=  (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
+                                    else:
+                                        y -=  (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
+
+                                    base_line = True
+                                    x = left_bound + self.windings[num].conductor_radius
+                                    y += self.windings[num].conductor_radius + self.cond_cond_isolation[num]
+
+                            # Secondary winding from top to bottom
+                            if num == 1:
+
+                                base_line = True
+
+                                while y > bot_bound + self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
+                                    while x < right_bound - self.windings[num].conductor_radius and i < self.windings[num].turns[
+                                        n_win]:
+                                        print(f"i: {i} "
+                                              f"x: {x} "
+                                              f"y: {y} ")
+
+                                        self.p_conductor[num].append([x, y, 0, self.c_center_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x - self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x, y + self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x + self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                        self.p_conductor[num].append(
+                                            [x, y - self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                        i += 1
+
+
+                                        x += 2 * np.cos(np.pi / 6) * (
+                                                self.windings[num].conductor_radius + self.cond_cond_isolation[num] / 2)
+
+                                        # depending on what line, hexa scheme starts shifted
+                                        # reset y to "new" bottom
+                                        base_line = (not base_line)
+                                        if base_line:
+                                            y += (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
+                                        else:
+                                            y -= (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
+
+                                    # Undo last base_line reset
+                                    if base_line:
+                                        y -= (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
+                                    else:
+                                        y += (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
+
+                                    base_line = True
+                                    x = left_bound + self.windings[num].conductor_radius
+                                    # from top to bottom
+                                    y -= (self.windings[num].conductor_radius + self.cond_cond_isolation[num])
 
 
             else:
@@ -633,8 +817,8 @@ class MagneticComponent:
                 if self.virtual_winding_windows[n_win].winding == "secondary":
                     num = 1
 
-                if self.conductor_type[num] == "full":
-                    if sum(self.turns[num]) != 1:
+                if self.windings[num].conductor_type == "full":
+                    if sum(self.windings[num].turns) != 1:
                         print(f"For a \"full\" conductor you must choose 1 turn for each conductor!")
                     # full window conductor
                     self.p_conductor[num].append([left_bound, bot_bound, 0, self.c_conductor[num]])
@@ -643,36 +827,36 @@ class MagneticComponent:
                     self.p_conductor[num].append([right_bound, top_bound, 0, self.c_conductor[num]])
 
 
-                if self.conductor_type[num] == "stacked":
+                if self.windings[num].conductor_type == "stacked":
                     # Stack defined number of turns and chosen thickness
-                    for i in range(0, self.turns[num][n_win]):
+                    for i in range(0, self.windings[num].turns[n_win]):
                         # CHECK if top bound is reached
-                        if (bot_bound + (i+1)*self.thickness[num] + i*self.cond_cond_isolation[num]) <= top_bound:
+                        if (bot_bound + (i+1)*self.windings[num].thickness + i*self.cond_cond_isolation[num]) <= top_bound:
                             # stacking from the ground
-                            self.p_conductor[num].append([left_bound, bot_bound+ i*self.thickness[num] + i*self.cond_cond_isolation[num], 0, self.c_conductor[num]])
-                            self.p_conductor[num].append([right_bound, bot_bound + i*self.thickness[num] + i*self.cond_cond_isolation[num], 0, self.c_conductor[num]])
-                            self.p_conductor[num].append([left_bound, bot_bound+ (i+1)*self.thickness[num] + i*self.cond_cond_isolation[num], 0, self.c_conductor[num]])
-                            self.p_conductor[num].append([right_bound, bot_bound+ (i+1)*self.thickness[num] + i*self.cond_cond_isolation[num], 0, self.c_conductor[num]])
+                            self.p_conductor[num].append([left_bound, bot_bound+ i*self.windings[num].thickness + i*self.cond_cond_isolation[num], 0, self.c_conductor[num]])
+                            self.p_conductor[num].append([right_bound, bot_bound + i*self.windings[num].thickness + i*self.cond_cond_isolation[num], 0, self.c_conductor[num]])
+                            self.p_conductor[num].append([left_bound, bot_bound+ (i+1)*self.windings[num].thickness + i*self.cond_cond_isolation[num], 0, self.c_conductor[num]])
+                            self.p_conductor[num].append([right_bound, bot_bound+ (i+1)*self.windings[num].thickness + i*self.cond_cond_isolation[num], 0, self.c_conductor[num]])
 
 
-                if self.conductor_type[num] == "foil":
-
+                if self.windings[num].conductor_type == "foil":
                     # Wrap defined number of turns and chosen thickness
                     if self.wrap_para[num] == "fixed_thickness":
-                        for i in range(0, self.turns[num][n_win]):
+                        for i in range(0, self.windings[num].turns[n_win]):
                             # CHECK if right bound is reached
-                            if (left_bound + (i + 1) * self.thickness[num] + i * self.cond_cond_isolation[num]) <= right_bound:
+                            if (left_bound + (i + 1) * self.windings[num].thickness + i * self.cond_cond_isolation[num]) <= right_bound:
                                 # Foils
-                                self.p_conductor[num].append([left_bound + i    *self.thickness[num] + i*self.cond_cond_isolation[num], bot_bound, 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([left_bound + (i+1)*self.thickness[num] + i*self.cond_cond_isolation[num], bot_bound, 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([left_bound + i    *self.thickness[num] + i*self.cond_cond_isolation[num], top_bound, 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([left_bound + (i+1)*self.thickness[num] + i*self.cond_cond_isolation[num], top_bound, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([left_bound + i    *self.windings[num].thickness + i*self.cond_cond_isolation[num], bot_bound, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([left_bound + (i+1)*self.windings[num].thickness + i*self.cond_cond_isolation[num], bot_bound, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([left_bound + i    *self.windings[num].thickness + i*self.cond_cond_isolation[num], top_bound, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([left_bound + (i+1)*self.windings[num].thickness + i*self.cond_cond_isolation[num], top_bound, 0, self.c_conductor[num]])
+
 
                     # Fill the allowed space in the Winding Window with a chosen number of turns
                     if self.wrap_para[num] == "interpolate":
-                        x_interpol = np.linspace(left_bound, right_bound+self.cond_cond_isolation[num], self.turns[num]+1)
+                        x_interpol = np.linspace(left_bound, right_bound+self.cond_cond_isolation[num], self.windings[num].turns+1)
                         print(x_interpol)
-                        for i in range(0, self.turns[num]):
+                        for i in range(0, self.windings[num].turns):
                             # Foils
                             self.p_conductor[num].append([x_interpol[i], bot_bound, 0, self.c_conductor[num]])
                             self.p_conductor[num].append([x_interpol[i+1] - self.cond_cond_isolation[num], bot_bound, 0, self.c_conductor[num]])
@@ -681,47 +865,48 @@ class MagneticComponent:
 
 
                 # Round Conductors:
-                if self.conductor_type[num] == "litz" or self.conductor_type[num] == "solid":
+                if self.windings[num].conductor_type == "litz" or self.windings[num].conductor_type == "solid":
+
                     if self.virtual_winding_windows[num].scheme == "square":
-                        y = bot_bound + self.conductor_radius[num]
-                        x = left_bound + self.conductor_radius[num]
+                        y = bot_bound + self.windings[num].conductor_radius
+                        x = left_bound + self.windings[num].conductor_radius
                         i = 0
                         # Case n_conductors higher that "allowed" is missing
-                        while y < top_bound-self.conductor_radius[num] and i < self.turns[num][n_win]:
-                            while x < right_bound-self.conductor_radius[num] and i < self.turns[num][n_win]:
+                        while y < top_bound-self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
+                            while x < right_bound-self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
                                 self.p_conductor[num].append([x, y, 0, self.c_center_conductor[num]])
-                                self.p_conductor[num].append([x-self.conductor_radius[num], y, 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([x, y+self.conductor_radius[num], 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([x+self.conductor_radius[num], y, 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([x, y-self.conductor_radius[num], 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([x-self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([x, y+self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([x+self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([x, y-self.windings[num].conductor_radius, 0, self.c_conductor[num]])
                                 i += 1
-                                x += self.conductor_radius[num] * 2 + self.cond_cond_isolation[num]  # from left to top
-                            y += self.conductor_radius[num] * 2 + self.cond_cond_isolation[num]  # one step from left to right
-                            x = left_bound + self.conductor_radius[num]  # always the same
+                                x += self.windings[num].conductor_radius * 2 + self.cond_cond_isolation[num]  # from left to top
+                            y += self.windings[num].conductor_radius * 2 + self.cond_cond_isolation[num]  # one step from left to right
+                            x = left_bound + self.windings[num].conductor_radius  # always the same
 
                     if self.virtual_winding_windows[num].scheme == "hexa":
-                        y = bot_bound + self.conductor_radius[num]
-                        x = left_bound + self.conductor_radius[num]
+                        y = bot_bound + self.windings[num].conductor_radius
+                        x = left_bound + self.windings[num].conductor_radius
                         i = 0
                         base_line = True
                         # Case n_conductors higher that "allowed" is missing
-                        while x < right_bound - self.conductor_radius[num] and i < self.turns[num][n_win]:
-                            while y < top_bound - self.conductor_radius[num] and i < self.turns[num][n_win]:
+                        while x < right_bound - self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
+                            while y < top_bound - self.windings[num].conductor_radius and i < self.windings[num].turns[n_win]:
                                 self.p_conductor[num].append([x, y, 0, self.c_center_conductor[num]])
-                                self.p_conductor[num].append([x - self.conductor_radius[num], y, 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([x, y + self.conductor_radius[num], 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([x + self.conductor_radius[num], y, 0, self.c_conductor[num]])
-                                self.p_conductor[num].append([x, y - self.conductor_radius[num], 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([x - self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([x, y + self.windings[num].conductor_radius, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([x + self.windings[num].conductor_radius, y, 0, self.c_conductor[num]])
+                                self.p_conductor[num].append([x, y - self.windings[num].conductor_radius, 0, self.c_conductor[num]])
                                 i += 1
-                                y += self.conductor_radius[num] * 2 + self.cond_cond_isolation[num]  # from bottom to top
-                            x += 2 * np.cos(np.pi/6) * (self.conductor_radius[num] + self.cond_cond_isolation[num]/2) #* np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
+                                y += self.windings[num].conductor_radius * 2 + self.cond_cond_isolation[num]  # from bottom to top
+                            x += 2 * np.cos(np.pi/6) * (self.windings[num].conductor_radius + self.cond_cond_isolation[num]/2) #* np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
                             # depending on what line, hexa scheme starts shifted
                             # reset y to "new" bottom
                             base_line = (not base_line)
                             if base_line:
-                                y = bot_bound + self.conductor_radius[num]
+                                y = bot_bound + self.windings[num].conductor_radius
                             else:
-                                y = bot_bound + 2*self.conductor_radius[num] + self.cond_cond_isolation[num]/2
+                                y = bot_bound + 2*self.windings[num].conductor_radius + self.cond_cond_isolation[num]/2
 
 
         # Checking the Conductors
@@ -733,19 +918,19 @@ class MagneticComponent:
 
             #TODO:CHECKS for rect. conductors
             """ CHECK: rectangle conductors with 4 points
-            if self.conductor_type[num] == "full" or self.conductor_type[num] == "stacked" or \
-                    self.conductor_type[num] == "foil":
-                if int(self.p_conductor[num].shape[0]/4) < self.turns[num]:
+            if self.windings[num].conductor_type == "full" or self.windings[num].conductor_type == "stacked" or \
+                    self.windings[num].conductor_type == "foil":
+                if int(self.p_conductor[num].shape[0]/4) < self.windings[num].turns:
                     print("Could not resolve all conductors.")
-                    # self.turns[num] = int(self.p_conductor[num].shape[0]/4)
+                    # self.windings[num].turns = int(self.p_conductor[num].shape[0]/4)
                     self.valid = None
             """
 
             # CHECK: round conductors with 5 points
-            if self.conductor_type[num] == "solid" or self.conductor_type[num] == "litz":
-                if int(self.p_conductor[num].shape[0]/5) < sum(self.turns[num]):
-                    #print("Could not resolve all conductors.")
-                    #self.turns[num] = int(self.p_conductor[num].shape[0]/5)
+            if self.windings[num].conductor_type == "solid" or self.windings[num].conductor_type == "litz":
+                if int(self.p_conductor[num].shape[0]/5) < sum(self.windings[num].turns):
+                    print("Could not resolve all conductors.")
+                    # self.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
                     # TODO: break and warning
                     self.valid = None
 
@@ -982,7 +1167,7 @@ class MagneticComponent:
                                                                        0,                            # z
                                                                        self.p_conductor[num][i][3])) # mesh_accuracy
                         # Curves of Conductors
-                        if self.conductor_type[num] == "litz" or self.conductor_type[num] == "solid":
+                        if self.windings[num].conductor_type == "litz" or self.windings[num].conductor_type == "solid":
                             for i in range(0, int(len(p_cond[num]) / 5)):
                                 l_cond[num].append(gmsh.model.geo.addCircleArc(
                                     p_cond[num][5 * i + 1], p_cond[num][5 * i + 0], p_cond[num][5 * i + 2]))
@@ -1007,7 +1192,7 @@ class MagneticComponent:
                                 curve_loop_cond[num].append(gmsh.model.geo.addCurveLoop(
                                     [l_cond[num][i * 4 + 0], l_cond[num][i * 4 + 1], l_cond[num][i * 4 + 2], l_cond[num][i * 4 + 3]]))
                                 plane_surface_cond[num].append(gmsh.model.geo.addPlaneSurface([curve_loop_cond[num][i]]))
-                    #print(f"plane_surface_cond {plane_surface_cond}")
+                    print(f"plane_surface_cond {plane_surface_cond}")
                     # =====================
 
                     # Air (Points are partwise double designated)
@@ -1078,14 +1263,14 @@ class MagneticComponent:
         ps_cond = [[], []]  # xfmr
         for num in range(0, self.n_windings):
 
-            if self.conductor_type[num] == "foil" or self.conductor_type[num] == "solid" or \
-                    self.conductor_type[num] == "full" or self.conductor_type[num] == "stacked":
-                for i in range(0, sum(self.turns[num])):
+            if self.windings[num].conductor_type == "foil" or self.windings[num].conductor_type == "solid" or \
+                    self.windings[num].conductor_type == "full" or self.windings[num].conductor_type == "stacked":
+                for i in range(0, sum(self.windings[num].turns)):
+                    print(plane_surface_cond)
                     ps_cond[num].append(
                         gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
-
-            if self.conductor_type[num] == "litz":
-                for i in range(0, sum(self.turns[num])):
+            if self.windings[num].conductor_type == "litz":
+                for i in range(0, sum(self.windings[num].turns)):
                     ps_cond[num].append(
                         gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
 
@@ -1119,16 +1304,16 @@ class MagneticComponent:
                     y_inter = []
                     j = 0
 
-                    if self.conductor_type[num] == "solid" and self.turns[num] > 1:
+                    if self.windings[num].conductor_type == "solid" and self.windings[num].turns[n_win] > 1:
                         while self.p_conductor[num][5*j][1] == self.p_conductor[num][5*j+5][1]:
                             x_inter.append(0.5*(self.p_conductor[num][5*j][0]+self.p_conductor[num][5*j+5][0]))
                             j += 1
-                            if j == self.turns[num]-1:
+                            if j == self.windings[num].turns[n_win]-1:
                                 break
                         j += 1
                         #print(f"j = {j}")
-                        if int(self.turns[num]/j) > 1:
-                            for i in range(0, int(self.turns[num]/j)):
+                        if int(self.windings[num].turns[n_win]/j) > 1:
+                            for i in range(0, int(self.windings[num].turns[n_win]/j)):
                                 if 5*j*i+5*j >= len(self.p_conductor[num][:]):
                                     break
                                 y_inter.append(0.5*(self.p_conductor[num][5*j*i][1]+self.p_conductor[num][5*j*i+5*j][1]))
@@ -1189,7 +1374,7 @@ class MagneticComponent:
             print("\n ------- \nRefined Mesh Creation ")
             # mesh the new gmsh.model using the size field
             bg_field = gmsh.model.mesh.field.add("PostView")
-            gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
+            # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
             gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
             print("\nMeshing...\n")
             gmsh.model.mesh.generate(2)
@@ -1509,7 +1694,7 @@ class MagneticComponent:
         gmsh.view.write(sf_view, "sf.pos")
 
     # === GetDP Interaction / Simulation / Exciation ===
-    def excitation(self, f, i, phases=[], nonlinear=0, ex_type='current', imposed_red_f=0, ):
+    def excitation(self, f, i, phases=[], ex_type='current', imposed_red_f=0):
         """
         - excitation of the electromagnetic problem
         - current, voltage or current density
@@ -1531,7 +1716,6 @@ class MagneticComponent:
         # -- Excitation --
         self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
-        self.flag_non_linear_core = nonlinear
 
         phases = np.asarray(phases)
         for num in range(0, self.n_windings):
@@ -1554,13 +1738,13 @@ class MagneticComponent:
                 if self.frequency != 0:
                     self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.cond_sigma * self.mu0))
 
-                    if self.conductor_type[num] == "litz":
-                        self.red_freq[num] = self.strand_radius[num] / self.delta
-                    elif self.conductor_type[num] == "solid":
-                        self.red_freq[num] = self.conductor_radius[num] / self.delta
+                    if self.windings[num].conductor_type == "litz":
+                        self.red_freq[num] = self.windings[num].strand_radius / self.delta
+                    elif self.windings[num].conductor_type == "solid":
+                        self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                     else:
                         print("Wrong???")
-                        print(self.conductor_type[num])
+                        print(self.windings[num].conductor_type)
                         self.red_freq[num] = 1  # TODO: doesn't make sense like this
                 else:
                     self.delta = 1e20  # random huge value
@@ -1614,7 +1798,7 @@ class MagneticComponent:
                 text_file.write(f"Flag_ImposedVoltage = 0;\n")
             if self.flag_excitation_type == 'voltage':
                 text_file.write(f"Flag_ImposedVoltage = 1;\n")
-            if self.conductor_type[num] == 'litz':  # xfmr
+            if self.windings[num].conductor_type == 'litz':  # xfmr
                 text_file.write(f"Flag_HomogenisedModel{num+1} = 1;\n")
             else:
                 text_file.write(f"Flag_HomogenisedModel{num+1} = 0;\n")
@@ -1622,20 +1806,20 @@ class MagneticComponent:
 
             # -- Geometry --
             # Number of conductors
-            text_file.write(f"NbrCond{num+1} = {sum(self.turns[num])};\n")
+            text_file.write(f"NbrCond{num+1} = {sum(self.windings[num].turns)};\n")
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
-            if self.conductor_type[num] == "litz":
-                text_file.write(f"NbrStrands{num+1} = {self.n_strands[num]};\n")
-                text_file.write(f"Fill{num+1} = {self.FF[num]};\n")
+            if self.windings[num].conductor_type == "litz":
+                text_file.write(f"NbrStrands{num+1} = {self.windings[num].n_strands};\n")
+                text_file.write(f"Fill{num+1} = {self.windings[num].ff};\n")
                 # ---
                 # Litz Approximation Coefficients were created with 4 layers
                 # Thats why here a hard-coded 4 is implemented
                 # text_file.write(f"NbrLayers{num+1} = {self.n_layers[num]};\n")
                 text_file.write(f"NbrLayers{num+1} = 4;\n")
-            text_file.write(f"AreaCell{num+1} = {self.A_cell[num]};\n")
-            text_file.write(f"Rc{num+1} = {self.conductor_radius[num]};\n")
+            text_file.write(f"AreaCell{num+1} = {self.windings[num].a_cell};\n")
+            text_file.write(f"Rc{num+1} = {self.windings[num].conductor_radius};\n")
 
             # -- Excitation --
             # Imposed current, current density or voltage
@@ -1646,9 +1830,9 @@ class MagneticComponent:
                 text_file.write(f"Val_EE_{num+1} = {self.current_density[num]};\n")
             if self.flag_excitation_type == 'voltage':
                 text_file.write(f"Val_EE_{num+1} = {self.voltage[num]};\n")
-            print(f"Cell surface area: {self.A_cell[num]} \n"
+            print(f"Cell surface area: {self.windings[num].a_cell} \n"
                   f"Reduced frequency: {self.red_freq[num]}")
-            if self.red_freq[num] > 1.25 and self.conductor_type[num] == "litz":
+            if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == "litz":
                 #TODO: Allow higher reduced frequencies
                 print(f"Litz Coefficients only implemented for X<=1.25")
                 raise Warning
@@ -1674,16 +1858,16 @@ class MagneticComponent:
         text_file.write(f"SigmaCu = {self.cond_sigma};\n")
 
         # Core Material
-        if self.frequency == 0:
-            if self.flag_non_linear_core == 1:
-                text_file.write(f"Flag_NL = 1;\n")
-                text_file.write(f"Core_Material = {self.core_material};\n")
-            else:
-                text_file.write(f"Flag_NL = 0;\n")
-                text_file.write(f"mur = {self.core_re_mu_rel};\n")
-        if self.frequency != 0:
+        #if self.frequency == 0:
+        if self.flag_non_linear_core == 1:
+            text_file.write(f"Flag_NL = 1;\n")
+            text_file.write(f"Core_Material = {self.core_material};\n")
+        else:
             text_file.write(f"Flag_NL = 0;\n")
             text_file.write(f"mur = {self.core_re_mu_rel};\n")
+        #if self.frequency != 0:
+        #    text_file.write(f"Flag_NL = 0;\n")
+        #    text_file.write(f"mur = {self.core_re_mu_rel};\n")
 
         text_file.close()
 
@@ -1728,7 +1912,7 @@ class MagneticComponent:
         view = 0
 
         #if self.conductor_type[0] != 'litz':
-        if any(type != 'litz' for type in self.conductor_type):
+        if any(self.windings[i].conductor_type != 'litz' for i in range(0, self.n_windings)):
             # Ohmic losses (weightend effective value of current density)
             gmsh.open(self.path + "/" + self.path_res_fields + "j2F.pos")
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
@@ -1742,7 +1926,7 @@ class MagneticComponent:
             print(gmsh.option.getNumber(f"View[{view}].Max"))
             view += 1
 
-        if any(type == 'litz' for type in self.conductor_type):
+        if any(self.windings[i].conductor_type == 'litz' for i in range(0, self.n_windings)):
             # Ohmic losses (weightend effective value of current density)
             gmsh.open(self.path + "/" + self.path_res_fields + "jH.pos")
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
@@ -1797,7 +1981,7 @@ class MagneticComponent:
 
         # Either read old data or create
         if sim_choice != 'show':
-          # pseudo 2D dataframe: ['strand number, strand radius'], 'frequency'  | const. litz radius --> FF
+          # pseudo 2D dataframe: ['strand number, strand radius'], 'frequency'  | const. litz radius --> ff
           if not os.path.isfile(target_femm):
               df_pv_femm = pd.DataFrame([], index=frequencies, columns=[])
               df_pv_femmt = pd.DataFrame([], index=frequencies, columns=[])
@@ -1858,8 +2042,8 @@ class MagneticComponent:
         femm.mi_addmaterial('Ferrite', self.core_re_mu_rel, self.core_re_mu_rel, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         if self.conductor_type[0] == "litz":
-            femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 5, 0, 0, self.n_strands[0], 2*1000*self.strand_radius[0])  # type := 5. last argument
-            print(f"Strandsnumber: {self.n_strands[0]}")
+            femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 5, 0, 0, self.windings[0].n_strands, 2*1000*self.windings[0].strand_radius)  # type := 5. last argument
+            print(f"Strandsnumber: {self.windings[0].n_strands}")
             print(f"Strandsdiameter in mm: {2 * 1000 * self.strand_radius[0]}")
         if self.conductor_type[0] == "solid":
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 0, 0, 0, 0, 0)
@@ -1994,12 +2178,12 @@ class MagneticComponent:
         :return:
         """
         for num in range(0, self.n_windings):
-            if self.conductor_type[num] == 'litz':
+            if self.windings[num].conductor_type == 'litz':
                 # ---
                 # Litz Approximation Coefficients were created with 4 layers
                 # Thats why here a hard-coded 4 is implemented
-                # if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat"):
-                if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.FF[num]}_4layer.dat"):
+                # if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
+                if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat"):
                     print("Coefficients for stands approximation are found.")
 
                 else:
@@ -2026,7 +2210,7 @@ class MagneticComponent:
         # Thats why here a hard-coded 4 is implemented
         #text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
         text_file.write(f"NbrLayers = 4;\n")
-        text_file.write(f"Fill = {self.FF[num]};\n")
+        text_file.write(f"Fill = {self.windings[num].ff};\n")
         print("Here")
         text_file.write(f"Rc = {self.strand_radius[num]};\n")  # double named!!! must be changed
         text_file.close()
@@ -2051,7 +2235,7 @@ class MagneticComponent:
                 # text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
                 text_file.write(f"NbrLayers = 4;\n")
 
-                text_file.write(f"Fill = {self.FF[num]};\n")
+                text_file.write(f"Fill = {self.windings[num].ff};\n")
                 text_file.write(f"Rc = {self.strand_radius[num]};\n")  # double named!!! must be changed
                 text_file.close()
 
@@ -2066,14 +2250,14 @@ class MagneticComponent:
         # Formatting stuff
         # Litz Approximation Coefficients are created with 4 layers
         # Thats why here a hard-coded 4 is implemented
-        #files = [self.path + f"/pre/coeff/pB_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/pre/coeff/pI_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/pre/coeff/qB_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/pre/coeff/qI_RS_la{self.FF[num]}_{self.n_layers[num]}layer.dat"]
-        files = [self.path + f"/pre/coeff/pB_RS_la{self.FF[num]}_4layer.dat",
-                 self.path + f"/pre/coeff/pI_RS_la{self.FF[num]}_4layer.dat",
-                 self.path + f"/pre/coeff/qB_RS_la{self.FF[num]}_4layer.dat",
-                 self.path + f"/pre/coeff/qI_RS_la{self.FF[num]}_4layer.dat"]
+        #files = [self.path + f"/pre/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/pre/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/pre/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/pre/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
+        files = [self.path + f"/pre/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat",
+                 self.path + f"/pre/coeff/pI_RS_la{self.windings[num].ff}_4layer.dat",
+                 self.path + f"/pre/coeff/qB_RS_la{self.windings[num].ff}_4layer.dat",
+                 self.path + f"/pre/coeff/qI_RS_la{self.windings[num].ff}_4layer.dat"]
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:
@@ -2102,6 +2286,7 @@ class MagneticComponent:
                                      core_im_mu_rel = 1750 * np.sin(10 *np.pi/180),
                                      core_im_epsilon_rel = 6e+4 * np.sin(20 *np.pi/180),
                                      core_material = 95,
+                                     non_linear = 0,
                             **kwargs):
         """
         - One positional parameter core_type
@@ -2125,6 +2310,7 @@ class MagneticComponent:
         self.core_update_count+=1
 
         # Material Properties
+        self.flag_non_linear_core   = non_linear
         self.core_re_mu_rel         = core_re_mu_rel
         self.core_im_mu_rel         = core_im_mu_rel
         self.core_im_epsilon_rel    = core_im_epsilon_rel
@@ -2229,34 +2415,31 @@ class MagneticComponent:
                 self.added_bar = value[1]
                 print(f"Stray Path arguments{self.start_i, self.end_i, self.added_bar}")
 
-    def update_conductors(self, n_turns=[], conductor_type=[], winding=[], scheme=[], conductor_radix=[],
-                          litz_para_type=[], ff=[], layer_numbers=[], strand_radix=[], thickness=[],
+    def update_conductors(self, n_turns=[], conductor_type=[], winding=[], scheme=[], conductor_radii=[],
+                          litz_para_type=[], ff=[], strands_numbers=[], strand_radii=[], thickness=[],
                           wrap_para=[], cond_cond_isolation=[], core_cond_isolation=[]):
         """
-        conductor_type: - "stacked"  # Vertical packing of conductors
-                        - "full"     # One massive Conductor in each window
-                        - "foil"     # Horizontal packing of conductors
-                        - "solid"    # Massive wires
-                        - "litz"     # Litz wires
+        This Method allows the user to easily update/initialize the Windings in terms of their conductors and
+        arrangement.
         :param cond_cond_isolation:
         :param core_cond_isolation:
         :param n_turns:
-        :param strand_radix:
-        :param layer_numbers:
-        :param conductor_radix:
+        :param strand_radii:
+        :param strands_numbers:
+        :param conductor_radii:
         :param conductor_radius:
         :param n_conductors:
-        :param conductor_type:
+        :param conductor_type:  - "stacked"  # Vertical packing of conductors
+                                - "full"     # One massive Conductor in each window
+                                - "foil"     # Horizontal packing of conductors
+                                - "solid"    # Massive wires
+                                - "litz"     # Litz wires
         :return:
         """
-        if self.conductor_update_count == 0:
-            print(f"Initialize the conductors with some standard values.\n"
+        print(f"Update the conductors...\n"
                   f"---")
-        else:
-            print(f"Update the conductors with type {conductor_type}\n"
-                  f"---")
-        self.conductor_update_count += 1
 
+        # - - - - - - - - - - - - - - - - - - - - - CHECK Input Parameters - - - - - - - - - - - - - - - - - - - - - - -
         if self.component_type == "inductor":
             if len(n_turns) != 1 or len(conductor_type) != 1:
                 print(f"Wrong number of conductor parameters passed to inductor model!")
@@ -2267,23 +2450,27 @@ class MagneticComponent:
                 print(f"Wrong number of conductor parameters passed to transformer model!")
                 raise Warning
 
-        """
-        # Classical two winding transformer: One virtual winding window
-        if self.dedicated_stray_path == False:
+        # - - - - - - - - - - - - - - - - - Definition of Virtual Winding Windows - - - - - - - - - - - - - - - - - - -
+        # Inductor: One virtual winding window
+        if self.component_type == "inductor":
+            self.vw_type = "full_window"  # One Virtual Winding Window
+
+        # Two winding transformer
+        # One virtual winding window
+        if not self.dedicated_stray_path:
             if len(winding) == 1 and winding[0] == "interleaved":
-                self.virtual_winding_windows = [self.Virtual_Winding_Window()]
+                self.vw_type = "full_window"  # One Virtual Winding Window
+            if len(winding) == 2:
+                self.vw_type = "center"  # Two Virtual Winding Windows #TODO: Center anpassen (nicht mehr nur Nulllinie)
+        else:
+            None
+            # Dedicated stray path: Two virtual winding windows
+            # TODO: Subdivision into further Virtual Winding Windows
 
-
-        # Dedicated stray path: Two virtual winding windows
-        if self.dedicated_stray_path == True:
-            self.virtual_winding_windows = [self.Virtual_Winding_Window(), self.Virtual_Winding_Window()]
-        """
-
-        # Classical two winding transformer: One virtual winding window
-        # Dedicated stray path: Two virtual winding windows
         self.virtual_winding_windows = []
         for windows in range(0, len(winding)):
-            self.virtual_winding_windows.append(self.Virtual_Winding_Window())
+            # If there is a dedicated stray path, always two Virtual Winding Windows are used!
+            self.virtual_winding_windows.append(self.VirtualWindingWindow())
 
 
         # Fill the Virtual Winding Windows with the given data
@@ -2291,54 +2478,60 @@ class MagneticComponent:
             self.virtual_winding_windows[vww].winding = winding[vww]
             self.virtual_winding_windows[vww].scheme = scheme[vww]
             self.virtual_winding_windows[vww].turns = list(map(list, zip(*n_turns)))[vww]
-                # Need number of turns per VWW but given is a form
-                # of [list_of_primary_turns, list_of_secondary_turns]
+            # Need number of turns per VWW but given is a form
+            # of [list_of_primary_turns, list_of_secondary_turns]
 
-        self.turns = n_turns
-        self.conductor_type = conductor_type
-
-        # foil/stacked windings need:
-        self.thickness = thickness
-        self.wrap_para = wrap_para
-
+        # - - - - - - - - - - - - - - - - - Definition of the Isolation Parameters - - - - - - - - - - - - - - - - - - -
         # isolation parameters as lists:
         self.core_cond_isolation = core_cond_isolation
         self.cond_cond_isolation = cond_cond_isolation
 
+        # - - - - - - - - - - - - - - - - - Definition of the Conductor Parameters - - - - - - - - - - - - - - - - - - -
+        # self.n_windings is implied by component type
+        
         for i in range(0, self.n_windings):
-            # self.n_windings is implied by component type
-            if self.conductor_type[i] == 'solid':
-                self.conductor_radius[i] = conductor_radix[i]
-                self.A_cell[i] = np.pi * self.conductor_radius[i]**2  # Cross section of the solid conductor
+            # general conductor parameters
+            self.windings[i].turns = n_turns[i]  # turns in a list which corresponds to the Virtual Winding Windows
+            self.windings[i].conductor_type = conductor_type[i]
 
-            if self.conductor_type[i] == 'litz':
+            if self.windings[i].conductor_type == ('stacked' or 'full' or 'foil'):
+                # foil/stacked parameters
+                self.windings[i].thickness = thickness[i]
+                self.windings[i].wrap_para = wrap_para[i]
+            
+            # round conductors
+            if self.windings[i].conductor_type == 'solid':
+                self.windings[i].conductor_radius = conductor_radii[i]
+                self.windings[i].a_cell = np.pi * self.windings[i].conductor_radius ** 2  # Cross section of the solid conductor
+
+            if self.windings[i].conductor_type == 'litz':
                 if litz_para_type[i] == 'implicite_ff':
                     self.update_litz_configuration(num=i,
                                                    litz_parametrization_type=litz_para_type[i],
-                                                   conductor_radius=conductor_radix[i],
-                                                   n_layers=layer_numbers[i],
-                                                   strand_radius=strand_radix[i])
+                                                   conductor_radius=conductor_radii[i],
+                                                   n_strands=strands_numbers[i],
+                                                   strand_radius=strand_radii[i])
                 if litz_para_type[i] == 'implicite_litz_radius':
                     self.update_litz_configuration(num=i,
                                                    litz_parametrization_type=litz_para_type[i],
                                                    ff=ff[i],
-                                                   n_layers=layer_numbers[i],
-                                                   strand_radius=strand_radix[i])
+                                                   n_strands=strands_numbers[i],
+                                                   strand_radius=strand_radii[i])
                 if litz_para_type[i] == 'implicite_strands_number':
                     self.update_litz_configuration(num=i,
                                                    litz_parametrization_type=litz_para_type[i],
                                                    ff=ff[i],
-                                                   conductor_radius=conductor_radix[i],
-                                                   strand_radius=strand_radix[i])
+                                                   conductor_radius=conductor_radii[i],
+                                                   strand_radius=strand_radii[i])
 
-            if self.conductor_type[i] == 'full' or self.conductor_type[i] == 'foil' or self.conductor_type[i] == 'stacked':
-                self.A_cell[i] = 1  # TODO: Surface size needed?
-                self.conductor_radius[i] = 1  # revisit
+            if self.windings[i].conductor_type == ('stacked' or 'full' or 'foil'):
+                self.windings[i].a_cell = 1  # TODO: Surface size needed?
+                self.windings[i].conductor_radius = 1  # revisit
                 # Surface of the litz approximated hexagonal cell
-                # self.A_cell = np.pi * self.conductor_radius**2  # * self.FF
+                # self.a_cell = np.pi * self.conductor_radius**2  # * self.ff
 
     def update_litz_configuration(self, num=0, litz_parametrization_type='implicite_ff', strand_radius=None, ff=None,
-                                  conductor_radius=None, n_layers=None):
+                                  conductor_radius=None, n_strands=None):
         """
         - updates the conductor #num (simple transformer: num=0 -> primary winding,
                                                                      num=1 -> secondary winding)
@@ -2352,57 +2545,40 @@ class MagneticComponent:
         :param strand_radius:
         :param ff:
         :param conductor_radius:
-        :param n_layers:
+        :param n_strands:
         :return:
         """
-        # Litz Approximation
+        # Choose one of three different parametrization types
         if litz_parametrization_type == 'implicite_ff':
-            self.conductor_radius[num] = conductor_radius
-            self.n_layers[num] = n_layers
-            self.n_strands[num] = NbrStrands(self.n_layers[num])
-            self.strand_radius[num] = strand_radius
-            # hexagonal packing: ~90.7% are theoretical maximum FF
-            ff_exact = self.n_strands[num]*self.strand_radius[num]**2/self.conductor_radius[num]**2
+            ff_exact = n_strands * strand_radius ** 2 / conductor_radius ** 2
             print(f"Exact fill factor: {ff_exact}")
-            self.FF[num] = np.around(ff_exact, decimals=2)
-            print(f" Updated Litz Configuration: \n"
-                  f" FF: {self.FF[num]} \n"
-                  f" Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
-                  f" Strand radius: {self.strand_radius[num]} \n"
-                  f" Conductor radius: {self.conductor_radius[num]}\n"
-                  f"---")
-            # print(f"Rounded fill factor: {self.FF}")
+            ff = np.around(ff_exact, decimals=2)  # TODO: Interpolation instead of rounding
 
         if litz_parametrization_type == 'implicite_litz_radius':
-            self.FF[num] = ff
-            self.n_layers[num] = n_layers
-            self.n_strands[num] = NbrStrands(self.n_layers[num])
-            self.strand_radius[num] = strand_radius
-            self.conductor_radius[num] = np.sqrt(self.n_strands[num]*self.strand_radius[num]**2/self.FF[num])
-            print(f"Updated Litz Configuration: \n"
-                  f" FF: {self.FF[num]} \n"
-                  f" Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
-                  f" Strand radius: {self.strand_radius[num]} \n"
-                  f" Conductor radius: {self.conductor_radius[num]}\n"
-                  f"---")
+            conductor_radius = np.sqrt(n_strands*strand_radius ** 2 / ff)
 
         if litz_parametrization_type == 'implicite_strands_number':
-            self.FF[num] = ff
-            self.strand_radius[num] = strand_radius
-            self.conductor_radius[num] = conductor_radius
-            self.n_strands[num] = self.conductor_radius[num]**2/self.strand_radius[num]**2*self.FF[num]
-            self.n_layers[num] = NbrLayers(self.n_strands[num])
-            print(f"Updated Litz Configuration: \n"
-                  f" FF: {self.FF[num]} \n"
-                  f" Number of layers/strands: {self.n_layers[num]}/{self.n_strands[num]} \n"
-                  f" Strand radius: {self.strand_radius[num]} \n"
-                  f" Conductor radius: {self.conductor_radius[num]}\n"
-                  f"---")
+            n_strands = conductor_radius ** 2 / strand_radius ** 2 * ff
 
-        self.A_cell[num] = self.n_strands[num] * self.strand_radius[num]**2 * np.pi / self.FF[num]
+        # Save parameters in Winding objects
+        self.windings[num].conductor_radius = conductor_radius
+        self.windings[num].n_layers = NbrLayers(n_strands)
+        self.windings[num].n_strands = n_strands
+        self.windings[num].strand_radius = strand_radius
+        self.windings[num].ff = ff
+        self.windings[num].a_cell = self.windings[num].n_strands * self.windings[num].strand_radius ** 2 * np.pi \
+                                    / self.windings[num].ff
+
+        # Print updated Litz Data
+        print(f"Updated Litz Configuration: \n"
+              f" ff: {self.windings[num].ff} \n"
+              f" Number of layers/strands: {self.windings[num].n_layers}/{self.windings[num].n_strands} \n"
+              f" Strand radius: {self.windings[num].strand_radius} \n"
+              f" Conductor radius: {self.windings[num].conductor_radius}\n"
+              f"---")
 
     # === Standard Simulations ===
-    def single_simulation(self, freq, current, phi=[], skin_mesh_factor=1):
+    def single_simulation(self, freq, current, phi=[], skin_mesh_factor=1, NL_core=0):
         """
         - can be used for a single simulation
         - no sweeping at all
@@ -2480,9 +2656,9 @@ class MagneticComponent:
 
             # Turns Ratio n=N1/N2 with relative winding sense
             if phases[0][0] != phases[0][1]:
-                n = -1 * sum(self.turns[0]) / sum(self.turns[1])
+                n = -1 * sum(self.windings[0].turns) / sum(self.windings[1].turns)
             else:
-                n = sum(self.turns[0]) / sum(self.turns[1])
+                n = sum(self.windings[0].turns) / sum(self.windings[1].turns)
 
             print(f"\n"
                   f"Turns Ratio:\n"
@@ -2543,18 +2719,18 @@ class MagneticComponent:
                   )
 
             # Stray Inductance concentrated on Primary Side
-            ü_conc = self.M / self.L_22
-            L_s_conc = (1 - k**2) * self.L_11
-            L_h_conc = self.M**2 / self.L_22
+            self.ü_conc = self.M / self.L_22
+            self.L_s_conc = (1 - k**2) * self.L_11
+            self.L_h_conc = self.M**2 / self.L_22
             print(f"\n"
                   f"T-ECD (primary side concentrated):\n"
                   f"[Underdetermined System: ü := M / L_22  -->  L_s2 = L_22 - M / n = 0]\n"
                   f"    - Transformation Ratio: ü\n"
                   f"    - (Primary) Stray Inductance: L_s1\n"
                   f"    - Primary Side Main Inductance: L_h\n"
-                  f"ü := M / L_22 = k * Sqrt(L_11 / L_22) = {ü_conc}\n"
-                  f"L_s1 = (1 - k^2) * L_11 = {L_s_conc}\n"
-                  f"L_h = M^2 / L_22 = k^2 * L_11 = {L_h_conc}\n"
+                  f"ü := M / L_22 = k * Sqrt(L_11 / L_22) = {self.ü_conc}\n"
+                  f"L_s1 = (1 - k^2) * L_11 = {self.L_s_conc}\n"
+                  f"L_h = M^2 / L_22 = k^2 * L_11 = {self.L_h_conc}\n"
                   )
             self.visualize()
 
@@ -2647,17 +2823,19 @@ class MagneticComponent:
             self.simulate()
             self.visualize()
 
-    def litz_loss_comparison(self, FF, n_layers, strand_radius, sim_choice, sweep_parameter='fill_factor', nametag=''):
+    def litz_loss_comparison(self, ff, n_strands, strand_radius, sim_choice, sweep_parameter='fill_factor', nametag=''):
         """
 
         :param nametag:
         :param sweep_parameter:
-        :param FF:
-        :param n_layers:
+        :param ff:
+        :param n_strands:
         :param strand_radius:
         :param sim_choice:
         :return:
         """
+        # TODO: Bring it to newest Update (for example: strands_numbers instead of layer_number)
+
         # Excitation: fixed sweep parameters
         frequencies = np.linspace(0, 250000, 6)
         currents = [2, 2, 2, 2, 2, 2]
@@ -2667,9 +2845,9 @@ class MagneticComponent:
         target_femmt = self.path + nametag + 'Pv_FEMMT_' + sweep_parameter + '.json'
 
         # Update model to chosen litz parameters
-        self.update_litz_configuration(litz_parametrization_type='implicite_litz_radius', n_layers=n_layers,
-                                       strand_radius=strand_radius, ff=FF)
-        for fill_factors in self.FF:
+        self.update_litz_configuration(litz_parametrization_type='implicite_litz_radius', n_strands=n_strands,
+                                       strand_radius=strand_radius, ff=ff)
+        for fill_factors in self.ff:
             if fill_factors < 0.4 or fill_factors > 0.9:
                 print(f"Skip simulation with non realistic fill factor {fill_factors}")
 
@@ -2688,8 +2866,9 @@ class MagneticComponent:
                         df_pv_femmt = pd.read_json(target_femmt)
 
                 # Column tags
-                femmt_col_tag = f"onelab, {self.n_layers}, {self.strand_radius}, {self.FF}"
-                femm_col_tag = f"femm, {self.n_layers}, {self.strand_radius}, {self.FF}"
+                # TODO: Which winding is meant here? Only Inductor case?
+                femmt_col_tag = f"onelab, {self.n_strands}, {self.strand_radius}, {self.ff}"
+                femm_col_tag = f"femm, {self.n_strands}, {self.strand_radius}, {self.ff}"
 
                 # Prevent from rewriting already used parametrization
                 # rename duplicated tag by adding randomness | string of length 6
@@ -2745,6 +2924,7 @@ class MagneticComponent:
         :param tag:
         :return:
         """
+        # TODO: Bring it to newest Update (for example: strands_numbers instead of layer_number)
 
         # Read Json to pandas dataframe
         df_femm = pd.read_json(self.path + tag + 'Pv_FEMM_fill_factor.json', convert_axes=False)
@@ -2763,7 +2943,7 @@ class MagneticComponent:
         # Error plotting
         error = pd.DataFrame([], columns=[])
         for col in range(0, len(df_Pv_femmt.columns)):
-            error.insert(loc=0, column=f"FF{fillfactors[-col - 1]}",
+            error.insert(loc=0, column=f"ff{fillfactors[-col - 1]}",
                          value=(df_Pv_femmt.iloc[:, col] - df_Pv_femm.iloc[:, col]).div(df_Pv_femmt.iloc[:, col]))
         """
 
@@ -2790,8 +2970,11 @@ class MagneticComponent:
         # ax.text(25000, 0.5, 'FEMMT', color='g', ha='right', rotation=0, wrap=True)
         plt.show()
 
+# ----------------------------------------------------------------------------------------------------------------------
 #  ===== Static Functions  =====
-#  Used somewhere in the
+#  Used somewhere in the Code
+
+
 def inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate as the two
@@ -2926,7 +3109,7 @@ def NbrLayers(NbrStrands):
 
 
 def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', rad: str ='no',
-        f0: Union[float, None]=None, title: str='FFT') -> npt.NDArray[list]:
+        f0: Union[float, None]=None, title: str='ffT') -> npt.NDArray[list]:
     """
     A fft for a input signal. Input signal is in vector format and should include one period.
 
@@ -2934,14 +3117,14 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
 
     Minimal example:
     example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
-    out = fft(example_waveform, plot=True, rad='yes', f0=25000, title='FFT input current')
+    out = fft(example_waveform, plot=True, rad='yes', f0=25000, title='ffT input current')
 
     :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
     :param sample_factor: f_sampling/f_period, defaults to 1000
     :param plot: insert anything else than "no" or 'False' to show a plot to visualize input and output
     :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
     :param f0: set when rad != 'no' and rad != False
-    :param title: plot window title, defaults to 'FFT'
+    :param title: plot window title, defaults to 'ffT'
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     """
 
@@ -3006,7 +3189,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
         ax1.legend()
         ax2.stem(f_out, x_out)
         ax2.grid()
-        ax2.set_title('FFT')
+        ax2.set_title('ffT')
         ax2.set_xlabel('Frequency in Hz')
         ax2.set_ylabel('Amplitude')
         plt.tight_layout()
@@ -3049,4 +3232,81 @@ def compare_fft_list(list: list, rad: float = 'no', f0: Union[float,None] = None
 
     plt.tight_layout()
     plt.show()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Reluctance Model [with calculation]
+mu0 = 4e-7*np.pi
+
+
+def r_basis(l, w, h):
+    """
+    1-dim reluctance per-unit-of-length
+    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
+    :param w:
+    :param l:
+    :param h:
+    :return:
+    """
+    if l <= 0:
+        l = 0.0000001
+    return 1 / (mu0 * (w/2/l + 2/np.pi * (1+np.log(np.pi*h/4/l))))
+
+
+def sigma(l, w, R_equivalent):
+    """
+    1-dim fringing factor
+    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
+    :param w:
+    :param l:
+    :param R_equivalent:
+    :return:
+    """
+    return R_equivalent / (l/mu0/w)
+
+
+def r_round_inf(l, sigma, r):
+    """
+    3-dim reluctance for 2-dim axial-symmetric air gaps
+    :param sigma:
+    :param r:
+    :param l:
+    :return:
+    """
+    return sigma**2 * l/mu0/r**2/np.pi
+
+
+def r_round_round(l, sigma, r):
+    """
+    3-dim reluctance for 2-dim axial-symmetric air gaps
+    :param sigma:
+    :param r:
+    :param l:
+    :return:
+    """
+    return sigma**2 * l/mu0/r**2/np.pi
+
+
+def r_cyl_cyl(l, sigma, w, r_o):
+    """
+
+    :param l:
+    :param sigma:
+    :param w:
+    :param r_o:
+    :return:
+    """
+    return sigma * np.log(r_o/(r_o-l)) / 2/mu0/np.pi/w
+
+
+def r_cheap_cyl_cyl(r_o, l, w):
+    """
+
+    :param r_o:
+    :param l:
+    :param w:
+    :return:
+    """
+    r_i = r_o - l
+    return (r_o-r_i) / mu0/w/np.pi/(r_o+r_i)
 
