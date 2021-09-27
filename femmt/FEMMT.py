@@ -74,39 +74,37 @@ class MagneticComponent:
 
         # Breaking variable
         self.valid = True
+        self.mu0 = np.pi*4e-7
 
-        # ==============================
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Geometry
-        # ==============================
         # -- Control Flags --
-        self.region = None # Apply an outer Region or directly apply a constraint on the Core Boundary
-        self.padding = 1.5 # ... > 1
+        self.region = None  # Apply an outer Region or directly apply a constraint on the Core Boundary
+        self.padding = 1.5  # ... > 1
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
         self.dimensionality = "2D axi"  # Axial-symmetric model (idealized full-cylindrical)
         self.s = 0.5  # Parameter for mesh-accuracy
         self.component_type = component_type  # "inductor" or "transformer"
 
-        # -- Core --
-        self.core_type = "EI"  # Basic shape of magnetic conductor
-        self.core_w = None  # Axi symmetric case | core_w := core radius
-        self.window_w = None  # Winding window width
-        self.window_h = None  # Winding window height
-        self.core_update_count = 0
-        self.update_core(core_type="EI", core_w=0.02, window_w=0.01, window_h=0.03)  # some initial values
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Core
+        self.core = self.Core()
+        self.update_core(type="EI", core_w=0.02, window_w=0.01, window_h=0.03)  # some initial values
 
-        # -- Air gaps --
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Air Gaps
         self.n_air_gaps = 1  # Number of air gaps [==1: air gap in center | >1: random air gaps]
         self.air_gaps = np.empty((self.n_air_gaps, 4))  # list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
-
-        # -- Dedicated Stray Path --
+        # Dedicated Stray Path
         self.dedicated_stray_path = False
         self.start_i = None
-        #TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the "stray air gap" is
-        # different in axialsymmetric approximation
+        # TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the "stray air gap" is
+        #  different in axi-symmetric approximation
         self.end_i = None
         self.added_bar = None
 
-        # -- Windings --
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Windings
         self.n_windings = None  # Number of conductors/windings
 
         if component_type == "inductor":
@@ -122,20 +120,20 @@ class MagneticComponent:
             self.windings = [self.Winding(), self.Winding(), self.Winding()]
             raise NotImplemented
 
-
-        # -- Virtual Winding Windows --
+        # Virtual Winding Windows
         self.virtual_winding_windows = None
         self.vw_type = None  # "center" and "full_window" are the only cases implemented yet; #TODO: ersetzen
 
-        # -- Isolation ---
-        self.core_cond_isolation = [None] * self.n_windings  # gap between Core and each Conductor
+        # Isolation
         self.cond_cond_isolation = [None] * (self.n_windings * 2 - 1)  # \n
         # first n_conductor arguments: isolation gap between two turns of common conductors
         # last n_conductor-1 arguments: gap between two neighboured conductors
         # 12, 13, 23
-        #TODO: (n-1)! = (n-1)*(n-2)...*1 + 1
+        # TODO: (n-1)! = (n-1)*(n-2)...*1 + 1
+        self.core_cond_isolation = [None] * self.n_windings  # gap between Core and each Conductor
 
-        # -- Geometric Parameters/Coordinates --
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Geometric Parameters/Coordinates
         self.n_windows = None
         self.p_outer = None
         self.p_window = None
@@ -144,23 +142,8 @@ class MagneticComponent:
             self.p_conductor.insert(i, [])
         self.p_air_gaps = None
 
-        # ==============================
-        # Materials
-        # ==============================
-        # frequency = 0: mu_rel only used if flag_non_linear_core == 0
-        # frequency > 0: mu_rel is used
-        self.cond_sigma = 5.8e7  # perfect copper
-        self.mu0 = np.pi*4e-7
-        # TDk N95 as standard material:
-        self.core_re_mu_rel = 3000  # Real part of relative Core Permeability  [B-Field and frequency-dependend]
-        self.core_im_mu_rel = 1750 * np.sin(10 *np.pi/180)   # Imaginary part of relative Core Permeability  [B-Field and frequency-dependend]
-        self.core_im_epsilon_rel = 6e+4 * np.sin(20 *np.pi/180)  # Imaginary part of complex equivalent permeability  [only frequency-dependend]
-        self.core_material = 95_100  # 95  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
-
-        # ==============================
-        # Problem Definition
-        # ==============================
-        # -- Excitation Parameters --
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Excitation Parameters
         self.flag_imposed_reduced_frequency = None
         self.flag_excitation_type = None
         self.flag_non_linear_core = None
@@ -172,32 +155,22 @@ class MagneticComponent:
         self.red_freq = [None] * self.n_windings  # Defined for every conductor
         self.delta = None
 
-        # ==============================
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Meshing
-        # ==============================
-        # -- Characteristic lengths -- [for mesh sizes]
+        # Characteristic lengths [for mesh sizes]
         self.skin_mesh_factor = None
         self.c_core = None
-        # self.c_core =  self.core_w/10. * self.s
+        # self.c_core =  self.core.core_w/10. * self.s
         self.c_window = None
-        self.c_conductor = [None] * self.n_windings  # self.delta  # self.s /20 #self.window_w/30 * self.s
+        self.c_conductor = [None] * self.n_windings  # self.delta  # self.s /20 #self.core.window_w/30 * self.s
         self.c_center_conductor = [None] * self.n_windings  # used for the mesh accuracy in the conductors
         self.c_air_gap = []
         self.island_mesh_acc = 1  # will be multiplied with self.c_window later
         self.zero_mesh_acc = self.island_mesh_acc  # points that are pulled to x=0
 
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # -- Used for Litz Validation --
         self.sweep_frequencies = None
-
-        # -- Core Loss --
-        self.core_loss_simlation = 0
-        self.Ipeak = None
-        self.ki = None
-        self.alpha = None
-        self.beta = None
-        self.t_rise = None
-        self.t_fall = None
-        self.f_switch = None
 
         # -- Results --
         self.L_11 = None
@@ -253,8 +226,8 @@ class MagneticComponent:
         # ==============================
 
         # Mesh-Parameters must be updated depending on geometry size
-        self.c_core =  self.core_w/10. * self.s
-        self.c_window = self.window_w/30 * self.s
+        self.c_core =  self.core.core_w/10. * self.s
+        self.c_window = self.core.window_w/30 * self.s
 
         # Update Skin Depth (needed for meshing)
         self.skin_mesh_factor = skin_mesh_factor
@@ -262,7 +235,7 @@ class MagneticComponent:
             if frequency == 0:
                 self.delta = 1e9
             else:
-                self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.cond_sigma * self.mu0))
+                self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
             for i in range(0, self.n_windings):
                 if self.windings[i].conductor_type == "solid":
                     self.c_conductor[i] = min([self.delta * self.skin_mesh_factor,
@@ -277,7 +250,7 @@ class MagneticComponent:
                     self.c_conductor[i] = 0.0001  # revisit
 
         # -- Core-type --
-        if self.core_type == core_type:
+        if self.core.type == core_type:
             self.n_windows = 2
 
         # -- Symmetry -- [Choose between asymmetric, symmetric and axi symmetric]
@@ -285,7 +258,7 @@ class MagneticComponent:
         if self.dimensionality == "2D axi":
             self.y_symmetric = 1
 
-        if self.core_type == "EI" and self.dimensionality == "2D axi":
+        if self.core.type == "EI" and self.dimensionality == "2D axi":
             self.ei_axi()
 
     class VirtualWindingWindow:
@@ -316,6 +289,7 @@ class MagneticComponent:
         class:VirtualWindingWindow the arrangement of the conductors is specified.
         """
         def __init__(self):
+            self.cond_sigma = 5.8e7  # perfect copper
             self.turns = None
             self.conductor_type = None  # List of possible conductor types
             self.ff = None
@@ -326,6 +300,38 @@ class MagneticComponent:
             self.a_cell = None
             self.thickness = None
             self.wrap_para = None
+
+    class Core:
+        """
+        frequency = 0: mu_rel only used if flag_non_linear_core == 0
+        frequency > 0: mu_rel is used
+        """
+        def __init__(self):
+
+            # Complex Loss
+            # TDK N95 as standard material:
+            self.re_mu_rel = 3000  # Real part of relative Core Permeability  [B-Field and frequency-dependent]
+            self.im_mu_rel = 1750 * np.sin(
+                10 * np.pi / 180)  # Imaginary part of relative Core Permeability  [B-Field and frequency-dependent]
+            self.im_epsilon_rel = 6e+4 * np.sin(
+                20 * np.pi / 180)  # Imaginary part of complex equivalent permeability  [only frequency-dependent]
+            self.material = 95_100  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
+
+            # Steinmetz Loss
+            self.steinmetz_loss = 0
+            self.Ipeak = None
+            self.ki = None
+            self.alpha = None
+            self.beta = None
+            self.t_rise = None
+            self.t_fall = None
+            self.f_switch = None
+
+            # Dimensions
+            self.type = "EI"  # Basic shape of magnetic conductor
+            self.core_w = None  # Axi symmetric case | core_w := core radius
+            self.window_w = None  # Winding window width
+            self.window_h = None  # Winding window height
 
     def ei_axi(self):
         """
@@ -344,27 +350,27 @@ class MagneticComponent:
         # -- Geometry data --
 
         # Fitting the outer radius to ensure surface area
-        r_inner = self.window_w + self.core_w/2
-        r_outer = np.sqrt((self.core_w/2)**2 + r_inner**2)  # np.sqrt(window_w**2 + window_w * core_w + core_w**2/2)
+        r_inner = self.core.window_w + self.core.core_w/2
+        r_outer = np.sqrt((self.core.core_w/2)**2 + r_inner**2)  # np.sqrt(window_w**2 + window_w * core_w + core_w**2/2)
 
         # Outer Core
         # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
-        self.p_outer[0][:] = [-r_outer, -(self.window_h / 2 + self.core_w/4), 0, self.c_core]
-        self.p_outer[1][:] = [r_outer, -(self.window_h / 2 + self.core_w/4), 0, self.c_core]
-        self.p_outer[2][:] = [-r_outer, (self.window_h / 2 + self.core_w/4), 0, self.c_core]
-        self.p_outer[3][:] = [r_outer, (self.window_h / 2 + self.core_w/4), 0, self.c_core]
+        self.p_outer[0][:] = [-r_outer, -(self.core.window_h / 2 + self.core.core_w/4), 0, self.c_core]
+        self.p_outer[1][:] = [r_outer, -(self.core.window_h / 2 + self.core.core_w/4), 0, self.c_core]
+        self.p_outer[2][:] = [-r_outer, (self.core.window_h / 2 + self.core.core_w/4), 0, self.c_core]
+        self.p_outer[3][:] = [r_outer, (self.core.window_h / 2 + self.core.core_w/4), 0, self.c_core]
 
         # Window
         # At this point both windows (in a cut) are modeled
         # print(f"win: c_window: {self.c_window}")
-        self.p_window[0] = [-r_inner, -self.window_h/2, 0, self.c_window]
-        self.p_window[1] = [-self.core_w/2, -self.window_h/2, 0, self.c_window]
-        self.p_window[2] = [-r_inner, self.window_h/2, 0, self.c_window]
-        self.p_window[3] = [-self.core_w/2, self.window_h/2, 0, self.c_window]
-        self.p_window[4] = [self.core_w/2, -self.window_h/2, 0, self.c_window]
-        self.p_window[5] = [r_inner, -self.window_h/2, 0, self.c_window]
-        self.p_window[6] = [self.core_w/2, self.window_h/2, 0, self.c_window]
-        self.p_window[7] = [r_inner, self.window_h/2, 0, self.c_window]
+        self.p_window[0] = [-r_inner, -self.core.window_h/2, 0, self.c_window]
+        self.p_window[1] = [-self.core.core_w/2, -self.core.window_h/2, 0, self.c_window]
+        self.p_window[2] = [-r_inner, self.core.window_h/2, 0, self.c_window]
+        self.p_window[3] = [-self.core.core_w/2, self.core.window_h/2, 0, self.c_window]
+        self.p_window[4] = [self.core.core_w/2, -self.core.window_h/2, 0, self.c_window]
+        self.p_window[5] = [r_inner, -self.core.window_h/2, 0, self.c_window]
+        self.p_window[6] = [self.core.core_w/2, self.core.window_h/2, 0, self.c_window]
+        self.p_window[7] = [r_inner, self.core.window_h/2, 0, self.c_window]
 
 
         # - Air gaps -
@@ -378,33 +384,33 @@ class MagneticComponent:
             """
             # Left leg (-1)
             if self.air_gaps[i][0] == -1:
-                self.p_air_gaps[i * 4] = [-(self.core_w + self.window_w), self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 1] = [-(self.core_w / 2 + self.window_w), self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 2] = [-(self.core_w + self.window_w), self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 3] = [-(self.core_w / 2 + self.window_w), self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4] = [-(self.core.core_w + self.core.window_w), self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [-(self.core.core_w / 2 + self.core.window_w), self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [-(self.core.core_w + self.core.window_w), self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [-(self.core.core_w / 2 + self.core.window_w), self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
 
             # Right leg (+1)
             if self.air_gaps[i][0] == 1:
-                self.p_air_gaps[i * 4] = [self.core_w / 2 + self.window_w, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 1] = [self.core_w + self.window_w, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 2] = [self.core_w / 2 + self.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 3] = [self.core_w + self.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4] = [self.core.core_w / 2 + self.core.window_w, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [self.core.core_w + self.core.window_w, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [self.core.core_w / 2 + self.core.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [self.core.core_w + self.core.window_w, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
             """
             # Center leg (0)
             if self.air_gaps[i][0] == 0:
                 print(self.air_gaps[i][3])
                 #TODO: sadly the center points are passed by update_air_gaps() and at this point transformed into 4 corner points
-                self.p_air_gaps[i * 4 + 0] = [-self.core_w/2, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 1] = [ self.core_w/2, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 2] = [-self.core_w/2, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
-                self.p_air_gaps[i * 4 + 3] = [ self.core_w/2, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 0] = [-self.core.core_w/2, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 1] = [ self.core.core_w/2, self.air_gaps[i][1] - self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 2] = [-self.core.core_w/2, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
+                self.p_air_gaps[i * 4 + 3] = [ self.core.core_w/2, self.air_gaps[i][1] + self.air_gaps[i][2] / 2, 0, self.air_gaps[i][3]]
 
 
         # - Virtual Windows -
         #TODO: make this part of the class VWW...
         # self.vw_type must be an input or so to that class
-        separation_hor = 0 #self.window_h * 0.5
-        separation_vert = self.window_w * 0.5
+        separation_hor = 0 #self.core.window_h * 0.5
+        separation_vert = self.core.window_w * 0.5
 
         if self.dedicated_stray_path == False:
             # Some examples for virtual windows
@@ -416,9 +422,9 @@ class MagneticComponent:
                 In case of a transformer, an interleaved winding scheme must be used.
                 """
                 # top window
-                min =-self.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
-                max = self.window_h / 2 - self.core_cond_isolation[0]  # top
-                left = self.core_w / 2 + self.core_cond_isolation[0]
+                min =-self.core.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
+                max = self.core.window_h / 2 - self.core_cond_isolation[0]  # top
+                left = self.core.core_w / 2 + self.core_cond_isolation[0]
                 right = r_inner - self.core_cond_isolation[0]
 
                 # Sum the windows up in a list
@@ -438,14 +444,14 @@ class MagneticComponent:
 
                 # top window
                 min21 = -separation_hor + self.cond_cond_isolation[-1] / 2  # separation_hor
-                max21 = self.window_h / 2 - self.core_cond_isolation[0]  # top
-                left21 = self.core_w / 2 + self.core_cond_isolation[0]
+                max21 = self.core.window_h / 2 - self.core_cond_isolation[0]  # top
+                left21 = self.core.core_w / 2 + self.core_cond_isolation[0]
                 right21 = r_inner - self.core_cond_isolation[0]
 
                 # bottom window
-                min11 =-self.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
+                min11 =-self.core.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
                 max11 = -separation_hor - self.cond_cond_isolation[-1] / 2  # separation_hor
-                left11 = self.core_w / 2 + self.core_cond_isolation[0]
+                left11 = self.core.core_w / 2 + self.core_cond_isolation[0]
                 right11 = r_inner - self.core_cond_isolation[0]
 
                 # Sum the windows up in a list
@@ -458,21 +464,21 @@ class MagneticComponent:
 
             if self.vw_type == "something_else":
                 # bottom left window
-                min11 = -self.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
+                min11 = -self.core.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
                 max11 = -separation_hor - self.cond_cond_isolation[-1] / 2  # separation_hor
-                left11 = self.core_w / 2 + self.core_cond_isolation[0]
+                left11 = self.core.core_w / 2 + self.core_cond_isolation[0]
                 right11 = r_inner - self.cond_cond_isolation[0] - separation_vert
 
                 # bottom right window
-                min12 =-self.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
+                min12 =-self.core.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
                 max12 = -separation_hor - self.cond_cond_isolation[-1] / 2  # separation_hor
                 left12 = r_inner + self.cond_cond_isolation[0] - separation_vert
                 right12 = r_inner - self.core_cond_isolation[0]
 
                 # top window
                 min21 = -separation_hor + self.cond_cond_isolation[-1] / 2  # separation_hor
-                max21 = self.window_h / 2 - self.core_cond_isolation[0]  # top
-                left21 = self.core_w / 2 + self.core_cond_isolation[0]
+                max21 = self.core.window_h / 2 - self.core_cond_isolation[0]  # top
+                left21 = self.core.core_w / 2 + self.core_cond_isolation[0]
                 right21 = r_inner - self.core_cond_isolation[0]
 
                 # Sum the windows up in a list
@@ -491,15 +497,15 @@ class MagneticComponent:
 
             # top window
             island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
-            min11 = -self.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
+            min11 = -self.core.window_h / 2 + self.core_cond_isolation[0] / 2  # bottom
             max11 = island_right_tmp[(self.start_i - 1) * 2][1] - self.core_cond_isolation[0] / 2  # separation_hor
-            left11 = self.core_w / 2 + self.core_cond_isolation[0]
+            left11 = self.core.core_w / 2 + self.core_cond_isolation[0]
             right11 = r_inner - self.core_cond_isolation[0]
 
             # bot window
             min21 = island_right_tmp[(self.start_i - 1) * 2 + 1][1] + self.core_cond_isolation[0] / 2  # separation_hor
-            max21 = self.window_h / 2 - self.core_cond_isolation[0]  # top
-            left21 = self.core_w / 2 + self.core_cond_isolation[0]
+            max21 = self.core.window_h / 2 - self.core_cond_isolation[0]  # top
+            left21 = self.core.core_w / 2 + self.core_cond_isolation[0]
             right21 = r_inner - self.core_cond_isolation[0]
 
             # Store the window boarders in the VWW objects
@@ -935,10 +941,10 @@ class MagneticComponent:
                     self.valid = None
 
         # Region for Boundary Condition
-        self.p_region_bound[0][:] = [-r_outer*self.padding, -(self.window_h / 2 + self.core_w/4)*self.padding, 0, self.c_core*self.padding]
-        self.p_region_bound[1][:] = [r_outer*self.padding, -(self.window_h / 2 + self.core_w/4)*self.padding, 0, self.c_core*self.padding]
-        self.p_region_bound[2][:] = [-r_outer*self.padding, (self.window_h / 2 + self.core_w/4)*self.padding, 0, self.c_core*self.padding]
-        self.p_region_bound[3][:] = [r_outer*self.padding, (self.window_h / 2 + self.core_w/4)*self.padding, 0, self.c_core*self.padding]
+        self.p_region_bound[0][:] = [-r_outer*self.padding, -(self.core.window_h / 2 + self.core.core_w/4)*self.padding, 0, self.c_core*self.padding]
+        self.p_region_bound[1][:] = [r_outer*self.padding, -(self.core.window_h / 2 + self.core.core_w/4)*self.padding, 0, self.c_core*self.padding]
+        self.p_region_bound[2][:] = [-r_outer*self.padding, (self.core.window_h / 2 + self.core.core_w/4)*self.padding, 0, self.c_core*self.padding]
+        self.p_region_bound[3][:] = [r_outer*self.padding, (self.core.window_h / 2 + self.core.core_w/4)*self.padding, 0, self.c_core*self.padding]
 
     # === Meshing ===
     def generate_mesh(self, refine=0, alternative_error=0):
@@ -967,7 +973,7 @@ class MagneticComponent:
         gmsh.model.add(self.path_mesh + "geometry")
         # ------------------------------------------ Geometry -------------------------------------------
         # Core generation
-        if self.core_type == "EI":
+        if self.core.type == "EI":
             # --------------------------------------- Points --------------------------------------------
             if self.y_symmetric == 1:
                 if self.dimensionality == "2D axi":
@@ -1406,293 +1412,6 @@ class MagneticComponent:
         if self.valid:
             self.generate_mesh()
 
-    # == Adaptive Meshing ==
-    # !!! Experimental Code !!!
-    def triangle_max_edge(self, x):
-        a = np.sum((x[:, 0, :] - x[:, 1, :]) ** 2, 1) ** 0.5
-        b = np.sum((x[:, 0, :] - x[:, 2, :]) ** 2, 1) ** 0.5
-        c = np.sum((x[:, 1, :] - x[:, 2, :]) ** 2, 1) ** 0.5
-        return np.maximum(a, np.maximum(b, c))
-
-    def triangle_mean_edge(self, x):
-        a = np.sum((x[:, 0, :] - x[:, 1, :]) ** 2, 1) ** 0.5
-        b = np.sum((x[:, 0, :] - x[:, 2, :]) ** 2, 1) ** 0.5
-        c = np.sum((x[:, 1, :] - x[:, 2, :]) ** 2, 1) ** 0.5
-        return (a + b + c)/3
-
-    def compute_size_field_old(self, nodes, triangles, err, N):
-        x = nodes[triangles]
-        a = 2.
-        d = 2.
-        fact = (a ** ((2. + a) / (1. + a)) + a ** (1. / (1. + a))) * np.sum(err ** (2. / (1. + a)))
-        ri = err ** (2. / (2. * (1 + a))) * a ** (1. / (d * (1. + a))) * ((1. + a) * N / fact) ** (1. / d)
-        return self.triangle_max_edge(x) / ri
-
-    def compute_size_field(self, nodes, triangles, err, N):
-        x = nodes[triangles]
-        threshold = 0.01
-        print(f"Error{err}")
-        err[err > 0.1] = 0.5
-        err[err < 0.1] = 0.9
-        print(f"Error{err}")
-        return self.triangle_max_edge(x) * err
-        # return self.triangle_max_edge(x) - err**(0.1) * self.triangle_max_edge(x)
-
-    class Mesh:
-        """
-        Currently unused except for experimental adaptive Meshing.
-        #TODO: Make the mesh an object for increased reusability
-        """
-        def __init__(self):
-            self.vtags, vxyz, _ = gmsh.model.mesh.getNodes()
-            self.vxyz = vxyz.reshape((-1, 3))
-            vmap = dict({j: i for i, j in enumerate(self.vtags)})
-            self.triangles_tags, evtags = gmsh.model.mesh.getElementsByType(2)
-            evid = np.array([vmap[j] for j in evtags])
-            self.triangles = evid.reshape((self.triangles_tags.shape[-1], -1))
-
-    def refine_mesh(self, local=0):
-        """
-
-        :return:
-        """
-
-        # --------------------------------------
-        if local == 1:
-            self.generate_mesh(refine=1)
-
-        # --------------------------------------
-        if local == 0:
-            # Refine current mesh
-            gmsh.model.mesh.refine()
-            print("\nMeshing...\n")
-            gmsh.model.mesh.generate(2)
-            # --------------------------------------
-            # Mesh generation
-            #gmsh.model.mesh.generate(2)
-            # Check operating system
-            if sys.platform == "linux" or sys.platform == "linux2":
-                gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")
-            elif sys.platform == "darwin":
-                # OS X
-                gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")
-            elif sys.platform == "win32":
-                gmsh.write(self.path + "/" + self.path_mesh + "geometry.msh")  # Win10 can handle slash
-
-            # Terminate gmsh
-            gmsh.finalize()
-
-    def find_neighbours(self, file="results/J_rms.pos"):
-        # Open loss/error results
-        dest_file = open(self.path + "error.dat", "w")
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + "/" + self.path_res_fields + 'J_rms.pos') as f:
-            read = 0
-            for line in f:
-                if line == "$ElementNodeData\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    # words = line.split(sep=' ')
-                    words = line.replace(' ', ', ')
-                    for word in words:
-                        dest_file.write(word)
-        dest_file.close()
-
-    def alternative_local_error(self, loss_file='/results/fields/J_rms.pos'):
-        """
-
-        :return:
-        """
-        # Open loss/error results
-        error_file = open(self.path + "/mesh_error.dat", "w")
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + loss_file) as f:
-            read = 0
-            for line in f:
-                if line == "$ElementNodeData\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    # words = line.split(sep=' ')
-                    words = line.replace(' ', ', ')
-                    for word in words:
-                        error_file.write(word)
-        error_file.close()
-
-        # Load local Error values
-        data = pd.read_csv(self.path + "/mesh_error.dat")
-        local_error = data.iloc[:, 2].to_numpy()
-        local_error = np.insert(local_error, 0, 0., axis=0)
-
-        local_error = local_error / np.max(local_error) + 0.001
-        print(f"Längen: {len(local_error), local_error} ")  # first of the 3 loss values
-
-        # ---- Open post-processing results ----
-
-        # Elements ----
-        elements = []
-        values = []
-        # error_file = open(self.path + "/mesh_error.dat", "w")
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + "/" + self.path_res_fields + 'J_rms.pos') as file:
-            read = 0
-            for line in file:
-                if line == "$Elements\n" or line == "$EndElements\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    words = line.split(sep=' ')
-                    elements.append(words)
-
-        # Convert Elements to Dataframe
-        element_frame = pd.DataFrame(elements)
-        # Dropout not needed columns
-        element_frame.drop(element_frame.columns[[1, 2, 3, 4, 8]], axis=1, inplace=True)
-        element_frame.columns = ['NumElement', 'Node1', 'Node2', 'Node3']
-        print(f"Number of Elements: {len(elements)}\n"
-              # f"Elements: {elements}\n"
-              f"Element Dataframe: {element_frame}")
-        element_frame.to_csv(path_or_buf="elements.txt")
-
-        # Values ----
-        with open(self.path + "/" + self.path_res_fields + 'J_rms.pos') as file:
-            read = 0
-            for line in file:
-                if line == "$ElementNodeData\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    words = re.split(' |\n', line)
-                    values.append(words)
-
-        # Convert Values to Dataframe
-        value_frame = pd.DataFrame(values)
-        # Dropout not needed columns
-        value_frame.drop(value_frame.columns[[1, 5]], axis=1, inplace=True)
-        value_frame.columns = ['NumElement', 'Node1', 'Node2', 'Node3']
-        # value_frame['NumElement', 'Node1', 'Node2', 'Node3'] = pd.to_numeric(value_frame['NumElement', 'Node1', 'Node2', 'Node3'], downcast="float")
-        value_frame['NumElement'] = pd.to_numeric(value_frame['NumElement'], downcast="float")
-        value_frame['Node1'] = pd.to_numeric(value_frame['Node1'], downcast="float")
-        value_frame['Node2'] = pd.to_numeric(value_frame['Node2'], downcast="float")
-        value_frame['Node3'] = pd.to_numeric(value_frame['Node3'], downcast="float")
-        print(f"Number of Values: {len(values)}\n"
-              # f"Values: {values}\n"
-              f"Values Dataframe: {value_frame}")
-
-        # ---- Neighbour algorithm || Error calculation ----
-        local_error = np.zeros(len(element_frame.index))
-
-        nodes = ['Node1', 'Node2', 'Node3']
-        for i in value_frame.index:
-            mean_cell = 0
-            # Mean loss per cell
-            for node in nodes:
-                mean_cell += value_frame[node][i] / len(nodes)
-            # Local Variance
-            for node in nodes:
-                local_error[i] += (value_frame[node][i] - mean_cell) ** 2
-
-        # Distribute Local Error on neighbour cells
-        nodes_neighbours_found = []
-        distribution_factor = 2
-
-        """
-        local_error_copy = local_error
-        print(local_error)
-
-        # every element
-        for i in element_frame.index:
-            # every element's node
-            for node in nodes:
-                # Node already considered?
-                if not element_frame[node][i] in nodes_neighbours_found:
-                    nodes_neighbours_found += element_frame[node][i]
-                    # Value[Node] == 0 ? : skip
-                    if not value_frame[node][i] == 0:
-                        # search in every element for Node
-                        for j in element_frame.index:
-                            for node in nodes:
-                                if value_frame[node][j] == 0:
-                                    # add some error in neighboured Nodes
-                                    if element_frame[node][j] == element_frame[node][i]:
-                                        local_error_copy[j] += local_error[i] * distribution_factor
-
-
-        local_error = local_error_copy
-        """
-        print(local_error)
-        # Error Normalization
-        return local_error / np.max(local_error) + 0.0001
-
-        # print(f"Local Error: {local_error[3387]}\n"
-        #      f"Length of Local Error: {len(local_error)}")
-        """
-        # Load local Error values
-        data = pd.read_csv(self.path + "/mesh_error.dat")
-        local_error = data.iloc[:, 2].to_numpy()
-        local_error = np.insert(local_error, 0, 0., axis=0)
-
-        local_error = local_error/np.max(local_error) + 0.001
-        print(len(local_error), local_error)  # first of the 3 loss values
-        """
-
-    def local_error(self, loss_file='/results/fields/error.pos'):
-        """
-        - Method shall return the normalized numeric local error of the last adaptive simulation step
-        - Local error can be used to optimize the mesh in the next iteration step
-        :return:
-        """
-        # Open loss/error results
-        error_file = open(self.path + "/mesh_error.dat", "w")
-        # Read the logged losses corresponding to the frequencies
-        with open(self.path + loss_file) as f:
-            read = 0
-            for line in f:
-                if line == "$ElementNodeData\n":
-                    read = (read + 1) % 2
-                    print(line, read)
-                if read == 1 and ' ' in line:
-                    # words = line.split(sep=' ')
-                    words = line.replace(' ', ', ')
-                    for word in words:
-                        error_file.write(word)
-        error_file.close()
-
-        # Load local Error values
-        data = pd.read_csv(self.path + "/mesh_error.dat")
-        print(f"Data: {data}")
-        local_error = data.iloc[:, 2].to_numpy()
-        local_error = np.insert(local_error, 0, 1e-5, axis=0)
-
-        return local_error / np.max(local_error)
-        print(f"Längen: {len(local_error), local_error} ")
-
-    def create_background_mesh(self, local_error):
-        gmsh.open(self.path + "/" + self.path_mesh + "geometry.msh")  # Open current mesh
-        N = 50000  # Number of elements after remeshing
-        mesh = self.Mesh()  # Create virtual mesh
-        """
-        print(f"Mesh nodes: {mesh.vxyz} \n "
-              f"Mesh nodes.shape: {mesh.vxyz.shape} \n "
-              f"Mesh node tags: {mesh.vtags} \n"
-              f"Mesh triangles: {mesh.triangles} \n"
-              f"Mesh triangles.shape: {mesh.triangles.shape} \n"
-              f"Mesh triangle tags: {mesh.triangles_tags} \n"
-              )
-        """  # some printing options
-
-        err_view = gmsh.view.add("element-wise error")
-        gmsh.view.addModelData(err_view, 0, self.path_mesh + "/" + self.path_mesh + "geometry", "ElementData", mesh.triangles_tags, local_error[:, None])
-        gmsh.view.write(err_view, "err.pos")
-
-        # Refinement
-        sf_ele = self.compute_size_field(mesh.vxyz, mesh.triangles, local_error, N)
-        np.savetxt("sf_ele.txt", sf_ele)
-        sf_view = gmsh.view.add("mesh size field")
-        gmsh.view.addModelData(sf_view, 0, self.path_mesh + "/" + self.path_mesh + "geometry", "ElementData", mesh.triangles_tags, sf_ele[:, None])
-        gmsh.view.write(sf_view, "sf.pos")
-
     # === GetDP Interaction / Simulation / Exciation ===
     def excitation(self, f, i, phases=[], ex_type='current', imposed_red_f=0):
         """
@@ -1736,7 +1455,7 @@ class MagneticComponent:
                 self.red_freq[num] = 4
             else:
                 if self.frequency != 0:
-                    self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.cond_sigma * self.mu0))
+                    self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
 
                     if self.windings[num].conductor_type == "litz":
                         self.red_freq[num] = self.windings[num].strand_radius / self.delta
@@ -1779,11 +1498,11 @@ class MagneticComponent:
         text_file.write(f"delta = {self.delta};\n")
 
         # Core Loss
-        text_file.write(f"Flag_Core_Loss = {self.core_loss_simlation};\n")
-        text_file.write(f"e_r_imag = {self.core_im_epsilon_rel};\n")
-        text_file.write(f"mu_r_imag = {self.core_im_mu_rel};\n")
+        text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
+        text_file.write(f"e_r_imag = {self.core.im_epsilon_rel};\n")
+        text_file.write(f"mu_r_imag = {self.core.im_mu_rel};\n")
 
-        if self.core_loss_simlation:
+        if self.core.steinmetz_loss:
             text_file.write(f"ki = {self.ki};\n")
             text_file.write(f"alpha = {self.alpha};\n")
             text_file.write(f"beta = {self.beta};\n")
@@ -1855,19 +1574,19 @@ class MagneticComponent:
 
         # Material Properties
         # Conductor Material
-        text_file.write(f"SigmaCu = {self.cond_sigma};\n")
+        text_file.write(f"SigmaCu = {self.windings[0].cond_sigma};\n")
 
         # Core Material
         #if self.frequency == 0:
         if self.flag_non_linear_core == 1:
             text_file.write(f"Flag_NL = 1;\n")
-            text_file.write(f"Core_Material = {self.core_material};\n")
+            text_file.write(f"Core_Material = {self.core.material};\n")
         else:
             text_file.write(f"Flag_NL = 0;\n")
-            text_file.write(f"mur = {self.core_re_mu_rel};\n")
+            text_file.write(f"mur = {self.core.re_mu_rel};\n")
         #if self.frequency != 0:
         #    text_file.write(f"Flag_NL = 0;\n")
-        #    text_file.write(f"mur = {self.core_re_mu_rel};\n")
+        #    text_file.write(f"mur = {self.core.re_mu_rel};\n")
 
         text_file.close()
 
@@ -2039,7 +1758,7 @@ class MagneticComponent:
         femm.mi_probdef(freq, 'meters', 'axi', 1.e-8, 0, 30)
 
         # == Materials ==
-        femm.mi_addmaterial('Ferrite', self.core_re_mu_rel, self.core_re_mu_rel, 0, 0, 0, 0, 0, 1, 0, 0, 0)
+        femm.mi_addmaterial('Ferrite', self.core.re_mu_rel, self.core.re_mu_rel, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         if self.conductor_type[0] == "litz":
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 5, 0, 0, self.windings[0].n_strands, 2*1000*self.windings[0].strand_radius)  # type := 5. last argument
@@ -2282,52 +2001,47 @@ class MagneticComponent:
 
     # ==== Front-End Methods =====
     # === Geometry Definitions ===
-    def update_core(self, core_type, core_re_mu_rel = 3000,
-                                     core_im_mu_rel = 1750 * np.sin(10 *np.pi/180),
-                                     core_im_epsilon_rel = 6e+4 * np.sin(20 *np.pi/180),
-                                     core_material = 95,
+    def update_core(self, type, re_mu_rel = 3000,
+                                     im_mu_rel = 1750 * np.sin(10 *np.pi/180),
+                                     im_epsilon_rel = 6e+4 * np.sin(20 *np.pi/180),
+                                     material = 95,
                                      non_linear = 0,
                             **kwargs):
         """
-        - One positional parameter core_type
+        - One positional parameter type
         - All core parameters can be passed or adjusted by keyword calling
             - Allows single parameter changing
-            - Depending on core_type
+            - Depending on type
             - Strict keyword usage!
-        :param core_type:
+        :param type:
         :param kwargs:
             - Case "2D, axisym., EI": 'core_w', 'window_w', 'window_h'
             - Case "3D, EI": ...tba...
         :return:
         """
 
-        if self.core_update_count == 0:
-            print(f"Initialize the magnetic Core as {self.core_type}-type with some standard values.\n"
-                  f"---")
-        else:
-            print(f"Update the magnetic Core to {self.core_type}-type with following parameters: {kwargs}\n"
-                  f"---")
-        self.core_update_count+=1
+        print(f"Update the magnetic Core to {self.core.type}-type with following parameters: {kwargs}\n"
+              f"---")
 
         # Material Properties
-        self.flag_non_linear_core   = non_linear
-        self.core_re_mu_rel         = core_re_mu_rel
-        self.core_im_mu_rel         = core_im_mu_rel
-        self.core_im_epsilon_rel    = core_im_epsilon_rel
-        self.core_material          = core_material
+        self.core.flag_non_linear_core = non_linear
+        self.core.re_mu_rel = re_mu_rel
+        self.core.im_mu_rel = im_mu_rel
+        self.core.im_epsilon_rel = im_epsilon_rel
+        self.core.material = material
+        self.core.type = type
 
-
-        self.core_type = core_type
-        if self.core_type == "EI":
+        if self.core.type == "EI":
             if self.dimensionality == "2D axi":
                 for key, value in kwargs.items():
                     if key == 'core_w':
-                        self.core_w = value
+                        self.core.core_w = value
                     if key == 'window_w':
-                        self.window_w = value
+                        self.core.window_w = value
                     if key == 'window_h':
-                        self.window_h = value
-        if self.core_type == "EI":
+                        self.core.window_h = value
+
+        if self.core.type == "EI":
             if self.dimensionality == "3D":
                 # tba 3D Group
                 None
@@ -2352,7 +2066,7 @@ class MagneticComponent:
               f"---")
 
         # Update the mesh accuracy of the window
-        self.c_window = self.window_w/20 * self.s
+        self.c_window = self.core.window_w/20 * self.s
 
         # Rewrite variables
         self.n_air_gaps = n_air_gaps
@@ -2375,8 +2089,8 @@ class MagneticComponent:
         if (method == "manually" or method == "percent") and self.dimensionality == "2D axi":
             for i in range(0, self.n_air_gaps):
                 if method == "percent":
-                    air_gap_position[i] = air_gap_position[i] / 100 * (self.window_h - air_gap_h[i]) - (
-                                self.window_h / 2 - air_gap_h[i] / 2)
+                    air_gap_position[i] = air_gap_position[i] / 100 * (self.core.window_h - air_gap_h[i]) - (
+                                self.core.window_h / 2 - air_gap_h[i] / 2)
                 # Overlapping Control
                 for j in range(0, self.air_gaps.shape[0]):
                     if self.air_gaps[j, 1]+self.air_gaps[j, 2]/2 > air_gap_position[i] > self.air_gaps[j, 1]-self.air_gaps[j, 2]/2:
@@ -2396,7 +2110,7 @@ class MagneticComponent:
             i = 0
             while i in range(0, self.n_air_gaps):
                 height = np.random.rand(1) * 0.001 + 0.001
-                position = np.random.rand(1) * (self.window_h - height) - (self.window_h / 2 - height / 2)
+                position = np.random.rand(1) * (self.core.window_h - height) - (self.core.window_h / 2 - height / 2)
                 self.c_air_gap[i] = height * self.s
                 # Overlapping Control
                 for j in range(0, self.air_gaps.shape[0]):
@@ -2764,7 +2478,7 @@ class MagneticComponent:
         if show_last:
             self.visualize()
 
-    def get_Core_Loss(self, Ipeak=[10, 10], ki=1, alpha=1.2, beta=2.2, t_rise=3e-6, t_fall=3e-6, f_switch=100000,
+    def get_Steinmetz_Loss(self, Ipeak=[10, 10], ki=1, alpha=1.2, beta=2.2, t_rise=3e-6, t_fall=3e-6, f_switch=100000,
                       skin_mesh_factor=0.5):
         """
 
@@ -2776,7 +2490,7 @@ class MagneticComponent:
         :param f_switch:
         :return:
         """
-        self.core_loss_simlation = 1
+        self.core.steinmetz_loss = 1
         self.Ipeak = Ipeak
         self.ki = ki
         self.alpha = alpha

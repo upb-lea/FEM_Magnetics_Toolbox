@@ -10,7 +10,7 @@ ExtGmsh = ".pos";
 // ----------------------
 // All Variables - remove or create in python
 // ----------------------
-Nb_max_iter             = 100;
+Nb_max_iter             = 20;
 relaxation_factor       = 1.;
 stop_criterion          = 1e-8;
 Flag_Circuit            = Flag_ImposedVoltage;
@@ -203,7 +203,8 @@ Function {
     //nu[ #{Iron} ] = nu_N95[$1] ;
     nu[ #{Iron} ] = nu~{Core_Material}[$1] ;
     h[ #{Iron} ]  = h~{Core_Material}[$1];
-    dhdb_NL[ #{Iron} ]= dhdb_95_NL[$1] ;
+    //dhdb_NL[ #{Iron} ]= dhdb_95_NL[$1] ;
+    dhdb_NL[ #{Iron} ]= dhdb_95100_NL[$1] ;
     dhdb[ #{Iron} ]   = dhdb~{Core_Material}[$1] ;
   EndIf
 
@@ -452,7 +453,7 @@ PostProcessing {
       // iGSE Integral explicitely solved
       // needs the result of Magb at peak current to evaluate the peak flux density
       // (Norm[{d a}]*2) is delta_B
-      If(Flag_Core_Loss)
+      If(Flag_Steinmetz_loss)
 
         { Name piGSE ; Value { Integral { [ f_switch * ki * (Norm[{d a}]*2)^(beta-alpha) * (
                                         ((Norm[{d a}]*2 / t_rise )^alpha) * t_rise +
@@ -506,6 +507,10 @@ PostProcessing {
           { Name j2F ; Value { Integral {
              [ CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)]] ;
              In DomainC ; Jacobian Vol ; Integration II ; } } }
+          { Name j2F_density ; Value { Integral {
+             [ CoefGeo/ElementVol[]*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
+             In DomainC ; Jacobian Vol ; Integration II ; } } }
+
       Else
            { Name j2F ; Value { Integral {
              [ 0.5*CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
@@ -525,6 +530,10 @@ PostProcessing {
            { Name j2H ; Value { Integral {
              [ 0.5*CoefGeo*( Re[{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added
              In DomainS ; Jacobian Vol ; Integration II ; } } }
+           { Name j2H_density ; Value { Integral {
+             [ 0.5*CoefGeo/ElementVol[]*( Re[{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added
+             In DomainS ; Jacobian Vol ; Integration II ; } } }
+
            { Name j2Hprox ; Value { Integral {
             [ 0.5*CoefGeo*Re[{d a}*Conj[nuOm[]*{d a}]] ] ;// 0.5 added by Till
             In DomainS ; Jacobian Vol ; Integration II ; } } }
@@ -620,7 +629,7 @@ PostOperation Map_local UsingPost MagDyn_a {
   Print[ Magh,  OnElementsOf Domain,  File StrCat[DirResFields, "Magh", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Core Loss Density
-  If(Flag_Core_Loss)
+  If(Flag_Steinmetz_loss)
     Print[ piGSE,  OnElementsOf Domain,  File StrCat[DirResFields, "piGSE", ExtGmsh],  LastTimeStepOnly ] ;
     Print[ pSE,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE", ExtGmsh],  LastTimeStepOnly ] ;
     Print[ pSE_density,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE_density", ExtGmsh],  LastTimeStepOnly ] ;
@@ -646,6 +655,8 @@ PostOperation Map_local UsingPost MagDyn_a {
   Print[ j2F, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
   Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
   Print[ j2H,   OnElementsOf DomainS, File StrCat[DirResFields,"jH",ExtGmsh] ] ;
+  Print[ j2H_density,   OnElementsOf DomainS, File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
+
   //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
   //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
 
@@ -677,13 +688,13 @@ PostOperation Get_global UsingPost MagDyn_a {
   Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
   Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
 
-  Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
-  Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];
-  Print[ j2Hskin[StrandedWinding2],   OnGlobal , Format Table];
-  Print[ j2Hprox[StrandedWinding2],   OnGlobal , Format Table];
+  //Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
+  //Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];
+  //Print[ j2Hskin[StrandedWinding2],   OnGlobal , Format Table];
+  //Print[ j2Hprox[StrandedWinding2],   OnGlobal , Format Table];
 
   //Print[ SoH[ DomainS ], OnGlobal, Format TimeTable, File Sprintf("results/SH_f%g.dat", Freq) ] ;
-  If(Flag_Core_Loss)
+  If(Flag_Steinmetz_loss)
     Print[ piGSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"piGSE.dat"]] ;// Core losses
     Print[ piGSE[ Iron ], OnGlobal, Format Table];
     Print[ pSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"pSE.dat"]] ;// Core losses

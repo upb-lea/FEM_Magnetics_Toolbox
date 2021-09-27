@@ -39,15 +39,15 @@ How to use the FEM Magnetics Toolbox:
 
 Installed as a pip-package: Minimal example for a single simulation with displayed result in ONELAB: 
 ```
-# minimal example for github clone
-from FEMMT import MagneticComponent
-
+# minimal example for installation from pip-package
+import femmt as fmt
+ 
 # Create Object
-# geo = MagneticComponent(component_type="inductor")
-geo = MagneticComponent(component_type="transformer")
+# geo = fmt.MagneticComponent(component_type="inductor")
+geo = fmt.MagneticComponent(component_type="transformer")
 
 # Update Geometry
-geo.update_core(core_type="EI", window_h=0.03)
+geo.update_core(type="EI", window_h=0.03)
 
 geo.update_air_gaps(method="center", n_air_gaps=1, air_gap_h=[0.001])
 
@@ -74,7 +74,7 @@ from FEMMT import MagneticComponent
 geo = MagneticComponent(component_type="transformer")
 
 # Update Geometry
-geo.update_core(core_type="EI", window_h=0.03)
+geo.update_core(type="EI", window_h=0.03)
 
 geo.update_air_gaps(method="center", n_air_gaps=1, air_gap_h=[0.001])
 
