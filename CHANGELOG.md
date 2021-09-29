@@ -10,8 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - fix #5: changed typo to L_h_conc = self.M**2 / self.L_22
 ### Added
-- add class Virtual_Winding_Window()
-- add class Winding()
+- add class Mesh
+- add class Isolation
+- add class AirGaps
+- add class Core
+- add class Virtual_Winding_Window
+- add class Winding
 - add horizontal interleaved winding scheme
 
 ## [0.1.2] - 2021-08-08

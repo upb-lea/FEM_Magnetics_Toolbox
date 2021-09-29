@@ -49,7 +49,7 @@ geo = fmt.MagneticComponent(component_type="transformer")
 # Update Geometry
 geo.update_core(type="EI", window_h=0.03)
 
-geo.update_air_gaps(method="center", n_air_gaps=1, air_gap_h=[0.001])
+geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.001])
 
 # geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
 #                      winding=["primary"], scheme=["square"],
@@ -76,7 +76,7 @@ geo = MagneticComponent(component_type="transformer")
 # Update Geometry
 geo.update_core(type="EI", window_h=0.03)
 
-geo.update_air_gaps(method="center", n_air_gaps=1, air_gap_h=[0.001])
+geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.001])
 
 # geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
 #                      winding=["primary"], scheme=["square"],
