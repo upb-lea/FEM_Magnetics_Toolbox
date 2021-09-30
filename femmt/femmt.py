@@ -7,6 +7,7 @@ import pandas as pd
 import pathlib
 import re
 import sys
+from scipy.optimize import brentq
 import time
 import warnings
 from matplotlib import pyplot as plt
@@ -119,13 +120,12 @@ class MagneticComponent:
         # Excitation Parameters
         self.flag_imposed_reduced_frequency = None
         self.flag_excitation_type = None
-        self.flag_non_linear_core = None
         self.current = [None] * self.n_windings  # Defined for every conductor
         self.current_density = [None] * self.n_windings  # Defined for every conductor
         self.voltage = [None] * self.n_windings  # Defined for every conductor
         self.frequency = None
         self.phase_tmp = np.zeros(self.n_windings)  # Default is zero, Defined for every conductor
-        self.red_freq = [None] * self.n_windings  # Defined for every conductor
+        self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
         self.delta = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -136,6 +136,9 @@ class MagneticComponent:
         # -- Used for Litz Validation --
         self.sweep_frequencies = None
 
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Pre-Simulation
+        self.reluctance_model = self.ReluctanceModel(self)
 
         # -- Results --
         self.L_11 = None
@@ -143,7 +146,7 @@ class MagneticComponent:
         self.M = None
         self.Pv = None
         # - Primary Concentrated
-        self.ü_conc = None
+        self.n_conc = None
         self.L_s_conc = None
         self.L_h_conc = None
 
@@ -269,7 +272,7 @@ class MagneticComponent:
 
     class Core:
         """
-        frequency = 0: mu_rel only used if flag_non_linear_core == 0
+        frequency = 0: mu_rel only used if non_linear == False
         frequency > 0: mu_rel is used
         """
 
@@ -309,7 +312,7 @@ class MagneticComponent:
                         im_mu_rel=1750 * np.sin(10 * np.pi / 180),
                         im_epsilon_rel=6e+4 * np.sin(20 * np.pi / 180),
                         material=95,
-                        non_linear=0,
+                        non_linear=False,
                         **kwargs):
             """
             - One positional parameter type
@@ -330,29 +333,16 @@ class MagneticComponent:
                   f"---")
 
             # Material Properties
-            self.flag_non_linear_core = non_linear
+            self.non_linear = non_linear
             self.re_mu_rel = re_mu_rel
             self.im_mu_rel = im_mu_rel
             self.im_epsilon_rel = im_epsilon_rel
             self.material = material
             self.type = type
 
-            #print(super(object, self))
-
-            if self.type == "EI":
-                if self.component.dimensionality == "2D axi":
-                    for key, value in kwargs.items():
-                        if key == 'core_w':
-                            self.core_w = value
-                        if key == 'window_w':
-                            self.window_w = value
-                        if key == 'window_h':
-                            self.window_h = value
-
-            if self.type == "EI":
-                if self.component.dimensionality == "3D":
-                    # tba 3D Group
-                    None
+            # Set attributes of core with given keywords
+            for key, value in kwargs.items():
+                setattr(self, key, value)
 
     class AirGaps:
         """
@@ -507,8 +497,6 @@ class MagneticComponent:
         :param strand_radii:
         :param strands_numbers:
         :param conductor_radii:
-        :param conductor_radius:
-        :param n_conductors:
         :param conductor_type:  - "stacked"  # Vertical packing of conductors
                                 - "full"     # One massive Conductor in each window
                                 - "foil"     # Horizontal packing of conductors
@@ -557,7 +545,7 @@ class MagneticComponent:
             if len(winding) == 2:
                 self.vw_type = "center"  # Two Virtual Winding Windows #TODO: Center anpassen (nicht mehr nur Nulllinie)
         else:
-            None
+            pass
             # Dedicated stray path: Two virtual winding windows
             # TODO: Subdivision into further Virtual Winding Windows
 
@@ -909,8 +897,8 @@ class MagneticComponent:
                         print("For bifilar winding scheme both conductors must be of the same radius!")
                     else:
                         print("Bifilar winding scheme is applied")
-                        # ü1 = self.n_turns[0]/self.n_turns[1]
-                        # ü2 = self.n_stray_turns[0]/self.n_stray_turns[1]
+                        # n1 = self.n_turns[0]/self.n_turns[1]
+                        # n2 = self.n_stray_turns[0]/self.n_stray_turns[1]
                         """
                         for
                             if self.virtual_winding_windows[num].scheme == "hexa":
@@ -1383,6 +1371,232 @@ class MagneticComponent:
                                      self.mesh.c_core * self.padding]
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    # Pre-Processing
+    class ReluctanceModel:
+        """
+        Depending on Core-Configurations, given number of turns and Inductance-goals, calculate air gap lengths
+        """
+        def __init__(self, component):
+            """
+            -> initialize class:MagneticComponent only once
+                -> initialize class:ReluctanceModel only once
+                -> call preliminary_parameter_design(par_init, par_fix, L_goal)
+                    -> returns par_ok
+
+            no.
+            f.e.:   n_reluctances = 1 without stray path
+                    n_reluctances = 3 with stray path
+
+                    n_air_gaps = air_gap_division * n_reluctances or sth. like that for distributed air gaps
+            """
+            self.component = component
+            self.n_theo = None
+
+        def calculate_reluctances(self, N, L):
+            """
+            Calculates the Reluctance Matrix.
+            Everything must be numpy!
+            :return: reluctance[-matrix]
+            """
+
+            # Reluctance Matrix
+            if np.ndim(N) == 0:
+                L_invert = 1 / L
+            else:
+                L_invert = np.linalg.inv(L)
+
+            return np.matmul(np.matmul(N, L_invert), np.transpose(N))
+
+        def calculate_air_gap_lengths_idealized(self, reluctances, types, n_ag_per_rel):
+            """
+
+            :param reluctances:
+            :param types:
+            :param n_ag_per_rel:
+            :return:
+            """
+            air_gap_lengths = [None] * len(reluctances)
+
+            # Go through reluctances
+            for n_reluctance, R_0 in enumerate(reluctances):
+                if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
+
+                    if types[n_reluctance] == ("round-round" or "round-inf"):
+                        A_core = (self.component.core.core_w / 2) ** 2 * np.pi
+                        length = R_0 * self.component.mu0 * A_core
+
+                    if types[n_reluctance] == "cyl-cyl":
+                        # return R_0 * self.component.mu0 * w * np.pi * (r_o + r_i)
+                        length = None  #TODO: Find explicit formula of idealized air gap length
+                air_gap_lengths[n_reluctance] = length
+
+            return air_gap_lengths
+
+        def calculate_air_gap_lengths_with_SCT(self, reluctances, max_length, types, n_ag_per_rel):
+            """
+            TODO: List with lists of air gap lengths...
+             important to always keep the order of elements [or use a dictionary]
+             future use case integrated_transformer:  [[l_top_1, l_top_2, ...],
+                                                      [l_bot_1, l_bot_2, ...],
+                                                      [l_stray_1, l_stray_2, ...]]
+             use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
+
+            :param reluctances:
+            :param max_length:
+            :param types:
+            :param n_ag_per_rel:
+            :return:
+            """
+            air_gap_lengths = [None] * len(reluctances)
+
+            # Go through reluctances
+            for n_reluctance, R_0 in enumerate(reluctances):
+                # Go through the distributed air gaps (of each reluctance)
+                for n_distributed in range(0, n_ag_per_rel[n_reluctance]):
+
+                    # Define the Reluctance function to be solved for the air gap length
+                    if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
+
+                        if types[n_reluctance][n_distributed] == "round-inf":
+
+                            def r_sct(length):
+                                return r_round_inf(l=length,
+                                                   r=self.component.core.core_w / 2,
+                                                   sigma=sigma(l=length,
+                                                               w=self.component.core.core_w / 2,
+                                                               R_equivalent=r_basis(l=length,
+                                                                                    w=self.component.core.core_w,
+                                                                                    h=self.component.core.window_h *
+                                                                                        0.5))
+                                                   ) - R_0
+
+                        if types[n_reluctance] == "round-round":
+                            def r_sct(length):
+                                return r_round_inf(l=length,
+                                                   r=self.component.core.core_w / 2,
+                                                   sigma=sigma(l=length,
+                                                               w=self.component.core.core_w / 2,
+                                                               R_equivalent=r_basis(l=length,
+                                                                                    w=self.component.core.core_w,
+                                                                                    h=self.component.core.window_h *
+                                                                                        0.5))
+                                                   ) - R_0
+
+                        if types[n_reluctance] == "cyl-cyl":
+                            def r_sct(length):
+                                return r_round_inf(l=length,
+                                                   r=self.component.core.core_w / 2,
+                                                   sigma=sigma(l=length,
+                                                               w=self.component.core.core_w / 2,
+                                                               R_equivalent=r_basis(l=length,
+                                                                                    w=self.component.core.core_w,
+                                                                                    h=self.component.core.window_h *
+                                                                                        0.5))
+                                                   ) - R_0
+
+                air_gap_lengths[n_reluctance] = brentq(r_sct, 1e-6, max_length[n_reluctance])
+
+            return air_gap_lengths
+
+        def get_air_gaps_from_winding_matrices(self, N_init, L_goal):
+            """
+
+            :return:
+            """
+            # Valid Results
+            air_gap_lengths_valid = []
+            max_length = None
+            air_gap_types = None
+            n_ag_per_rel = None
+
+            # Core and Component type decide about air gap characteristics
+            if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
+                if N_init[0].shape == (2, 2):  # TODO: Only the first element of N_init is checked
+
+                    # Max allowed lengths in each leg
+                    # TODO: Bring in more exact values
+                    max_length = [self.component.core.window_h / 4,
+                                  self.component.core.window_h / 4,
+                                  self.component.core.window_w]
+
+
+
+                    # Air gap types: "round-round", "round-inf", "cyl-cyl"
+                    air_gap_types = [["round-inf"],
+                                     ["round-inf"],
+                                     ["cyl-cyl"]]
+
+                    # TODO: R_top and R_bot can be realized with distributed air gaps
+                    n_ag_per_rel = [1, 1, 1]
+
+            # Iterate through Winding Matrices
+            for count, N in enumerate(N_init):
+
+                # Calculate goal reluctance values
+                R_matrix = self.calculate_reluctances(N=N, L=L_goal)
+                R_goal = [R_matrix[0, 0] + R_matrix[0, 1], R_matrix[1, 1] + R_matrix[0, 1], -R_matrix[0, 1]]
+
+                # Calculate idealized air_gap_lengths to find too big results ???
+                # l_ideal = self.calculate_air_gap_lengths_idealized(reluctances=R_goal,
+                #                                                    types=air_gap_types,
+                #                                                    n_ag_per_rel=n_ag_per_rel)
+
+                # Calculate the air gap lengths with the help of SCT
+                if (R >= 0 for R in R_goal):
+                    air_gap_lengths = self.calculate_air_gap_lengths_with_SCT(reluctances=R_goal,
+                                                                              max_length=max_length,
+                                                                              types=air_gap_types,
+                                                                              n_ag_per_rel=n_ag_per_rel)
+
+                    # TODO: CHECK for saturation
+                    air_gap_lengths_valid.append(air_gap_lengths)
+
+                else:
+                    air_gap_lengths_valid.append([None] * len(R_goal))
+
+            return air_gap_lengths_valid
+
+        def air_gap_design(self, N_init=None, core_par_init=None, L_goal=None, **kwargs):
+            # TODO:split N and core paras i two functions
+            """
+
+            :param N_init: initial list of lists of winding matrices
+            :param core_par_init: initial list of lists of sweep-core-parameters
+            :param L_goal: list of inductance goals [inductor: single value L;
+                                                     transformer: Inductance Matrix [[L_11, M], [M, L_22]]
+            :return:
+            """
+            if not os.path.isdir(self.component.path + "/" + "Reluctance_Model"):
+                os.mkdir(self.component.path + "/" + "Reluctance_Model")
+
+            # Save initial parameter set of winding matrices
+            N_init = np.asarray(N_init)
+            np.save('Reluctance_Model/N_init.npy', N_init)
+
+            # Save initial parameter set of core parameters
+            # core_par_init = np.asarray(core_par_init)
+            # np.save('Reluctance_Model/core_par_init.npy', core_par_init)
+
+            # Save goal inductance values
+            L_goal = np.asarray(L_goal)
+            np.save('Reluctance_Model/goals.npy', L_goal)
+
+            par_ok = [None] * len(core_par_init)
+
+            # Update the core to use its internal core parameter calculation functionality
+            # Set attributes of core with given keywords
+            for index, core_parameters in enumerate(core_par_init):
+                for key, value in core_parameters.items():
+                    setattr(self.component.core, key, value)
+                    all_parameters = [core_parameters,
+                                      N_init,
+                                      self.get_air_gaps_from_winding_matrices(N_init=N_init, L_goal=L_goal)]
+
+                    par_ok[index] = all_parameters
+
+            return par_ok
+
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Meshing
     class Mesh:
         """
@@ -1412,6 +1626,7 @@ class MagneticComponent:
             # Initialization
             gmsh.initialize()
 
+            """
             if refine == 1:
                 # TODO: Adaptive Meshing
                 # Choose applied Error Function
@@ -1421,6 +1636,7 @@ class MagneticComponent:
                     local_error = self.local_error()  # Here a "real" numeric error should be applied
 
                 self.create_background_mesh(local_error)
+            """
 
             gmsh.option.setNumber("General.Terminal", 1)
             gmsh.model.add(self.component.path_mesh + "geometry")
@@ -1810,7 +2026,6 @@ class MagneticComponent:
                         self.component.windings[num].conductor_type == "full" or \
                         self.component.windings[num].conductor_type == "stacked":
                     for i in range(0, sum(self.component.windings[num].turns)):
-                        print(plane_surface_cond)
                         ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
                 if self.component.windings[num].conductor_type == "litz":
@@ -1959,7 +2174,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, f, i, phases=[], ex_type='current', imposed_red_f=0):
+    def excitation(self, f, i, phases=None, ex_type='current', imposed_red_f=0):
         """
         - excitation of the electromagnetic problem
         - current, voltage or current density
@@ -1967,11 +2182,13 @@ class MagneticComponent:
         :param phases:
         :param f:
         :param i:
-        :param nonlinear:
         :param ex_type:
         :param imposed_red_f:
         :return:
         """
+        phases = phases or []
+
+
         print(f"\n---\n"
               f"Excitation: \n"
               f"Frequency: {f}\n"
@@ -1983,6 +2200,8 @@ class MagneticComponent:
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
 
         phases = np.asarray(phases)
+        self.red_freq = np.empty(2)
+
         for num in range(0, self.n_windings):
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
@@ -2123,7 +2342,7 @@ class MagneticComponent:
 
         # Core Material
         # if self.frequency == 0:
-        if self.flag_non_linear_core == 1:
+        if self.core.non_linear:
             text_file.write(f"Flag_NL = 1;\n")
             text_file.write(f"Core_Material = {self.core.material};\n")
         else:
@@ -2176,7 +2395,6 @@ class MagneticComponent:
         gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
         view = 0
 
-        # if self.conductor_type[0] != 'litz':
         if any(self.windings[i].conductor_type != 'litz' for i in range(0, self.n_windings)):
             # Ohmic losses (weightend effective value of current density)
             gmsh.open(self.path + "/" + self.path_res_fields + "j2F.pos")
@@ -2283,12 +2501,12 @@ class MagneticComponent:
         # == Materials ==
         femm.mi_addmaterial('Ferrite', self.core.re_mu_rel, self.core.re_mu_rel, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
-        if self.conductor_type[0] == "litz":
+        if self.windings[0].conductor_type == "litz":
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 5, 0, 0, self.windings[0].n_strands,
                                 2 * 1000 * self.windings[0].strand_radius)  # type := 5. last argument
             print(f"Strandsnumber: {self.windings[0].n_strands}")
             print(f"Strandsdiameter in mm: {2 * 1000 * self.strand_radius[0]}")
-        if self.conductor_type[0] == "solid":
+        if self.windings[0].conductor_type == "solid":
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma, 0, 0, 1, 0, 0, 0, 0, 0)
 
         # == Circuit ==
@@ -2320,7 +2538,7 @@ class MagneticComponent:
         femm.mi_clearselected()
         """
         for num in range(0, self.n_windings):
-            if self.conductor_type[0] == "litz" or self.conductor_type[0] == "solid":
+            if self.windings[num].conductor_type == "litz" or self.windings[num].conductor_type == "solid":
                 for i in range(0, int(self.p_conductor[num].shape[0] / 5)):
                     # 0: center | 1: left | 2: top | 3: right | 4.bottom
                     femm.mi_drawarc(self.p_conductor[num][5 * i + 1][0], self.p_conductor[num][5 * i + 1][1],
@@ -2546,7 +2764,7 @@ class MagneticComponent:
         self.simulate()
         self.visualize()
 
-    def get_inductances(self, I0, op_frequency=0, skin_mesh_factor=1, visualize=0):
+    def get_inductances(self, I0, op_frequency=0, skin_mesh_factor=1, visualize=False):
         """
 
         :param visualize:
@@ -2654,34 +2872,34 @@ class MagneticComponent:
                   f"M__ = L_22 * K_21 = {M__}\n"
                   )
 
-            # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' ü
+            # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n
             L_s1 = self.L_11 - self.M * n
             L_s2 = self.L_22 - self.M / n
             L_h = self.M * n
             print(f"\n"
                   f"T-ECD (primary side transformed):\n"
                   f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
-                  f"    - Transformation Ratio: ü\n"
+                  f"    - Transformation Ratio: n\n"
                   f"    - Primary Side Stray Inductance: L_s1\n"
                   f"    - Secondary Side Stray Inductance: L_s2\n"
                   f"    - Primary Side Main Inductance: L_h\n"
-                  f"ü := n = {n}\n"
+                  f"n := n = {n}\n"
                   f"L_s1 = L_11 - M * n = {L_s1}\n"
                   f"L_s2 = L_22 - M / n = {L_s2}\n"
                   f"L_h = M * n = {L_h}\n"
                   )
 
             # Stray Inductance concentrated on Primary Side
-            self.ü_conc = self.M / self.L_22
+            self.n_conc = self.M / self.L_22
             self.L_s_conc = (1 - k ** 2) * self.L_11
             self.L_h_conc = self.M ** 2 / self.L_22
             print(f"\n"
                   f"T-ECD (primary side concentrated):\n"
-                  f"[Underdetermined System: ü := M / L_22  -->  L_s2 = L_22 - M / n = 0]\n"
-                  f"    - Transformation Ratio: ü\n"
+                  f"[Underdetermined System: n := M / L_22  -->  L_s2 = L_22 - M / n = 0]\n"
+                  f"    - Transformation Ratio: n\n"
                   f"    - (Primary) Stray Inductance: L_s1\n"
                   f"    - Primary Side Main Inductance: L_h\n"
-                  f"ü := M / L_22 = k * Sqrt(L_11 / L_22) = {self.ü_conc}\n"
+                  f"n := M / L_22 = k * Sqrt(L_11 / L_22) = {self.n_conc}\n"
                   f"L_s1 = (1 - k^2) * L_11 = {self.L_s_conc}\n"
                   f"L_h = M^2 / L_22 = k^2 * L_11 = {self.L_h_conc}\n"
                   )
