@@ -444,7 +444,7 @@ class MagneticComponent:
                                  air_gap_position=[0.000, 0.003])
 
             """
-            self.number = n_air_gaps or 1
+            self.number = n_air_gaps
             position_tag = position_tag or [0]
             air_gap_position = air_gap_position or [0]
             air_gap_h = air_gap_h or [0.001]
