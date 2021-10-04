@@ -18,7 +18,12 @@ import time
 
 # Static Functions
 #  Used somewhere in the Code of femmt.py
-def install_femm_if_missing():
+def install_femm_if_missing() -> None:
+    """
+    Windows users only.
+    Installs femm-software pip package in case of running on windows machine
+    :return: None
+    """
     required = {'pyfemm'}
     installed = {pkg.key for pkg in pkg_resources.working_set}
     missing = required - installed
@@ -35,8 +40,10 @@ def inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate as the two
     interval borders a and b
-    :param a:
-    :param b:
+
+    Use case: Air gap generation. Helps to generate the core structure form class AirGap.
+    :param a: first point
+    :param b: second point
     :param input_points:
     :return:
     """
@@ -76,8 +83,8 @@ def min_max_inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate and
     the minimum distance from the interval borders.
-    :param a:
-    :param b:
+    :param a: first point
+    :param b: second point
     :param input_points:
     :return:
     """

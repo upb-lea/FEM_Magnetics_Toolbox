@@ -19,6 +19,10 @@ from femmt_functions import inner_points, min_max_inner_points, call_for_path,  
 # import time
 # import warnings
 # from matplotlib import pyplot as plt
+from typing import List, Union, Optional
+from femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
+    fft, compare_fft_list, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
+    install_femm_if_missing
 
 # Self written functions. It is necessary to write a . before the function, due to handling
 # this package also as a pip-package
@@ -53,7 +57,11 @@ class MagneticComponent:
         - Initialization of all instance variables
         - One or more "MagneticComponents" can be created
         - Each "MagneticComponent" owns its own instance variable values
-        :param component_type: Available options are "inductor", "transformer" and "integrated_transformer"
+        :param component_type: Available options are
+                               - "inductor"
+                               - "transformer"
+                               - "integrated_transformer" (Transformer with included stray-path).
+                               - "three_phase_transformer": Not implemented yet
         """
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
@@ -160,10 +168,10 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
-    def onelab_setup(self):
+    def onelab_setup(self) -> None:
         """
-        Either reads onelab parent folder path from config.p or asks the user to provide it.
-        Creates a config.p at first run.
+        Either reads ONELAB parent folder path from config.json or asks the user to provide the ONELAB path it.
+        Creates a config.json inside the site-packages folder at first run.
         :return: -
         """
         # find out path of femmt (installed module or directly opened in git)?
@@ -311,24 +319,36 @@ class MagneticComponent:
             self.window_w = None  # Winding window width
             self.window_h = None  # Winding window height
 
-        def update(self, type, re_mu_rel=3000, im_mu_rel=1750 * np.sin(10 * np.pi / 180),
-                   im_epsilon_rel=6e+4 * np.sin(20 * np.pi / 180), material=95, non_linear=False, **kwargs):
+        def update(self, type: str,
+                   re_mu_rel: float =3000,
+                   im_mu_rel:float =1750 * np.sin(10 * np.pi / 180),
+                   im_epsilon_rel: float=6e+4 * np.sin(20 * np.pi / 180),
+                   material=95,
+                   non_linear:bool = False,
+                   **kwargs) -> None:
             """
-            - One positional parameter type
-            - All core parameters can be passed or adjusted by keyword calling
-                - Allows single parameter changing
-                - Depending on type
+            Updates the core structure.
+            - One positional parameter: type
+            - All other core parameters can be passed or adjusted by keyword calling
+                - Allows single parameter changing, depending on core-type
                 - Strict keyword usage!
-            :param non_linear:
-            :param material:
+                - All dimensions are in meters
             :param im_epsilon_rel:
-            :param re_mu_rel:
-            :param im_mu_rel:
-            :param type:
+            :type im_epsilon_rel: float
+            :param non_linear: True/False
+            :type non_linear: bool
+            :param material: specified in BH.pro. Currently available: '95_100' #ToDo: Werte ergänzen!
+            :type material: str
+            :param re_mu_rel: material's real mu_rel part, found in the datasheet (used if non_linear == False)
+            :type re_mu_rel: float
+            :param im_mu_rel: material's imaginary mu_rel part, found in the datasheet (used if non_linear == False)
+            :type im_mu_rel: float
+            :param type: There is actually only one type: "EI"
+            :type type: str
             :param kwargs:
                 - Case "2D, axisym., EI": 'core_w', 'window_w', 'window_h'
                 - Case "3D, EI": ...tba...
-            :return:
+            :return: None
             """
 
             print(f"Update the magnetic Core to {self.type}-type with following parameters: {kwargs}\n"
@@ -379,21 +399,50 @@ class MagneticComponent:
             self.midpoints = None  # list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
 
 
-        def update(self, method="center", n_air_gaps=None, position_tag=None, air_gap_position=None,
-                            air_gap_h=None, **kwargs):
+        def update(self, method: str="center", n_air_gaps: Union[int, None]=None,
+                   position_tag: List[float]=None,
+                   air_gap_position: List[float]=None,
+                   air_gap_h:List[float] = None, **kwargs) -> None:
             """
+            Updates the air gap structure.
+            - Strict keyword usage!
+            - All dimensions are in meters
+            - all parameters are in lists!
+            - first chose the method, second, transfer parameters:
+                - "center": ONE air gap exactly in core's middle
+                - "random": random count of air gaps in the inner/outer leg
+                - "percent": Easy way to split air gaps over the innter/outer leg
+                - "manually": Place air gaps manually
             - "self.midpoints" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
-               - position_tag: specifies the gapped "leg"
-               - air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
-               - air_gap_h: height/length of the air gap
-               - c_air_gap: mesh accuracy factor
+            -  c_air_gap: mesh accuracy factor
             - "EI 2D axi": position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
-            :param n_air_gaps:
-            :param position_tag:
-            :param air_gap_h:
-            :param air_gap_position:
+            :param n_air_gaps: number of air gaps
+            :type n_air_gaps: int
+            :param position_tag: specifies the gapped "leg"
+            :type position_tag:
+            :param air_gap_h: List of air gap high, list length depending on total air gap count
+            :type air_gap_h:
+            :param air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
+            :type air_gap_position:
             :param method: "random", "center", "percent", "manually"
-            :return:
+            :type method: str
+            :return: None
+
+            :Example:
+            # 'center': single air gap in the middle
+            geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002])
+
+            # 'percent': Place air gaps manually using percentages
+            geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001],
+                                air_gap_position=[10, 80])
+
+            # random
+            geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80])
+
+            # manually
+            geo.air_gaps.update(method="manually", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001],
+                                 air_gap_position=[0.000, 0.003])
+
             """
             self.number = n_air_gaps or 1
             position_tag = position_tag or [0]
@@ -484,12 +533,15 @@ class MagneticComponent:
     # Update Methods
     def update_conductors(self, n_turns=None, conductor_type=None, winding=None, scheme=None, conductor_radii=None,
                           litz_para_type=None, ff=None, strands_numbers=None, strand_radii=None, thickness=None,
-                          wrap_para=None, cond_cond_isolation=None, core_cond_isolation=None):
+                          wrap_para=None, cond_cond_isolation=None, core_cond_isolation=None) -> None:
         """
         This Method allows the user to easily update/initialize the Windings in terms of their conductors and
         arrangement.
+
+        Note: set all parameters in a list!
+
         :param wrap_para:
-        :param ff:
+        :param ff: fill-factor, values between [0....1]
         :param winding:
         :param scheme:
         :param litz_para_type:
@@ -628,7 +680,7 @@ class MagneticComponent:
         :param num:
         :param litz_parametrization_type:
         :param strand_radius:
-        :param ff:
+        :param ff: in 0....1
         :param conductor_radius:
         :param n_strands:
         :return:
@@ -2982,22 +3034,24 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
-    def single_simulation(self, freq, current, phi=None, skin_mesh_factor=1, NL_core=0):
+    def single_simulation(self, freq: float, current: float, phi_deg: List[float]=None,
+                          skin_mesh_factor: float=1, NL_core=0) -> None:
         """
-        - can be used for a single simulation
-        - no sweeping at all
-        :param NL_core:
-        :param phi:
+        Start a _single_ ONELAB simulation.
+        :param freq: frequency to simulate
+        :type freq: float
+        :param current: current to simulate
         :param skin_mesh_factor:
-        :param freq:
-        :param current:
-        :return:
+        :type skin_mesh_factor: float
+        :param phi_deg: phase angle in degree
+        :type phi_deg: List[float]
+        :return: None
         """
-        phi = phi or []
+        phi_deg = phi_deg or []
 
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         self.mesh.generate_mesh()
-        self.excitation(f=freq, i=current, phases=phi)  # frequency and current
+        self.excitation(f=freq, i=current, phases=phi_deg)  # frequency and current
         self.file_communication()
         self.pre_simulate()
         self.simulate()
