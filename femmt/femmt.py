@@ -9,6 +9,7 @@ from scipy.optimize import brentq
 import gmsh
 from onelab import onelab
 import json
+import warnings
 from femmt_functions import inner_points, min_max_inner_points, call_for_path,  NbrLayers, \
      install_femm_if_missing, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
      NbrStrands, fft, compare_fft_list, id_generator
@@ -546,8 +547,14 @@ class MagneticComponent:
         :param wrap_para:
         :param ff: fill-factor, values between [0....1]
         :param winding:
+                - "interleaved"
+                - ""
         :param scheme:
-        :param litz_para_type:
+        :param litz_para_type: there is on degree of freedom.
+                - "implicit_litz_radius":
+                - "implicit_ff":
+                - "implicit_strands_number":
+
         :param thickness:
         :param cond_cond_isolation:
         :param core_cond_isolation:
@@ -587,8 +594,7 @@ class MagneticComponent:
 
         if self.component_type == ("transformer" or "integrated_transformer"):
             if len(n_turns) != 2 or len(conductor_type) != 2:
-                print(f"Wrong number of conductor parameters passed to transformer model!")
-                raise Warning
+                raise Warning(f"Wrong number of conductor parameters passed to transformer model!")
 
         # - - - - - - - - - - - - - - - - - Definition of Virtual Winding Windows - - - - - - - - - - - - - - - - - - -
         # Inductor: One virtual winding window
@@ -680,12 +686,17 @@ class MagneticComponent:
         - needed to always make sure that the relation between litz parameters (strand radius, fill factor, number of
           layers/strands and conductor/litz radius) is valid and consistent
         - 4 parameters, 1 degree of freedom (dof)
-        :param num:
+        - all parameters are list parameters!
+        :param num: internal counter for primary/secondary winding. Do not change!
         :param litz_parametrization_type:
-        :param strand_radius:
+        :param strand_radius: radius of a single strand in [m]
+        :type strand_radius: float
         :param ff: in 0....1
-        :param conductor_radius:
-        :param n_strands:
+        :type ff: float
+        :param conductor_radius: radius of conductor in [m], in a list
+        :type conductor_radius: list[float]
+        :param n_strands: number of strands for one conductor in a list
+        :type: n_strands: list[float]
         :return:
         """
         # Choose one of three different parametrization types
@@ -1170,9 +1181,9 @@ class MagneticComponent:
                     """Blockwise concentrated"""
                     if isinstance(self.component.virtual_winding_windows[n_win].scheme, list):
                         """
-                        - interleaving with a list means a concentrated winding scheme of ("hexagonal", 
-                          "square" or mixed) in virtual winding window
-                        - only valid for two winding case 
+                        - interleaving with a list means a concentrated winding scheme of ("hexagonal", "square" or mixed) 
+                          in virtual winding window
+                        - only valid for two winding case (=transformator) 
                         - vertical stacking
                         - block winding
 
@@ -1549,7 +1560,7 @@ class MagneticComponent:
                         self.component.windings[num].conductor_type == "stacked" or \
                         self.component.windings[num].conductor_type == "foil":
                     if int(self.p_conductor[num].shape[0]/4) < self.component.windings[num].turns:
-                        print("Could not resolve all conductors.")
+                        warnings.warn("Too many turns that do not fit in the winding window.")
                         # self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/4)
                         self.component.valid = None
                 """
@@ -1558,9 +1569,9 @@ class MagneticComponent:
                 if self.component.windings[num].conductor_type == "solid" or \
                         self.component.windings[num].conductor_type == "litz":
                     if int(self.p_conductor[num].shape[0] / 5) < sum(self.component.windings[num].turns):
-                        print("Could not resolve all conductors.")
+                        warnings.warn("Too many turns that do not fit in the winding window.")
                         # self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
-                        # TODO: break and warning
+                        # TODO: break and warning. valid bit should be set to False
                         self.component.valid = None
 
             # Region for Boundary Condition
