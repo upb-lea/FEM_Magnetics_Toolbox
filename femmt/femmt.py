@@ -9,6 +9,7 @@ from scipy.optimize import brentq
 import gmsh
 from onelab import onelab
 import json
+import warnings
 from femmt_functions import inner_points, min_max_inner_points, call_for_path,  NbrLayers, \
      install_femm_if_missing, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
      NbrStrands, fft, compare_fft_list, id_generator
@@ -1556,7 +1557,7 @@ class MagneticComponent:
                         self.component.windings[num].conductor_type == "stacked" or \
                         self.component.windings[num].conductor_type == "foil":
                     if int(self.p_conductor[num].shape[0]/4) < self.component.windings[num].turns:
-                        print("Could not resolve all conductors.")
+                        warnings.warn("Too many turns that do not fit in the winding window.")
                         # self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/4)
                         self.component.valid = None
                 """
@@ -1565,9 +1566,9 @@ class MagneticComponent:
                 if self.component.windings[num].conductor_type == "solid" or \
                         self.component.windings[num].conductor_type == "litz":
                     if int(self.p_conductor[num].shape[0] / 5) < sum(self.component.windings[num].turns):
-                        print("Could not resolve all conductors.")
+                        warnings.warn("Too many turns that do not fit in the winding window.")
                         # self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
-                        # TODO: break and warning
+                        # TODO: break and warning. valid bit should be set to False
                         self.component.valid = None
 
             # Region for Boundary Condition
