@@ -81,7 +81,7 @@ class MagneticComponent:
         self.padding = 1.5  # ... > 1
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
         self.dimensionality = "2D axi"  # Axial-symmetric model (idealized full-cylindrical)
-        self.s = 0.5  # Parameter for mesh-accuracy
+        self.s = 1 #0.5  # Parameter for mesh-accuracy
         self.component_type = component_type    # "inductor", "transformer", "integrated_transformer" or
                                                 # "three-phase-tranformer"
 
@@ -127,8 +127,6 @@ class MagneticComponent:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Geometric Parameters/Coordinates
         self.n_windows = None
-
-        self.ei_axi = self.EIaxi(self)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Excitation Parameters
@@ -238,6 +236,7 @@ class MagneticComponent:
             self.y_symmetric = 1
 
         if self.core.type == "EI" and self.dimensionality == "2D axi":
+            self.ei_axi = self.EIaxi(self)
             self.ei_axi.update()
 
     class VirtualWindingWindow:
@@ -373,8 +372,10 @@ class MagneticComponent:
         """
         def __init__(self):
             # Dedicated Stray Path
-            self.start_index = None  # lower air gap that marks the stray path
+            self.start_index = None  # lower air gap that characterizes the stray path
             self.radius = None
+            self.width = None
+            self.midpoint = None
             # TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the
             #  "stray air gap" is different in axi-symmetric approximation
 
@@ -399,8 +400,7 @@ class MagneticComponent:
             # self.midpoints = np.empty((self.number, 4))
             self.midpoints = None  # list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
 
-
-        def update(self, method: str="center", n_air_gaps: Union[int, None]=None,
+        def update(self, method: str=None, n_air_gaps: Union[int, None]=None,
                    position_tag: List[float]=None,
                    air_gap_position: List[float]=None,
                    air_gap_h:List[float] = None, **kwargs) -> None:
@@ -446,9 +446,9 @@ class MagneticComponent:
 
             """
             self.number = n_air_gaps
-            position_tag = position_tag or [0]
-            air_gap_position = air_gap_position or [0]
-            air_gap_h = air_gap_h or [0.001]
+            position_tag = position_tag
+            air_gap_position = air_gap_position
+            air_gap_h = air_gap_h
 
             print(f"Update the air gaps.\n"
                   f"---")
@@ -493,6 +493,8 @@ class MagneticComponent:
                             # print(f"c_window: {self.component.mesh.c_window}")
                             self.midpoints[i, :] = np.array(
                                 [position_tag[i], air_gap_position[i], air_gap_h[i], self.component.mesh.c_air_gap[i]])
+
+            #  TODO: Proof whether air gaaps are valid
 
             # Random
             if method == "random" and self.component.dimensionality == "2D axi":
@@ -1118,6 +1120,7 @@ class MagneticComponent:
                                     if x < right_bound - self.component.windings[col_cond].conductor_radius:
                                         while y < top_bound - self.component.windings[col_cond].conductor_radius and \
                                                 N_completed[col_cond] < self.component.windings[col_cond].turns[n_win]:
+                                            print(self.p_conductor)
                                             self.p_conductor[col_cond].append(
                                                 [x, y, 0, self.component.mesh.c_center_conductor[col_cond]])
 
@@ -1568,7 +1571,8 @@ class MagneticComponent:
                     if int(self.p_conductor[num].shape[0] / 5) < sum(self.component.windings[num].turns):
                         warnings.warn("Too many turns that do not fit in the winding window.")
                         # self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
-                        # TODO: break and warning. valid bit should be set to False
+                        # TODO: break and but remove warning. valid bit should be set to False
+                        #  Code must go to the next parameter-iteration step for geometric sweep
                         self.component.valid = None
 
             # Region for Boundary Condition
@@ -1625,12 +1629,6 @@ class MagneticComponent:
         """
         def __init__(self, component):
             """
-            -> initialize class:MagneticComponent only once
-                -> initialize class:ReluctanceModel only once
-                -> call preliminary_parameter_design(par_init, par_fix, L_goal)
-                    -> returns par_ok
-
-            no.
             f.e.:   n_reluctances = 1 without stray path
                     n_reluctances = 3 with stray path
 
@@ -1638,6 +1636,11 @@ class MagneticComponent:
             """
             self.component = component
             self.n_theo = None
+            self.L_goal = None
+            self.current = None
+            self.Bmax = None
+            self.max_length = None
+            self.n_ag_per_rel = None
 
         def calculate_reluctances(self, N, L):
             """
@@ -1654,12 +1657,11 @@ class MagneticComponent:
 
             return np.matmul(np.matmul(N, L_invert), np.transpose(N))
 
-        def calculate_air_gap_lengths_idealized(self, reluctances, types, n_ag_per_rel):
+        def calculate_air_gap_lengths_idealized(self, reluctances, types):
             """
 
             :param reluctances:
             :param types:
-            :param n_ag_per_rel:
             :return:
             """
             air_gap_lengths = [None] * len(reluctances)
@@ -1679,7 +1681,7 @@ class MagneticComponent:
 
             return air_gap_lengths
 
-        def calculate_air_gap_lengths_with_sct(self, reluctances, max_length, types, n_ag_per_rel):
+        def calculate_air_gap_lengths_with_sct(self, reluctances):
             """
             TODO: List with lists of air gap lengths...
              important to always keep the order of elements [or use a dictionary]
@@ -1689,29 +1691,37 @@ class MagneticComponent:
              use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
 
             :param reluctances:
-            :param max_length:
             :param types:
-            :param n_ag_per_rel:
-            :return:
+            :return: Dictionary with air gap names and the associated lengths
             """
-            air_gap_lengths = [None] * len(reluctances)
+            air_gap_lengths = {}
 
             # Go through reluctances
             for n_reluctance, R_0 in enumerate(reluctances):
+
                 # Go through the distributed air gaps (of each reluctance)
-                for n_distributed in range(0, n_ag_per_rel[n_reluctance]):
+                for n_distributed in range(0, self.n_ag_per_rel[n_reluctance]):
 
                     # Define the Reluctance function to be solved for the air gap length
                     if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
 
-                        if types[n_reluctance][n_distributed] == "round-inf":
+                        if self.air_gap_types[n_reluctance][n_distributed] == "round-inf":
                             # TODO: Ask for keyword... top, stray, bot, ...
                             if n_reluctance == 0:
-                                h_basis = self.component.core.window_h * 0.5  # TODO: Get from self.component.stray_path
-                                          # self.component.air_gaps.air_gap_position[1] / 100
+                                air_gap_name = "R_top"
+                                print(self.component.core.window_h,
+                                      self.component.stray_path.midpoint,
+                                      self.component.stray_path.width)
+
+                                h_basis = self.max_length[n_reluctance]
+                                # h_basis = self.component.core.window_h / 2 - self.component.stray_path.midpoint - \
+                                #           self.component.stray_path.width / 2
+
                             if n_reluctance == 1:
-                                h_basis = self.component.core.window_h * 0.3  # TODO: Get from self.component.stray_path
-                                          # self.component.air_gaps.air_gap_position[0] / 100
+                                air_gap_name = "R_bot"
+                                h_basis = self.max_length[n_reluctance]
+                                # h_basis = self.component.core.window_h / 2 + self.component.stray_path.midpoint - \
+                                #           self.component.stray_path.width / 2
 
                             def r_sct(length):
                                 return r_round_inf(l=length,
@@ -1723,125 +1733,171 @@ class MagneticComponent:
                                                                                     h=h_basis))
                                                    ) - R_0
 
-                        if types[n_reluctance][n_distributed] == "round-round":
+                        if self.air_gap_types[n_reluctance][n_distributed] == "round-round":
                             # def r_sct(length):
                             #    return r_round_round(length)
                             pass
 
-                        if types[n_reluctance][n_distributed] == "cyl-cyl":
+                        if self.air_gap_types[n_reluctance][n_distributed] == "cyl-cyl":
+                            air_gap_name = "R_stray"
                             def r_sct(length):
-                                w_stray = self.component.core.window_h * 0.1  # TODO: Get from self.component.stray_path
-                                          # (self.component.air_gaps.air_gap_position[1] -
-                                           # self.component.air_gaps.air_gap_position[0]) / 100 - length / 2 - \
-                                          # air_gap_lengths[0] / 2
                                 return r_cyl_cyl(l=length,
                                                  sigma=sigma(l=length,
-                                                             w=w_stray,
+                                                             w=self.component.stray_path.width,
                                                              R_equivalent=0.5 * r_basis(l=length,
-                                                                                        w=w_stray,
+                                                                                        w=self.component.stray_path.width,
                                                                                         h=self.component.core.window_w
                                                                                         - length)),
-                                                 w=w_stray,
+                                                 w=self.component.stray_path.width,
                                                  r_o=self.component.core.window_w + self.component.core.core_w / 2
                                                  ) - R_0
 
-                air_gap_lengths[n_reluctance] = brentq(r_sct, 1e-6, max_length[n_reluctance])
+
+                print(f"n_reluctance {n_reluctance}")
+                print(f"self.component.stray_path.width {self.component.stray_path.width}")
+                print(f"max_length[n_reluctance] {self.max_length[n_reluctance]}")
+                print(f"R_0 {R_0}")
+                print(f"r_sct(a) {r_sct(1e-6)}")
+                print(f"r_sct(b) {r_sct(self.max_length[n_reluctance])}")
+
+                # Check for different signs (zero crossing)
+                if r_sct(1e-6) * r_sct(self.max_length[n_reluctance]) > 0:
+                    air_gap_lengths[air_gap_name] = None
+                else:
+                    air_gap_lengths[air_gap_name] = brentq(r_sct, 1e-6, self.max_length[n_reluctance])
 
             return air_gap_lengths
 
-        def get_air_gaps_from_winding_matrices(self, N_init, L_goal):
+        def stray_path_parametrization_EI_axi(self, N):
             """
 
             :return:
             """
-            # Valid Results
-            air_gap_lengths_valid = []
-            max_length = None
-            air_gap_types = None
-            n_ag_per_rel = None
+            # Calculate stray path width
+            [Phi_top, Phi_bot] = np.matmul( np.matmul(np.linalg.inv(np.transpose(N)), self.L_goal), np.transpose(self.current))
+            Phi_stray = - (Phi_top + Phi_bot)
+            print(Phi_top, Phi_bot, Phi_stray)
+            self.component.stray_path.width = Phi_stray / self.Bmax / (2 * np.pi * self.component.core.core_w)
 
-            # Core and Component type decide about air gap characteristics
-            if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
-                if N_init[0].shape == (2, 2):  # TODO: Only the first element of N_init is checked
+            # Max allowed lengths in each leg
+            # TODO: Bring in more exact values
+            self.max_length = [self.component.core.window_h * (100 - self.component.stray_path.midpoint) / 100,
+                               self.component.core.window_h * self.component.stray_path.midpoint / 100,
+                               self.component.core.window_w / 2]
 
-                    # Max allowed lengths in each leg
-                    # TODO: Bring in more exact values
-                    max_length = [self.component.core.window_h / 4,
-                                  self.component.core.window_h / 4,
-                                  self.component.core.window_w]
+            # Air gap types: "round-round", "round-inf", "cyl-cyl"
+            self.air_gap_types = [["round-inf"],
+                                  ["round-inf"],
+                                  ["cyl-cyl"]]
 
-                    # Air gap types: "round-round", "round-inf", "cyl-cyl"
-                    air_gap_types = [["round-inf"],
-                                     ["round-inf"],
-                                     ["cyl-cyl"]]
+            # TODO: R_top and R_bot can be realized with distributed air gaps
+            self.n_ag_per_rel = [1, 1, 1]
 
-                    # TODO: R_top and R_bot can be realized with distributed air gaps
-                    n_ag_per_rel = [1, 1, 1]
-
-            # Iterate through Winding Matrices
-            for count, N in enumerate(N_init):
-
-                # Calculate goal reluctance values
-                R_matrix = self.calculate_reluctances(N=N, L=L_goal)
-                R_goal = [R_matrix[0, 0] + R_matrix[0, 1], R_matrix[1, 1] + R_matrix[0, 1], -R_matrix[0, 1]]
-
-                # Calculate idealized air_gap_lengths to find too big results ???
-                # l_ideal = self.calculate_air_gap_lengths_idealized(reluctances=R_goal,
-                #                                                    types=air_gap_types,
-                #                                                    n_ag_per_rel=n_ag_per_rel)
-
-                # Calculate the air gap lengths with the help of SCT
-                if (R >= 0 for R in R_goal):
-                    air_gap_lengths = self.calculate_air_gap_lengths_with_sct(reluctances=R_goal,
-                                                                              max_length=max_length,
-                                                                              types=air_gap_types,
-                                                                              n_ag_per_rel=n_ag_per_rel)
-
-                    # TODO: CHECK for saturation
-                    air_gap_lengths_valid.append(air_gap_lengths)
-
-                else:
-                    air_gap_lengths_valid.append([None] * len(R_goal))
-
-            return air_gap_lengths_valid
-
-        def air_gap_design(self, N_init=None, core_par_init=None, L_goal=None, **kwargs):
-            # TODO:split N and core paras i two functions
+        def get_air_gaps_from_winding_matrix(self, N):
             """
 
+            :return: Dictionay with air gap results or None
+            """
+            # Core and Component type decide about air gap characteristics
+            if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
+
+                # Dedicated stray path
+                # Check first argument of list
+                if N.shape == (2, 2):
+
+                    # Iterate through Winding Matrices
+                    self.stray_path_parametrization_EI_axi(N=N)
+
+                    # Calculate goal reluctance values
+                    R_matrix = self.calculate_reluctances(N=N, L=self.L_goal)
+                    R_goal = [R_matrix[0, 0] + R_matrix[0, 1], R_matrix[1, 1] + R_matrix[0, 1], -R_matrix[0, 1]]
+
+                    # Calculate idealized air_gap_lengths to find too big results ???
+                    # l_ideal = self.calculate_air_gap_lengths_idealized(reluctances=R_goal,
+                    #                                                    types=air_gap_types,
+                    #                                                    n_ag_per_rel=n_ag_per_rel)
+
+                    # Check for negative Reluctances
+                    if all(R >= 0 for R in R_goal):
+
+                        # Calculate the air gap lengths with the help of SCT
+                        # air_gap_lengths is a dictionary with air gap names and the associated length
+                        air_gap_lengths = self.calculate_air_gap_lengths_with_sct(reluctances=R_goal)
+
+                    else:
+                        # Ignore
+                        # air_gap_lengths_valid.append([None] * len(R_goal))
+                        pass
+
+                # Save resulting parameter set
+                # air_gap_lengths_valid = np.asarray(air_gap_lengths_valid)
+                # np.save('Reluctance_Model/air_gap_lengths_valid.npy', air_gap_lengths_valid)
+
+                return air_gap_lengths
+
+        def air_gap_design(self, L_goal,
+                           parameters_init,
+                           current=None, Bmax=None,
+                           **kwargs):
+            """
+
+            :param Bmax:
+            :param current:
+            :param stray_path_init:
             :param N_init: initial list of lists of winding matrices
             :param core_par_init: initial list of lists of sweep-core-parameters
             :param L_goal: list of inductance goals [inductor: single value L;
                                                      transformer: Inductance Matrix [[L_11, M], [M, L_22]]
             :return:
             """
+            self.current = current
+            self.Bmax = Bmax
+
             if not os.path.isdir(self.component.path + "/" + "Reluctance_Model"):
                 os.mkdir(self.component.path + "/" + "Reluctance_Model")
 
-            # Save initial parameter set of winding matrices
-            N_init = np.asarray(N_init)
-            np.save('Reluctance_Model/N_init.npy', N_init)
-
-            # Save initial parameter set of core parameters
-            # core_par_init = np.asarray(core_par_init)
-            # np.save('Reluctance_Model/core_par_init.npy', core_par_init)
+            # Save initial parameter set
+            parameters_init = np.asarray(parameters_init)
+            np.save('Reluctance_Model/parameters_init.npy', parameters_init)
 
             # Save goal inductance values
-            L_goal = np.asarray(L_goal)
-            np.save('Reluctance_Model/goals.npy', L_goal)
+            self.L_goal = np.asarray(L_goal)
+            np.save('Reluctance_Model/goals.npy', self.L_goal)
 
-            par_ok = [None] * len(core_par_init)
+            # Initialize result list
+            par_ok = []
 
             # Update the core to use its internal core parameter calculation functionality
             # Set attributes of core with given keywords
-            for index, core_parameters in enumerate(core_par_init):
-                for key, value in core_parameters.items():
-                    setattr(self.component.core, key, value)
-                    all_parameters = [core_parameters,
-                                      N_init,
-                                      self.get_air_gaps_from_winding_matrices(N_init=N_init, L_goal=L_goal)]
+            for index, parameters in enumerate(parameters_init):
+                for key, value in parameters.items():
+                    print(key, value)
 
-                    par_ok[index] = all_parameters
+                    if hasattr(self.component.core, key):
+                        setattr(self.component.core, key, value)
+
+                    if hasattr(self.component.stray_path, key):
+                        setattr(self.component.stray_path, key, value)
+
+                    if key == "N":
+                        N_init = value
+
+                air_gap_results = self.get_air_gaps_from_winding_matrix(N=N_init)
+
+                if air_gap_results is None:
+                    all_parameters = None
+                else:
+                    all_parameters = dict(parameters, **air_gap_results)
+
+                par_ok.append(all_parameters)
+
+            # Save resulting parameter set
+            #if not (par_ok[-1][-1]):
+            #    par_ok[-1] = None
+            #par_ok[not (par_ok[][-1])] = None
+
+            #par_ok = np.asarray(par_ok, dtype=object)
+            #np.save('Reluctance_Model/par_ok.npy', par_ok)
 
             return par_ok
 
