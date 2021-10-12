@@ -3,6 +3,7 @@
 // ----------------------
 Include "Parameter.pro";
 Include "BH.pro";
+Include "mu_imag.pro";
 ExtGmsh = ".pos";
 
 
@@ -189,7 +190,9 @@ Function {
 
   // Hysteresis Loss
   // Imaginary Part Of Permeability
-  mu_imag[#{Iron}] = mu0 * mu_r_imag;
+  // Liste von Lukas hinterlegen
+  mu_imag[ #{Iron} ] = mu0 * f_N95_mu_imag[$1];
+  //mu_imag[#{Iron}] = mu0 * mu_r_imag;
 
   If(!Flag_NL)
     nu[#{Iron}]   = nu0/mur;
@@ -289,8 +292,6 @@ Function {
   EndIf
 
 }
-
-
 
 
 // ----------------------
@@ -472,8 +473,8 @@ PostProcessing {
 
       // Magnetic Flux Density
       //TODO:
-      { Name p_hyst ; Value { Integral { [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-      { Name p_hyst_density ; Value { Integral { [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+      { Name p_hyst ; Value { Integral { [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+      { Name p_hyst_density ; Value { Integral { [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[{d a}] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
 
 
       // Energy
@@ -626,7 +627,7 @@ PostOperation Map_local UsingPost MagDyn_a {
 
   // Magnetic Field
   //Print[ h,  OnElementsOf Domain,  File StrCat[DirResFields, "h", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ Magh,  OnElementsOf Domain,  File StrCat[DirResFields, "Magh", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ Magh,  OnElementsOf Domain,  File StrCat[DirResFields, "Magh", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Core Loss Density
   If(Flag_Steinmetz_loss)
@@ -653,13 +654,12 @@ PostOperation Map_local UsingPost MagDyn_a {
 
   // Ohmic Loss
   Print[ j2F, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
-  Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
   Print[ j2H,   OnElementsOf DomainS, File StrCat[DirResFields,"jH",ExtGmsh] ] ;
-  Print[ j2H_density,   OnElementsOf DomainS, File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
+  //Print[ j2H_density,   OnElementsOf DomainS, File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
 
   //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
   //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
-
 
 
   // Settings
@@ -683,10 +683,10 @@ PostOperation Get_global UsingPost MagDyn_a {
   Print[ j2F[ DomainC ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F.dat"]] ;// Joule losses
   //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // Complex power
   Print[ j2H[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H.dat"] ] ;
-  Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
-  Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
-  Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
-  Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
+  //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
+  //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
+  //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
+  //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
 
   //Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
   //Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];

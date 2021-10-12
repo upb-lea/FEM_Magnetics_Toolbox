@@ -399,3 +399,18 @@ def r_cheap_cyl_cyl(r_o, l, w):
     r_i = r_o - l
     return (r_o-r_i) / mu0/w/np.pi/(r_o+r_i)
 
+
+def calculate_reluctances(N, L):
+    """
+    Calculates the Reluctance Matrix.
+    Everything must be numpy!
+    :return: reluctance[-matrix]
+    """
+
+    # Reluctance Matrix
+    if np.ndim(N) == 0:
+        L_invert = 1 / L
+    else:
+        L_invert = np.linalg.inv(L)
+
+    return np.matmul(np.matmul(N, L_invert), np.transpose(N))
