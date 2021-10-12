@@ -1,4 +1,4 @@
-# FEM_Magnetics_Toolbox
+# FEM Magnetics Toolbox (FEMMT)
 Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics
 
 Functionality examples
