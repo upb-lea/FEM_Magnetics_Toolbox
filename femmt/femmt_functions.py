@@ -171,8 +171,8 @@ def NbrLayers(n_strands):
     return np.sqrt(0.25+(n_strands-1)/3)-0.5
 
 
-def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', rad: str ='no',
-        f0: Union[float, None]=None, title: str='ffT') -> npt.NDArray[list]:
+def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', mode: str = 'rad',
+        f0: Union[float, None] = None, title: str = 'ffT') -> npt.NDArray[list]:
     """
     A fft for a input signal. Input signal is in vector format and should include one period.
 
@@ -180,26 +180,31 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
 
     Minimal example:
     example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
-    out = fft(example_waveform, plot=True, rad='yes', f0=25000, title='ffT input current')
+    out = fft(example_waveform, plot=True, mode='rad', f0=25000, title='ffT input current')
 
     :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
     :param sample_factor: f_sampling/f_period, defaults to 1000
     :param plot: insert anything else than "no" or 'False' to show a plot to visualize input and output
-    :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
-    :param f0: set when rad != 'no' and rad != False
+    :param mode: 'rad'[default]: full period is 2*pi, 'deg': full period is 360°, 'time': time domain.
+    :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :param title: plot window title, defaults to 'ffT'
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     """
 
     t = period_vector_t_i[0]
     i = period_vector_t_i[1]
+    # check for correct input parameter
+    if (mode == 'rad' or mode == 'deg') and f0 is None:
+        raise ValueError("if mode is 'rad' or 'deg', a fundamental frequency f0 must be set")
+    # mode pre-calculation
+    if mode == 'rad':
+        period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
+    elif mode == 'deg':
+        period_vector_t_i[0] = period_vector_t_i[0] / (360 * f0)
+    elif mode != 'time':
+        raise ValueError("Mode not availabe. Choose: 'rad', 'deg', 'time'")
 
-    if rad != 'no' and rad!=False:
-        if f0 is None:
-            raise ValueError("if rad!='no', a fundamental frequency f0 must be set")
-        else:
-            period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
-
+    # fft-function works per default in time domain
     # time domain
     t_interp = np.linspace(0, t[-1], sample_factor)
     i_interp = np.interp(t_interp, t, i)
@@ -242,7 +247,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
             reconstructed_signal += x_out[i_range] * np.cos(
                 2 * np.pi * f_out[i_range] * t_interp + phi_rad_out[i_range])
 
-        fig, [ax1, ax2] = plt.subplots(num=title, nrows=2, ncols=1)
+        fig, [ax1, ax2, ax3] = plt.subplots(num=title, nrows=3, ncols=1)
         ax1.plot(t, i, label='original signal')
         ax1.plot(t_interp, reconstructed_signal, label='reconstructed signal')
         ax1.grid()
@@ -255,6 +260,13 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
         ax2.set_title('ffT')
         ax2.set_xlabel('Frequency in Hz')
         ax2.set_ylabel('Amplitude')
+
+        ax3.stem(f_out, phi_rad_out)
+        ax3.grid()
+        ax3.set_title('ffT')
+        ax3.set_xlabel('Frequency in Hz')
+        ax3.set_ylabel('Phase in rad')
+
         plt.tight_layout()
         plt.show()
 
