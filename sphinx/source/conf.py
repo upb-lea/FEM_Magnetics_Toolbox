@@ -24,7 +24,6 @@ author = 'LEA-UPB'
 # The full version, including alpha/beta/rc tags
 release = '0.1.2'
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -56,12 +55,7 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# on_rtd is whether we are on readthedocs.org, this line of code grabbed from docs.readthedocs.org
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if not on_rtd:  # only import and set the theme if we're building docs locally
-    import stanford_theme
-    html_theme = 'stanford_theme'
-    html_theme_path = [stanford_theme.get_html_theme_path()]
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -80,13 +74,13 @@ html_context = {
     'display_github': True,
     'github_user': 'Mohan Nagella',
     'github_repo': 'FEM_Magnetics_Toolbox',
-    'github_version': 'main/docs/',
+    'github_version': 'main/sphinx',
 }
 
 # Code for adding html side bars to theme
 html_sidebars = {
     '**': [
-        'versions.html',
+        'versioning.html',
     ],
  }
 # Add any paths that contain custom static files (such as style sheets) here,
