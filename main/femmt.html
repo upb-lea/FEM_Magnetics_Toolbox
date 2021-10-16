@@ -1,0 +1,1339 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Documentation &mdash; FEM Magnetics Toolbox 0.1.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="1 FEM Magnetics Toolbox (FEMMT)" href="intro.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FEM Magnetics Toolbox
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#installation"><span class="sectnum">2</span> Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#clone-the-repo"><span class="sectnum">2.1</span> Clone the Repo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#onelab-installation"><span class="sectnum">2.2</span> ONELAB installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#femm-installation-for-windows-user-only"><span class="sectnum">2.3</span> FEMM installation [for Windows User only]</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#basics-of-usage"><span class="sectnum">3</span> Basics of Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installed-as-a-pip-package"><span class="sectnum">3.1</span> Installed as a pip-package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#others"><span class="sectnum">3.1.1</span> Others</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#roadmap"><span class="sectnum">3.1.1.1</span> Roadmap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#organisation"><span class="sectnum">3.1.1.2</span> Organisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#bug-reports"><span class="sectnum">3.2</span> Bug Reports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#contributing"><span class="sectnum">3.3</span> Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#authors-and-contributors"><span class="sectnum">3.4</span> Authors and contributors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#changelog"><span class="sectnum">3.5</span> Changelog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#license"><span class="sectnum">3.6</span> License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#history-and-project-status"><span class="sectnum">3.7</span> History and project status</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-magneticcomponent-class">The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-virtualwindingwindow-class">The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-femmt_functions">FEMMT methods</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Documentation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/Mohan Nagella/FEM_Magnetics_Toolbox/blob/main/femmt.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-magneticcomponent-class">
+<h2>The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class<a class="headerlink" href="#the-magneticcomponent-class" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">femmt.</span></span><span class="sig-name descname"><span class="pre">MagneticComponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'inductor'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>Initialization of all class variables</p></li>
+<li><p>Common variables for all instances</p></li>
+</ul>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.path">
+<span class="sig-name descname"><span class="pre">path</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'C:\\Users\\mnagella\\AppData\\Local\\Temp\\tmpxd69m6fs\\662debcae31775c3027ea2d79a663a2f1ee56fa6\\femmt'</span></em><a class="headerlink" href="#femmt.MagneticComponent.path" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.onelab">
+<span class="sig-name descname"><span class="pre">onelab</span></span><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#femmt.MagneticComponent.onelab" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.path_mesh">
+<span class="sig-name descname"><span class="pre">path_mesh</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'mesh/'</span></em><a class="headerlink" href="#femmt.MagneticComponent.path_mesh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.path_res">
+<span class="sig-name descname"><span class="pre">path_res</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'results/'</span></em><a class="headerlink" href="#femmt.MagneticComponent.path_res" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.path_res_fields">
+<span class="sig-name descname"><span class="pre">path_res_fields</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'results/fields/'</span></em><a class="headerlink" href="#femmt.MagneticComponent.path_res_fields" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.path_res_values">
+<span class="sig-name descname"><span class="pre">path_res_values</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'results/values/'</span></em><a class="headerlink" href="#femmt.MagneticComponent.path_res_values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.path_res_circuit">
+<span class="sig-name descname"><span class="pre">path_res_circuit</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'results/circuit/'</span></em><a class="headerlink" href="#femmt.MagneticComponent.path_res_circuit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.path_res_FEMM">
+<span class="sig-name descname"><span class="pre">path_res_FEMM</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'FEMM/'</span></em><a class="headerlink" href="#femmt.MagneticComponent.path_res_FEMM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'inductor'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>Initialization of all instance variables</p></li>
+<li><p>One or more “MagneticComponents” can be created</p></li>
+<li><p>Each “MagneticComponent” owns its own instance variable values</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>component_type</strong> – Available options are
+- “inductor”
+- “transformer”
+- “integrated_transformer” (Transformer with included stray-path).
+- “three_phase_transformer”: Not implemented yet</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.onelab_setup">
+<span class="sig-name descname"><span class="pre">onelab_setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.MagneticComponent.onelab_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Either reads ONELAB parent folder path from config.json or asks the user to provide the ONELAB path it.
+Creates a config.json inside the site-packages folder at first run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.high_level_geo_gen">
+<span class="sig-name descname"><span class="pre">high_level_geo_gen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">core_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'EI'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimensionality</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2D</span> <span class="pre">axi'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skin_mesh_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.high_level_geo_gen" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>high level geometry generation</p></li>
+<li><p>based on chosen core and conductor types and simulation mode</p></li>
+<li><p>calls “low level” methods, that creates all points needed for mesh generation</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.VirtualWindingWindow">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">VirtualWindingWindow</span></span><a class="headerlink" href="#femmt.MagneticComponent.VirtualWindingWindow" title="Permalink to this definition">¶</a></dt>
+<dd><p>A virtual winding window is the area, where either some kind of interleaved conductors or a one winding
+(primary, secondary,…) is placed in a certain way.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.VirtualWindingWindow.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.VirtualWindingWindow.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Winding">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Winding</span></span><a class="headerlink" href="#femmt.MagneticComponent.Winding" title="Permalink to this definition">¶</a></dt>
+<dd><p>A winding defines a conductor which is wound around a magnetic component such as transformer or inductance.
+The winding is defined by its conductor and the way it is placed in the magnetic component. To allow different
+arrangements of the conductors in several winding windows (hexagonal or square packing, interleaved, …) in
+this class only the conductor parameters are specified. Then, by calling class:Winding in
+class:VirtualWindingWindow the arrangement of the conductors is specified.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Winding.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Winding.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Core">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Core</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re_mu_rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Core" title="Permalink to this definition">¶</a></dt>
+<dd><p>frequency = 0: mu_rel only used if non_linear == False
+frequency &gt; 0: mu_rel is used</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Core.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re_mu_rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Core.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>re_mu_rel</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Core.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re_mu_rel</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">3000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im_mu_rel</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">855.0503583141718</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im_epsilon_rel</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">20521.20859954012</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_linear</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.MagneticComponent.Core.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the core structure.</p>
+<ul>
+<li><p>One positional parameter: type</p></li>
+<li><p>All other core parameters can be passed or adjusted by keyword calling</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Allows single parameter changing, depending on core-type</p></li>
+<li><p>Strict keyword usage!</p></li>
+<li><p>All dimensions are in meters</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>im_epsilon_rel</strong> (<em>float</em>) – </p></li>
+<li><p><strong>non_linear</strong> (<em>bool</em>) – True/False</p></li>
+<li><p><strong>material</strong> (<em>str</em>) – specified in BH.pro. Currently available: ‘95_100’ #ToDo: Add Values!</p></li>
+<li><p><strong>re_mu_rel</strong> (<em>float</em>) – material’s real mu_rel part, found in the datasheet (used if non_linear == False)</p></li>
+<li><p><strong>im_mu_rel</strong> (<em>float</em>) – material’s imaginary mu_rel part, found in the datasheet (used if non_linear == False)</p></li>
+<li><p><strong>type</strong> (<em>str</em>) – There is actually only one type: “EI”</p></li>
+<li><p><strong>kwargs</strong> – <ul>
+<li><p>Case “2D, axisym., EI”: ‘core_w’, ‘window_w’, ‘window_h’</p></li>
+<li><p>Case “3D, EI”: …tba…</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.StrayPath">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">StrayPath</span></span><a class="headerlink" href="#femmt.MagneticComponent.StrayPath" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.StrayPath.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.StrayPath.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.StrayPath.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.StrayPath.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.AirGaps">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">AirGaps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.AirGaps" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.AirGaps.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.AirGaps.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.AirGaps.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_air_gaps</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_tag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">air_gap_position</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">air_gap_h</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.MagneticComponent.AirGaps.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the air gap structure.</p>
+<ul>
+<li><p>Strict keyword usage!</p></li>
+<li><p>All dimensions are in meters</p></li>
+<li><p>all parameters are in lists!</p></li>
+<li><p>first chose the method, second, transfer parameters:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>“center”: ONE air gap exactly in core’s middle</p></li>
+<li><p>“random”: random count of air gaps in the inner/outer leg</p></li>
+<li><p>“percent”: Easy way to split air gaps over the inner/outer leg</p></li>
+<li><p>“manually”: Place air gaps manually</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>“self.midpoints” is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]</p></li>
+<li><p>c_air_gap: mesh accuracy factor</p></li>
+<li><p>“EI 2D axi”: position_tag = 0  # ‘-1’: left leg | ‘0’: center leg | ‘1’: right leg</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_air_gaps</strong> (<em>int</em>) – number of air gaps</p></li>
+<li><p><strong>position_tag</strong> (<em>float</em>) – specifies the gapped “leg”</p></li>
+<li><p><strong>air_gap_h</strong> (<em>float</em>) – List of air gap high, list length depending on total air gap count</p></li>
+<li><p><strong>air_gap_position</strong> (<em>float</em>) – specifies the coordinate of the air gap’s center point along the specified leg</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – “random”, “center”, “percent”, “manually”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">geo</span><span class="o">.</span><span class="n">air_gaps</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">n_air_gaps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">air_gap_h</span><span class="o">=</span><span class="p">[</span><span class="mf">0.002</span><span class="p">])</span> <span class="c1"># &#39;center&#39;: single air gap in the middle</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">geo</span><span class="o">.</span><span class="n">air_gaps</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;percent&quot;</span><span class="p">,</span> <span class="n">n_air_gaps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">position_tag</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">air_gap_h</span><span class="o">=</span><span class="p">[</span><span class="mf">0.003</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">],</span> <span class="n">air_gap_position</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">])</span> <span class="c1"># &#39;percent&#39;: Place air gaps manually using percentages</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">geo</span><span class="o">.</span><span class="n">air_gaps</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;percent&quot;</span><span class="p">,</span> <span class="n">n_air_gaps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">position_tag</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">air_gap_h</span><span class="o">=</span><span class="p">[</span><span class="mf">0.003</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">],</span> <span class="n">air_gap_position</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">])</span> <span class="c1"># random</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">geo</span><span class="o">.</span><span class="n">air_gaps</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;manually&quot;</span><span class="p">,</span> <span class="n">n_air_gaps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">position_tag</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">air_gap_h</span><span class="o">=</span><span class="p">[</span><span class="mf">0.003</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">],</span> <span class="n">air_gap_position</span><span class="o">=</span><span class="p">[</span><span class="mf">0.000</span><span class="p">,</span> <span class="mf">0.003</span><span class="p">])</span> <span class="c1"># manually</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Isolation">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Isolation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond_cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">core_cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Isolation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Isolation.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond_cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">core_cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Isolation.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><dl class="simple">
+<dt>Isolation</dt><dd><ul>
+<li><p>Between two turns of common conductors: first n_conductor arguments of cond_cond</p></li>
+<li><p>Between two neighboured conductors: last n_conductor-1 arguments</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.update_conductors">
+<span class="sig-name descname"><span class="pre">update_conductors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_turns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductor_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">winding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheme</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductor_radii</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">litz_para_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strands_numbers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strand_radii</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thickness</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrap_para</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_cond_isolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">core_cond_isolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.MagneticComponent.update_conductors" title="Permalink to this definition">¶</a></dt>
+<dd><p>This Method allows the user to easily update/initialize the Windings in terms of their conductors and
+arrangement.</p>
+<p>Note: set all parameters in a list!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wrap_para</strong> – </p></li>
+<li><p><strong>ff</strong> – fill-factor, values between [0….1]</p></li>
+<li><p><strong>winding</strong> – <ul>
+<li><p>“interleaved”</p></li>
+<li><p>””</p></li>
+</ul>
+</p></li>
+<li><p><strong>scheme</strong> – </p></li>
+<li><p><strong>litz_para_type</strong> – there is on degree of freedom.
+- “implicit_litz_radius”:
+- “implicit_ff”:
+- “implicit_strands_number”:</p></li>
+<li><p><strong>thickness</strong> – </p></li>
+<li><p><strong>cond_cond_isolation</strong> – </p></li>
+<li><p><strong>core_cond_isolation</strong> – </p></li>
+<li><p><strong>n_turns</strong> – </p></li>
+<li><p><strong>strand_radii</strong> – </p></li>
+<li><p><strong>strands_numbers</strong> – </p></li>
+<li><p><strong>conductor_radii</strong> – </p></li>
+<li><p><strong>conductor_type</strong> – <ul>
+<li><p>“stacked”  # Vertical packing of conductors</p></li>
+<li><p>”full”     # One massive Conductor in each window</p></li>
+<li><p>”foil”     # Horizontal packing of conductors</p></li>
+<li><p>”solid”    # Massive wires</p></li>
+<li><p>”litz”     # Litz wires</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.update_litz_configuration">
+<span class="sig-name descname"><span class="pre">update_litz_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">litz_parametrization_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'implicit_ff'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strand_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductor_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_strands</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.update_litz_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><dl class="simple">
+<dt>updates the conductor #num (simple transformer: num=0 -&gt; primary winding,</dt><dd><p>num=1 -&gt; secondary winding)</p>
+</dd>
+</dl>
+</li>
+<li><p>used to change litz configurations</p></li>
+<li><p>also used at first initialisation of the geometry</p></li>
+<li><p>needed to always make sure that the relation between litz parameters (strand radius, fill factor, number of
+layers/strands and conductor/litz radius) is valid and consistent</p></li>
+<li><p>4 parameters, 1 degree of freedom (dof)</p></li>
+<li><p>all parameters are list parameters!</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num</strong> – internal counter for primary/secondary winding. Do not change!</p></li>
+<li><p><strong>litz_parametrization_type</strong> – </p></li>
+<li><p><strong>strand_radius</strong> (<em>float</em>) – radius of a single strand in [m]</p></li>
+<li><p><strong>ff</strong> (<em>float</em>) – in 0….1</p></li>
+<li><p><strong>conductor_radius</strong> (<em>list</em><em>[</em><em>float</em><em>]</em>) – radius of conductor in [m], in a list</p></li>
+<li><p><strong>n_strands</strong> – number of strands for one conductor in a list</p></li>
+</ul>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p>n_strands: list[float]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.EIaxi">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">EIaxi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.EIaxi" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>creates all points needed for the radial axi-symmetric EI core typology</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.EIaxi.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.EIaxi.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.EIaxi.draw_outer">
+<span class="sig-name descname"><span class="pre">draw_outer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.EIaxi.draw_outer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws the</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.EIaxi.draw_window">
+<span class="sig-name descname"><span class="pre">draw_window</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.EIaxi.draw_window" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.EIaxi.draw_air_gaps">
+<span class="sig-name descname"><span class="pre">draw_air_gaps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.EIaxi.draw_air_gaps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.EIaxi.draw_virtual_winding_windows">
+<span class="sig-name descname"><span class="pre">draw_virtual_winding_windows</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.EIaxi.draw_virtual_winding_windows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.EIaxi.draw_conductors">
+<span class="sig-name descname"><span class="pre">draw_conductors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.EIaxi.draw_conductors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.EIaxi.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.EIaxi.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.ReluctanceModel">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ReluctanceModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.ReluctanceModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Depending on Core-Configurations, given number of turns and Inductance-goals, calculate air gap lengths</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.ReluctanceModel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.ReluctanceModel.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>f.e.:   n_reluctances = 1 without stray path</dt><dd><p>n_reluctances = 3 with stray path</p>
+<p>n_air_gaps = air_gap_division * n_reluctances or sth. like that for distributed air gaps</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.ReluctanceModel.calculate_air_gap_lengths_idealized">
+<span class="sig-name descname"><span class="pre">calculate_air_gap_lengths_idealized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reluctances</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.ReluctanceModel.calculate_air_gap_lengths_idealized" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reluctances</strong> – </p></li>
+<li><p><strong>types</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.ReluctanceModel.calculate_air_gap_lengths_with_sct">
+<span class="sig-name descname"><span class="pre">calculate_air_gap_lengths_with_sct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reluctances</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.ReluctanceModel.calculate_air_gap_lengths_with_sct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method calculates air gap lengths according to the given reluctances.
+Method uses several instance variables of the Reluctance Model.</p>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<p>List with lists of air gap lengths important to always keep the order of elements [or use a dictionary] future use case integrated_transformer:  [[l_top_1, l_top_2, …],
+[l_bot_1, l_bot_2, …],
+[l_stray_1, l_stray_2, …]]
+use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>reluctances</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary with air gap names and the associated lengths</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.ReluctanceModel.stray_path_parametrization_ei_axi">
+<span class="sig-name descname"><span class="pre">stray_path_parametrization_ei_axi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.ReluctanceModel.stray_path_parametrization_ei_axi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method defines instance variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.ReluctanceModel.get_air_gaps_from_winding_matrix">
+<span class="sig-name descname"><span class="pre">get_air_gaps_from_winding_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.ReluctanceModel.get_air_gaps_from_winding_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates air gap lengths according to a given winding matrix.
+Uses several instance variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Dictionary with air gap results or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.ReluctanceModel.air_gap_design">
+<span class="sig-name descname"><span class="pre">air_gap_design</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L_goal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters_init</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_stray</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.ReluctanceModel.air_gap_design" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs calculation of air gap lengths according to given data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>b_max</strong> – </p></li>
+<li><p><strong>parameters_init</strong> – </p></li>
+<li><p><strong>b_stray</strong> – </p></li>
+<li><p><strong>current</strong> – </p></li>
+<li><p><strong>L_goal</strong> – list of inductance goals [inductor: single value L;
+transformer: Inductance Matrix [[L_11, M], [M, L_22]]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dictionary with resulting air gap (and stray path) parameters. Saturated and other unvalid
+parameter combinations are set to None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Mesh">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Mesh" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Mesh.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Mesh.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Mesh.generate_mesh">
+<span class="sig-name descname"><span class="pre">generate_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alternative_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Mesh.generate_mesh" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>interaction with gmsh</p></li>
+<li><dl class="simple">
+<dt>mesh generation</dt><dd><ul>
+<li><p>Skin depth based forward meshing</p></li>
+<li><dl class="simple">
+<dt>adaptive refinement</dt><dd><ul>
+<li><p>with the help of mesh-size-fields/background meshes</p></li>
+<li><p>with an appropriate local error metric</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.Mesh.mesh">
+<span class="sig-name descname"><span class="pre">mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skin_mesh_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.Mesh.mesh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.excitation">
+<span class="sig-name descname"><span class="pre">excitation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phases</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ex_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'current'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imposed_red_f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.excitation" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>excitation of the electromagnetic problem</p></li>
+<li><p>current, voltage or current density</p></li>
+<li><p>frequency or reduced frequency</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>phases</strong> – </p></li>
+<li><p><strong>f</strong> – </p></li>
+<li><p><strong>i</strong> – </p></li>
+<li><p><strong>ex_type</strong> – </p></li>
+<li><p><strong>imposed_red_f</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.file_communication">
+<span class="sig-name descname"><span class="pre">file_communication</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.file_communication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interaction between python and Prolog files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.simulate">
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.simulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes a onelab client. Provides the GetDP based solver with the created mesh file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.visualize">
+<span class="sig-name descname"><span class="pre">visualize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.visualize" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>a post simulation viewer</p></li>
+<li><p>allows to open “.pos”-files in gmsh</p></li>
+<li><p>For example current density, ohmic losses or the magnetic field density can be visualized</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.get_loss_data">
+<span class="sig-name descname"><span class="pre">get_loss_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">last_n_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'litz_loss'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.get_loss_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the last n values from the chosen loss type logged in the result folder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>last_n_values</strong> – </p></li>
+<li><p><strong>loss_type</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.femm_reference">
+<span class="sig-name descname"><span class="pre">femm_reference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_cu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_visualize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.femm_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
+Helpful to validate changes (especially in the Prolog Code).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sign</strong> – </p></li>
+<li><p><strong>non_visualize</strong> – </p></li>
+<li><p><strong>freq</strong> – </p></li>
+<li><p><strong>current</strong> – </p></li>
+<li><p><strong>sigma_cu</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.pre_simulate">
+<span class="sig-name descname"><span class="pre">pre_simulate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.pre_simulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to determine the litz-approximation coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.create_strand_coeff">
+<span class="sig-name descname"><span class="pre">create_strand_coeff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.create_strand_coeff" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.pre_simulation">
+<span class="sig-name descname"><span class="pre">pre_simulation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.pre_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>Complete “pre-simulation” call</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.single_simulation">
+<span class="sig-name descname"><span class="pre">single_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi_deg</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skin_mesh_factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">NL_core</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt.MagneticComponent.single_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start a _single_ ONELAB simulation.
+:param NL_core:
+:param freq: frequency to simulate
+:type freq: float
+:param current: current to simulate
+:param skin_mesh_factor:
+:type skin_mesh_factor: float
+:param phi_deg: phase angle in degree
+:type phi_deg: List[float]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.get_inductances">
+<span class="sig-name descname"><span class="pre">get_inductances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">I0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_frequency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skin_mesh_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visualize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.get_inductances" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>visualize</strong> – </p></li>
+<li><p><strong>skin_mesh_factor</strong> – </p></li>
+<li><p><strong>I0</strong> – </p></li>
+<li><p><strong>op_frequency</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.excitation_sweep">
+<span class="sig-name descname"><span class="pre">excitation_sweep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequencies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">currents</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_last</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.excitation_sweep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a sweep simulation for frequency-current pairs. Both values can
+be passed in lists of the same length. The mesh is only created ones (fast sweep)!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Example Code</dt>
+<dd class="field-odd"><ol class="arabic simple">
+<li><p>geo = MagneticComponent()</p></li>
+<li><p>geo.mesh()</p></li>
+<li><p>fs = np.linspace(0, 250000, 6)</p></li>
+<li><p>cs = [10, 2, 1, 0.5, 0.2, 0.1]</p></li>
+<li><p>geo.excitation_sweep(frequencies=fs, currents=cs)</p></li>
+</ol>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>phi</strong> – </p></li>
+<li><p><strong>currents</strong> – </p></li>
+<li><p><strong>frequencies</strong> – </p></li>
+<li><p><strong>show_last</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="femmt.MagneticComponent.get_steinmetz_loss">
+<span class="sig-name descname"><span class="pre">get_steinmetz_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Ipeak</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ki</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_rise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_fall</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_switch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skin_mesh_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt.MagneticComponent.get_steinmetz_loss" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>skin_mesh_factor</strong> – </p></li>
+<li><p><strong>Ipeak</strong> – </p></li>
+<li><p><strong>ki</strong> – </p></li>
+<li><p><strong>alpha</strong> – </p></li>
+<li><p><strong>beta</strong> – </p></li>
+<li><p><strong>t_rise</strong> – </p></li>
+<li><p><strong>t_fall</strong> – </p></li>
+<li><p><strong>f_switch</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="the-virtualwindingwindow-class">
+<h2>The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class<a class="headerlink" href="#the-virtualwindingwindow-class" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">MagneticComponent.</span></span><span class="sig-name descname"><span class="pre">VirtualWindingWindow</span></span></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A virtual winding window is the area, where either some kind of interleaved conductors or a one winding
+(primary, secondary,…) is placed in a certain way.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-femmt_functions">
+<span id="femmt-methods"></span><h2>FEMMT methods<a class="headerlink" href="#module-femmt_functions" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.NbrLayers">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">NbrLayers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_strands</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.NbrLayers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of layers in a hexagonal litz winding with a
+specified number of strands (n_strands).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Zero number of layers corresponds to a single strand.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n_strands</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.NbrStrands">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">NbrStrands</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_layers</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.NbrStrands" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of strands in a hexagonal litz winding with a
+specified number of layers (n_layers). CAUTION: Zero number of
+layers corresponds to a single strand.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n_layers</strong> – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.calculate_reluctances">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">calculate_reluctances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.calculate_reluctances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the Reluctance Matrix.
+Everything must be numpy!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>reluctance[-matrix]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.call_for_path">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">call_for_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">destination</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'config.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.call_for_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>asks the user to enter the filepath of a destinated file WITHOUT the suffix
+stores a the filepath as a python string declaration in a config file
+returns the filepath</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>destination</strong> – </p></li>
+<li><p><strong>config_file</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.compare_fft_list">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">compare_fft_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rad</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'no'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f0</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt_functions.compare_fft_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>generate fft curves from input curves and compare them to each other</p>
+<dl class="field-list simple">
+<dt class="field-odd">Minimal Example</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">example_waveform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.34</span><span class="p">,</span> <span class="mf">3.14</span><span class="p">,</span> <span class="mf">4.48</span><span class="p">,</span> <span class="mf">6.28</span><span class="p">],[</span><span class="o">-</span><span class="mf">175.69</span><span class="p">,</span> <span class="mf">103.47</span><span class="p">,</span> <span class="mf">175.69</span><span class="p">,</span> <span class="o">-</span><span class="mf">103.47</span><span class="p">,</span><span class="o">-</span><span class="mf">175.69</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example_waveform_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">,</span> <span class="mf">3.14</span><span class="p">,</span> <span class="mf">3.69</span><span class="p">,</span> <span class="mf">6.28</span><span class="p">],[</span><span class="o">-</span><span class="mf">138.37</span><span class="p">,</span> <span class="mf">257.58</span><span class="p">,</span> <span class="mf">138.37</span><span class="p">,</span> <span class="o">-</span><span class="mf">257.58</span><span class="p">,</span> <span class="o">-</span><span class="mf">138.37</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">compare_fft_list</span><span class="p">([</span><span class="n">example_waveform</span><span class="p">,</span> <span class="n">example_waveform_2</span><span class="p">],</span> <span class="n">rad</span><span class="o">=</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span> <span class="n">f0</span><span class="o">=</span><span class="mi">25000</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>list</strong> – list of fft-compatible numpy-arrays [element, element, … ], each element format like [[time-vector[,[current-vector]]. One period only</p></li>
+<li><p><strong>rad</strong> – ‘no’ for time domain input vector, anything else than ‘no’ for 2pi-time domain</p></li>
+<li><p><strong>f0</strong> – set when rad != ‘no’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>plot</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.data_logging">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">data_logging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim_choice</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.data_logging" title="Permalink to this definition">¶</a></dt>
+<dd><p>!!! not finally implemented !!!</p>
+<p>This method shall do the saving and loading of results! with date and time</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.fft">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">period_vector_t_i</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.typing._array_like._SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.typing._array_like._SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.typing._array_like._SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.typing._array_like._SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.typing._array_like._SupportsArray</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.dtype</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">bool</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">complex</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">complex</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">complex</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">complex</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">complex</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'no'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'rad'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f0</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'ffT'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.dtype</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#femmt_functions.fft" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fft for a input signal. Input signal is in vector format and should include one period.</p>
+<p>Output vector includes only frequencies with amplitudes &gt; 1% of input signal</p>
+<dl class="field-list simple">
+<dt class="field-odd">Minimal Example</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">example_waveform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.34</span><span class="p">,</span> <span class="mf">3.14</span><span class="p">,</span> <span class="mf">4.48</span><span class="p">,</span> <span class="mf">6.28</span><span class="p">],[</span><span class="o">-</span><span class="mf">175.69</span><span class="p">,</span> <span class="mf">103.47</span><span class="p">,</span> <span class="mf">175.69</span><span class="p">,</span> <span class="o">-</span><span class="mf">103.47</span><span class="p">,</span><span class="o">-</span><span class="mf">175.69</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">fft</span><span class="p">(</span><span class="n">example_waveform</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;rad&#39;</span><span class="p">,</span> <span class="n">f0</span><span class="o">=</span><span class="mi">25000</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;ffT input current&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>period_vector_t_i</strong> – numpy-array [[time-vector[,[current-vector]]. One period only</p></li>
+<li><p><strong>sample_factor</strong> – f_sampling/f_period, defaults to 1000</p></li>
+<li><p><strong>plot</strong> – insert anything else than “no” or ‘False’ to show a plot to visualize input and output</p></li>
+<li><p><strong>mode</strong> – ‘rad’[default]: full period is 2*pi, ‘deg’: full period is 360°, ‘time’: time domain.</p></li>
+<li><p><strong>f0</strong> – fundamental frequency. Needs to be set in ‘rad’- or ‘deg’-mode</p></li>
+<li><p><strong>title</strong> – plot window title, defaults to ‘ffT’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.id_generator">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">id_generator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.id_generator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.inner_points">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">inner_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.inner_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the input points that have a common coordinate as the two
+interval borders a and b</p>
+<p>Use case: Air gap generation. Helps to generate the core structure form class AirGap.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> – first point</p></li>
+<li><p><strong>b</strong> – second point</p></li>
+<li><p><strong>input_points</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.install_femm_if_missing">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">install_femm_if_missing</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#femmt_functions.install_femm_if_missing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Windows users only.
+Installs femm-software pip package in case of running on windows machine</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.min_max_inner_points">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">min_max_inner_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_points</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.min_max_inner_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the input points that have a common coordinate and
+the minimum distance from the interval borders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> – first point</p></li>
+<li><p><strong>b</strong> – second point</p></li>
+<li><p><strong>input_points</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.r_basis">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">r_basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.r_basis" title="Permalink to this definition">¶</a></dt>
+<dd><p>1-dim reluctance per-unit-of-length
+[according to “A Novel Approach for 3D Air Gap Reluctance Calculations” - J. Mühlethaler, J.W. Kolar, A. Ecklebe]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>w</strong> – </p></li>
+<li><p><strong>l</strong> – </p></li>
+<li><p><strong>h</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.r_cheap_cyl_cyl">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">r_cheap_cyl_cyl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.r_cheap_cyl_cyl" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r_o</strong> – </p></li>
+<li><p><strong>l</strong> – </p></li>
+<li><p><strong>w</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.r_cyl_cyl">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">r_cyl_cyl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_o</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.r_cyl_cyl" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>l</strong> – </p></li>
+<li><p><strong>sigma</strong> – </p></li>
+<li><p><strong>w</strong> – </p></li>
+<li><p><strong>r_o</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.r_round_inf">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">r_round_inf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.r_round_inf" title="Permalink to this definition">¶</a></dt>
+<dd><p>3-dim reluctance for 2-dim axial-symmetric air gaps</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> – </p></li>
+<li><p><strong>r</strong> – </p></li>
+<li><p><strong>l</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.r_round_round">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">r_round_round</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.r_round_round" title="Permalink to this definition">¶</a></dt>
+<dd><p>3-dim reluctance for 2-dim axial-symmetric air gaps</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> – </p></li>
+<li><p><strong>r</strong> – </p></li>
+<li><p><strong>l</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="femmt_functions.sigma">
+<span class="sig-prename descclassname"><span class="pre">femmt_functions.</span></span><span class="sig-name descname"><span class="pre">sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R_equivalent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#femmt_functions.sigma" title="Permalink to this definition">¶</a></dt>
+<dd><p>1-dim fringing factor
+[according to “A Novel Approach for 3D Air Gap Reluctance Calculations” - J. Mühlethaler, J.W. Kolar, A. Ecklebe]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>w</strong> – </p></li>
+<li><p><strong>l</strong> – </p></li>
+<li><p><strong>R_equivalent</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="intro.html" class="btn btn-neutral float-left" title="1 FEM Magnetics Toolbox (FEMMT)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, LEA, Paderborn University.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> Other Versions</span>
+    v: main
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>Branches</dt>
+      <dd><a href="femmt.html">main</a></dd>
+    </dl>
+  </div>
+</div>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,572 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Index &mdash; FEM Magnetics Toolbox 0.1.2 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> FEM Magnetics Toolbox
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#installation"><span class="sectnum">2</span> Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#clone-the-repo"><span class="sectnum">2.1</span> Clone the Repo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#onelab-installation"><span class="sectnum">2.2</span> ONELAB installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#femm-installation-for-windows-user-only"><span class="sectnum">2.3</span> FEMM installation [for Windows User only]</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#basics-of-usage"><span class="sectnum">3</span> Basics of Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installed-as-a-pip-package"><span class="sectnum">3.1</span> Installed as a pip-package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#others"><span class="sectnum">3.1.1</span> Others</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#roadmap"><span class="sectnum">3.1.1.1</span> Roadmap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#organisation"><span class="sectnum">3.1.1.2</span> Organisation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#bug-reports"><span class="sectnum">3.2</span> Bug Reports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#contributing"><span class="sectnum">3.3</span> Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#authors-and-contributors"><span class="sectnum">3.4</span> Authors and contributors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#changelog"><span class="sectnum">3.5</span> Changelog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#license"><span class="sectnum">3.6</span> License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#history-and-project-status"><span class="sectnum">3.7</span> History and project status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="femmt.html">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="femmt.html#the-magneticcomponent-class">The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="femmt.html#the-virtualwindingwindow-class">The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="femmt.html#module-femmt_functions">FEMMT methods</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Index</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/Mohan Nagella/FEM_Magnetics_Toolbox/blob/main/genindex" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#_"><strong>_</strong></a>
+ | <a href="#A"><strong>A</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ 
+</div>
+<h2 id="_">_</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.__init__">__init__() (femmt.MagneticComponent method)</a>
+
+      <ul>
+        <li><a href="femmt.html#femmt.MagneticComponent.AirGaps.__init__">(femmt.MagneticComponent.AirGaps method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.Core.__init__">(femmt.MagneticComponent.Core method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.EIaxi.__init__">(femmt.MagneticComponent.EIaxi method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.Isolation.__init__">(femmt.MagneticComponent.Isolation method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.Mesh.__init__">(femmt.MagneticComponent.Mesh method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.ReluctanceModel.__init__">(femmt.MagneticComponent.ReluctanceModel method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.StrayPath.__init__">(femmt.MagneticComponent.StrayPath method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.VirtualWindingWindow.__init__">(femmt.MagneticComponent.VirtualWindingWindow method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.Winding.__init__">(femmt.MagneticComponent.Winding method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.ReluctanceModel.air_gap_design">air_gap_design() (femmt.MagneticComponent.ReluctanceModel method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.ReluctanceModel.calculate_air_gap_lengths_idealized">calculate_air_gap_lengths_idealized() (femmt.MagneticComponent.ReluctanceModel method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.ReluctanceModel.calculate_air_gap_lengths_with_sct">calculate_air_gap_lengths_with_sct() (femmt.MagneticComponent.ReluctanceModel method)</a>
+</li>
+      <li><a href="femmt.html#femmt_functions.calculate_reluctances">calculate_reluctances() (in module femmt_functions)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.call_for_path">call_for_path() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt_functions.compare_fft_list">compare_fft_list() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.create_strand_coeff">create_strand_coeff() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.data_logging">data_logging() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.EIaxi.draw_air_gaps">draw_air_gaps() (femmt.MagneticComponent.EIaxi method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.EIaxi.draw_conductors">draw_conductors() (femmt.MagneticComponent.EIaxi method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.EIaxi.draw_outer">draw_outer() (femmt.MagneticComponent.EIaxi method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.EIaxi.draw_virtual_winding_windows">draw_virtual_winding_windows() (femmt.MagneticComponent.EIaxi method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.EIaxi.draw_window">draw_window() (femmt.MagneticComponent.EIaxi method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.excitation">excitation() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.excitation_sweep">excitation_sweep() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.femm_reference">femm_reference() (femmt.MagneticComponent method)</a>
+</li>
+      <li>
+    femmt_functions
+
+      <ul>
+        <li><a href="femmt.html#module-femmt_functions">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.fft">fft() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.file_communication">file_communication() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.Mesh.generate_mesh">generate_mesh() (femmt.MagneticComponent.Mesh method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.ReluctanceModel.get_air_gaps_from_winding_matrix">get_air_gaps_from_winding_matrix() (femmt.MagneticComponent.ReluctanceModel method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.get_inductances">get_inductances() (femmt.MagneticComponent method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.get_loss_data">get_loss_data() (femmt.MagneticComponent method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.get_steinmetz_loss">get_steinmetz_loss() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.high_level_geo_gen">high_level_geo_gen() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.id_generator">id_generator() (in module femmt_functions)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.inner_points">inner_points() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt_functions.install_femm_if_missing">install_femm_if_missing() (in module femmt_functions)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent">MagneticComponent (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.AirGaps">MagneticComponent.AirGaps (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.Core">MagneticComponent.Core (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.EIaxi">MagneticComponent.EIaxi (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.Isolation">MagneticComponent.Isolation (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.Mesh">MagneticComponent.Mesh (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.ReluctanceModel">MagneticComponent.ReluctanceModel (class in femmt)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.StrayPath">MagneticComponent.StrayPath (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.VirtualWindingWindow">MagneticComponent.VirtualWindingWindow (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.Winding">MagneticComponent.Winding (class in femmt)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.Mesh.mesh">mesh() (femmt.MagneticComponent.Mesh method)</a>
+</li>
+      <li><a href="femmt.html#femmt_functions.min_max_inner_points">min_max_inner_points() (in module femmt_functions)</a>
+</li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="femmt.html#module-femmt_functions">femmt_functions</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.NbrLayers">NbrLayers() (in module femmt_functions)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.NbrStrands">NbrStrands() (in module femmt_functions)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.onelab">onelab (femmt.MagneticComponent attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.onelab_setup">onelab_setup() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.path">path (femmt.MagneticComponent attribute)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.path_mesh">path_mesh (femmt.MagneticComponent attribute)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.path_res">path_res (femmt.MagneticComponent attribute)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.path_res_circuit">path_res_circuit (femmt.MagneticComponent attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.path_res_FEMM">path_res_FEMM (femmt.MagneticComponent attribute)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.path_res_fields">path_res_fields (femmt.MagneticComponent attribute)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.path_res_values">path_res_values (femmt.MagneticComponent attribute)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.pre_simulate">pre_simulate() (femmt.MagneticComponent method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.pre_simulation">pre_simulation() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.r_basis">r_basis() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt_functions.r_cheap_cyl_cyl">r_cheap_cyl_cyl() (in module femmt_functions)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.r_cyl_cyl">r_cyl_cyl() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt_functions.r_round_inf">r_round_inf() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt_functions.r_round_round">r_round_round() (in module femmt_functions)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt_functions.sigma">sigma() (in module femmt_functions)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.simulate">simulate() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.single_simulation">single_simulation() (femmt.MagneticComponent method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.ReluctanceModel.stray_path_parametrization_ei_axi">stray_path_parametrization_ei_axi() (femmt.MagneticComponent.ReluctanceModel method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.AirGaps.update">update() (femmt.MagneticComponent.AirGaps method)</a>
+
+      <ul>
+        <li><a href="femmt.html#femmt.MagneticComponent.Core.update">(femmt.MagneticComponent.Core method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.EIaxi.update">(femmt.MagneticComponent.EIaxi method)</a>
+</li>
+        <li><a href="femmt.html#femmt.MagneticComponent.StrayPath.update">(femmt.MagneticComponent.StrayPath method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.update_conductors">update_conductors() (femmt.MagneticComponent method)</a>
+</li>
+      <li><a href="femmt.html#femmt.MagneticComponent.update_litz_configuration">update_litz_configuration() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="femmt.html#femmt.MagneticComponent.visualize">visualize() (femmt.MagneticComponent method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, LEA, Paderborn University.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> Other Versions</span>
+    v: main
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>Branches</dt>
+      <dd><a href="genindex.html">main</a></dd>
+    </dl>
+  </div>
+</div>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
