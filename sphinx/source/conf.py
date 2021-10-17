@@ -12,13 +12,14 @@
 
 import os
 import sys
+import time
 sys.path.insert(0, os.path.abspath('../../femmt'))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'FEM Magnetics Toolbox'
-copyright = '2021, LEA, Paderborn University'
+copyright = '{}, {}'.format(time.strftime('%Y'),  'LEA, Paderborn University')
 author = 'LEA-UPB'
 
 # The full version, including alpha/beta/rc tags
@@ -52,15 +53,19 @@ todo_include_todos = True
 
 # -- Options for HTML output -------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
-html_theme = 'sphinx_rtd_theme'
+# on_rtd is whether we are on readthedocs.org, this line of code grabbed from docs.readthedocs.org
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+if not on_rtd:  # only import and set the theme if we're building docs locally
+    import stanford_theme
+    html_theme = 'stanford_theme'
+    html_theme_path = [stanford_theme.get_html_theme_path()]
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
+
 html_theme_options = {
     'logo_only': False,
     'display_version': True,
@@ -72,9 +77,9 @@ html_theme_options = {
 
 html_context = {
     'display_github': True,
-    'github_user': 'Mohan Nagella',
+    'github_user': 'upb-lea',
     'github_repo': 'FEM_Magnetics_Toolbox',
-    'github_version': 'main/sphinx',
+    'github_version': 'main/sphinx/source/',
 }
 
 # Code for adding html side bars to theme

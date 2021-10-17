@@ -1,6 +1,6 @@
-###################
+*****************
  Basics of Usage
-###################
+*****************
 .. image:: /images/Transformer_Screenshot.png
     :width: 500px
     :align: center
@@ -8,7 +8,8 @@
     :alt: Why FEM Magnetics Toolbox?
 
 
-**How to use the FEM Magnetics Toolbox:**
+How to use the FEM Magnetics Toolbox
+====================================
 
 1) Import the class with
 
@@ -51,7 +52,7 @@
     geo.single_simulation(freq=100000, current=[5, 10], phi=[0, 0], skin_mesh_factor=accuracy)
 
 Installed as a pip-package
---------------------------
+==========================
 
 Minimal example for a single simulation with displayed result in ONELAB:
 

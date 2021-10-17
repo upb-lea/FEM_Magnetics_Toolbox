@@ -7,7 +7,7 @@ Welcome to FEM Magnetics Toolbox's documentation!
 =================================================
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 6
    :caption: Contents:
 
    intro
