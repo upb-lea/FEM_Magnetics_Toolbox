@@ -1,7 +1,7 @@
 ************
 Installation
 ************
-
+==============
 Clone the Repo
 ==============
 .. code-block::
@@ -9,12 +9,14 @@ Clone the Repo
     cd /Documents/Folder/of/Interest
     git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
 
+===================
 ONELAB installation
 ===================
 
     * Go to https://onelab.info/
     * Install the Desktop Version for your OS (Windows, Linux or macOS)
 
+=========================================
 FEMM installation [for Windows User only]
 =========================================
 

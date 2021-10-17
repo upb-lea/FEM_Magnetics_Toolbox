@@ -20,6 +20,6 @@ Functionality examples:
 
 .. include:: install.rst
 
-.. include:: others.rst
-
 .. include:: usage.rst
+
+.. include:: others.rst

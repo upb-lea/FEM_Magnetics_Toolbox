@@ -7,7 +7,7 @@
     :height: 200px
     :alt: Why FEM Magnetics Toolbox?
 
-
+====================================
 How to use the FEM Magnetics Toolbox
 ====================================
 
@@ -51,6 +51,7 @@ How to use the FEM Magnetics Toolbox
 
     geo.single_simulation(freq=100000, current=[5, 10], phi=[0, 0], skin_mesh_factor=accuracy)
 
+==========================
 Installed as a pip-package
 ==========================
 
