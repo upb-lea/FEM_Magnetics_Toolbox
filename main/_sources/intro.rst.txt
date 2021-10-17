@@ -1,8 +1,11 @@
 .. sectnum::
 
-##############################
+************
+Introduction
+************
+==============================
  FEM Magnetics Toolbox (FEMMT)
-##############################
+==============================
 
 Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics
 

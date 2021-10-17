@@ -1,5 +1,6 @@
+##############
 Documentation
-==========================
+##############
 The ``MagneticComponent`` class
 *********************************
 
@@ -20,7 +21,7 @@ The ``VirtualWindingWindow`` class
     :noindex:
 
 FEMMT methods
-**************************
+**************
 
 .. automodule:: femmt_functions
     :members:

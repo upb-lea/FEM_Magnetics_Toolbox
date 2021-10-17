@@ -1,22 +1,14 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1 FEM Magnetics Toolbox (FEMMT) &mdash; FEM Magnetics Toolbox 0.1.2 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-
-  
+  <title>1 Introduction &mdash; FEM Magnetics Toolbox 0.1.2 documentation</title>
   
 
   
@@ -25,34 +17,44 @@
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
     
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-    
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Documentation" href="femmt.html" />
-    <link rel="prev" title="Welcome to FEM Magnetics Toolbox’s documentation!" href="index.html" /> 
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="FEM Magnetics Toolbox 0.1.2 documentation" href="index.html"/>
+        <link rel="next" title="Documentation" href="femmt.html"/>
+        <link rel="prev" title="Welcome to FEM Magnetics Toolbox’s documentation!" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
 </head>
 
-<body class="wy-body-for-nav">
+<body class="wy-body-for-nav" role="document">
 
    
   <div class="wy-grid-for-nav">
+
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+        <div class="wy-side-nav-search">
           
 
           
@@ -79,17 +81,16 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
             
-              
-            
-            
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+                <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><span class="sectnum">1</span> Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#fem-magnetics-toolbox-femmt"><span class="sectnum">1.1</span> FEM Magnetics Toolbox (FEMMT)</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="#installation"><span class="sectnum">2</span> Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#clone-the-repo"><span class="sectnum">2.1</span> Clone the Repo</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#onelab-installation"><span class="sectnum">2.2</span> ONELAB installation</a></li>
@@ -97,20 +98,21 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#basics-of-usage"><span class="sectnum">3</span> Basics of Usage</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installed-as-a-pip-package"><span class="sectnum">3.1</span> Installed as a pip-package</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#others"><span class="sectnum">3.1.1</span> Others</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#roadmap"><span class="sectnum">3.1.1.1</span> Roadmap</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#organisation"><span class="sectnum">3.1.1.2</span> Organisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-use-the-fem-magnetics-toolbox"><span class="sectnum">3.1</span> How to use the FEM Magnetics Toolbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installed-as-a-pip-package"><span class="sectnum">3.2</span> Installed as a pip-package</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="#others"><span class="sectnum">4</span> Others</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#roadmap"><span class="sectnum">4.1</span> Roadmap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#organisation"><span class="sectnum">4.2</span> Organisation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#bug-reports"><span class="sectnum">4.2.1</span> Bug Reports</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contributing"><span class="sectnum">4.2.2</span> Contributing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors-and-contributors"><span class="sectnum">4.2.3</span> Authors and contributors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#changelog"><span class="sectnum">4.2.4</span> Changelog</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#license"><span class="sectnum">4.2.5</span> License</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#history-and-project-status"><span class="sectnum">4.2.6</span> History and project status</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#bug-reports"><span class="sectnum">3.2</span> Bug Reports</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#contributing"><span class="sectnum">3.3</span> Contributing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#authors-and-contributors"><span class="sectnum">3.4</span> Authors and contributors</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#changelog"><span class="sectnum">3.5</span> Changelog</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#license"><span class="sectnum">3.6</span> License</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#history-and-project-status"><span class="sectnum">3.7</span> History and project status</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="femmt.html">Documentation</a><ul>
@@ -124,14 +126,13 @@
             
           
         </div>
-        
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" aria-label="top navigation">
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">FEM Magnetics Toolbox</a>
@@ -139,13 +140,10 @@
       </nav>
 
 
+      
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
           
-
-
 
 
 
@@ -165,16 +163,16 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</li>
+      <li><span class="sectnum">1</span> Introduction</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
-          
             
-              <a href="https://github.com/Mohan Nagella/FEM_Magnetics_Toolbox/blob/main/intro.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/intro.rst" class="fa fa-github"> Edit on GitHub</a>
             
           
         
@@ -188,8 +186,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="fem-magnetics-toolbox-femmt">
-<h1><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)<a class="headerlink" href="#fem-magnetics-toolbox-femmt" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="introduction">
+<h1><span class="sectnum">1</span> Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="fem-magnetics-toolbox-femmt">
+<h2><span class="sectnum">1.1</span> FEM Magnetics Toolbox (FEMMT)<a class="headerlink" href="#fem-magnetics-toolbox-femmt" title="Permalink to this headline">¶</a></h2>
 <p>Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics</p>
 <p>Functionality examples:</p>
 <blockquote>
@@ -202,6 +202,7 @@
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Development status: Alpha</p>
+</div>
 </div>
 </div>
 <div class="section" id="installation">
@@ -236,7 +237,8 @@
 <div class="section" id="basics-of-usage">
 <h1><span class="sectnum">3</span> Basics of Usage<a class="headerlink" href="#basics-of-usage" title="Permalink to this headline">¶</a></h1>
 <a class="reference internal image-reference" href="_images/Transformer_Screenshot.png"><img alt="Why FEM Magnetics Toolbox?" class="align-center" src="_images/Transformer_Screenshot.png" style="width: 500px; height: 200px;" /></a>
-<p><strong>How to use the FEM Magnetics Toolbox:</strong></p>
+<div class="section" id="how-to-use-the-fem-magnetics-toolbox">
+<h2><span class="sectnum">3.1</span> How to use the FEM Magnetics Toolbox<a class="headerlink" href="#how-to-use-the-fem-magnetics-toolbox" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic simple">
 <li><p>Import the class with</p></li>
 </ol>
@@ -277,8 +279,9 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">single_simulation</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">current</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">phi</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">skin_mesh_factor</span><span class="o">=</span><span class="n">accuracy</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
 <div class="section" id="installed-as-a-pip-package">
-<h2><span class="sectnum">3.1</span> Installed as a pip-package<a class="headerlink" href="#installed-as-a-pip-package" title="Permalink to this headline">¶</a></h2>
+<h2><span class="sectnum">3.2</span> Installed as a pip-package<a class="headerlink" href="#installed-as-a-pip-package" title="Permalink to this headline">¶</a></h2>
 <p>Minimal example for a single simulation with displayed result in ONELAB:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># minimal example for installation from pip-package</span>
 <span class="kn">import</span> <span class="nn">femmt</span> <span class="k">as</span> <span class="nn">fmt</span>
@@ -306,10 +309,12 @@
 <span class="n">geo</span><span class="o">.</span><span class="n">single_simulation</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span> <span class="n">current</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">])</span>
 </pre></div>
 </div>
+</div>
+</div>
 <div class="section" id="others">
-<h3><span class="sectnum">3.1.1</span> Others<a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h3>
+<h1><span class="sectnum">4</span> Others<a class="headerlink" href="#others" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="roadmap">
-<h4><span class="sectnum">3.1.1.1</span> Roadmap<a class="headerlink" href="#roadmap" title="Permalink to this headline">¶</a></h4>
+<h2><span class="sectnum">4.1</span> Roadmap<a class="headerlink" href="#roadmap" title="Permalink to this headline">¶</a></h2>
 <p>Planned features in 2021</p>
 <blockquote>
 <div><ul class="simple">
@@ -320,23 +325,20 @@
 </div></blockquote>
 </div>
 <div class="section" id="organisation">
-<h4><span class="sectnum">3.1.1.2</span> Organisation<a class="headerlink" href="#organisation" title="Permalink to this headline">¶</a></h4>
-</div>
-</div>
-</div>
+<h2><span class="sectnum">4.2</span> Organisation<a class="headerlink" href="#organisation" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="bug-reports">
-<h2><span class="sectnum">3.2</span> Bug Reports<a class="headerlink" href="#bug-reports" title="Permalink to this headline">¶</a></h2>
+<h3><span class="sectnum">4.2.1</span> Bug Reports<a class="headerlink" href="#bug-reports" title="Permalink to this headline">¶</a></h3>
 <p>Please use the issues report button within github to report bugs.</p>
 </div>
 <div class="section" id="contributing">
-<h2><span class="sectnum">3.3</span> Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
+<h3><span class="sectnum">4.2.2</span> Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h3>
 <p>Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 For contributing, please refer to this [section](Contributing.md).</p>
 <p>For drawings (e.g. in readme-files), we recommend to use the program <a class="reference external" href="https://inkscape.org/">Inkscape</a>.
 It is open source software and runs on Linux, Mac and Windows. If you want to draw electric circuits, we recommend this library on <a class="reference external" href="https://github.com/upb-lea/Inkscape_electric_Symbols">github</a>.</p>
 </div>
 <div class="section" id="authors-and-contributors">
-<h2><span class="sectnum">3.4</span> Authors and contributors<a class="headerlink" href="#authors-and-contributors" title="Permalink to this headline">¶</a></h2>
+<h3><span class="sectnum">4.2.3</span> Authors and contributors<a class="headerlink" href="#authors-and-contributors" title="Permalink to this headline">¶</a></h3>
 <div class="topic">
 <p class="topic-title">Current developers</p>
 <ul class="simple">
@@ -351,47 +353,47 @@ It is open source software and runs on Linux, Mac and Windows. If you want to dr
 </div>
 </div>
 <div class="section" id="changelog">
-<h2><span class="sectnum">3.5</span> Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<h3><span class="sectnum">4.2.4</span> Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h3>
 <p>Find the changelog <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/CHANGELOG.md">here</a>.</p>
 </div>
 <div class="section" id="license">
-<h2><span class="sectnum">3.6</span> License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<h3><span class="sectnum">4.2.5</span> License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h3>
 <p>Licensed under <a class="reference external" href="https://choosealicense.com/licenses/gpl-3.0/">GPLv3</a>.</p>
 </div>
 <div class="section" id="history-and-project-status">
-<h2><span class="sectnum">3.7</span> History and project status<a class="headerlink" href="#history-and-project-status" title="Permalink to this headline">¶</a></h2>
+<h3><span class="sectnum">4.2.6</span> History and project status<a class="headerlink" href="#history-and-project-status" title="Permalink to this headline">¶</a></h3>
 <p>This project was initially written in matlab using femm simulation tool. It became clear that the project was no longer a small project. The project should be completely rewritten, because many new complex levels have been added. To place the project in the open source world, the programming language python is used.</p>
+</div>
 </div>
 </div>
 
 
            </div>
-           
           </div>
           <footer>
+  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="femmt.html" class="btn btn-neutral float-right" title="Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to FEM Magnetics Toolbox’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+      
+        <a href="femmt.html" class="btn btn-neutral float-right" title="Documentation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Welcome to FEM Magnetics Toolbox’s documentation!" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
     </div>
+  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &#169; Copyright 2021, LEA, Paderborn University.
+        &copy; Copyright 2021, LEA, Paderborn University.
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Stanford-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
+
         </div>
       </div>
 
@@ -413,15 +415,37 @@ It is open source software and runs on Linux, Mac and Windows. If you want to dr
   </div>
 </div>
 
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script>
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/documentation_options.js"></script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
 
   
   
-    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
    
 
 </body>

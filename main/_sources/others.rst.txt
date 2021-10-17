@@ -1,7 +1,7 @@
 *******
 Others
 *******
-
+=======
 Roadmap
 =======
 Planned features in 2021
@@ -10,6 +10,7 @@ Planned features in 2021
     * Work with pre-defined standard core materials
     * Automated 2D FEM simulation controlled with python
 
+============
 Organisation
 ============
 
@@ -26,7 +27,7 @@ For drawings (e.g. in readme-files), we recommend to use the program `Inkscape <
 It is open source software and runs on Linux, Mac and Windows. If you want to draw electric circuits, we recommend this library on `github <https://github.com/upb-lea/Inkscape_electric_Symbols>`_.
 
 Authors and contributors
----------------------------
+------------------------
 .. topic:: Current developers
 
      * Till Piepenbrock
@@ -46,5 +47,5 @@ License
 Licensed under `GPLv3 <https://choosealicense.com/licenses/gpl-3.0/>`_.
 
 History and project status
-----------------------------------
+--------------------------
 This project was initially written in matlab using femm simulation tool. It became clear that the project was no longer a small project. The project should be completely rewritten, because many new complex levels have been added. To place the project in the open source world, the programming language python is used.
