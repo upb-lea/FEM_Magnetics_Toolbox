@@ -34,7 +34,7 @@ sys.path.insert(0, os.path.abspath('_extensions'))
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx_multiversion']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ['_templates/']
 
 # source_suffix = ['.rst', '.md']
 source_suffix = '.rst'
@@ -60,11 +60,11 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     html_theme = 'stanford_theme'
     html_theme_path = [stanford_theme.get_html_theme_path()]
 
-
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
+smv_released_pattern = r'^tags/.*$'
 
 html_theme_options = {
     'logo_only': False,
