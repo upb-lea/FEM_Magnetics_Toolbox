@@ -191,11 +191,15 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     """
 
-    t = period_vector_t_i[0]
-    i = period_vector_t_i[1]
     # check for correct input parameter
     if (mode == 'rad' or mode == 'deg') and f0 is None:
         raise ValueError("if mode is 'rad' or 'deg', a fundamental frequency f0 must be set")
+    # check for input is list. Convert to numpy-array
+    if isinstance(period_vector_t_i, list):
+        if plot != 'no' and plot != False:
+            print("Input is list, convert to np.array()")
+        period_vector_t_i = np.array(period_vector_t_i)
+
     # mode pre-calculation
     if mode == 'rad':
         period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
@@ -203,6 +207,9 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
         period_vector_t_i[0] = period_vector_t_i[0] / (360 * f0)
     elif mode != 'time':
         raise ValueError("Mode not availabe. Choose: 'rad', 'deg', 'time'")
+
+    t = period_vector_t_i[0]
+    i = period_vector_t_i[1]
 
     # fft-function works per default in time domain
     # time domain
