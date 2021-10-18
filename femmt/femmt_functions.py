@@ -22,7 +22,9 @@ def install_femm_if_missing() -> None:
     """
     Windows users only.
     Installs femm-software pip package in case of running on windows machine
+
     :return: None
+
     """
     required = {'pyfemm'}
     installed = {pkg.key for pkg in pkg_resources.working_set}
@@ -42,10 +44,13 @@ def inner_points(a, b, input_points):
     interval borders a and b
 
     Use case: Air gap generation. Helps to generate the core structure form class AirGap.
+
     :param a: first point
     :param b: second point
     :param input_points:
+
     :return:
+
     """
     [min, max] = [None, None]
     output = input_points
@@ -83,10 +88,13 @@ def min_max_inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate and
     the minimum distance from the interval borders.
+
     :param a: first point
     :param b: second point
     :param input_points:
+
     :return:
+
     """
 
     [min, max] = [None, None]
@@ -124,9 +132,12 @@ def call_for_path(destination, config_file="config.json"):
     asks the user to enter the filepath of a destinated file WITHOUT the suffix
     stores a the filepath as a python string declaration in a config file
     returns the filepath
+
     :param destination:
     :param config_file:
+
     :return:
+
     """
     # pickle_file = open(config_file, "w")
     # path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
@@ -154,8 +165,11 @@ def NbrStrands(n_layers):
     Returns the number of strands in a hexagonal litz winding with a
     specified number of layers (n_layers). CAUTION: Zero number of
     layers corresponds to a single strand.
+
     :param n_layers:
+
     :return:
+
     """
     return 3 * (n_layers + 1) ** 2 - 3 * (n_layers + 1) + 1
 
@@ -163,10 +177,14 @@ def NbrStrands(n_layers):
 def NbrLayers(n_strands):
     """
     Returns the number of layers in a hexagonal litz winding with a
-    specified number of strands (n_strands). CAUTION: Zero number of
-    layers corresponds to a single strand.
+    specified number of strands (n_strands).
+
+    .. note:: Zero number of layers corresponds to a single strand.
+
     :param n_strands:
+
     :return:
+
     """
     return np.sqrt(0.25+(n_strands-1)/3)-0.5
 
@@ -178,9 +196,10 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
 
     Output vector includes only frequencies with amplitudes > 1% of input signal
 
-    Minimal example:
-    example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
-    out = fft(example_waveform, plot=True, mode='rad', f0=25000, title='ffT input current')
+    :Minimal Example:
+
+    >>> example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
+    >>> out = fft(example_waveform, plot=True, mode='rad', f0=25000, title='ffT input current')
 
     :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
     :param sample_factor: f_sampling/f_period, defaults to 1000
@@ -188,7 +207,9 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :param mode: 'rad'[default]: full period is 2*pi, 'deg': full period is 360°, 'time': time domain.
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :param title: plot window title, defaults to 'ffT'
+
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
+
     """
 
     # check for correct input parameter
@@ -284,15 +305,18 @@ def compare_fft_list(list: list, rad: float = 'no', f0: Union[float,None] = None
     """
     generate fft curves from input curves and compare them to each other
 
-    minimal example:
-    example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
-    example_waveform_2 = np.array([[0, 0.55, 3.14, 3.69, 6.28],[-138.37, 257.58, 138.37, -257.58, -138.37]])
-    compare_fft_list([example_waveform, example_waveform_2], rad='yes', f0=25000)
+    :Minimal Example:
+
+    >>> example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
+    >>> example_waveform_2 = np.array([[0, 0.55, 3.14, 3.69, 6.28],[-138.37, 257.58, 138.37, -257.58, -138.37]])
+    >>> compare_fft_list([example_waveform, example_waveform_2], rad='yes', f0=25000)
 
     :param list: list of fft-compatible numpy-arrays [element, element, ... ], each element format like [[time-vector[,[current-vector]]. One period only
     :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
     :param f0: set when rad != 'no'
+
     :return: plot
+
     """
 
     out = []
@@ -321,7 +345,9 @@ def data_logging(sim_choice):
     !!! not finally implemented !!!
 
     This method shall do the saving and loading of results! with date and time
+
     :return:
+
     """
     frequencies = None
     # Data Logging with date and time
@@ -351,10 +377,13 @@ def r_basis(l, w, h):
     """
     1-dim reluctance per-unit-of-length
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
+
     :param w:
     :param l:
     :param h:
+
     :return:
+
     """
     if l <= 0:
         l = 0.0000001
@@ -365,10 +394,13 @@ def sigma(l, w, R_equivalent):
     """
     1-dim fringing factor
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
+
     :param w:
     :param l:
     :param R_equivalent:
+
     :return:
+
     """
     return R_equivalent / (l/mu0/w)
 
@@ -376,10 +408,13 @@ def sigma(l, w, R_equivalent):
 def r_round_inf(l, sigma, r):
     """
     3-dim reluctance for 2-dim axial-symmetric air gaps
+
     :param sigma:
     :param r:
     :param l:
+
     :return:
+
     """
     return sigma**2 * l/mu0/r**2/np.pi
 
@@ -387,10 +422,13 @@ def r_round_inf(l, sigma, r):
 def r_round_round(l, sigma, r):
     """
     3-dim reluctance for 2-dim axial-symmetric air gaps
+
     :param sigma:
     :param r:
     :param l:
+
     :return:
+
     """
     return sigma**2 * l/mu0/r**2/np.pi
 
@@ -402,7 +440,9 @@ def r_cyl_cyl(l, sigma, w, r_o):
     :param sigma:
     :param w:
     :param r_o:
+
     :return:
+
     """
     return sigma * np.log(r_o/(r_o-l)) / 2/mu0/np.pi/w
 
@@ -413,7 +453,9 @@ def r_cheap_cyl_cyl(r_o, l, w):
     :param r_o:
     :param l:
     :param w:
+
     :return:
+
     """
     r_i = r_o - l
     return (r_o-r_i) / mu0/w/np.pi/(r_o+r_i)
@@ -423,7 +465,9 @@ def calculate_reluctances(N, L):
     """
     Calculates the Reluctance Matrix.
     Everything must be numpy!
+
     :return: reluctance[-matrix]
+
     """
 
     # Reluctance Matrix

@@ -39,8 +39,10 @@ if os.name == 'nt':
 #  ===== Main Class  =====
 class MagneticComponent:
     """
+
     - Initialization of all class variables
     - Common variables for all instances
+
     """
     # -- Parent folder path --
     path = str(pathlib.Path(__file__).parent.absolute())  # Path of FEMMT files
@@ -57,11 +59,13 @@ class MagneticComponent:
         - Initialization of all instance variables
         - One or more "MagneticComponents" can be created
         - Each "MagneticComponent" owns its own instance variable values
+
         :param component_type: Available options are
                                - "inductor"
                                - "transformer"
                                - "integrated_transformer" (Transformer with included stray-path).
                                - "three_phase_transformer": Not implemented yet
+
         """
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
@@ -168,8 +172,10 @@ class MagneticComponent:
     # Setup
     def onelab_setup(self) -> None:
         """
+
         Either reads ONELAB parent folder path from config.json or asks the user to provide the ONELAB path it.
         Creates a config.json inside the site-packages folder at first run.
+
         :return: -
         """
         # find out path of femmt (installed module or directly opened in git)?
@@ -197,7 +203,9 @@ class MagneticComponent:
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
         - calls "low level" methods, that creates all points needed for mesh generation
+     
         :return:
+     
         """
         # Always reset the to valid
         self.valid = True
@@ -245,6 +253,7 @@ class MagneticComponent:
         """
         A virtual winding window is the area, where either some kind of interleaved conductors or a one winding
         (primary, secondary,...) is placed in a certain way.
+
         """
 
         def __init__(self):
@@ -268,6 +277,7 @@ class MagneticComponent:
         arrangements of the conductors in several winding windows (hexagonal or square packing, interleaved, ...) in
         this class only the conductor parameters are specified. Then, by calling class:Winding in
         class:VirtualWindingWindow the arrangement of the conductors is specified.
+
         """
 
         def __init__(self):
@@ -287,12 +297,13 @@ class MagneticComponent:
         """
         frequency = 0: mu_rel only used if non_linear == False
         frequency > 0: mu_rel is used
+
         """
 
         def __init__(self, component, re_mu_rel=3000):
             """
-
             :param re_mu_rel:
+            
             """
             self.component = component  # Convention: parent
 
@@ -330,11 +341,14 @@ class MagneticComponent:
                    **kwargs) -> None:
             """
             Updates the core structure.
+
             - One positional parameter: type
             - All other core parameters can be passed or adjusted by keyword calling
+
                 - Allows single parameter changing, depending on core-type
                 - Strict keyword usage!
                 - All dimensions are in meters
+
             :param im_epsilon_rel:
             :type im_epsilon_rel: float
             :param non_linear: True/False
@@ -350,7 +364,9 @@ class MagneticComponent:
             :param kwargs:
                 - Case "2D, axisym., EI": 'core_w', 'window_w', 'window_h'
                 - Case "3D, EI": ...tba...
+
             :return: None
+
             """
 
             print(f"Update the magnetic Core to {self.type}-type with following parameters: {kwargs}\n"
@@ -409,44 +425,40 @@ class MagneticComponent:
                    air_gap_h: List[float] = None, **kwargs) -> None:
             """
             Updates the air gap structure.
+
             - Strict keyword usage!
             - All dimensions are in meters
             - all parameters are in lists!
             - first chose the method, second, transfer parameters:
+
                 - "center": ONE air gap exactly in core's middle
                 - "random": random count of air gaps in the inner/outer leg
                 - "percent": Easy way to split air gaps over the inner/outer leg
                 - "manually": Place air gaps manually
+
             - "self.midpoints" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
             -  c_air_gap: mesh accuracy factor
             - "EI 2D axi": position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
+
             :param n_air_gaps: number of air gaps
             :type n_air_gaps: int
             :param position_tag: specifies the gapped "leg"
-            :type position_tag:
+            :type position_tag: float
             :param air_gap_h: List of air gap high, list length depending on total air gap count
-            :type air_gap_h:
+            :type air_gap_h: float
             :param air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
-            :type air_gap_position:
+            :type air_gap_position: float
             :param method: "random", "center", "percent", "manually"
             :type method: str
+
             :return: None
 
             :Example:
-            # 'center': single air gap in the middle
-            geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002])
 
-            # 'percent': Place air gaps manually using percentages
-            geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001],
-                                air_gap_position=[10, 80])
-
-            # random
-            geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001],
-            air_gap_position=[10, 80])
-
-            # manually
-            geo.air_gaps.update(method="manually", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001],
-                                 air_gap_position=[0.000, 0.003])
+            >>> geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002]) # 'center': single air gap in the middle
+            >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # 'percent': Place air gaps manually using percentages
+            >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # random
+            >>> geo.air_gaps.update(method="manually", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[0.000, 0.003]) # manually
 
             """
             self.number = n_air_gaps
@@ -539,6 +551,7 @@ class MagneticComponent:
             - Isolation
                 - Between two turns of common conductors: first n_conductor arguments of cond_cond
                 - Between two neighboured conductors: last n_conductor-1 arguments
+
             """
             self.cond_cond = cond_cond or []
             self.core_cond = core_cond or []
@@ -577,6 +590,7 @@ class MagneticComponent:
                                 - "solid"    # Massive wires
                                 - "litz"     # Litz wires
         :return:
+
         """
         n_turns = n_turns or []
         conductor_type = conductor_type or []
@@ -696,6 +710,7 @@ class MagneticComponent:
           layers/strands and conductor/litz radius) is valid and consistent
         - 4 parameters, 1 degree of freedom (dof)
         - all parameters are list parameters!
+
         :param num: internal counter for primary/secondary winding. Do not change!
         :param litz_parametrization_type:
         :param strand_radius: radius of a single strand in [m]
@@ -706,7 +721,9 @@ class MagneticComponent:
         :type conductor_radius: list[float]
         :param n_strands: number of strands for one conductor in a list
         :type: n_strands: list[float]
+
         :return:
+
         """
         # Choose one of three different parametrization types
         if litz_parametrization_type == 'implicit_ff':
@@ -742,7 +759,9 @@ class MagneticComponent:
     class EIaxi:
         """
         - creates all points needed for the radial axi-symmetric EI core typology
+
         :return:
+
         """
 
         def __init__(self, component):
@@ -762,7 +781,9 @@ class MagneticComponent:
         def draw_outer(self):
             """
             Draws the
+
             :return:
+
             """
             # Outer Core
             # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
@@ -986,6 +1007,7 @@ class MagneticComponent:
                 """
                 If dedicated stray path is the chosen typology the are two winding windows
                 These can either be split up into more virtual windows or (in case of bifilar windings) not
+        
                 """
                 # TODO: Separation in more Virtual Winding Windows
 
@@ -1023,6 +1045,7 @@ class MagneticComponent:
                 - To automatically fill a virtual winding window with windings, #TODO: self.interleaving[n_win] 
                    can be chosen to "bifilar", "vertical", "horizontal", ["hexa", "square"] or completely with 
                    one of the windings by "primary" or "secondary"
+        
                 """
                 # Boarders of the VWW:
                 # start with the lower one
@@ -1039,6 +1062,7 @@ class MagneticComponent:
                         - Can only be used for conductors of identical radius (in terms of litz radius for 
                           stranded wires)
                         - Excess windings are placed below the bifilar ones
+        
                         """
                         if self.component.windings[0].conductor_radius != self.component.windings[1].conductor_radius:
                             print("For bifilar winding scheme both conductors must be of the same radius!")
@@ -1106,6 +1130,7 @@ class MagneticComponent:
                         - This is practically most common
                         - If the turns ratio is != 1, the scheme always begins with the "higher-turns-number's" 
                           conductor
+                          
                         """
 
                         # assume 2 winding transformer and dedicated stray path:
@@ -1203,6 +1228,7 @@ class MagneticComponent:
                             1. start with the primary winding from bot / left
                             2. continue with the secondary from top / right
                             3.CHECK solution conditions
+                       
                         """
                         # CHECK for two winding transformer
                         if len(self.component.virtual_winding_windows[n_win].scheme) != 2:
@@ -1636,6 +1662,7 @@ class MagneticComponent:
     class ReluctanceModel:
         """
         Depending on Core-Configurations, given number of turns and Inductance-goals, calculate air gap lengths
+
         """
 
         def __init__(self, component):
@@ -1644,6 +1671,7 @@ class MagneticComponent:
                     n_reluctances = 3 with stray path
 
                     n_air_gaps = air_gap_division * n_reluctances or sth. like that for distributed air gaps
+
             """
             self.component = component
             self.n_theo = None
@@ -1661,7 +1689,9 @@ class MagneticComponent:
 
             :param reluctances:
             :param types:
+
             :return:
+
             """
             air_gap_lengths = [None] * len(reluctances)
 
@@ -1685,15 +1715,15 @@ class MagneticComponent:
             Method calculates air gap lengths according to the given reluctances.
             Method uses several instance variables of the Reluctance Model.
 
-            TODO: List with lists of air gap lengths...
-             important to always keep the order of elements [or use a dictionary]
-             future use case integrated_transformer:  [[l_top_1, l_top_2, ...],
+            .. todo:: List with lists of air gap lengths important to always keep the order of elements [or use a dictionary] future use case integrated_transformer:  [[l_top_1, l_top_2, ...],
                                                       [l_bot_1, l_bot_2, ...],
                                                       [l_stray_1, l_stray_2, ...]]
-             use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
+                                                      use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
 
             :param reluctances:
+
             :return: Dictionary with air gap names and the associated lengths
+
             """
             air_gap_lengths = {}
 
@@ -1781,7 +1811,9 @@ class MagneticComponent:
         def stray_path_parametrization_ei_axi(self, N, R):
             """
             Method defines instance variables.
+
             :return:
+
             """
             # Calculate stray path width
             # [Phi_top1, Phi_bot1] = np.matmul(np.matmul(np.linalg.inv(R), N), self.current)
@@ -1821,7 +1853,9 @@ class MagneticComponent:
             """
             Calculates air gap lengths according to a given winding matrix.
             Uses several instance variables.
+
             :return: Dictionary with air gap results or None
+
             """
             # Core and Component type decide about air gap characteristics
             if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
@@ -1880,14 +1914,17 @@ class MagneticComponent:
         def air_gap_design(self, L_goal, parameters_init, current=None, b_max=None, b_stray=None, **kwargs):
             """
             Performs calculation of air gap lengths according to given data.
+
             :param b_max:
             :param parameters_init:
             :param b_stray:
             :param current:
             :param L_goal: list of inductance goals [inductor: single value L;
                                                      transformer: Inductance Matrix [[L_11, M], [M, L_22]]
+
             :return: Dictionary with resulting air gap (and stray path) parameters. Saturated and other unvalid
                         parameter combinations are set to None
+
             """
             self.current = current
             self.b_stray = b_stray
@@ -1975,10 +2012,12 @@ class MagneticComponent:
             - interaction with gmsh
             - mesh generation
                 - Skin depth based forward meshing
-                [- adaptive refinement
+                - adaptive refinement
                     - with the help of mesh-size-fields/background meshes
-                    - with an appropriate local error metric ]
+                    - with an appropriate local error metric
+
             :return:
+
             """
             # Initialization
             gmsh.initialize()
@@ -2541,12 +2580,15 @@ class MagneticComponent:
         - excitation of the electromagnetic problem
         - current, voltage or current density
         - frequency or reduced frequency
+
         :param phases:
         :param f:
         :param i:
         :param ex_type:
         :param imposed_red_f:
+
         :return:
+
         """
         phases = phases or []
 
@@ -2598,7 +2640,9 @@ class MagneticComponent:
     def file_communication(self):
         """
         Interaction between python and Prolog files.
+
         :return:
+
         """
         # --------------------------------- File Communication --------------------------------
         # All shared control variables and parameters are passed to a temporary Prolog file
@@ -2720,7 +2764,9 @@ class MagneticComponent:
     def simulate(self):
         """
         Initializes a onelab client. Provides the GetDP based solver with the created mesh file.
+
         :return:
+
         """
         print(f"\n---\n"
               f"Initialize ONELAB API\n"
@@ -2746,7 +2792,9 @@ class MagneticComponent:
         - a post simulation viewer
         - allows to open ".pos"-files in gmsh
         - For example current density, ohmic losses or the magnetic field density can be visualized
+
         :return:
+
         """
         # ---------------------------------------- Visualization in gmsh ---------------------------------------
         print(f"\n---\n"
@@ -2814,9 +2862,12 @@ class MagneticComponent:
     def get_loss_data(self, last_n_values, loss_type='litz_loss'):
         """
         Returns the last n values from the chosen loss type logged in the result folder.
+
         :param last_n_values:
         :param loss_type:
+
         :return:
+
         """
         loss_file = None
         # Loss file location
@@ -2836,12 +2887,15 @@ class MagneticComponent:
         """
         Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
         Helpful to validate changes (especially in the Prolog Code).
+
         :param sign:
         :param non_visualize:
         :param freq:
         :param current:
         :param sigma_cu:
+
         :return:
+
         """
         sign = sign or [1]
 
@@ -3051,7 +3105,9 @@ class MagneticComponent:
     def pre_simulate(self):
         """
         Used to determine the litz-approximation coefficients.
+
         :return:
+
         """
         for num in range(0, self.n_windings):
             if self.windings[num].conductor_type == 'litz':
@@ -3074,6 +3130,7 @@ class MagneticComponent:
         """
 
         :return:
+
         """
         print(f"\n"
               f"Pre-Simulation\n"
@@ -3150,7 +3207,9 @@ class MagneticComponent:
     def pre_simulation(self):
         """
         - Complete "pre-simulation" call
+
         :return:
+
         """
         self.high_level_geo_gen()
         self.excitation(f=100000, i=1)  # arbitrary values: frequency and current
@@ -3162,6 +3221,7 @@ class MagneticComponent:
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
                           skin_mesh_factor: float = 1, NL_core=0) -> None:
         """
+
         Start a _single_ ONELAB simulation.
         :param NL_core:
         :param freq: frequency to simulate
@@ -3171,7 +3231,9 @@ class MagneticComponent:
         :type skin_mesh_factor: float
         :param phi_deg: phase angle in degree
         :type phi_deg: List[float]
+
         :return: None
+
         """
         phi_deg = phi_deg or []
 
@@ -3191,7 +3253,9 @@ class MagneticComponent:
         :param skin_mesh_factor:
         :param I0:
         :param op_frequency:
+
         :return:
+
         """
 
         # Remove "old" Inductance Logs
@@ -3333,17 +3397,20 @@ class MagneticComponent:
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
 
-        Example Code:
-            1 geo = MagneticComponent()
-            2 geo.mesh()
-            3 fs = np.linspace(0, 250000, 6)
-            4 cs = [10, 2, 1, 0.5, 0.2, 0.1]
-            5 geo.excitation_sweep(frequencies=fs, currents=cs)
+        :Example Code:
+            #. geo = MagneticComponent()
+            #. geo.mesh()
+            #. fs = np.linspace(0, 250000, 6)
+            #. cs = [10, 2, 1, 0.5, 0.2, 0.1]
+            #. geo.excitation_sweep(frequencies=fs, currents=cs)
+
         :param phi:
         :param currents:
         :param frequencies:
         :param show_last:
+
         :return:
+
         """
         frequencies = frequencies or []
         currents = currents or []
@@ -3369,7 +3436,9 @@ class MagneticComponent:
         :param t_rise:
         :param t_fall:
         :param f_switch:
+
         :return:
+
         """
         Ipeak = Ipeak or [10, 10]
 
