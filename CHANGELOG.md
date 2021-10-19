@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - fix #5: changed typo to L_h_conc = self.M**2 / self.L_22
 ### Added
+- add file mu_imag.pro
 - add class EIaxi
 - add class ReluctanceModel
 - add class Mesh

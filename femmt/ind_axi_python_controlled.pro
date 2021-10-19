@@ -191,7 +191,7 @@ Function {
   // Hysteresis Loss
   // Imaginary Part Of Permeability
   // Liste von Lukas hinterlegen
-  mu_imag[ #{Iron} ] = mu0 * f_N95_mu_imag[$1];
+  mu_imag[ #{Iron} ] = mu0 * f_N95_mu_imag[$1, $2];
   //mu_imag[#{Iron}] = mu0 * mu_r_imag;
 
   If(!Flag_NL)
@@ -454,28 +454,29 @@ PostProcessing {
       // iGSE Integral explicitely solved
       // needs the result of Magb at peak current to evaluate the peak flux density
       // (Norm[{d a}]*2) is delta_B
-      If(Flag_Steinmetz_loss)
 
-        { Name piGSE ; Value { Integral { [ f_switch * ki * (Norm[{d a}]*2)^(beta-alpha) * (
+
+      If(Flag_Generalized_Steinmetz_loss)
+        { Name piGSE ; Value { Integral { [ Freq * ki * (Norm[{d a}]*2)^(beta-alpha) * (
                                         ((Norm[{d a}]*2 / t_rise )^alpha) * t_rise +
                                         ((Norm[{d a}]*2 / t_fall )^alpha) * t_fall
                                         // 10 abschnitte reinbauen
                                         // python überprüfung + vorfaktoren zu NULL
                                    ) ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+      EndIf
 
-        { Name pSE ; Value { Integral { [ CoefGeo * ki * f_switch^alpha * (Norm[{d a}])^beta
+      If(Flag_Steinmetz_loss)
+        { Name pSE ; Value { Integral { [ CoefGeo * ki * Freq^alpha * (Norm[{d a}])^beta
                                      ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
 
-        { Name pSE_density ; Value { Integral { [ CoefGeo* ki * f_switch^alpha * (Norm[{d a}])^beta
+        { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
                                      ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-
       EndIf
 
       // Magnetic Flux Density
       //TODO:
-      { Name p_hyst ; Value { Integral { [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-      { Name p_hyst_density ; Value { Integral { [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[{d a}] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-
+      { Name p_hyst ; Value { Integral { [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+      { Name p_hyst_density ; Value { Integral { [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
 
       // Energy
       { Name MagEnergy ; Value {
@@ -630,8 +631,11 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ Magh,  OnElementsOf Domain,  File StrCat[DirResFields, "Magh", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Core Loss Density
-  If(Flag_Steinmetz_loss)
+  If(Flag_Generalized_Steinmetz_loss)
     Print[ piGSE,  OnElementsOf Domain,  File StrCat[DirResFields, "piGSE", ExtGmsh],  LastTimeStepOnly ] ;
+  EndIf
+
+  If(Flag_Steinmetz_loss)
     Print[ pSE,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE", ExtGmsh],  LastTimeStepOnly ] ;
     Print[ pSE_density,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE_density", ExtGmsh],  LastTimeStepOnly ] ;
   EndIf
@@ -694,9 +698,13 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ j2Hprox[StrandedWinding2],   OnGlobal , Format Table];
 
   //Print[ SoH[ DomainS ], OnGlobal, Format TimeTable, File Sprintf("results/SH_f%g.dat", Freq) ] ;
-  If(Flag_Steinmetz_loss)
+
+  If(Flag_Generalized_Steinmetz_loss)
     Print[ piGSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"piGSE.dat"]] ;// Core losses
     Print[ piGSE[ Iron ], OnGlobal, Format Table];
+  EndIf
+
+  If(Flag_Steinmetz_loss)
     Print[ pSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"pSE.dat"]] ;// Core losses
     Print[ pSE[ Iron ], OnGlobal, Format Table];
   EndIf
