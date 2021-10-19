@@ -84,7 +84,7 @@ class MagneticComponent:
         self.padding = 1.5  # ... > 1
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
         self.dimensionality = "2D axi"  # Axial-symmetric model (idealized full-cylindrical)
-        self.s = 0.5  # Parameter for mesh-accuracy
+        self.s = 0.5 #0.5  # Parameter for mesh-accuracy
         self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" or
         # "three-phase-transformer"
 
@@ -144,6 +144,18 @@ class MagneticComponent:
         self.delta = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Materials
+        self.core.steinmetz_loss = 1
+        self.core.generalized_steinmetz_loss = 0
+        self.Ipeak = None
+        self.ki = None
+        self.alpha = None
+        self.beta = None
+        self.t_rise = None
+        self.t_fall = None
+        self.f_switch = None
+
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Meshing
         self.mesh = self.Mesh(self)
 
@@ -198,7 +210,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
-    def high_level_geo_gen(self, core_type="EI", dimensionality="2D axi", frequency=None, skin_mesh_factor=1):
+    def high_level_geo_gen(self, core_type="EI", dimensionality="2D axi", frequency=None, skin_mesh_factor=1.0):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
@@ -310,8 +322,9 @@ class MagneticComponent:
             # Complex Loss
             # TDK N95 as standard material:
             self.re_mu_rel = re_mu_rel  # Real part of relative Core Permeability  [B-Field and frequency-dependent]
-            #self.im_mu_rel = 1750 * np.sin(10 * np.pi / 180)  # Imaginary part of relative Core Permeability  [B-Field and frequency-dependent]
-            self.im_mu_rel = 2500 * np.sin(20 * np.pi / 180)  # Imaginary part of relative Core Permeability  [B-Field and frequency-dependent]
+            # self.im_mu_rel = 1750 * np.sin(10 * np.pi / 180)  # Imaginary part of relative Core Permeability
+            # B-Field and frequency-dependent:
+            self.im_mu_rel = 2500 * np.sin(20 * np.pi / 180)  # Imaginary part of relative Core Permeability
             self.im_epsilon_rel = 6e+4 * np.sin(
                 20 * np.pi / 180)  # Imaginary part of complex equivalent permeability  [only frequency-dependent]
             self.material = 95_100  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
@@ -340,6 +353,7 @@ class MagneticComponent:
                    non_linear: bool = False,
                    **kwargs) -> None:
             """
+            # TODO: Steinmetz - parameters
             Updates the core structure.
 
             - One positional parameter: type
@@ -1239,6 +1253,8 @@ class MagneticComponent:
 
                         for num in range(0, len(self.component.virtual_winding_windows[n_win].scheme)):
 
+                            y = None
+
                             # Cases
                             if num == 0:
                                 y = bot_bound + self.component.windings[num].conductor_radius
@@ -1472,7 +1488,7 @@ class MagneticComponent:
                             for i in range(0, self.component.windings[num].turns[n_win]):
                                 # CHECK if right bound is reached
                                 if (left_bound + (i + 1) * self.component.windings[num].thickness +
-                                    i * self.component.isolation.cond_cond[num]) <= right_bound:
+                                        i * self.component.isolation.cond_cond[num]) <= right_bound:
                                     # Foils
                                     self.p_conductor[num].append(
                                         [left_bound + i * self.component.windings[num].thickness + i *
@@ -1677,12 +1693,15 @@ class MagneticComponent:
             self.n_theo = None
             self.L_goal = None
             self.current = None
+            self.stray_path_parametrization = None  # "max_flux", "given_flux", "mean_flux"
+            self.b_stray_rel_overshoot = 1
             self.b_max = None
             self.b_stray = None
             self.max_length = None
             self.n_ag_per_rel = None
             self.air_gap_types = None
             self.phi = None
+            self.n_singularities = 0
 
         def calculate_air_gap_lengths_idealized(self, reluctances, types):
             """
@@ -1816,9 +1835,28 @@ class MagneticComponent:
 
             """
             # Calculate stray path width
-            # [Phi_top1, Phi_bot1] = np.matmul(np.matmul(np.linalg.inv(R), N), self.current)
-            [Phi_top, Phi_bot] = np.matmul(np.matmul(np.linalg.inv(np.transpose(N)), self.L_goal),
-                                           np.transpose(self.current))
+
+            if np.linalg.cond(np.transpose(N)) < 1 / sys.float_info.epsilon:
+                [Phi_top, Phi_bot] = np.matmul(np.matmul(np.linalg.inv(np.transpose(N)), self.L_goal),
+                                               np.transpose(self.current))
+
+            else:
+                # Singular Matrices cannot be treated
+                # Fluss im Streupfad Null? Außenschenkel?
+
+                self.n_singularities += 1
+                # print(N)
+                [Phi_top, Phi_bot] = [0, 0]
+
+            # Alternative way of flux calculation
+            # if np.linalg.cond(np.transpose(R)) < 1 / sys.float_info.epsilon:
+            #     [Phi_top, Phi_bot] = np.matmul(np.matmul(np.linalg.inv(R), N), self.current)
+            #
+            # else:
+            #     # Singular Matrices cannot be treated
+            #     self.n_singularities += 1
+            #     print(N)
+            #     [Phi_top, Phi_bot] = [0, 0]
 
             Phi_stray = np.abs(Phi_top - Phi_bot)
 
@@ -1833,10 +1871,22 @@ class MagneticComponent:
             # self.component.stray_path.width = (Phi_stray+np.abs(Phi_top + Phi_bot)) / self.b_stray /
             # (np.pi * self.component.core.core_w)
 
-            self.component.stray_path.width = Phi_stray / self.b_stray / (np.pi * self.component.core.core_w)
+            # Calculate stray path width corresponding to ...
+            # ... externally set magnetic flux density or ...
+            if self.stray_path_parametrization == "given_flux":
+                self.component.stray_path.width = Phi_stray / self.b_stray / (np.pi * self.component.core.core_w)
+            # ... to mean flux density of top and bottom flux density
+            if self.stray_path_parametrization == "mean":
+                b_stray_mean = (np.abs(Phi_top) + np.abs(Phi_bot)) / 2 / np.pi / (self.component.core.core_w / 2)**2
+                self.component.stray_path.width = Phi_stray / b_stray_mean / (np.pi * self.component.core.core_w)
+            if self.stray_path_parametrization == "max_flux":
+                phi_abs = np.array([np.abs(Phi_top), np.abs(Phi_bot)])
+                b_stray_max = phi_abs.max(0) / 2 / np.pi / (self.component.core.core_w / 2)**2
+                self.component.stray_path.width = Phi_stray / b_stray_max / self.b_stray_rel_overshoot\
+                                                                            / (np.pi * self.component.core.core_w)
 
             # Max allowed lengths in each leg
-            # TODO: Bring in more exact values
+            # TODO: Fit values a bit
             self.max_length = [self.component.core.window_h * (100 - self.component.stray_path.midpoint) / 100,
                                self.component.core.window_h * self.component.stray_path.midpoint / 100,
                                self.component.core.window_w / 2]
@@ -1867,17 +1917,22 @@ class MagneticComponent:
                     raise NotImplemented
 
                 # Transformer
-                if N.shape == (2,) and self.component.component_type == "transformer" :
+                if N.shape == (2,) and self.component.component_type == "transformer":
                     raise NotImplemented
 
                 # Dedicated stray path
                 if N.shape == (2, 2) and self.component.component_type == "integrated_transformer":
 
-                    # Calculate goal reluctance values
+                    # Calculate goal reluctance matrix
                     R_matrix = calculate_reluctances(N=N, L=self.L_goal)
+
+                    # R_goal = [R_top, R_bot, R_stray]
                     R_goal = [R_matrix[0, 0] + R_matrix[0, 1], R_matrix[1, 1] + R_matrix[0, 1], -R_matrix[0, 1]]
 
                     # Stray path specific parameters
+                    # print(R_matrix)
+                    # print(R_goal)
+                    # print(self.L_goal)
                     self.stray_path_parametrization_ei_axi(N=N, R=R_matrix)
 
                     # Check for negative Reluctances
@@ -1911,12 +1966,17 @@ class MagneticComponent:
                 # print(f"{results=}")
                 return results
 
-        def air_gap_design(self, L_goal, parameters_init, current=None, b_max=None, b_stray=None, **kwargs):
+        def air_gap_design(self, L_goal, parameters_init, current=None, stray_path_parametrization=None,
+                           b_max=None, b_stray=None):
             """
             Performs calculation of air gap lengths according to given data.
+<<<<<<< HEAD
+            :param stray_path_parametrization:
+=======
 
+>>>>>>> ce59cac40dc9c6300076b326e7d995c5f6d57010
             :param b_max:
-            :param parameters_init:
+            :param parameters_init: "max_flux", "given_flux", "mean_flux"
             :param b_stray:
             :param current:
             :param L_goal: list of inductance goals [inductor: single value L;
@@ -1927,6 +1987,7 @@ class MagneticComponent:
 
             """
             self.current = current
+            self.stray_path_parametrization = stray_path_parametrization
             self.b_stray = b_stray
             self.b_max = b_max
 
@@ -1942,7 +2003,7 @@ class MagneticComponent:
             np.save('Reluctance_Model/goals.npy', self.L_goal)
 
             # Initialize result list
-            par_ok = []
+            parameter_results = []
             N_init = None
 
             # Put to Terminal
@@ -1957,6 +2018,8 @@ class MagneticComponent:
             for index, parameters in enumerate(parameters_init):
                 for key, value in parameters.items():
                     # print(key, value)
+                    if hasattr(self, key):
+                        setattr(self, key, value)
 
                     if hasattr(self.component.core, key):
                         setattr(self.component.core, key, value)
@@ -1975,20 +2038,26 @@ class MagneticComponent:
                 else:
                     all_parameters = dict(parameters, **air_gap_results)
 
-                par_ok.append(all_parameters)
+                parameter_results.append(all_parameters)
 
-            # Save resulting parameter set
-            # if not (par_ok[-1][-1]):
-            #     par_ok[-1] = None
-            # par_ok[not (par_ok[][-1])] = None
+            print(f"Number of singularities: {self.n_singularities}\n")
 
-            # par_ok = np.asarray(par_ok, dtype=object)
-            # np.save('Reluctance_Model/par_ok.npy', par_ok)
+            # Save Results including invalid parameters
+            print(f"{parameter_results=}")
+            np.save('Reluctance_Model/parameter_results.npy', parameter_results)
 
-            print(f"Ready with reluctance calculations\n"
+            # Filter all entries, that are None
+            # Elements of list reluctance_parameters are either a dictionary or None
+            valid_parameter_results = [x for x in parameter_results if x is not None]
+
+            # Save resulting valid parameters
+            np.save('Reluctance_Model/valid_parameter_results.npy', valid_parameter_results)
+
+            print(f"Number of valid parameters: {len(valid_parameter_results)}\n\n"
+                  f"Ready with reluctance calculations\n"
                   f"--- ---\n")
 
-            return par_ok
+            return valid_parameter_results
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Meshing
@@ -2410,6 +2479,30 @@ class MagneticComponent:
                             plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # TODO: Visualization Flag or something like that
+            visualize_before = False
+            if visualize_before:
+                # synchronize must be placed before!!! the color properties are set
+
+                gmsh.model.geo.synchronize()
+                # Colors
+                for i in range(0, len(plane_surface_core)):
+                    gmsh.model.setColor([(2, plane_surface_core[i])], 50, 50, 50)
+                gmsh.model.setColor([(2, plane_surface_air[0])], 255, 255, 255)
+                for num in range(0, self.component.n_windings):
+                    for i in range(0, len(plane_surface_cond[num])):
+                        gmsh.model.setColor([(2, plane_surface_cond[num][i])], 200*num, 200*(1-num), 0)
+
+                # Output .msh file
+                gmsh.option.setNumber("Mesh.SaveAll", 1)
+                # gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
+
+                # gmsh.model.geo.synchronize()
+                gmsh.model.mesh.generate(2)
+                gmsh.write(self.component.path_mesh + "color.msh")
+                gmsh.fltk.run()
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Define physical Surfaces and Curves
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Core
@@ -2435,7 +2528,7 @@ class MagneticComponent:
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Air
             ps_air = gmsh.model.geo.addPhysicalGroup(2, plane_surface_air, tag=1000)
-            ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
+            # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Boundary
@@ -2521,18 +2614,10 @@ class MagneticComponent:
             gmsh.model.geo.synchronize()
 
             # Output .msh file
-            gmsh.option.setNumber("Mesh.SaveAll", 0)
+            # TODO: What are these flags about???
+            gmsh.option.setNumber("Mesh.SaveAll", 1)
             gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
             gmsh.option.setNumber("Mesh.SurfaceFaces", 1)
-
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Colors
-            for i in range(0, len(plane_surface_core)):
-                gmsh.model.setColor([(2, plane_surface_core[i])], 50, 50, 50)
-            gmsh.model.setColor([(2, plane_surface_air[0])], 0, 0, 230)
-            for num in range(0, self.component.n_windings):
-                for i in range(0, len(plane_surface_cond[num])):
-                    gmsh.model.setColor([(2, plane_surface_cond[num][i])], 150, 150, 0)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # TODO: Adaptive Meshing
@@ -2670,6 +2755,7 @@ class MagneticComponent:
 
         # Core Loss
         text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
+        text_file.write(f"Flag_Generalized_Steinmetz_loss = {self.core.generalized_steinmetz_loss};\n")
         text_file.write(f"e_r_imag = {self.core.im_epsilon_rel};\n")
         text_file.write(f"mu_r_imag = {self.core.im_mu_rel};\n")
 
@@ -2677,6 +2763,7 @@ class MagneticComponent:
             text_file.write(f"ki = {self.ki};\n")
             text_file.write(f"alpha = {self.alpha};\n")
             text_file.write(f"beta = {self.beta};\n")
+        if self.core.generalized_steinmetz_loss:
             text_file.write(f"t_rise = {self.t_rise};\n")
             text_file.write(f"t_fall = {self.t_fall};\n")
             text_file.write(f"f_switch = {self.f_switch};\n")
@@ -2802,6 +2889,20 @@ class MagneticComponent:
 
         gmsh.initialize()
         epsilon = 1e-9
+
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Colors
+        # gmsh.option.setColor([(2, 1)], 50, 50, 50)
+        # gmsh.option.setColor([(2, 2)], 0, 0, 230)
+        # gmsh.option.setColor([(2, 3)], 150, 150, 0)
+        # gmsh.option.setColor([(2, 4)], 150, 150, 0)
+        # gmsh.option.setColor([(2, 5)], 150, 150, 0)
+        # gmsh.option.setColor([(2, 6)], 150, 150, 0)
+        # gmsh.option.setColor([(2, 7)], 150, 150, 0)
+        # gmsh.option.setNumber("Mesh.SurfaceFaces", 1)
+        # gmsh.option.setNumber("Mesh.ColorCarousel", 1)
+        # gmsh.option.setNumber("Mesh.LabelType", 1)
+
         # Mesh
         gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
         view = 0
@@ -3027,7 +3128,8 @@ class MagneticComponent:
         # Alternative BC
         region_add = 1.1
 
-        femm.mi_drawrectangle(0, region_add*self.ei_axi.p_outer[0][1], region_add*self.ei_axi.p_outer[3][0], region_add*self.ei_axi.p_outer[3][1])
+        femm.mi_drawrectangle(0, region_add*self.ei_axi.p_outer[0][1], region_add*self.ei_axi.p_outer[3][0], 
+        region_add*self.ei_axi.p_outer[3][1])
         # mi_addboundprop('Asymptotic', 0, 0, 0, 0, 0, 0, 1 / (para.mu_0 * bound.width), 0, 2); % Mixed
         femm.mi_addboundprop('Asymptotic', 0, 0, 0, 0, 1, 50, 0, 0, 1)
         femm.mi_selectsegment(region_add*self.ei_axi.p_outer[3][0], region_add*self.ei_axi.p_outer[3][1])
@@ -3246,6 +3348,10 @@ class MagneticComponent:
             self.simulate()
             self.visualize()
 
+        #results =
+
+        #return results
+
     def get_inductances(self, I0, op_frequency=0, skin_mesh_factor=1, visualize=False):
         """
 
@@ -3263,7 +3369,8 @@ class MagneticComponent:
             os.remove(self.path + "/" + self.path_res_values + "L_11.dat")
             os.remove(self.path + "/" + self.path_res_values + "L_22.dat")
         except:
-            print("Could not find Inductance logs")
+            # TODO: Find better way for exception
+            pass
 
         # -- Inductance Estimation --
         self.mesh.mesh(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)

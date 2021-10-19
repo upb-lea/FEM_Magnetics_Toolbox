@@ -2,17 +2,11 @@ from femmt import MagneticComponent
 import numpy as np
 import itertools
 
-
-# TODO: safe & fast exclusion of geometrically impossible configurations at high level
-# Must be in the MA:
-# Graph with Rsct(l) vs Rideal(l) and length_sct(R) vs length_ideal(R).
-# Zero crossing & maximum estimation...
-
 #                                               -- Definitions --
 # ----------------------------------------------------------------------------------------------------------------------
 mu0 = 4e-7*np.pi
 mur = 3000
-inductance_calculation = 0
+inductance_calculation = 1
 skin_accuracy = 0.5
 frequency = 250000
 I0 = 6 * 1.25  # 6 is peak of current wave_form
@@ -27,33 +21,34 @@ L_22 = L_h / n**2
 M = L_h / n
 L = np.array([[L_11, M], [M, L_22]])
 
-
+# TODO: Dicts schon hier packen
 # Reluctance Model Parameters
 window_h = [0.0295]
 window_w = [0.012]
 core_w = [0.015]
-midpoint = [30]
-N1 = [27]  # Turns in main window
+midpoint = [35]
+b_stray_rel_overshoot = [2]
+width = []  # [0.004]
+N1 = [27, 20]  # Turns in main window
 N2 = [7]  # Turns in main window
 Ns1 = [5]  # Turns in stray window
 Ns2 = [6]  # Turns in stray window
-N_flat = list(itertools.product(N1, N2, Ns1, Ns2))
-# print(N_flat)
-N = [np.reshape(N_flat_single, (2, 2)) for N_flat_single in N_flat]
-# print(N)
 
+# N1 = np.arange(10, 40)  # [27, 20]  # Turns in main window
+# N2 = np.arange(10, 40)  # [7]  # Turns in main window
+# Ns1 = np.arange(10, 20)  # [5]  # Turns in stray window
+# Ns2 = np.arange(10, 20)  # [6]  # Turns in stray window
+
+N_flat = list(itertools.product(N1, N2, Ns1, Ns2))
+N = [np.reshape(N_flat_single, (2, 2)) for N_flat_single in N_flat]
 
 # Create List of Dictionaries for Reluctance Model
-reluctance_parameter_categories = ["window_h", "window_w", "core_w", "midpoint", "N"]
-reluctance_parameter_values = list(itertools.product(window_h, window_w, core_w, midpoint, N))
-# print(reluctance_parameter_values)
+reluctance_parameter_categories = ["window_w", "window_h", "core_w", "midpoint", "N", "b_stray_rel_overshoot"]
+reluctance_parameter_values = list(itertools.product(window_w, window_h, core_w, midpoint, N, b_stray_rel_overshoot))
 
 reluctance_parameters = []
 for objects in reluctance_parameter_values:
     reluctance_parameters.append({key: value for key, value in zip(reluctance_parameter_categories, objects)})
-
-# print(f"{reluctance_parameters=}")
-# print(len(reluctance_parameters))
 
 
 #                                           -- Reluctance Model --
@@ -61,16 +56,11 @@ for objects in reluctance_parameter_values:
 geo = MagneticComponent(component_type="integrated_transformer")
 
 
-all_reluctance_parameters = geo.reluctance_model.air_gap_design(L_goal=L,
-                                                                parameters_init=reluctance_parameters,
-                                                                current=[I0, -I0*3.2], b_max=0.3, b_stray=0.2)
-
-
-# Filter all entries, that are None
-# Elements of list reluctance_parameters are either a dictionary or None
-valid_reluctance_parameters = [x for x in all_reluctance_parameters if x is not None]
-# print(valid_reluctance_parameters)
-# print(len(valid_reluctance_parameters))
+valid_reluctance_parameters = geo.reluctance_model.air_gap_design(L_goal=L,
+                                                                  parameters_init=reluctance_parameters,
+                                                                  current=[1.25*I0, -1.25*I0*3.2],
+                                                                  b_max=0.3, b_stray=0.25,
+                                                                  stray_path_parametrization="max_flux")
 
 
 #                                         -- FEM Simulation --
@@ -89,7 +79,6 @@ non_reluctance_values = list(itertools.product(strand_radius, N_strands_prim, N_
 non_reluctance_parameters = []
 for objects in non_reluctance_values:
     non_reluctance_parameters.append({key: value for key, value in zip(non_reluctance_categories, objects)})
-
 # print(non_reluctance_parameters)
 # print(len(non_reluctance_parameters))
 
@@ -108,17 +97,19 @@ for reluctance_parameters in valid_reluctance_parameters:
 # print(len(FEM_parameters))
 
 
-# TODO: Filter bad reluctance configurations
-
-
 do_simulate = True
 
-for parameters in FEM_parameters:
+geo.ki = 0.53
+geo.alpha = 1.50
+geo.beta = 2.38
+
+for n_par, parameters in enumerate(FEM_parameters):
     # print(f"{parameters=}")
 
     if do_simulate:
 
         # -- FFT --
+        print(f"{n_par=}")
 
         # -- Component Design --
         geo.core.update(type="EI",
