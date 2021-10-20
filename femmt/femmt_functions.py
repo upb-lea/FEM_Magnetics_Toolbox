@@ -197,7 +197,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     """
     A fft for a input signal. Input signal is in vector format and should include one period.
 
-    Output vector includes only frequencies with amplitudes > 0.1% of input signal
+    Output vector includes only frequencies with amplitudes > 1% of input signal
 
     :Minimal Example:
 
