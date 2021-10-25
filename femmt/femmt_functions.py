@@ -14,6 +14,7 @@ import os
 import pandas as pd
 import pathlib
 import time
+import warnings
 
 
 # Static Functions
@@ -367,6 +368,110 @@ def data_logging(sim_choice):
           df_pv_femm = pd.read_json(target_femm)
           df_pv_femmt = pd.read_json(target_femmt)
       # print(df_pv_femm, df_pv_femmt)
+
+
+def get_dicts_with_keys_and_values(data, **kwargs):
+    """
+    Returns a list of dictionaries out of a list of dictionaries which contains pairs of the given key(s) and value(s).
+    :param data: list of dicts
+    :param kwargs: keys and values in dicts
+    :return:
+    """
+    invalid_index = []
+    for n, dictionary in enumerate(data):
+        for key, value in kwargs.items():
+            if not (key in dictionary and value == dictionary[key]):
+                invalid_index.append(n)
+                break
+    valid_data = np.delete(data, invalid_index)
+    return valid_data
+
+
+def get_dict_with_unique_keys(data, *keys):
+    """
+    Returns a dictionary out of a list of dictionaries which contains the given key(s).
+    :param data: list of dicts
+    :param keys: keys in dicts
+    :return:
+    """
+    invalid_index = []
+    for n, dict in enumerate(data):
+        for key in keys:
+            if not key in dict:
+                invalid_index.append(n)
+                break
+    valid_data = np.delete(data, invalid_index)
+    if len(valid_data) != 1:
+        warnings.warn("Keyword(s) not unique!")
+    # Only one dictionary shall survive --> choose element 0
+    return valid_data[0]
+
+
+def find_common_frequencies(amplitudes1, phases1, frequencies1, amplitudes2, phases2, frequencies2):
+    """
+
+    :param amplitudes1:
+    :param phases1:
+    :param frequencies1:
+    :param amplitudes2:
+    :param phases2:
+    :param frequencies2:
+    :return:
+    """
+    common_amplitudes1 = []
+    common_phases1 = []
+    common_amplitudes2 = []
+    common_phases2 = []
+
+    # Find all common frequencies
+    # print(f"{frequencies1=}")
+    # print(f"{frequencies2=}")
+    # print(f"{phases1=}")
+    # print(f"{phases2=}")
+    # print(f"{amplitudes1=}")
+    # print(f"{amplitudes2=}")
+
+    common_frequencies = list(set(frequencies1).intersection(frequencies2))
+    # print(f"{common_frequencies=}")
+
+    # Delete the corresponding phases and amplitudes
+    if isinstance(amplitudes1, list):
+        for frequency in common_frequencies:
+            common_amplitudes1.append(amplitudes1[frequencies1.index(frequency)])
+            common_phases1.append(phases1[frequencies1.index(frequency)])
+            common_amplitudes2.append(amplitudes2[frequencies2.index(frequency)])
+            common_phases2.append(phases2[frequencies2.index(frequency)])
+    if isinstance(amplitudes1, np.ndarray):
+        for frequency in common_frequencies:
+            common_amplitudes1.append(amplitudes1[np.where(frequencies1==frequency)][0])
+            common_phases1.append(phases1[np.where(frequencies1==frequency)][0])
+            common_amplitudes2.append(amplitudes2[np.where(frequencies2==frequency)][0])
+            common_phases2.append(phases2[np.where(frequencies2==frequency)][0])
+    else:
+        warnings.warn("Either a list or a np.ndarray must be provided!")
+
+    current_pairs = list(map(list, zip(common_amplitudes1, common_amplitudes2)))
+    phase_pairs = list(map(list, zip(common_phases1, common_phases2)))
+
+    return current_pairs, phase_pairs, common_frequencies
+
+
+def sort_out_small_harmonics(phase_pairs, amplitude_pairs, frequencies, limes):
+    # Calculate geometric lengths
+    amp_tot = np.sqrt(np.sum(np.array(amplitude_pairs)**2, axis=0))
+    # amp_tot = np.max(amplitude_pairs, axis=0)
+
+    invalid_index = []
+    for n, amplitude_pair in enumerate(amplitude_pairs):
+        if all(amplitude/amp_tot[i] < limes for i, amplitude in enumerate(amplitude_pair)):
+            invalid_index.append(n)
+
+    phase_pairs = np.delete(phase_pairs, invalid_index, axis=0)
+    amplitude_pairs = np.delete(amplitude_pairs, invalid_index, axis=0)
+    frequencies = np.delete(frequencies, invalid_index)
+
+    return phase_pairs, amplitude_pairs, frequencies
+
 
 
 # Reluctance Model [with calculation]
