@@ -447,6 +447,8 @@ PostProcessing {
 
       // Magnetic Flux Density
       { Name b ; Value { Term { [ {d a} ] ; In Domain ; Jacobian Vol ; } } }
+      { Name b_pol ; Value { Term { [ Norm [ Re [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name im_b_pol ; Value { Term { [ Norm [ Im [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name Magb ; Value { Term { [ Norm[ {d a} ] ]; In Domain ; Jacobian Vol ; } } }
 
       // Core Loss
@@ -473,10 +475,16 @@ PostProcessing {
                                      ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
       EndIf
 
+      // Permeability
+      { Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+
       // Magnetic Flux Density
-      //TODO:
-      { Name p_hyst ; Value { Integral { [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-      { Name p_hyst_density ; Value { Integral { [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+      { Name p_hyst ; Value { Integral {
+        [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
+        In Iron ; Jacobian Vol ; Integration II ;} } }
+      { Name p_hyst_density ; Value { Integral {
+        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
+        In Iron ; Jacobian Vol ; Integration II ;} } }
 
       // Energy
       { Name MagEnergy ; Value {
@@ -640,11 +648,14 @@ PostOperation Map_local UsingPost MagDyn_a {
     Print[ pSE_density,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE_density", ExtGmsh],  LastTimeStepOnly ] ;
   EndIf
 
+  Print[ mur,  OnElementsOf Domain,  File StrCat[DirResFields, "mur", ExtGmsh],  LastTimeStepOnly ] ;
   Print[ p_hyst,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst", ExtGmsh],  LastTimeStepOnly ] ;
   Print[ p_hyst_density,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Magnetic Flux (Density)
-  //Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
+  Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
+  Print[ b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "b_pol", ExtGmsh],  LastTimeStepOnly ] ;
+  Print[ im_b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "im_b_pol", ExtGmsh],  LastTimeStepOnly ] ;
   Print[ Magb,  OnElementsOf Domain,  File StrCat[DirResFields, "Magb", ExtGmsh],  LastTimeStepOnly] ;
   //  , StoreInVariable $Magb maybe use this for Core Loss
 
@@ -652,15 +663,15 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ MagEnergy,  OnElementsOf Domain,  File StrCat[DirResFields, "MagEnergy", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Current Density
-  //Print[ jz, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirResFields, "jz", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ jz, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirResFields, "jz", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ j, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirResFields, "j", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ J_rms, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "J_rms", ExtGmsh], LastTimeStepOnly ] ;
 
   // Ohmic Loss
   Print[ j2F, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
-  //Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
+  Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
   Print[ j2H,   OnElementsOf DomainS, File StrCat[DirResFields,"jH",ExtGmsh] ] ;
-  //Print[ j2H_density,   OnElementsOf DomainS, File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
+  Print[ j2H_density,   OnElementsOf DomainS, File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
 
   //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
   //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
