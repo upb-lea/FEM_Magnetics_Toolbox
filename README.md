@@ -8,6 +8,9 @@ Functionality examples
 
 __Note: Alpha Version!__
 
+## Detailed Documentation
+Can be found ![here](https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html).
+
 ## Installation
 ```
 cd /Documents/Folder/of/Interest   

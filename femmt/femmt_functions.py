@@ -1,4 +1,6 @@
 # Usual Python libraries
+import warnings
+
 import numpy.typing as npt
 import numpy as np
 import pathlib
@@ -191,7 +193,8 @@ def NbrLayers(n_strands):
 
 
 def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', mode: str = 'rad',
-        f0: Union[float, None] = None, title: str = 'ffT') -> npt.NDArray[list]:
+        f0: Union[float, None] = None, title: str = 'ffT', filter_type: str = 'factor',
+        filter_value_factor: float = 0.01, filter_value_harmonic: int = 100) -> npt.NDArray[list]:
     """
     A fft for a input signal. Input signal is in vector format and should include one period.
 
@@ -203,13 +206,28 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     >>> out = fft(example_waveform, plot=True, mode='rad', f0=25000, title='ffT input current')
 
     :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
+    :type period_vector_t_i: np.array
     :param sample_factor: f_sampling/f_period, defaults to 1000
+    :type sample_factor: float
     :param plot: insert anything else than "no" or 'False' to show a plot to visualize input and output
+    :type plot: str
     :param mode: 'rad'[default]: full period is 2*pi, 'deg': full period is 360°, 'time': time domain.
+    :type mode: str
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
+    :type f0: float
     :param title: plot window title, defaults to 'ffT'
+    :type title: str
+    :param filter_type: 'factor'[default] or 'harmonic' or 'disabled'.
+    :type filter_type: str
+    :param filter_value_factor: filters out amplitude-values below a certain factor of max. input amplitude.
+        Should be 0...1, default to 0.01 (1%)
+    :type filter_value_factor: float
+    :param filter_value_harmonic: filters out harmonics up to a certain number. Default value is 100.
+        Note: count 1 is DC component, count 2 is the fundamental frequency
+    :type filter_value_harmonic: int
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
+    :
 
     """
 
@@ -255,11 +273,25 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     f_out = []
     x_out = []
     phi_rad_out = []
-    for count, value in enumerate(x_mag_corrected):
-        if x_mag_corrected[count] > 0.01 * max(i):
-            f_out.append(f_corrected[count])
-            x_out.append(x_mag_corrected[count])
-            phi_rad_out.append(phi_rad_corrected[count])
+    if filter_type.lower() == 'factor':
+        for count, value in enumerate(x_mag_corrected):
+            if x_mag_corrected[count] > filter_value_factor * max(i):
+                f_out.append(f_corrected[count])
+                x_out.append(x_mag_corrected[count])
+                phi_rad_out.append(phi_rad_corrected[count])
+    elif filter_type.lower() == 'harmonic':
+        for count, value in enumerate(x_mag_corrected):
+            if count < filter_value_harmonic:
+                f_out.append(f_corrected[count])
+                x_out.append(x_mag_corrected[count])
+                phi_rad_out.append(phi_rad_corrected[count])
+    elif filter_type.lower() == 'disabled':
+        f_out = f_corrected
+        x_out = x_mag_corrected
+        phi_rad_out = phi_rad_corrected
+    else:
+        raise ValueError(f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
+
 
     if plot != 'no' and plot != False:
         print(f"{title = }")
@@ -302,7 +334,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     return np.array([f_out, x_out, phi_rad_out])
 
 
-def compare_fft_list(list: list, rad: float = 'no', f0: Union[float,None] = None) -> None:
+def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: str = 'rad', f0: Union[float,None] = None) -> None:
     """
     generate fft curves from input curves and compare them to each other
 
@@ -310,23 +342,24 @@ def compare_fft_list(list: list, rad: float = 'no', f0: Union[float,None] = None
 
     >>> example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
     >>> example_waveform_2 = np.array([[0, 0.55, 3.14, 3.69, 6.28],[-138.37, 257.58, 138.37, -257.58, -138.37]])
-    >>> compare_fft_list([example_waveform, example_waveform_2], rad='yes', f0=25000)
+    >>> compare_fft_list([example_waveform, example_waveform_2], mode='rad', f0=25000)
 
-    :param list: list of fft-compatible numpy-arrays [element, element, ... ], each element format like [[time-vector[,[current-vector]]. One period only
-    :param rad: 'no' for time domain input vector, anything else than 'no' for 2pi-time domain
-    :param f0: set when rad != 'no'
+    :param input_data_list: list of fft-compatible numpy-arrays [element, element, ... ], each element format like [[time-vector[,[current-vector]]. One period only
+    :param mode: 'rad'[default]: full period is 2*pi, 'deg': full period is 360°, 'time': time domain.
+    :type mode: str
+    :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
+    :type f0: float
 
     :return: plot
 
     """
-
     out = []
-    for count, value in enumerate(list):
-        out.append([fft(list[count], sample_factor=1000, plot='no', rad=rad, f0=f0)])
+    for count, value in enumerate(input_data_list):
+        out.append([fft(input_data_list[count], sample_factor=sample_factor, plot='no', mode=mode, f0=f0)])
 
-    fig, axs = plt.subplots(2, len(list), sharey=True)
-    for count, value in enumerate(list):
-        axs[0, count].plot(list[count][0], list[count][1], label='original signal')
+    fig, axs = plt.subplots(2, len(input_data_list), sharey=True)
+    for count, value in enumerate(input_data_list):
+        axs[0, count].plot(input_data_list[count][0], input_data_list[count][1], label='original signal')
         axs[0, count].grid()
         axs[0, count].set_xlabel('time in s')
         axs[0, count].set_ylabel('Amplitude')
