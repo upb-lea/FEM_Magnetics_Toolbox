@@ -47,7 +47,7 @@ import femmt as fmt
 geo = fmt.MagneticComponent(component_type="transformer")
 
 # Update Geometry
-geo.update_core(type="EI", window_h=0.03)
+geo.core.update(type="EI", window_h=0.03)
 
 geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.001])
 
@@ -67,14 +67,14 @@ geo.single_simulation(freq=1000000, current=[10, 10])
 git clone: Mninimal example for a single simulation with displayed result in ONELAB: 
 ```
 # minimal example for github clone
-from FEMMT import MagneticComponent
+from femmt import MagneticComponent
 
 # Create Object
 # geo = MagneticComponent(component_type="inductor")
 geo = MagneticComponent(component_type="transformer")
 
 # Update Geometry
-geo.update_core(type="EI", window_h=0.03)
+geo.core.update(type="EI", window_h=0.03)
 
 geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.001])
 
