@@ -26,7 +26,7 @@ from typing import List, Union, Optional
 from femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
     fft, compare_fft_list, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
     install_femm_if_missing, calculate_reluctances
-from Analytical_Core_Data import f_N95_mu_imag
+from Analytical_Core_Data import f_N95_mu_imag, f_N95_er_imag
 # Self written functions. It is necessary to write a . before the function, due to handling
 # this package also as a pip-package
 # from .femmt_functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
@@ -91,6 +91,7 @@ class MagneticComponent:
         self.s = 0.5  # Parameter for mesh-accuracy
         self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" or
         # "three-phase-transformer"
+        self.plot_fields = "standard"
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
@@ -1029,17 +1030,17 @@ class MagneticComponent:
                 """
                 # TODO: Separation in more Virtual Winding Windows
 
-                # top window
-                island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
-                min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0] / 2  # bottom
-                max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - \
-                        self.component.isolation.core_cond[0] / 2  # sep_hor
-                left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
-                right11 = self.r_inner - self.component.isolation.core_cond[0]
-
                 # bot window
+                island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
+                min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1]  # bottom
+                max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - \
+                        self.component.isolation.core_cond[1]  # sep_hor
+                left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[1]
+                right11 = self.r_inner - self.component.isolation.core_cond[1]
+
+                # top window
                 min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + \
-                        self.component.isolation.core_cond[0] / 2  # sep_hor
+                        self.component.isolation.core_cond[0]  # sep_hor
                 max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[0]  # top
                 left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
                 right21 = self.r_inner - self.component.isolation.core_cond[0]
@@ -1696,6 +1697,7 @@ class MagneticComponent:
             self.component = component
 
             # Control
+            self.singularity = False
             self.visualize_waveforms = False
             self.visualize_max = False
             self.visualize_nom = False
@@ -1711,6 +1713,7 @@ class MagneticComponent:
             self.max_length = None
             self.n_ag_per_rel = None
             self.air_gap_types = None
+            self.air_gap_lengths = None
             self.material = None
             self.b_max = None
             self.b_stray = None
@@ -1726,6 +1729,10 @@ class MagneticComponent:
             self.nom_phi = None
             self.nom_current_1st = None
             self.nom_phase_1st = None
+
+            # Results
+            self.p_hyst_nom_1st = None
+            self.p_hyst_nom = None
 
         def calculate_air_gap_lengths_idealized(self, reluctances, types):
             """
@@ -1862,7 +1869,7 @@ class MagneticComponent:
             Calculates the hysteresis loss corresponding to complex core parameters.
             :return:
             """
-            print(f"Calculate Analytical Core Losses:")
+            # print(f"Calculate Analytical Core Losses:")
 
             # time domain
             Phi_top_nom, Phi_bot_nom, Phi_stray_nom = \
@@ -1881,16 +1888,15 @@ class MagneticComponent:
 
 
             p_top_1st, p_bot_1st, p_stray_1st = self.hysteresis_loss(Phi_top_nom_1st_peak, Phi_bot_nom_1st_peak, Phi_stray_nom_1st_peak)
+            # print(p_top_1st, p_bot_1st, p_stray_1st)
+            self.p_hyst_nom_1st = sum([p_top_1st, p_bot_1st, p_stray_1st])
 
-            print(p_top_1st, p_bot_1st, p_stray_1st)
 
             p_top, p_bot, p_stray = self.hysteresis_loss(Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak)
+            # print(p_top, p_bot, p_stray)
+            self.p_hyst_nom = sum([p_top, p_bot, p_stray])
 
-            print(p_top, p_bot, p_stray)
-
-            print(f"Analytical Core Losses = \n\n")
-
-            return None
+            # print(f"Analytical Core Losses = \n\n")
 
         def phi_fundamental(self):
             """
@@ -1942,33 +1948,40 @@ class MagneticComponent:
             Returns the hysteresis losses. Assumptions: homogeneous flux, sinusoidal excitation
             :return:
             """
+            length_corner = self.A_core/self.component.core.core_w/np.pi
+            ri = self.component.core.core_w/2
+            ro = ri + self.component.core.window_w
 
             # Top Part
             b_top = Phi_top / self.A_core
-            Vol_top = 2 * self.A_core * (100-self.component.stray_path.midpoint) / 100 * self.component.core.window_h
+            Vol_top = self.A_core * (100-self.component.stray_path.midpoint) / 100 * self.component.core.window_h + \
+                      self.A_core * ((100-self.component.stray_path.midpoint) / 100 * self.component.core.window_h - \
+                      self.air_gap_lengths["R_top"])
+
             p_top = 0.5 * self.component.mu0 * f_N95_mu_imag(self.f_1st, b_top) * Vol_top * 2 * np.pi * self.f_1st * \
                     (b_top / self.component.core.re_mu_rel / self.component.mu0)**2 + \
-                    self.p_loss_cyl(Phi_top, self.A_core/2/self.component.core.core_w/np.pi)[0]
+                    self.p_loss_cyl(Phi_top, length_corner, ri, ro)[0]
 
             # Bot Part
             b_bot = Phi_bot / self.A_core
-            Vol_bot = 2 * self.A_core * self.component.stray_path.midpoint / 100 * self.component.core.window_h
+            Vol_bot = self.A_core * self.component.stray_path.midpoint / 100 * self.component.core.window_h + \
+                      self.A_core * (self.component.stray_path.midpoint / 100 * self.component.core.window_h + \
+                      self.air_gap_lengths["R_bot"])
             p_bot = 0.5 * self.component.mu0 * f_N95_mu_imag(self.f_1st, b_bot) * Vol_bot * 2 * np.pi * self.f_1st * \
                     (b_bot / self.component.core.re_mu_rel / self.component.mu0)**2 + \
-                    self.p_loss_cyl(Phi_bot, self.A_core/2/self.component.core.core_w/np.pi)[0]
+                    self.p_loss_cyl(Phi_bot, length_corner, ri, ro)[0]
 
             # Stray Path
-            p_stray = self.p_loss_cyl(Phi_stray, self.component.stray_path.width)[0]
+            p_stray = self.p_loss_cyl(Phi_stray, self.component.stray_path.width, ri,
+                                      ro - self.air_gap_lengths["R_stray"])[0]
 
             return p_top, p_bot, p_stray
 
-        def p_loss_cyl(self, Phi, w):
+        def p_loss_cyl(self, Phi, w, ri, ro):
             """
 
             :return:
             """
-            ri = self.component.core.core_w/2
-            ro = ri + self.component.core.window_w
 
             def b(r, Phi, w):
                 return Phi / (2 * np.pi * r * w)
@@ -1979,7 +1992,7 @@ class MagneticComponent:
                        self.component.mu0 * f_N95_mu_imag(self.f_1st, b(r, Phi, w)) *\
                        (b(r, Phi, w) / self.component.core.re_mu_rel / self.component.mu0)**2
 
-            return quad(p_loss_density, ri, ro, args=(Phi, w))
+            return quad(p_loss_density, ri, ro, args=(Phi, w), epsabs=1e-4)
 
         def max_phi_from_time_phi(self, Phi_top, Phi_bot, Phi_stray):
             """
@@ -1993,9 +2006,9 @@ class MagneticComponent:
             Phi_bot_peak = max([abs(ele) for ele in Phi_bot])
             Phi_stray_peak = max([abs(ele) for ele in Phi_stray])
 
-            print(f"{Phi_top_peak=}\n"
-                  f"{Phi_bot_peak=}\n"
-                  f"{Phi_stray_peak=}\n")
+            # print(f"{Phi_top_peak=}\n"
+            #       f"{Phi_bot_peak=}\n"
+            #       f"{Phi_stray_peak=}\n")
 
             return Phi_top_peak, Phi_bot_peak, Phi_stray_peak
 
@@ -2081,45 +2094,46 @@ class MagneticComponent:
                 Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak = \
                     self.max_phi_from_time_phi(Phi_top_max, Phi_bot_max, Phi_stray_max)
 
+                # Store max peak fluxes in instance variable -> used for saturation check
+                self.max_phi = [Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak]
+
+                # self.component.stray_path.width = (Phi_stray+np.abs(Phi_top + Phi_bot)) / self.b_stray /
+                # (np.pi * self.component.core.core_w)
+
+                # Calculate stray path width corresponding to ...
+                # ... externally set magnetic flux density or ...
+                if self.stray_path_parametrization == "given_flux":
+                    self.component.stray_path.width = Phi_stray_max_peak / self.b_stray / (np.pi * self.component.core.core_w)
+                # ... to mean flux density of top and bottom flux density
+                if self.stray_path_parametrization == "mean":
+                    b_stray_mean = (np.abs(Phi_top_max_peak) + np.abs(Phi_bot_max_peak)) / 2 / np.pi / (self.component.core.core_w / 2)**2
+                    self.component.stray_path.width = Phi_stray_max_peak / b_stray_mean / (np.pi * self.component.core.core_w)
+                if self.stray_path_parametrization == "max_flux":
+                    phi_abs = np.array([np.abs(Phi_top_max_peak), np.abs(Phi_bot_max_peak)])
+                    b_stray_max = phi_abs.max(0) / 2 / np.pi / (self.component.core.core_w / 2)**2
+                    self.component.stray_path.width = Phi_stray_max_peak / b_stray_max / self.b_stray_rel_overshoot\
+                                                                                / (np.pi * self.component.core.core_w)
+
+                # Max allowed lengths in each leg
+                # TODO: Fit values a bit
+                self.max_length = [self.component.core.window_h * (100 - self.component.stray_path.midpoint) / 100,
+                                   self.component.core.window_h * self.component.stray_path.midpoint / 100,
+                                   self.component.core.window_w / 2]
+
+                # Air gap types: "round-round", "round-inf", "cyl-cyl"
+                self.air_gap_types = [["round-inf"],  # top
+                                      ["round-inf"],  # bot
+                                      ["cyl-cyl"]]  # stray
+
+                # TODO: R_top and R_bot can be realized with distributed air gaps
+                self.n_ag_per_rel = [1, 1, 1]
+
             else:
                 # Singular Matrices cannot be treated
                 self.n_singularities += 1
+                self.singularity = True
                 # print(N)
-                [Phi_top_max_peak, Phi_bot_max_peak] = [0, 0]  # TODO:Case treatment
-
-            # Store max peak fluxes in instance variable -> used for saturation check
-            self.max_phi = [Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak]
-
-            # self.component.stray_path.width = (Phi_stray+np.abs(Phi_top + Phi_bot)) / self.b_stray /
-            # (np.pi * self.component.core.core_w)
-
-            # Calculate stray path width corresponding to ...
-            # ... externally set magnetic flux density or ...
-            if self.stray_path_parametrization == "given_flux":
-                self.component.stray_path.width = Phi_stray_max_peak / self.b_stray / (np.pi * self.component.core.core_w)
-            # ... to mean flux density of top and bottom flux density
-            if self.stray_path_parametrization == "mean":
-                b_stray_mean = (np.abs(Phi_top_max_peak) + np.abs(Phi_bot_max_peak)) / 2 / np.pi / (self.component.core.core_w / 2)**2
-                self.component.stray_path.width = Phi_stray_max_peak / b_stray_mean / (np.pi * self.component.core.core_w)
-            if self.stray_path_parametrization == "max_flux":
-                phi_abs = np.array([np.abs(Phi_top_max_peak), np.abs(Phi_bot_max_peak)])
-                b_stray_max = phi_abs.max(0) / 2 / np.pi / (self.component.core.core_w / 2)**2
-                self.component.stray_path.width = Phi_stray_max_peak / b_stray_max / self.b_stray_rel_overshoot\
-                                                                            / (np.pi * self.component.core.core_w)
-
-            # Max allowed lengths in each leg
-            # TODO: Fit values a bit
-            self.max_length = [self.component.core.window_h * (100 - self.component.stray_path.midpoint) / 100,
-                               self.component.core.window_h * self.component.stray_path.midpoint / 100,
-                               self.component.core.window_w / 2]
-
-            # Air gap types: "round-round", "round-inf", "cyl-cyl"
-            self.air_gap_types = [["round-inf"],  # top
-                                  ["round-inf"],  # bot
-                                  ["cyl-cyl"]]  # stray
-
-            # TODO: R_top and R_bot can be realized with distributed air gaps
-            self.n_ag_per_rel = [1, 1, 1]
+                [Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak] = [0, 0, 0]  # TODO:Case treatment
 
         def get_air_gaps_from_winding_matrix(self):
             """
@@ -2129,6 +2143,7 @@ class MagneticComponent:
             :return: Dictionary with air gap results or None
 
             """
+            results = None
             # Core and Component type decide about air gap characteristics
             if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
 
@@ -2158,16 +2173,17 @@ class MagneticComponent:
                     self.stray_path_parametrization_ei_axi()
 
                     # Check for negative Reluctances
-                    if all(R >= 0 for R in R_goal):
+                    if all(R >= 0 for R in R_goal) and self.singularity == False:
 
                         # Calculate the air gap lengths with the help of SCT
                         # air_gap_lengths is a dictionary with air gap names and the associated length
-                        air_gap_lengths = self.calculate_air_gap_lengths_with_sct(reluctances=R_goal)
+                        self.air_gap_lengths = self.calculate_air_gap_lengths_with_sct(reluctances=R_goal)
 
                         # print(air_gap_lengths.values())
 
                         # Check for invalid data
-                        if "saturated" in air_gap_lengths.values() or "out of bounds" in air_gap_lengths.values():
+                        if "saturated" in self.air_gap_lengths.values() or \
+                                "out of bounds" in self.air_gap_lengths.values():
                             results = None
                             # print("Invalid Data\n\n")
 
@@ -2176,7 +2192,7 @@ class MagneticComponent:
                             stray_path_width = {"stray_path_width": self.component.stray_path.width}
 
                             # Put together the single dictionaries
-                            results = dict(stray_path_width, **air_gap_lengths)
+                            results = dict(stray_path_width, **self.air_gap_lengths)
 
                     else:
                         results = None
@@ -2194,6 +2210,9 @@ class MagneticComponent:
             """
             Performs calculation of air gap lengths according to given data.
 
+            :param f_1st:
+            :param nom_phase_1st:
+            :param nom_current_1st:
             :param max_current:
             :param nom_current:
             :param material:
@@ -2225,23 +2244,22 @@ class MagneticComponent:
 
             # Visualization
             self.visualize_waveforms = visualize_waveforms
-            if self.visualize_waveforms == ("max"):
+            if self.visualize_waveforms == "max":
                 self.visualize_max = True
                 self.visualize_nom = False
-            if self.visualize_waveforms == ("nom"):
+            if self.visualize_waveforms == "nom":
                 self.visualize_max = False
                 self.visualize_nom = True
-            if self.visualize_waveforms == ("all"):
+            if self.visualize_waveforms == "all":
                 self.visualize_max = True
                 self.visualize_nom = True
-
 
             if not os.path.isdir(self.component.path + "/" + "Reluctance_Model"):
                 os.mkdir(self.component.path + "/" + "Reluctance_Model")
 
             # Save initial parameter set
-            parameters_init = np.asarray(parameters_init)
-            np.save('Reluctance_Model/parameters_init.npy', parameters_init)
+            # parameters_init = np.asarray(parameters_init)
+            # np.save('Reluctance_Model/parameters_init.npy', parameters_init)
 
             # Save goal inductance values
             self.L_goal = np.asarray(L_goal)
@@ -2274,19 +2292,27 @@ class MagneticComponent:
                     if key == "N":
                         self.N = value
 
+                self.singularity = False
                 air_gap_results = self.get_air_gaps_from_winding_matrix()
 
                 # Check if the result is valid
                 if air_gap_results is None:
                     all_parameters = None
                 else:
-                    # Calculate analytical Core Loss
+                    # Add frequency to results
+                    wp_frequency = {"frequency": self.f_1st}
+                    model_results = dict(air_gap_results, **wp_frequency)
 
-                    losses = self.get_core_loss()
+                    # Calculate analytical Hysteresis Loss
+                    self.get_core_loss()
+                    losses = {"p_hyst_nom_1st": self.p_hyst_nom_1st, "p_hyst_nom": self.p_hyst_nom}
 
-                    all_parameters = dict(parameters, **air_gap_results)
+                    model_results = dict(model_results, **losses)
+
+                    all_parameters = dict(parameters, **model_results)
 
                 parameter_results.append(all_parameters)
+
 
             print(f"Number of singularities: {self.n_singularities}\n")
 
@@ -2308,7 +2334,7 @@ class MagneticComponent:
 
             return valid_parameter_results
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Meshing
     class Mesh:
         """
@@ -2905,7 +2931,7 @@ class MagneticComponent:
             if self.component.valid:
                 self.generate_mesh()
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
     def excitation(self, f, i, phases=None, ex_type='current', imposed_red_f=0):
         """
@@ -2988,6 +3014,12 @@ class MagneticComponent:
         text_file.write(f"DirResVals = \"{self.path_res_values}\";\n")
         text_file.write(f"DirResCirc = \"{self.path_res_circuit}\";\n")
 
+        # Visualisation
+        if self.plot_fields == "standard":
+            text_file.write(f"Flag_show_standard_fields = 1;\n")
+        else:
+            text_file.write(f"Flag_show_standard_fields = 0;\n")
+
         # Magnetic Component Type
         if self.component_type == 'inductor':
             text_file.write(f"Flag_Transformer = 0;\n")
@@ -3003,6 +3035,9 @@ class MagneticComponent:
         # Core Loss
         text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
         text_file.write(f"Flag_Generalized_Steinmetz_loss = {self.core.generalized_steinmetz_loss};\n")
+
+        # TODO: Make following definitions general
+        self.core.im_epsilon_rel = f_N95_er_imag(f=self.frequency)
         text_file.write(f"e_r_imag = {self.core.im_epsilon_rel};\n")
         text_file.write(f"mu_r_imag = {self.core.im_mu_rel};\n")
 
@@ -3766,7 +3801,7 @@ class MagneticComponent:
         else:
             print(f"Invalid Geometry Data!")
 
-    def excitation_sweep(self, frequencies, currents, phi, show_last=False):
+    def excitation_sweep(self, frequencies, currents, phi, show_last=False, return_results=False):
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -3789,14 +3824,34 @@ class MagneticComponent:
         # frequencies = frequencies or []
         # currents = currents or []
         # phi = phi or []
-        print(frequencies, currents, phi)
-        for i in range(0, len(frequencies)):
-            self.excitation(f=frequencies[i], i=currents[i], phases=phi[i])  # frequency and current
-            self.file_communication()
-            self.pre_simulate()
-            self.simulate()
         if show_last:
-            self.visualize()
+            self.plot_fields = "standard"
+        else:
+            self.plot_fields = False
+
+        self.high_level_geo_gen(frequency=frequencies[0])  # TODO: Must be changed for solid sim.
+
+        if self.valid:
+            self.mesh.generate_mesh()
+
+            for i in range(0, len(frequencies)):
+                self.excitation(f=frequencies[i], i=currents[i], phases=phi[i])  # frequency and current
+                self.file_communication()
+                self.pre_simulate()
+                self.simulate()
+
+            if show_last:
+                self.visualize()
+
+            if return_results:
+                # Return a Dictionary with the results
+                results = {"j2F": self.load_result("j2F", len(frequencies), "real"),
+                           "j2H": self.load_result("j2H", len(frequencies), "real")}
+                return results
+
+        else:
+            if return_results:
+                return {"FEM_results": "invalid"}
 
     def get_steinmetz_loss(self, Ipeak=None, ki=1, alpha=1.2, beta=2.2, t_rise=3e-6, t_fall=3e-6, f_switch=100000,
                            skin_mesh_factor=0.5):

@@ -1,15 +1,11 @@
-import warnings
 import numpy as np
-import itertools
-import matplotlib.pyplot as plt
 from femmt import MagneticComponent
 from femmt_functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
     sort_out_small_harmonics
-from DAB_Input_Data import working_points, reluctance_parameters, non_reluctance_parameters, L, N, power_nom, power_max
-from scipy.interpolate import interp1d
+from DAB_Input_Data import working_points, reluctance_parameters, non_reluctance_parameters, L_goal, power_nom, power_max
 
-mur = 3000
 skin_accuracy = 0.5
+mur = 3000
 
 
 #                                               -- Definitions --
@@ -46,7 +42,7 @@ for wp_data in working_points:
 
     # Throw out all harmonics with low impact (f.e. amplitude smaller 1%)
     phase_pairs_nom, current_pairs_nom, frequencies = sort_out_small_harmonics(phase_pairs_nom, current_pairs_nom,
-                                                                               frequencies, limes=0.01)
+                                                                               frequencies, limes=0.05)
 
     # Sort with ascending frequencies
     frequencies, phase_pairs_nom, current_pairs_nom = list(zip(*sorted(zip(frequencies,
@@ -63,10 +59,6 @@ for wp_data in working_points:
     frequencies = list(frequencies)
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Hysteresis Loss Comparison [Flux: time-domain vs. 1st-harmonic approximation]
-
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Maximal Power Data (worst case)
     dicts_max = get_dicts_with_keys_and_values(wp_data, power=power_max)
     dict_max_in = get_dict_with_unique_keys(dicts_max, 'wp_ib_il_phase_rad_vec')
@@ -75,15 +67,13 @@ for wp_data in working_points:
     time_max_in = dict_max_in['wp_ib_il_vec']
     time_max_out = dict_max_out['wp_ob_il_vec']
 
-    I0 = 6  # 6 * 1.25  # 6 is peak of current wave_form
-
     #                                           -- Reluctance Model --
     # ------------------------------------------------------------------------------------------------------------------
     geo = MagneticComponent(component_type="integrated_transformer")
 
-    # valid_reluctance_parameters: List of dictionaries (Core Parameters, Stray Path Paramters, Winding Parameters,
+    # valid_reluctance_parameters: List of dictionaries (Core Parameters, Stray Path Parameters, Winding Parameters,
     #                                                    Fluxes, Analytic Core Losses)
-    valid_reluctance_parameters = geo.reluctance_model.air_gap_design(L_goal=L,
+    valid_reluctance_parameters = geo.reluctance_model.air_gap_design(L_goal=L_goal[f"{frequency}"],
                                                                       parameters_init=reluctance_parameters,
                                                                       max_current=[time_max_in, time_max_out],
                                                                       nom_current=[time_nom_in, time_nom_out],
@@ -96,16 +86,17 @@ for wp_data in working_points:
                                                                       stray_path_parametrization="max_flux",
                                                                       visualize_waveforms=None)
 
-    input("Press Enter to continue...")
+    print(valid_reluctance_parameters)
 
+    # input("Press Enter to continue...")
 
     #                                         -- FEM Simulation --
     # --------------------------------------------------------------------------------------------------------------
     # Bring together valid reluctance parameters and non reluctance parameters
     FEM_parameters = []
-    for reluctance_parameters in valid_reluctance_parameters:
+    for valid_parameters in valid_reluctance_parameters:
         for non_reluctance_parameter in non_reluctance_parameters:
-            FEM_parameters.append(dict(reluctance_parameters, **non_reluctance_parameter))
+            FEM_parameters.append(dict(valid_parameters, **non_reluctance_parameter))
 
     # Remove:
     geo.s = 0.5
@@ -141,20 +132,25 @@ for wp_data in working_points:
                               conductor_radii=[0.0005, 0.0009],
                               litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
                               strands_numbers=[parameters["N_strands_prim"], parameters["N_strands_sec"]],
-                              ff=[0.5, 0.5],
+                              ff=[0.55, 0.55],
                               strand_radii=[parameters["strand_radius"], parameters["strand_radius"]],
-                              cond_cond_isolation=[0.0002, 0.0002, 0.0004],
-                              core_cond_isolation=[0.002])
+                              cond_cond_isolation=[0.0001, 0.0001, 0.0001],
+                              core_cond_isolation=[0.0005, 0.0005])
 
         # -- Simulation --
+        I0 = 6  # 6 * 1.25  # 6 is peak of current wave_form
         # geo.get_inductances(I0=I0, op_frequency=frequency, skin_mesh_factor=skin_accuracy)
 
-        geo.single_simulation(freq=frequencies[0],
-                              current=current_pairs_nom[0],
-                              phi_deg=phase_pairs_nom[0])
+        # geo.single_simulation(freq=frequencies[0],
+        #                       current=current_pairs_nom[0],
+        #                       phi_deg=phase_pairs_nom[0])
 
-        # geo.excitation_sweep(frequencies=frequencies,
-        #                      currents=current_pairs_nom,
-        #                      phi=phase_pairs_nom,
-        #                      show_last=True)
+        FEM_results = geo.excitation_sweep(frequencies=frequencies,
+                                           currents=current_pairs_nom,
+                                           phi=phase_pairs_nom,
+                                           show_last=True,
+                                           return_results=True)
 
+        FEM_parameters[n_par] = dict(FEM_parameters[n_par], **FEM_results)
+
+    print(FEM_parameters)
