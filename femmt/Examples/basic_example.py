@@ -29,7 +29,7 @@ if component == "inductor":
 if component == "transformer":
     geo = MagneticComponent(component_type="transformer")
 
-    geo.visualize_before = True
+    geo.visualize_before = False
 
     # Update Geometry
     geo.core.update(type="EI", window_h=0.0295, window_w=0.012, core_w=0.015)
