@@ -234,10 +234,10 @@ Function {
   If(Flag_HomogenisedModel1)
     // Homogenization coefficients
     // Primary (Inductor + Transformer)
-    file_ZSkinRe_1  = Sprintf("pre/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
-    file_ZSkinIm_1  = Sprintf("pre/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
-    file_NuProxRe_1= Sprintf("pre/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
-    file_NuProxIm_1 = Sprintf("pre/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
+    file_ZSkinRe_1  = Sprintf("Strands_Coefficents/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
+    file_ZSkinIm_1  = Sprintf("Strands_Coefficents/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
+    file_NuProxRe_1= Sprintf("Strands_Coefficents/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
+    file_NuProxIm_1 = Sprintf("Strands_Coefficents/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
     skin_rhor_list_1() = ListFromFile[ file_ZSkinRe_1 ];
     skin_rhoi_list_1() = ListFromFile[ file_ZSkinIm_1 ];
     prox_nur_list_1()  = ListFromFile[ file_NuProxRe_1 ];
@@ -254,10 +254,10 @@ Function {
   If(Flag_Transformer)
     If(Flag_HomogenisedModel2)
       // Secondary
-      file_ZSkinRe_2  = Sprintf("pre/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
-      file_ZSkinIm_2  = Sprintf("pre/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
-      file_NuProxRe_2= Sprintf("pre/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
-      file_NuProxIm_2 = Sprintf("pre/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
+      file_ZSkinRe_2  = Sprintf("Strands_Coefficents/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
+      file_ZSkinIm_2  = Sprintf("Strands_Coefficents/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
+      file_NuProxRe_2= Sprintf("Strands_Coefficents/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
+      file_NuProxIm_2 = Sprintf("Strands_Coefficents/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
       skin_rhor_list_2() = ListFromFile[ file_ZSkinRe_2 ];
       skin_rhoi_list_2() = ListFromFile[ file_ZSkinIm_2 ];
       prox_nur_list_2()  = ListFromFile[ file_NuProxRe_2 ];
@@ -648,29 +648,35 @@ PostOperation Map_local UsingPost MagDyn_a {
     Print[ pSE_density,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE_density", ExtGmsh],  LastTimeStepOnly ] ;
   EndIf
 
-  Print[ mur,  OnElementsOf Domain,  File StrCat[DirResFields, "mur", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ p_hyst,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ mur,  OnElementsOf Domain,  File StrCat[DirResFields, "mur", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ p_hyst,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst", ExtGmsh],  LastTimeStepOnly ] ;
   Print[ p_hyst_density,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Magnetic Flux (Density)
-  Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "b_pol", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ im_b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "im_b_pol", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ Magb,  OnElementsOf Domain,  File StrCat[DirResFields, "Magb", ExtGmsh],  LastTimeStepOnly] ;
+  //Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "b_pol", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ im_b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "im_b_pol", ExtGmsh],  LastTimeStepOnly ] ;
+  If(Flag_show_standard_fields)
+    Print[ Magb,  OnElementsOf Domain,  File StrCat[DirResFields, "Magb", ExtGmsh],  LastTimeStepOnly] ;
+  EndIf
   //  , StoreInVariable $Magb maybe use this for Core Loss
 
   // Energy
   //Print[ MagEnergy,  OnElementsOf Domain,  File StrCat[DirResFields, "MagEnergy", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Current Density
-  Print[ jz, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirResFields, "jz", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ jz, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirResFields, "jz", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ j, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirResFields, "j", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ J_rms, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "J_rms", ExtGmsh], LastTimeStepOnly ] ;
 
   // Ohmic Loss
-  Print[ j2F, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
+  If(Flag_show_standard_fields)
+    Print[ j2F, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
+  EndIf
   Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
-  Print[ j2H,   OnElementsOf DomainS, File StrCat[DirResFields,"jH",ExtGmsh] ] ;
+  If(Flag_show_standard_fields)
+    Print[ j2H,   OnElementsOf DomainS, File StrCat[DirResFields,"jH",ExtGmsh] ] ;
+  EndIf
   Print[ j2H_density,   OnElementsOf DomainS, File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
 
   //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
@@ -695,12 +701,12 @@ PostOperation Map_local UsingPost MagDyn_a {
 PostOperation Get_global UsingPost MagDyn_a {
 
   // Loss
-  Print[ j2F[ DomainC ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F.dat"]] ;// Joule losses
+  Print[ j2F[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F.dat"]] ;// Joule losses
   //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // Complex power
   Print[ j2H[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H.dat"] ] ;
-  //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
+  Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
   //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
-  //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
+  Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
   //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
 
   //Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];

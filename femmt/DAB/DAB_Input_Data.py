@@ -53,17 +53,16 @@ b_stray_rel_overshoot = [2]  # [1, 1.5, 2]
 width = []  # [0.004]  # stray_path.width
 
 """
-N1 = np.arange(24, 30)  # [27, 20]  # Turns in main window
-N2 = np.arange(6, 9)  # [7]  # Turns in main window
-Ns1 = np.arange(2, 8)  # [5]  # Turns in stray window
-Ns2 = np.arange(2, 7)  # [6]  # Turns in stray window
-
-
+N1 = np.arange(18, 30)  # [27, 20]  # Turns in main window
+N2 = np.arange(4, 10)  # [7]  # Turns in main window
+Ns1 = np.arange(0, 13)  # [5]  # Turns in stray window
+Ns2 = np.arange(0, 9)  # [6]  # Turns in stray window
 """
+
 N1 = np.arange(26, 27)  # [27, 20]  # Turns in main window
 N2 = np.arange(6, 8)  # [7]  # Turns in main window
-Ns1 = np.arange(5, 6)  # [5]  # Turns in stray window
-Ns2 = np.arange(6, 7)  # [6]  # Turns in stray window
+Ns1 = np.arange(0, 2)  # [5]  # Turns in stray window
+Ns2 = np.arange(4, 5)  # [6]  # Turns in stray window
 
 
 N_flat = list(itertools.product(N1, N2, Ns1, Ns2))
@@ -81,7 +80,7 @@ for objects in reluctance_parameter_values:
 # Litz Definitions
 litzes = {
     "prim": {"strand_radius": 0.0355e-3, "N_strands": 405, "conductor_radius": 0.90e-3, "isolation": 50e-6},
-    "sec": {"strand_radius": 0.0355e-3, "N_strands": 600, "conductor_radius": 1.0e-3, "isolation": 100e-6}}
+    "sec": {"strand_radius": 0.0355e-3, "N_strands": 600, "conductor_radius": 1.1e-3, "isolation": 100e-6}}
 
 
 # Create List of Dictionaries for FEM simulations
@@ -97,6 +96,3 @@ non_reluctance_parameters = [{"litzes": litzes}]
 
 print(non_reluctance_parameters)
 print(len(non_reluctance_parameters))
-
-parameters = non_reluctance_parameters[0]
-conductor_radii = [parameters["litzes"]["prim"]["conductor_radius"], parameters["litzes"]["sec"]["conductor_radius"]],

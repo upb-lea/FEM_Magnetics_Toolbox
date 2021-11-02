@@ -106,7 +106,6 @@ for wp_data in working_points:
         for non_reluctance_parameter in non_reluctance_parameters:
             FEM_parameters.append(dict(valid_parameters, **non_reluctance_parameter))
 
-
     store_as_npy_in_directory(result_directory, f"Init_FEM_parameters_{frequency}", FEM_parameters)
 
     # Remove:
@@ -148,7 +147,7 @@ for wp_data in working_points:
                                                    2*parameters["litzes"]["sec"]["isolation"],
                                                    parameters["litzes"]["prim"]["isolation"] +
                                                    parameters["litzes"]["prim"]["isolation"]],
-                              core_cond_isolation=[200e-6, 200e-6])
+                              core_cond_isolation=[1e-3, 200e-6])  # 1st argument close to air gaps
 
 
         # -- Simulation --

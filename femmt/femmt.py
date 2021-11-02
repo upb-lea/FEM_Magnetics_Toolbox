@@ -1034,16 +1034,16 @@ class MagneticComponent:
                 island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
                 min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1]  # bottom
                 max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - \
-                        self.component.isolation.core_cond[1]  # sep_hor
-                left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[1]
+                        self.component.isolation.core_cond[0]  # sep_hor
+                left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
                 right11 = self.r_inner - self.component.isolation.core_cond[1]
 
                 # top window
                 min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + \
                         self.component.isolation.core_cond[0]  # sep_hor
-                max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[0]  # top
+                max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[1]  # top
                 left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
-                right21 = self.r_inner - self.component.isolation.core_cond[0]
+                right21 = self.r_inner - self.component.isolation.core_cond[1]
 
                 # Store the window boarders in the VWW objects
                 virtual_windows = [[min21, max21, left21, right21], [min11, max11, left11, right11]]
@@ -2263,7 +2263,7 @@ class MagneticComponent:
 
             # Save goal inductance values
             self.L_goal = np.asarray(L_goal)
-            np.save('Reluctance_Model/goals.npy', self.L_goal)
+            np.save(self.component.path + '/Reluctance_Model/goals.npy', self.L_goal)
 
             # Initialize result list
             parameter_results = []
@@ -2319,14 +2319,14 @@ class MagneticComponent:
             # Save Results including invalid parameters
             # print(f"{parameter_results=}")
 
-            np.save('Reluctance_Model/parameter_results.npy', parameter_results)
+            np.save(self.component.path + '/Reluctance_Model/parameter_results.npy', parameter_results)
 
             # Filter all entries, that are None
             # Elements of list reluctance_parameters are either a dictionary or None
             valid_parameter_results = [x for x in parameter_results if x is not None]
 
             # Save resulting valid parameters
-            np.save('Reluctance_Model/valid_parameter_results.npy', valid_parameter_results)
+            np.save(self.component.path + '/Reluctance_Model/valid_parameter_results.npy', valid_parameter_results)
 
             print(f"Number of valid parameters: {len(valid_parameter_results)}\n\n"
                   f"Ready with reluctance calculations\n"
@@ -2771,8 +2771,8 @@ class MagneticComponent:
                 # gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
 
                 # gmsh.model.geo.synchronize()
-                gmsh.model.mesh.generate(2)
                 gmsh.write(self.component.path_mesh + "color.msh")
+                gmsh.model.mesh.generate(2)
                 gmsh.fltk.run()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3519,8 +3519,8 @@ class MagneticComponent:
                 # Litz Approximation Coefficients were created with 4 layers
                 # That's why here a hard-coded 4 is implemented
                 # if os.path.isfile(self.path +
-                # f"/pre/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
-                if os.path.isfile(self.path + f"/pre/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat"):
+                # f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
+                if os.path.isfile(self.path + f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat"):
                     print("Coefficients for stands approximation are found.")
 
                 else:
@@ -3542,7 +3542,7 @@ class MagneticComponent:
               f"Create coefficients for strands approximation\n")
         # Create a new onelab client
         # -- Pre-Simulation Settings --
-        text_file = open(self.path + "/pre/PreParameter.pro", "w")
+        text_file = open(self.path + "/Strands_Coefficents/PreParameter.pro", "w")
         # ---
         # Litz Approximation Coefficients are created with 4 layers
         # That's why here a hard-coded 4 is implemented
@@ -3554,7 +3554,7 @@ class MagneticComponent:
         text_file.close()
         self.onelab_setup()
         c = onelab.client(__file__)
-        cell_geo = c.getPath('pre/cell.geo')
+        cell_geo = c.getPath('Strands_Coefficents/cell.geo')
 
         # Run gmsh as a sub client
         mygmsh = self.onelab + 'gmsh'
@@ -3565,7 +3565,7 @@ class MagneticComponent:
         for mode in modes:
             for rf in reduced_frequencies:
                 # -- Pre-Simulation Settings --
-                text_file = open(self.path + "/pre/PreParameter.pro", "w")
+                text_file = open(self.path + "/Strands_Coefficents/PreParameter.pro", "w")
                 text_file.write(f"Rr_cell = {rf};\n")
                 text_file.write(f"Mode = {mode};\n")
                 # Litz Approximation Coefficients are created with 4 layers
@@ -3578,8 +3578,8 @@ class MagneticComponent:
                 text_file.close()
 
                 # get model file names with correct path
-                input_file = c.getPath('pre/cell_dat.pro')
-                cell = c.getPath('pre/cell.pro')
+                input_file = c.getPath('Strands_Coefficents/cell_dat.pro')
+                cell = c.getPath('Strands_Coefficents/cell.pro')
 
                 # Run simulations as sub clients
                 mygetdp = self.onelab + 'getdp'
@@ -3588,14 +3588,14 @@ class MagneticComponent:
         # Formatting stuff
         # Litz Approximation Coefficients are created with 4 layers
         # That's why here a hard-coded 4 is implemented
-        # files = [self.path + f"/pre/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/pre/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/pre/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/pre/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
-        files = [self.path + f"/pre/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat",
-                 self.path + f"/pre/coeff/pI_RS_la{self.windings[num].ff}_4layer.dat",
-                 self.path + f"/pre/coeff/qB_RS_la{self.windings[num].ff}_4layer.dat",
-                 self.path + f"/pre/coeff/qI_RS_la{self.windings[num].ff}_4layer.dat"]
+        # files = [self.path + f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/Strands_Coefficents/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/Strands_Coefficents/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/Strands_Coefficents/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
+        files = [self.path + f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat",
+                 self.path + f"/Strands_Coefficents/coeff/pI_RS_la{self.windings[num].ff}_4layer.dat",
+                 self.path + f"/Strands_Coefficents/coeff/qB_RS_la{self.windings[num].ff}_4layer.dat",
+                 self.path + f"/Strands_Coefficents/coeff/qI_RS_la{self.windings[num].ff}_4layer.dat"]
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:
