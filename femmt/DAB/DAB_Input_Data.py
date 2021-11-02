@@ -48,8 +48,10 @@ for f_switch in wp_f_switch:
 window_h = [0.029]
 window_w = [0.01105]
 core_w = [0.0145]
+real_core_width = [28e-3]
 midpoint = [30, 35, 40]  # [25, 30, 35, 40, 45]  # stray_path.midpoint
-b_stray_rel_overshoot = [2]  # [1, 1.5, 2]
+b_stray_rel_overshoot = [1, 1.5]
+
 width = []  # [0.004]  # stray_path.width
 
 """
@@ -57,8 +59,8 @@ N1 = np.arange(18, 30)  # [27, 20]  # Turns in main window
 N2 = np.arange(4, 10)  # [7]  # Turns in main window
 Ns1 = np.arange(0, 13)  # [5]  # Turns in stray window
 Ns2 = np.arange(0, 9)  # [6]  # Turns in stray window
-"""
 
+"""
 N1 = np.arange(26, 27)  # [27, 20]  # Turns in main window
 N2 = np.arange(6, 8)  # [7]  # Turns in main window
 Ns1 = np.arange(0, 2)  # [5]  # Turns in stray window
@@ -69,8 +71,8 @@ N_flat = list(itertools.product(N1, N2, Ns1, Ns2))
 N = [np.reshape(N_flat_single, (2, 2)) for N_flat_single in N_flat]
 
 # Create List of Dictionaries for Reluctance Model
-reluctance_parameter_categories = ["window_w", "window_h", "core_w", "midpoint", "N", "b_stray_rel_overshoot"]
-reluctance_parameter_values = list(itertools.product(window_w, window_h, core_w, midpoint, N, b_stray_rel_overshoot))
+reluctance_parameter_categories = ["window_w", "window_h", "core_w", "real_core_width", "midpoint", "N", "b_stray_rel_overshoot"]
+reluctance_parameter_values = list(itertools.product(window_w, window_h, core_w, real_core_width, midpoint, N, b_stray_rel_overshoot))
 
 reluctance_parameters = []
 for objects in reluctance_parameter_values:
@@ -86,7 +88,7 @@ litzes = {
 # Create List of Dictionaries for FEM simulations
 non_reluctance_categories = ["litzes"]
 non_reluctance_values = [litzes]
-print(non_reluctance_values)
+# print(non_reluctance_values)
 
 
 # non_reluctance_parameters = []
@@ -94,5 +96,5 @@ print(non_reluctance_values)
 #     non_reluctance_parameters.append({key: value for key, value in zip(non_reluctance_categories, objects)})
 non_reluctance_parameters = [{"litzes": litzes}]
 
-print(non_reluctance_parameters)
-print(len(non_reluctance_parameters))
+# print(non_reluctance_parameters)
+# print(len(non_reluctance_parameters))

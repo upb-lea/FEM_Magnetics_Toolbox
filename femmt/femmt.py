@@ -15,7 +15,7 @@ from scipy.interpolate import interp1d
 import warnings
 from femmt_functions import inner_points, min_max_inner_points, call_for_path, NbrLayers, \
     install_femm_if_missing, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
-    NbrStrands, fft, compare_fft_list, id_generator
+    NbrStrands, fft, compare_fft_list, id_generator, r_cyl_cyl_real
 
 # import pandas as pd
 # import re
@@ -1154,7 +1154,7 @@ class MagneticComponent:
 
                         # assume 2 winding transformer and dedicated stray path:
                         if self.component.component_type == "integrated_transformer" or self.component.n_windings == 2:
-                            
+
                             # top window
                             if n_win == 0:
                                 # Initialize the list, that counts the already placed conductors
@@ -1800,11 +1800,13 @@ class MagneticComponent:
             self.air_gap_types = None
             self.air_gap_lengths = None
             self.material = None
+            self.b_peaks = None
             self.b_max = None
             self.b_stray = None
             self.b_stray_rel_overshoot = 1
             self.A_stray = None
             self.A_core = None
+            self.real_core_width = None
 
             # Excitation
             self.f_1st = None
@@ -1861,6 +1863,7 @@ class MagneticComponent:
 
             """
             air_gap_lengths = {}
+            b_peaks = {}
 
             # Go through reluctances
             for n_reluctance, R_0 in enumerate(reluctances):
@@ -1888,6 +1891,8 @@ class MagneticComponent:
 
                     # Check for saturation
                     b_peak = self.max_phi[n_reluctance] / A_part
+                    b_peaks[air_gap_name + "_b_peak"] = b_peak
+
                     if b_peak > self.b_max:
                         air_gap_lengths[air_gap_name] = "saturated"
                         # print("saturated")
@@ -1931,6 +1936,19 @@ class MagneticComponent:
                                                  r_o=self.component.core.window_w + self.component.core.core_w / 2
                                                  ) - R_0
 
+                            def r_sct_real(length):
+                                return r_cyl_cyl_real(l=length,
+                                                      sigma=sigma(l=length,
+                                                                  w=self.component.stray_path.width,
+                                                                  R_equivalent=r_basis(l=length,
+                                                                                       w=self.component.stray_path.width,
+                                                                                       h=self.component.core.window_w
+                                                                                       - length) / 2),
+                                                      w=self.component.stray_path.width,
+                                                      r_o=self.component.core.window_w + self.component.core.core_w / 2,
+                                                      h_real_core=self.real_core_width
+                                                      ) - R_0
+
                         # print(f"\n  {air_gap_name}")
                         # print(f"n_reluctance {n_reluctance}")
                         # print(f"self.component.stray_path.width {self.component.stray_path.width}")
@@ -1945,9 +1963,11 @@ class MagneticComponent:
                             # print("out of bounds")
                         else:
                             air_gap_lengths[air_gap_name] = brentq(r_sct, 1e-6, self.max_length[n_reluctance])
+                            if air_gap_name == "R_stray":
+                                air_gap_lengths[air_gap_name + "_real"] = brentq(r_sct_real, 1e-6, self.max_length[n_reluctance])
 
             # print(f"{air_gap_lengths=}")
-            return air_gap_lengths
+            return air_gap_lengths, b_peaks
 
         def get_core_loss(self):
             """
@@ -2195,7 +2215,7 @@ class MagneticComponent:
                     self.component.stray_path.width = Phi_stray_max_peak / b_stray_mean / (np.pi * self.component.core.core_w)
                 if self.stray_path_parametrization == "max_flux":
                     phi_abs = np.array([np.abs(Phi_top_max_peak), np.abs(Phi_bot_max_peak)])
-                    b_stray_max = phi_abs.max(0) / 2 / np.pi / (self.component.core.core_w / 2)**2
+                    b_stray_max = phi_abs.max(0) / np.pi / (self.component.core.core_w / 2)**2
                     self.component.stray_path.width = Phi_stray_max_peak / b_stray_max / self.b_stray_rel_overshoot\
                                                                                 / (np.pi * self.component.core.core_w)
 
@@ -2262,7 +2282,7 @@ class MagneticComponent:
 
                         # Calculate the air gap lengths with the help of SCT
                         # air_gap_lengths is a dictionary with air gap names and the associated length
-                        self.air_gap_lengths = self.calculate_air_gap_lengths_with_sct(reluctances=R_goal)
+                        self.air_gap_lengths, self.b_peaks = self.calculate_air_gap_lengths_with_sct(reluctances=R_goal)
 
                         # print(air_gap_lengths.values())
 
@@ -2277,7 +2297,8 @@ class MagneticComponent:
                             stray_path_width = {"stray_path_width": self.component.stray_path.width}
 
                             # Put together the single dictionaries
-                            results = dict(stray_path_width, **self.air_gap_lengths)
+                            lengths_and_peaks = dict(self.b_peaks, **self.air_gap_lengths)
+                            results = dict(stray_path_width, **lengths_and_peaks)
 
                     else:
                         results = None
@@ -3931,7 +3952,8 @@ class MagneticComponent:
             if return_results:
                 # Return a Dictionary with the results
                 results = {"j2F": self.load_result("j2F", len(frequencies), "real"),
-                           "j2H": self.load_result("j2H", len(frequencies), "real")}
+                           "j2H": self.load_result("j2H", len(frequencies), "real"),
+                           "p_hyst": self.load_result("p_hyst", len(frequencies), "real")}
                 return results
 
         else:

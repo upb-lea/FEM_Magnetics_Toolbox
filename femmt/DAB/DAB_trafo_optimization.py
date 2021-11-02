@@ -86,16 +86,21 @@ for wp_data in working_points:
                                                                       f_1st=frequency,
                                                                       b_max=0.3, b_stray=0.25,
                                                                       stray_path_parametrization="max_flux",
-                                                                      visualize_waveforms=None)
+                                                                      visualize_waveforms=True)
 
-    print(valid_reluctance_parameters)
+    print(f"{len(valid_reluctance_parameters)=}")
 
     store_as_npy_in_directory(result_directory, f"valid_reluctance_parameters_{frequency}", valid_reluctance_parameters)
 
 
     # Sort out inacceptable hysteresis losses:
-    # hyst_good = [item for item in hyst if item > 20]
+    epsilon = 1.25
+    hyst = [res["p_hyst_nom"] for res in valid_reluctance_parameters]
+    hyst_minimum = min(hyst)
+    reluctance_parameters_hyst_good = [item for item in valid_reluctance_parameters if item["p_hyst_nom"] < hyst_minimum*epsilon]
 
+
+    print(f"{len(reluctance_parameters_hyst_good)=}")
     # input("Press Enter to continue...")
 
     #                                         -- FEM Simulation --
@@ -162,13 +167,11 @@ for wp_data in working_points:
         FEM_results = geo.excitation_sweep(frequencies=frequencies,
                                            currents=current_pairs_nom,
                                            phi=phase_pairs_nom,
-                                           show_last=True,
+                                           show_last=False,
                                            return_results=True)
 
         FEM_parameters[n_par] = dict(FEM_parameters[n_par], **FEM_results)
 
     store_as_npy_in_directory(result_directory, f"Result_FEM_parameters_{frequency}", FEM_parameters)
-
-
 
     print(FEM_parameters)
