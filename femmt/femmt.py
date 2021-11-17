@@ -1964,7 +1964,7 @@ class MagneticComponent:
                         else:
                             air_gap_lengths[air_gap_name] = brentq(r_sct, 1e-6, self.max_length[n_reluctance])
                             if air_gap_name == "R_stray":
-                                air_gap_lengths[air_gap_name + "_real"] = brentq(r_sct_real, 1e-6, self.max_length[n_reluctance])
+                                air_gap_lengths[air_gap_name + "_real"] = brentq(r_sct_real, 1e-9, self.max_length[n_reluctance])
 
             # print(f"{air_gap_lengths=}")
             return air_gap_lengths, b_peaks
@@ -2000,8 +2000,39 @@ class MagneticComponent:
             p_top, p_bot, p_stray = self.hysteresis_loss(Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak)
             # print(p_top, p_bot, p_stray)
             self.p_hyst_nom = sum([p_top, p_bot, p_stray])
+            self.phi_core_loss(Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak)
 
             # print(f"Analytical Core Losses = \n\n")
+
+        def phi_core_loss(self, Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak):
+            """
+
+            :return:
+            """
+            # time
+            t = np.linspace(min(self.nom_current[0][0]), max(self.nom_current[0][0]), 500) / self.f_1st / 2 / np.pi
+            phase = 0
+            Phi_top = Phi_top_nom_peak * np.cos(t * self.f_1st * 2 * np.pi + phase)
+            Phi_bot = Phi_bot_nom_peak * np.cos(t * self.f_1st * 2 * np.pi + phase)
+            Phi_stray = Phi_stray_nom_peak * np.cos(t * self.f_1st * 2 * np.pi + phase)
+
+
+            if self.visualize_nom:
+                figure, axis = plt.subplots(3, figsize=(4, 6))
+
+                # t = np.array(t) * 10 ** 6 / 200000 / 2 / np.pi
+                for i, phi in enumerate([Phi_top, Phi_bot, Phi_stray]):
+                    axis[i].plot(t, 1000 * np.array(Phi_top), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
+                    axis[i].set_ylabel("Magnetic fluxes / mWb")
+                    axis[i].set_xlabel(r"$t$ / \mu s")
+                    axis[i].legend()
+                    axis[i].grid()
+
+                plt.savefig(
+                    f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/core_loss.pdf",
+                    bbox_inches="tight")
+
+                plt.show()
 
         def phi_fundamental(self):
             """
@@ -2009,7 +2040,7 @@ class MagneticComponent:
             :return:
             """
             # time
-            t = np.linspace(min(self.nom_current[0][0]), max(self.nom_current[0][0]), 500) / self.f_1st
+            t = np.linspace(min(self.nom_current[0][0]), max(self.nom_current[0][0]), 500) / self.f_1st / 2 / np.pi
 
             # time functions
             # f_I1 = interp1d(self.nom_current[0][0], self.nom_current[0][1])  # current_pairs_nom[0]
@@ -2019,11 +2050,11 @@ class MagneticComponent:
 
             # Imax_in = max(time_nom_in[1])
             # I1 = Imax_in * np.cos(t * f + phase_pairs_nom[0][0])
-            I1 = self.nom_current_1st[0] * np.cos(t * self.f_1st + self.nom_phase_1st[0])
+            I1 = self.nom_current_1st[0] * np.cos(t * self.f_1st * 2 * np.pi + self.nom_phase_1st[0])
 
             # Imax_out = max(time_nom_out[1])
             # I2 = Imax_out * np.cos(t * f + phase_pairs_nom[0][1]+np.pi)
-            I2 = self.nom_current_1st[1] * np.cos(t * self.f_1st + self.nom_phase_1st[1] + np.pi)
+            I2 = self.nom_current_1st[1] * np.cos(t * self.f_1st * 2 * np.pi + self.nom_phase_1st[1] + np.pi)
 
             # Calc fluxes
             Phi_top = []
@@ -2160,25 +2191,30 @@ class MagneticComponent:
             return Phi_top, Phi_bot, Phi_stray
 
         def visualize_current_and_flux(self, t, Phi_top, Phi_bot, Phi_stray, I1, I2):
-            figure, axis = plt.subplots(2)
+            figure, axis = plt.subplots(2, figsize=(4, 4))
 
-            axis[0].plot(t, Phi_top, label=f"Phi_top")
-            axis[0].plot(t, Phi_bot, label=f"Phi_bot")
-            axis[0].plot(t, Phi_stray, label=f"Phi_stray")
-            axis[1].plot(t, I1, label=f"Iin")
-            axis[1].plot(t, -np.array(I2), label=f"Iout")
-            axis[1].plot(t, np.array(I2)/3.2 - np.array(I1), label=f"Im")
+            t = np.array(t) * 10**6 / 200000 / 2 / np.pi
 
-            axis[0].set_ylabel("Magnetic flux in Wb")
-            axis[0].set_xlabel("time in s")
-            axis[1].set_ylabel("Current in A")
-            axis[1].set_xlabel("time in s")
+            axis[0].plot(t, 1000*np.array(Phi_top), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
+            axis[0].plot(t, 1000*np.array(Phi_bot), label=r"$\mathcal{\phi}_{\mathrm{bot}}$")
+            axis[0].plot(t, 1000*np.array(Phi_stray), label=r"$\mathcal{\phi}_{\mathrm{stray}}$")
+            axis[1].plot(t, I1, label=r"$I_{\mathrm{in}}$")
+            axis[1].plot(t, -np.array(I2), label=r"$I_{\mathrm{out}}$")
+            # axis[1].plot(t, np.array(I2)/3.2 - np.array(I1), label=f"Im")
+
+            axis[0].set_ylabel("Magnetic fluxes / mWb")
+            axis[0].set_xlabel(r"$t$ / \mu s")
+            axis[1].set_ylabel("Currents / A")
+            axis[1].set_xlabel(r"$t$ / $\mathrm{\mu s}$")
 
             axis[0].legend()
             axis[1].legend()
 
             axis[0].grid()
             axis[1].grid()
+
+            plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/{I1[0]}.pdf",
+                        bbox_inches="tight")
 
             plt.show()
 
@@ -2201,6 +2237,8 @@ class MagneticComponent:
 
                 # Store max peak fluxes in instance variable -> used for saturation check
                 self.max_phi = [Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak]
+                print(self.max_phi)
+
 
                 # self.component.stray_path.width = (Phi_stray+np.abs(Phi_top + Phi_bot)) / self.b_stray /
                 # (np.pi * self.component.core.core_w)
@@ -3564,7 +3602,7 @@ class MagneticComponent:
 
         # Now, the finished input geometry can be displayed.
         femm.mi_zoomnatural()
-        femm.mi_saveas(self.path_res_FEMM + 'coil.fem')
+        femm.mi_saveas(self.path + "/" + self.path_res_FEMM + 'coil.fem')
         femm.mi_analyze()
         femm.mi_loadsolution()
 
@@ -3782,13 +3820,16 @@ class MagneticComponent:
 
         # -- Inductance Estimation --
         self.mesh.mesh(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
+        # self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
+        # self.mesh.generate_mesh()
 
         if self.valid:
             frequencies = [op_frequency] * 2
             currents = [[I0, 0], [0, I0]]
             phases = [[0, 180], [0, 180]]
 
-            self.excitation_sweep(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
+            # self.excitation_sweep(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize, meshing=False)
+            self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
 
             print(f"\n"
                   f"                             == Inductances ==                             \n")
@@ -3907,7 +3948,39 @@ class MagneticComponent:
         else:
             print(f"Invalid Geometry Data!")
 
-    def excitation_sweep(self, frequencies, currents, phi, show_last=False, return_results=False):
+    def excitation_sweep_old(self, frequencies, currents, phi, show_last=False):
+        """
+        Performs a sweep simulation for frequency-current pairs. Both values can
+        be passed in lists of the same length. The mesh is only created ones (fast sweep)!
+
+        :Example Code:
+            #. geo = MagneticComponent()
+            #. geo.mesh()
+            #. fs = np.linspace(0, 250000, 6)
+            #. cs = [10, 2, 1, 0.5, 0.2, 0.1]
+            #. geo.excitation_sweep(frequencies=fs, currents=cs)
+
+        :param phi:
+        :param currents:
+        :param frequencies:
+        :param show_last:
+
+        :return:
+
+        """
+        # frequencies = frequencies or []
+        # currents = currents or []
+        # phi = phi or []
+        print(frequencies, currents, phi)
+        for i in range(0, len(frequencies)):
+            self.excitation(f=frequencies[i], i=currents[i], phases=phi[i])  # frequency and current
+            self.file_communication()
+            self.pre_simulate()
+            self.simulate()
+        if show_last:
+            self.visualize()
+
+    def excitation_sweep(self, frequencies, currents, phi, show_last=False, return_results=False, meshing=True):
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -3935,10 +4008,12 @@ class MagneticComponent:
         else:
             self.plot_fields = False
 
-        self.high_level_geo_gen(frequency=frequencies[0])  # TODO: Must be changed for solid sim.
+        if meshing:
+            self.high_level_geo_gen(frequency=frequencies[0])  # TODO: Must be changed for solid sim.
+            if self.valid:
+                self.mesh.generate_mesh()
 
         if self.valid:
-            self.mesh.generate_mesh()
 
             for i in range(0, len(frequencies)):
                 self.excitation(f=frequencies[i], i=currents[i], phases=phi[i])  # frequency and current
