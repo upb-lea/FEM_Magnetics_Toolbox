@@ -374,6 +374,12 @@ def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: 
     plt.show()
 
 
+def store_as_npy_in_directory(dir_path, file_name, data):
+    if not os.path.isdir(dir_path):
+        os.mkdir(dir_path)
+    np.save(dir_path + "/" + file_name, data)
+
+
 def data_logging(sim_choice):
     """
     !!! not finally implemented !!!
@@ -583,6 +589,20 @@ def r_cyl_cyl(l, sigma, w, r_o):
 
     """
     return sigma * np.log(r_o/(r_o-l)) / 2/mu0/np.pi/w
+
+
+def r_cyl_cyl_real(l, sigma, w, r_o, h_real_core):
+    """
+
+    :param l:
+    :param sigma:
+    :param w:
+    :param r_o:
+
+    :return:
+
+    """
+    return sigma * np.log(r_o/(r_o-l)) / mu0 / (2*np.pi - 4*np.arccos(h_real_core/2/r_o)) / w
 
 
 def r_cheap_cyl_cyl(r_o, l, w):
