@@ -29,7 +29,7 @@ jobs:
         run: |
             sudo apt-get update
             sudo apt install libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libgl1-mesa-glx
-            # pip install opencv-python
+            pip install opencv-python
             pip install -e .
             pip install pytest
       # Runs a set of commands using the runners shell
