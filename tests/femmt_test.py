@@ -22,6 +22,6 @@ def test_fft():
     assert out.any() == out_test.any()
 
     with pytest.raises(ValueError):
-        femmt.fft(femmt.fft, example_waveform, mode='deg')
+        femmt.fft(example_waveform, mode='deg')
         femmt.fft(example_waveform, mode='rad')
         femmt.fft(example_waveform, mode='unallowed_mode')

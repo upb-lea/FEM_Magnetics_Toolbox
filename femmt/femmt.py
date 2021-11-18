@@ -13,24 +13,14 @@ import json
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import warnings
-from femmt_functions import inner_points, min_max_inner_points, call_for_path, NbrLayers, \
-    install_femm_if_missing, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
-    NbrStrands, fft, compare_fft_list, id_generator, r_cyl_cyl_real
-
 # import pandas as pd
 # import re
 # import time
-# import warnings
-# from matplotlib import pyplot as plt
 from typing import List, Union, Optional
-from femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
+from .femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
     fft, compare_fft_list, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
-    install_femm_if_missing, calculate_reluctances
-from Analytical_Core_Data import f_N95_mu_imag, f_N95_er_imag
-# Self written functions. It is necessary to write a . before the function, due to handling
-# this package also as a pip-package
-# from .femmt_functions import id_generator, inner_points, min_max_inner_points, call_for_path, NbrStrands
-
+    install_femm_if_missing, calculate_reluctances, r_cyl_cyl_real
+from .Analytical_Core_Data import f_N95_mu_imag, f_N95_er_imag
 
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
