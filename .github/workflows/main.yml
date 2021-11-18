@@ -27,8 +27,8 @@ jobs:
 
       - name: install femmt package
         run: |
-            apt-get update ##[edited]
-            apt-get install ffmpeg libsm6 libxext6  -y
+            sudo apt-get update
+            sudo apt-get install ffmpeg libsm6 libxext6  -y
             pip install -e .
             pip install pytest
       # Runs a set of commands using the runners shell
