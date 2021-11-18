@@ -28,7 +28,7 @@ jobs:
       - name: install femmt package
         run: |
             sudo apt-get update
-            sudo apt install libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libgl1-mesa-glx
+            sudo apt install libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libgl1-mesa-glx:i386
             pip install opencv-python
             pip install -e .
             pip install pytest
