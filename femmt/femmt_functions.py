@@ -130,33 +130,36 @@ def min_max_inner_points(a, b, input_points):
     return [min, max]
 
 
-def call_for_path(destination, config_file="config.json"):
+def call_for_path(destination: str, config_file: str = "config.json") -> str:
     """
     asks the user to enter the filepath of a destinated file WITHOUT the suffix
     stores a the filepath as a python string declaration in a config file
     returns the filepath
 
-    :param destination:
-    :param config_file:
+    :param destination: program name
+    :type destination: str
+    :param config_file: name of configuration file
+    :type config_file: str
 
-    :return:
+    :return: onelab_path
+    :rtype: str
 
     """
-    # pickle_file = open(config_file, "w")
-    # path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
-    # pickle.dumps(path, pickle_file) # f"{destination} = '{path}'\n")
-    # pickle_file.close()
 
-    # Find out the path of installed module, or in case of running directly from git, find the path of git repository
+    # Find out the onelab_path of installed module, or in case of running directly from git, find the onelab_path of git repository
     module_file_path = pathlib.Path(__file__).parent.absolute()
 
-    path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
-    dict = {"onelab": path}
+    onelab_path = input(f"Please enter the parent folder onelab_path of {destination} in ways of 'C:.../onelab-Windows64/': ")
+
+    if onelab_path[-1] != '/':
+        onelab_path = onelab_path + '/'
+
+    onelab_path_dict = {"onelab": onelab_path}
     file = open(module_file_path / config_file, 'w', encoding='utf-8')
-    json.dump(dict, file, ensure_ascii=False)
+    json.dump(onelab_path_dict, file, ensure_ascii=False)
     file.close()
 
-    return path
+    return onelab_path
 
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
