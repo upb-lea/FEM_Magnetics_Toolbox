@@ -3,7 +3,6 @@ import warnings
 
 import numpy.typing as npt
 import numpy as np
-import pathlib
 from matplotlib import pyplot as plt
 import json
 import random
@@ -17,7 +16,6 @@ import pandas as pd
 import pathlib
 import time
 import warnings
-
 
 # Static Functions
 #  Used somewhere in the Code of femmt.py
@@ -149,10 +147,28 @@ def call_for_path(destination: str, config_file: str = "config.json") -> str:
     # Find out the onelab_path of installed module, or in case of running directly from git, find the onelab_path of git repository
     module_file_path = pathlib.Path(__file__).parent.absolute()
 
-    onelab_path = input(f"Please enter the parent folder onelab_path of {destination} in ways of 'C:.../onelab-Windows64/': ")
+    # loop until path is correct
+    onelab_path_wrong = True
+    path_wrong = True
+    while onelab_path_wrong:
+        while path_wrong:
+            onelab_path = input(
+                f"Enter the parent folder onelab_path of {destination} in ways of 'C:.../onelab-Windows64/': ")
+            if '\\' in onelab_path:
+                path_wrong = True
+                print("Use '/' instead of '\\'!")
+            else:
+                path_wrong = False
 
-    if onelab_path[-1] != '/':
-        onelab_path = onelab_path + '/'
+        if onelab_path[-1] != '/':
+            onelab_path = onelab_path + '/'
+
+        if pathlib.Path(onelab_path + 'onelab.py').exists():
+            onelab_path_wrong = False
+        else:
+            onelab_path_wrong = True
+            path_wrong = True
+            print('onelab not found! Please re-enter path!')
 
     onelab_path_dict = {"onelab": onelab_path}
     file = open(module_file_path / config_file, 'w', encoding='utf-8')

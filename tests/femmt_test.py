@@ -25,9 +25,3 @@ def test_fft():
         femmt.fft(example_waveform, mode='deg')
         femmt.fft(example_waveform, mode='rad')
         femmt.fft(example_waveform, mode='unallowed_mode')
-
-def test_call_for_path(monkeypatch):
-    monkeypatch.setattr('builtins.input', lambda _: "C:/folder/of/interest")
-    assert femmt.call_for_path('onelab') == 'C:/folder/of/interest/'
-    monkeypatch.setattr('builtins.input', lambda _: "C:/folder/of/interest/")
-    assert femmt.call_for_path('onelab') == 'C:/folder/of/interest/'
