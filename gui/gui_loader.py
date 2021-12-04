@@ -225,6 +225,7 @@ class MainWindow(QMainWindow):
         self.coreImageLabel.setPixmap(pixmap)
         self.imageBoxImageLabel.setPixmap(pixmap)
         self.initialize_controls()
+
         """slots and events"""
         self.layersNumComboBox.currentTextChanged.connect(self.add_combo_boxes)
         self.windingNumComboBox.currentTextChanged.connect(self.add_winding_type_widgets)
@@ -243,46 +244,48 @@ class MainWindow(QMainWindow):
             self.gapsNumComboBox.addItem(option)
 
 
-    def add_combo_boxes(self):
-        windingDropDown = QtWidgets.QComboBox(self.windingInfoBox)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(windingDropDown.sizePolicy().hasHeightForWidth())
-        windingDropDown.setSizePolicy(sizePolicy)
-        windingDropDown.setMinimumSize(QtCore.QSize(50, 30))
-        windingDropDown.setMaximumSize(QtCore.QSize(16777215, 16777215))
-        windingDropDown.setStyleSheet("border : 1px solid black; border-top-left-radius : 5px; border-top-right-radius : 5px; border-bottom-left-radius:5px; border-bottom-right-radius : 5px;")
-        windingDropDown.setFrame(True)
-        windingDropDown.setObjectName("windingDropDown")
-        self.horizontalLayout_3.addWidget(windingDropDown)
-        print('Hello')
+    def add_combo_boxes(self, selection_count: str):
+        clear_layout(self.horizontalLayout_3)
+        if not selection_count == '':
+            for index in range(int(selection_count)):
+                windingDropDown = QtWidgets.QComboBox(self.windingInfoBox)
+                sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                sizePolicy.setHorizontalStretch(0)
+                sizePolicy.setVerticalStretch(0)
+                sizePolicy.setHeightForWidth(windingDropDown.sizePolicy().hasHeightForWidth())
+                windingDropDown.setSizePolicy(sizePolicy)
+                windingDropDown.setMinimumSize(QtCore.QSize(50, 30))
+                windingDropDown.setMaximumSize(QtCore.QSize(16777215, 16777215))
+                windingDropDown.setStyleSheet("border : 1px solid black; border-top-left-radius : 5px; border-top-right-radius : 5px; border-bottom-left-radius:5px; border-bottom-right-radius : 5px;")
+                windingDropDown.setFrame(True)
+                windingDropDown.setObjectName("windingDropDown"+f'_{index}')
+                self.horizontalLayout_3.addWidget(windingDropDown)
+        self.adjustSize()
 
-    def add_air_gap_widgets(self, selection_count: int):
+    def add_air_gap_widgets(self, selection_count: str):
         clear_layout(self.airgapDynamicLayout)
-        widget_3 = AirGapControls()
-        widget_4 = AirGapControls()
-        widget_5 = AirGapControls()
-        self.airgapDynamicLayout.addWidget(widget_3, 0, 0)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.airgapDynamicLayout.addItem(spacerItem, 0, 1)
-        self.airgapDynamicLayout.addWidget(widget_4, 0, 2)
-        self.airgapDynamicLayout.addWidget(widget_5, 1, 0)
+        if not selection_count == '':
+            for index in range(int(selection_count)):
+                air_gap_widget = AirGapControls()
+                widget_position = divmod(index, 2)
+                self.airgapDynamicLayout.addWidget(air_gap_widget, widget_position[0], widget_position[1])
+                if not index+1 % 2 == 0:
+                    spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                    self.airgapDynamicLayout.addItem(spacerItem, 0, 1)
+        self.adjustSize()
 
-    def add_winding_type_widgets(self, selection_count: int):
+    def add_winding_type_widgets(self, selection_count: str):
         clear_layout(self.windingDynamicLayout)
-
-        widget_1 = WindingControls()
-        widget_2 = WindingControls()
-        self.windingDynamicLayout.addWidget(widget_1)
-        # self.windingDynamicLayout.addWidget(widget_2)
-
+        if not selection_count == '':
+            for index in range(int(selection_count)):
+                winding_type_widget = WindingControls()
+                self.windingDynamicLayout.addWidget(winding_type_widget)
+        self.adjustSize()
 
 def clear_layout(layout):
     while layout.count():
         child = layout.takeAt(0)
-        if child.widget():
-            child.widget().deleteLater()
+        child.widget().deleteLater()
 
 
 if __name__ == "__main__":
