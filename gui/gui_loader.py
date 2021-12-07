@@ -1,16 +1,16 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap
 import femmt as ft
 
 
 class WindingControls(QtWidgets.QWidget):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, index, *args, **kwargs):
         super(WindingControls, self).__init__(*args, **kwargs)
         self.windingDynVerticalLayout = QtWidgets.QVBoxLayout(self)
         self.windingDynVerticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.windingDynVerticalLayout.setObjectName("windingDynVerticalLayout")
+        self.windingDynVerticalLayout.setObjectName("windingDynVerticalLayout" + str(index))
         self.windingDynHorizontalLayout = QtWidgets.QHBoxLayout()
         self.windingDynHorizontalLayout.setObjectName("windingDynHorizontalLayout")
         self.windingTypeLabel = QtWidgets.QLabel(self)
@@ -123,11 +123,18 @@ class WindingControls(QtWidgets.QWidget):
         self.percentLabel.setObjectName("percentLabel")
         self.windingDynGroupBoxHLayout.addWidget(self.percentLabel)
         self.windingDynVerticalLayout.addWidget(self.windingDynGroupBox)
+        self.index = index
         self.retranslateUi()
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.windingTypeLabel.setText(_translate("Form", "<html><head/><body><p><span style=\" color:#ff0000;\"> X. Winding Type (X)</span></p></body></html>"))
+        if self.index == 1:
+            text_to_attach = '(P)'
+        elif self.index == 2:
+            text_to_attach = '(S)'
+        elif self.index == 3:
+            text_to_attach = '(T)'
+        self.windingTypeLabel.setText(_translate("Form", f"<html><head/><body><p><span style=\" color:#ff0000;\"> {self.index}. Winding Type {text_to_attach}</span></p></body></html>"))
         self.strandLabel.setText(_translate("Form", "<html><head/><body><p><span style=\" color:#ff0000;\">Strand No.</span></p></body></html>"))
         self.mmLabelOne.setText(_translate("Form", "mm"))
         self.strdiameterLabel.setText(_translate("Form", "<html><head/><body><p><span style=\" color:#ff0000;\">Str.Diameter</span></p></body></html>"))
@@ -139,9 +146,8 @@ class WindingControls(QtWidgets.QWidget):
 
 
 class AirGapControls(QtWidgets.QWidget):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, index, *args, **kwargs):
         super(AirGapControls, self).__init__(*args, **kwargs)
-
         self.airgapDynamicHLayout = QtWidgets.QHBoxLayout(self)
         self.airgapDynamicHLayout.setContentsMargins(0, 0, 0, 0)
         self.airgapDynamicHLayout.setSpacing(2)
@@ -203,11 +209,12 @@ class AirGapControls(QtWidgets.QWidget):
         self.mmDynLabelTwo.setWordWrap(False)
         self.mmDynLabelTwo.setObjectName("mmDynLabelTwo")
         self.airgapDynamicHLayout.addWidget(self.mmDynLabelTwo)
+        self.index = index
         self.retranslateUi()
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.countDynLabel.setText(_translate("Form", "1."))
+        self.countDynLabel.setText(_translate("Form", f"{self.index}."))
         self.p2pDynLabel.setText(_translate("Form", "<html><head/><body><p><span style=\" color:#00e3e3;\">P2P</span></p></body></html>"))
         self.mmDnyLabelOne.setText(_translate("Form", "mm"))
         self.sizeDynLabel.setText(_translate("Form", "<html><head/><body><p><span style=\" color:#00e3e3;\">size</span></p></body></html>"))
@@ -243,9 +250,10 @@ class MainWindow(QMainWindow):
         for option in gap_num_count:
             self.gapsNumComboBox.addItem(option)
 
-
     def add_combo_boxes(self, selection_count: str):
-        clear_layout(self.horizontalLayout_3)
+        if self.horizontalLayout_3.count():
+            clear_layout(self.horizontalLayout_3)
+            self.adjustSize()
         if not selection_count == '':
             for index in range(int(selection_count)):
                 windingDropDown = QtWidgets.QComboBox(self.windingInfoBox)
@@ -254,7 +262,7 @@ class MainWindow(QMainWindow):
                 sizePolicy.setVerticalStretch(0)
                 sizePolicy.setHeightForWidth(windingDropDown.sizePolicy().hasHeightForWidth())
                 windingDropDown.setSizePolicy(sizePolicy)
-                windingDropDown.setMinimumSize(QtCore.QSize(50, 30))
+                windingDropDown.setMinimumSize(QtCore.QSize(20, 30))
                 windingDropDown.setMaximumSize(QtCore.QSize(16777215, 16777215))
                 windingDropDown.setStyleSheet("border : 1px solid black; border-top-left-radius : 5px; border-top-right-radius : 5px; border-bottom-left-radius:5px; border-bottom-right-radius : 5px;")
                 windingDropDown.setFrame(True)
@@ -263,29 +271,39 @@ class MainWindow(QMainWindow):
         self.adjustSize()
 
     def add_air_gap_widgets(self, selection_count: str):
-        clear_layout(self.airgapDynamicLayout)
+        if self.airgapDynamicLayout.count():
+            clear_layout(self.airgapDynamicLayout)
+            self.adjustSize()
         if not selection_count == '':
-            for index in range(int(selection_count)):
-                air_gap_widget = AirGapControls()
+            widget_length = int(selection_count)
+            spacer_column = 1 if widget_length > 1 else 0
+            for index in range(widget_length):
+                air_gap_widget = AirGapControls(index+1)
                 widget_position = divmod(index, 2)
-                self.airgapDynamicLayout.addWidget(air_gap_widget, widget_position[0], widget_position[1])
-                if not index+1 % 2 == 0:
-                    spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-                    self.airgapDynamicLayout.addItem(spacerItem, 0, 1)
+                self.airgapDynamicLayout.addWidget(air_gap_widget, widget_position[0], widget_position[1]+spacer_column)
+            if spacer_column:  # if there are more than one item then adding a spacer in between position (2*3 matrix with one 2nd column for spacer)
+                spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+                self.airgapDynamicLayout.addItem(spacerItem, 0, 1)
         self.adjustSize()
 
     def add_winding_type_widgets(self, selection_count: str):
-        clear_layout(self.windingDynamicLayout)
+        if self.windingDynamicLayout.count():
+            clear_layout(self.windingDynamicLayout)
+            self.adjustSize()
         if not selection_count == '':
             for index in range(int(selection_count)):
-                winding_type_widget = WindingControls()
+                winding_type_widget = WindingControls(index+1)
                 self.windingDynamicLayout.addWidget(winding_type_widget)
         self.adjustSize()
+
 
 def clear_layout(layout):
     while layout.count():
         child = layout.takeAt(0)
-        child.widget().deleteLater()
+        if isinstance(child, QtWidgets.QSpacerItem):
+            layout.removeItem(child)   # for spacer item
+        elif child.widget() or child:   # child for comboBoxType and child.widget() for custom class types
+            child.widget().deleteLater()
 
 
 if __name__ == "__main__":
