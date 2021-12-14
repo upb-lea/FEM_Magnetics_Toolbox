@@ -44,7 +44,7 @@ jobs:
           
       - name: Install sphinx and build documentation with sphinx
         run: |
-          pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email standford-theme
+          pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email stanford-theme
           pwd
           ls
           cd sphinx/
