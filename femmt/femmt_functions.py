@@ -17,6 +17,7 @@ import pathlib
 import time
 import warnings
 
+
 # Static Functions
 #  Used somewhere in the Code of femmt.py
 def install_femm_if_missing() -> None:
@@ -246,8 +247,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :type filter_value_harmonic: int
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
-    :
-
+    :rtype: npt.NDArray[list]
     """
 
     # check for correct input parameter
