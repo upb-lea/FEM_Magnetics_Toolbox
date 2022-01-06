@@ -3,7 +3,6 @@ import warnings
 
 import numpy.typing as npt
 import numpy as np
-import pathlib
 from matplotlib import pyplot as plt
 import json
 import random
@@ -130,33 +129,54 @@ def min_max_inner_points(a, b, input_points):
     return [min, max]
 
 
-def call_for_path(destination, config_file="config.json"):
+def call_for_path(destination: str, config_file: str = "config.json") -> str:
     """
     asks the user to enter the filepath of a destinated file WITHOUT the suffix
     stores a the filepath as a python string declaration in a config file
     returns the filepath
 
-    :param destination:
-    :param config_file:
+    :param destination: program name
+    :type destination: str
+    :param config_file: name of configuration file
+    :type config_file: str
 
-    :return:
+    :return: onelab_path
+    :rtype: str
 
     """
-    # pickle_file = open(config_file, "w")
-    # path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
-    # pickle.dumps(path, pickle_file) # f"{destination} = '{path}'\n")
-    # pickle_file.close()
 
-    # Find out the path of installed module, or in case of running directly from git, find the path of git repository
+    # Find out the onelab_path of installed module, or in case of running directly from git, find the onelab_path of git repository
     module_file_path = pathlib.Path(__file__).parent.absolute()
 
-    path = input(f"Please enter the parent folder path of {destination} in ways of 'C:.../onelab-Windows64/': ")
-    dict = {"onelab": path}
+    # loop until path is correct
+    onelab_path_wrong = True
+    path_wrong = True
+    while onelab_path_wrong:
+        while path_wrong:
+            onelab_path = input(
+                f"Enter the parent folder onelab_path of {destination} in ways of 'C:.../onelab-Windows64/': ")
+            if '\\' in onelab_path:
+                path_wrong = True
+                print("Use '/' instead of '\\'!")
+            else:
+                path_wrong = False
+
+        if onelab_path[-1] != '/':
+            onelab_path = onelab_path + '/'
+
+        if pathlib.Path(onelab_path + 'onelab.py').exists():
+            onelab_path_wrong = False
+        else:
+            onelab_path_wrong = True
+            path_wrong = True
+            print('onelab not found! Please re-enter path!')
+
+    onelab_path_dict = {"onelab": onelab_path}
     file = open(module_file_path / config_file, 'w', encoding='utf-8')
-    json.dump(dict, file, ensure_ascii=False)
+    json.dump(onelab_path_dict, file, ensure_ascii=False)
     file.close()
 
-    return path
+    return onelab_path
 
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
@@ -227,8 +247,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :type filter_value_harmonic: int
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
-    :
-
+    :rtype: npt.NDArray[list]
     """
 
     # check for correct input parameter
