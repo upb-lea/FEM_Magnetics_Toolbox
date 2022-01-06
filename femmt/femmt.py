@@ -83,7 +83,7 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
-        self.visualize_before = False
+        self.visualize_before = True
         self.region = None  # Apply an outer Region or directly apply a constraint on the Core Boundary
         self.padding = 1.5  # ... > 1
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
@@ -1040,7 +1040,7 @@ class MagneticComponent:
 
                 # top window
                 min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + \
-                        self.component.isolation.core_cond[0]  # sep_hor
+                        self.component.isolation.core_cond[0] * 1.5 # TODO:remove 1.5 # sep_hor
                 max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[1]  # top
                 left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
                 right21 = self.r_inner - self.component.isolation.core_cond[1]
@@ -1784,6 +1784,7 @@ class MagneticComponent:
             # Control
             self.singularity = False
             self.visualize_waveforms = False
+            self.visualize_airgaps = False
             self.visualize_max = False
             self.visualize_nom = False
             self.stray_path_parametrization = None  # "max_flux", "given_flux", "mean_flux"
@@ -1893,6 +1894,9 @@ class MagneticComponent:
                     b_peak = self.max_phi[n_reluctance] / A_part
                     b_peaks[air_gap_name + "_b_peak"] = b_peak
 
+                    # print(f"{b_peak=}")
+                    # print(f"{A_part=}")
+
                     if b_peak > self.b_max:
                         air_gap_lengths[air_gap_name] = "saturated"
                         # print("saturated")
@@ -1916,6 +1920,14 @@ class MagneticComponent:
                                                                                     w=self.component.core.core_w,
                                                                                     h=h_basis))
                                                    ) - R_0
+
+                            if self.visualize_airgaps:
+                                def r_sct_ideal(length):
+                                    return r_round_inf(l=length,
+                                                       r=self.component.core.core_w / 2,
+                                                       sigma=1
+                                                       ) - R_0
+
 
                         if self.air_gap_types[n_reluctance][n_distributed] == "round-round":
                             # def r_sct(length):
@@ -1957,11 +1969,35 @@ class MagneticComponent:
                         # print(f"r_sct(a) {r_sct(1e-6)}")
                         # print(f"r_sct(b) {r_sct(self.max_length[n_reluctance])}")
 
+
+
+
                         # Check for different signs (zero crossing)
                         if r_sct(1e-6) * r_sct(self.max_length[n_reluctance]) > 0:
                             air_gap_lengths[air_gap_name] = "out of bounds"
                             # print("out of bounds")
+
                         else:
+                            if self.visualize_airgaps:
+                                length_vec = np.linspace(1e-6, self.max_length[n_reluctance]/4)
+                                R_res = np.array([r_sct(length)+R_0 for length in length_vec])
+                                R_res_ideal = np.array([r_sct_ideal(length)+R_0 for length in length_vec])
+                                R_0_vec = np.array([R_0 for length in length_vec])
+                                length_vec = length_vec * 1000
+
+                                plt.figure(figsize=(5, 3))
+                                plt.plot(length_vec, R_res*1e-6, label=r"$R_{\mathrm{fringing}}$")
+                                plt.plot(length_vec, R_res_ideal*1e-6, label=r"$R_{\mathrm{ideal}}$")
+                                plt.plot(length_vec, R_0_vec*1e-6, label=r"$R_{\mathrm{goal}}$")
+                                plt.xlabel(r"$l / \mathrm{mm}$")
+                                plt.ylabel(r"$R / \mathrm{(\mu H)^{-1}}$")
+                                plt.legend()
+                                plt.grid()
+                                plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Inkscape/Reluctance_Model/sct_resistance.pdf",
+                                    bbox_inches="tight")
+
+                                plt.show()
+
                             air_gap_lengths[air_gap_name] = brentq(r_sct, 1e-6, self.max_length[n_reluctance])
                             if air_gap_name == "R_stray":
                                 air_gap_lengths[air_gap_name + "_real"] = brentq(r_sct_real, 1e-9, self.max_length[n_reluctance])
@@ -1984,6 +2020,9 @@ class MagneticComponent:
             Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak = \
                 self.max_phi_from_time_phi(Phi_top_nom, Phi_bot_nom, Phi_stray_nom)
 
+            # Phases of time domain
+            phase_top, phase_bot, phase_stray = self.phases_from_time_phi(Phi_top_nom, Phi_bot_nom, Phi_stray_nom)
+
             # fundamental
             Phi_top_nom_1st, Phi_bot_nom_1st, Phi_stray_nom_1st = self.phi_fundamental()
 
@@ -2000,36 +2039,61 @@ class MagneticComponent:
             p_top, p_bot, p_stray = self.hysteresis_loss(Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak)
             # print(p_top, p_bot, p_stray)
             self.p_hyst_nom = sum([p_top, p_bot, p_stray])
-            self.phi_core_loss(Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak)
+
+            self.visualize_phi_core_loss(Phi_top_nom, Phi_bot_nom, Phi_stray_nom,
+                                         phase_top, phase_bot, phase_stray)
 
             # print(f"Analytical Core Losses = \n\n")
 
-        def phi_core_loss(self, Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak):
+        def visualize_phi_core_loss(self, Phi_top_init, Phi_bot_init, Phi_stray_init,
+                                    phase_top, phase_bot, phase_stray):
             """
-
+            Visualization of the fluxes used for the core loss calculation.
             :return:
             """
+            Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak = \
+                self.max_phi_from_time_phi(Phi_top_init, Phi_bot_init, Phi_stray_init)
+
+
             # time
             t = np.linspace(min(self.nom_current[0][0]), max(self.nom_current[0][0]), 500) / self.f_1st / 2 / np.pi
-            phase = 0
-            Phi_top = Phi_top_nom_peak * np.cos(t * self.f_1st * 2 * np.pi + phase)
-            Phi_bot = Phi_bot_nom_peak * np.cos(t * self.f_1st * 2 * np.pi + phase)
-            Phi_stray = Phi_stray_nom_peak * np.cos(t * self.f_1st * 2 * np.pi + phase)
+            # phase = 0
+            Phi_top = Phi_top_nom_peak * np.cos(t * self.f_1st * 2 * np.pi - phase_top)
+            Phi_bot = Phi_bot_nom_peak * np.cos(t * self.f_1st * 2 * np.pi - phase_bot)
+            Phi_stray = Phi_stray_nom_peak * np.cos(t * self.f_1st * 2 * np.pi - phase_stray)
+
 
 
             if self.visualize_nom:
-                figure, axis = plt.subplots(3, figsize=(4, 6))
+                # figure, axis = plt.subplots(3, figsize=(4, 6))
 
                 # t = np.array(t) * 10 ** 6 / 200000 / 2 / np.pi
-                for i, phi in enumerate([Phi_top, Phi_bot, Phi_stray]):
-                    axis[i].plot(t, 1000 * np.array(Phi_top), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
-                    axis[i].set_ylabel("Magnetic fluxes / mWb")
-                    axis[i].set_xlabel(r"$t$ / \mu s")
-                    axis[i].legend()
-                    axis[i].grid()
+                # for i, phi in enumerate([Phi_top, Phi_bot, Phi_stray]):
+                #     axis[i].plot(t, 1000 * np.array(phi), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
+                #     axis[i].set_ylabel("Magnetic fluxes / mWb")
+                #     axis[i].set_xlabel(r"$t$ / \mu s")
+                #     axis[i].legend()
+                #     axis[i].grid()
 
-                plt.savefig(
-                    f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/core_loss.pdf",
+                plt.figure(figsize=(6, 3))
+                plt.plot(t, 1000 * np.array(Phi_top), color="tab:blue", label=r"$\mathcal{\phi}_{\mathrm{top, fd}}$")
+                plt.plot(t, 1000 * np.array(Phi_bot), color="tab:orange", label=r"$\mathcal{\phi}_{\mathrm{bot, fd}}$")
+                plt.plot(t, 1000 * np.array(Phi_stray), color="tab:green", label=r"$\mathcal{\phi}_{\mathrm{stray, fd}}$")
+
+                time = np.array(self.nom_current[0][0]) / 200000 / 2 / np.pi
+
+                plt.plot(time, 1000 * np.array(Phi_top_init), ":", color="tab:blue", label=r"$\mathcal{\phi}_{\mathrm{top, td}}$")
+                plt.plot(time, 1000 * np.array(Phi_bot_init), ":", color="tab:orange", label=r"$\mathcal{\phi}_{\mathrm{bot, td}}$")
+                plt.plot(time, 1000 * np.array(Phi_stray_init), ":", color="tab:green", label=r"$\mathcal{\phi}_{\mathrm{stray, td}}$")
+
+
+                plt.ylabel("Magnetic fluxes / mWb")
+                plt.xlabel(r"$t$ / s")
+                plt.yticks([-0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03])
+                plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+                plt.grid()
+
+                plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/core_loss.pdf",
                     bbox_inches="tight")
 
                 plt.show()
@@ -2148,6 +2212,28 @@ class MagneticComponent:
 
             return Phi_top_peak, Phi_bot_peak, Phi_stray_peak
 
+        def phases_from_time_phi(self, Phi_top, Phi_bot, Phi_stray):
+            """
+            Returns the phases of the peaks
+            :param Phi_stray:
+            :param Phi_bot:
+            :param Phi_top:
+            :return:
+            """
+            # print(np.array(Phi_top))
+            # print(np.array(Phi_top).argmax(axis=0))
+            # print(self.nom_current[0][0])
+
+            phase_top = self.nom_current[0][0][np.array(Phi_top).argmax(axis=0)]
+            phase_bot = self.nom_current[0][0][np.array(Phi_bot).argmax(axis=0)]
+            phase_stray = self.nom_current[0][0][np.array(Phi_stray).argmax(axis=0)]
+
+            # print(np.array(Phi_top).argmax(axis=0))
+            # print(np.array(Phi_bot).argmax(axis=0))
+            # print(np.array(Phi_stray).argmax(axis=0))
+
+            return phase_top, phase_bot, phase_stray
+
         def phi_from_time_currents(self, time_current_1, time_current_2, visualize=False):
             """
 
@@ -2198,6 +2284,9 @@ class MagneticComponent:
             axis[0].plot(t, 1000*np.array(Phi_top), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
             axis[0].plot(t, 1000*np.array(Phi_bot), label=r"$\mathcal{\phi}_{\mathrm{bot}}$")
             axis[0].plot(t, 1000*np.array(Phi_stray), label=r"$\mathcal{\phi}_{\mathrm{stray}}$")
+
+            axis[0].set_yticks([-0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03])
+
             axis[1].plot(t, I1, label=r"$I_{\mathrm{in}}$")
             axis[1].plot(t, -np.array(I2), label=r"$I_{\mathrm{out}}$")
             # axis[1].plot(t, np.array(I2)/3.2 - np.array(I1), label=f"Im")
@@ -2216,7 +2305,7 @@ class MagneticComponent:
             plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/{I1[0]}.pdf",
                         bbox_inches="tight")
 
-            plt.show()
+            # plt.show()
 
         def stray_path_parametrization_ei_axi(self):
             """
@@ -2237,7 +2326,7 @@ class MagneticComponent:
 
                 # Store max peak fluxes in instance variable -> used for saturation check
                 self.max_phi = [Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak]
-                print(self.max_phi)
+                # print(self.max_phi)
 
 
                 # self.component.stray_path.width = (Phi_stray+np.abs(Phi_top + Phi_bot)) / self.b_stray /
@@ -2684,7 +2773,7 @@ class MagneticComponent:
                         if self.component.air_gaps.number == 0:
                             l_bound_core.append(gmsh.model.geo.addLine(p_core[4],
                                                                        p_core[1]))
-
+                        print(f"{l_bound_core=}")
                         # Curves: Core - Air
                         if self.component.air_gaps.number > 0:
                             l_core_air.append(gmsh.model.geo.addLine(p_core[5],
@@ -2915,7 +3004,11 @@ class MagneticComponent:
                 # gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
 
                 # gmsh.model.geo.synchronize()
-                gmsh.write(self.component.path_mesh + "color.msh")
+                # gmsh.write(self.component.path_mesh + "color.msh")
+
+                gmsh.write(
+                    self.component.path + "/" + self.component.path_mesh + "color.msh")  # Win10 can handle slash
+
                 gmsh.model.mesh.generate(2)
                 gmsh.fltk.run()
 
@@ -3876,12 +3969,12 @@ class MagneticComponent:
                   )
 
             # Coupling Factors
-            K_21 = Phi_21 / Phi_22
-            K_12 = Phi_12 / Phi_11
+            K_21 = Phi_21 / Phi_11
+            K_12 = Phi_12 / Phi_22
             k = n / np.abs(n) * (K_21 * K_12) ** 0.5
             print(f"Coupling Factors:\n"
-                  f"K_12 = Phi_21 / Phi_22 = {K_12}\n"
-                  f"K_21 = Phi_12 / Phi_11 = {K_21}\n"
+                  f"K_12 = Phi_12 / Phi_22 = {K_12}\n"
+                  f"K_21 = Phi_21 / Phi_11 = {K_21}\n"
                   f"k = Sqrt(K_12 * K_21) = M / Sqrt(L_11 * L_22) = {k}\n"
                   )
 
@@ -3902,13 +3995,13 @@ class MagneticComponent:
 
             # Main/Counter Inductance
             self.M = k * (self.L_11 * self.L_22) ** 0.5
-            M_ = self.L_11 * K_12  # Only to proof correctness - ideally: M = M_ = M__
-            M__ = self.L_22 * K_21  # Only to proof correctness - ideally: M = M_ = M__
+            M_ = self.L_11 * K_21  # Only to proof correctness - ideally: M = M_ = M__
+            M__ = self.L_22 * K_12  # Only to proof correctness - ideally: M = M_ = M__
             print(f"\n"
                   f"Main/Counter Inductance:\n"
                   f"M = k * Sqrt(L_11 * L_22) = {self.M}\n"
-                  f"M_ = L_11 * K_12 = {M_}\n"
-                  f"M__ = L_22 * K_21 = {M__}\n"
+                  f"M_ = L_11 * K_21 = {M_}\n"
+                  f"M__ = L_22 * K_12 = {M__}\n"
                   )
 
             # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n

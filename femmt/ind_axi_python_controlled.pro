@@ -540,6 +540,7 @@ PostProcessing {
            { Name j2H ; Value { Integral {
              [ 0.5*CoefGeo*( Re[{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added
              In DomainS ; Jacobian Vol ; Integration II ; } } }
+
            { Name j2H_density ; Value { Integral {
              [ 0.5*CoefGeo/ElementVol[]*( Re[{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added
              In DomainS ; Jacobian Vol ; Integration II ; } } }
@@ -653,7 +654,7 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ p_hyst_density,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Magnetic Flux (Density)
-  //Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
+  Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "b_pol", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ im_b_pol,  OnElementsOf Domain,  File StrCat[DirResFields, "im_b_pol", ExtGmsh],  LastTimeStepOnly ] ;
   If(Flag_show_standard_fields)

@@ -54,18 +54,18 @@ b_stray_rel_overshoot = [1, 1.5]
 
 width = []  # [0.004]  # stray_path.width
 
-"""
-N1 = np.arange(18, 30)  # [27, 20]  # Turns in main window
-N2 = np.arange(4, 10)  # [7]  # Turns in main window
-Ns1 = np.arange(0, 13)  # [5]  # Turns in stray window
-Ns2 = np.arange(0, 9)  # [6]  # Turns in stray window
+
+N1 = np.arange(18, 30)  # Turns in main window
+N2 = np.arange(4, 10)  #  Turns in main window
+Ns1 = np.arange(0, 13)  # Turns in stray window
+Ns2 = np.arange(0, 9)  #  Turns in stray window
 
 """
 N1 = np.arange(26, 27)  # [27, 20]  # Turns in main window
 N2 = np.arange(6, 8)  # [7]  # Turns in main window
 Ns1 = np.arange(0, 2)  # [5]  # Turns in stray window
 Ns2 = np.arange(4, 5)  # [6]  # Turns in stray window
-
+"""
 
 N_flat = list(itertools.product(N1, N2, Ns1, Ns2))
 N = [np.reshape(N_flat_single, (2, 2)) for N_flat_single in N_flat]
@@ -98,3 +98,9 @@ non_reluctance_parameters = [{"litzes": litzes}]
 
 # print(non_reluctance_parameters)
 # print(len(non_reluctance_parameters))
+
+
+# Unused:
+ki = 0.53
+alpha = 1.50
+beta = 2.38

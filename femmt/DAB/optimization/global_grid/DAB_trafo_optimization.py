@@ -1,11 +1,12 @@
 import numpy as np
-
 from femmt import MagneticComponent
 from femmt_functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
     sort_out_small_harmonics, store_as_npy_in_directory
-from DAB_Input_Data import working_points, reluctance_parameters, non_reluctance_parameters, L_goal, power_nom, power_max
+# from DAB_Input_Data import working_points, reluctance_parameters, non_reluctance_parameters, L_goal, power_nom, power_max
+from DAB_Input_Data_opt import working_points, reluctance_parameters, non_reluctance_parameters, L_goal, power_nom, power_max
 
-result_directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final"
+# result_directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final"
+result_directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/experimental"
 
 
 #                                               -- Definitions --
@@ -86,28 +87,30 @@ for wp_data in working_points:
                                                                       f_1st=frequency,
                                                                       b_max=0.3, b_stray=0.25,
                                                                       stray_path_parametrization="max_flux",
-                                                                      visualize_waveforms=True)
+                                                                      visualize_waveforms="all")
 
     print(f"{len(valid_reluctance_parameters)=}")
 
     store_as_npy_in_directory(result_directory, f"valid_reluctance_parameters_{frequency}", valid_reluctance_parameters)
 
-
-    # Sort out inacceptable hysteresis losses:
-    epsilon = 1.25
+    # Sort out unacceptable hysteresis losses:
+    epsilon = 1.5
     hyst = [res["p_hyst_nom"] for res in valid_reluctance_parameters]
     hyst_minimum = min(hyst)
     reluctance_parameters_hyst_good = [item for item in valid_reluctance_parameters if item["p_hyst_nom"] < hyst_minimum*epsilon]
 
 
     print(f"{len(reluctance_parameters_hyst_good)=}")
+    store_as_npy_in_directory(result_directory, f"reluctance_parameters_hyst_good{frequency}", reluctance_parameters_hyst_good)
+
+
     # input("Press Enter to continue...")
 
     #                                         -- FEM Simulation --
     # --------------------------------------------------------------------------------------------------------------
     # Bring together valid reluctance parameters and non reluctance parameters
     FEM_parameters = []
-    for valid_parameters in valid_reluctance_parameters:
+    for valid_parameters in reluctance_parameters_hyst_good:
         for non_reluctance_parameter in non_reluctance_parameters:
             FEM_parameters.append(dict(valid_parameters, **non_reluctance_parameter))
 
@@ -115,9 +118,6 @@ for wp_data in working_points:
 
     # Remove:
     geo.s = 0.5
-    geo.ki = 0.53
-    geo.alpha = 1.50
-    geo.beta = 2.38
 
     for n_par, parameters in enumerate(FEM_parameters):
 
