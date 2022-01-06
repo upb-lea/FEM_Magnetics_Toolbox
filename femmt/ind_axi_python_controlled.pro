@@ -403,6 +403,8 @@ Resolution {
       CreateDir[DirRes];
       CreateDir[DirResFields];
       CreateDir[DirResVals];
+      CreateDir[DirResValsPrimary];
+      CreateDir[DirResValsSecondary];
       CreateDir[DirResCirc];
 
       If(!Flag_NL)
@@ -709,6 +711,20 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
   Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
   //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
+
+  // Single Winding Losses
+  Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
+
+  For isF In {1:nbturns1}
+    Print[ j2H[ TurnStrand1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"j2H_turn_%g.dat"], isF] ] ;
+  EndFor
+  If(Flag_Transformer)
+    For isF In {1:nbturns2}
+      Print[ j2H[ TurnStrand2~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsSecondary,"j2H_turn_%g.dat"], isF] ] ;
+    EndFor
+  EndIf
+
+
 
   //Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
   //Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];

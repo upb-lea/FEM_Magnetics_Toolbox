@@ -73,7 +73,7 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
-        self.visualize_before = True
+        self.visualize_before = False
         self.region = None  # Apply an outer Region or directly apply a constraint on the Core Boundary
         self.padding = 1.5  # ... > 1
         self.y_symmetric = 1  # Mirror-symmetry across y-axis
@@ -3239,6 +3239,8 @@ class MagneticComponent:
         text_file.write(f"DirRes = \"{self.path_res}\";\n")
         text_file.write(f"DirResFields = \"{self.path_res_fields}\";\n")
         text_file.write(f"DirResVals = \"{self.path_res_values}\";\n")
+        text_file.write(f"DirResValsPrimary = \"{self.path_res_values}Primary/\";\n")
+        text_file.write(f"DirResValsSecondary = \"{self.path_res_values}Secondary/\";\n")
         text_file.write(f"DirResCirc = \"{self.path_res_circuit}\";\n")
 
         # Visualisation
