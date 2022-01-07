@@ -294,7 +294,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     phi_rad_out = []
     if filter_type.lower() == 'factor':
         for count, value in enumerate(x_mag_corrected):
-            if x_mag_corrected[count] > filter_value_factor * max(i):
+            if x_mag_corrected[count] > filter_value_factor * max(abs(i)):
                 f_out.append(f_corrected[count])
                 x_out.append(x_mag_corrected[count])
                 phi_rad_out.append(phi_rad_corrected[count])
