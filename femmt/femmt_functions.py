@@ -16,6 +16,7 @@ import pandas as pd
 import pathlib
 import time
 import warnings
+from typing import Union, List, Tuple
 
 
 # Static Functions
@@ -214,7 +215,8 @@ def NbrLayers(n_strands):
 
 def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', mode: str = 'rad',
         f0: Union[float, None] = None, title: str = 'ffT', filter_type: str = 'factor',
-        filter_value_factor: float = 0.01, filter_value_harmonic: int = 100) -> npt.NDArray[list]:
+        filter_value_factor: float = 0.01, filter_value_harmonic: int = 100,
+        figure_size: Tuple=None, figure_directory: str=None) -> npt.NDArray[list]:
     """
     A fft for a input signal. Input signal is in vector format and should include one period.
 
@@ -245,6 +247,10 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :param filter_value_harmonic: filters out harmonics up to a certain number. Default value is 100.
         Note: count 1 is DC component, count 2 is the fundamental frequency
     :type filter_value_harmonic: int
+    :param figure_directory: full path with file extension
+    :type Tuple
+    :param figure_size: None for auto fit; fig_size for matplotlib (width, length)
+    :type Tuple
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     :rtype: npt.NDArray[list]
@@ -327,7 +333,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
             reconstructed_signal += x_out[i_range] * np.cos(
                 2 * np.pi * f_out[i_range] * t_interp + phi_rad_out[i_range])
 
-        fig, [ax1, ax2, ax3] = plt.subplots(num=title, nrows=3, ncols=1)
+        fig, [ax1, ax2, ax3] = plt.subplots(num=title, nrows=3, ncols=1, figsize=figure_size)
         ax1.plot(t, i, label='original signal')
         ax1.plot(t_interp, reconstructed_signal, label='reconstructed signal')
         ax1.grid()
@@ -348,6 +354,8 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
         ax3.set_ylabel('Phase in rad')
 
         plt.tight_layout()
+        if figure_directory is not None:
+            plt.savefig(figure_directory, bbox_inches="tight")
         plt.show()
 
     return np.array([f_out, x_out, phi_rad_out])
