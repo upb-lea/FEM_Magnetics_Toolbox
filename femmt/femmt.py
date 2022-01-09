@@ -17,10 +17,10 @@ import warnings
 # import re
 # import time
 from typing import List, Union, Optional
-from .femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
+from femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
     fft, compare_fft_list, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
     install_femm_if_missing, calculate_reluctances, r_cyl_cyl_real
-from .Analytical_Core_Data import f_N95_mu_imag, f_N95_er_imag
+from Analytical_Core_Data import f_N95_mu_imag, f_N95_er_imag
 
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
@@ -581,7 +581,7 @@ class MagneticComponent:
                 - "interleaved"
                 - ""
         :param scheme:
-        :param litz_para_type: there is on degree of freedom.
+        :param litz_para_type: there is one degree of freedom.
                 - "implicit_litz_radius":
                 - "implicit_ff":
                 - "implicit_strands_number":
@@ -2763,7 +2763,6 @@ class MagneticComponent:
                         if self.component.air_gaps.number == 0:
                             l_bound_core.append(gmsh.model.geo.addLine(p_core[4],
                                                                        p_core[1]))
-                        print(f"{l_bound_core=}")
                         # Curves: Core - Air
                         if self.component.air_gaps.number > 0:
                             l_core_air.append(gmsh.model.geo.addLine(p_core[5],
@@ -3383,6 +3382,44 @@ class MagneticComponent:
         mygetdp = self.onelab + 'getdp'
         c.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
 
+    def write_log(self):
+        """
+        Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
+        them in a JSON log file.
+        :return:
+        :rtype: None
+        """
+
+        log_path = self.path + "/" + self.path_res + 'result_log.json'
+        file = open(log_path, 'w', encoding='utf-8')
+
+        log = {}
+        log["Losses"] = {}
+
+        # Write Core Losses
+        log["Losses"]["Core_Eddy_Current"] = self.load_result(res_name="CoreEddyCurrentLosses")[0]
+
+        # Write Winding Losses
+        total_winding_losses = 0
+        for winding in range(0, self.n_windings):
+            if self.windings[winding].conductor_type == "litz":
+                losses_winding = self.load_result(res_name=f"j2H_{winding+1}")
+            else:
+                losses_winding = self.load_result(res_name=f"j2F_{winding+1}")
+
+            log["Losses"][f"Winding_{winding+1}"] = losses_winding[0]
+            total_winding_losses += losses_winding[0]
+        log["Losses"]["Winding"] = total_winding_losses
+
+
+        # loss_log["Winding_Total"] = self.load_result(res_name="WindingTotal")
+
+
+
+        json.dump(log, file, ensure_ascii=False)
+        file.close()
+
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
     def visualize(self):
@@ -3501,7 +3538,8 @@ class MagneticComponent:
         :param part: "real" or "imaginary" part can be chosen
         :param res_name: name of the quantity
         :param last_n: Number of parameters to be loaded
-        :return:
+        :return: last_n entries of the chosen result file
+        :rtype: list
         """
         with open(self.path + "/" + self.path_res_values + res_name + ".dat") as f:
             lines = f.readlines()[-last_n:]
@@ -3877,6 +3915,7 @@ class MagneticComponent:
             self.file_communication()
             self.pre_simulate()
             self.simulate()
+            self.write_log()
             self.visualize()
 
         #results =

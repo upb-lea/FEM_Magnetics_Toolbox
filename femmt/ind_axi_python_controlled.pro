@@ -703,25 +703,46 @@ PostOperation Map_local UsingPost MagDyn_a {
 
 PostOperation Get_global UsingPost MagDyn_a {
 
-  // Loss
-  Print[ j2F[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F.dat"]] ;// Joule losses
+  // Losses
+
+  // Core
+  Print[ j2F[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"CoreEddyCurrentLosses.dat"]] ;
+
+  // Windings Total
   //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // Complex power
-  Print[ j2H[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H.dat"] ] ;
+  Print[ j2H[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"LossesStrandedWindings.dat"] ] ;
+  Print[ j2F[ Winding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_1.dat"]] ;
+  Print[ j2F[ Winding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_2.dat"]] ;
+
   Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
   //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
   Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
   //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
 
-  // Single Winding Losses
-  Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
+  // Single Turns
 
-  For isF In {1:nbturns1}
-    Print[ j2H[ TurnStrand1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"j2H_turn_%g.dat"], isF] ] ;
-  EndFor
-  If(Flag_Transformer)
-    For isF In {1:nbturns2}
-      Print[ j2H[ TurnStrand2~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsSecondary,"j2H_turn_%g.dat"], isF] ] ;
+
+
+  If(Flag_HomogenisedModel1) // Differentiate fine und hom
+    For isF In {1:nbturns1}
+      Print[ j2H[ TurnStrand1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"Losses_turn_%g.dat"], isF] ] ;
     EndFor
+  Else
+    For isF In {1:nbturns1}
+      Print[ j2F[ Turn1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"Losses_turn_%g.dat"], isF] ] ;
+    EndFor
+  EndIf
+
+  If(Flag_Transformer)
+    If(Flag_HomogenisedModel2) // Differentiate fine und hom
+      For isF In {1:nbturns2}
+        Print[ j2H[ TurnStrand2~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsSecondary,"Losses_turn_%g.dat"], isF] ] ;
+      EndFor
+    Else
+      For isF In {1:nbturns2}
+        Print[ j2F[ Turn2~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsSecondary,"Losses_turn_%g.dat"], isF] ] ;
+      EndFor
+    EndIf
   EndIf
 
 
