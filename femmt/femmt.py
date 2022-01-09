@@ -17,10 +17,10 @@ import warnings
 # import re
 # import time
 from typing import List, Union, Optional
-from femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
+from .femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
     fft, compare_fft_list, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
     install_femm_if_missing, calculate_reluctances, r_cyl_cyl_real
-from Analytical_Core_Data import f_N95_mu_imag, f_N95_er_imag
+from .Analytical_Core_Data import f_N95_mu_imag, f_N95_er_imag
 
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
