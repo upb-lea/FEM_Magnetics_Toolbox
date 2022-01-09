@@ -3393,6 +3393,8 @@ class MagneticComponent:
         log_path = self.path + "/" + self.path_res + 'result_log.json'
         file = open(log_path, 'w', encoding='utf-8')
 
+        winding_result_path = ["Primary", "Secondary", "Tertiary"]
+
         log = {}
         log["Losses"] = {}
 
@@ -3402,14 +3404,23 @@ class MagneticComponent:
         # Write Winding Losses
         total_winding_losses = 0
         for winding in range(0, self.n_windings):
+            log["Losses"][f"Winding_{winding + 1}"] = {}
+            log["Losses"][f"Winding_{winding + 1}"][f"Turns"] = []
             if self.windings[winding].conductor_type == "litz":
                 losses_winding = self.load_result(res_name=f"j2H_{winding+1}")
+                for turn in range(0, self.windings[winding].turns[0]):
+                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding]+f"/Losses_turn_{winding + 1}")[0])
             else:
                 losses_winding = self.load_result(res_name=f"j2F_{winding+1}")
+                for turn in range(0, self.windings[winding].turns[0]):
+                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding]+f"/Losses_turn_{winding + 1}"))
 
-            log["Losses"][f"Winding_{winding+1}"] = losses_winding[0]
+            log["Losses"][f"Winding_{winding+1}"]["total_winding"] = losses_winding[0]
+
             total_winding_losses += losses_winding[0]
-        log["Losses"]["Winding"] = total_winding_losses
+        log["Losses"]["all_windings"] = total_winding_losses
+
+
 
 
         # loss_log["Winding_Total"] = self.load_result(res_name="WindingTotal")
