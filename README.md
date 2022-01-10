@@ -12,13 +12,26 @@ __Note: Alpha Version!__
 Can be found ![here](https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html).
 
 ## Installation
+
+### install FEMMT
+Chose to install the development version of FEMMT or the release version.
+
+#### Installation the latest FEMMT development version (for developers)
 ```
 cd /Documents/Folder/of/Interest   
 git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
+pip install -e .
 ```
+
+#### Install the FEMMT release version (recommended)
+```
+pip install femmt
+```
+
 ### ONELAB installation
 * Go to https://onelab.info/
 * Install the Desktop Version for your OS (Windows, Linux or macOS)
+
 ### FEMM installation [for Windows User only]
 * Go to https://www.femm.info/wiki/Download
 * Install FEMM as described
@@ -40,67 +53,18 @@ How to use the FEM Magnetics Toolbox:
 			    or for an inductor with "geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radix=[0.0015], winding=["primary"], scheme=["square"], core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
 * Start a single simulation with "geo.single_simulation(freq=100000, current=[5, 10], phi=[0, 0], skin_mesh_factor=accuracy)"
 
-Installed as a pip-package: Minimal example for a single simulation with displayed result in ONELAB: 
-```
-# minimal example for installation from pip-package
-import femmt as fmt
- 
-# Create Object
-# geo = fmt.MagneticComponent(component_type="inductor")
-geo = fmt.MagneticComponent(component_type="transformer")
-
-# Update Geometry
-geo.core.update(type="EI", window_h=0.03)
-
-geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.001])
-
-# geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
-#                      winding=["primary"], scheme=["square"],
-#                      core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
-
-geo.update_conductors(n_turns=[[6, 0], [0, 6]], conductor_type=["solid", "solid"],
-                      conductor_radii=[0.0015, 0.0015], winding=["interleaved", "interleaved"],
-                      scheme=["horizontal", "horizontal"],
-                      cond_cond_isolation=[0.0001, 0.0001, 0.0003], core_cond_isolation=[0.0005])
-
-# Perform a single simulation
-# geo.single_simulation(freq=1000000, current=[10])
-geo.single_simulation(freq=1000000, current=[10, 10])
-```
-git clone: Mninimal example for a single simulation with displayed result in ONELAB: 
-```
-# minimal example for github clone
-from femmt import MagneticComponent
-
-# Create Object
-# geo = MagneticComponent(component_type="inductor")
-geo = MagneticComponent(component_type="transformer")
-
-# Update Geometry
-geo.core.update(type="EI", window_h=0.03)
-
-geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.001])
-
-# geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
-#                      winding=["primary"], scheme=["square"],
-#                      core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
-
-geo.update_conductors(n_turns=[[6, 0], [0, 6]], conductor_type=["solid", "solid"],
-                      conductor_radii=[0.0015, 0.0015], winding=["interleaved", "interleaved"],
-                      scheme=["horizontal", "horizontal"],
-                      cond_cond_isolation=[0.0001, 0.0001, 0.0003], core_cond_isolation=[0.0005])
-
-# Perform a single simulation
-# geo.single_simulation(freq=1000000, current=[10])
-geo.single_simulation(freq=1000000, current=[10, 10])
-```
-
+See examples in [basic_example.py](/femmt/Examples/basic_example.py)
 
 ## Roadmap
 Planned features in 2021
 * work with pre-defined standard core structures
 * work with pre-defined standard core materials
 * automated 2D FEM simulation controlled with python
+
+Planned features in 2022
+* software stability and general improvements
+* basic GUI implementation
+* implement basics for thermal simulation
 
 ## Bug Reports
 Please use the issues report button within github to report bugs.
@@ -110,15 +74,6 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 For contributing, please refer to this [section](Contributing.md).
 
 For drawings (e.g. in readme-files), we recomment to use the program [Inkscape](https://inkscape.org/). It is open source software and runs on Linux, Mac and Windows. If you want to draw electirc circuits, we recommend this library on [github](https://github.com/upb-lea/Inkscape_electric_Symbols).
-
-## Authors and acknowledgement
-Current developers
- * Till Piepenbrock
- * Jan Wiegard
- * Dennis Kirchner
-
-Developers in the past
-
 
 ## Changelog
 Find the changelog [here](CHANGELOG.md)

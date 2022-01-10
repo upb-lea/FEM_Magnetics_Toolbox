@@ -41,6 +41,7 @@ setup(
 					  'gmsh>=4.8.4',
 					  'onelab>=1.0',
 					  'scipy>=1.7.2',
+                      'pytest',
 					  ],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - updated the winding generation
 ### Fixed
 - fix #5: changed typo to L_h_conc = self.M**2 / self.L_22
+- fix #11: rename femmt.py to femmt_classes.py due to package problems
 ### Added
 - add file mu_imag.pro
 - add class EIaxi
