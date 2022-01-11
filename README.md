@@ -8,36 +8,38 @@ Functionality examples
 
 __Note: Alpha Version!__
 
-## Detailed Documentation
+## 1. Detailed Documentation
 Can be found ![here](https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html).
 
-## Installation
+## 2. Installation
 
-### install FEMMT
+### 2.1 ONELAB installation
+* Go to https://onelab.info/
+* Download the Desktop Version for your OS (Windows, Linux or macOS)
+* Unpack the software and remember the file path. This will be needed later when installing FEMMT.
+
+### 2.2 FEMM installation [for Windows User only]
+* Go to https://www.femm.info/wiki/Download
+* Install FEMM as described
+* FEMM can be used as an alternative FEM solver for 2D simulations
+
+### 2.3 install FEMMT
 Chose to install the development version of FEMMT or the release version.
 
 #### Installation the latest FEMMT development version (for developers)
+Note: You may need to install [git](https://git-scm.com/downloads).
 ```
 cd /Documents/Folder/of/Interest   
 git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
 pip install -e .
 ```
 
-#### Install the FEMMT release version (recommended)
-```
-pip install femmt
-```
+### 2.4 Minimal example and first run
+Run the example from here: [basic_example.py](/femmt/Examples/basic_example.py).
+FEMMT will ask you for the installation path of ONELAB during first use.
 
-### ONELAB installation
-* Go to https://onelab.info/
-* Install the Desktop Version for your OS (Windows, Linux or macOS)
 
-### FEMM installation [for Windows User only]
-* Go to https://www.femm.info/wiki/Download
-* Install FEMM as described
-* FEMM can be used as an alternative FEM solver for 2D simulations
-
-## Basics of Usage
+## 3. Basics of Usage
 ![](https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/Transformer_Screenshot.png?raw=true)
 Date: 2021-07-27
 How to use the FEM Magnetics Toolbox:
@@ -55,7 +57,7 @@ How to use the FEM Magnetics Toolbox:
 
 See examples in [basic_example.py](/femmt/Examples/basic_example.py)
 
-## Roadmap
+## 4. Roadmap
 Planned features in 2021
 * work with pre-defined standard core structures
 * work with pre-defined standard core materials
@@ -66,20 +68,20 @@ Planned features in 2022
 * basic GUI implementation
 * implement basics for thermal simulation
 
-## Bug Reports
+## 5. Bug Reports
 Please use the issues report button within github to report bugs.
 
-## Contributing
+## 6. Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 For contributing, please refer to this [section](Contributing.md).
 
 For drawings (e.g. in readme-files), we recomment to use the program [Inkscape](https://inkscape.org/). It is open source software and runs on Linux, Mac and Windows. If you want to draw electirc circuits, we recommend this library on [github](https://github.com/upb-lea/Inkscape_electric_Symbols).
 
-## Changelog
+## 7. Changelog
 Find the changelog [here](CHANGELOG.md)
 
-## License
+## 8. License
 [GPLv3](https://choosealicense.com/licenses/gpl-3.0/)
 
-## History and project status
+## 9. History and project status
 This project was initially written in matlab using femm simulation tool. It became clear that the project was no longer a small project. The project should be completely rewritten, because many new complex levels have been added. To place the project in the open source world, the programming language python is used.      
