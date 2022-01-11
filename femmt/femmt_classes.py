@@ -3577,6 +3577,10 @@ class MagneticComponent:
         :return:
 
         """
+        if os.name != 'nt':
+            raise Exception('You are using a computer that is not running windows. '
+                          'This command is only executable on Windows computers.')
+
         sign = sign or [1]
 
         if sign is None:
