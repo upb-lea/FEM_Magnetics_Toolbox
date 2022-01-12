@@ -3413,7 +3413,7 @@ class MagneticComponent:
             else:
                 losses_winding = self.load_result(res_name=f"j2F_{winding+1}")
                 for turn in range(0, self.windings[winding].turns[0]):
-                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding]+f"/Losses_turn_{turn + 1}"))
+                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding]+f"/Losses_turn_{turn + 1}")[0])
 
             log["Losses"][f"Winding_{winding+1}"]["total_winding"] = losses_winding[0]
 
@@ -3427,7 +3427,7 @@ class MagneticComponent:
 
 
 
-        json.dump(log, file, ensure_ascii=False)
+        json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
