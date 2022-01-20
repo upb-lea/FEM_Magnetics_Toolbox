@@ -13,6 +13,9 @@ import json
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import warnings
+from thermal import thermal as th
+from thermal import thermal_functions as th_functions
+import shutil
 # import pandas as pd
 # import re
 # import time
@@ -175,6 +178,56 @@ class MagneticComponent:
         # -- FEMM variables --
         self.tot_loss_femm = None
 
+        self.onelab_setup()
+        self.onelab_client = onelab.client(__file__)
+
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    # Thermal simulation
+
+    # Start thermal simulation
+    def thermal_simulation(self, thermal_conductivity) -> None:
+        """
+        
+        Starts the thermal simulation using thermal.py
+
+        :return: -
+        """
+
+        # Set necessary paths
+        onelab_folder_path = self.onelab
+        model_mesh_file_path_old = os.path.join(self.mesh.component.path, self.mesh.component.path_mesh, "geometry.msh")
+        results_log_file_path = os.path.join(self.path, self.path_res, "result_log.json")
+        model_mesh_file_path = os.path.join(os.path.dirname(th.__file__), "thermal_mesh.msh")
+
+        # Create copy of the current mesh, because it will be changed for the thermal simulation
+        shutil.copy(model_mesh_file_path_old, model_mesh_file_path)
+
+        # Set tags
+        # TODO The tags need to be set dynamically based by the model
+        winding_tags = [list(range(4000, 4036)), list(range(7000, 7011)), None]
+        tags = {
+            "core_tag": 2000,
+            "background_tag": 1000,
+            "winding_tags": winding_tags,
+            "core_point_tags": [5, 4, 3, 2], # Order: top left, top right, bottom right, bottom left
+        }
+
+        # Mesh size -> Used when creating the case
+        # TODO Currently fixed.. Can be changed dynamically?
+        mesh_size = 0.001 
+
+        # Core area -> Is needed to estimate the heat flux
+        # TODO Needs to be calculated dynamically
+        core_area = 0.00077
+        # Use th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
+        # Set wire radii
+        wire_radii = [winding.conductor_radius for winding in self.windings]
+
+        # When a gmsh window should open showing the simulation results
+        show_results = True
+
+        th.thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity, mesh_size, core_area, wire_radii, show_results)
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
     def onelab_setup(self) -> None:
@@ -186,15 +239,15 @@ class MagneticComponent:
         :return: -
         """
         # find out path of femmt (installed module or directly opened in git)?
-        module_file_path = pathlib.Path(__file__).parent.absolute()
-        config_file_path = module_file_path / 'config.json'
+        module_file_path = os.path.dirname(__file__)
+        config_file_path = os.path.join(module_file_path, 'config.json')
 
         # check if config.json is available and not empty
-        if pathlib.Path.is_file(config_file_path) and pathlib.Path.stat(config_file_path).st_size != 0:
-            json_file = config_file_path.open('rb')
-            loaded_dict = json.load(json_file)
-            json_file.close()
-            path = loaded_dict['onelab']
+        if os.path.isfile(config_file_path) and os.stat(config_file_path).st_size != 0:
+            path = ""
+            with open(config_file_path, "r") as fd:
+                loaded_dict = json.loads(fd.read())
+                path = loaded_dict['onelab']
 
             if os.path.exists(path):
                 self.onelab = path
@@ -3369,18 +3422,16 @@ class MagneticComponent:
               f"Initialize ONELAB API\n"
               f"Run Simulation\n")
 
-        self.onelab_setup()
         # -- Simulation --
         # create a new onelab client
-        c = onelab.client(__file__)
 
         # get model file names with correct path
-        msh_file = c.getPath(self.path_mesh + 'geometry.msh')
-        solver = c.getPath('ind_axi_python_controlled' + '.pro')
+        msh_file = self.onelab_client.getPath(self.path_mesh + 'geometry.msh')
+        solver = self.onelab_client.getPath('ind_axi_python_controlled' + '.pro')
 
         # Run simulations as sub clients (non blocking??)
         mygetdp = self.onelab + 'getdp'
-        c.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
+        self.onelab_client.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
 
     def write_log(self):
         """
@@ -3785,6 +3836,213 @@ class MagneticComponent:
         # When the analysis is completed, FEMM can be shut down.
         # femm.closefemm()
 
+    @staticmethod
+    def calculate_point_average(x1, y1, x2, y2):
+        """
+        Used for femm_thermaL_validation
+        """
+        return (x1+x2)/2, (y1+y2)/2
+
+    def femm_thermal_validation(self, thermal_conductivity_dict):
+        # Get paths
+        femm_model_file_path = os.path.join(os.path.dirname(th.__file__), "femm", "validation.FEH")
+        results_log_file_path = os.path.join(self.path, self.path_res, "result_log.json")
+
+        # Extract losses
+        losses = th_functions.read_results_log(results_log_file_path)
+
+        # Extract wire_radii
+        wire_radii = [winding.conductor_radius for winding in self.windings]
+
+        # TODO Needs to be calculated by the model
+        core_area = 0.00077
+
+        # == Init ==
+        femm.openfemm(0)
+        femm.newdocument(2)
+        femm.hi_probdef("meters", "axi", 1.e-8, 0)
+
+        # == Materials ==
+        # Core
+        k_core = thermal_conductivity_dict["core"]
+        #q_vol_core = th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
+        q_vol_core = losses["Core_Eddy_Current"]/core_area
+        #c_core = 0.007
+        c_core = 0
+
+        # Air
+        k_air = thermal_conductivity_dict["air"]
+        q_vol_air = 0
+        #c_air = 1004.7
+        c_air = 0
+
+        # Wire
+        k_wire = thermal_conductivity_dict["winding"]
+        #c_wire = 385
+        c_wire = 0
+
+        # Case
+        k_case = thermal_conductivity_dict["case"]
+        q_vol_case = 0 
+        #c_case = 0.01
+        c_case = 0
+
+        # Setup winding list
+        winding_losses_list = []
+        for i in range(1, 3):
+            key = f"Winding_{i}"
+            inner_winding_list = []
+            if key in losses:
+                for loss in losses[key]["Turns"]:
+                    inner_winding_list.append(loss)
+            winding_losses_list.append(inner_winding_list)
+
+        # Setup materials
+        femm.hi_addmaterial('Core', k_core, k_core, q_vol_core, c_core)
+        femm.hi_addmaterial('Air', k_air, k_air, q_vol_air, c_air)
+        for winding_index, winding in enumerate(winding_losses_list):
+            for i in range(len(winding)):
+                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, th_functions.calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index]), c_wire)
+        femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case) 
+
+        # Add boundary condition
+        femm.hi_addboundprop("Boundary", 0, 273, 0, 0, 0, 0)
+        femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
+
+        # == Geometry ==
+        self.high_level_geo_gen()
+        # Add core
+        femm.hi_drawline(0,
+                        self.ei_axi.p_air_gaps[0, 1],
+                        self.ei_axi.p_air_gaps[1, 0],
+                        self.ei_axi.p_air_gaps[1, 1])
+        femm.hi_drawline(self.ei_axi.p_air_gaps[1, 0],
+                        self.ei_axi.p_air_gaps[1, 1],
+                        self.ei_axi.p_window[4, 0],
+                        self.ei_axi.p_window[4, 1])
+        femm.hi_drawline(self.ei_axi.p_window[4, 0],
+                        self.ei_axi.p_window[4, 1],
+                        self.ei_axi.p_window[5, 0],
+                        self.ei_axi.p_window[5, 1])
+        femm.hi_drawline(self.ei_axi.p_window[5, 0],
+                        self.ei_axi.p_window[5, 1],
+                        self.ei_axi.p_window[7, 0],
+                        self.ei_axi.p_window[7, 1])
+        femm.hi_drawline(self.ei_axi.p_window[7, 0],
+                        self.ei_axi.p_window[7, 1],
+                        self.ei_axi.p_window[6, 0],
+                        self.ei_axi.p_window[6, 1])
+        femm.hi_drawline(self.ei_axi.p_window[6, 0],
+                        self.ei_axi.p_window[6, 1],
+                        self.ei_axi.p_air_gaps[3, 0],
+                        self.ei_axi.p_air_gaps[3, 1])
+        femm.hi_drawline(self.ei_axi.p_air_gaps[3, 0],
+                        self.ei_axi.p_air_gaps[3, 1],
+                        0,
+                        self.ei_axi.p_air_gaps[2, 1])
+        femm.hi_drawline(0,
+                        self.ei_axi.p_air_gaps[2, 1],
+                        0,
+                        self.ei_axi.p_outer[2, 1])
+        femm.hi_drawline(0,
+                        self.ei_axi.p_outer[2, 1],
+                        self.ei_axi.p_outer[3, 0],
+                        self.ei_axi.p_outer[3, 1])
+        femm.hi_drawline(self.ei_axi.p_outer[3, 0],
+                        self.ei_axi.p_outer[3, 1],
+                        self.ei_axi.p_outer[1, 0],
+                        self.ei_axi.p_outer[1, 1])
+        femm.hi_drawline(self.ei_axi.p_outer[1, 0],
+                        self.ei_axi.p_outer[1, 1],
+                        0,
+                        self.ei_axi.p_outer[0, 1])      
+        femm.hi_drawline(0,
+                        self.ei_axi.p_outer[0, 1],
+                        0,
+                        self.ei_axi.p_air_gaps[0, 1])
+
+        # In order for the simulation to work the air_gap must be closed:
+        femm.hi_drawline(0, self.ei_axi.p_air_gaps[0, 1], 0, self.ei_axi.p_air_gaps[2, 1])
+
+        # Add case
+        # Case size
+        case_gap_top = 0.0015
+        case_gap_right = 0.0025
+        case_gap_bot = 0.002
+
+        femm.hi_drawline(0, self.ei_axi.p_outer[2, 1], 0, self.ei_axi.p_outer[2, 1] + case_gap_top) # Top left line
+        femm.hi_drawline(0, self.ei_axi.p_outer[2, 1] + case_gap_top, self.ei_axi.p_outer[3, 0] + case_gap_right, self.ei_axi.p_outer[3, 1] + case_gap_top) # Top line
+        femm.hi_drawline(self.ei_axi.p_outer[3, 0] + case_gap_right, self.ei_axi.p_outer[3, 1] + case_gap_top, self.ei_axi.p_outer[1, 0] + case_gap_right, self.ei_axi.p_outer[1, 1] - case_gap_bot) # Right line
+        femm.hi_drawline(self.ei_axi.p_outer[1, 0] + case_gap_right, self.ei_axi.p_outer[1, 1] - case_gap_bot, 0, self.ei_axi.p_outer[0, 1] - case_gap_bot) # Bottom line
+        femm.hi_drawline(0, self.ei_axi.p_outer[0, 1] - case_gap_bot, 0, self.ei_axi.p_outer[0, 1]) # Bottom right line
+
+        # Create boundary
+        #femm.hi_selectsegment(*self.calculatePointAverage(0, self.ei_axi.p_outer[2, 1], 0, self.ei_axi.p_outer[2, 1] + caseGapTop))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(0, self.ei_axi.p_outer[2, 1] + case_gap_top, self.ei_axi.p_outer[3, 0] + case_gap_right, self.ei_axi.p_outer[3, 1] + case_gap_top))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.ei_axi.p_outer[3, 0] + case_gap_right, self.ei_axi.p_outer[3, 1] + case_gap_top, self.ei_axi.p_outer[1, 0] + case_gap_right, self.ei_axi.p_outer[1, 1] - case_gap_bot))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.ei_axi.p_outer[1, 0] + case_gap_right, self.ei_axi.p_outer[1, 1] - case_gap_bot, 0, self.ei_axi.p_outer[0, 1] - case_gap_bot))
+        #femm.hi_selectsegment(*self.calculatePointAverage(0, self.ei_axi.p_outer[0, 1] - caseGapBot, 0, self.ei_axi.p_outer[0, 1]))
+        femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
+
+        # Add case material
+        material_x, material_y = self.calculate_point_average(0, self.ei_axi.p_outer[2, 1], 0, self.ei_axi.p_outer[2, 1] + case_gap_top)
+        femm.hi_addblocklabel(material_x + 0.001, material_y)
+        femm.hi_selectlabel(material_x + 0.001, material_y)
+        femm.hi_setblockprop('Case', 1, 0, 0)
+        femm.hi_clearselected()
+
+        # Add Coil
+        for num in range(0, self.n_windings):
+            for i in range(0, int(self.ei_axi.p_conductor[num].shape[0] / 5)):
+                # 0: center | 1: left | 2: top | 3: right | 4.bottom
+                femm.hi_drawarc(self.ei_axi.p_conductor[num][5 * i + 1][0],
+                                self.ei_axi.p_conductor[num][5 * i + 1][1],
+                                self.ei_axi.p_conductor[num][5 * i + 3][0],
+                                self.ei_axi.p_conductor[num][5 * i + 3][1], 180, 2.5)
+                femm.hi_addarc(self.ei_axi.p_conductor[num][5 * i + 3][0],
+                            self.ei_axi.p_conductor[num][5 * i + 3][1],
+                            self.ei_axi.p_conductor[num][5 * i + 1][0],
+                            self.ei_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
+                femm.hi_addblocklabel(self.ei_axi.p_conductor[num][5 * i][0],
+                                    self.ei_axi.p_conductor[num][5 * i][1])
+                femm.hi_selectlabel(self.ei_axi.p_conductor[num][5 * i][0], self.ei_axi.p_conductor[num][5 * i][1])
+                if num == 0:
+                    femm.hi_setblockprop(f'Wire_{num}_{i}', 1, 0, 1)
+                if num == 1:
+                    femm.hi_setblockprop(f'Wire_{num}_{i}', 1, 0, 1)
+                femm.hi_clearselected()
+
+        # Define an "open" boundary condition using the built-in function:
+        #femm.hi_makeABC()
+
+
+        # == Labels/Designations ==
+        # Label for core
+        femm.hi_addblocklabel(self.ei_axi.p_outer[3, 0] - 0.001, self.ei_axi.p_outer[3, 1] - 0.001)
+        femm.hi_selectlabel(self.ei_axi.p_outer[3, 0] - 0.001, self.ei_axi.p_outer[3, 1] - 0.001)
+        femm.hi_setblockprop('Core', 1, 0, 0)
+        femm.hi_clearselected()
+
+        # Labels for air
+        femm.hi_addblocklabel(0.001, 0)
+        femm.hi_selectlabel(0.001, 0)
+        femm.hi_setblockprop('Air', 1, 0, 0)
+        femm.hi_clearselected()
+
+        # Not needed when the core is the boundary
+        #femm.hi_addblocklabel(self.ei_axi.p_outer[3, 0] + 0.001, self.ei_axi.p_outer[3, 1] + 0.001)
+        #femm.hi_selectlabel(self.ei_axi.p_outer[3, 0] + 0.001, self.ei_axi.p_outer[3, 1] + 0.001)
+        #femm.hi_setblockprop('Air', 1, 0, 0)
+        #femm.hi_clearselected()
+
+        # Now, the finished input geometry can be displayed.
+        femm.hi_zoomnatural()
+        femm.hi_saveas(femm_model_file_path)
+        femm.hi_analyze()
+        femm.hi_loadsolution()
+        input() # So the window stays open
+        # femm.closefemm()
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Litz Approximation [internal methods]
     def pre_simulate(self):
@@ -3833,13 +4091,11 @@ class MagneticComponent:
         print("Here")
         text_file.write(f"Rc = {self.windings[num].strand_radius};\n")  # double named!!! must be changed
         text_file.close()
-        self.onelab_setup()
-        c = onelab.client(__file__)
-        cell_geo = c.getPath('Strands_Coefficents/cell.geo')
+        cell_geo = self.onelab_client.getPath('Strands_Coefficents/cell.geo')
 
         # Run gmsh as a sub client
         mygmsh = self.onelab + 'gmsh'
-        c.runSubClient('myGmsh', mygmsh + ' ' + cell_geo + ' -2 -v 2')
+        self.onelab_client.runSubClient('myGmsh', mygmsh + ' ' + cell_geo + ' -2 -v 2')
 
         modes = [1, 2]  # 1 = "skin", 2 = "proximity"
         reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
@@ -3859,12 +4115,12 @@ class MagneticComponent:
                 text_file.close()
 
                 # get model file names with correct path
-                input_file = c.getPath('Strands_Coefficents/cell_dat.pro')
-                cell = c.getPath('Strands_Coefficents/cell.pro')
+                input_file = self.onelab_client.getPath('Strands_Coefficents/cell_dat.pro')
+                cell = self.onelab_client.getPath('Strands_Coefficents/cell.pro')
 
                 # Run simulations as sub clients
                 mygetdp = self.onelab + 'getdp'
-                c.runSubClient('myGetDP', mygetdp + ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
+                self.onelab_client.runSubClient('myGetDP', mygetdp + ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
 
         # Formatting stuff
         # Litz Approximation Coefficients are created with 4 layers
