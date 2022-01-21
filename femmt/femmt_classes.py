@@ -2494,7 +2494,7 @@ class MagneticComponent:
             :param material:
             :param visualize_waveforms:
             :param stray_path_parametrization: the width of the stray path may be parametrized by "max_flux" or
-            "mean_flux" of the other two legs (top and bot) or by a "given_flux" which can be defined with param:b_stray
+                "mean_flux" of the other two legs (top and bot) or by a "given_flux" which can be defined with param:b_stray
             :param b_max:
             :param parameters_init:
             :param b_stray:

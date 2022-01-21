@@ -248,9 +248,9 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
         Note: count 1 is DC component, count 2 is the fundamental frequency
     :type filter_value_harmonic: int
     :param figure_directory: full path with file extension
-    :type Tuple
+    :type figure_directory: Tuple
     :param figure_size: None for auto fit; fig_size for matplotlib (width, length)
-    :type Tuple
+    :type figure_size: Tuple
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     :rtype: npt.NDArray[list]
