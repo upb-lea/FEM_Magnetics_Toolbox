@@ -1,0 +1,14 @@
+value_boundary_top = 273;
+value_boundary_top_right = 273;
+value_boundary_right_top = 273;
+value_boundary_right = 273;
+value_boundary_right_bottom = 273;
+value_boundary_bottom_right = 273;
+value_boundary_bottom = 273;
+flag_boundary_top = 1;
+flag_boundary_top_right = 1;
+flag_boundary_right_top = 1;
+flag_boundary_right = 1;
+flag_boundary_right_bottom = 1;
+flag_boundary_bottom_right = 1;
+flag_boundary_bottom = 1;
