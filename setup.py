@@ -57,7 +57,7 @@ setup(
     extras_require={},
     url='https://github.com/upb-lea/FEM_Magnetics_Toolbox',
     project_urls={
-        "Documentation": "https://github.com/upb-lea/FEM_Magnetics_Toolbox",
+        "Documentation": "https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html",
         "Source Code": "https://github.com/upb-lea/FEM_Magnetics_Toolbox",
     },
     version='0.1.2',
