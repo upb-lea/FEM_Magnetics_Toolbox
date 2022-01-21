@@ -12,5 +12,6 @@ build/
 dist/
 femmt.egg-info/
 .eggs/
-femmt/config.json
+*.json
 femmt/Parameter.pro
+.vscode/
