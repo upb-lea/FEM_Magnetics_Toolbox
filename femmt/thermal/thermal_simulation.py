@@ -210,8 +210,7 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
     mygetdp = path.join(onelab_folder_path, "getdp")
     c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2")
 
-def run_thermal(
-onelab_folder_path, model_mesh_file_path, results_log_file_path, tags_dict, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors = False, show_before_simulation = False):
+def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags_dict, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors = False, show_before_simulation = False):
     """
     Runs a thermal simulation.
     
