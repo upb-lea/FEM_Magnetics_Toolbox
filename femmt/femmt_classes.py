@@ -196,7 +196,13 @@ class MagneticComponent:
         # Set necessary paths
         onelab_folder_path = self.onelab
         model_mesh_file_path_old = os.path.join(self.mesh.component.path, self.mesh.component.path_mesh, "geometry.msh")
-        results_log_file_path = os.path.join(self.path, self.path_res, "result_log.json")
+        # TODO Currently self.path_res contains a / at the end. This cannot be used when wokring with os.path.join.
+        #       This needs to be fixed when working on the general pathing system.
+        results_log_file_path = os.path.join(self.path, self.path_res[:-1], "result_log.json")
+        if not os.path.exists(results_log_file_path):
+            # Simulation results file not created
+            # TODO Add error message handling?
+            print("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
         model_mesh_file_path = os.path.join(os.path.dirname(run_thermal.__globals__['__file__']), "thermal_mesh.msh")
 
         # Create copy of the current mesh, because it will be changed for the thermal simulation
@@ -3845,11 +3851,11 @@ class MagneticComponent:
 
     def femm_thermal_validation(self, thermal_conductivity_dict):
         # Get paths
-        femm_model_file_path = os.path.join(os.path.dirname(th.__file__), "femm", "validation.FEH")
+        femm_model_file_path = os.path.join(os.path.dirname(run_thermal.__globals__['__file__']), "femm", "validation.FEH")
         results_log_file_path = os.path.join(self.path, self.path_res, "result_log.json")
 
         # Extract losses
-        losses = th_functions.read_results_log(results_log_file_path)
+        losses = read_results_log(results_log_file_path)
 
         # Extract wire_radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
@@ -3902,7 +3908,7 @@ class MagneticComponent:
         femm.hi_addmaterial('Air', k_air, k_air, q_vol_air, c_air)
         for winding_index, winding in enumerate(winding_losses_list):
             for i in range(len(winding)):
-                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, th_functions.calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index]), c_wire)
+                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index]), c_wire)
         femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case) 
 
         # Add boundary condition
