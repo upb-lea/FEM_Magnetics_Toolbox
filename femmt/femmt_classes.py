@@ -13,8 +13,8 @@ import json
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import warnings
-from thermal import thermal as th
-from thermal import thermal_functions as th_functions
+from .thermal.thermal_simulation import *
+from .thermal.thermal_functions import * 
 import shutil
 # import pandas as pd
 # import re
@@ -197,7 +197,7 @@ class MagneticComponent:
         onelab_folder_path = self.onelab
         model_mesh_file_path_old = os.path.join(self.mesh.component.path, self.mesh.component.path_mesh, "geometry.msh")
         results_log_file_path = os.path.join(self.path, self.path_res, "result_log.json")
-        model_mesh_file_path = os.path.join(os.path.dirname(th.__file__), "thermal_mesh.msh")
+        model_mesh_file_path = os.path.join(os.path.dirname(run_thermal.__globals__['__file__']), "thermal_mesh.msh")
 
         # Create copy of the current mesh, because it will be changed for the thermal simulation
         shutil.copy(model_mesh_file_path_old, model_mesh_file_path)
@@ -226,7 +226,7 @@ class MagneticComponent:
         # When a gmsh window should open showing the simulation results
         show_results = True
 
-        th.thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity, mesh_size, core_area, wire_radii, show_results)
+        run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity, mesh_size, core_area, wire_radii, show_results)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup

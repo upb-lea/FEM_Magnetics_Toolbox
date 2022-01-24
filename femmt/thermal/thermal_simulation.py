@@ -1,8 +1,8 @@
 import gmsh
 from os import path
 from onelab import onelab
-from thermal.thermal_functions import *
-from thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro
+from .thermal_functions import *
+from .thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro
 
 def get_entities_from_physical_group_list(dim, ids):
     """
@@ -210,7 +210,8 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
     mygetdp = path.join(onelab_folder_path, "getdp")
     c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2")
 
-def thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags_dict, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors = False, show_before_simulation = False):
+def run_thermal(
+onelab_folder_path, model_mesh_file_path, results_log_file_path, tags_dict, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors = False, show_before_simulation = False):
     """
     Runs a thermal simulation.
     
@@ -312,7 +313,8 @@ def run_with_config(config):
     conductor_radii = list(simulation["conductor_radii"])
     show_results = simulation["show_results"] == "True"
 
-    thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors, show_before_simulation)
+    run_thermal(
+onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors, show_before_simulation)
 
 if __name__ == "__main__":
     read_config = True
@@ -349,4 +351,4 @@ if __name__ == "__main__":
         conductor_radii = [0.0011, 0.0011]
         show_results = True
 
-        thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors, show_before_simulation)
+        run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors, show_before_simulation)
