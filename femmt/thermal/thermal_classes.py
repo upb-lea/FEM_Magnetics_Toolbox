@@ -1,6 +1,8 @@
+from typing import List, Tuple
+
 class ConstraintPro:
     # For boundary contstraints, the tuple contains (key, region, value)
-    boundary_constraints: list[tuple[str, str, str]]
+    boundary_constraints: List[Tuple[str, str, str]]
 
     def __init__(self):
         self.boundary_constraints = []
