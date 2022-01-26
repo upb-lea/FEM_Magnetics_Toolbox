@@ -3533,9 +3533,9 @@ class MagneticComponent:
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
-    # Thermal simulation
-
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Post-Processing
+    
     def visualize(self):
         """
         - a post simulation viewer
