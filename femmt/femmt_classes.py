@@ -588,7 +588,7 @@ class MagneticComponent:
             self.component.mesh.c_window = self.component.core.window_w / 20 * self.component.s
 
             # Rewrite variables
-            self.midpoints = np.empty((self.number, 4))
+            self.midpoints = np.zeros((self.number, 4))
             self.component.mesh.c_air_gap = [None] * self.number
 
             # Update air gaps with chosen method
