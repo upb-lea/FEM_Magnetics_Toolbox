@@ -314,7 +314,7 @@ class MagneticComponent:
 
         def __init__(self, component, re_mu_rel=3000):
             """
-            :param re_mu_rel:
+            :param re_mu_rel
             
             """
             self.component = component  # Convention: parent
@@ -770,7 +770,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Full Geometry
-    class EIaxi:
+    class 2Daxi:
         """
         - creates all points needed for the radial axi-symmetric EI core typology
 
@@ -2648,8 +2648,8 @@ class MagneticComponent:
                         l_core_air = []
                         l_cond = [[], []]
                         l_region = []
-                        curve_loop_cond = [[], []]
                         # Curve Loops
+                        curve_loop_cond = [[], []]
                         curve_loop_island = []
                         curve_loop_air = []
                         # curve_loop_outer_air = []

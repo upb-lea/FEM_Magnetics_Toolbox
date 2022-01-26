@@ -27,7 +27,7 @@ if component == "inductor":
 
 
 if component == "transformer":
-    simulate_before_thermal = False
+    simulate_before_thermal = True
 
     geo = MagneticComponent(component_type="transformer")
     geo.visualize_before = False
@@ -46,8 +46,6 @@ if component == "transformer":
                         winding=["interleaved"], scheme=["horizontal"],
                         core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
-    # IFFT_in_1 = 4.18368713 * np.sin(t_1000 * f_0 - 1.09710805)
-    # IFFT_in_2 = 4.28975166 * np.sin(t_1000 * f_0 - 0.51739939)
     if simulate_before_thermal:
         # Perform a single simulation
         geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180,
