@@ -1,8 +1,8 @@
 import gmsh
 from os import path
 from onelab import onelab
-from thermal.thermal_functions import *
-from thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro
+from .thermal_functions import *
+from .thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro
 
 def get_entities_from_physical_group_list(dim, ids):
     """
@@ -21,11 +21,12 @@ def create_physical_group(dim, entities, name):
 
     return tag
 
-def create_case(core_point_tags, k_case, function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro, constraint_pro: ConstraintPro, mesh_size):
+def create_case(core_point_tags, core_line_tags, k_case, function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro, constraint_pro: ConstraintPro, mesh_size):
     """
     Creates a case around the core and applied the boundary conditions to it.
 
     core_point_tags: List of corner points of the core. Order: top left, top right, bottom right, bottom left
+    core_line_tags: List of line tags of the core. Order: top, right, bottom
     
     """
     
@@ -36,9 +37,9 @@ def create_case(core_point_tags, k_case, function_pro: FunctionPro, parameters_p
     bl_point = core_point_tags[3] # Bottom left - default 2
 
 
-    top_line = 4
-    right_line = 3
-    bottom_line = 2
+    top_line = core_line_tags[0] # default 4
+    right_line = core_line_tags[1] # default 3 
+    bottom_line = core_line_tags[2] # default 2
 
     # Get positions from points
     tl_point_pos  = gmsh.model.getValue(0, tl_point, [])
@@ -147,8 +148,7 @@ def create_case(core_point_tags, k_case, function_pro: FunctionPro, parameters_p
     q_vol = {"case": 0}
 
     function_pro.add_dicts(k, q_vol)
-    all_surfaces_region = f"{{{top_surface_physical_group}, {top_right_surface_physical_group}, {right_surface_physical_group}, {bottom_right_surface_physical_group}, {bottom_surface_physical_group}}}"
-    group_pro.add_regions({"case": all_surfaces_region})
+    group_pro.add_regions({"case": f"{{{top_surface_physical_group}, {top_right_surface_physical_group}, {right_surface_physical_group}, {bottom_right_surface_physical_group}, {bottom_surface_physical_group}}}"})
 
     return [[2, top_case_surface], [2, top_right_case_surface], [2, right_case_surface], [2, bottom_right_case_surface], [2, bottom_case_surface]]
 
@@ -164,7 +164,7 @@ def create_background(background_tag, k_air, function_pro: FunctionPro, group_pr
 
     function_pro.add_dicts(k_air, q_vol_air)
     group_pro.add_regions({"air": background_tag})
-
+    
     return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, background_tag)]
 
 def create_core(core_tag, k_core, core_area, core_losses, function_pro: FunctionPro, group_pro: GroupPro):
@@ -210,7 +210,7 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
     mygetdp = path.join(onelab_folder_path, "getdp")
     c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2")
 
-def thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags_dict, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors = False, show_before_simulation = False):
+def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags_dict, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors = False, show_before_simulation = False):
     """
     Runs a thermal simulation.
     
@@ -261,7 +261,7 @@ def thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tag
 
     core_losses = losses["Core_Eddy_Current"]
 
-    case_dim_tags = create_case(tags_dict["core_point_tags"], thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro, mesh_size)
+    case_dim_tags = create_case(tags_dict["core_point_tags"], tags_dict["core_line_tags"], thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro, mesh_size)
     background_dim_tags = create_background(tags_dict["background_tag"], thermal_conductivity_dict["air"], function_pro, group_pro)
     core_dim_tags = create_core(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, function_pro, group_pro)
     windings_dim_tags = create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, function_pro, group_pro)
@@ -312,7 +312,8 @@ def run_with_config(config):
     conductor_radii = list(simulation["conductor_radii"])
     show_results = simulation["show_results"] == "True"
 
-    thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors, show_before_simulation)
+    run_thermal(
+onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors, show_before_simulation)
 
 if __name__ == "__main__":
     read_config = True
@@ -336,6 +337,7 @@ if __name__ == "__main__":
             "core_tag": 2000,
             "background_tag": 1000,
             "winding_tags": winding_tags,
+            "core_line_tags": [4, 3, 2],
             "core_point_tags": [5, 4, 3, 2] # Order: top left, top right, bottom right, bottom left
         }
         thermal_conductivity_dict = {
@@ -349,4 +351,4 @@ if __name__ == "__main__":
         conductor_radii = [0.0011, 0.0011]
         show_results = True
 
-        thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors, show_before_simulation)
+        run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity_dict, mesh_size, core_area, conductor_radii, show_results, pretty_colors, show_before_simulation)

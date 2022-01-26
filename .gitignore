@@ -1,4 +1,5 @@
 femmt/.idea/
+.idea/
 femmt/__pycache__/
 gpgit/
 *.pyc
