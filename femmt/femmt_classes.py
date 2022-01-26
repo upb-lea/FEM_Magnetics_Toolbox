@@ -183,8 +183,6 @@ class MagneticComponent:
         self.onelab_client = onelab.client(__file__)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
-<<<<<<< HEAD
-=======
     # Thermal simulation
 
     def extract_tags_from_model(self) -> dict:
@@ -284,7 +282,6 @@ class MagneticComponent:
         run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity, mesh_size, core_area, wire_radii, show_results)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
->>>>>>> 4b10285e79dca20b647b29d09e631d3e279d9378
     # Setup
     def onelab_setup(self) -> None:
         """
@@ -2745,17 +2742,6 @@ class MagneticComponent:
                         self.p_cond = [[], []]
                         self.p_region = []
                         # Curves
-<<<<<<< HEAD
-                        l_bound_core = []
-                        l_bound_air = []
-                        l_core_air = []
-                        l_cond = [[], []]
-                        l_region = []
-                        # Curve Loops
-                        curve_loop_cond = [[], []]
-                        curve_loop_island = []
-                        curve_loop_air = []
-=======
                         self.l_bound_core = []
                         self.l_bound_air = []
                         self.l_core_air = []
@@ -2765,7 +2751,6 @@ class MagneticComponent:
                         # Curve Loops
                         self.curve_loop_island = []
                         self.curve_loop_air = []
->>>>>>> 4b10285e79dca20b647b29d09e631d3e279d9378
                         # curve_loop_outer_air = []
                         # curve_loop_bound = []
                         # Plane Surfaces
@@ -3551,53 +3536,6 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
 
-    # Start thermal simulation
-    def thermal_simulation(self, thermal_conductivity) -> None:
-        """
-
-        Starts the thermal simulation using thermal.py
-
-        :return: -
-        """
-
-        # Set necessary paths
-        onelab_folder_path = self.onelab
-        model_mesh_file_path_old = os.path.join(self.mesh.component.path, self.mesh.component.path_mesh, "geometry.msh")
-        results_log_file_path = os.path.join(self.path, self.path_res, "result_log.json")
-        model_mesh_file_path = os.path.join(os.path.dirname(th.__file__), "thermal_mesh.msh")
-
-        # Create copy of the current mesh, because it will be changed for the thermal simulation
-        shutil.copy(model_mesh_file_path_old, model_mesh_file_path)
-
-        # Set tags
-        # TODO The tags need to be set dynamically based by the model
-        winding_tags = [list(range(4000, 4036)), list(range(7000, 7011)), None]
-        tags = {
-            "core_tag": 2000,
-            "background_tag": 1000,
-            "winding_tags": winding_tags,
-            "core_point_tags": [5, 4, 3, 2],  # Order: top left, top right, bottom right, bottom left
-        }
-
-        # Mesh size -> Used when creating the case
-        # TODO Currently fixed.. Can be changed dynamically?
-        mesh_size = 0.001
-
-        # Core area -> Is needed to estimate the heat flux
-        # TODO Needs to be calculated dynamically
-        core_area = 0.00077
-        # Use th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
-        # Set wire radii
-        wire_radii = [winding.conductor_radius for winding in self.windings]
-
-        # When a gmsh window should open showing the simulation results
-        show_results = True
-
-        th.thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity,
-                   mesh_size, core_area, wire_radii, show_results)
-
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Post-Processing
     def visualize(self):
         """
         - a post simulation viewer
