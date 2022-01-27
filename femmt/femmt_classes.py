@@ -3491,7 +3491,7 @@ class MagneticComponent:
         :rtype: None
         """
 
-        log_path = self.path + "/" + self.path_res + 'result_log.json'
+        log_path = self.path + "/" + self.path_res + 'result_log_electro_magnetic.json'
         file = open(log_path, 'w', encoding='utf-8')
 
         winding_result_path = ["Primary", "Secondary", "Tertiary"]
