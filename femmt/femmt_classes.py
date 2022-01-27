@@ -588,7 +588,7 @@ class MagneticComponent:
             self.component.mesh.c_window = self.component.core.window_w / 20 * self.component.s
 
             # Rewrite variables
-            self.midpoints = np.zeros((self.number, 4))
+            self.midpoints = np.full((self.number, 4), None)
             self.component.mesh.c_air_gap = [None] * self.number
 
             # Update air gaps with chosen method
@@ -614,9 +614,7 @@ class MagneticComponent:
 
                     # Overlapping Control
                     for j in range(0, self.midpoints.shape[0]):
-                        if self.midpoints[j, 1] + self.midpoints[j, 2] / 2 > air_gap_position[i] > self.midpoints[
-                            j, 1] - \
-                                self.midpoints[j, 2] / 2:
+                        if self.midpoints[j, 1] is not None and self.midpoints[j, 1] + self.midpoints[j, 2] / 2 > air_gap_position[i] > self.midpoints[j, 1] - self.midpoints[j, 2] / 2:
                             if position_tag[i] == self.midpoints[j, 0]:
                                 print(f"Overlapping Air Gap")
                                 # raise Warning
