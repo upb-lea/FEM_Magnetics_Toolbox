@@ -3,8 +3,8 @@ Python toolbox to generate preconfigured figures for FEM simulation tools in pow
 
 Functionality examples
  * work with pre-defined standard core structures [not implemented yet]
- * use python to perform parametersweeps, e.g. perform several automated simultations of different air gap sizes
- * read the results automatet with python from the FEM simulation tool
+ * use python to perform parametersweeps, e.g. perform several automated simulations of different air gap sizes
+ * read the results automated with python from the FEM simulation tool
 
 __Note: Alpha Version!__
 

@@ -35,11 +35,15 @@ if os.name == 'nt':
 #  ===== Main Class  =====
 class MagneticComponent:
     """
+    A MagneticComponent is the main object for all simulation purposes in femmt.
 
-    - Initialization of all class variables
-    - Common variables for all instances
+        - One or more "MagneticComponents" can be created
+        - Each "MagneticComponent" owns its own instance variable values
 
     """
+    # Initialization of all class variables
+    # Common variables for all instances
+
     # -- Parent folder path --
     path = str(pathlib.Path(__file__).parent.absolute())  # Path of FEMMT files
     onelab = None  # Path to Onelab installation folder
@@ -52,20 +56,17 @@ class MagneticComponent:
 
     def __init__(self, component_type="inductor"):
         """
-        - Initialization of all instance variables
-        - One or more "MagneticComponents" can be created
-        - Each "MagneticComponent" owns its own instance variable values
-
-        :param component_type: Available options are
+        :param component_type: Available options:
                                - "inductor"
                                - "transformer"
-                               - "integrated_transformer" (Transformer with included stray-path).
-                               - "three_phase_transformer": Not implemented yet
-
+                               - "integrated_transformer" (Transformer with included stray-path)
+        :type component_type: string
         """
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
+
+        # Initialization of all instance variables
 
         # Breaking variable
         self.valid = True
@@ -365,7 +366,6 @@ class MagneticComponent:
         """
         A virtual winding window is the area, where either some kind of interleaved conductors or a one winding
         (primary, secondary,...) is placed in a certain way.
-
         """
 
         def __init__(self):
@@ -389,7 +389,6 @@ class MagneticComponent:
         arrangements of the conductors in several winding windows (hexagonal or square packing, interleaved, ...) in
         this class only the conductor parameters are specified. Then, by calling class:Winding in
         class:VirtualWindingWindow the arrangement of the conductors is specified.
-
         """
 
         def __init__(self):
@@ -414,7 +413,7 @@ class MagneticComponent:
 
         def __init__(self, component, re_mu_rel=3000):
             """
-            :param re_mu_rel:
+            :param re_mu_rel
             
             """
             self.component = component  # Convention: parent
@@ -3534,8 +3533,9 @@ class MagneticComponent:
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
+    
     def visualize(self):
         """
         - a post simulation viewer
@@ -3665,7 +3665,7 @@ class MagneticComponent:
 
             return result
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # FEMM [alternative Solver]
     def femm_reference(self, freq, current, sigma_cu, sign=None, non_visualize=0):
         """
@@ -4103,7 +4103,7 @@ class MagneticComponent:
         input() # So the window stays open
         # femm.closefemm()
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Litz Approximation [internal methods]
     def pre_simulate(self):
         """
@@ -4217,7 +4217,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
                           skin_mesh_factor: float = 1, NL_core=0) -> None:

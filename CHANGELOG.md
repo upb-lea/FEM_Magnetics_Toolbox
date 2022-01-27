@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix #5: changed typo to L_h_conc = self.M**2 / self.L_22
 - fix #11: rename femmt.py to femmt_classes.py due to package problems
 ### Added
+- add 
+- add file Analytical_Core_Data.py
+- add file DAB_Input_Data.py
+- add file DAB_trafo_optimization.py
 - add file mu_imag.pro
 - add class EIaxi
 - add class ReluctanceModel
@@ -21,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add class Virtual_Winding_Window
 - add class Winding
 - add horizontal interleaved winding scheme
+- add method write_log() to femmt.py
 
 ## [0.1.2] - 2021-08-08
 ### Updated
@@ -63,11 +68,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/SimComparison.py
 - add femmt/SolidComp.py
 - add femmt/CompRes.py
-
-[Unreleased]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.1...HEAD
-[0.1.2]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.1...0.1.2
-[0.1.1]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.0...0.1.1
-[0.1.0]: https://github.com/upb-lea/FEM_Magnetics_Toolbox/compare/0.1.0...0.1.0
-
 
 
