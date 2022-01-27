@@ -241,7 +241,7 @@ class MagneticComponent:
         model_mesh_file_path_old = os.path.join(self.mesh.component.path, self.mesh.component.path_mesh, "geometry.msh")
         # TODO Currently self.path_res contains a / at the end. This cannot be used when wokring with os.path.join.
         #       This needs to be fixed when working on the general pathing system.
-        results_log_file_path = os.path.join(self.path, self.path_res[:-1], "result_log.json")
+        results_log_file_path = os.path.join(self.path, self.path_res[:-1], "result_log_electro_magnetic.json")
         if not os.path.exists(results_log_file_path):
             # Simulation results file not created
             # TODO Add error message handling?
@@ -3906,7 +3906,7 @@ class MagneticComponent:
         """
         # Get paths
         femm_model_file_path = os.path.join(os.path.dirname(run_thermal.__globals__['__file__']), "femm", "validation.FEH")
-        results_log_file_path = os.path.join(self.path, self.path_res, "result_log.json")
+        results_log_file_path = os.path.join(self.path, self.path_res, "result_log_electro_magnetic.json")
 
         # Extract losses
         losses = read_results_log(results_log_file_path)
