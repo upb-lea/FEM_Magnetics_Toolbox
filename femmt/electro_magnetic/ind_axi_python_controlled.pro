@@ -1,7 +1,7 @@
 // ----------------------
 // Files and Directories
 // ----------------------
-Include "Parameter.pro";
+Include "../Parameter.pro";
 Include "BH.pro";
 Include "mu_imag.pro";
 ExtGmsh = ".pos";

@@ -48,6 +48,7 @@ class MagneticComponent:
     path = str(pathlib.Path(__file__).parent.absolute())  # Path of FEMMT files
     onelab = None  # Path to Onelab installation folder
     path_mesh = "mesh/"
+    path_electro_magnetic = "electro_magnetic/"
     path_res = "results/"
     path_res_fields = "results/fields/"
     path_res_values = "results/values/"
@@ -3477,7 +3478,7 @@ class MagneticComponent:
 
         # get model file names with correct path
         msh_file = self.onelab_client.getPath(self.path_mesh + 'geometry.msh')
-        solver = self.onelab_client.getPath('ind_axi_python_controlled' + '.pro')
+        solver = self.onelab_client.getPath(self.path_electro_magnetic + 'ind_axi_python_controlled' + '.pro')
 
         # Run simulations as sub clients (non blocking??)
         mygetdp = self.onelab + 'getdp'
@@ -4117,7 +4118,7 @@ class MagneticComponent:
                 # That's why here a hard-coded 4 is implemented
                 # if os.path.isfile(self.path +
                 # f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
-                if os.path.isfile(self.path + f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat"):
+                if os.path.isfile(self.path + "/" + self.path_electro_magnetic + f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat"):
                     print("Coefficients for stands approximation are found.")
 
                 else:
@@ -4139,7 +4140,7 @@ class MagneticComponent:
               f"Create coefficients for strands approximation\n")
         # Create a new onelab client
         # -- Pre-Simulation Settings --
-        text_file = open(self.path + "/Strands_Coefficents/PreParameter.pro", "w")
+        text_file = open(self.path + "/" + self.path_electro_magnetic + "Strands_Coefficents/PreParameter.pro", "w")
         # ---
         # Litz Approximation Coefficients are created with 4 layers
         # That's why here a hard-coded 4 is implemented
@@ -4149,7 +4150,7 @@ class MagneticComponent:
         print("Here")
         text_file.write(f"Rc = {self.windings[num].strand_radius};\n")  # double named!!! must be changed
         text_file.close()
-        cell_geo = self.onelab_client.getPath('Strands_Coefficents/cell.geo')
+        cell_geo = self.onelab_client.getPath(self.path + "/" + self.path_electro_magnetic + 'Strands_Coefficents/cell.geo')
 
         # Run gmsh as a sub client
         mygmsh = self.onelab + 'gmsh'
@@ -4160,7 +4161,7 @@ class MagneticComponent:
         for mode in modes:
             for rf in reduced_frequencies:
                 # -- Pre-Simulation Settings --
-                text_file = open(self.path + "/Strands_Coefficents/PreParameter.pro", "w")
+                text_file = open(self.path + "/" + self.path_electro_magnetic + "Strands_Coefficents/PreParameter.pro", "w")
                 text_file.write(f"Rr_cell = {rf};\n")
                 text_file.write(f"Mode = {mode};\n")
                 # Litz Approximation Coefficients are created with 4 layers
@@ -4173,8 +4174,8 @@ class MagneticComponent:
                 text_file.close()
 
                 # get model file names with correct path
-                input_file = self.onelab_client.getPath('Strands_Coefficents/cell_dat.pro')
-                cell = self.onelab_client.getPath('Strands_Coefficents/cell.pro')
+                input_file = self.onelab_client.getPath(self.path_electro_magnetic + 'Strands_Coefficents/cell_dat.pro')
+                cell = self.onelab_client.getPath(self.path + "/" + self.path_electro_magnetic +  'Strands_Coefficents/cell.pro')
 
                 # Run simulations as sub clients
                 mygetdp = self.onelab + 'getdp'
