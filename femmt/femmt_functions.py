@@ -1,19 +1,15 @@
 # Usual Python libraries
-import warnings
-
 import numpy.typing as npt
 import numpy as np
 from matplotlib import pyplot as plt
 import json
 import random
 import string
-from typing import Union
 import pkg_resources
 import subprocess
 import sys
 import os
 import pandas as pd
-import pathlib
 import time
 import warnings
 from typing import Union, List, Tuple
@@ -130,14 +126,12 @@ def min_max_inner_points(a, b, input_points):
     return [min, max]
 
 
-def call_for_path(destination: str, config_file: str = "config.json") -> str:
+def call_for_onelab_path(config_file: str = "femmt_global_config.json") -> str:
     """
     asks the user to enter the filepath of a destinated file WITHOUT the suffix
     stores a the filepath as a python string declaration in a config file
     returns the filepath
 
-    :param destination: program name
-    :type destination: str
     :param config_file: name of configuration file
     :type config_file: str
 
@@ -146,8 +140,13 @@ def call_for_path(destination: str, config_file: str = "config.json") -> str:
 
     """
 
+    if '.json' not in config_file:
+        config_file = config_file + '.json'
+
     # Find out the onelab_path of installed module, or in case of running directly from git, find the onelab_path of git repository
-    module_file_path = pathlib.Path(__file__).parent.absolute()
+    module_file_path = os.path.dirname(__file__)
+    # add missing '/' to end of path-name
+    module_file_path = os.path.join(module_file_path, '')
 
     # loop until path is correct
     onelab_path_wrong = True
@@ -155,7 +154,7 @@ def call_for_path(destination: str, config_file: str = "config.json") -> str:
     while onelab_path_wrong:
         while path_wrong:
             onelab_path = input(
-                f"Enter the parent folder onelab_path of {destination} in ways of 'C:.../onelab-Windows64/': ")
+                f"Enter the parent folder of onelab in ways of 'C:.../onelab-Windows64/': ")
             if '\\' in onelab_path:
                 path_wrong = True
                 print("Use '/' instead of '\\'!")
@@ -165,15 +164,15 @@ def call_for_path(destination: str, config_file: str = "config.json") -> str:
         if onelab_path[-1] != '/':
             onelab_path = onelab_path + '/'
 
-        if pathlib.Path(onelab_path + 'onelab.py').exists():
+        if os.path.exists(onelab_path + 'onelab.py'):
             onelab_path_wrong = False
         else:
             onelab_path_wrong = True
             path_wrong = True
-            print('onelab not found! Please re-enter path!')
+            print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
 
     onelab_path_dict = {"onelab": onelab_path}
-    file = open(module_file_path / config_file, 'w', encoding='utf-8')
+    file = open(module_file_path + config_file, 'w', encoding='utf-8')
     json.dump(onelab_path_dict, file, ensure_ascii=False)
     file.close()
 
@@ -662,3 +661,6 @@ def calculate_reluctances(N, L):
         L_invert = np.linalg.inv(L)
 
     return np.matmul(np.matmul(N, L_invert), np.transpose(N))
+
+if __name__ == '__main__':
+    pass
