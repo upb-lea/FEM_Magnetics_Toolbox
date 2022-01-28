@@ -3,7 +3,6 @@ import csv
 import fileinput
 import numpy as np
 import os
-import pathlib
 import sys
 from matplotlib import pyplot as plt
 from scipy.optimize import brentq
@@ -13,17 +12,12 @@ import json
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import warnings
+import shutil
+from typing import List, Union, Optional
 from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import * 
-import shutil
-# import pandas as pd
-# import re
-# import time
-from typing import List, Union, Optional
-from .femmt_functions import inner_points, min_max_inner_points, call_for_path, id_generator, NbrStrands, NbrLayers, \
-    fft, compare_fft_list, r_basis, sigma, r_round_inf, r_round_round, r_cyl_cyl, r_cheap_cyl_cyl, \
-    install_femm_if_missing, calculate_reluctances, r_cyl_cyl_real
-from .electro_magnetic.Analytical_Core_Data import f_N95_mu_imag, f_N95_er_imag
+from .femmt_functions import *
+from .electro_magnetic.Analytical_Core_Data import *
 
 
 # Optional usage of FEMM tool by David Meeker
@@ -45,8 +39,10 @@ class MagneticComponent:
     # Initialization of all class variables
     # Common variables for all instances
 
-    # -- Parent folder path --
-    path = str(pathlib.Path(__file__).parent.absolute())  # Path of FEMMT files
+    # -- Parent folder path of FEMMT files --  
+    path = os.path.dirname(__file__)
+    # add missing '/' to end of path-name
+    path = os.path.join(path, '')
     onelab = None  # Path to Onelab installation folder
     path_mesh = "mesh/"
     path_electro_magnetic = "electro_magnetic/"
@@ -307,9 +303,9 @@ class MagneticComponent:
             if os.path.exists(path):
                 self.onelab = path
             else:
-                self.onelab = call_for_path("onelab")
+                self.onelab = call_for_onelab_path()
         else:
-            self.onelab = call_for_path("onelab")
+            self.onelab = call_for_onelab_path()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
@@ -3340,12 +3336,12 @@ class MagneticComponent:
 
         text_file = open(self.path + "/Parameter.pro", "w")
 
-        text_file.write(f"DirRes = \"{self.path_res}\";\n")
-        text_file.write(f"DirResFields = \"{self.path_res_fields}\";\n")
-        text_file.write(f"DirResVals = \"{self.path_res_values}\";\n")
-        text_file.write(f"DirResValsPrimary = \"{self.path_res_values}Primary/\";\n")
-        text_file.write(f"DirResValsSecondary = \"{self.path_res_values}Secondary/\";\n")
-        text_file.write(f"DirResCirc = \"{self.path_res_circuit}\";\n")
+        text_file.write(f"DirRes = \"../{self.path_res}\";\n")
+        text_file.write(f"DirResFields = \"../{self.path_res_fields}\";\n")
+        text_file.write(f"DirResVals = \"../{self.path_res_values}\";\n")
+        text_file.write(f"DirResValsPrimary = \"../{self.path_res_values}Primary/\";\n")
+        text_file.write(f"DirResValsSecondary = \"../{self.path_res_values}Secondary/\";\n")
+        text_file.write(f"DirResCirc = \"../{self.path_res_circuit}\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":
