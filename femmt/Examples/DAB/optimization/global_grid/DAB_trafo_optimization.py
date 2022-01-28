@@ -2,11 +2,12 @@ import numpy as np
 from femmt import MagneticComponent
 from femmt_functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
     sort_out_small_harmonics, store_as_npy_in_directory
-# from DAB_Input_Data import working_points, reluctance_parameters, non_reluctance_parameters, L_goal, power_nom, power_max
-from DAB_Input_Data_opt import working_points, reluctance_parameters, non_reluctance_parameters, L_goal, power_nom, power_max
+from DAB_Input_Data import working_points, reluctance_parameters, non_reluctance_parameters, L_goal, power_nom, power_max
+# from DAB.DAB_Input_Data_opt import working_points, reluctance_parameters, non_reluctance_parameters, L_goal, power_nom, power_max
 
 # result_directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final"
-result_directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/experimental"
+# result_directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/experimental"
+result_directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/new"
 
 
 #                                               -- Definitions --
@@ -87,7 +88,7 @@ for wp_data in working_points:
                                                                       f_1st=frequency,
                                                                       b_max=0.3, b_stray=0.25,
                                                                       stray_path_parametrization="max_flux",
-                                                                      visualize_waveforms="all")
+                                                                      visualize_waveforms=None)
 
     print(f"{len(valid_reluctance_parameters)=}")
 

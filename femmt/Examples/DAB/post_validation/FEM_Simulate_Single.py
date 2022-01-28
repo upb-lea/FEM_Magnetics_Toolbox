@@ -1,40 +1,32 @@
-from femmt_functions import store_as_npy_in_directory
 import numpy as np
-from matplotlib import pyplot as plt
-from operator import itemgetter
 from femmt import MagneticComponent
 from femmt_functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
-    sort_out_small_harmonics, store_as_npy_in_directory
-from DAB_Input_Data import working_points, non_reluctance_parameters, L_goal, power_nom, power_max
+    sort_out_small_harmonics
+from DAB.optimization.global_grid.DAB_Input_Data import working_points, power_nom
 
-
-
-pathC = f"C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final/local_4/Optimal_Result.npy"
+# Load list of dictionaries
 pathD = f"C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final/local_3/Result_FEM_parameters_200000.npy"
-
-print(np.load(pathC, allow_pickle=True))
-
 result = np.load(pathD, allow_pickle=True)
+
+# Select a single dictionary
 parameters = dict(result[0])
 print(parameters)
 print(type(parameters))
+
 # parameters["N"] = np.array([[2, 2], [1, 0]])
 # parameters["R_top"] = 1e-6
 parameters["R_bot"] = np.round(parameters["R_bot"] * 0.95, 4)
 parameters["R_stray"] = np.round(parameters["R_stray"] * 1.0, 4)
-parameters["stray_path_width"] = 0.0045 + 0.0045  # np.round(parameters["stray_path_width"] * 1.15, 5)
+parameters["stray_path_width"] = 0.0045 # np.round(parameters["stray_path_width"] * 1.15, 5)
 parameters["midpoint"] = 31
 parameters["real_core_width"] = 0.024
-parameters["window_h"] = 0.029 + 0.0045
+parameters["window_h"] = 0.029
 
 print(f"{parameters['R_stray']=}")
 print(f"{parameters['R_bot']=}")
 print(f"{parameters['stray_path_width']=}")
 
 f_opt = parameters["frequency"]
-
-
-
 
 wp_data = None
 for working_point in working_points:

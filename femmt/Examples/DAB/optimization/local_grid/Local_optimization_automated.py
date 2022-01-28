@@ -4,8 +4,13 @@ import numpy as np
 from femmt import MagneticComponent
 from femmt_functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
     sort_out_small_harmonics, store_as_npy_in_directory
-from DAB_Input_Data import working_points, non_reluctance_parameters, L_goal, power_nom, power_max
+from DAB.optimization.global_grid.DAB_Input_Data import working_points, non_reluctance_parameters, L_goal, power_nom, power_max
 import itertools
+
+# Result Directory
+# loc = "local_corrected"
+# loc = "local_corrected_extended"
+loc = "local_corrected_experimental"
 
 # Find optimal frequency
 f_opt = None
@@ -27,8 +32,8 @@ for wp_data in working_points:
 
     # Add total losses to each dictionary
     results = [dict(item, **{'total_losses': item["p_hyst_nom"] +
-                                             np.sqrt(np.mean(np.array(item["j2H"])**2)) +
-                                             np.sqrt(np.mean(np.array(item["j2F"])**2))}) for item in results]
+                                             np.sum(item["j2H"]) +
+                                             np.sum(item["j2F"])}) for item in results]
     # Sort with ascending total losses
     results_sorted = sorted(results, key=itemgetter('total_losses'))
 
@@ -36,7 +41,9 @@ for wp_data in working_points:
         min_losses = results_sorted[0]["total_losses"]
         f_opt = frequency
         results_init_sorted = results_sorted
-    # store_as_npy_in_directory(result_directory, f"results_{frequency}", results)
+
+    print(f"{results_init_sorted=}")
+    store_as_npy_in_directory(f"C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final/{loc}", f"results_{frequency}", results_sorted)
 
     # print(f"{len(results)=}")
     # print(f"{results=}")
@@ -124,10 +131,11 @@ time_max_out = dict_max_out['wp_ob_il_vec']
 # Create List of Dictionaries for Reluctance Model
 midpoint = [-1, 0, 1]  # [25, 30, 35, 40, 45]  # stray_path.midpoint
 b_stray_rel_overshoot = [-0.1, 0, 0.1]
-N1 = [-1, 0, 1]
-N2 = [-1, 0, 1]
-Ns1 = [-1, 0, 1]
-Ns2 = [-1, 0, 1]
+N_plus = [-3, -2, -1, 0, 1, 2, 3]
+N1 = N_plus
+N2 = N_plus
+Ns1 = N_plus
+Ns2 = N_plus
 N_flat = list(itertools.product(N1, N2, Ns1, Ns2))
 N = [np.reshape(N_flat_single, (2, 2)) for N_flat_single in N_flat]
 
@@ -140,6 +148,8 @@ for objects in update_incrementation_values:
 
 
 print(update_incrementation_matrix)
+
+
 # input("bitte wei")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -190,16 +200,19 @@ converged = False
 no_iter = 0
 while not converged:
     no_iter += 1
-    result_directory = f"C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final/local_{no_iter}"
+    result_directory = f"C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final/{loc}_{no_iter}"
 
     # optimum of last iteration
     init_opt = dict(results_init_sorted[0])
+    init_opt_total_losses = init_opt["total_losses"]
 
     # get new parameter set with local grid
     new_opt_set = new_iteration(init_opt, update_incrementation_matrix, results_init_sorted)
 
+    print("New Optimum:")
     print(init_opt, "\n\n")
     print(new_opt_set)
+
 
     #                                           -- Reluctance Model --
     # -------------------------------------------------------------------------------------------------------------
@@ -220,14 +233,14 @@ while not converged:
                                                                       f_1st=frequency,
                                                                       b_max=0.3, b_stray=0.25,
                                                                       stray_path_parametrization="max_flux",
-                                                                      visualize_waveforms=True)
+                                                                      visualize_waveforms=None)
 
     print(f"{len(valid_reluctance_parameters)=}")
 
     store_as_npy_in_directory(result_directory, f"valid_reluctance_parameters_{frequency}", valid_reluctance_parameters)
 
     # Sort out unacceptable hysteresis losses:
-    epsilon = 1.2
+    epsilon = 2 #1.5
     hyst = [res["p_hyst_nom"] for res in valid_reluctance_parameters]
     hyst_minimum = min(hyst)
     reluctance_parameters_hyst_good = [item for item in valid_reluctance_parameters if
@@ -318,8 +331,8 @@ while not converged:
 
     # Add total losses to each dictionary
     results = [dict(item, **{'total_losses': item["p_hyst_nom"] +
-                                             np.sqrt(np.mean(np.array(item["j2H"])**2)) +
-                                             np.sqrt(np.mean(np.array(item["j2F"])**2))}) for item in results]
+                                             np.sum(item["j2H"]) +
+                                             np.sum(item["j2F"])}) for item in results]
     # Sort with ascending total losses
     results = sorted(results, key=itemgetter('total_losses'))
 
@@ -332,6 +345,7 @@ while not converged:
     # find optimum
     if results:
         new_opt = results[0]['total_losses']
+        print(f"{new_opt=}")
     else:
         print("Empty Results!")
 
@@ -340,7 +354,7 @@ while not converged:
         break
 
     # Check for converging
-    if init_opt == new_opt:
+    if init_opt_total_losses <= new_opt:
         print("Converged!")
 
         print(f"Rewrite last results")

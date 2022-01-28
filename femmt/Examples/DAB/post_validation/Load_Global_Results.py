@@ -13,7 +13,8 @@ hyst_1st_FEM = []
 hyst_1st_ana = []
 hyst_ana = []
 
-for frequency in [200000, 225000, 250000, 275000, 300000]:
+# for frequency in [200000, 225000, 250000, 275000, 300000]:
+for frequency in [200000]:
 
     pathD = f"C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final/Result_FEM_parameters_{frequency}.npy"
     pathE = f"C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/femmt/MA/final/valid_reluctance_parameters_{frequency}.npy"
