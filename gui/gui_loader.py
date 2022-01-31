@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap
-import femmt as ft
+import femmt as fmt
 
 
 class WindingControls(QtWidgets.QWidget):
@@ -17,9 +17,13 @@ class WindingControls(QtWidgets.QWidget):
         font = QtGui.QFont()
         font.setFamily("Segoe UI Semibold")
         font.setPointSize(8)
+
+        # winding type label
         self.windingTypeLabel.setFont(font)
         self.windingTypeLabel.setObjectName("windingTypeLabel")
+
         self.windingDynHorizontalLayout.addWidget(self.windingTypeLabel)
+
         self.windingTypeLineEdit = QtWidgets.QComboBox(self)
         self.windingTypeLineEdit.setObjectName("windingTypeLineEdit")
         self.windingDynHorizontalLayout.addWidget(self.windingTypeLineEdit)
@@ -43,6 +47,9 @@ class WindingControls(QtWidgets.QWidget):
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.strandLineEdit.sizePolicy().hasHeightForWidth())
+
+
+
         self.strandLineEdit.setSizePolicy(sizePolicy)
         self.strandLineEdit.setFont(font)
         self.strandLineEdit.setMinimumSize(QtCore.QSize(30, 22))
@@ -70,6 +77,8 @@ class WindingControls(QtWidgets.QWidget):
         self.strdiameterLineEdit.setFont(font)
         self.strdiameterLineEdit.setMinimumSize(QtCore.QSize(30, 22))
         self.strdiameterLineEdit.setObjectName("strdiameterLineEdit")
+        #self.strdiameterLineEdit.setEnabled(False)
+        #self.strdiameterLineEdit.setEnabled(True)
         self.windingDynGroupBoxHLayout.addWidget(self.strdiameterLineEdit)
         self.mmLabelTwo = QtWidgets.QLabel(self.windingDynGroupBox)
         self.mmLabelTwo.setFont(font)
@@ -125,6 +134,18 @@ class WindingControls(QtWidgets.QWidget):
         self.windingDynVerticalLayout.addWidget(self.windingDynGroupBox)
         self.index = index
         self.retranslateUi()
+
+        wire_type_count = ['Litz Wire', 'Solid Wire']
+        material = ['Copper', 'Aluminium']
+        for option in wire_type_count:
+            self.windingTypeLineEdit.addItem(option)
+        for option in material:
+            self.windingMaterialLineEdit.addItem(option)
+
+    def chose_litz_full_wire(self, material):
+
+        self.strdiameterLineEdit.setEnabled(False)
+
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
@@ -234,14 +255,16 @@ class MainWindow(QMainWindow):
         self.initialize_controls()
 
         """slots and events"""
-        self.layersNumComboBox.currentTextChanged.connect(self.add_combo_boxes)
+        self.layersNumComboBox.currentTextChanged.connect(self.add_winding_type_combo_boxes)
         self.windingNumComboBox.currentTextChanged.connect(self.add_winding_type_widgets)
         self.gapsNumComboBox.currentTextChanged.connect(self.add_air_gap_widgets)
+        self.calculation_button.clicked.connect(self.run_simulation)
         # self.aboutToQuit.connect(self.closeEvent)
+        self.windingNumComboBox.currentIndexChanged.connect(self.chose_litz_full_wire)
 
     def initialize_controls(self):
         layers_count = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
-        winding_num_count = ['', '1', '2', '3']
+        winding_num_count = ['', '1', '2']
         gap_num_count = ['', '1', '2', '3', '4']
         for option in layers_count:
             self.layersNumComboBox.addItem(option)
@@ -250,7 +273,8 @@ class MainWindow(QMainWindow):
         for option in gap_num_count:
             self.gapsNumComboBox.addItem(option)
 
-    def add_combo_boxes(self, selection_count: str):
+
+    def add_winding_type_combo_boxes(self, selection_count: str):
         if self.horizontalLayout_3.count():
             clear_layout(self.horizontalLayout_3)
             self.adjustSize()
@@ -294,7 +318,36 @@ class MainWindow(QMainWindow):
             for index in range(int(selection_count)):
                 winding_type_widget = WindingControls(index+1)
                 self.windingDynamicLayout.addWidget(winding_type_widget)
+                #self.store_test.setEnabled(False)
+                stored_class = self.windingDynamicLayout.itemAt(0).widget()
+                stored_class.strdiameterLineEdit.setEnabled(False)
+
         self.adjustSize()
+
+
+
+    def run_simulation(self):
+
+        geo = fmt.MagneticComponent(component_type="inductor")
+
+
+        geo.core.update(type="EI", core_h=float(self.coreHeightLineEdit.text()) , core_w=float(self.coreWidthLineEdit.text()),
+                        window_h=float (self.windowHeightLineEdit.text()), window_w=float(self.windowWidthLineEdit.text()))
+
+        # geo.air_gaps.update(method="percent", n_air_gaps=4, air_gap_h=[0.0005, 0.0005, 0.0005, 0.0005],
+        #                     position_tag=[0, 0, 0, 0], air_gap_position=[20, 40, 60, 80])
+        geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
+
+        geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
+                              winding=["primary"], scheme=["square"],
+                              core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
+
+        geo.single_simulation(freq=int(self.lineEdit_frequency.text()), current=[int(self.lineEdit_amplitude.text())])
+
+
+        self.md_calculation_textoutput.setText(self.coreHeightLineEdit.text())
+
+
 
 
 def clear_layout(layout):
