@@ -124,60 +124,7 @@ def min_max_inner_points(a, b, input_points):
         argmin = np.argmin(buffer[:, 1])
         min = buffer[argmin]
     return [min, max]
-
-
-def call_for_onelab_path(config_file: str = "femmt_global_config.json") -> str:
-    """
-    asks the user to enter the filepath of a destinated file WITHOUT the suffix
-    stores a the filepath as a python string declaration in a config file
-    returns the filepath
-
-    :param config_file: name of configuration file
-    :type config_file: str
-
-    :return: onelab_path
-    :rtype: str
-
-    """
-
-    if '.json' not in config_file:
-        config_file = config_file + '.json'
-
-    # Find out the onelab_path of installed module, or in case of running directly from git, find the onelab_path of git repository
-    module_file_path = os.path.dirname(__file__)
-    # add missing '/' to end of path-name
-    module_file_path = os.path.join(module_file_path, '')
-
-    # loop until path is correct
-    onelab_path_wrong = True
-    path_wrong = True
-    while onelab_path_wrong:
-        while path_wrong:
-            onelab_path = input(
-                f"Enter the parent folder of onelab in ways of 'C:.../onelab-Windows64/': ")
-            if '\\' in onelab_path:
-                path_wrong = True
-                print("Use '/' instead of '\\'!")
-            else:
-                path_wrong = False
-
-        if onelab_path[-1] != '/':
-            onelab_path = onelab_path + '/'
-
-        if os.path.exists(onelab_path + 'onelab.py'):
-            onelab_path_wrong = False
-        else:
-            onelab_path_wrong = True
-            path_wrong = True
-            print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
-
-    onelab_path_dict = {"onelab": onelab_path}
-    file = open(module_file_path + config_file, 'w', encoding='utf-8')
-    json.dump(onelab_path_dict, file, ensure_ascii=False)
-    file.close()
-
-    return onelab_path
-
+    
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))

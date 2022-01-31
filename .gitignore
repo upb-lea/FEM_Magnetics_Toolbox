@@ -9,6 +9,8 @@ gpgit/
 *.pre
 *.pos
 *.dat
+*.anh
+*.FEH
 build/
 dist/
 femmt.egg-info/
