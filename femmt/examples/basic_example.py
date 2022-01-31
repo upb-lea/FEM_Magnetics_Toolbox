@@ -1,5 +1,5 @@
 # minimal example for github clone
-from femmt import MagneticComponent
+from femmt import *
 import numpy as np
 
 # component = "inductor"
@@ -12,7 +12,7 @@ if component == "inductor":
     geo = MagneticComponent(component_type="inductor")
 
     # Update Geometry
-    geo.core.update(type="EI", window_h=0.03, window_w=0.011)
+    geo.core.update(window_h=0.03, window_w=0.011)
 
     # geo.air_gaps.update(method="percent", n_air_gaps=4, air_gap_h=[0.0005, 0.0005, 0.0005, 0.0005],
     #                     position_tag=[0, 0, 0, 0], air_gap_position=[20, 40, 60, 80])
@@ -32,7 +32,7 @@ if component == "transformer":
     geo.visualize_before = False
 
     # Update Geometry
-    geo.core.update(type="EI", window_h=0.0295, window_w=0.012, core_w=0.015)
+    geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015)
 
     # geo.air_gaps.update(n_air_gaps=0)
     geo.air_gaps.update(method="percent", n_air_gaps=1, air_gap_h=[0.0005],
@@ -47,8 +47,7 @@ if component == "transformer":
 
     if simulate_before_thermal:
         # Perform a single simulation
-        geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180,
-                                                                                    170])
+        geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
         # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
         #                                                                               - 1.47917789/np.pi*180 + 180])
 
@@ -74,7 +73,7 @@ if component == "integrated_transformer":
                           winding=["interleaved", "interleaved"], scheme=["horizontal", "horizontal"],
                           core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
-    geo.core.update(type="EI", window_h=0.03, window_w=0.011)
+    geo.core.update(window_h=0.03, window_w=0.011)
 
     geo.air_gaps.update(method="percent",
                         n_air_gaps=2,
