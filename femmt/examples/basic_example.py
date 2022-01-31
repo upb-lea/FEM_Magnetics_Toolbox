@@ -63,7 +63,7 @@ if component == "transformer":
     }
 
     geo.thermal_simulation(thermal_conductivity_dict)
-    #geo.femm_thermal_validation(thermal_conductivity_dict)
+    geo.femm_thermal_validation(thermal_conductivity_dict)
 
 if component == "integrated_transformer":
     geo = MagneticComponent(component_type="integrated_transformer")
