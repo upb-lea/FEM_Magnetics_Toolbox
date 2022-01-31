@@ -50,7 +50,7 @@ class MagneticComponent:
     e_m_circuit_folder_path = os.path.join(results_folder_path, "circuit")
     e_m_strands_coefficients_folder_path = os.path.join(electro_magnetic_folder_path, "Strands_Coefficients")
     femm_folder_path = os.path.join(femmt_folder_path, "femm")
-    reluctance_model_folder = os.path.join(femmt_folder_path, "reluctance_model")
+    reluctance_model_folder_path = os.path.join(femmt_folder_path, "reluctance_model")
 
     # Setup file paths
     e_m_results_log_path = os.path.join(results_folder_path, "result_log_electro_magnetic.json")
@@ -310,7 +310,7 @@ class MagneticComponent:
                     path_wrong = False
 
             onelab_path = onelab_path[:-1] if onelab_path[-1] == '/' else onelab_path
-            onelab_path = os.path.join(onelab_path, "onelab.py")
+            onelab_path = onelab_path.replace("/", os.sep)
             if os.path.exists(onelab_path):
                 onelab_path_wrong = False
             else:
@@ -318,11 +318,10 @@ class MagneticComponent:
                 path_wrong = True
                 print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
 
-        # Wirte the path to the config.json
+        # Write the path to the config.json
         onelab_path_dict = {"onelab": onelab_path}
-        file = open(os.path.join(), 'w', encoding='utf-8')
-        json.dump(onelab_path_dict, file, ensure_ascii=False)
-        file.close()
+        with open(os.path.join(config_file_path), 'w', encoding='utf-8') as fd:
+            json.dump(onelab_path_dict, fd, ensure_ascii=False)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
