@@ -1,7 +1,7 @@
 // ----------------------
 // Files and Directories
 // ----------------------
-Include "../Parameter.pro";
+Include "Parameter.pro";
 Include "BH.pro";
 Include "mu_imag.pro";
 ExtGmsh = ".pos";
@@ -19,7 +19,7 @@ Flag_Circuit            = Flag_ImposedVoltage;
 // half inductor with axisymmetry
 // 1 means full zylinder
 SymFactor               = 1. ;
-CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor
+CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
 e_0                     = 8.8541878128e-12;
 
 
@@ -234,10 +234,10 @@ Function {
   If(Flag_HomogenisedModel1)
     // Homogenization coefficients
     // Primary (Inductor + Transformer)
-    file_ZSkinRe_1  = Sprintf("Strands_Coefficents/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
-    file_ZSkinIm_1  = Sprintf("Strands_Coefficents/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
-    file_NuProxRe_1= Sprintf("Strands_Coefficents/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
-    file_NuProxIm_1 = Sprintf("Strands_Coefficents/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
+    file_ZSkinRe_1  = Sprintf("Strands_Coefficients/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
+    file_ZSkinIm_1  = Sprintf("Strands_Coefficients/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
+    file_NuProxRe_1= Sprintf("Strands_Coefficients/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
+    file_NuProxIm_1 = Sprintf("Strands_Coefficients/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill1, NbrLayers1);
     skin_rhor_list_1() = ListFromFile[ file_ZSkinRe_1 ];
     skin_rhoi_list_1() = ListFromFile[ file_ZSkinIm_1 ];
     prox_nur_list_1()  = ListFromFile[ file_NuProxRe_1 ];
@@ -254,10 +254,10 @@ Function {
   If(Flag_Transformer)
     If(Flag_HomogenisedModel2)
       // Secondary
-      file_ZSkinRe_2  = Sprintf("Strands_Coefficents/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
-      file_ZSkinIm_2  = Sprintf("Strands_Coefficents/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
-      file_NuProxRe_2= Sprintf("Strands_Coefficents/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
-      file_NuProxIm_2 = Sprintf("Strands_Coefficents/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
+      file_ZSkinRe_2  = Sprintf("Strands_Coefficients/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
+      file_ZSkinIm_2  = Sprintf("Strands_Coefficients/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
+      file_NuProxRe_2= Sprintf("Strands_Coefficients/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
+      file_NuProxIm_2 = Sprintf("Strands_Coefficients/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill2, NbrLayers2);
       skin_rhor_list_2() = ListFromFile[ file_ZSkinRe_2 ];
       skin_rhoi_list_2() = ListFromFile[ file_ZSkinIm_2 ];
       prox_nur_list_2()  = ListFromFile[ file_NuProxRe_2 ];
@@ -692,7 +692,7 @@ PostOperation Map_local UsingPost MagDyn_a {
              View[PostProcessing.NbViews-1].RangeType=3;
              View[PostProcessing.NbViews-1].IntervalsType=1;
              View[PostProcessing.NbViews-1].NbIso = 25;"],
-           File "results/option.pos"];
+           File "../results/option.pos"];
   // RangeType = 1; // Value scale range type (1=default, 2=custom, 3=per time step)
   // IntervalsType = 2; // Type of interval display (1=iso, 2=continuous, 3=discrete, 4=numeric)
 
