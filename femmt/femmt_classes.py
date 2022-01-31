@@ -15,10 +15,9 @@ import warnings
 import shutil
 from typing import List, Union, Optional
 from .thermal.thermal_simulation import *
-from .thermal.thermal_functions import * 
+from .thermal.thermal_functions import *
 from .femmt_functions import *
 from .electro_magnetic.Analytical_Core_Data import *
-
 
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
@@ -52,7 +51,7 @@ class MagneticComponent:
     path_res_circuit = "results/circuit/"
     path_res_FEMM = "FEMM/"
 
-    def __init__(self, component_type="inductor"):
+    def __init__(self, component_type="inductor", **kwargs):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -68,27 +67,23 @@ class MagneticComponent:
 
         # Breaking variable
         self.valid = True
-        self.mu0 = np.pi * 4e-7
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Geometry
+        # Component Geometry
+        self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" or "three-phase-transformer"
+        self.dimensionality = "2D"  # "2D" or "3D"
+        self.symmetry = "radial"  # "radial", "linear", None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
         self.visualize_before = False
         self.region = None  # Apply an outer Region or directly apply a constraint on the Core Boundary
-        self.padding = 1.5  # ... > 1
-        self.y_symmetric = 1  # Mirror-symmetry across y-axis
-        self.dimensionality = "2D axi"  # Axial-symmetric model (idealized full-cylindrical)
-        self.s = 0.5  # Parameter for mesh-accuracy
-        self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" or
-        # "three-phase-transformer"
         self.plot_fields = "standard"
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
         self.core = self.Core(self)
-        self.core.update(type="EI", core_w=0.02, window_w=0.01, window_h=0.03)  # some initial values
+        self.core.update(type="axi_symmetric", core_w=0.02, window_w=0.01, window_h=0.03)  # some initial values
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air Gaps
@@ -142,6 +137,7 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Materials
+        self.mu0 = np.pi * 4e-7
         self.core.steinmetz_loss = 0
         self.core.generalized_steinmetz_loss = 0
         self.Ipeak = None
@@ -249,20 +245,20 @@ class MagneticComponent:
 
         # Set tags
         # TODO The tags need to be set dynamically based by the model
-        #winding_tags = [list(range(4000, 4036)), list(range(7000, 7011)), None]
-        #tags = {
+        # winding_tags = [list(range(4000, 4036)), list(range(7000, 7011)), None]
+        # tags = {
         #    "core_tag": 2000,
         #    "background_tag": 1000,
         #    "winding_tags": winding_tags,
         #    "core_line_tags": [4, 3, 2],
         #    "core_point_tags": [5, 4, 3, 2] # Order: top left, top right, bottom right, bottom left
-        #}
+        # }
 
         tags = self.extract_tags_from_model()
 
         # Mesh size -> Used when creating the case
         # TODO Currently fixed.. Can be changed dynamically?
-        mesh_size = 0.001 
+        mesh_size = 0.001
 
         # Core area -> Is needed to estimate the heat flux
         # TODO Needs to be calculated dynamically
@@ -309,11 +305,11 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
-    def high_level_geo_gen(self, core_type="EI", dimensionality="2D axi", frequency=None, skin_mesh_factor=1.0):
+    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=1.0):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
-        - calls "low level" methods, that creates all points needed for mesh generation
+        - calls "low level" methods, that create all points needed for mesh generation
      
         :return:
      
@@ -321,13 +317,9 @@ class MagneticComponent:
         # Always reset the to valid
         self.valid = True
 
-        # ==============================
-        # High-Level Geometry Generation
-        # ==============================
-
         # Mesh-Parameters must be updated depending on geometry size
-        self.mesh.c_core = self.core.core_w / 10. * self.s
-        self.mesh.c_window = self.core.window_w / 30 * self.s
+        self.mesh.c_core = self.core.core_w / 10. * self.mesh.global_accuracy
+        self.mesh.c_window = self.core.window_w / 30 * self.mesh.global_accuracy
 
         # Update Skin Depth (needed for meshing)
         self.mesh.skin_mesh_factor = skin_mesh_factor
@@ -345,20 +337,16 @@ class MagneticComponent:
                     self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor
                 else:
-                    self.mesh.c_conductor[i] = 0.0001  # revisit
+                    self.mesh.c_conductor[i] = 0.0001  # TODO: dynamic inplementation
 
         # -- Core-type --
-        if self.core.type == core_type:
-            self.n_windows = 2
+        self.n_windows = 2
 
         # -- Symmetry -- [Choose between asymmetric, symmetric and axi symmetric]
         self.dimensionality = dimensionality
-        if self.dimensionality == "2D axi":
-            self.y_symmetric = 1
-
-        if self.core.type == "EI" and self.dimensionality == "2D axi":
-            self.ei_axi = self.EIaxi(self)
-            self.ei_axi.update()
+        if self.dimensionality == "2D":
+            self.two_d_axi = self.TwoDaxiSymmetric(self)
+            self.two_d_axi.update()
 
     class VirtualWindingWindow:
         """
@@ -442,7 +430,7 @@ class MagneticComponent:
             self.window_w = None  # Winding window width
             self.window_h = None  # Winding window height
 
-        def update(self, type: str,
+        def update(self,
                    re_mu_rel: float = 3000,
                    im_mu_rel: float = 2500 * np.sin(20 * np.pi / 180),
                    im_epsilon_rel: float = 6e+4 * np.sin(20 * np.pi / 180),
@@ -583,7 +571,7 @@ class MagneticComponent:
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - - - - - - - - - - - - - - - - - - -
 
             # Update the mesh accuracy of the window
-            self.component.mesh.c_window = self.component.core.window_w / 20 * self.component.s
+            self.component.mesh.c_window = self.component.core.window_w / 20 * self.component.mesh.global_accuracy
 
             # Rewrite variables
             self.midpoints = np.full((self.number, 4), None)
@@ -592,16 +580,16 @@ class MagneticComponent:
             # Update air gaps with chosen method
 
             # Center
-            if method == "center" and self.component.dimensionality == "2D axi":
+            if method == "center" and self.component.dimensionality == "2D":
                 if self.number > 1:
                     print(f"{self.number} are too many air gaps for the 'center' option!")
                     raise Warning
                 else:
-                    self.component.mesh.c_air_gap[0] = air_gap_h[0] * self.component.s
+                    self.component.mesh.c_air_gap[0] = air_gap_h[0] * self.component.mesh.global_accuracy
                     self.midpoints[0, :] = np.array([0, 0, air_gap_h[0], self.component.mesh.c_air_gap[0]])
 
             # Deterministic
-            if (method == "manually" or method == "percent") and self.component.dimensionality == "2D axi":
+            if (method == "manually" or method == "percent") and self.component.dimensionality == "2D":
                 for i in range(0, self.number):
                     if method == "percent":
                         # air_gap_position[i] = air_gap_position[i] / 100 * \
@@ -612,12 +600,13 @@ class MagneticComponent:
 
                     # Overlapping Control
                     for j in range(0, self.midpoints.shape[0]):
-                        if self.midpoints[j, 1] is not None and self.midpoints[j, 1] + self.midpoints[j, 2] / 2 > air_gap_position[i] > self.midpoints[j, 1] - self.midpoints[j, 2] / 2:
+                        if self.midpoints[j, 1] is not None and self.midpoints[j, 1] + self.midpoints[j, 2] / 2 > air_gap_position[i] > self.midpoints[j, 1] - self.midpoints[
+                            j, 2] / 2:
                             if position_tag[i] == self.midpoints[j, 0]:
                                 print(f"Overlapping Air Gap")
                                 # raise Warning
                         else:
-                            # self.component.mesh.c_air_gap[i] = air_gap_h[i] * self.component.s
+                            # self.component.mesh.c_air_gap[i] = air_gap_h[i] * self.component.mesh.global_accuracy
                             self.component.mesh.c_air_gap[i] = self.component.mesh.c_window
                             # print(f"c_window: {self.component.mesh.c_window}")
                             self.midpoints[i, :] = np.array([position_tag[i],
@@ -628,7 +617,7 @@ class MagneticComponent:
             #  TODO: Proof whether air gaps are valid
 
             # Random
-            if method == "random" and self.component.dimensionality == "2D axi":
+            if method == "random" and self.component.dimensionality == "2D":
                 position_tag = [0] * self.number
 
                 i = 0
@@ -636,7 +625,7 @@ class MagneticComponent:
                     height = np.random.rand(1) * 0.001 + 0.001
                     position = np.random.rand(1) * (self.component.core.window_h - height) - (
                             self.component.core.window_h / 2 - height / 2)
-                    self.component.mesh.c_air_gap[i] = height * self.component.s
+                    self.component.mesh.c_air_gap[i] = height * self.component.mesh.global_accuracy
                     # Overlapping Control
                     for j in range(0, self.midpoints.shape[0]):
                         if self.midpoints[j, 1] + self.midpoints[j, 2] / 2 > position > self.midpoints[j, 1] - \
@@ -865,9 +854,9 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Full Geometry
-    class EIaxi:
+    class TwoDaxiSymmetric:
         """
-        - creates all points needed for the radial axi-symmetric EI core typology
+        - creates all points needed for the radial axi-symmetric core typology
 
         :return:
 
@@ -1130,7 +1119,7 @@ class MagneticComponent:
 
                 # top window
                 min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + \
-                        self.component.isolation.core_cond[0] * 1.5 # TODO:remove 1.5 # sep_hor
+                        self.component.isolation.core_cond[0] * 1.5  # TODO:remove 1.5 # sep_hor
                 max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[1]  # top
                 left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
                 right21 = self.r_inner - self.component.isolation.core_cond[1]
@@ -1668,7 +1657,7 @@ class MagneticComponent:
                             for i in range(0, self.component.windings[num].turns[n_win]):
                                 # CHECK if right bound is reached
                                 if (left_bound + (i + 1) * self.component.windings[num].thickness +
-                                        i * self.component.isolation.cond_cond[num]) <= right_bound:
+                                    i * self.component.isolation.cond_cond[num]) <= right_bound:
                                     # Foils
                                     self.p_conductor[num].append(
                                         [left_bound + i * self.component.windings[num].thickness + i *
@@ -1808,26 +1797,26 @@ class MagneticComponent:
                         self.component.valid = False
 
             # Region for Boundary Condition
-            self.p_region_bound[0][:] = [-self.r_outer * self.component.padding,
+            self.p_region_bound[0][:] = [-self.r_outer * self.component.mesh.padding,
                                          -(self.component.core.window_h / 2 + self.component.core.core_w / 4)
-                                         * self.component.padding,
+                                         * self.component.mesh.padding,
                                          0,
-                                         self.component.mesh.c_core * self.component.padding]
-            self.p_region_bound[1][:] = [self.r_outer * self.component.padding,
+                                         self.component.mesh.c_core * self.component.mesh.padding]
+            self.p_region_bound[1][:] = [self.r_outer * self.component.mesh.padding,
                                          -(self.component.core.window_h / 2 + self.component.core.core_w / 4)
-                                         * self.component.padding,
+                                         * self.component.mesh.padding,
                                          0,
-                                         self.component.mesh.c_core * self.component.padding]
-            self.p_region_bound[2][:] = [-self.r_outer * self.component.padding,
+                                         self.component.mesh.c_core * self.component.mesh.padding]
+            self.p_region_bound[2][:] = [-self.r_outer * self.component.mesh.padding,
                                          (self.component.core.window_h / 2 + self.component.core.core_w / 4)
-                                         * self.component.padding,
+                                         * self.component.mesh.padding,
                                          0,
-                                         self.component.mesh.c_core * self.component.padding]
-            self.p_region_bound[3][:] = [self.r_outer * self.component.padding,
+                                         self.component.mesh.c_core * self.component.mesh.padding]
+            self.p_region_bound[3][:] = [self.r_outer * self.component.mesh.padding,
                                          (self.component.core.window_h / 2 + self.component.core.core_w / 4)
-                                         * self.component.padding,
+                                         * self.component.mesh.padding,
                                          0,
-                                         self.component.mesh.c_core * self.component.padding]
+                                         self.component.mesh.c_core * self.component.mesh.padding]
 
         def update(self):
 
@@ -1858,7 +1847,6 @@ class MagneticComponent:
     class ReluctanceModel:
         """
         Depending on Core-Configurations, given number of turns and Inductance-goals, calculate air gap lengths
-
         """
 
         def __init__(self, component):
@@ -1925,7 +1913,7 @@ class MagneticComponent:
 
             # Go through reluctances
             for n_reluctance, R_0 in enumerate(reluctances):
-                if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
+                if self.component.dimensionality == "2D":
 
                     if types[n_reluctance] == ("round-round" or "round-inf"):
                         A_core = (self.component.core.core_w / 2) ** 2 * np.pi
@@ -1943,10 +1931,9 @@ class MagneticComponent:
             Method calculates air gap lengths according to the given reluctances.
             Method uses several instance variables of the Reluctance Model.
 
-            .. todo:: List with lists of air gap lengths important to always keep the order of elements [or use a dictionary] future use case integrated_transformer:  [[l_top_1, l_top_2, ...],
-                                                      [l_bot_1, l_bot_2, ...],
-                                                      [l_stray_1, l_stray_2, ...]]
-                                                      use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
+            .. TODO:: List with lists of air gap lengths important to always keep the order of elements [or use a dictionary] future use case integrated_transformer:
+                      [[l_top_1, l_top_2, ...], [l_bot_1, l_bot_2, ...], [l_stray_1, l_stray_2, ...]]
+                    use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
 
             :param reluctances:
 
@@ -1960,7 +1947,7 @@ class MagneticComponent:
             for n_reluctance, R_0 in enumerate(reluctances):
 
                 # Define the Reluctance function to be solved for the air gap length
-                if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
+                if self.component.dimensionality == "2D":
 
                     if n_reluctance == 2:
                         self.A_stray = self.component.stray_path.width * self.component.core.core_w * np.pi
@@ -2018,14 +2005,12 @@ class MagneticComponent:
                                                        sigma=1
                                                        ) - R_0
 
-
                         if self.air_gap_types[n_reluctance][n_distributed] == "round-round":
                             # def r_sct(length):
                             #    return r_round_round(length)
                             pass
 
                         if self.air_gap_types[n_reluctance][n_distributed] == "cyl-cyl":
-
                             def r_sct(length):
                                 return r_cyl_cyl(l=length,
                                                  sigma=sigma(l=length,
@@ -2045,7 +2030,7 @@ class MagneticComponent:
                                                                   R_equivalent=r_basis(l=length,
                                                                                        w=self.component.stray_path.width,
                                                                                        h=self.component.core.window_w
-                                                                                       - length) / 2),
+                                                                                         - length) / 2),
                                                       w=self.component.stray_path.width,
                                                       r_o=self.component.core.window_w + self.component.core.core_w / 2,
                                                       h_real_core=self.real_core_width
@@ -2059,9 +2044,6 @@ class MagneticComponent:
                         # print(f"r_sct(a) {r_sct(1e-6)}")
                         # print(f"r_sct(b) {r_sct(self.max_length[n_reluctance])}")
 
-
-
-
                         # Check for different signs (zero crossing)
                         if r_sct(1e-6) * r_sct(self.max_length[n_reluctance]) > 0:
                             air_gap_lengths[air_gap_name] = "out of bounds"
@@ -2069,22 +2051,22 @@ class MagneticComponent:
 
                         else:
                             if self.visualize_airgaps:
-                                length_vec = np.linspace(1e-6, self.max_length[n_reluctance]/4)
-                                R_res = np.array([r_sct(length)+R_0 for length in length_vec])
-                                R_res_ideal = np.array([r_sct_ideal(length)+R_0 for length in length_vec])
+                                length_vec = np.linspace(1e-6, self.max_length[n_reluctance] / 4)
+                                R_res = np.array([r_sct(length) + R_0 for length in length_vec])
+                                R_res_ideal = np.array([r_sct_ideal(length) + R_0 for length in length_vec])
                                 R_0_vec = np.array([R_0 for length in length_vec])
                                 length_vec = length_vec * 1000
 
                                 plt.figure(figsize=(5, 3))
-                                plt.plot(length_vec, R_res*1e-6, label=r"$R_{\mathrm{fringing}}$")
-                                plt.plot(length_vec, R_res_ideal*1e-6, label=r"$R_{\mathrm{ideal}}$")
-                                plt.plot(length_vec, R_0_vec*1e-6, label=r"$R_{\mathrm{goal}}$")
+                                plt.plot(length_vec, R_res * 1e-6, label=r"$R_{\mathrm{fringing}}$")
+                                plt.plot(length_vec, R_res_ideal * 1e-6, label=r"$R_{\mathrm{ideal}}$")
+                                plt.plot(length_vec, R_0_vec * 1e-6, label=r"$R_{\mathrm{goal}}$")
                                 plt.xlabel(r"$l / \mathrm{mm}$")
                                 plt.ylabel(r"$R / \mathrm{(\mu H)^{-1}}$")
                                 plt.legend()
                                 plt.grid()
                                 plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Inkscape/Reluctance_Model/sct_resistance.pdf",
-                                    bbox_inches="tight")
+                                            bbox_inches="tight")
 
                                 plt.show()
 
@@ -2120,11 +2102,9 @@ class MagneticComponent:
             Phi_top_nom_1st_peak, Phi_bot_nom_1st_peak, Phi_stray_nom_1st_peak = \
                 self.max_phi_from_time_phi(Phi_top_nom_1st, Phi_bot_nom_1st, Phi_stray_nom_1st)
 
-
             p_top_1st, p_bot_1st, p_stray_1st = self.hysteresis_loss(Phi_top_nom_1st_peak, Phi_bot_nom_1st_peak, Phi_stray_nom_1st_peak)
             # print(p_top_1st, p_bot_1st, p_stray_1st)
             self.p_hyst_nom_1st = sum([p_top_1st, p_bot_1st, p_stray_1st])
-
 
             p_top, p_bot, p_stray = self.hysteresis_loss(Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak)
             # print(p_top, p_bot, p_stray)
@@ -2144,15 +2124,12 @@ class MagneticComponent:
             Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak = \
                 self.max_phi_from_time_phi(Phi_top_init, Phi_bot_init, Phi_stray_init)
 
-
             # time
             t = np.linspace(min(self.nom_current[0][0]), max(self.nom_current[0][0]), 500) / self.f_1st / 2 / np.pi
             # phase = 0
             Phi_top = Phi_top_nom_peak * np.cos(t * self.f_1st * 2 * np.pi - phase_top)
             Phi_bot = Phi_bot_nom_peak * np.cos(t * self.f_1st * 2 * np.pi - phase_bot)
             Phi_stray = Phi_stray_nom_peak * np.cos(t * self.f_1st * 2 * np.pi - phase_stray)
-
-
 
             if self.visualize_nom:
                 # figure, axis = plt.subplots(3, figsize=(4, 6))
@@ -2176,7 +2153,6 @@ class MagneticComponent:
                 plt.plot(time, 1000 * np.array(Phi_bot_init), ":", color="tab:orange", label=r"$\mathcal{\phi}_{\mathrm{bot, td}}$")
                 plt.plot(time, 1000 * np.array(Phi_stray_init), ":", color="tab:green", label=r"$\mathcal{\phi}_{\mathrm{stray, td}}$")
 
-
                 plt.ylabel("Magnetic fluxes / mWb")
                 plt.xlabel(r"$t$ / s")
                 plt.yticks([-0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03])
@@ -2184,7 +2160,7 @@ class MagneticComponent:
                 plt.grid()
 
                 plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/core_loss.pdf",
-                    bbox_inches="tight")
+                            bbox_inches="tight")
 
                 plt.show()
 
@@ -2238,27 +2214,27 @@ class MagneticComponent:
             Returns the hysteresis losses. Assumptions: homogeneous flux, sinusoidal excitation
             :return:
             """
-            length_corner = self.A_core/self.component.core.core_w/np.pi
-            ri = self.component.core.core_w/2
+            length_corner = self.A_core / self.component.core.core_w / np.pi
+            ri = self.component.core.core_w / 2
             ro = ri + self.component.core.window_w
 
             # Top Part
             b_top = Phi_top / self.A_core
-            Vol_top = self.A_core * (100-self.component.stray_path.midpoint) / 100 * self.component.core.window_h + \
-                      self.A_core * ((100-self.component.stray_path.midpoint) / 100 * self.component.core.window_h - \
-                      self.air_gap_lengths["R_top"])
+            Vol_top = self.A_core * (100 - self.component.stray_path.midpoint) / 100 * self.component.core.window_h + \
+                      self.A_core * ((100 - self.component.stray_path.midpoint) / 100 * self.component.core.window_h - \
+                                     self.air_gap_lengths["R_top"])
 
             p_top = 0.5 * self.component.mu0 * f_N95_mu_imag(self.f_1st, b_top) * Vol_top * 2 * np.pi * self.f_1st * \
-                    (b_top / self.component.core.re_mu_rel / self.component.mu0)**2 + \
+                    (b_top / self.component.core.re_mu_rel / self.component.mu0) ** 2 + \
                     self.p_loss_cyl(Phi_top, length_corner, ri, ro)[0]
 
             # Bot Part
             b_bot = Phi_bot / self.A_core
             Vol_bot = self.A_core * self.component.stray_path.midpoint / 100 * self.component.core.window_h + \
                       self.A_core * (self.component.stray_path.midpoint / 100 * self.component.core.window_h + \
-                      self.air_gap_lengths["R_bot"])
+                                     self.air_gap_lengths["R_bot"])
             p_bot = 0.5 * self.component.mu0 * f_N95_mu_imag(self.f_1st, b_bot) * Vol_bot * 2 * np.pi * self.f_1st * \
-                    (b_bot / self.component.core.re_mu_rel / self.component.mu0)**2 + \
+                    (b_bot / self.component.core.re_mu_rel / self.component.mu0) ** 2 + \
                     self.p_loss_cyl(Phi_bot, length_corner, ri, ro)[0]
 
             # Stray Path
@@ -2279,12 +2255,13 @@ class MagneticComponent:
             def p_loss_density(r, Phi, w):
                 return 2 * np.pi * r * w * \
                        np.pi * self.f_1st * \
-                       self.component.mu0 * f_N95_mu_imag(self.f_1st, b(r, Phi, w)) *\
-                       (b(r, Phi, w) / self.component.core.re_mu_rel / self.component.mu0)**2
+                       self.component.mu0 * f_N95_mu_imag(self.f_1st, b(r, Phi, w)) * \
+                       (b(r, Phi, w) / self.component.core.re_mu_rel / self.component.mu0) ** 2
 
             return quad(p_loss_density, ri, ro, args=(Phi, w), epsabs=1e-4)
 
-        def max_phi_from_time_phi(self, Phi_top, Phi_bot, Phi_stray):
+        @staticmethod
+        def max_phi_from_time_phi(Phi_top, Phi_bot, Phi_stray):
             """
 
             :param Phi_stray:
@@ -2346,7 +2323,6 @@ class MagneticComponent:
             Phi_stray = []
 
             for i in range(0, len(I1)):
-
                 # Negative sign is placed here
                 CurrentVector = [I1[i], -I2[i]]
 
@@ -2366,14 +2342,15 @@ class MagneticComponent:
 
             return Phi_top, Phi_bot, Phi_stray
 
-        def visualize_current_and_flux(self, t, Phi_top, Phi_bot, Phi_stray, I1, I2):
+        @staticmethod
+        def visualize_current_and_flux(t, Phi_top, Phi_bot, Phi_stray, I1, I2):
             figure, axis = plt.subplots(2, figsize=(4, 4))
 
-            t = np.array(t) * 10**6 / 200000 / 2 / np.pi
+            t = np.array(t) * 10 ** 6 / 200000 / 2 / np.pi
 
-            axis[0].plot(t, 1000*np.array(Phi_top), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
-            axis[0].plot(t, 1000*np.array(Phi_bot), label=r"$\mathcal{\phi}_{\mathrm{bot}}$")
-            axis[0].plot(t, 1000*np.array(Phi_stray), label=r"$\mathcal{\phi}_{\mathrm{stray}}$")
+            axis[0].plot(t, 1000 * np.array(Phi_top), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
+            axis[0].plot(t, 1000 * np.array(Phi_bot), label=r"$\mathcal{\phi}_{\mathrm{bot}}$")
+            axis[0].plot(t, 1000 * np.array(Phi_stray), label=r"$\mathcal{\phi}_{\mathrm{stray}}$")
 
             axis[0].set_yticks([-0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03])
 
@@ -2397,7 +2374,7 @@ class MagneticComponent:
 
             # plt.show()
 
-        def stray_path_parametrization_ei_axi(self):
+        def stray_path_parametrization_two_d_axi(self):
             """
             Method defines instance variables.
             :return:
@@ -2418,7 +2395,6 @@ class MagneticComponent:
                 self.max_phi = [Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak]
                 # print(self.max_phi)
 
-
                 # self.component.stray_path.width = (Phi_stray+np.abs(Phi_top + Phi_bot)) / self.b_stray /
                 # (np.pi * self.component.core.core_w)
 
@@ -2428,13 +2404,13 @@ class MagneticComponent:
                     self.component.stray_path.width = Phi_stray_max_peak / self.b_stray / (np.pi * self.component.core.core_w)
                 # ... to mean flux density of top and bottom flux density
                 if self.stray_path_parametrization == "mean":
-                    b_stray_mean = (np.abs(Phi_top_max_peak) + np.abs(Phi_bot_max_peak)) / 2 / np.pi / (self.component.core.core_w / 2)**2
+                    b_stray_mean = (np.abs(Phi_top_max_peak) + np.abs(Phi_bot_max_peak)) / 2 / np.pi / (self.component.core.core_w / 2) ** 2
                     self.component.stray_path.width = Phi_stray_max_peak / b_stray_mean / (np.pi * self.component.core.core_w)
                 if self.stray_path_parametrization == "max_flux":
                     phi_abs = np.array([np.abs(Phi_top_max_peak), np.abs(Phi_bot_max_peak)])
-                    b_stray_max = phi_abs.max(0) / np.pi / (self.component.core.core_w / 2)**2
-                    self.component.stray_path.width = Phi_stray_max_peak / b_stray_max / self.b_stray_rel_overshoot\
-                                                                                / (np.pi * self.component.core.core_w)
+                    b_stray_max = phi_abs.max(0) / np.pi / (self.component.core.core_w / 2) ** 2
+                    self.component.stray_path.width = Phi_stray_max_peak / b_stray_max / self.b_stray_rel_overshoot \
+                                                      / (np.pi * self.component.core.core_w)
 
                 # Max allowed lengths in each leg
                 # TODO: Fit values a bit
@@ -2467,7 +2443,7 @@ class MagneticComponent:
             """
             results = None
             # Core and Component type decide about air gap characteristics
-            if self.component.core.type == "EI" and self.component.dimensionality == "2D axi":
+            if self.component.dimensionality == "2D":
 
                 # Check winding matrix
 
@@ -2492,7 +2468,7 @@ class MagneticComponent:
                     # print(R_matrix)
                     # print(R_goal)
                     # print(self.L_goal)
-                    self.stray_path_parametrization_ei_axi()
+                    self.stray_path_parametrization_two_d_axi()
 
                     # Check for negative Reluctances
                     if all(R >= 0 for R in R_goal) and self.singularity == False:
@@ -2636,7 +2612,6 @@ class MagneticComponent:
 
                 parameter_results.append(all_parameters)
 
-
             print(f"Number of singularities: {self.n_singularities}\n")
 
             # Save Results including invalid parameters
@@ -2663,16 +2638,45 @@ class MagneticComponent:
         """
 
         """
+
         def __init__(self, component):
             self.component = component
 
             # Characteristic lengths [for mesh sizes]
+            self.global_accuracy = 0.5  # Parameter for mesh-accuracy
+            self.padding = 1.5  # ... > 1
+
             self.skin_mesh_factor = None
             self.c_core = None
             self.c_window = None
             self.c_conductor = [None] * self.component.n_windings
             self.c_center_conductor = [None] * self.component.n_windings  # used for the mesh accuracy in the conductors
             # self.c_air_gap = None  # TODO: make usable again ?
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Pre-Definitions
+            # Points
+            self.p_core = []
+            self.p_island = []
+            self.p_cond = [[], []]
+            self.p_region = []
+            # Curves
+            self.l_bound_core = []
+            self.l_bound_air = []
+            self.l_core_air = []
+            self.l_cond = [[], []]
+            self.l_region = []
+            self.curve_loop_cond = [[], []]
+            # Curve Loops
+            self.curve_loop_island = []
+            self.curve_loop_air = []
+            # curve_loop_outer_air = []
+            # curve_loop_bound = []
+            # Plane Surfaces
+            self.plane_surface_core = []
+            self.plane_surface_cond = [[], []]
+            self.plane_surface_air = []
+            self.plane_surface_outer_air = []
 
         def generate_mesh(self, refine=0, alternative_error=0):
             """
@@ -2703,377 +2707,353 @@ class MagneticComponent:
 
             gmsh.option.setNumber("General.Terminal", 1)
             gmsh.model.add(self.component.path_mesh + "geometry")
+
+            print(self.component.dimensionality)
             # ------------------------------------------ Geometry -------------------------------------------
             # Core generation
-            if self.component.core.type == "EI":
-                # --------------------------------------- Points --------------------------------------------
-                if self.component.y_symmetric == 1:
-                    if self.component.dimensionality == "2D axi":
+            # --------------------------------------- Points --------------------------------------------
+            if self.component.dimensionality == "2D":
 
-                        # Find points of air gaps (used later)
-                        if self.component.air_gaps.number > 0:
-                            # Top and bottom point
-                            center_right = min_max_inner_points(self.component.ei_axi.p_window[4],
-                                                                self.component.ei_axi.p_window[6],
-                                                                self.component.ei_axi.p_air_gaps)
-                            island_right = inner_points(self.component.ei_axi.p_window[4],
-                                                        self.component.ei_axi.p_window[6],
-                                                        self.component.ei_axi.p_air_gaps)
+                # Find points of air gaps (used later)
+                if self.component.air_gaps.number > 0:
+                    # Top and bottom point
+                    center_right = min_max_inner_points(self.component.two_d_axi.p_window[4],
+                                                        self.component.two_d_axi.p_window[6],
+                                                        self.component.two_d_axi.p_air_gaps)
+                    island_right = inner_points(self.component.two_d_axi.p_window[4],
+                                                self.component.two_d_axi.p_window[6],
+                                                self.component.two_d_axi.p_air_gaps)
 
-                            # Dedicated stray path:
-                            if self.component.component_type == "integrated_transformer":
-                                # mshopt stray_path_gap = [[], []]
-                                # mshopt stray_path_gap[0][:] = island_right[(self.stray_path.start_index-1)*2][:]
-                                # mshopt stray_path_gap[1][:] = island_right[(self.stray_path.start_index-1)*2+1][:]
-                                island_right[(self.component.stray_path.start_index - 1) * 2][0] = \
-                                    self.component.stray_path.radius
-                                island_right[(self.component.stray_path.start_index - 1) * 2 + 1][0] = \
-                                    self.component.stray_path.radius
+                    # Dedicated stray path:
+                    if self.component.component_type == "integrated_transformer":
+                        # mshopt stray_path_gap = [[], []]
+                        # mshopt stray_path_gap[0][:] = island_right[(self.stray_path.start_index-1)*2][:]
+                        # mshopt stray_path_gap[1][:] = island_right[(self.stray_path.start_index-1)*2+1][:]
+                        island_right[(self.component.stray_path.start_index - 1) * 2][0] = \
+                            self.component.stray_path.radius
+                        island_right[(self.component.stray_path.start_index - 1) * 2 + 1][0] = \
+                            self.component.stray_path.radius
 
-                        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        # Pre-Definitions
-                        # Points
-                        self.p_core = []
-                        self.p_island = []
-                        self.p_cond = [[], []]
-                        self.p_region = []
-                        # Curves
-                        self.l_bound_core = []
-                        self.l_bound_air = []
-                        self.l_core_air = []
-                        self.l_cond = [[], []]
-                        self.l_region = []
-                        self.curve_loop_cond = [[], []]
-                        # Curve Loops
-                        self.curve_loop_island = []
-                        self.curve_loop_air = []
-                        # curve_loop_outer_air = []
-                        # curve_loop_bound = []
-                        # Plane Surfaces
-                        self.plane_surface_core = []
-                        self.plane_surface_cond = [[], []]
-                        self.plane_surface_air = []
-                        self.plane_surface_outer_air = []
 
-                        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        # Geometry definitions: points -> lines -> curve loops -> surfaces
-                        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        # Main Core
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # Geometry definitions: points -> lines -> curve loops -> surfaces
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # Main Core
 
-                        # Points
-                        # (index refers to sketch)
+                # Points
+                # (index refers to sketch)
 
-                        # First point (left point of lowest air gap)
-                        if self.component.air_gaps.number > 0:
-                            self.p_core.append(gmsh.model.geo.addPoint(0,
-                                                                  center_right[0][1],
-                                                                  center_right[0][2],
-                                                                  self.c_core))
-                        if self.component.air_gaps.number == 0:
-                            self.p_core.append(None)  # dummy filled for no air gap special case
+                # First point (left point of lowest air gap)
+                if self.component.air_gaps.number > 0:
+                    self.p_core.append(gmsh.model.geo.addPoint(0,
+                                                               center_right[0][1],
+                                                               center_right[0][2],
+                                                               self.c_core))
+                if self.component.air_gaps.number == 0:
+                    self.p_core.append(None)  # dummy filled for no air gap special case
 
-                        # Go down and counter-clockwise
-                        # Four points around the core
-                        self.p_core.append(gmsh.model.geo.addPoint(0,
-                                                              self.component.ei_axi.p_outer[1][1],
-                                                              self.component.ei_axi.p_outer[1][2],
-                                                              self.component.ei_axi.p_outer[1][3]))
+                # Go down and counter-clockwise
+                # Four points around the core
+                self.p_core.append(gmsh.model.geo.addPoint(0,
+                                                           self.component.two_d_axi.p_outer[1][1],
+                                                           self.component.two_d_axi.p_outer[1][2],
+                                                           self.component.two_d_axi.p_outer[1][3]))
 
-                        self.p_core.append(gmsh.model.geo.addPoint(self.component.ei_axi.p_outer[1][0],
-                                                              self.component.ei_axi.p_outer[1][1],
-                                                              self.component.ei_axi.p_outer[1][2],
-                                                              self.component.ei_axi.p_outer[1][3]))
+                self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_outer[1][0],
+                                                           self.component.two_d_axi.p_outer[1][1],
+                                                           self.component.two_d_axi.p_outer[1][2],
+                                                           self.component.two_d_axi.p_outer[1][3]))
 
-                        self.p_core.append(gmsh.model.geo.addPoint(self.component.ei_axi.p_outer[3][0],
-                                                              self.component.ei_axi.p_outer[3][1],
-                                                              self.component.ei_axi.p_outer[3][2],
-                                                              self.component.ei_axi.p_outer[3][3]))
+                self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_outer[3][0],
+                                                           self.component.two_d_axi.p_outer[3][1],
+                                                           self.component.two_d_axi.p_outer[3][2],
+                                                           self.component.two_d_axi.p_outer[3][3]))
 
-                        self.p_core.append(gmsh.model.geo.addPoint(0,
-                                                              self.component.ei_axi.p_outer[3][1],
-                                                              self.component.ei_axi.p_outer[3][2],
-                                                              self.component.ei_axi.p_outer[3][3]))
+                self.p_core.append(gmsh.model.geo.addPoint(0,
+                                                           self.component.two_d_axi.p_outer[3][1],
+                                                           self.component.two_d_axi.p_outer[3][2],
+                                                           self.component.two_d_axi.p_outer[3][3]))
 
-                        # Two points of highest air gap
-                        if self.component.air_gaps.number > 0:
-                            self.p_core.append(gmsh.model.geo.addPoint(0,
-                                                                  center_right[1][1],
-                                                                  center_right[1][2],
-                                                                  self.c_core))
+                # Two points of highest air gap
+                if self.component.air_gaps.number > 0:
+                    self.p_core.append(gmsh.model.geo.addPoint(0,
+                                                               center_right[1][1],
+                                                               center_right[1][2],
+                                                               self.c_core))
 
-                            self.p_core.append(gmsh.model.geo.addPoint(center_right[1][0],
-                                                                  center_right[1][1],
-                                                                  center_right[1][2],
-                                                                  self.c_window))
+                    self.p_core.append(gmsh.model.geo.addPoint(center_right[1][0],
+                                                               center_right[1][1],
+                                                               center_right[1][2],
+                                                               self.c_window))
 
-                        if self.component.air_gaps.number == 0:
-                            self.p_core.append(None)  # dummy filled for no air gap special case
-                            self.p_core.append(None)  # dummy filled for no air gap special case
+                if self.component.air_gaps.number == 0:
+                    self.p_core.append(None)  # dummy filled for no air gap special case
+                    self.p_core.append(None)  # dummy filled for no air gap special case
 
-                        # Clockwise
-                        # Four points of the window
-                        self.p_core.append(gmsh.model.geo.addPoint(self.component.ei_axi.p_window[6][0],
-                                                              self.component.ei_axi.p_window[6][1],
-                                                              self.component.ei_axi.p_window[6][2],
-                                                              self.component.ei_axi.p_window[6][3]))
+                # Clockwise
+                # Four points of the window
+                self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_window[6][0],
+                                                           self.component.two_d_axi.p_window[6][1],
+                                                           self.component.two_d_axi.p_window[6][2],
+                                                           self.component.two_d_axi.p_window[6][3]))
 
-                        self.p_core.append(gmsh.model.geo.addPoint(self.component.ei_axi.p_window[7][0],
-                                                              self.component.ei_axi.p_window[7][1],
-                                                              self.component.ei_axi.p_window[7][2],
-                                                              self.component.ei_axi.p_window[7][3]))
+                self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_window[7][0],
+                                                           self.component.two_d_axi.p_window[7][1],
+                                                           self.component.two_d_axi.p_window[7][2],
+                                                           self.component.two_d_axi.p_window[7][3]))
 
-                        self.p_core.append(gmsh.model.geo.addPoint(self.component.ei_axi.p_window[5][0],
-                                                              self.component.ei_axi.p_window[5][1],
-                                                              self.component.ei_axi.p_window[5][2],
-                                                              self.component.ei_axi.p_window[5][3]))
+                self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_window[5][0],
+                                                           self.component.two_d_axi.p_window[5][1],
+                                                           self.component.two_d_axi.p_window[5][2],
+                                                           self.component.two_d_axi.p_window[5][3]))
 
-                        self.p_core.append(gmsh.model.geo.addPoint(self.component.ei_axi.p_window[4][0],
-                                                              self.component.ei_axi.p_window[4][1],
-                                                              self.component.ei_axi.p_window[4][2],
-                                                              self.component.ei_axi.p_window[4][3]))
+                self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_window[4][0],
+                                                           self.component.two_d_axi.p_window[4][1],
+                                                           self.component.two_d_axi.p_window[4][2],
+                                                           self.component.two_d_axi.p_window[4][3]))
 
-                        # Last point of lowest air gap
-                        if self.component.air_gaps.number > 0:
-                            self.p_core.append(gmsh.model.geo.addPoint(center_right[0][0],
-                                                                  center_right[0][1],
-                                                                  center_right[0][2],
-                                                                  self.c_window))
+                # Last point of lowest air gap
+                if self.component.air_gaps.number > 0:
+                    self.p_core.append(gmsh.model.geo.addPoint(center_right[0][0],
+                                                               center_right[0][1],
+                                                               center_right[0][2],
+                                                               self.c_window))
 
-                        if self.component.air_gaps.number == 0:
-                            self.p_core.append(None)  # dummy filled for no air gap special case
+                if self.component.air_gaps.number == 0:
+                    self.p_core.append(None)  # dummy filled for no air gap special case
 
-                        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        # Curves
-                        # (index refers to sketch)
-                        # To be added: Case Air Gaps directly on outer leg
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # Curves
+                # (index refers to sketch)
+                # To be added: Case Air Gaps directly on outer leg
 
-                        # Curves: Boundary - Core
-                        if self.component.air_gaps.number > 0:
-                            self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[0],
-                                                                       self.p_core[1]))
-                        self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[1],
-                                                                   self.p_core[2]))
-                        self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[2],
-                                                                   self.p_core[3]))
-                        self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[3],
-                                                                   self.p_core[4]))
-                        if self.component.air_gaps.number > 0:
-                            self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[4],
-                                                                       self.p_core[5]))
-                        if self.component.air_gaps.number == 0:
-                            self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[4],
-                                                                       self.p_core[1]))
-                        # Curves: Core - Air
-                        if self.component.air_gaps.number > 0:
-                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[5],
-                                                                     self.p_core[6]))
-                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[6],
-                                                                     self.p_core[7]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[7],
-                                                                 self.p_core[8]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[8],
-                                                                 self.p_core[9]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[9],
-                                                                 self.p_core[10]))
+                # Curves: Boundary - Core
+                if self.component.air_gaps.number > 0:
+                    self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[0],
+                                                                    self.p_core[1]))
+                self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[1],
+                                                                self.p_core[2]))
+                self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[2],
+                                                                self.p_core[3]))
+                self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[3],
+                                                                self.p_core[4]))
+                if self.component.air_gaps.number > 0:
+                    self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[4],
+                                                                    self.p_core[5]))
+                if self.component.air_gaps.number == 0:
+                    self.l_bound_core.append(gmsh.model.geo.addLine(self.p_core[4],
+                                                                    self.p_core[1]))
+                # Curves: Core - Air
+                if self.component.air_gaps.number > 0:
+                    self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[5],
+                                                                  self.p_core[6]))
+                    self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[6],
+                                                                  self.p_core[7]))
+                self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[7],
+                                                              self.p_core[8]))
+                self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[8],
+                                                              self.p_core[9]))
+                self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[9],
+                                                              self.p_core[10]))
 
-                        if self.component.air_gaps.number > 0:
-                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[10],
-                                                                     self.p_core[11]))
-                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[11],
-                                                                     self.p_core[0]))
-                        if self.component.air_gaps.number == 0:
-                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[10],
-                                                                     self.p_core[7]))
-                        # Plane: Main Core --> plane_surface_core[0]
-                        if self.component.air_gaps.number > 0:
-                            curve_loop_core = gmsh.model.geo.addCurveLoop(self.l_bound_core + self.l_core_air)
-                            self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core]))
-                        if self.component.air_gaps.number == 0:
-                            curve_loop_bound_core = gmsh.model.geo.addCurveLoop(self.l_bound_core)
-                            curve_loop_core_air = gmsh.model.geo.addCurveLoop(self.l_core_air)
-                            self.plane_surface_core.append(
-                                gmsh.model.geo.addPlaneSurface([curve_loop_bound_core, curve_loop_core_air]))
+                if self.component.air_gaps.number > 0:
+                    self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[10],
+                                                                  self.p_core[11]))
+                    self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[11],
+                                                                  self.p_core[0]))
+                if self.component.air_gaps.number == 0:
+                    self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[10],
+                                                                  self.p_core[7]))
+                # Plane: Main Core --> plane_surface_core[0]
+                if self.component.air_gaps.number > 0:
+                    curve_loop_core = gmsh.model.geo.addCurveLoop(self.l_bound_core + self.l_core_air)
+                    self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core]))
+                if self.component.air_gaps.number == 0:
+                    curve_loop_bound_core = gmsh.model.geo.addCurveLoop(self.l_bound_core)
+                    curve_loop_core_air = gmsh.model.geo.addCurveLoop(self.l_core_air)
+                    self.plane_surface_core.append(
+                        gmsh.model.geo.addPlaneSurface([curve_loop_bound_core, curve_loop_core_air]))
 
-                        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        # - Core parts between Air Gaps
-                        # Points of Core Islands (index refers to sketch)
-                        if self.component.air_gaps.number != 0:
-                            while island_right.shape[0] > 0:
-                                # take two points with lowest y-coordinates
-                                min_island_right = np.argmin(island_right[:, 1])
-                                self.p_island.append(gmsh.model.geo.addPoint(0,
-                                                                        island_right[min_island_right, 1],
-                                                                        island_right[min_island_right, 2],
-                                                                        self.c_core))
-                                self.p_island.append(gmsh.model.geo.addPoint(island_right[min_island_right, 0],
-                                                                        island_right[min_island_right, 1],
-                                                                        island_right[min_island_right, 2],
-                                                                        self.c_window))
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # - Core parts between Air Gaps
+                # Points of Core Islands (index refers to sketch)
+                if self.component.air_gaps.number != 0:
+                    while island_right.shape[0] > 0:
+                        # take two points with lowest y-coordinates
+                        min_island_right = np.argmin(island_right[:, 1])
+                        self.p_island.append(gmsh.model.geo.addPoint(0,
+                                                                     island_right[min_island_right, 1],
+                                                                     island_right[min_island_right, 2],
+                                                                     self.c_core))
+                        self.p_island.append(gmsh.model.geo.addPoint(island_right[min_island_right, 0],
+                                                                     island_right[min_island_right, 1],
+                                                                     island_right[min_island_right, 2],
+                                                                     self.c_window))
 
-                                island_right = np.delete(island_right, min_island_right, 0)
+                        island_right = np.delete(island_right, min_island_right, 0)
 
-                            # Curves of Core Islands (index refers to sketch)
-                            for i in range(0, int(len(self.p_island) / 4)):
-                                self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], self.p_island[4 * i + 1]))
-                                self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
-                                self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], self.p_island[4 * i + 2]))
-                                self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
-                                # Iterative plane creation
-                                self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
-                                    [self.l_core_air[-3], self.l_core_air[-2], self.l_core_air[-1], self.l_bound_core[-1]]))
-                                self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([self.curve_loop_island[-1]]))
+                    # Curves of Core Islands (index refers to sketch)
+                    for i in range(0, int(len(self.p_island) / 4)):
+                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], self.p_island[4 * i + 1]))
+                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
+                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], self.p_island[4 * i + 2]))
+                        self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
+                        # Iterative plane creation
+                        self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
+                            [self.l_core_air[-3], self.l_core_air[-2], self.l_core_air[-1], self.l_bound_core[-1]]))
+                        self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([self.curve_loop_island[-1]]))
 
-                        # Curves: Boundary - Air
-                        if self.component.air_gaps.number == 1:
-                            self.l_bound_air.append(gmsh.model.geo.addLine(self.p_core[0], self.p_core[5]))
-                        else:
-                            for i in range(0, int(len(self.p_island) / 4)):
-                                if i == 0:  # First Line
-                                    self.l_bound_air.append(gmsh.model.geo.addLine(self.p_core[0], self.p_island[0]))
-                                else:  # Middle Lines
-                                    self.l_bound_air.append(
-                                        gmsh.model.geo.addLine(self.p_island[4 * (i - 1) + 2], self.p_island[4 * i + 0]))
-                                if i == int(len(self.p_island) / 4) - 1:  # Last Line
-                                    self.l_bound_air.append(gmsh.model.geo.addLine(self.p_island[-2], self.p_core[5]))
+                # Curves: Boundary - Air
+                if self.component.air_gaps.number == 1:
+                    self.l_bound_air.append(gmsh.model.geo.addLine(self.p_core[0], self.p_core[5]))
+                else:
+                    for i in range(0, int(len(self.p_island) / 4)):
+                        if i == 0:  # First Line
+                            self.l_bound_air.append(gmsh.model.geo.addLine(self.p_core[0], self.p_island[0]))
+                        else:  # Middle Lines
+                            self.l_bound_air.append(
+                                gmsh.model.geo.addLine(self.p_island[4 * (i - 1) + 2], self.p_island[4 * i + 0]))
+                        if i == int(len(self.p_island) / 4) - 1:  # Last Line
+                            self.l_bound_air.append(gmsh.model.geo.addLine(self.p_island[-2], self.p_core[5]))
 
-                        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        # Conductors
-                        # Points of Conductors
-                        for num in range(0, self.component.n_windings):
-                            for i in range(0, self.component.ei_axi.p_conductor[num].shape[0]):
-                                self.p_cond[num].append(
-                                    gmsh.model.geo.addPoint(
-                                        self.component.ei_axi.p_conductor[num][i][0],  # x
-                                        self.component.ei_axi.p_conductor[num][i][1],  # y
-                                        0,  # z
-                                        self.component.ei_axi.p_conductor[num][i][3]))
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # Conductors
+                # Points of Conductors
+                for num in range(0, self.component.n_windings):
+                    for i in range(0, self.component.two_d_axi.p_conductor[num].shape[0]):
+                        self.p_cond[num].append(
+                            gmsh.model.geo.addPoint(
+                                self.component.two_d_axi.p_conductor[num][i][0],  # x
+                                self.component.two_d_axi.p_conductor[num][i][1],  # y
+                                0,  # z
+                                self.component.two_d_axi.p_conductor[num][i][3]))
 
-                            # Curves of Conductors
-                            if self.component.windings[num].conductor_type == "litz" or \
-                                    self.component.windings[num].conductor_type == "solid":
-                                for i in range(0, int(len(self.p_cond[num]) / 5)):
-                                    self.l_cond[num].append(gmsh.model.geo.addCircleArc(
-                                        self.p_cond[num][5 * i + 1],
-                                        self.p_cond[num][5 * i + 0],
-                                        self.p_cond[num][5 * i + 2]))
-                                    self.l_cond[num].append(gmsh.model.geo.addCircleArc(
-                                        self.p_cond[num][5 * i + 2],
-                                        self.p_cond[num][5 * i + 0],
-                                        self.p_cond[num][5 * i + 3]))
-                                    self.l_cond[num].append(gmsh.model.geo.addCircleArc(
-                                        self.p_cond[num][5 * i + 3],
-                                        self.p_cond[num][5 * i + 0],
-                                        self.p_cond[num][5 * i + 4]))
-                                    self.l_cond[num].append(gmsh.model.geo.addCircleArc(
-                                        self.p_cond[num][5 * i + 4],
-                                        self.p_cond[num][5 * i + 0],
-                                        self.p_cond[num][5 * i + 1]))
-                                    # Iterative plane creation
-                                    self.curve_loop_cond[num].append(gmsh.model.geo.addCurveLoop(
-                                        [self.l_cond[num][i * 4 + 0],
-                                         self.l_cond[num][i * 4 + 1],
-                                         self.l_cond[num][i * 4 + 2],
-                                         self.l_cond[num][i * 4 + 3]]))
-                                    self.plane_surface_cond[num].append(
-                                        gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
-                            else:
-                                # Rectangle conductor cut
-                                for i in range(0, int(len(self.p_cond[num]) / 4)):
-                                    self.l_cond[num].append(gmsh.model.geo.addLine(self.p_cond[num][4 * i + 0],
-                                                                              self.p_cond[num][4 * i + 2]))
-                                    self.l_cond[num].append(gmsh.model.geo.addLine(self.p_cond[num][4 * i + 2],
-                                                                              self.p_cond[num][4 * i + 3]))
-                                    self.l_cond[num].append(gmsh.model.geo.addLine(self.p_cond[num][4 * i + 3],
-                                                                              self.p_cond[num][4 * i + 1]))
-                                    self.l_cond[num].append(gmsh.model.geo.addLine(self.p_cond[num][4 * i + 1],
-                                                                              self.p_cond[num][4 * i + 0]))
-                                    # Iterative plane creation
-                                    self.curve_loop_cond[num].append(gmsh.model.geo.addCurveLoop([self.l_cond[num][i * 4 + 0],
-                                                                                             self.l_cond[num][i * 4 + 1],
-                                                                                             self.l_cond[num][i * 4 + 2],
-                                                                                             self.l_cond[num][i * 4 + 3]]))
-                                    self.plane_surface_cond[num].append(
-                                        gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
+                    # Curves of Conductors
+                    if self.component.windings[num].conductor_type == "litz" or \
+                            self.component.windings[num].conductor_type == "solid":
+                        for i in range(0, int(len(self.p_cond[num]) / 5)):
+                            self.l_cond[num].append(gmsh.model.geo.addCircleArc(
+                                self.p_cond[num][5 * i + 1],
+                                self.p_cond[num][5 * i + 0],
+                                self.p_cond[num][5 * i + 2]))
+                            self.l_cond[num].append(gmsh.model.geo.addCircleArc(
+                                self.p_cond[num][5 * i + 2],
+                                self.p_cond[num][5 * i + 0],
+                                self.p_cond[num][5 * i + 3]))
+                            self.l_cond[num].append(gmsh.model.geo.addCircleArc(
+                                self.p_cond[num][5 * i + 3],
+                                self.p_cond[num][5 * i + 0],
+                                self.p_cond[num][5 * i + 4]))
+                            self.l_cond[num].append(gmsh.model.geo.addCircleArc(
+                                self.p_cond[num][5 * i + 4],
+                                self.p_cond[num][5 * i + 0],
+                                self.p_cond[num][5 * i + 1]))
+                            # Iterative plane creation
+                            self.curve_loop_cond[num].append(gmsh.model.geo.addCurveLoop(
+                                [self.l_cond[num][i * 4 + 0],
+                                 self.l_cond[num][i * 4 + 1],
+                                 self.l_cond[num][i * 4 + 2],
+                                 self.l_cond[num][i * 4 + 3]]))
+                            self.plane_surface_cond[num].append(
+                                gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
+                    else:
+                        # Rectangle conductor cut
+                        for i in range(0, int(len(self.p_cond[num]) / 4)):
+                            self.l_cond[num].append(gmsh.model.geo.addLine(self.p_cond[num][4 * i + 0],
+                                                                           self.p_cond[num][4 * i + 2]))
+                            self.l_cond[num].append(gmsh.model.geo.addLine(self.p_cond[num][4 * i + 2],
+                                                                           self.p_cond[num][4 * i + 3]))
+                            self.l_cond[num].append(gmsh.model.geo.addLine(self.p_cond[num][4 * i + 3],
+                                                                           self.p_cond[num][4 * i + 1]))
+                            self.l_cond[num].append(gmsh.model.geo.addLine(self.p_cond[num][4 * i + 1],
+                                                                           self.p_cond[num][4 * i + 0]))
+                            # Iterative plane creation
+                            self.curve_loop_cond[num].append(gmsh.model.geo.addCurveLoop([self.l_cond[num][i * 4 + 0],
+                                                                                          self.l_cond[num][i * 4 + 1],
+                                                                                          self.l_cond[num][i * 4 + 2],
+                                                                                          self.l_cond[num][i * 4 + 3]]))
+                            self.plane_surface_cond[num].append(
+                                gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
 
-                        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        # Air
-                        # Points are partwise double designated
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # Air
+                # Points are partwise double designated
 
-                        l_air_tmp = self.l_core_air[:7]
-                        for i in range(0, len(self.l_bound_air)):
-                            l_air_tmp.append(self.l_bound_air[i])
-                            if i < len(self.l_bound_air) - 1:
-                                l_air_tmp.append(self.l_core_air[7 + 3 * i])
-                                l_air_tmp.append(self.l_core_air[7 + 3 * i + 1])
-                                l_air_tmp.append(self.l_core_air[7 + 3 * i + 2])
+                l_air_tmp = self.l_core_air[:7]
+                for i in range(0, len(self.l_bound_air)):
+                    l_air_tmp.append(self.l_bound_air[i])
+                    if i < len(self.l_bound_air) - 1:
+                        l_air_tmp.append(self.l_core_air[7 + 3 * i])
+                        l_air_tmp.append(self.l_core_air[7 + 3 * i + 1])
+                        l_air_tmp.append(self.l_core_air[7 + 3 * i + 2])
 
-                        self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp))
+                self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp))
 
-                        # Need flatten list of all! conductors
-                        flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
-                        self.plane_surface_air.append(
-                            gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond))
+                # Need flatten list of all! conductors
+                flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
+                self.plane_surface_air.append(
+                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond))
 
-                        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        # Boundary
-                        if self.component.region is None:
-                            l_bound_tmp = self.l_bound_core[:5]
-                            for i in range(0, len(self.l_bound_air)):
-                                l_bound_tmp.append(self.l_bound_air[-i - 1])
-                                if i != len(self.l_bound_air) - 1:  # last run
-                                    l_bound_tmp.append(self.l_bound_core[-i - 1])
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # Boundary
+                if self.component.region is None:
+                    l_bound_tmp = self.l_bound_core[:5]
+                    for i in range(0, len(self.l_bound_air)):
+                        l_bound_tmp.append(self.l_bound_air[-i - 1])
+                        if i != len(self.l_bound_air) - 1:  # last run
+                            l_bound_tmp.append(self.l_bound_core[-i - 1])
 
-                        else:
-                            # Generate Lines of Region
-                            # start top left and go clockwise
-                            self.p_region.append(gmsh.model.geo.addPoint(0,
-                                                                    self.component.ei_axi.p_region_bound[2][1],
-                                                                    self.component.ei_axi.p_region_bound[2][2],
-                                                                    self.component.ei_axi.p_region_bound[2][3]))
+                else:
+                    # Generate Lines of Region
+                    # start top left and go clockwise
+                    self.p_region.append(gmsh.model.geo.addPoint(0,
+                                                                 self.component.two_d_axi.p_region_bound[2][1],
+                                                                 self.component.two_d_axi.p_region_bound[2][2],
+                                                                 self.component.two_d_axi.p_region_bound[2][3]))
 
-                            self.p_region.append(gmsh.model.geo.addPoint(self.component.ei_axi.p_region_bound[3][0],
-                                                                    self.component.ei_axi.p_region_bound[3][1],
-                                                                    self.component.ei_axi.p_region_bound[3][2],
-                                                                    self.component.ei_axi.p_region_bound[3][3]))
+                    self.p_region.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_region_bound[3][0],
+                                                                 self.component.two_d_axi.p_region_bound[3][1],
+                                                                 self.component.two_d_axi.p_region_bound[3][2],
+                                                                 self.component.two_d_axi.p_region_bound[3][3]))
 
-                            self.p_region.append(gmsh.model.geo.addPoint(self.component.ei_axi.p_region_bound[1][0],
-                                                                    self.component.ei_axi.p_region_bound[1][1],
-                                                                    self.component.ei_axi.p_region_bound[1][2],
-                                                                    self.component.ei_axi.p_region_bound[1][3]))
+                    self.p_region.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_region_bound[1][0],
+                                                                 self.component.two_d_axi.p_region_bound[1][1],
+                                                                 self.component.two_d_axi.p_region_bound[1][2],
+                                                                 self.component.two_d_axi.p_region_bound[1][3]))
 
-                            self.p_region.append(gmsh.model.geo.addPoint(0,
-                                                                    self.component.ei_axi.p_region_bound[0][1],
-                                                                    self.component.ei_axi.p_region_bound[0][2],
-                                                                    self.component.ei_axi.p_region_bound[0][3]))
+                    self.p_region.append(gmsh.model.geo.addPoint(0,
+                                                                 self.component.two_d_axi.p_region_bound[0][1],
+                                                                 self.component.two_d_axi.p_region_bound[0][2],
+                                                                 self.component.two_d_axi.p_region_bound[0][3]))
 
-                            # Outer Region Lines
-                            self.l_region.append(gmsh.model.geo.addLine(self.p_core[4],
-                                                                   self.p_region[0]))
-                            self.l_region.append(gmsh.model.geo.addLine(self.p_region[0],
-                                                                   self.p_region[1]))
-                            self.l_region.append(gmsh.model.geo.addLine(self.p_region[1],
-                                                                   self.p_region[2]))
-                            self.l_region.append(gmsh.model.geo.addLine(self.p_region[2],
-                                                                   self.p_region[3]))
-                            self.l_region.append(gmsh.model.geo.addLine(self.p_region[3],
-                                                                   self.p_core[1]))
+                    # Outer Region Lines
+                    self.l_region.append(gmsh.model.geo.addLine(self.p_core[4],
+                                                                self.p_region[0]))
+                    self.l_region.append(gmsh.model.geo.addLine(self.p_region[0],
+                                                                self.p_region[1]))
+                    self.l_region.append(gmsh.model.geo.addLine(self.p_region[1],
+                                                                self.p_region[2]))
+                    self.l_region.append(gmsh.model.geo.addLine(self.p_region[2],
+                                                                self.p_region[3]))
+                    self.l_region.append(gmsh.model.geo.addLine(self.p_region[3],
+                                                                self.p_core[1]))
 
-                            # Boundary Line
-                            l_bound_tmp = [self.l_bound_core[4]]
+                    # Boundary Line
+                    l_bound_tmp = [self.l_bound_core[4]]
 
-                            for i in range(0, len(self.l_region)):
-                                l_bound_tmp.append(self.l_region[i])
+                    for i in range(0, len(self.l_region)):
+                        l_bound_tmp.append(self.l_region[i])
 
-                            l_bound_tmp.append(self.l_bound_core[0])
+                    l_bound_tmp.append(self.l_bound_core[0])
 
-                            for i in range(0, len(self.l_bound_air)):
-                                l_bound_tmp.append(self.l_bound_air[-i - 1])
-                                if i != len(self.l_bound_air) - 1:  # last run
-                                    l_bound_tmp.append(self.l_bound_core[-i - 1])
+                    for i in range(0, len(self.l_bound_air)):
+                        l_bound_tmp.append(self.l_bound_air[-i - 1])
+                        if i != len(self.l_bound_air) - 1:  # last run
+                            l_bound_tmp.append(self.l_bound_core[-i - 1])
 
-                            # Outer Air Surface
-                            curve_loop_outer_air = gmsh.model.geo.addCurveLoop(self.l_region + self.l_bound_core[1:4])
-                            self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
+                    # Outer Air Surface
+                    curve_loop_outer_air = gmsh.model.geo.addCurveLoop(self.l_region + self.l_bound_core[1:4])
+                    self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if self.component.visualize_before:
@@ -3086,7 +3066,7 @@ class MagneticComponent:
                 gmsh.model.setColor([(2, self.plane_surface_air[0])], 255, 255, 255)
                 for num in range(0, self.component.n_windings):
                     for i in range(0, len(self.plane_surface_cond[num])):
-                        gmsh.model.setColor([(2, self.plane_surface_cond[num][i])], 200*num, 200*(1-num), 0)
+                        gmsh.model.setColor([(2, self.plane_surface_cond[num][i])], 200 * num, 200 * (1 - num), 0)
 
                 # Output .msh file
                 gmsh.option.setNumber("Mesh.SaveAll", 1)
@@ -3157,28 +3137,27 @@ class MagneticComponent:
 
                         if self.component.windings[num].conductor_type == "solid" and \
                                 self.component.windings[num].turns[n_win] > 1:
-                            while self.component.ei_axi.p_conductor[num][5 * j][1] == \
-                                    self.component.ei_axi.p_conductor[num][5 * j + 5][1]:
+                            while self.component.two_d_axi.p_conductor[num][5 * j][1] == \
+                                    self.component.two_d_axi.p_conductor[num][5 * j + 5][1]:
                                 x_inter.append(
-                                    0.5 * (self.component.ei_axi.p_conductor[num][5 * j][0] +
-                                           self.component.ei_axi.p_conductor[num][5 * j + 5][0]))
+                                    0.5 * (self.component.two_d_axi.p_conductor[num][5 * j][0] +
+                                           self.component.two_d_axi.p_conductor[num][5 * j + 5][0]))
                                 j += 1
                                 if j == self.component.windings[num].turns[n_win] - 1:
                                     break
                             j += 1
                             if int(self.component.windings[num].turns[n_win] / j) > 1:
                                 for i in range(0, int(self.component.windings[num].turns[n_win] / j)):
-                                    if 5 * j * i + 5 * j >= len(self.component.ei_axi.p_conductor[num][:]):
+                                    if 5 * j * i + 5 * j >= len(self.component.two_d_axi.p_conductor[num][:]):
                                         break
-                                    y_inter.append(0.5 * (self.component.ei_axi.p_conductor[num][5 * j * i][1] +
-                                                          self.component.ei_axi.p_conductor[num][5 * j * i + 5 * j][1]))
+                                    y_inter.append(0.5 * (self.component.two_d_axi.p_conductor[num][5 * j * i][1] +
+                                                          self.component.two_d_axi.p_conductor[num][5 * j * i + 5 * j][1]))
                                 for x in x_inter:
                                     for y in y_inter:
                                         p_inter.append(gmsh.model.geo.addPoint(x,
                                                                                y,
                                                                                0,
                                                                                self.c_center_conductor[num]))
-
 
             # mshopt # Explicit stray path air gap optimization
             # mshopt if not self.component.component_type == "integrated_transformer":
@@ -3429,9 +3408,9 @@ class MagneticComponent:
 
         """
         # Coordinates of the rectangular winding window
-        if self.dimensionality == "2D axi":
-            text_file.write("Xw1 = %s;\n" % self.ei_axi.p_window[4, 0])
-            text_file.write("Xw2 = %s;\n" % self.ei_axi.p_window[5, 0])
+        if self.dimensionality == "2D":
+            text_file.write("Xw1 = %s;\n" % self.two_d_axi.p_window[4, 0])
+            text_file.write("Xw2 = %s;\n" % self.two_d_axi.p_window[5, 0])
         else:
             raise NotImplementedError("Only axi-symmetric case implemented :(")
         """
@@ -3506,32 +3485,27 @@ class MagneticComponent:
             log["Losses"][f"Winding_{winding + 1}"] = {}
             log["Losses"][f"Winding_{winding + 1}"][f"Turns"] = []
             if self.windings[winding].conductor_type == "litz":
-                losses_winding = self.load_result(res_name=f"j2H_{winding+1}")
+                losses_winding = self.load_result(res_name=f"j2H_{winding + 1}")
                 for turn in range(0, self.windings[winding].turns[0]):
-                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding]+f"/Losses_turn_{turn + 1}")[0])
+                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding] + f"/Losses_turn_{turn + 1}")[0])
             else:
-                losses_winding = self.load_result(res_name=f"j2F_{winding+1}")
+                losses_winding = self.load_result(res_name=f"j2F_{winding + 1}")
                 for turn in range(0, self.windings[winding].turns[0]):
-                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding]+f"/Losses_turn_{turn + 1}")[0])
+                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding] + f"/Losses_turn_{turn + 1}")[0])
 
-            log["Losses"][f"Winding_{winding+1}"]["total_winding"] = losses_winding[0]
+            log["Losses"][f"Winding_{winding + 1}"]["total_winding"] = losses_winding[0]
 
             total_winding_losses += losses_winding[0]
         log["Losses"]["all_windings"] = total_winding_losses
 
-
-
-
         # loss_log["Winding_Total"] = self.load_result(res_name="WindingTotal")
-
-
 
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
-    
+
     def visualize(self):
         """
         - a post simulation viewer
@@ -3679,7 +3653,7 @@ class MagneticComponent:
         """
         if os.name != 'nt':
             raise Exception('You are using a computer that is not running windows. '
-                          'This command is only executable on Windows computers.')
+                            'This command is only executable on Windows computers.')
 
         sign = sign or [1]
 
@@ -3719,65 +3693,65 @@ class MagneticComponent:
         # == Geometry ==
         # Add core
         femm.mi_drawline(0,
-                         self.ei_axi.p_air_gaps[0, 1],
-                         self.ei_axi.p_air_gaps[1, 0],
-                         self.ei_axi.p_air_gaps[1, 1])
-        femm.mi_drawline(self.ei_axi.p_air_gaps[1, 0],
-                         self.ei_axi.p_air_gaps[1, 1],
-                         self.ei_axi.p_window[4, 0],
-                         self.ei_axi.p_window[4, 1])
-        femm.mi_drawline(self.ei_axi.p_window[4, 0],
-                         self.ei_axi.p_window[4, 1],
-                         self.ei_axi.p_window[5, 0],
-                         self.ei_axi.p_window[5, 1])
-        femm.mi_drawline(self.ei_axi.p_window[5, 0],
-                         self.ei_axi.p_window[5, 1],
-                         self.ei_axi.p_window[7, 0],
-                         self.ei_axi.p_window[7, 1])
-        femm.mi_drawline(self.ei_axi.p_window[7, 0],
-                         self.ei_axi.p_window[7, 1],
-                         self.ei_axi.p_window[6, 0],
-                         self.ei_axi.p_window[6, 1])
-        femm.mi_drawline(self.ei_axi.p_window[6, 0],
-                         self.ei_axi.p_window[6, 1],
-                         self.ei_axi.p_air_gaps[3, 0],
-                         self.ei_axi.p_air_gaps[3, 1])
-        femm.mi_drawline(self.ei_axi.p_air_gaps[3, 0],
-                         self.ei_axi.p_air_gaps[3, 1],
+                         self.two_d_axi.p_air_gaps[0, 1],
+                         self.two_d_axi.p_air_gaps[1, 0],
+                         self.two_d_axi.p_air_gaps[1, 1])
+        femm.mi_drawline(self.two_d_axi.p_air_gaps[1, 0],
+                         self.two_d_axi.p_air_gaps[1, 1],
+                         self.two_d_axi.p_window[4, 0],
+                         self.two_d_axi.p_window[4, 1])
+        femm.mi_drawline(self.two_d_axi.p_window[4, 0],
+                         self.two_d_axi.p_window[4, 1],
+                         self.two_d_axi.p_window[5, 0],
+                         self.two_d_axi.p_window[5, 1])
+        femm.mi_drawline(self.two_d_axi.p_window[5, 0],
+                         self.two_d_axi.p_window[5, 1],
+                         self.two_d_axi.p_window[7, 0],
+                         self.two_d_axi.p_window[7, 1])
+        femm.mi_drawline(self.two_d_axi.p_window[7, 0],
+                         self.two_d_axi.p_window[7, 1],
+                         self.two_d_axi.p_window[6, 0],
+                         self.two_d_axi.p_window[6, 1])
+        femm.mi_drawline(self.two_d_axi.p_window[6, 0],
+                         self.two_d_axi.p_window[6, 1],
+                         self.two_d_axi.p_air_gaps[3, 0],
+                         self.two_d_axi.p_air_gaps[3, 1])
+        femm.mi_drawline(self.two_d_axi.p_air_gaps[3, 0],
+                         self.two_d_axi.p_air_gaps[3, 1],
                          0,
-                         self.ei_axi.p_air_gaps[2, 1])
+                         self.two_d_axi.p_air_gaps[2, 1])
         femm.mi_drawline(0,
-                         self.ei_axi.p_air_gaps[2, 1],
+                         self.two_d_axi.p_air_gaps[2, 1],
                          0,
-                         self.ei_axi.p_outer[2, 1])
+                         self.two_d_axi.p_outer[2, 1])
         femm.mi_drawline(0,
-                         self.ei_axi.p_outer[2, 1],
-                         self.ei_axi.p_outer[3, 0],
-                         self.ei_axi.p_outer[3, 1])
-        femm.mi_drawline(self.ei_axi.p_outer[3, 0],
-                         self.ei_axi.p_outer[3, 1],
-                         self.ei_axi.p_outer[1, 0],
-                         self.ei_axi.p_outer[1, 1])
-        femm.mi_drawline(self.ei_axi.p_outer[1, 0],
-                         self.ei_axi.p_outer[1, 1],
+                         self.two_d_axi.p_outer[2, 1],
+                         self.two_d_axi.p_outer[3, 0],
+                         self.two_d_axi.p_outer[3, 1])
+        femm.mi_drawline(self.two_d_axi.p_outer[3, 0],
+                         self.two_d_axi.p_outer[3, 1],
+                         self.two_d_axi.p_outer[1, 0],
+                         self.two_d_axi.p_outer[1, 1])
+        femm.mi_drawline(self.two_d_axi.p_outer[1, 0],
+                         self.two_d_axi.p_outer[1, 1],
                          0,
-                         self.ei_axi.p_outer[0, 1])
+                         self.two_d_axi.p_outer[0, 1])
         femm.mi_drawline(0,
-                         self.ei_axi.p_outer[0, 1],
+                         self.two_d_axi.p_outer[0, 1],
                          0,
-                         self.ei_axi.p_air_gaps[0, 1])
+                         self.two_d_axi.p_air_gaps[0, 1])
 
         # Add Coil
 
-        # femm.mi_drawrectangle(self.ei_axi.p_window[4, 0]+self.isolation.core_cond,
-        # self.ei_axi.p_window[4, 1]+self.component.isolation.core_cond,
-        # self.ei_axi.p_window[7, 0]-self.isolation.core_cond, self.ei_axi.p_window[7, 1]-self.isolation.core_cond)
+        # femm.mi_drawrectangle(self.two_d_axi.p_window[4, 0]+self.isolation.core_cond,
+        # self.two_d_axi.p_window[4, 1]+self.component.isolation.core_cond,
+        # self.two_d_axi.p_window[7, 0]-self.isolation.core_cond, self.two_d_axi.p_window[7, 1]-self.isolation.core_cond)
         #
-        # femm.mi_addblocklabel(self.ei_axi.p_window[7, 0]-2*self.isolation.core_cond,
-        # self.ei_axi.p_window[7, 1]-2*self.isolation.core_cond)
+        # femm.mi_addblocklabel(self.two_d_axi.p_window[7, 0]-2*self.isolation.core_cond,
+        # self.two_d_axi.p_window[7, 1]-2*self.isolation.core_cond)
         #
-        # femm.mi_selectlabel(self.ei_axi.p_window[7, 0]-2*self.isolation.core_cond,
-        # self.ei_axi.p_window[7, 1]-2*self.isolation.core_cond)
+        # femm.mi_selectlabel(self.two_d_axi.p_window[7, 0]-2*self.isolation.core_cond,
+        # self.two_d_axi.p_window[7, 1]-2*self.isolation.core_cond)
         #
         # femm.mi_setblockprop('Copper', 0, 1, 'icoil', 0, 0, 1)
         #
@@ -3785,19 +3759,19 @@ class MagneticComponent:
 
         for num in range(0, self.n_windings):
             if self.windings[num].conductor_type == "litz" or self.windings[num].conductor_type == "solid":
-                for i in range(0, int(self.ei_axi.p_conductor[num].shape[0] / 5)):
+                for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
                     # 0: center | 1: left | 2: top | 3: right | 4.bottom
-                    femm.mi_drawarc(self.ei_axi.p_conductor[num][5 * i + 1][0],
-                                    self.ei_axi.p_conductor[num][5 * i + 1][1],
-                                    self.ei_axi.p_conductor[num][5 * i + 3][0],
-                                    self.ei_axi.p_conductor[num][5 * i + 3][1], 180, 2.5)
-                    femm.mi_addarc(self.ei_axi.p_conductor[num][5 * i + 3][0],
-                                   self.ei_axi.p_conductor[num][5 * i + 3][1],
-                                   self.ei_axi.p_conductor[num][5 * i + 1][0],
-                                   self.ei_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
-                    femm.mi_addblocklabel(self.ei_axi.p_conductor[num][5 * i][0],
-                                          self.ei_axi.p_conductor[num][5 * i][1])
-                    femm.mi_selectlabel(self.ei_axi.p_conductor[num][5 * i][0], self.ei_axi.p_conductor[num][5 * i][1])
+                    femm.mi_drawarc(self.two_d_axi.p_conductor[num][5 * i + 1][0],
+                                    self.two_d_axi.p_conductor[num][5 * i + 1][1],
+                                    self.two_d_axi.p_conductor[num][5 * i + 3][0],
+                                    self.two_d_axi.p_conductor[num][5 * i + 3][1], 180, 2.5)
+                    femm.mi_addarc(self.two_d_axi.p_conductor[num][5 * i + 3][0],
+                                   self.two_d_axi.p_conductor[num][5 * i + 3][1],
+                                   self.two_d_axi.p_conductor[num][5 * i + 1][0],
+                                   self.two_d_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
+                    femm.mi_addblocklabel(self.two_d_axi.p_conductor[num][5 * i][0],
+                                          self.two_d_axi.p_conductor[num][5 * i][1])
+                    femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
                     if num == 0:
                         femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 0, 1)
                     if num == 1:
@@ -3811,19 +3785,19 @@ class MagneticComponent:
         # Alternative BC
         region_add = 1.1
 
-        femm.mi_drawrectangle(0, region_add*self.ei_axi.p_outer[0][1], region_add*self.ei_axi.p_outer[3][0], 
-        region_add*self.ei_axi.p_outer[3][1])
+        femm.mi_drawrectangle(0, region_add*self.two_d_axi.p_outer[0][1], region_add*self.two_d_axi.p_outer[3][0], 
+        region_add*self.two_d_axi.p_outer[3][1])
         # mi_addboundprop('Asymptotic', 0, 0, 0, 0, 0, 0, 1 / (para.mu_0 * bound.width), 0, 2); % Mixed
         femm.mi_addboundprop('Asymptotic', 0, 0, 0, 0, 1, 50, 0, 0, 1)
-        femm.mi_selectsegment(region_add*self.ei_axi.p_outer[3][0], region_add*self.ei_axi.p_outer[3][1])
+        femm.mi_selectsegment(region_add*self.two_d_axi.p_outer[3][0], region_add*self.two_d_axi.p_outer[3][1])
         femm.mi_setsegmentprop('Asymptotic', 1, 1, 0, 0)
         """
 
         # == Labels/Designations ==
 
         # Label for core
-        femm.mi_addblocklabel(self.ei_axi.p_outer[3, 0] - 0.001, self.ei_axi.p_outer[3, 1] - 0.001)
-        femm.mi_selectlabel(self.ei_axi.p_outer[3, 0] - 0.001, self.ei_axi.p_outer[3, 1] - 0.001)
+        femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
+        femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
         femm.mi_setblockprop('Ferrite', 1, 0, '<None>', 0, 0, 0)
         femm.mi_clearselected()
 
@@ -3832,8 +3806,8 @@ class MagneticComponent:
         femm.mi_selectlabel(0.001, 0)
         femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
         femm.mi_clearselected()
-        femm.mi_addblocklabel(self.ei_axi.p_outer[3, 0] + 0.001, self.ei_axi.p_outer[3, 1] + 0.001)
-        femm.mi_selectlabel(self.ei_axi.p_outer[3, 0] + 0.001, self.ei_axi.p_outer[3, 1] + 0.001)
+        femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
+        femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
         femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
         femm.mi_clearselected()
 
@@ -3890,7 +3864,7 @@ class MagneticComponent:
         """
         Used for femm_thermaL_validation
         """
-        return (x1+x2)/2, (y1+y2)/2
+        return (x1 + x2) / 2, (y1 + y2) / 2
 
     def femm_thermal_validation(self, thermal_conductivity_dict):
         """
@@ -3921,26 +3895,26 @@ class MagneticComponent:
         # == Materials ==
         # Core
         k_core = thermal_conductivity_dict["core"]
-        #q_vol_core = th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
-        q_vol_core = losses["Core_Eddy_Current"]/core_area
-        #c_core = 0.007
+        # q_vol_core = th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
+        q_vol_core = losses["Core_Eddy_Current"] / core_area
+        # c_core = 0.007
         c_core = 0
 
         # Air
         k_air = thermal_conductivity_dict["air"]
         q_vol_air = 0
-        #c_air = 1004.7
+        # c_air = 1004.7
         c_air = 0
 
         # Wire
         k_wire = thermal_conductivity_dict["winding"]
-        #c_wire = 385
+        # c_wire = 385
         c_wire = 0
 
         # Case
         k_case = thermal_conductivity_dict["case"]
-        q_vol_case = 0 
-        #c_case = 0.01
+        q_vol_case = 0
+        # c_case = 0.01
         c_case = 0
 
         # Setup winding list
@@ -3959,7 +3933,7 @@ class MagneticComponent:
         for winding_index, winding in enumerate(winding_losses_list):
             for i in range(len(winding)):
                 femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index]), c_wire)
-        femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case) 
+        femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case)
 
         # Add boundary condition
         femm.hi_addboundprop("Boundary", 0, 273, 0, 0, 0, 0)
@@ -3969,56 +3943,56 @@ class MagneticComponent:
         self.high_level_geo_gen()
         # Add core
         femm.hi_drawline(0,
-                        self.ei_axi.p_air_gaps[0, 1],
-                        self.ei_axi.p_air_gaps[1, 0],
-                        self.ei_axi.p_air_gaps[1, 1])
-        femm.hi_drawline(self.ei_axi.p_air_gaps[1, 0],
-                        self.ei_axi.p_air_gaps[1, 1],
-                        self.ei_axi.p_window[4, 0],
-                        self.ei_axi.p_window[4, 1])
-        femm.hi_drawline(self.ei_axi.p_window[4, 0],
-                        self.ei_axi.p_window[4, 1],
-                        self.ei_axi.p_window[5, 0],
-                        self.ei_axi.p_window[5, 1])
-        femm.hi_drawline(self.ei_axi.p_window[5, 0],
-                        self.ei_axi.p_window[5, 1],
-                        self.ei_axi.p_window[7, 0],
-                        self.ei_axi.p_window[7, 1])
-        femm.hi_drawline(self.ei_axi.p_window[7, 0],
-                        self.ei_axi.p_window[7, 1],
-                        self.ei_axi.p_window[6, 0],
-                        self.ei_axi.p_window[6, 1])
-        femm.hi_drawline(self.ei_axi.p_window[6, 0],
-                        self.ei_axi.p_window[6, 1],
-                        self.ei_axi.p_air_gaps[3, 0],
-                        self.ei_axi.p_air_gaps[3, 1])
-        femm.hi_drawline(self.ei_axi.p_air_gaps[3, 0],
-                        self.ei_axi.p_air_gaps[3, 1],
-                        0,
-                        self.ei_axi.p_air_gaps[2, 1])
+                         self.two_d_axi.p_air_gaps[0, 1],
+                         self.two_d_axi.p_air_gaps[1, 0],
+                         self.two_d_axi.p_air_gaps[1, 1])
+        femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0],
+                         self.two_d_axi.p_air_gaps[1, 1],
+                         self.two_d_axi.p_window[4, 0],
+                         self.two_d_axi.p_window[4, 1])
+        femm.hi_drawline(self.two_d_axi.p_window[4, 0],
+                         self.two_d_axi.p_window[4, 1],
+                         self.two_d_axi.p_window[5, 0],
+                         self.two_d_axi.p_window[5, 1])
+        femm.hi_drawline(self.two_d_axi.p_window[5, 0],
+                         self.two_d_axi.p_window[5, 1],
+                         self.two_d_axi.p_window[7, 0],
+                         self.two_d_axi.p_window[7, 1])
+        femm.hi_drawline(self.two_d_axi.p_window[7, 0],
+                         self.two_d_axi.p_window[7, 1],
+                         self.two_d_axi.p_window[6, 0],
+                         self.two_d_axi.p_window[6, 1])
+        femm.hi_drawline(self.two_d_axi.p_window[6, 0],
+                         self.two_d_axi.p_window[6, 1],
+                         self.two_d_axi.p_air_gaps[3, 0],
+                         self.two_d_axi.p_air_gaps[3, 1])
+        femm.hi_drawline(self.two_d_axi.p_air_gaps[3, 0],
+                         self.two_d_axi.p_air_gaps[3, 1],
+                         0,
+                         self.two_d_axi.p_air_gaps[2, 1])
         femm.hi_drawline(0,
-                        self.ei_axi.p_air_gaps[2, 1],
-                        0,
-                        self.ei_axi.p_outer[2, 1])
+                         self.two_d_axi.p_air_gaps[2, 1],
+                         0,
+                         self.two_d_axi.p_outer[2, 1])
         femm.hi_drawline(0,
-                        self.ei_axi.p_outer[2, 1],
-                        self.ei_axi.p_outer[3, 0],
-                        self.ei_axi.p_outer[3, 1])
-        femm.hi_drawline(self.ei_axi.p_outer[3, 0],
-                        self.ei_axi.p_outer[3, 1],
-                        self.ei_axi.p_outer[1, 0],
-                        self.ei_axi.p_outer[1, 1])
-        femm.hi_drawline(self.ei_axi.p_outer[1, 0],
-                        self.ei_axi.p_outer[1, 1],
-                        0,
-                        self.ei_axi.p_outer[0, 1])      
+                         self.two_d_axi.p_outer[2, 1],
+                         self.two_d_axi.p_outer[3, 0],
+                         self.two_d_axi.p_outer[3, 1])
+        femm.hi_drawline(self.two_d_axi.p_outer[3, 0],
+                         self.two_d_axi.p_outer[3, 1],
+                         self.two_d_axi.p_outer[1, 0],
+                         self.two_d_axi.p_outer[1, 1])
+        femm.hi_drawline(self.two_d_axi.p_outer[1, 0],
+                         self.two_d_axi.p_outer[1, 1],
+                         0,
+                         self.two_d_axi.p_outer[0, 1])
         femm.hi_drawline(0,
-                        self.ei_axi.p_outer[0, 1],
-                        0,
-                        self.ei_axi.p_air_gaps[0, 1])
+                         self.two_d_axi.p_outer[0, 1],
+                         0,
+                         self.two_d_axi.p_air_gaps[0, 1])
 
         # In order for the simulation to work the air_gap must be closed:
-        femm.hi_drawline(0, self.ei_axi.p_air_gaps[0, 1], 0, self.ei_axi.p_air_gaps[2, 1])
+        femm.hi_drawline(0, self.two_d_axi.p_air_gaps[0, 1], 0, self.two_d_axi.p_air_gaps[2, 1])
 
         # Add case
         # Case size
@@ -4026,22 +4000,26 @@ class MagneticComponent:
         case_gap_right = 0.0025
         case_gap_bot = 0.002
 
-        femm.hi_drawline(0, self.ei_axi.p_outer[2, 1], 0, self.ei_axi.p_outer[2, 1] + case_gap_top) # Top left line
-        femm.hi_drawline(0, self.ei_axi.p_outer[2, 1] + case_gap_top, self.ei_axi.p_outer[3, 0] + case_gap_right, self.ei_axi.p_outer[3, 1] + case_gap_top) # Top line
-        femm.hi_drawline(self.ei_axi.p_outer[3, 0] + case_gap_right, self.ei_axi.p_outer[3, 1] + case_gap_top, self.ei_axi.p_outer[1, 0] + case_gap_right, self.ei_axi.p_outer[1, 1] - case_gap_bot) # Right line
-        femm.hi_drawline(self.ei_axi.p_outer[1, 0] + case_gap_right, self.ei_axi.p_outer[1, 1] - case_gap_bot, 0, self.ei_axi.p_outer[0, 1] - case_gap_bot) # Bottom line
-        femm.hi_drawline(0, self.ei_axi.p_outer[0, 1] - case_gap_bot, 0, self.ei_axi.p_outer[0, 1]) # Bottom right line
+        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + case_gap_top)  # Top left line
+        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top)  # Top line
+        femm.hi_drawline(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top, self.two_d_axi.p_outer[1, 0] + case_gap_right,
+                         self.two_d_axi.p_outer[1, 1] - case_gap_bot)  # Right line
+        femm.hi_drawline(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0, self.two_d_axi.p_outer[0, 1] - case_gap_bot)  # Bottom line
+        femm.hi_drawline(0, self.two_d_axi.p_outer[0, 1] - case_gap_bot, 0, self.two_d_axi.p_outer[0, 1])  # Bottom right line
 
         # Create boundary
-        #femm.hi_selectsegment(*self.calculatePointAverage(0, self.ei_axi.p_outer[2, 1], 0, self.ei_axi.p_outer[2, 1] + caseGapTop))
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(0, self.ei_axi.p_outer[2, 1] + case_gap_top, self.ei_axi.p_outer[3, 0] + case_gap_right, self.ei_axi.p_outer[3, 1] + case_gap_top))
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.ei_axi.p_outer[3, 0] + case_gap_right, self.ei_axi.p_outer[3, 1] + case_gap_top, self.ei_axi.p_outer[1, 0] + case_gap_right, self.ei_axi.p_outer[1, 1] - case_gap_bot))
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.ei_axi.p_outer[1, 0] + case_gap_right, self.ei_axi.p_outer[1, 1] - case_gap_bot, 0, self.ei_axi.p_outer[0, 1] - case_gap_bot))
-        #femm.hi_selectsegment(*self.calculatePointAverage(0, self.ei_axi.p_outer[0, 1] - caseGapBot, 0, self.ei_axi.p_outer[0, 1]))
+        # femm.hi_selectsegment(*self.calculatePointAverage(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + caseGapTop))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right,
+                                                                         self.two_d_axi.p_outer[3, 1] + case_gap_top))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top,
+                                                                         self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0,
+                                                                         self.two_d_axi.p_outer[0, 1] - case_gap_bot))
+        # femm.hi_selectsegment(*self.calculatePointAverage(0, self.two_d_axi.p_outer[0, 1] - caseGapBot, 0, self.two_d_axi.p_outer[0, 1]))
         femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
 
         # Add case material
-        material_x, material_y = self.calculate_point_average(0, self.ei_axi.p_outer[2, 1], 0, self.ei_axi.p_outer[2, 1] + case_gap_top)
+        material_x, material_y = self.calculate_point_average(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + case_gap_top)
         femm.hi_addblocklabel(material_x + 0.001, material_y)
         femm.hi_selectlabel(material_x + 0.001, material_y)
         femm.hi_setblockprop('Case', 1, 0, 0)
@@ -4049,19 +4027,19 @@ class MagneticComponent:
 
         # Add Coil
         for num in range(0, self.n_windings):
-            for i in range(0, int(self.ei_axi.p_conductor[num].shape[0] / 5)):
+            for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
                 # 0: center | 1: left | 2: top | 3: right | 4.bottom
-                femm.hi_drawarc(self.ei_axi.p_conductor[num][5 * i + 1][0],
-                                self.ei_axi.p_conductor[num][5 * i + 1][1],
-                                self.ei_axi.p_conductor[num][5 * i + 3][0],
-                                self.ei_axi.p_conductor[num][5 * i + 3][1], 180, 2.5)
-                femm.hi_addarc(self.ei_axi.p_conductor[num][5 * i + 3][0],
-                            self.ei_axi.p_conductor[num][5 * i + 3][1],
-                            self.ei_axi.p_conductor[num][5 * i + 1][0],
-                            self.ei_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
-                femm.hi_addblocklabel(self.ei_axi.p_conductor[num][5 * i][0],
-                                    self.ei_axi.p_conductor[num][5 * i][1])
-                femm.hi_selectlabel(self.ei_axi.p_conductor[num][5 * i][0], self.ei_axi.p_conductor[num][5 * i][1])
+                femm.hi_drawarc(self.two_d_axi.p_conductor[num][5 * i + 1][0],
+                                self.two_d_axi.p_conductor[num][5 * i + 1][1],
+                                self.two_d_axi.p_conductor[num][5 * i + 3][0],
+                                self.two_d_axi.p_conductor[num][5 * i + 3][1], 180, 2.5)
+                femm.hi_addarc(self.two_d_axi.p_conductor[num][5 * i + 3][0],
+                               self.two_d_axi.p_conductor[num][5 * i + 3][1],
+                               self.two_d_axi.p_conductor[num][5 * i + 1][0],
+                               self.two_d_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
+                femm.hi_addblocklabel(self.two_d_axi.p_conductor[num][5 * i][0],
+                                      self.two_d_axi.p_conductor[num][5 * i][1])
+                femm.hi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
                 if num == 0:
                     femm.hi_setblockprop(f'Wire_{num}_{i}', 1, 0, 1)
                 if num == 1:
@@ -4069,13 +4047,12 @@ class MagneticComponent:
                 femm.hi_clearselected()
 
         # Define an "open" boundary condition using the built-in function:
-        #femm.hi_makeABC()
-
+        # femm.hi_makeABC()
 
         # == Labels/Designations ==
         # Label for core
-        femm.hi_addblocklabel(self.ei_axi.p_outer[3, 0] - 0.001, self.ei_axi.p_outer[3, 1] - 0.001)
-        femm.hi_selectlabel(self.ei_axi.p_outer[3, 0] - 0.001, self.ei_axi.p_outer[3, 1] - 0.001)
+        femm.hi_addblocklabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
+        femm.hi_selectlabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
         femm.hi_setblockprop('Core', 1, 0, 0)
         femm.hi_clearselected()
 
@@ -4086,17 +4063,17 @@ class MagneticComponent:
         femm.hi_clearselected()
 
         # Not needed when the core is the boundary
-        #femm.hi_addblocklabel(self.ei_axi.p_outer[3, 0] + 0.001, self.ei_axi.p_outer[3, 1] + 0.001)
-        #femm.hi_selectlabel(self.ei_axi.p_outer[3, 0] + 0.001, self.ei_axi.p_outer[3, 1] + 0.001)
-        #femm.hi_setblockprop('Air', 1, 0, 0)
-        #femm.hi_clearselected()
+        # femm.hi_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
+        # femm.hi_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
+        # femm.hi_setblockprop('Air', 1, 0, 0)
+        # femm.hi_clearselected()
 
         # Now, the finished input geometry can be displayed.
         femm.hi_zoomnatural()
         femm.hi_saveas(femm_model_file_path)
         femm.hi_analyze()
         femm.hi_loadsolution()
-        input() # So the window stays open
+        input()  # So the window stays open
         # femm.closefemm()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -4172,7 +4149,7 @@ class MagneticComponent:
 
                 # get model file names with correct path
                 input_file = self.onelab_client.getPath(self.path_electro_magnetic + 'Strands_Coefficents/cell_dat.pro')
-                cell = self.onelab_client.getPath(self.path + "/" + self.path_electro_magnetic +  'Strands_Coefficents/cell.pro')
+                cell = self.onelab_client.getPath(self.path + "/" + self.path_electro_magnetic + 'Strands_Coefficents/cell.pro')
 
                 # Run simulations as sub clients
                 mygetdp = self.onelab + 'getdp'
@@ -4244,9 +4221,9 @@ class MagneticComponent:
             self.write_log()
             self.visualize()
 
-        #results =
+        # results =
 
-        #return results
+        # return results
 
     def get_inductances(self, I0, op_frequency=0, skin_mesh_factor=1, visualize=False):
         """
