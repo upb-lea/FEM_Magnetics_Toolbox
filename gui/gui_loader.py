@@ -24,12 +24,12 @@ class WindingControls(QtWidgets.QWidget):
 
         self.windingDynHorizontalLayout.addWidget(self.windingTypeLabel)
 
-        self.windingTypeLineEdit = QtWidgets.QComboBox(self)
-        self.windingTypeLineEdit.setObjectName("windingTypeLineEdit")
-        self.windingDynHorizontalLayout.addWidget(self.windingTypeLineEdit)
-        self.windingMaterialLineEdit = QtWidgets.QComboBox(self)
-        self.windingMaterialLineEdit.setObjectName("windingMaterialLineEdit")
-        self.windingDynHorizontalLayout.addWidget(self.windingMaterialLineEdit)
+        self.windingTypeComboBox = QtWidgets.QComboBox(self)
+        self.windingTypeComboBox.setObjectName("windingTypeComboBox")
+        self.windingDynHorizontalLayout.addWidget(self.windingTypeComboBox)
+        self.windingMaterialComboBox = QtWidgets.QComboBox(self)
+        self.windingMaterialComboBox.setObjectName("windingMaterialComboBox")
+        self.windingDynHorizontalLayout.addWidget(self.windingMaterialComboBox)
         self.windingDynVerticalLayout.addLayout(self.windingDynHorizontalLayout)
         self.windingDynGroupBox = QtWidgets.QGroupBox(self)
         self.windingDynGroupBox.setTitle("")
@@ -77,8 +77,6 @@ class WindingControls(QtWidgets.QWidget):
         self.strdiameterLineEdit.setFont(font)
         self.strdiameterLineEdit.setMinimumSize(QtCore.QSize(30, 22))
         self.strdiameterLineEdit.setObjectName("strdiameterLineEdit")
-        #self.strdiameterLineEdit.setEnabled(False)
-        #self.strdiameterLineEdit.setEnabled(True)
         self.windingDynGroupBoxHLayout.addWidget(self.strdiameterLineEdit)
         self.mmLabelTwo = QtWidgets.QLabel(self.windingDynGroupBox)
         self.mmLabelTwo.setFont(font)
@@ -134,18 +132,16 @@ class WindingControls(QtWidgets.QWidget):
         self.windingDynVerticalLayout.addWidget(self.windingDynGroupBox)
         self.index = index
         self.retranslateUi()
-
+        self.initalize_controls()
         wire_type_count = ['Litz Wire', 'Solid Wire']
         material = ['Copper', 'Aluminium']
         for option in wire_type_count:
-            self.windingTypeLineEdit.addItem(option)
+            self.windingTypeComboBox.addItem(option)
         for option in material:
-            self.windingMaterialLineEdit.addItem(option)
+            self.windingMaterialComboBox.addItem(option)
 
-    def chose_litz_full_wire(self, material):
-
-        self.strdiameterLineEdit.setEnabled(False)
-
+        "Signal and slot bindings"
+        self.windingTypeComboBox.currentTextChanged.connect(self.chose_litz_full_wire)
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
@@ -164,6 +160,21 @@ class WindingControls(QtWidgets.QWidget):
         self.mmLabelThree.setText(_translate("Form", "mm"))
         self.fillfactorLabel.setText(_translate("Form", "<html><head/><body><p><span style=\" color:#ff0000;\">Fill Factor</span></p></body></html>"))
         self.percentLabel.setText(_translate("Form", " %"))
+
+    def initalize_controls(self):
+        self.strdiameterLineEdit.setEnabled(False)
+        self.diameterLineEdit.setEnabled(False)
+        self.fillfactorLineEdit.setEnabled(False)
+
+    def chose_litz_full_wire(self, wire_type):
+        if wire_type == 'Litz Wire':
+            self.strdiameterLineEdit.setEnabled(False)
+            self.diameterLineEdit.setEnabled(False)
+            self.fillfactorLineEdit.setEnabled(False)
+        elif wire_type == 'Solid Wire':
+            self.strdiameterLineEdit.setEnabled(True)
+            self.diameterLineEdit.setEnabled(True)
+            self.fillfactorLineEdit.setEnabled(True)
 
 
 class AirGapControls(QtWidgets.QWidget):
@@ -254,13 +265,13 @@ class MainWindow(QMainWindow):
         self.imageBoxImageLabel.setPixmap(pixmap)
         self.initialize_controls()
 
-        """slots and events"""
+        "Signal and slot bindings"
         self.layersNumComboBox.currentTextChanged.connect(self.add_winding_type_combo_boxes)
         self.windingNumComboBox.currentTextChanged.connect(self.add_winding_type_widgets)
         self.gapsNumComboBox.currentTextChanged.connect(self.add_air_gap_widgets)
         self.calculation_button.clicked.connect(self.run_simulation)
         # self.aboutToQuit.connect(self.closeEvent)
-        self.windingNumComboBox.currentIndexChanged.connect(self.chose_litz_full_wire)
+        # self.windingNumComboBox.currentIndexChanged.connect(self.chose_litz_full_wire)
 
     def initialize_controls(self):
         layers_count = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
