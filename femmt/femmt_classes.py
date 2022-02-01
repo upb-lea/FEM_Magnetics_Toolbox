@@ -188,6 +188,35 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
 
+    def calculate_core_area(self) -> float:
+        core_height = self.core.window_h + self.core.core_w / 2
+        core_width = self.two_d_axi.r_outer
+        winding_height = self.core.window_h
+        winding_width = self.core.window_w
+
+        air_gap_area = 0
+        for i in range(self.air_gaps.number):
+            position_tag = self.air_gaps.position_tag[i]
+            height = self.air_gaps.air_gap_h[i]
+            width = 0
+
+            if position_tag == -1:
+                # left leg
+                width = core_width - self.r_inner
+            elif position_tag == 0:
+                # center leg
+                width = self.two_d_axi.r_inner - winding_width
+            elif position_tag == 1:
+                # right leg
+                width = core_width - self.r_inner
+            else:
+                raise Exception(f"Unvalid position tag {i} used for an air gap.")
+
+            air_gap_area = air_gap_area + height*width
+
+        return core_height * core_width - winding_height * winding_width - air_gap_area
+        
+
     def extract_tags_from_model(self) -> dict:
         """
         For the thermal simulation the tags of the physical groups for the core, windings and the background are needed
@@ -255,9 +284,8 @@ class MagneticComponent:
         mesh_size = 0.001
 
         # Core area -> Is needed to estimate the heat flux
-        # TODO Needs to be calculated dynamically
-        core_area = 0.00077
-
+        core_area = self.calculate_core_area()
+        
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
 
@@ -577,9 +605,9 @@ class MagneticComponent:
 
             """
             self.number = n_air_gaps
-            position_tag = position_tag
+            self.position_tag = position_tag
             air_gap_position = air_gap_position
-            air_gap_h = air_gap_h
+            self.air_gap_h = air_gap_h
 
             print(f"Update the air gaps.\n"
                   f"---")
