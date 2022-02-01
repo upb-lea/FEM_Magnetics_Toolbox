@@ -9,17 +9,11 @@ def calculate_heat_flux_round_wire(power, radius):
 
     wire_thickness = radius
 
-    return power/(np.pi * wire_thickness**2)
+    # Power density for volumes W/m^3
+    return power/(2*np.pi**2 * wire_thickness**2)
 
-def calculate_heat_flux_core(power, dim_core, dim_window, dim_air_gaps):
-    """
-    :param power: losses in Watts
-    :dimCore: dimensions of the core in the format [width, height]
-    :dimWindow: dimensions of the winding window in the format [width, height]
-    :dimAirGaps: dimensions of the air gaos in the format [[air_gap_1_width, air_gap_1_height], [air_gap_2_width, air_gap_2_height], ..]
-    """
-
-    return power/(dim_core[0]*dim_core[1] - dim_window[0]*dim_window[1]*sum([x[0]*x[1] for x in dim_air_gaps]))
+    # Power density for surfaces W/m^2
+    #return power/(np.pi * wire_thickness**2)
 
 def read_results_log(results_log_file_path):
     losses = {}

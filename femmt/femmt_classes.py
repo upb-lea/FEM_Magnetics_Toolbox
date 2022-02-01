@@ -284,8 +284,12 @@ class MagneticComponent:
         mesh_size = 0.001
 
         # Core area -> Is needed to estimate the heat flux
-        core_area = self.calculate_core_area()
-        
+        # Power density for volumes W/m^3
+        core_area = 2 * np.pi * self.calculate_core_area()
+
+        # Power density for surfaces W/m^2
+        #core_area = self.calculate_core_area()
+
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
 
@@ -3929,9 +3933,6 @@ class MagneticComponent:
         # Extract wire_radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
 
-        # TODO Needs to be calculated by the model
-        core_area = 0.00077
-
         # == Init ==
         femm.openfemm(0)
         femm.newdocument(2)
@@ -3940,8 +3941,7 @@ class MagneticComponent:
         # == Materials ==
         # Core
         k_core = thermal_conductivity_dict["core"]
-        # q_vol_core = th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
-        q_vol_core = losses["Core_Eddy_Current"] / core_area
+        q_vol_core = losses["Core_Eddy_Current"] / (2*np.pi*self.calculate_core_area())
         # c_core = 0.007
         c_core = 0
 
