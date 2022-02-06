@@ -1,18 +1,38 @@
+# VS code
+.vscode/
+
+# General files
+*.dat
+*.pyc
+*.pdf
+*.msh
+*.dat
+*.json
+*.anh
+*.FEH
+*.pre
+*.pos
+*.res
+
+# Folders
+femmt/femm
+femmt/mesh
+femmt/results
 femmt/.idea/
 .idea/
 femmt/__pycache__/
 gpgit/
-*.pyc
-*.pdf
-*.msh
-*.res
-*.pre
-*.pos
-*.dat
 build/
 dist/
 femmt.egg-info/
 .eggs/
-*.json
-femmt/Parameter.pro
-.vscode/
+
+# FEMMT: generated files
+femmt/electro_magnetic/Parameter.pro
+femmt/electro_magnetic/Strands_Coefficients/PreParameter.pro
+
+# Thermal: generated files
+femmt/thermal/solver/Constraint.pro
+femmt/thermal/solver/Function.pro
+femmt/thermal/solver/Group.pro
+femmt/thermal/solver/Parameters.pro

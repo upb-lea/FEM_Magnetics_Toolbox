@@ -38,18 +38,23 @@ class MagneticComponent:
     # Initialization of all class variables
     # Common variables for all instances
 
-    # -- Parent folder path of FEMMT files --  
-    path = os.path.dirname(__file__)
-    # add missing '/' to end of path-name
-    path = os.path.join(path, '')
-    onelab = None  # Path to Onelab installation folder
-    path_mesh = "mesh/"
-    path_electro_magnetic = "electro_magnetic/"
-    path_res = "results/"
-    path_res_fields = "results/fields/"
-    path_res_values = "results/values/"
-    path_res_circuit = "results/circuit/"
-    path_res_FEMM = "FEMM/"
+    # Setup folder paths 
+    femmt_folder_path = os.path.dirname(__file__)
+    onelab_folder_path = None
+    mesh_folder_path = os.path.join(femmt_folder_path, "mesh")
+    electro_magnetic_folder_path = os.path.join(femmt_folder_path, "electro_magnetic")
+    results_folder_path = os.path.join(femmt_folder_path, "results")
+    e_m_values_folder_path = os.path.join(results_folder_path, "values")
+    e_m_fields_folder_path = os.path.join(results_folder_path, "fields")
+    e_m_circuit_folder_path = os.path.join(results_folder_path, "circuit")
+    e_m_strands_coefficients_folder_path = os.path.join(electro_magnetic_folder_path, "Strands_Coefficients")
+    femm_folder_path = os.path.join(femmt_folder_path, "femm")
+    reluctance_model_folder_path = os.path.join(femmt_folder_path, "reluctance_model")
+
+    # Setup file paths
+    e_m_results_log_path = os.path.join(results_folder_path, "result_log_electro_magnetic.json")
+    config_path = os.path.join(femmt_folder_path, "config.json")
+    e_m_mesh_file = os.path.join(mesh_folder_path, "geometry.msh")
 
     def __init__(self, component_type="inductor", **kwargs):
         """
@@ -176,8 +181,41 @@ class MagneticComponent:
         self.onelab_setup()
         self.onelab_client = onelab.client(__file__)
 
+        # Create necessary folders
+        if not os.path.exists(self.e_m_strands_coefficients_folder_path):
+            os.mkdir(self.e_m_strands_coefficients_folder_path)
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
+
+    def calculate_core_area(self) -> float:
+        core_height = self.core.window_h + self.core.core_w / 2
+        core_width = self.two_d_axi.r_outer
+        winding_height = self.core.window_h
+        winding_width = self.core.window_w
+
+        air_gap_area = 0
+        for i in range(self.air_gaps.number):
+            position_tag = self.air_gaps.position_tag[i]
+            height = self.air_gaps.air_gap_h[i]
+            width = 0
+
+            if position_tag == -1:
+                # left leg
+                width = core_width - self.r_inner
+            elif position_tag == 0:
+                # center leg
+                width = self.two_d_axi.r_inner - winding_width
+            elif position_tag == 1:
+                # right leg
+                width = core_width - self.r_inner
+            else:
+                raise Exception(f"Unvalid position tag {i} used for an air gap.")
+
+            air_gap_area = air_gap_area + height*width
+
+        return core_height * core_width - winding_height * winding_width - air_gap_area
+        
 
     def extract_tags_from_model(self) -> dict:
         """
@@ -228,31 +266,16 @@ class MagneticComponent:
         :return: -
         """
 
-        # Set necessary paths
-        onelab_folder_path = self.onelab
-        model_mesh_file_path_old = os.path.join(self.mesh.component.path, self.mesh.component.path_mesh, "geometry.msh")
-        # TODO Currently self.path_res contains a / at the end. This cannot be used when wokring with os.path.join.
-        #       This needs to be fixed when working on the general pathing system.
-        results_log_file_path = os.path.join(self.path, self.path_res[:-1], "result_log_electro_magnetic.json")
-        if not os.path.exists(results_log_file_path):
+        # Set necessary path
+        model_mesh_file_path = os.path.join(self.mesh_folder_path, "thermal_mesh.msh")
+
+        if not os.path.exists(self.e_m_results_log_path):
             # Simulation results file not created
             # TODO Add error message handling?
             print("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
-        model_mesh_file_path = os.path.join(os.path.dirname(run_thermal.__globals__['__file__']), "thermal_mesh.msh")
 
         # Create copy of the current mesh, because it will be changed for the thermal simulation
-        shutil.copy(model_mesh_file_path_old, model_mesh_file_path)
-
-        # Set tags
-        # TODO The tags need to be set dynamically based by the model
-        # winding_tags = [list(range(4000, 4036)), list(range(7000, 7011)), None]
-        # tags = {
-        #    "core_tag": 2000,
-        #    "background_tag": 1000,
-        #    "winding_tags": winding_tags,
-        #    "core_line_tags": [4, 3, 2],
-        #    "core_point_tags": [5, 4, 3, 2] # Order: top left, top right, bottom right, bottom left
-        # }
+        shutil.copy(self.e_m_mesh_file, model_mesh_file_path)
 
         tags = self.extract_tags_from_model()
 
@@ -261,19 +284,19 @@ class MagneticComponent:
         mesh_size = 0.001
 
         # Core area -> Is needed to estimate the heat flux
-        # TODO Needs to be calculated dynamically
-        core_area = 0.00077
-        # Use th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
+        # Power density for volumes W/m^3
+        core_area = 2 * np.pi * self.calculate_core_area()
+
+        # Power density for surfaces W/m^2
+        #core_area = self.calculate_core_area()
+
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
 
         # When a gmsh window should open showing the simulation results
         show_results = True
 
-        print(tags["core_line_tags"])
-        print(tags["core_point_tags"])
-
-        run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, tags, thermal_conductivity, mesh_size, core_area, wire_radii, show_results)
+        run_thermal(self.onelab_folder_path, model_mesh_file_path, self.e_m_results_log_path, tags, thermal_conductivity, mesh_size, core_area, wire_radii, show_results)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
@@ -286,22 +309,47 @@ class MagneticComponent:
         :return: -
         """
         # find out path of femmt (installed module or directly opened in git)?
-        module_file_path = os.path.dirname(__file__)
-        config_file_path = os.path.join(module_file_path, 'config.json')
+        config_file_path = os.path.join(self.femmt_folder_path, 'config.json')
 
         # check if config.json is available and not empty
         if os.path.isfile(config_file_path) and os.stat(config_file_path).st_size != 0:
-            path = ""
+            onelab_path = ""
             with open(config_file_path, "r") as fd:
                 loaded_dict = json.loads(fd.read())
-                path = loaded_dict['onelab']
+                onelab_path = loaded_dict['onelab']
 
-            if os.path.exists(path):
-                self.onelab = path
+            if os.path.exists(onelab_path) and os.path.isfile(os.path.join(onelab_path, "onelab.py")):
+                # Path found
+                self.onelab_folder_path = onelab_path
+                return
+
+        # Let the user enter the onelab_path:
+        # Find out the onelab_path of installed module, or in case of running directly from git, find the onelab_path of git repository
+        # loop until path is correct
+        onelab_path_wrong = True
+        path_wrong = True
+        while onelab_path_wrong:
+            while path_wrong:
+                onelab_path = input("Enter the parent folder of onelab in ways of 'C:.../onelab-Windows64': ")
+                if '\\' in onelab_path:
+                    path_wrong = True
+                    print("Use '/' instead of '\\'!")
+                else:
+                    path_wrong = False
+
+            onelab_path = onelab_path[:-1] if onelab_path[-1] == '/' else onelab_path
+            onelab_path = onelab_path.replace("/", os.sep)
+            if os.path.exists(onelab_path):
+                onelab_path_wrong = False
             else:
-                self.onelab = call_for_onelab_path()
-        else:
-            self.onelab = call_for_onelab_path()
+                onelab_path_wrong = True
+                path_wrong = True
+                print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
+
+        # Write the path to the config.json
+        onelab_path_dict = {"onelab": onelab_path}
+        with open(os.path.join(config_file_path), 'w', encoding='utf-8') as fd:
+            json.dump(onelab_path_dict, fd, ensure_ascii=False)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
@@ -561,9 +609,9 @@ class MagneticComponent:
 
             """
             self.number = n_air_gaps
-            position_tag = position_tag
+            self.position_tag = position_tag
             air_gap_position = air_gap_position
-            air_gap_h = air_gap_h
+            self.air_gap_h = air_gap_h
 
             print(f"Update the air gaps.\n"
                   f"---")
@@ -2535,6 +2583,7 @@ class MagneticComponent:
             self.nom_current_1st = nom_current_1st
             self.nom_phase_1st = nom_phase_1st
 
+
             # Others
             self.stray_path_parametrization = stray_path_parametrization
             self.b_stray = b_stray
@@ -2553,8 +2602,8 @@ class MagneticComponent:
                 self.visualize_max = True
                 self.visualize_nom = True
 
-            if not os.path.isdir(self.component.path + "/" + "Reluctance_Model"):
-                os.mkdir(self.component.path + "/" + "Reluctance_Model")
+            if not os.path.exists(self.reluctance_model_folder):
+                os.mkdir(self.reluctance_model_folder)
 
             # Save initial parameter set
             # parameters_init = np.asarray(parameters_init)
@@ -2706,9 +2755,8 @@ class MagneticComponent:
             """
 
             gmsh.option.setNumber("General.Terminal", 1)
-            gmsh.model.add(self.component.path_mesh + "geometry")
-
-            print(self.component.dimensionality)
+            gmsh.model.add(os.path.join(self.component.e_m_mesh_file, "geometry"))
+            
             # ------------------------------------------ Geometry -------------------------------------------
             # Core generation
             # --------------------------------------- Points --------------------------------------------
@@ -3075,8 +3123,7 @@ class MagneticComponent:
                 # gmsh.model.geo.synchronize()
                 # gmsh.write(self.component.path_mesh + "color.msh")
 
-                gmsh.write(
-                    self.component.path + "/" + self.component.path_mesh + "color.msh")  # Win10 can handle slash
+                gmsh.write(os.path.join(self.component.mesh_folder_path, "color.msh"))
 
                 gmsh.model.mesh.generate(2)
                 gmsh.fltk.run()
@@ -3208,15 +3255,17 @@ class MagneticComponent:
                 gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
                 print("\nMeshing...\n")
                 gmsh.model.mesh.generate(2)
-                gmsh.write(self.component.path_mesh + "geometry.msh")
+                gmsh.write(os.path.join(self.component.mesh_folder_path, "geometry.msh"))
             else:
                 print("\nMeshing...\n")
                 gmsh.model.mesh.generate(2)
 
-            # Mesh direction
-            if not os.path.isdir(self.component.path + "/" + self.component.path_mesh):
-                os.mkdir(self.component.path + "/" + self.component.path_mesh)
+            if not os.path.exists(self.component.mesh_folder_path):
+                os.mkdir(self.component.mesh_folder_path)
 
+            gmsh.write(os.path.join(self.component.mesh_folder_path, "geometry.msh"))
+
+            """ No need to check the OS anymore?
             # Check operating system
             if sys.platform == "linux" or sys.platform == "linux2":
                 gmsh.write(self.component.path + "/" + self.component.path_mesh + "geometry.msh")
@@ -3225,7 +3274,7 @@ class MagneticComponent:
             elif sys.platform == "win32":
                 gmsh.write(
                     self.component.path + "/" + self.component.path_mesh + "geometry.msh")  # Win10 can handle slash
-
+            """
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Open gmsh GUI for visualization
             # gmsh.fltk.run()
@@ -3313,14 +3362,14 @@ class MagneticComponent:
         print(f"\n---\n"
               f"File Communication\n")
 
-        text_file = open(self.path + "/Parameter.pro", "w")
+        text_file = open(os.path.join(self.electro_magnetic_folder_path, "Parameter.pro"), "w")
 
-        text_file.write(f"DirRes = \"../{self.path_res}\";\n")
-        text_file.write(f"DirResFields = \"../{self.path_res_fields}\";\n")
-        text_file.write(f"DirResVals = \"../{self.path_res_values}\";\n")
-        text_file.write(f"DirResValsPrimary = \"../{self.path_res_values}Primary/\";\n")
-        text_file.write(f"DirResValsSecondary = \"../{self.path_res_values}Secondary/\";\n")
-        text_file.write(f"DirResCirc = \"../{self.path_res_circuit}\";\n")
+        text_file.write(f"DirRes = \"../{os.path.basename(self.results_folder_path)}/\";\n")
+        text_file.write(f"DirResFields = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_fields_folder_path)}/\";\n")
+        text_file.write(f"DirResVals = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/\";\n")
+        text_file.write(f"DirResValsPrimary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Primary/\";\n")
+        text_file.write(f"DirResValsSecondary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Secondary/\";\n")
+        text_file.write(f"DirResCirc = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_circuit_folder_path)}/\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":
@@ -3453,12 +3502,11 @@ class MagneticComponent:
         # create a new onelab client
 
         # get model file names with correct path
-        msh_file = self.onelab_client.getPath(self.path_mesh + 'geometry.msh')
-        solver = self.onelab_client.getPath(self.path_electro_magnetic + 'ind_axi_python_controlled' + '.pro')
+        solver = os.path.join(self.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
 
         # Run simulations as sub clients (non blocking??)
-        mygetdp = self.onelab + 'getdp'
-        self.onelab_client.runSubClient('myGetDP', mygetdp + ' ' + solver + ' -msh ' + msh_file + ' -solve Analysis -v2')
+        mygetdp = os.path.join(self.onelab_folder_path, "getdp")
+        self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.e_m_mesh_file + " -solve Analysis -v2")
 
     def write_log(self):
         """
@@ -3467,9 +3515,7 @@ class MagneticComponent:
         :return:
         :rtype: None
         """
-
-        log_path = self.path + "/" + self.path_res + 'result_log_electro_magnetic.json'
-        file = open(log_path, 'w', encoding='utf-8')
+        file = open(self.e_m_results_log_path, 'w+', encoding='utf-8')
 
         winding_result_path = ["Primary", "Secondary", "Tertiary"]
 
@@ -3541,7 +3587,7 @@ class MagneticComponent:
 
         if any(self.windings[i].conductor_type != 'litz' for i in range(0, self.n_windings)):
             # Ohmic losses (weighted effective value of current density)
-            gmsh.open(self.path + "/" + self.path_res_fields + "j2F.pos")
+            gmsh.open(os.path.join(self.e_m_fields_folder_path, "j2F.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
@@ -3555,7 +3601,7 @@ class MagneticComponent:
 
         if any(self.windings[i].conductor_type == 'litz' for i in range(0, self.n_windings)):
             # Ohmic losses (weighted effective value of current density)
-            gmsh.open(self.path + "/" + self.path_res_fields + "jH.pos")
+            gmsh.open(os.path.join(self.e_m_fields_folder_path, "jH.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
@@ -3567,7 +3613,7 @@ class MagneticComponent:
             view += 1
 
         # Magnetic flux density
-        gmsh.open(self.path + "/" + self.path_res_fields + "Magb.pos")
+        gmsh.open(os.path.join(self.e_m_fields_folder_path, "Magb.pos"))
         gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
         gmsh.option.setNumber(f"View[{view}].RangeType", 1)
         gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
@@ -3579,7 +3625,7 @@ class MagneticComponent:
 
         """
         # Vector Potential
-        gmsh.open(self.path + "/" + self.path_res_fields + "raz.pos")
+        gmsh.open(os.path.join(self.e_m_fields_folder_path, "raz.pos"))
         gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
         gmsh.option.setNumber(f"View[{view}].RangeType", 1)
         gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
@@ -3610,8 +3656,8 @@ class MagneticComponent:
         if loss_type == 'solid_loss':
             loss_file = 'j2F.dat'
         # Read the logged losses corresponding to the frequencies
-        with open(self.path + "/" + self.path_res_values + loss_file, newline='') as f:
-            reader = csv.reader(f)
+        with open(os.path.join(self.e_m_values_folder_path, loss_file), newline='') as fd:
+            reader = csv.reader(fd)
             data = list(reader)
         return data[-last_n_values:-1] + [data[-1]]
 
@@ -3625,8 +3671,8 @@ class MagneticComponent:
         :return: last_n entries of the chosen result file
         :rtype: list
         """
-        with open(self.path + "/" + self.path_res_values + res_name + ".dat") as f:
-            lines = f.readlines()[-last_n:]
+        with open(os.path.join(self.e_m_values_folder_path, f"{res_name}.dat")) as fd:
+            lines = fd.readlines()[-last_n:]
 
             if part == "real":
                 result = [float(line.split(sep=' ')[2]) for n, line in enumerate(lines)]
@@ -3655,12 +3701,13 @@ class MagneticComponent:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
 
+        if not os.path.exists(self.femm_folder_path):
+            os.mkdir(self.femm_folder_path)
+
         sign = sign or [1]
 
         if sign is None:
             sign = [1, 1]
-        if not os.path.isdir(self.path + "/" + self.path_res_FEMM):
-            os.mkdir(self.path + "/" + self.path_res_FEMM)
 
         # == Pre Geometry ==
         self.high_level_geo_gen()
@@ -3813,7 +3860,7 @@ class MagneticComponent:
 
         # Now, the finished input geometry can be displayed.
         femm.mi_zoomnatural()
-        femm.mi_saveas(self.path + "/" + self.path_res_FEMM + 'coil.fem')
+        femm.mi_saveas(os.path.join(self.femm_folder_path, 'coil.fem'))
         femm.mi_analyze()
         femm.mi_loadsolution()
 
@@ -3875,17 +3922,16 @@ class MagneticComponent:
         :return:
         """
         # Get paths
-        femm_model_file_path = os.path.join(os.path.dirname(run_thermal.__globals__['__file__']), "femm", "validation.FEH")
-        results_log_file_path = os.path.join(self.path, self.path_res, "result_log_electro_magnetic.json")
+        femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")
+
+        if not os.path.exists(self.femm_folder_path):
+            os.mkdir(self.femm_folder_path)
 
         # Extract losses
-        losses = read_results_log(results_log_file_path)
+        losses = read_results_log(self.e_m_results_log_path)
 
         # Extract wire_radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
-
-        # TODO Needs to be calculated by the model
-        core_area = 0.00077
 
         # == Init ==
         femm.openfemm(0)
@@ -3895,8 +3941,7 @@ class MagneticComponent:
         # == Materials ==
         # Core
         k_core = thermal_conductivity_dict["core"]
-        # q_vol_core = th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
-        q_vol_core = losses["Core_Eddy_Current"] / core_area
+        q_vol_core = losses["Core_Eddy_Current"] / (2*np.pi*self.calculate_core_area())
         # c_core = 0.007
         c_core = 0
 
@@ -4091,8 +4136,8 @@ class MagneticComponent:
                 # Litz Approximation Coefficients were created with 4 layers
                 # That's why here a hard-coded 4 is implemented
                 # if os.path.isfile(self.path +
-                # f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
-                if os.path.isfile(self.path + "/" + self.path_electro_magnetic + f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat"):
+                # f"/Strands_Coefficients/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
+                if os.path.isfile(os.path.join(self.e_m_strands_coefficients_folder_path, "coeff", f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
                     print("Coefficients for stands approximation are found.")
 
                 else:
@@ -4114,7 +4159,7 @@ class MagneticComponent:
               f"Create coefficients for strands approximation\n")
         # Create a new onelab client
         # -- Pre-Simulation Settings --
-        text_file = open(self.path + "/" + self.path_electro_magnetic + "Strands_Coefficents/PreParameter.pro", "w")
+        text_file = open(os.path.join(self.e_m_strands_coefficients_folder_path, "PreParameter.pro"), "w")
         # ---
         # Litz Approximation Coefficients are created with 4 layers
         # That's why here a hard-coded 4 is implemented
@@ -4124,18 +4169,18 @@ class MagneticComponent:
         print("Here")
         text_file.write(f"Rc = {self.windings[num].strand_radius};\n")  # double named!!! must be changed
         text_file.close()
-        cell_geo = self.onelab_client.getPath(self.path + "/" + self.path_electro_magnetic + 'Strands_Coefficents/cell.geo')
+        cell_geo = os.path.join(self.e_m_strands_coefficients_folder_path, "cell.geo")
 
         # Run gmsh as a sub client
-        mygmsh = self.onelab + 'gmsh'
-        self.onelab_client.runSubClient('myGmsh', mygmsh + ' ' + cell_geo + ' -2 -v 2')
+        mygmsh = os.path.join(self.onelab_folder_path, "gmsh")
+        self.onelab_client.runSubClient("myGmsh", mygmsh + " " + cell_geo + " -2 -v 2")
 
         modes = [1, 2]  # 1 = "skin", 2 = "proximity"
         reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
         for mode in modes:
             for rf in reduced_frequencies:
                 # -- Pre-Simulation Settings --
-                text_file = open(self.path + "/" + self.path_electro_magnetic + "Strands_Coefficents/PreParameter.pro", "w")
+                text_file = open(os.path.join(self.e_m_strands_coefficients_folder_path, "PreParameter.pro"), "w")
                 text_file.write(f"Rr_cell = {rf};\n")
                 text_file.write(f"Mode = {mode};\n")
                 # Litz Approximation Coefficients are created with 4 layers
@@ -4148,24 +4193,29 @@ class MagneticComponent:
                 text_file.close()
 
                 # get model file names with correct path
-                input_file = self.onelab_client.getPath(self.path_electro_magnetic + 'Strands_Coefficents/cell_dat.pro')
-                cell = self.onelab_client.getPath(self.path + "/" + self.path_electro_magnetic + 'Strands_Coefficents/cell.pro')
+                input_file = os.path.join(self.e_m_strands_coefficients_folder_path, "cell_dat.pro")
+                cell = os.path.join(self.e_m_strands_coefficients_folder_path, "cell.pro")
 
                 # Run simulations as sub clients
-                mygetdp = self.onelab + 'getdp'
-                self.onelab_client.runSubClient('myGetDP', mygetdp + ' ' + cell + ' -input ' + input_file + ' -solve MagDyn_a -v2')
+                mygetdp = os.path.join(self.onelab_folder_path, "getdp")
+                self.onelab_client.runSubClient("myGetDP", mygetdp + " " + cell + " -input " + input_file + " -solve MagDyn_a -v2")
 
         # Formatting stuff
         # Litz Approximation Coefficients are created with 4 layers
         # That's why here a hard-coded 4 is implemented
-        # files = [self.path + f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/Strands_Coefficents/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/Strands_Coefficents/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
-        #         self.path + f"/Strands_Coefficents/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
-        files = [self.path + f"/Strands_Coefficents/coeff/pB_RS_la{self.windings[num].ff}_4layer.dat",
-                 self.path + f"/Strands_Coefficents/coeff/pI_RS_la{self.windings[num].ff}_4layer.dat",
-                 self.path + f"/Strands_Coefficents/coeff/qB_RS_la{self.windings[num].ff}_4layer.dat",
-                 self.path + f"/Strands_Coefficents/coeff/qI_RS_la{self.windings[num].ff}_4layer.dat"]
+        # files = [self.path + f"/Strands_Coefficients/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/Strands_Coefficients/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/Strands_Coefficients/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
+        #         self.path + f"/Strands_Coefficients/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
+        return
+        coeff_folder = os.path.join(self.e_m_strands_coefficients_folder_path, "coeff") 
+        if not os.path.isdir(coeff_folder):
+            os.mkdir(coeff_folder)
+
+        files = [os.path.join(coeff_folder, f"pB_RS_la{self.windings[num].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"pI_RS_la{self.windings[num].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"qB_RS_la{self.windings[num].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"qI_RS_la{self.windings[num].ff}_4layer.dat")]
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:
@@ -4239,8 +4289,8 @@ class MagneticComponent:
 
         # Remove "old" Inductance Logs
         try:
-            os.remove(self.path + "/" + self.path_res_values + "L_11.dat")
-            os.remove(self.path + "/" + self.path_res_values + "L_22.dat")
+            os.remove(os.path.join(self.e_m_values_folder_path, "L_11.dat"))
+            os.remove(os.path.join(self.e_m_values_folder_path, "L_22.dat"))
         except:
             # TODO: Find better way for exception
             pass
@@ -4262,14 +4312,14 @@ class MagneticComponent:
                   f"                             == Inductances ==                             \n")
 
             # Read the logged Flux_Linkages
-            with open(self.path + "/" + self.path_res_values + "Flux_Linkage_1.dat") as f:
-                line = f.readlines()[-2:]
+            with open(os.path.join(self.e_m_values_folder_path, "Flux_Linkage_1.dat")) as fd:
+                line = fd.readlines()[-2:]
                 # Fluxes induced in Winding 1
                 Phi_11 = float(line[0].split(sep=' ')[2])
                 Phi_12 = float(line[1].split(sep=' ')[2])
 
-            with open(self.path + "/" + self.path_res_values + "Flux_Linkage_2.dat") as f:
-                line = f.readlines()[-2:]
+            with open(os.path.join(self.e_m_values_folder_path, "Flux_Linkage_2.dat")) as fd:
+                line = fd.readlines()[-2:]
                 # Fluxes induced in Winding 2
                 Phi_21 = float(line[0].split(sep=' ')[2])
                 Phi_22 = float(line[1].split(sep=' ')[2])
@@ -4313,12 +4363,12 @@ class MagneticComponent:
                   )
 
             # Read the logged inductance values
-            with open(self.path + "/" + self.path_res_values + "L_11.dat") as f:
-                line = f.readlines()[-1]
+            with open(os.path.join(self.e_m_values_folder_path, "L_11.dat")) as fd:
+                line = fd.readlines()[-1]
                 words = line.split(sep=' ')
                 self.L_11 = float(words[2])
-            with open(self.path + "/" + self.path_res_values + "L_22.dat") as f:
-                line = f.readlines()[-1]
+            with open(os.path.join(self.e_m_values_folder_path, "L_22.dat")) as fd:
+                line = fd.readlines()[-1]
                 words = line.split(sep=' ')
                 self.L_22 = float(words[2])
             print(f"\n"
