@@ -552,7 +552,7 @@ class MagneticComponent:
 
     class AirGaps:
         """
-
+        Contains methods and arguments to describe the air gaps in a magnetic component
         """
 
         def __init__(self, component):
@@ -561,10 +561,10 @@ class MagneticComponent:
             """
             self.component = component
             # self.number = 1
-            self.number = None  # Number of air gaps [==1: air gap in center | >1: random air gaps]
+            self.number = None  #: Number of air gaps [==1: air gap in center | >1: random air gaps]
 
             # self.midpoints = np.empty((self.number, 4))
-            self.midpoints = None  # list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
+            self.midpoints = None  #: list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
 
         def update(self, method: str = None, n_air_gaps: Union[int, None] = None,
                    position_tag: List[float] = None,
@@ -577,7 +577,7 @@ class MagneticComponent:
             - All dimensions are in meters
             - all parameters are in lists!
             - first chose the method, second, transfer parameters:
-
+            - Method overview:
                 - "center": ONE air gap exactly in core's middle
                 - "random": random count of air gaps in the inner/outer leg
                 - "percent": Easy way to split air gaps over the inner/outer leg
@@ -599,9 +599,11 @@ class MagneticComponent:
             :type method: str
 
             :return: None
+            :rtype: None
 
             :Example:
-
+            >>> import femmt as fmt
+            >>> geo = fmt.MagneticComponent(component_type='inductor')
             >>> geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002]) # 'center': single air gap in the middle
             >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # 'percent': Place air gaps manually using percentages
             >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # random
@@ -692,50 +694,108 @@ class MagneticComponent:
 
         """
 
-        def __init__(self, cond_cond=None, core_cond=None):
+        def __init__(self, cond_cond: List = None, core_cond: List = None) -> None:
             """
-            - Isolation
+            Isolation
                 - Between two turns of common conductors: first n_conductor arguments of cond_cond
                 - Between two neighboured conductors: last n_conductor-1 arguments
 
+            :param cond_cond: list of floats to describe the isolations between conductors
+            :type cond_cond: List
+            :param core_cond: list of floats to describe the isolations between conductors and the core
+            :type core_cond: List
+            :return: None
+            :rtype: None
+
+            :Inductor Example:
+            core_cond_isolation=[winding2core],
+            cond_cond_isolation=[winding2primary]
+
+            :Transformer Example:
+            core_cond_isolation=[primary2core, secondary2core],
+            cond_cond_isolation=[primary2primary, secondary2secondary, primary2secondary]
             """
             self.cond_cond = cond_cond or []
             self.core_cond = core_cond or []
 
     # Update Methods
-    def update_conductors(self, n_turns=None, conductor_type=None, winding=None, scheme=None, conductor_radii=None,
-                          litz_para_type=None, ff=None, strands_numbers=None, strand_radii=None, thickness=None,
-                          wrap_para=None, cond_cond_isolation=None, core_cond_isolation=None) -> None:
+    def update_conductors(self, n_turns: List = None, conductor_type: List = None, winding: List = None,
+                          scheme: List = None, conductor_radii: List = None, litz_para_type: List = None,
+                          ff: List = None, strands_numbers: List = None, strand_radii: List = None,
+                          thickness: List = None, wrap_para: List = None, cond_cond_isolation: List = None, core_cond_isolation: List = None) -> None:
         """
         This Method allows the user to easily update/initialize the Windings in terms of their conductors and
         arrangement.
 
         Note: set all parameters in a list!
 
-        :param wrap_para:
-        :param ff: fill-factor, values between [0....1]
-        :param winding:
-                - "interleaved"
-                - ""
-        :param scheme:
-        :param litz_para_type: there is one degree of freedom.
-                - "implicit_litz_radius":
-                - "implicit_ff":
-                - "implicit_strands_number":
+        :param n_turns: Number of turns in a list [[n_primary], [n_secondary]].
+        :type n_turns: List
 
-        :param thickness:
-        :param cond_cond_isolation:
-        :param core_cond_isolation:
-        :param n_turns:
-        :param strand_radii:
-        :param strands_numbers:
-        :param conductor_radii:
+        # Winding Scheme
+        :param winding:
+                - "interleaved": interleaves primary and secondary windings
+                - "primary": only valid for inductor, just a single winding
+        :type winding: List
+        :param scheme:
+                - "horizontal":
+                - "square":
+        :type scheme: List
+
+        # Conductor Type Parameters
         :param conductor_type:  - "stacked"  # Vertical packing of conductors
-                                - "full"     # One massive Conductor in each window
-                                - "foil"     # Horizontal packing of conductors
-                                - "solid"    # Massive wires
-                                - "litz"     # Litz wires
-        :return:
+                        - "full"     # One massive Conductor in each window
+                        - "foil"     # Horizontal packing of conductors
+                        - "solid"    # Massive wires
+                        - "litz"     # Litz wires
+        :type conductor_type: List
+
+        # Litz parameters
+        :param litz_para_type: 4 litz parameters, one degree of freedom (3 necessary), e.g. [litz_para_type_primary, litz_para_type_secondary]
+                - "implicit_litz_radius": needs conductor_radii, ff, strands_numbers
+                - "implicit_ff": needs conductor_radii, strand_radii, strands_numbers
+                - "implicit_strands_number": needs conductor_radii, ff, strand_radii
+        :param strand_radii: radius for a single strand-wire in a litz wire, e.g. [strand_radii_primary, strand_radii_secondary]
+        :type strand_radii: List
+        :param strands_numbers: Number of single strands in a litz wire, e.g. [strands_numbers_primary, strands_numbers_secondary]
+        :type strands_numbers: List
+        :param conductor_radii: Conductor radii of the litz or solid wire, e.g. [conductor_radii_primary, conductor_radii_secondary]
+        :type conductor_radii: List
+        :param ff: fill-factor, values between [0....1]
+        :type ff: List
+
+
+        # Foil parameters
+        :param thickness: foil thickness
+        :type thickness: List
+        :param wrap_para:
+        :type wrap_para: List
+
+        # Isolation parameters
+        :param cond_cond_isolation: Isolation between windings and windings, e.g. [primary2primary, secondary2secondary, primary2secondary]
+        :type cond_cond_isolation: List
+        :param core_cond_isolation: Isolation between windings and the core, e.g. [primary2core, secondary2core],
+        :type core_cond_isolation: List
+
+        :return: None
+        :rtype: None
+
+        :Example Inductor:
+        >>> import femmt as fmt
+        >>> geo = fmt.MagneticComponent(component_type="Inductor")
+        >>> geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
+        >>>               winding=["primary"], scheme=["square"],
+        >>>               core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
+
+        :Example Transformer with solid (primary) winding and litz (secondary) winding:
+        >>> import femmt as fmt
+        >>> geo = fmt.MagneticComponent(component_type="transformer")
+        >>> geo.update_conductors(n_turns=[[36], [11]], conductor_type=["solid", "litz"],
+        >>>            litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
+        >>>             ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
+        >>>             conductor_radii=[0.0011, None],
+        >>>             winding=["interleaved"], scheme=["horizontal"],
+        >>>             core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
         """
         n_turns = n_turns or []
