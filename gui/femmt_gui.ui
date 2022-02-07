@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1645</width>
-    <height>1086</height>
+    <height>1089</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,7 +28,7 @@
         <item row="0" column="0">
          <widget class="QTabWidget" name="md_QTabWidget">
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="md_QWidget">
            <attribute name="title">
@@ -130,16 +130,13 @@
                    <item row="0" column="1">
                     <widget class="QComboBox" name="md_core_material_comboBox"/>
                    </item>
-                   <item row="0" column="2">
-                    <widget class="QLineEdit" name="lineEdit"/>
-                   </item>
                   </layout>
                  </widget>
                 </item>
                 <item>
                  <widget class="QGroupBox" name="groupBox_3">
                   <property name="title">
-                   <string>Winding 1: Definition</string>
+                   <string>Winding 1: Conductor Definition</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_3">
                    <item row="1" column="2">
@@ -156,48 +153,10 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="0">
-                    <widget class="QLabel" name="label_5">
-                     <property name="text">
-                      <string>Number Strands</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_8">
-                     <property name="text">
-                      <string>Number Turns</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="3">
-                    <widget class="QComboBox" name="md_winding1_type_comboBox"/>
-                   </item>
                    <item row="2" column="2">
                     <widget class="QLabel" name="label_10">
                      <property name="text">
                       <string>Fill Factor</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QLineEdit" name="md_winding1_turns_lineEdit">
-                     <property name="text">
-                      <string>25</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="2">
-                    <widget class="QLabel" name="label_12">
-                     <property name="text">
-                      <string>Wire Type</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="0">
-                    <widget class="QLabel" name="label_58">
-                     <property name="text">
-                      <string>Implicit</string>
                      </property>
                     </widget>
                    </item>
@@ -218,16 +177,6 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="1">
-                    <widget class="QLineEdit" name="md_winding1_strands_lineEdit">
-                     <property name="text">
-                      <string>600</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="1">
-                    <widget class="QComboBox" name="md_winding1_implicit_litz_comboBox"/>
-                   </item>
                    <item row="3" column="2">
                     <widget class="QLabel" name="label_61">
                      <property name="text">
@@ -242,13 +191,47 @@
                      </property>
                     </widget>
                    </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_12">
+                     <property name="text">
+                      <string>Wire Type</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="md_winding1_type_comboBox"/>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QComboBox" name="md_winding1_implicit_litz_comboBox"/>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_58">
+                     <property name="text">
+                      <string>Implicit</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="text">
+                      <string>Number Strands</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QLineEdit" name="md_winding1_strands_lineEdit">
+                     <property name="text">
+                      <string>600</string>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </widget>
                 </item>
                 <item>
                  <widget class="QGroupBox" name="groupBox_7">
                   <property name="title">
-                   <string>Winding 2: Definition</string>
+                   <string>Winding 2: Conductor Definition</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_4">
                    <item row="3" column="2">
@@ -258,34 +241,10 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_14">
-                     <property name="text">
-                      <string>Number Turns</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="1" column="2">
                     <widget class="QLabel" name="label_16">
                      <property name="text">
                       <string>Wire Radius</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QLineEdit" name="md_winding2_turns_lineEdit"/>
-                   </item>
-                   <item row="0" column="2">
-                    <widget class="QLabel" name="label_18">
-                     <property name="text">
-                      <string>Wire Type</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="0">
-                    <widget class="QLabel" name="label_59">
-                     <property name="text">
-                      <string>Implicit</string>
                      </property>
                     </widget>
                    </item>
@@ -315,21 +274,35 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="3">
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_18">
+                     <property name="text">
+                      <string>Wire Type</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
                     <widget class="QComboBox" name="md_winding2_type_comboBox"/>
                    </item>
                    <item row="3" column="1">
-                    <widget class="QComboBox" name="md_winding2_implicit_litz_comboBox"/>
-                   </item>
-                   <item row="2" column="1">
                     <widget class="QLineEdit" name="md_winding2_strands_lineEdit"/>
                    </item>
                    <item row="2" column="0">
+                    <widget class="QLabel" name="label_59">
+                     <property name="text">
+                      <string>Implicit</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
                     <widget class="QLabel" name="label_15">
                      <property name="text">
                       <string>Number Strands</string>
                      </property>
                     </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QComboBox" name="md_winding2_implicit_litz_comboBox"/>
                    </item>
                   </layout>
                  </widget>
@@ -338,6 +311,59 @@
               </item>
               <item>
                <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                 <widget class="QGroupBox" name="groupBox_4">
+                  <property name="title">
+                   <string>Winding Scheme</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_10">
+                   <item row="4" column="0">
+                    <widget class="QLabel" name="label_69">
+                     <property name="text">
+                      <string>Winding Scheme Winding 2</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="md_winding1_scheme_comboBox"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_68">
+                     <property name="text">
+                      <string>Winding Scheme Winding 1</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="1">
+                    <widget class="QComboBox" name="md_winding2_scheme_comboBox"/>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_winding1_turns_lineEdit">
+                     <property name="text">
+                      <string>25</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_8">
+                     <property name="text">
+                      <string>Number Turns Winding 1</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_14">
+                     <property name="text">
+                      <string>Number Turns Winding 2</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QLineEdit" name="md_winding2_turns_lineEdit"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
                 <item>
                  <widget class="QGroupBox" name="groupBox_11">
                   <property name="title">
@@ -530,35 +556,6 @@
                       <string>P2S</string>
                      </property>
                     </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QGroupBox" name="groupBox_4">
-                  <property name="title">
-                   <string>Winding Scheme</string>
-                  </property>
-                  <layout class="QGridLayout" name="gridLayout_10">
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_68">
-                     <property name="text">
-                      <string>Winding Scheme Winding 1</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QComboBox" name="md_winding1_scheme_comboBox"/>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_69">
-                     <property name="text">
-                      <string>Winding Scheme Winding 2</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QComboBox" name="md_winding2_scheme_comboBox"/>
                    </item>
                   </layout>
                  </widget>
@@ -1018,6 +1015,47 @@
                    <string>Harmonics</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_11">
+                   <item row="0" column="5">
+                    <widget class="QCheckBox" name="md_fk6_checkBox">
+                     <property name="text">
+                      <string>fk6</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="6">
+                    <widget class="QCheckBox" name="md_fk7_checkBox">
+                     <property name="text">
+                      <string>fk7</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QCheckBox" name="md_fk2_checkBox">
+                     <property name="text">
+                      <string>fk2</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QCheckBox" name="md_fk5_checkBox">
+                     <property name="text">
+                      <string>fk5</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="8">
+                    <spacer name="horizontalSpacer_2">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
                    <item row="0" column="2">
                     <widget class="QCheckBox" name="md_fk3_checkBox">
                      <property name="text">
@@ -1039,34 +1077,6 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="6">
-                    <widget class="QCheckBox" name="md_fk7_checkBox">
-                     <property name="text">
-                      <string>fk7</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="4">
-                    <widget class="QCheckBox" name="md_fk5_checkBox">
-                     <property name="text">
-                      <string>fk5</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="5">
-                    <widget class="QCheckBox" name="md_fk6_checkBox">
-                     <property name="text">
-                      <string>fk6</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QCheckBox" name="md_fk2_checkBox">
-                     <property name="text">
-                      <string>fk2</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="0" column="7">
                     <widget class="QCheckBox" name="md_fk8_checkBox">
                      <property name="text">
@@ -1074,8 +1084,37 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="8">
-                    <spacer name="horizontalSpacer_2">
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_14">
+                  <property name="title">
+                   <string>Plot Options</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_18">
+                   <item row="0" column="1">
+                    <widget class="QPushButton" name="md_excitation_update_graph_Button">
+                     <property name="text">
+                      <string>Update Graphs</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <spacer name="horizontalSpacer_7">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item row="0" column="2">
+                    <spacer name="horizontalSpacer_8">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
                      </property>
@@ -1090,25 +1129,53 @@
                   </layout>
                  </widget>
                 </item>
+                <item>
+                 <spacer name="verticalSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
                </layout>
               </item>
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_4">
                 <item>
-                 <widget class="QPushButton" name="md_excitation_update_graph_Button">
-                  <property name="text">
-                   <string>Update Graphs</string>
+                 <widget class="QGroupBox" name="groupBox_12">
+                  <property name="title">
+                   <string>Plot for winding 1:</string>
                   </property>
+                  <layout class="QGridLayout" name="gridLayout_16">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="md_graphic_winding_1">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QWidget" name="widget" native="true"/>
-                </item>
-                <item>
-                 <widget class="QLabel" name="md_graphic_winding_1">
-                  <property name="text">
-                   <string/>
+                 <widget class="QGroupBox" name="groupBox_13">
+                  <property name="title">
+                   <string>Plot for winding 2:</string>
                   </property>
+                  <layout class="QGridLayout" name="gridLayout_17">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="md_graphic_winding_2">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </widget>
                 </item>
                </layout>

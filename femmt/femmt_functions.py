@@ -307,7 +307,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     return np.array([f_out, x_out, phi_rad_out])
 
 
-def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000):
+def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000, figure_directory: str = None):
     time_period = 1 / min(frequency_list)
 
     t_interp = np.linspace(0, time_period, sample_factor)
@@ -336,8 +336,8 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
     ax3.set_ylabel('Phase in rad')
 
     plt.tight_layout()
-
-    plt.savefig("./md_winding_1.png", bbox_inches="tight")
+    if figure_directory is not None:
+        plt.savefig(figure_directory, bbox_inches="tight")
 
     #plt.show()
 
