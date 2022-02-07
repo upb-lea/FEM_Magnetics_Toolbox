@@ -252,12 +252,15 @@ class MagneticComponent:
         else:
             core_point_tags = [5, 4, 3, 2]
 
+        air_gaps_tag = self.mesh.ps_air_gaps
+
         return {
             "core_tag": core_tag,
             "background_tag": background_tag,
             "winding_tags": winding_tags,
             "core_line_tags": core_line_tags,
-            "core_point_tags": core_point_tags
+            "core_point_tags": core_point_tags,
+            "air_gaps_tag": air_gaps_tag
         }
 
     # Start thermal simulation
@@ -3068,6 +3071,7 @@ class MagneticComponent:
                 # Air
                 # Points are partwise double designated
 
+                """ This is without the split of the air gaps
                 l_air_tmp = self.l_core_air[:7]
                 for i in range(0, len(self.l_bound_air)):
                     l_air_tmp.append(self.l_bound_air[i])
@@ -3077,6 +3081,18 @@ class MagneticComponent:
                         l_air_tmp.append(self.l_core_air[7 + 3 * i + 2])
 
                 self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp))
+                """
+
+                # With splitted air gaps
+                l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
+                for i in range(self.component.air_gaps.number - 1):
+                    l_air_tmp.append(self.l_core_air[8+3*i])
+                #for i in range(0, self.component.air_gaps.number):
+                #    l_air_tmp.append(self.l_air_gaps_air[i])
+                #    l_air_tmp.append(self.l_air_gaps_air[i+1])
+
+
+                self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
 
                 # Need flatten list of all! conductors
                 flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
@@ -3168,7 +3184,6 @@ class MagneticComponent:
                 gmsh.write(self.component.hybrid_mesh_file)
 
             gmsh.finalize()
-            exit(0)
 
         def generate_electro_magnetic_mesh(self, refine = 0):
             gmsh.initialize()
@@ -3198,8 +3213,9 @@ class MagneticComponent:
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Air
-            self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=1000)
+            # Air and air_gaps
+            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps
+            self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=1000)
             # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3347,7 +3363,12 @@ class MagneticComponent:
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=1000)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Air gaps
+            self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=1001)
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Boundary
+            # TODO Can be removed
             self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=1111)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3357,7 +3378,8 @@ class MagneticComponent:
                 for i in range(0, len(self.ps_cond[num])):
                     gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
             gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
-            gmsh.model.setPhysicalName(1, self.pc_bound, "BOUND")
+            gmsh.model.setPhysicalName(1, self.pc_bound, "BOUND OLD")
+            gmsh.model.setPhysicalName(2, self.ps_air_gaps, "Air gaps")
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # - Forward Meshing -

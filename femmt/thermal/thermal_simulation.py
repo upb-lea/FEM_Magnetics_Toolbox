@@ -157,25 +157,29 @@ def create_background(background_tag, k_air, function_pro: FunctionPro, group_pr
     k_air = {"air": k_air}
     q_vol_air = {"air": 0}
 
-    # Airgap with material, currently not used
-    # TODO Add airgap material when mesh is split
-    q_vol_gap = {"air_gap_1": 0}
-    k_gap = {"air_gap_1": 0}
-
     function_pro.add_dicts(k_air, q_vol_air)
     group_pro.add_regions({"air": background_tag})
     
     return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, background_tag)]
 
-def create_core(core_tag, k_core, core_area, core_losses, function_pro: FunctionPro, group_pro: GroupPro):
+def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_tag, k_air_gaps, function_pro: FunctionPro, group_pro: GroupPro):
     heat_flux = core_losses/core_area
-    k = {"core": k_core}
-    q_vol = {"core": heat_flux}
+    k = {
+        "core": k_core,
+        "air_gaps": k_air_gaps 
+    }
+    q_vol = {
+        "core": heat_flux,
+        "air_gaps": 0
+    }
 
     function_pro.add_dicts(k, q_vol)
-    group_pro.add_regions({"core": core_tag})
+    group_pro.add_regions({
+        "core": core_tag,
+        "air_gaps": air_gaps_tag
+    })
 
-    return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, core_tag)]
+    return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, core_tag)], [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, air_gaps_tag)]
 
 def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, function_pro: FunctionPro, group_pro: GroupPro):
     q_vol = {}
@@ -263,7 +267,7 @@ def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path,
 
     case_dim_tags = create_case(tags_dict["core_point_tags"], tags_dict["core_line_tags"], thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro, mesh_size)
     background_dim_tags = create_background(tags_dict["background_tag"], thermal_conductivity_dict["air"], function_pro, group_pro)
-    core_dim_tags = create_core(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, function_pro, group_pro)
+    core_dim_tags, air_gaps_dim_tags = create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, tags_dict["air_gaps_tag"], thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
     windings_dim_tags = create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, function_pro, group_pro)
 
     gmsh.model.geo.synchronize()
@@ -274,6 +278,7 @@ def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path,
         gmsh.model.setColor(background_dim_tags, 255, 255, 255)
         gmsh.model.setColor(core_dim_tags, 110, 110, 110)
         gmsh.model.setColor(windings_dim_tags, 192, 28, 40)
+        gmsh.model.setColor(air_gaps_dim_tags, 203, 156, 190)
         
     gmsh.model.mesh.generate()
     gmsh.write(model_mesh_file_path)
@@ -338,13 +343,15 @@ if __name__ == "__main__":
             "background_tag": 1000,
             "winding_tags": winding_tags,
             "core_line_tags": [4, 3, 2],
-            "core_point_tags": [5, 4, 3, 2] # Order: top left, top right, bottom right, bottom left
+            "core_point_tags": [5, 4, 3, 2], # Order: top left, top right, bottom right, bottom left
+            "air_gaps_tag": 1001
         }
         thermal_conductivity_dict = {
             "air": 0.0263,
             "case": 0.3,
             "core": 5,
-            "winding": 400 
+            "winding": 400,
+            "air_gaps": 0.0263 # Air
         }
         mesh_size = 0.001
         core_area = 0.00077

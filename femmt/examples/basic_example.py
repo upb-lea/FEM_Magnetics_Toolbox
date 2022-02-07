@@ -35,8 +35,8 @@ if component == "transformer":
     geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015)
 
     # geo.air_gaps.update(n_air_gaps=0)
-    geo.air_gaps.update(method="percent", n_air_gaps=2, air_gap_h=[0.0005, 0.0005],
-                        air_gap_position=[50, 75], position_tag=[0, 0])
+    geo.air_gaps.update(method="percent", n_air_gaps=1, air_gap_h=[0.0005],
+                        air_gap_position=[50], position_tag=[0])
 
     geo.update_conductors(n_turns=[[36], [11]], conductor_type=["solid", "litz"],
                         litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
@@ -58,11 +58,12 @@ if component == "transformer":
             "air": 0.0263,
             "case": 0.3,
             "core": 5,
-            "winding": 400 
+            "winding": 400,
+            "air_gaps": 0.0263 # Air
     }
 
     geo.thermal_simulation(thermal_conductivity_dict)
-    geo.femm_thermal_validation(thermal_conductivity_dict)
+    #geo.femm_thermal_validation(thermal_conductivity_dict) # TODO Update femm model 
 
 if component == "integrated_transformer":
     geo = MagneticComponent(component_type="integrated_transformer")
