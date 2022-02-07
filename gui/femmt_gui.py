@@ -1,11 +1,20 @@
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap
 import femmt as fmt
 import json
+
+# import sys
+# import matplotlib
+#
+# matplotlib.use('Qt5Agg')
+#
+# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+# from matplotlib.figure import Figure
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -52,6 +61,7 @@ class MainWindow(QMainWindow):
         self.md_fk6_checkBox.stateChanged.connect(self.md_change_frequencies_6)
         self.md_fk7_checkBox.stateChanged.connect(self.md_change_frequencies_7)
         self.md_fk8_checkBox.stateChanged.connect(self.md_change_frequencies_8)
+        self.md_excitation_update_graph_Button.clicked.connect(self.md_redraw_input_signals)
 
         "Signals in Simulation Tab"
         self.md_simulation_QPushButton.clicked.connect(self.md_action_run_simulation)
@@ -333,6 +343,55 @@ class MainWindow(QMainWindow):
     def md_change_frequencies_8(self, status) -> None:
         self.md_f8_enable(False) if status == 0 else self.md_f8_enable(True)
 
+    def md_redraw_input_signals(self):
+
+        frequency_list = []
+        amplitude_list = []
+        phi_rad_list = []
+
+        if self.md_fk1_checkBox.isChecked():
+            frequency_list.append(1 * float(self.md_base_frequency_lineEdit.text()))
+            amplitude_list.append(float(self.md_winding1_ik1_lineEdit.text()))
+            phi_rad_list.append(float(self.md_winding1_pk1_lineEdit.text()))
+        if self.md_fk2_checkBox.isChecked():
+            frequency_list.append(2 * float(self.md_base_frequency_lineEdit.text()))
+            amplitude_list.append(float(self.md_winding1_ik2_lineEdit.text()))
+            phi_rad_list.append(float(self.md_winding1_pk2_lineEdit.text()))
+        if self.md_fk3_checkBox.isChecked():
+            frequency_list.append(3 * float(self.md_base_frequency_lineEdit.text()))
+            amplitude_list.append(float(self.md_winding1_ik3_lineEdit.text()))
+            phi_rad_list.append(float(self.md_winding1_pk3_lineEdit.text()))
+        if self.md_fk4_checkBox.isChecked():
+            frequency_list.append(4 * float(self.md_base_frequency_lineEdit.text()))
+            amplitude_list.append(float(self.md_winding1_ik4_lineEdit.text()))
+            phi_rad_list.append(float(self.md_winding1_pk4_lineEdit.text()))
+        if self.md_fk5_checkBox.isChecked():
+            frequency_list.append(5 * float(self.md_base_frequency_lineEdit.text()))
+            amplitude_list.append(float(self.md_winding1_ik5_lineEdit.text()))
+            phi_rad_list.append(float(self.md_winding1_pk5_lineEdit.text()))
+        if self.md_fk6_checkBox.isChecked():
+            frequency_list.append(6 * float(self.md_base_frequency_lineEdit.text()))
+            amplitude_list.append(float(self.md_winding1_ik6_lineEdit.text()))
+            phi_rad_list.append(float(self.md_winding1_pk6_lineEdit.text()))
+        if self.md_fk7_checkBox.isChecked():
+            frequency_list.append(7 * float(self.md_base_frequency_lineEdit.text()))
+            amplitude_list.append(float(self.md_winding1_ik7_lineEdit.text()))
+            phi_rad_list.append(float(self.md_winding1_pk7_lineEdit.text()))
+        if self.md_fk8_checkBox.isChecked():
+            frequency_list.append(8 * float(self.md_base_frequency_lineEdit.text()))
+            amplitude_list.append(float(self.md_winding1_ik8_lineEdit.text()))
+            phi_rad_list.append(float(self.md_winding1_pk8_lineEdit.text()))
+
+
+
+        fmt.plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list)
+
+
+        pixmap = QPixmap("./md_winding_1.png")
+        self.md_graphic_winding_1.setPixmap(pixmap)
+        self.md_graphic_winding_1.setMask(pixmap.mask())
+        self.md_graphic_winding_1.show()
+
     def md_change_air_gap_count(self, air_gap_count_from_combo_box):
         self.md_air_gap_1_enable(False)
         self.md_air_gap_2_enable(False)
@@ -500,10 +559,10 @@ class MainWindow(QMainWindow):
 
             self.md_simulation_QLabel.setText('simulation fertig.')
 
-            log_path = geo.path + "/" + geo.path_res + 'result_log_electro_magnetic.json'
-            simulation_results = str(fmt.read_results_log(log_path))
-            print(simulation_results)
-            self.md_simulation_output_textBrowser.setText(simulation_results)
+            # log_path = geo.path + "/" + geo.path_res + 'result_log_electro_magnetic.json'
+            # simulation_results = str(fmt.read_results_log(log_path))
+            # print(simulation_results)
+            # self.md_simulation_output_textBrowser.setText(simulation_results)
 
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':

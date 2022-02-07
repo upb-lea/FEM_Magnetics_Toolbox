@@ -307,6 +307,42 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     return np.array([f_out, x_out, phi_rad_out])
 
 
+def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000):
+    time_period = 1 / min(frequency_list)
+
+    t_interp = np.linspace(0, time_period, sample_factor)
+    reconstructed_signal = 0
+    for i_range, _ in enumerate(frequency_list):
+        reconstructed_signal += amplitude_list[i_range] * np.cos(
+            2 * np.pi * frequency_list[i_range] * t_interp + phi_rad_list[i_range])
+
+    fig, [ax1, ax2, ax3] = plt.subplots(nrows=3, ncols=1)
+    ax1.plot(t_interp, reconstructed_signal, label='reconstructed signal')
+    ax1.grid()
+    ax1.set_title('Signal')
+    ax1.set_xlabel('time in s')
+    ax1.set_ylabel('Amplitude')
+    ax1.legend()
+    ax2.stem(frequency_list, amplitude_list)
+    ax2.grid()
+    ax2.set_title('ffT')
+    ax2.set_xlabel('Frequency in Hz')
+    ax2.set_ylabel('Amplitude')
+
+    ax3.stem(frequency_list, phi_rad_list)
+    ax3.grid()
+    ax3.set_title('ffT')
+    ax3.set_xlabel('Frequency in Hz')
+    ax3.set_ylabel('Phase in rad')
+
+    plt.tight_layout()
+
+    plt.savefig("./md_winding_1.png", bbox_inches="tight")
+
+    #plt.show()
+
+
+
 def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: str = 'rad', f0: Union[float,None] = None) -> None:
     """
     generate fft curves from input curves and compare them to each other
