@@ -218,75 +218,28 @@ class MagneticComponent:
             air_gap_area = air_gap_area + height*width
 
         return core_height * core_width - winding_height * winding_width - air_gap_area
-        
-
-    def extract_tags_from_model(self) -> dict:
-        """
-        For the thermal simulation the tags of the physical groups for the core, windings and the background are needed
-        as well as the corner point tags and the top, right and bottom line tags are needed. 
-        They will be extracted from the mesh model using this function
-
-        :return: Dictionary containing core_tag, background_tag, winding_tags, core_line_tags, core_point_tags
-        """
-        # Core
-        # the main core as well as every core island will get the same material as core:
-        core_tag = self.mesh.ps_core
-
-        # Background
-        background_tag = self.mesh.ps_air
-
-        # Winding
-        winding_tags = self.mesh.ps_cond
-
-        # Core line tags
-        core_line_tags = []
-        if self.mesh.component.air_gaps.number == 0:
-            core_line_tags = [3, 2, 1]
-        else:
-            core_line_tags = [4, 3, 2]
-
-        # Core point tags
-        core_point_tags = []
-        if self.mesh.component.air_gaps.number == 0:
-            core_point_tags = [4, 3, 2, 1]
-        else:
-            core_point_tags = [5, 4, 3, 2]
-
-        air_gaps_tag = self.mesh.ps_air_gaps
-
-        return {
-            "core_tag": core_tag,
-            "background_tag": background_tag,
-            "winding_tags": winding_tags,
-            "core_line_tags": core_line_tags,
-            "core_point_tags": core_point_tags,
-            "air_gaps_tag": air_gaps_tag
-        }
 
     # Start thermal simulation
-    def thermal_simulation(self, thermal_conductivity) -> None:
+    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot) -> None:
         """
         
         Starts the thermal simulation using thermal.py
 
         :return: -
         """
-        self.mesh.generate_thermal_mesh()
+        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot)
 
         if not os.path.exists(self.e_m_results_log_path):
             # Simulation results file not created
-            # TODO Add error message handling?
-            print("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
+            raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
 
-        # Create copy of the current mesh, because it will be changed for the thermal simulation
-        # TODO This will be changed because the mesh is hybrid anyways
-        #shutil.copy(self.e_m_mesh_file, model_mesh_file_path)
-
-        tags = self.extract_tags_from_model()
-
-        # Mesh size -> Used when creating the case
-        # TODO Currently fixed.. Can be changed dynamically?
-        mesh_size = 0.001
+        tags = {
+            "core_tag": self.mesh.ps_core,
+            "background_tag": self.mesh.ps_air,
+            "winding_tags": self.mesh.ps_cond,
+            "air_gaps_tag": self.mesh.ps_air_gaps,
+            "boundary_regions": self.mesh.thermal_boundary_region_tags
+        }
 
         # Core area -> Is needed to estimate the heat flux
         # Power density for volumes W/m^3
@@ -301,7 +254,23 @@ class MagneticComponent:
         # When a gmsh window should open showing the simulation results
         show_results = True
 
-        run_thermal(self.onelab_folder_path, self.thermal_mesh_file, self.e_m_results_log_path, tags, thermal_conductivity, mesh_size, core_area, wire_radii, show_results)
+        thermal_parameters = {
+            "onelab_folder_path": self.onelab_folder_path,
+            "model_mesh_file_path": self.thermal_mesh_file,
+            "results_log_file_path": self.e_m_results_log_path,
+            "tags_dict": tags,
+            "thermal_conductivity_dict": thermal_conductivity,
+            "boundary_temperatures": boundary_temperatures,
+            "boundary_flags": boundary_flags,
+            "boundary_physical_groups": self.mesh.thermal_boundary_ps_groups,
+            "core_area": core_area,
+            "conductor_radii": wire_radii,
+            "show_results": show_results,
+            "pretty_colors": False,
+            "show_before_simulation": False
+        }
+
+        run_thermal(**thermal_parameters)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
@@ -3331,9 +3300,88 @@ class MagneticComponent:
             # Terminate gmsh
             gmsh.finalize()
 
-        def generate_thermal_mesh(self, refine = 0):
+        def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, refine = 0):
             gmsh.initialize()
             gmsh.open(self.component.hybrid_mesh_file)
+
+            # TODO Set dynamically?
+            mesh_size = 0.01
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Create case around the core
+
+            # Core line tags
+            core_line_tags = []
+            if self.component.air_gaps.number == 0:
+                core_line_tags = [3, 2, 1]
+            else:
+                core_line_tags = [4, 3, 2]
+
+            # Core point tags
+            core_point_tags = []
+            if self.component.air_gaps.number == 0:
+                core_point_tags = [4, 3, 2, 1]
+            else:
+                core_point_tags = [5, 4, 3, 2]
+
+            tl_point = core_point_tags[0] # Top left - default 5
+            tr_point = core_point_tags[1] # Top right - default 4
+            br_point = core_point_tags[2] # Bottom right - default 3
+            bl_point = core_point_tags[3] # Bottom left - default 2
+
+            top_line = core_line_tags[0] # default 4
+            right_line = core_line_tags[1] # default 3 
+            bottom_line = core_line_tags[2] # default 2
+
+            # Get positions from points
+            tl_point_pos  = gmsh.model.getValue(0, tl_point, [])
+            tr_point_pos  = gmsh.model.getValue(0, tr_point, [])
+            br_point_pos  = gmsh.model.getValue(0, br_point, [])
+            bl_point_pos  = gmsh.model.getValue(0, bl_point, [])
+
+            # Create 5 new areas: top, top right, right, bottom right, bottom
+            # top
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh_size)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh_size)
+            top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
+            top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
+            top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
+            top_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_left_line, top_case_top_line, top_case_right_line, top_line])
+            top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
+
+            # top right
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh_size)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh_size)
+            top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
+            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
+            top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
+            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
+            top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
+
+            # right
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh_size)
+            right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
+            right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
+            right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
+            right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
+
+            # bottom right
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh_size)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh_size)
+            bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
+            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
+            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
+            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line, bottom_right_case_right_line])
+            bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
+
+            # bottom
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh_size)
+            bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
+            bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
+            bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
+            bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
+
+            gmsh.model.geo.synchronize()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Define physical Surfaces and Curves
@@ -3345,7 +3393,6 @@ class MagneticComponent:
             # Conductors
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
-
                 if self.component.windings[num].conductor_type == "foil" or \
                         self.component.windings[num].conductor_type == "solid" or \
                         self.component.windings[num].conductor_type == "full" or \
@@ -3368,8 +3415,30 @@ class MagneticComponent:
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Boundary
-            # TODO Can be removed
-            self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=1111)
+            self.thermal_boundary_region_tags = {
+                "BOUNDARY_TOP"            : top_case_top_line,
+                "BOUNDARY_TOP_RIGHT"      : top_right_case_top_line,
+                "BOUNDARY_RIGHT_TOP"      : top_right_case_right_line,
+                "BOUNDARY_RIGHT"          : right_case_right_line,
+                "BOUNDARY_RIGHT_BOTTOM"   : bottom_right_case_right_line,
+                "BOUNDARY_BOTTOM_RIGHT"   : bottom_right_case_bottom_line,
+                "BOUNDARY_BOTTOM"         : bottom_case_bottom_line
+            }
+
+            for key in self.thermal_boundary_region_tags:
+                self.thermal_boundary_region_tags[key] = create_physical_group(1, [self.thermal_boundary_region_tags[key]], key)
+
+            # Add surface physical groups
+            # INFO: The physical groups are not created in the createRectWithPhysicalGroup because it causes a bug with the index counter when
+            # 1D physical groups (lines) are added after 2D physical groups (surfaces)
+            top_surface_physical_group = create_physical_group(2, [top_case_surface], "TopCase")
+            top_right_surface_physical_group = create_physical_group(2, [top_right_case_surface], "TopRightCase")
+            right_surface_physical_group = create_physical_group(2, [right_case_surface], "RightCase")
+            bottom_right_surface_physical_group = create_physical_group(2, [bottom_right_case_surface], "BottomRightCase")
+            bottom_surface_physical_group = create_physical_group(2, [bottom_case_surface], "BottomCase")
+
+            self.thermal_boundary_ps_groups = [top_surface_physical_group, top_right_surface_physical_group, 
+                right_surface_physical_group, bottom_right_surface_physical_group, bottom_surface_physical_group]
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Set names [optional]
@@ -3378,8 +3447,7 @@ class MagneticComponent:
                 for i in range(0, len(self.ps_cond[num])):
                     gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
             gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
-            gmsh.model.setPhysicalName(1, self.pc_bound, "BOUND OLD")
-            gmsh.model.setPhysicalName(2, self.ps_air_gaps, "Air gaps")
+            gmsh.model.setPhysicalName(2, self.ps_air_gaps, "AIR_GAPS")
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # - Forward Meshing -
@@ -4091,7 +4159,7 @@ class MagneticComponent:
         """
         return (x1 + x2) / 2, (y1 + y2) / 2
 
-    def femm_thermal_validation(self, thermal_conductivity_dict):
+    def femm_thermal_validation(self, thermal_conductivity_dict, boundary_temperature):
         """
         Creates a thermal model in femm and simulates it with the given thermal conductivities
 
@@ -4159,7 +4227,7 @@ class MagneticComponent:
         femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case)
 
         # Add boundary condition
-        femm.hi_addboundprop("Boundary", 0, 273, 0, 0, 0, 0)
+        femm.hi_addboundprop("Boundary", 0, boundary_temperature, 0, 0, 0, 0)
         femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
 
         # == Geometry ==

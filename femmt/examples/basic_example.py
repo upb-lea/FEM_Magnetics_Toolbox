@@ -62,8 +62,35 @@ if component == "transformer":
             "air_gaps": 0.0263 # Air
     }
 
-    geo.thermal_simulation(thermal_conductivity_dict)
-    #geo.femm_thermal_validation(thermal_conductivity_dict) # TODO Update femm model 
+    boundary_temperatures = {
+        "value_boundary_top": 283,
+        "value_boundary_top_right": 283,
+        "value_boundary_right_top": 283,
+        "value_boundary_right": 283,
+        "value_boundary_right_bottom": 283,
+        "value_boundary_bottom_right": 283,
+        "value_boundary_bottom": 283
+    }
+
+    boundary_flags = {
+        "flag_boundary_top": 1,
+        "flag_boundary_top_right": 1,
+        "flag_boundary_right_top": 1,
+        "flag_boundary_right": 1,
+        "flag_boundary_right_bottom": 1,
+        "flag_boundary_bottom_right": 1,
+        "flag_boundary_bottom": 1
+    }
+
+    case_gap_top = 0.0015
+    case_gap_right = 0.0025
+    case_gap_bot = 0.002
+
+    # TODO Split the femm boundary condition in multiple lines just like with the femmt thermal simulation
+    femm_boundary_temperature = 283
+
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot)
+    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature) # TODO Update femm model 
 
 if component == "integrated_transformer":
     geo = MagneticComponent(component_type="integrated_transformer")
