@@ -121,7 +121,11 @@ class MainWindow(QMainWindow):
             self.md_winding1_scheme_comboBox.addItem(option)
 
     def md_gmsh_pre_visualisation(self):
-        pass
+        geo = fmt.MagneticComponent(component_type="inductor")
+        geo.Mesh.generate_hybrid_mesh(do_meshing=False)
+
+
+
 
 
     def md_winding2_enable(self, status: bool) -> None:
