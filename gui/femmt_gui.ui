@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1645</width>
-    <height>1089</height>
+    <width>1219</width>
+    <height>980</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -562,6 +562,46 @@
                 </item>
                </layout>
               </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_5">
+                <item>
+                 <widget class="QPushButton" name="md_gmsh_visualisation_QPushButton">
+                  <property name="text">
+                   <string>Update Preview</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_15">
+                  <property name="title">
+                   <string>Gmsh Visualisation</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_19">
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="md_gmsh_visualisation_QLabel">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <spacer name="horizontalSpacer_9">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
              </layout>
             </item>
            </layout>
@@ -1100,8 +1140,8 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="0">
-                    <spacer name="horizontalSpacer_7">
+                   <item row="0" column="3">
+                    <spacer name="horizontalSpacer_8">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
                      </property>
@@ -1114,7 +1154,7 @@
                     </spacer>
                    </item>
                    <item row="0" column="2">
-                    <spacer name="horizontalSpacer_8">
+                    <spacer name="horizontalSpacer_7">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
                      </property>
@@ -1178,6 +1218,19 @@
                   </layout>
                  </widget>
                 </item>
+                <item>
+                 <spacer name="horizontalSpacer_10">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
                </layout>
               </item>
              </layout>
@@ -1188,42 +1241,71 @@
            <attribute name="title">
             <string>Simulation</string>
            </attribute>
-           <widget class="QPushButton" name="md_simulation_QPushButton">
-            <property name="geometry">
-             <rect>
-              <x>190</x>
-              <y>180</y>
-              <width>95</width>
-              <height>34</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Simulation</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="md_simulation_QLabel">
-            <property name="geometry">
-             <rect>
-              <x>200</x>
-              <y>230</y>
-              <width>67</width>
-              <height>22</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>TextLabel</string>
-            </property>
-           </widget>
-           <widget class="QTextBrowser" name="md_simulation_output_textBrowser">
-            <property name="geometry">
-             <rect>
-              <x>710</x>
-              <y>80</y>
-              <width>601</width>
-              <height>481</height>
-             </rect>
-            </property>
-           </widget>
+           <layout class="QGridLayout" name="gridLayout_20">
+            <item row="2" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_6">
+                <item>
+                 <widget class="QGroupBox" name="groupBox_18">
+                  <property name="title">
+                   <string>Simulation Status</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_21">
+                   <item row="0" column="0">
+                    <widget class="QPushButton" name="md_simulation_QPushButton">
+                     <property name="text">
+                      <string>Simulation</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="md_simulation_QLabel">
+                     <property name="text">
+                      <string>TextLabel</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer_2">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_17">
+                <property name="title">
+                 <string>Simulation Text Output</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_22">
+                 <item row="0" column="0">
+                  <widget class="QTextBrowser" name="md_simulation_output_textBrowser"/>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_16">
+                <property name="title">
+                 <string>Simulation Visual Output</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
           </widget>
          </widget>
         </item>
@@ -1243,7 +1325,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1645</width>
+     <width>1219</width>
      <height>30</height>
     </rect>
    </property>

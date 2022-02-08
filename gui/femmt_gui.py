@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         self.md_winding1_type_comboBox.currentTextChanged.connect(self.md_winding1_change_wire_type)
         self.md_air_gap_count_comboBox.currentTextChanged.connect(self.md_change_air_gap_count)
         self.md_air_gap_placement_method_comboBox.currentTextChanged.connect(self.md_change_air_gap_placement)
+        self.md_gmsh_visualisation_QPushButton.clicked.connect(self.md_gmsh_pre_visualisation)
 
         "Signals in Excitation Tab"
         self.md_fk1_checkBox.stateChanged.connect(self.md_change_frequencies_1)
@@ -119,7 +120,8 @@ class MainWindow(QMainWindow):
         for option in md_winding_scheme:
             self.md_winding1_scheme_comboBox.addItem(option)
 
-
+    def md_gmsh_pre_visualisation(self):
+        pass
 
 
     def md_winding2_enable(self, status: bool) -> None:
@@ -611,8 +613,9 @@ class MainWindow(QMainWindow):
             # self.md_simulation_output_textBrowser.setText(simulation_results)
 
             #geo.core
-            geo.onelab_client
-            gmsh.write('simulation.jpg')
+            geo.visualize_geometry()
+            #geo.onelab_client
+            #gmsh.write('simulation.jpg')
 
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
