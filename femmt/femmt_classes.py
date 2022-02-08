@@ -553,7 +553,6 @@ class MagneticComponent:
             - first chose the method, second, transfer parameters:
             - Method overview:
                 - "center": ONE air gap exactly in core's middle
-                - "random": random count of air gaps in the inner/outer leg
                 - "percent": Easy way to split air gaps over the inner/outer leg
                 - "manually": Place air gaps manually
 
@@ -569,7 +568,7 @@ class MagneticComponent:
             :type air_gap_h: float
             :param air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
             :type air_gap_position: float
-            :param method: "random", "center", "percent", "manually"
+            :param method: "center", "percent", "manually"
             :type method: str
 
             :return: None
@@ -580,7 +579,6 @@ class MagneticComponent:
             >>> geo = fmt.MagneticComponent(component_type='inductor')
             >>> geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002]) # 'center': single air gap in the middle
             >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # 'percent': Place air gaps manually using percentages
-            >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # random
             >>> geo.air_gaps.update(method="manually", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[0.000, 0.003]) # manually
 
             """
@@ -640,29 +638,6 @@ class MagneticComponent:
 
             #  TODO: Proof whether air gaps are valid
 
-            # Random
-            if method == "random" and self.component.dimensionality == "2D":
-                position_tag = [0] * self.number
-
-                i = 0
-                while i in range(0, self.number):
-                    height = np.random.rand(1) * 0.001 + 0.001
-                    position = np.random.rand(1) * (self.component.core.window_h - height) - (
-                            self.component.core.window_h / 2 - height / 2)
-                    self.component.mesh.c_air_gap[i] = height * self.component.mesh.global_accuracy
-                    # Overlapping Control
-                    for j in range(0, self.midpoints.shape[0]):
-                        if self.midpoints[j, 1] + self.midpoints[j, 2] / 2 > position > self.midpoints[j, 1] - \
-                                self.midpoints[j, 2] / 2:
-                            if position_tag[i] == self.midpoints[j, 0]:
-                                print(f"Overlapping air Gaps have been corrected")
-                    else:
-                        self.midpoints[i, :] = np.array([position_tag[i],
-                                                         position,
-                                                         height,
-                                                         self.component.mesh.c_air_gap[i]])
-                        i += 1
-
     class Isolation:
         """
 
@@ -696,7 +671,8 @@ class MagneticComponent:
     def update_conductors(self, n_turns: List = None, conductor_type: List = None, winding: List = None,
                           scheme: List = None, conductor_radii: List = None, litz_para_type: List = None,
                           ff: List = None, strands_numbers: List = None, strand_radii: List = None,
-                          thickness: List = None, wrap_para: List = None, cond_cond_isolation: List = None, core_cond_isolation: List = None) -> None:
+                          thickness: List = None, wrap_para: List = None, cond_cond_isolation: List = None,
+                          core_cond_isolation: List = None) -> None:
         """
         This Method allows the user to easily update/initialize the Windings in terms of their conductors and
         arrangement.
@@ -707,13 +683,21 @@ class MagneticComponent:
         :type n_turns: List
 
         # Winding Scheme
-        :param winding:
-                - "interleaved": interleaves primary and secondary windings
-                - "primary": only valid for inductor, just a single winding
+        :param winding: Sets the mode how to insert windings in a virtual winding window
+                - "interleaved": interleaves primary and secondary windings in a single virtual winding window
+                - "primary": the primary winding in a single virtual winding window
+                - "secondary": the primary winding in a single virtual winding window
         :type winding: List
         :param scheme:
-                - "horizontal":
-                - "square":
+            if winding != "interleaved" (e.g. "primary" or "secondary")
+                - "hexa": hexagonal turn scheme
+                - "square": square turn scheme
+            if winding == "interleaved" (works only for transformer, not for inductor!)
+                - "horizontal": horizontal winding interleaving
+                - "vertical": vertical winding interleaving
+                - "bifilar": bifilar winding
+                - "blockwise": two windings in ONE virtual winding window
+
         :type scheme: List
 
         # Conductor Type Parameters
