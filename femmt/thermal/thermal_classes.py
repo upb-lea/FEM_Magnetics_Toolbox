@@ -36,7 +36,7 @@ class GroupPro:
             fd.write("Group {\n")
             for key, value in self.regions.items():
                 fd.write(f"\t{key} = Region[{value}];\n")
-            fd.write("\tCold = Region[{air, case}];\n")
+            fd.write("\tCold = Region[{air, case, air_gaps}];\n")
             fd.write("\tWarm = Region[{core, windings_total}];\n")
             fd.write("\tTotal = Region[{Warm, Cold}];\n")
             fd.write("}")

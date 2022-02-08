@@ -11,6 +11,7 @@ import sys
 import os
 import pandas as pd
 import time
+import gmsh
 import warnings
 from typing import Union, List, Tuple
 
@@ -608,6 +609,13 @@ def calculate_reluctances(N, L):
         L_invert = np.linalg.inv(L)
 
     return np.matmul(np.matmul(N, L_invert), np.transpose(N))
+
+def create_physical_group(dim, entities, name):
+    tag = gmsh.model.addPhysicalGroup(dim, entities)
+    gmsh.model.setPhysicalName(dim, tag, name)
+
+    return tag
+
 
 if __name__ == '__main__':
     pass
