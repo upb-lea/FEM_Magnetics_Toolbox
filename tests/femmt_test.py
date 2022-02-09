@@ -25,3 +25,19 @@ def test_fft():
         femmt.fft(example_waveform, mode='deg')
         femmt.fft(example_waveform, mode='rad')
         femmt.fft(example_waveform, mode='unallowed_mode')
+
+def test_find_common_frequencies():
+    frequency_1 = [50, 100, 150, 200]
+    frequency_2 = [50, 100, 150, 170, 200]
+    amplitude_1 = [1, 2, 3, 4]
+    amplitude_2 = [5, 6, 7, 8, 9]
+    phase_1 = [10, 20, 30, 40]
+    phase_2 = [50, 60, 70, 80, 90]
+
+    out = femmt.find_common_frequencies(frequency_1, amplitude_1, phase_1, frequency_2,
+                                                                   amplitude_2, phase_2)
+    common_f = [50, 100, 150, 200]
+    common_a = [[1, 5], [2, 6], [3, 7], [4, 9]]
+    common_phase = [[10, 50], [20, 60], [30, 70], [40, 90]]
+    out_test = [common_f, common_a, common_phase]
+    assert out == out_test

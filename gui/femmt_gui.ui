@@ -1,0 +1,1345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1219</width>
+    <height>980</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_12">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="md_QWidget_2">
+       <attribute name="title">
+        <string>Manual Design</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_13">
+        <item row="0" column="0">
+         <widget class="QTabWidget" name="md_QTabWidget">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="md_QWidget">
+           <attribute name="title">
+            <string>Definition</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_14">
+            <item row="0" column="0">
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_2">
+                <item>
+                 <widget class="QGroupBox" name="groupBox">
+                  <property name="title">
+                   <string>Simulation Definition</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout">
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="md_simulation_type_comboBox"/>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label">
+                     <property name="text">
+                      <string>Simulation Type</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_2">
+                  <property name="title">
+                   <string>Core Definition</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_2">
+                   <item row="6" column="0">
+                    <widget class="QLabel" name="label_4">
+                     <property name="text">
+                      <string>Core Width</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="2">
+                    <widget class="QLabel" name="label_6">
+                     <property name="text">
+                      <string>Window Height</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_2">
+                     <property name="text">
+                      <string>Material</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="2">
+                    <widget class="QLabel" name="label_7">
+                     <property name="text">
+                      <string>Window Width</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="3">
+                    <widget class="QLineEdit" name="md_window_height_lineEdit">
+                     <property name="text">
+                      <string>0.03</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="1">
+                    <widget class="QLineEdit" name="md_core_width_lineEdit">
+                     <property name="text">
+                      <string>0.05</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="3">
+                    <widget class="QLineEdit" name="md_window_width_lineEdit">
+                     <property name="text">
+                      <string>0.011</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="0">
+                    <widget class="QLabel" name="label_3">
+                     <property name="text">
+                      <string>Core Height</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="1">
+                    <widget class="QLineEdit" name="md_core_height_lineEdit">
+                     <property name="text">
+                      <string>0.04</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="md_core_material_comboBox"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_3">
+                  <property name="title">
+                   <string>Winding 1: Conductor Definition</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_3">
+                   <item row="1" column="2">
+                    <widget class="QLabel" name="label_9">
+                     <property name="text">
+                      <string>Wire Radius</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="3">
+                    <widget class="QLineEdit" name="md_winding1_fill_factor_lineEdit">
+                     <property name="text">
+                      <string>0.6</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="2">
+                    <widget class="QLabel" name="label_10">
+                     <property name="text">
+                      <string>Fill Factor</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_11">
+                     <property name="text">
+                      <string>Winding Material</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="md_winding1_material_comboBox"/>
+                   </item>
+                   <item row="1" column="3">
+                    <widget class="QLineEdit" name="md_winding1_radius_lineEdit">
+                     <property name="text">
+                      <string>0.0015</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="2">
+                    <widget class="QLabel" name="label_61">
+                     <property name="text">
+                      <string>Strand Radius</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="3">
+                    <widget class="QLineEdit" name="md_winding1_strand_radius_comboBox">
+                     <property name="text">
+                      <string>35.5e-6</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_12">
+                     <property name="text">
+                      <string>Wire Type</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="md_winding1_type_comboBox"/>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QComboBox" name="md_winding1_implicit_litz_comboBox"/>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_58">
+                     <property name="text">
+                      <string>Implicit</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="text">
+                      <string>Number Strands</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QLineEdit" name="md_winding1_strands_lineEdit">
+                     <property name="text">
+                      <string>600</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_7">
+                  <property name="title">
+                   <string>Winding 2: Conductor Definition</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_4">
+                   <item row="3" column="2">
+                    <widget class="QLabel" name="label_60">
+                     <property name="text">
+                      <string>Strand Radius</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="2">
+                    <widget class="QLabel" name="label_16">
+                     <property name="text">
+                      <string>Wire Radius</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="3">
+                    <widget class="QLineEdit" name="md_winding2_strand_radius_comboBox"/>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_13">
+                     <property name="text">
+                      <string>Winding Material</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="3">
+                    <widget class="QLineEdit" name="md_winding2_radius_lineEdit"/>
+                   </item>
+                   <item row="2" column="3">
+                    <widget class="QLineEdit" name="md_winding2_fill_factor_lineEdit"/>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="md_winding2_material_comboBox"/>
+                   </item>
+                   <item row="2" column="2">
+                    <widget class="QLabel" name="label_17">
+                     <property name="text">
+                      <string>Fill Factor</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_18">
+                     <property name="text">
+                      <string>Wire Type</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="md_winding2_type_comboBox"/>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QLineEdit" name="md_winding2_strands_lineEdit"/>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_59">
+                     <property name="text">
+                      <string>Implicit</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_15">
+                     <property name="text">
+                      <string>Number Strands</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QComboBox" name="md_winding2_implicit_litz_comboBox"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                 <widget class="QGroupBox" name="groupBox_4">
+                  <property name="title">
+                   <string>Winding Scheme</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_10">
+                   <item row="4" column="0">
+                    <widget class="QLabel" name="label_69">
+                     <property name="text">
+                      <string>Winding Scheme Winding 2</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="md_winding1_scheme_comboBox"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_68">
+                     <property name="text">
+                      <string>Winding Scheme Winding 1</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="1">
+                    <widget class="QComboBox" name="md_winding2_scheme_comboBox"/>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_winding1_turns_lineEdit">
+                     <property name="text">
+                      <string>25</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_8">
+                     <property name="text">
+                      <string>Number Turns Winding 1</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_14">
+                     <property name="text">
+                      <string>Number Turns Winding 2</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QLineEdit" name="md_winding2_turns_lineEdit"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_11">
+                  <property name="title">
+                   <string>Air Gap Definition</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_9">
+                   <item row="4" column="3">
+                    <widget class="QLineEdit" name="md_air_gap_3_position_lineEdit"/>
+                   </item>
+                   <item row="4" column="0">
+                    <widget class="QLabel" name="label_65">
+                     <property name="text">
+                      <string>3. Length</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="3">
+                    <widget class="QLineEdit" name="md_air_gap_1_position_lineEdit">
+                     <property name="text">
+                      <string>10</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="2">
+                    <widget class="QLabel" name="md_air_gap_1_position_label">
+                     <property name="text">
+                      <string>Position</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_63">
+                     <property name="text">
+                      <string>No. of Air Gaps</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_67">
+                     <property name="text">
+                      <string>1. Length</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QLineEdit" name="md_air_gap_2_length_lineEdit"/>
+                   </item>
+                   <item row="5" column="3">
+                    <widget class="QLineEdit" name="md_air_gap_4_position_lineEdit"/>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="md_air_gap_count_comboBox"/>
+                   </item>
+                   <item row="5" column="0">
+                    <widget class="QLabel" name="label_64">
+                     <property name="text">
+                      <string>4. Length</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="2">
+                    <widget class="QLabel" name="md_air_gap_2_position_label">
+                     <property name="text">
+                      <string>Position</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QLineEdit" name="md_air_gap_1_length_lineEdit">
+                     <property name="text">
+                      <string>0.001</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="1">
+                    <widget class="QLineEdit" name="md_air_gap_3_length_lineEdit"/>
+                   </item>
+                   <item row="5" column="2">
+                    <widget class="QLabel" name="md_air_gap_4_position_label">
+                     <property name="text">
+                      <string>Position</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="3">
+                    <widget class="QLineEdit" name="md_air_gap_2_position_lineEdit"/>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_66">
+                     <property name="text">
+                      <string>2. Lenght</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="2">
+                    <widget class="QLabel" name="md_air_gap_3_position_label">
+                     <property name="text">
+                      <string>Position</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="1">
+                    <widget class="QLineEdit" name="md_air_gap_4_length_lineEdit"/>
+                   </item>
+                   <item row="6" column="1">
+                    <widget class="QLineEdit" name="md_air_gap_5_length_lineEdit"/>
+                   </item>
+                   <item row="6" column="3">
+                    <widget class="QLineEdit" name="md_air_gap_5_position_lineEdit"/>
+                   </item>
+                   <item row="6" column="0">
+                    <widget class="QLabel" name="label_72">
+                     <property name="text">
+                      <string>5. Length</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="2">
+                    <widget class="QLabel" name="md_air_gap_5_position_label">
+                     <property name="text">
+                      <string>Position</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QComboBox" name="md_air_gap_placement_method_comboBox"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_62">
+                     <property name="text">
+                      <string>Method</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_6">
+                  <property name="title">
+                   <string>Isolation</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_8">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_53">
+                     <property name="text">
+                      <string>P2P</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QLineEdit" name="md_isolation_p2core_lineEdit">
+                     <property name="text">
+                      <string>0.0001</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_isolation_p2p_lineEdit">
+                     <property name="text">
+                      <string>0.0005</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="2">
+                    <widget class="QLabel" name="label_54">
+                     <property name="text">
+                      <string>P2Core</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QLineEdit" name="md_isolation_s2s_lineEdit"/>
+                   </item>
+                   <item row="1" column="3">
+                    <widget class="QLineEdit" name="md_isolation_s2core_lineEdit"/>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QLineEdit" name="md_isolation_p2s_lineEdit"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_55">
+                     <property name="text">
+                      <string>S2S</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="2">
+                    <widget class="QLabel" name="label_56">
+                     <property name="text">
+                      <string>S2Core</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_57">
+                     <property name="text">
+                      <string>P2S</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_5">
+                <item>
+                 <widget class="QPushButton" name="md_gmsh_visualisation_QPushButton">
+                  <property name="text">
+                   <string>Update Preview</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_15">
+                  <property name="title">
+                   <string>Gmsh Visualisation</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_19">
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="md_gmsh_visualisation_QLabel">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <spacer name="horizontalSpacer_9">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="excitation_QWidget">
+           <attribute name="title">
+            <string>Excitation</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_15">
+            <item row="0" column="0">
+             <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_3">
+                <item>
+                 <widget class="QGroupBox" name="groupBox_8">
+                  <property name="title">
+                   <string>Winding 1: current shape</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_5">
+                   <item row="0" column="10">
+                    <widget class="QLabel" name="label_26">
+                     <property name="text">
+                      <string>Ik6 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QLabel" name="label_23">
+                     <property name="text">
+                      <string>Ik3 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QLineEdit" name="md_winding1_ik2_lineEdit"/>
+                   </item>
+                   <item row="0" column="2">
+                    <widget class="QLabel" name="label_22">
+                     <property name="text">
+                      <string>Ik2 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="11">
+                    <widget class="QLineEdit" name="md_winding1_ik6_lineEdit"/>
+                   </item>
+                   <item row="0" column="7">
+                    <widget class="QLineEdit" name="md_winding1_ik4_lineEdit"/>
+                   </item>
+                   <item row="0" column="6">
+                    <widget class="QLabel" name="label_24">
+                     <property name="text">
+                      <string>Ik4 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="9">
+                    <widget class="QLineEdit" name="md_winding1_ik5_lineEdit"/>
+                   </item>
+                   <item row="0" column="13">
+                    <widget class="QLineEdit" name="md_winding1_ik7_lineEdit"/>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_winding1_ik1_lineEdit">
+                     <property name="text">
+                      <string>10</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="14">
+                    <widget class="QLabel" name="label_32">
+                     <property name="text">
+                      <string>Ik8 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="2">
+                    <widget class="QLabel" name="label_21">
+                     <property name="text">
+                      <string>pk2 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="12">
+                    <widget class="QLabel" name="label_31">
+                     <property name="text">
+                      <string>Ik7 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="8">
+                    <widget class="QLabel" name="label_25">
+                     <property name="text">
+                      <string>Ik5 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="5">
+                    <widget class="QLineEdit" name="md_winding1_ik3_lineEdit"/>
+                   </item>
+                   <item row="1" column="10">
+                    <widget class="QLabel" name="label_30">
+                     <property name="text">
+                      <string>pk6 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="6">
+                    <widget class="QLabel" name="label_28">
+                     <property name="text">
+                      <string>pk4 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="8">
+                    <widget class="QLabel" name="label_29">
+                     <property name="text">
+                      <string>pk5 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_20">
+                     <property name="text">
+                      <string>pk1 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="4">
+                    <widget class="QLabel" name="label_27">
+                     <property name="text">
+                      <string>pk3 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_19">
+                     <property name="text">
+                      <string>Ik1 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="15">
+                    <widget class="QLineEdit" name="md_winding1_ik8_lineEdit"/>
+                   </item>
+                   <item row="1" column="12">
+                    <widget class="QLabel" name="label_33">
+                     <property name="text">
+                      <string>pk7 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="14">
+                    <widget class="QLabel" name="label_34">
+                     <property name="text">
+                      <string>pk8 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QLineEdit" name="md_winding1_pk1_lineEdit">
+                     <property name="text">
+                      <string>0</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="3">
+                    <widget class="QLineEdit" name="md_winding1_pk2_lineEdit"/>
+                   </item>
+                   <item row="1" column="5">
+                    <widget class="QLineEdit" name="md_winding1_pk3_lineEdit"/>
+                   </item>
+                   <item row="1" column="7">
+                    <widget class="QLineEdit" name="md_winding1_pk4_lineEdit"/>
+                   </item>
+                   <item row="1" column="9">
+                    <widget class="QLineEdit" name="md_winding1_pk5_lineEdit"/>
+                   </item>
+                   <item row="1" column="11">
+                    <widget class="QLineEdit" name="md_winding1_pk6_lineEdit"/>
+                   </item>
+                   <item row="1" column="13">
+                    <widget class="QLineEdit" name="md_winding1_pk7_lineEdit"/>
+                   </item>
+                   <item row="1" column="15">
+                    <widget class="QLineEdit" name="md_winding1_pk8_lineEdit"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_10">
+                  <property name="title">
+                   <string>Winding 2: current shape</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_6">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_36">
+                     <property name="text">
+                      <string>Ik1 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="13">
+                    <widget class="QLineEdit" name="md_winding2_pk7_lineEdit"/>
+                   </item>
+                   <item row="0" column="12">
+                    <widget class="QLabel" name="label_39">
+                     <property name="text">
+                      <string>Ik7 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="14">
+                    <widget class="QLabel" name="label_35">
+                     <property name="text">
+                      <string>Ik8 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="6">
+                    <widget class="QLabel" name="label_44">
+                     <property name="text">
+                      <string>pk4 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="8">
+                    <widget class="QLabel" name="label_45">
+                     <property name="text">
+                      <string>pk5 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="9">
+                    <widget class="QLineEdit" name="md_winding2_pk5_lineEdit"/>
+                   </item>
+                   <item row="1" column="4">
+                    <widget class="QLabel" name="label_50">
+                     <property name="text">
+                      <string>pk3 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="13">
+                    <widget class="QLineEdit" name="md_winding2_ik7_lineEdit"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_42">
+                     <property name="text">
+                      <string>pk1 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="11">
+                    <widget class="QLineEdit" name="md_winding2_ik6_lineEdit"/>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QLabel" name="label_49">
+                     <property name="text">
+                      <string>Ik3 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="7">
+                    <widget class="QLineEdit" name="md_winding2_ik4_lineEdit"/>
+                   </item>
+                   <item row="1" column="10">
+                    <widget class="QLabel" name="label_46">
+                     <property name="text">
+                      <string>pk6 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="8">
+                    <widget class="QLabel" name="label_37">
+                     <property name="text">
+                      <string>Ik5 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="6">
+                    <widget class="QLabel" name="label_41">
+                     <property name="text">
+                      <string>Ik4 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="14">
+                    <widget class="QLabel" name="label_48">
+                     <property name="text">
+                      <string>pk8 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="7">
+                    <widget class="QLineEdit" name="md_winding2_pk4_lineEdit"/>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_winding2_ik1_lineEdit"/>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QLineEdit" name="md_winding2_ik2_lineEdit"/>
+                   </item>
+                   <item row="0" column="2">
+                    <widget class="QLabel" name="label_40">
+                     <property name="text">
+                      <string>Ik2 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="3">
+                    <widget class="QLineEdit" name="md_winding2_pk2_lineEdit"/>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QLineEdit" name="md_winding2_pk1_lineEdit"/>
+                   </item>
+                   <item row="0" column="9">
+                    <widget class="QLineEdit" name="md_winding2_ik5_lineEdit"/>
+                   </item>
+                   <item row="1" column="12">
+                    <widget class="QLabel" name="label_47">
+                     <property name="text">
+                      <string>pk7 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="11">
+                    <widget class="QLineEdit" name="md_winding2_pk6_lineEdit"/>
+                   </item>
+                   <item row="0" column="5">
+                    <widget class="QLineEdit" name="md_winding2_ik3_lineEdit"/>
+                   </item>
+                   <item row="1" column="5">
+                    <widget class="QLineEdit" name="md_winding2_pk3_lineEdit"/>
+                   </item>
+                   <item row="0" column="10">
+                    <widget class="QLabel" name="label_38">
+                     <property name="text">
+                      <string>Ik6 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="2">
+                    <widget class="QLabel" name="label_43">
+                     <property name="text">
+                      <string>pk2 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="15">
+                    <widget class="QLineEdit" name="md_winding2_ik8_lineEdit"/>
+                   </item>
+                   <item row="1" column="15">
+                    <widget class="QLineEdit" name="md_winding2_pk8_lineEdit"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_9">
+                  <property name="title">
+                   <string>Frequencies</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_7">
+                   <item row="0" column="3">
+                    <spacer name="horizontalSpacer_5">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item row="0" column="5">
+                    <spacer name="horizontalSpacer_3">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item row="0" column="4">
+                    <spacer name="horizontalSpacer_4">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_51">
+                     <property name="text">
+                      <string>Base Frequency [Hz]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="2">
+                    <spacer name="horizontalSpacer_6">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item row="0" column="11">
+                    <spacer name="horizontalSpacer">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_base_frequency_lineEdit">
+                     <property name="text">
+                      <string>150000</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_5">
+                  <property name="title">
+                   <string>Harmonics</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_11">
+                   <item row="0" column="5">
+                    <widget class="QCheckBox" name="md_fk6_checkBox">
+                     <property name="text">
+                      <string>fk6</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="6">
+                    <widget class="QCheckBox" name="md_fk7_checkBox">
+                     <property name="text">
+                      <string>fk7</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QCheckBox" name="md_fk2_checkBox">
+                     <property name="text">
+                      <string>fk2</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QCheckBox" name="md_fk5_checkBox">
+                     <property name="text">
+                      <string>fk5</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="8">
+                    <spacer name="horizontalSpacer_2">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item row="0" column="2">
+                    <widget class="QCheckBox" name="md_fk3_checkBox">
+                     <property name="text">
+                      <string>fk3</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QCheckBox" name="md_fk1_checkBox">
+                     <property name="text">
+                      <string>fk1</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QCheckBox" name="md_fk4_checkBox">
+                     <property name="text">
+                      <string>fk4</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="7">
+                    <widget class="QCheckBox" name="md_fk8_checkBox">
+                     <property name="text">
+                      <string>fk8</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_14">
+                  <property name="title">
+                   <string>Plot Options</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_18">
+                   <item row="0" column="1">
+                    <widget class="QPushButton" name="md_excitation_update_graph_Button">
+                     <property name="text">
+                      <string>Update Graphs</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <spacer name="horizontalSpacer_8">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item row="0" column="2">
+                    <spacer name="horizontalSpacer_7">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_4">
+                <item>
+                 <widget class="QGroupBox" name="groupBox_12">
+                  <property name="title">
+                   <string>Plot for winding 1:</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_16">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="md_graphic_winding_1">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_13">
+                  <property name="title">
+                   <string>Plot for winding 2:</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_17">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="md_graphic_winding_2">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="horizontalSpacer_10">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab">
+           <attribute name="title">
+            <string>Simulation</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_20">
+            <item row="2" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_6">
+                <item>
+                 <widget class="QGroupBox" name="groupBox_18">
+                  <property name="title">
+                   <string>Simulation Status</string>
+                  </property>
+                  <layout class="QGridLayout" name="gridLayout_21">
+                   <item row="0" column="0">
+                    <widget class="QPushButton" name="md_simulation_QPushButton">
+                     <property name="text">
+                      <string>Simulation</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="md_simulation_QLabel">
+                     <property name="text">
+                      <string>TextLabel</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer_2">
+                  <property name="orientation">
+                   <enum>Qt::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_17">
+                <property name="title">
+                 <string>Simulation Text Output</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_22">
+                 <item row="0" column="0">
+                  <widget class="QTextBrowser" name="md_simulation_output_textBrowser"/>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_16">
+                <property name="title">
+                 <string>Simulation Visual Output</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="automated_design_QWidget">
+       <attribute name="title">
+        <string>Automated Design</string>
+       </attribute>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1219</width>
+     <height>30</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
