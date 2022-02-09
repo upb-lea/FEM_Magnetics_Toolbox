@@ -350,8 +350,8 @@ class MagneticComponent:
                                                     self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor])
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor
                 elif self.windings[i].conductor_type == "litz":
-                    self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor
-                    self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor
+                    self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
+                    self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                 else:
                     self.mesh.c_conductor[i] = 0.0001  # TODO: dynamic inplementation
 
@@ -671,7 +671,7 @@ class MagneticComponent:
             self.core_cond = core_cond or []
 
     # Update Methods
-    def update_conductors(self, n_turns=None, conductor_type=None, winding=None, scheme=None, conductor_radii=None,
+    def update_conductors(self, n_turns=None, parallel=None, conductor_type=None, winding=None, scheme=None, conductor_radii=None,
                           litz_para_type=None, ff=None, strands_numbers=None, strand_radii=None, thickness=None,
                           wrap_para=None, cond_cond_isolation=None, core_cond_isolation=None) -> None:
         """
@@ -680,6 +680,8 @@ class MagneticComponent:
 
         Note: set all parameters in a list!
 
+        :param parallel: Number of parallel turns
+        :type parallel: list[int]
         :param wrap_para:
         :param ff: fill-factor, values between [0....1]
         :param winding:
@@ -707,6 +709,7 @@ class MagneticComponent:
 
         """
         n_turns = n_turns or []
+        parallel = parallel or []
         conductor_type = conductor_type or []
         winding = winding or []
         scheme = scheme or []
@@ -760,8 +763,7 @@ class MagneticComponent:
             self.virtual_winding_windows[vww].winding = winding[vww]
             self.virtual_winding_windows[vww].scheme = scheme[vww]
             self.virtual_winding_windows[vww].turns = list(map(list, zip(*n_turns)))[vww]
-            # Need number of turns per VWW but given is a form
-            # of [list_of_primary_turns, list_of_secondary_turns]
+            # Need number of turns per VWW but given is a form of [list_of_primary_turns, list_of_secondary_turns]
 
         # - - - - - - - - - - - - - - - - - Definition of the Isolation Parameters - - - - - - - - - - - - - - - - - - -
         # isolation parameters as lists:
@@ -774,8 +776,17 @@ class MagneticComponent:
         for i in range(0, self.n_windings):
             # general conductor parameters
             self.windings[i].turns = n_turns[i]  # turns in a list which corresponds to the Virtual Winding Windows
-            self.windings[i].conductor_type = conductor_type[i]
+            if parallel is not None and len(parallel)==self.n_windings:
+                if parallel[i] is None:
+                    self.windings[i].parallel = 1
+                elif type(parallel[i]) is int:
+                    self.windings[i].parallel = parallel[i]
+                else:
+                    raise TypeError("parallel must be an int")
+            else:
+                self.windings[i].parallel = 1
 
+            self.windings[i].conductor_type = conductor_type[i]
             if self.windings[i].conductor_type == ('stacked' or 'full' or 'foil'):
                 # foil/stacked parameters
                 self.windings[i].thickness = thickness[i]
@@ -3093,7 +3104,7 @@ class MagneticComponent:
 
                 gmsh.write(os.path.join(self.component.mesh_folder_path, "color.msh"))
 
-                gmsh.model.mesh.generate(2)
+                # gmsh.model.mesh.generate(2)
                 gmsh.fltk.run()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3410,12 +3421,19 @@ class MagneticComponent:
             if self.flag_excitation_type == 'current':
                 text_file.write(f"Val_EE_{num + 1} = {self.current[num]};\n")
                 text_file.write(f"Phase_{num + 1} = Pi*{self.phase_tmp[num]};\n")
+                text_file.write(f"Parallel_{num + 1} = {self.windings[num].parallel};\n")
+
             if self.flag_excitation_type == 'current_density':
                 text_file.write(f"Val_EE_{num + 1} = {self.current_density[num]};\n")
+                raise NotImplementedError
+
             if self.flag_excitation_type == 'voltage':
                 text_file.write(f"Val_EE_{num + 1} = {self.voltage[num]};\n")
+                raise NotImplementedError
+
             print(f"Cell surface area: {self.windings[num].a_cell} \n"
                   f"Reduced frequency: {self.red_freq[num]}")
+
             if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == "litz":
                 # TODO: Allow higher reduced frequencies
                 print(f"Litz Coefficients only implemented for X<=1.25")
@@ -3488,9 +3506,10 @@ class MagneticComponent:
         winding_result_path = ["Primary", "Secondary", "Tertiary"]
 
         log = {}
-        log["Losses"] = {}
 
         # Write Core Losses
+        log["Losses"] = {}
+
         log["Losses"]["Core_Eddy_Current"] = self.load_result(res_name="CoreEddyCurrentLosses")[0]
 
         # Write Winding Losses
@@ -3514,9 +3533,24 @@ class MagneticComponent:
 
         # loss_log["Winding_Total"] = self.load_result(res_name="WindingTotal")
 
+        # Write Core Losses
+        log["Fluxes"] = {}
+        for winding in range(0, self.n_windings):
+            log["Fluxes"][f"Flux_Linkage_{winding+1}"] = self.load_result(res_name=f"Flux_Linkage_{winding+1}")[0], self.load_result(res_name=f"Flux_Linkage_{winding+1}", part="imaginary")[0]
+            log["Fluxes"][f"L_{winding+1}{winding+1}"] = self.load_result(res_name=f"L_{winding+1}{winding+1}")[0], self.load_result(res_name=f"L_{winding+1}{winding+1}", part="imaginary")[0]
+        log["Fluxes"][f"Mag_Field_Energy"] = self.load_result(res_name=f"ME")[0], self.load_result(res_name=f"ME", part="imaginary")[0]
+
+
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
 
+    def read_log(self):
+        log = {}
+        with open(self.e_m_results_log_path, "r") as fd:
+            content = json.loads(fd.read())
+            log = content
+
+        return log
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
 
@@ -4215,7 +4249,7 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          skin_mesh_factor: float = 1, NL_core=0) -> None:
+                          skin_mesh_factor: float = 0.5, NL_core=0) -> None:
         """
 
         Start a _single_ ONELAB simulation.
