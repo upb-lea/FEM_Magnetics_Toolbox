@@ -29,6 +29,7 @@ femmt.egg-info/
 
 # FEMMT: generated files
 femmt/electro_magnetic/Parameter.pro
+femmt/electro_magnetic/postquantities.pro
 femmt/electro_magnetic/Strands_Coefficients/PreParameter.pro
 
 # Thermal: generated files

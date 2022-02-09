@@ -3669,14 +3669,19 @@ class MagneticComponent:
         print(f"\n---\n"
               f"File Communication\n")
 
+        # Write initialization parameters for simulation in .pro file
+        self.write_electro_magnetic_parameter_pro()
+
+        # Write postprocessing parameters in .pro file
+        self.write_electro_magnetic_post_pro()
+
+    def write_electro_magnetic_parameter_pro(self):
+        """
+
+        :return:
+        """
         text_file = open(os.path.join(self.electro_magnetic_folder_path, "Parameter.pro"), "w")
 
-        text_file.write(f"DirRes = \"../{os.path.basename(self.results_folder_path)}/\";\n")
-        text_file.write(f"DirResFields = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_fields_folder_path)}/\";\n")
-        text_file.write(f"DirResVals = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/\";\n")
-        text_file.write(f"DirResValsPrimary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Primary/\";\n")
-        text_file.write(f"DirResValsSecondary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Secondary/\";\n")
-        text_file.write(f"DirResCirc = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_circuit_folder_path)}/\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":
@@ -3798,6 +3803,22 @@ class MagneticComponent:
         # if self.frequency != 0:
         #    text_file.write(f"Flag_NL = 0;\n")
         #    text_file.write(f"mur = {self.core.re_mu_rel};\n")
+
+        text_file.close()
+
+    def write_electro_magnetic_post_pro(self):
+        """
+
+        :return:
+        """
+        text_file = open(os.path.join(self.electro_magnetic_folder_path, "postquantities.pro"), "w")
+
+        text_file.write(f"DirRes = \"../{os.path.basename(self.results_folder_path)}/\";\n")
+        text_file.write(f"DirResFields = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_fields_folder_path)}/\";\n")
+        text_file.write(f"DirResVals = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/\";\n")
+        text_file.write(f"DirResValsPrimary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Primary/\";\n")
+        text_file.write(f"DirResValsSecondary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Secondary/\";\n")
+        text_file.write(f"DirResCirc = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_circuit_folder_path)}/\";\n")
 
         text_file.close()
 
