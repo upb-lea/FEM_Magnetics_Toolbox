@@ -25,7 +25,7 @@ CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
 e_0                     = 8.8541878128e-12;
 
 
-Flag_Conducting_Core    = 0;
+Flag_Conducting_Core    = 1;
 sigma_core              = e_r_imag * 2*Pi*Freq * e_0;
 
 // ----------------------
