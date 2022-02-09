@@ -23,7 +23,7 @@ CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
 e_0                     = 8.8541878128e-12;
 
 
-Flag_Conducting_Core    = 1;
+Flag_Conducting_Core    = 0;
 sigma_core              = e_r_imag * 2*Pi*Freq * e_0;
 
 // ----------------------
@@ -313,10 +313,10 @@ Constraint {
       //If(Val_EE_1!=0)
       If(1)
           If(Flag_Circuit==0 && Flag_HomogenisedModel1==0)
-            { Region Winding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
+            { Region Winding1 ; Value Val_EE_1/Parallel_1; TimeFunction Fct_Src1[] ; }
           EndIf
           If(Flag_Circuit==0 && Flag_HomogenisedModel1==1)
-            { Region StrandedWinding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
+            { Region StrandedWinding1 ; Value Val_EE_1/Parallel_1; TimeFunction Fct_Src1[] ; }
           EndIf
       EndIf
       // Transformer
@@ -324,10 +324,10 @@ Constraint {
         //If(Val_EE_2!=0)
         If(1)
             If(Flag_Circuit==0 && Flag_HomogenisedModel2==0)
-              { Region Winding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
+              { Region Winding2 ; Value Val_EE_2/Parallel_2; TimeFunction Fct_Src2[] ; }
             EndIf
             If(Flag_Circuit==0 && Flag_HomogenisedModel2==1)
-              { Region StrandedWinding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
+              { Region StrandedWinding2 ; Value Val_EE_2/Parallel_2; TimeFunction Fct_Src2[] ; }
             EndIf
         EndIf
       EndIf
@@ -426,7 +426,7 @@ Resolution {
 
 
 // ----------------------
-// calculation of varoius post-processing quantities with the help of the mag. vec.pot.
+// definition of varoius post-processing quantities with the help of the mag.vec.pot. a
 // ----------------------
 PostProcessing {
 
@@ -436,6 +436,7 @@ PostProcessing {
       // Potentials
       { Name a ; Value { Term { [ {a} ] ; In Domain ; Jacobian Vol  ;} } }
       { Name az ; Value { Term { [ CompZ[{a}] ] ; In Domain ; Jacobian Vol  ;} } }
+      { Name az_int ; Value { Integral { [ CompZ[{a}] ] ; In Domain ; Jacobian Vol  ; Integration II ; } } }
       { Name raz ; Value { Term { [ CompZ[{a}]*X[] ] ; In Domain ; Jacobian Vol  ;} } }
       { Name ur ; Value { Term { [ {ur} ] ; In Domain  ; Jacobian Vol  ;} } }
 
@@ -453,34 +454,11 @@ PostProcessing {
       { Name im_b_pol ; Value { Term { [ Norm [ Im [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name Magb ; Value { Term { [ Norm[ {d a} ] ]; In Domain ; Jacobian Vol ; } } }
 
-      // Core Loss
-      // for piecewise linear currents
-      // iGSE Integral explicitely solved
-      // needs the result of Magb at peak current to evaluate the peak flux density
-      // (Norm[{d a}]*2) is delta_B
 
-
-      If(Flag_Generalized_Steinmetz_loss)
-        { Name piGSE ; Value { Integral { [ Freq * ki * (Norm[{d a}]*2)^(beta-alpha) * (
-                                        ((Norm[{d a}]*2 / t_rise )^alpha) * t_rise +
-                                        ((Norm[{d a}]*2 / t_fall )^alpha) * t_fall
-                                        // 10 abschnitte reinbauen
-                                        // python überprüfung + vorfaktoren zu NULL
-                                   ) ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-      EndIf
-
-      If(Flag_Steinmetz_loss)
-        { Name pSE ; Value { Integral { [ CoefGeo * ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-
-        { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
-      EndIf
-
-      // Permeability
+      // Permeability Plot
       { Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
 
-      // Magnetic Flux Density
+      // Hysteresis Losses (According To Complex Core Parameters)
       { Name p_hyst ; Value { Integral {
         [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }
@@ -602,6 +580,31 @@ PostProcessing {
      EndIf
 
 
+      // Core Loss
+      // for piecewise linear currents
+      // iGSE Integral explicitely solved
+      // needs the result of Magb at peak current to evaluate the peak flux density
+      // (Norm[{d a}]*2) is delta_B
+
+
+      If(Flag_Generalized_Steinmetz_loss)
+        { Name piGSE ; Value { Integral { [ Freq * ki * (Norm[{d a}]*2)^(beta-alpha) * (
+                                        ((Norm[{d a}]*2 / t_rise )^alpha) * t_rise +
+                                        ((Norm[{d a}]*2 / t_fall )^alpha) * t_fall
+                                        // 10 abschnitte reinbauen
+                                        // python überprüfung + vorfaktoren zu NULL
+                                   ) ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+      EndIf
+
+      If(Flag_Steinmetz_loss)
+        { Name pSE ; Value { Integral { [ CoefGeo * ki * Freq^alpha * (Norm[{d a}])^beta
+                                     ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+
+        { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
+                                     ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+      EndIf
+
+
       // Circuit Quantities
       { Name U ; Value {
           Term { [ {U} ]   ; In DomainC ; }
@@ -715,6 +718,8 @@ PostOperation Get_global UsingPost MagDyn_a {
   Print[ j2F[ Winding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_2.dat"]] ;
 
   Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
+  Print[ SoH[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"SH_1.dat"] ] ;  // TODO
+
   //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
   Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
   //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
@@ -730,6 +735,7 @@ PostOperation Get_global UsingPost MagDyn_a {
   Else
     For isF In {1:nbturns1}
       Print[ j2F[ Turn1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"Losses_turn_%g.dat"], isF] ] ;
+      Print[ az_int[ Turn1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"a_turn_%g.dat"], isF] ] ;
     EndFor
   EndIf
 
@@ -752,7 +758,7 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ j2Hskin[StrandedWinding2],   OnGlobal , Format Table];
   //Print[ j2Hprox[StrandedWinding2],   OnGlobal , Format Table];
 
-  //Print[ SoH[ DomainS ], OnGlobal, Format TimeTable, File Sprintf("results/SH_f%g.dat", Freq) ] ;
+  Print[ SoH[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"SH.dat"] ] ;
 
   If(Flag_Generalized_Steinmetz_loss)
     Print[ piGSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"piGSE.dat"]] ;// Core losses
