@@ -55,7 +55,10 @@ class MagneticComponent:
     # Setup file paths
     e_m_results_log_path = os.path.join(results_folder_path, "result_log_electro_magnetic.json")
     config_path = os.path.join(femmt_folder_path, "config.json")
-    e_m_mesh_file = os.path.join(mesh_folder_path, "geometry.msh")
+    e_m_mesh_file = os.path.join(mesh_folder_path, "electro_magnetic.msh")
+    hybrid_mesh_file = os.path.join(mesh_folder_path, "hybrid.msh")
+    hybrid_color_mesh_file = os.path.join(mesh_folder_path, "hybrid_color.msh")
+    thermal_mesh_file = os.path.join(mesh_folder_path, "thermal.msh")
 
     def __init__(self, component_type="inductor", **kwargs):
         """
@@ -189,75 +192,62 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
 
-    def extract_tags_from_model(self) -> dict:
-        """
-        For the thermal simulation the tags of the physical groups for the core, windings and the background are needed
-        as well as the corner point tags and the top, right and bottom line tags are needed. 
-        They will be extracted from the mesh model using this function
+    def calculate_core_area(self) -> float:
+        core_height = self.core.window_h + self.core.core_w / 2
+        core_width = self.two_d_axi.r_outer
+        winding_height = self.core.window_h
+        winding_width = self.core.window_w
 
-        :return: Dictionary containing core_tag, background_tag, winding_tags, core_line_tags, core_point_tags
-        """
-        # Core
-        # the main core as well as every core island will get the same material as core:
-        core_tag = self.mesh.ps_core
+        air_gap_area = 0
+        for i in range(self.air_gaps.number):
+            position_tag = self.air_gaps.position_tag[i]
+            height = self.air_gaps.air_gap_h[i]
+            width = 0
 
-        # Background
-        background_tag = self.mesh.ps_air
+            if position_tag == -1:
+                # left leg
+                width = core_width - self.r_inner
+            elif position_tag == 0:
+                # center leg
+                width = self.two_d_axi.r_inner - winding_width
+            elif position_tag == 1:
+                # right leg
+                width = core_width - self.r_inner
+            else:
+                raise Exception(f"Unvalid position tag {i} used for an air gap.")
 
-        # Winding
-        winding_tags = self.mesh.ps_cond
+            air_gap_area = air_gap_area + height*width
 
-        # Core line tags
-        core_line_tags = []
-        if self.mesh.component.air_gaps.number == 0:
-            core_line_tags = [3, 2, 1]
-        else:
-            core_line_tags = [4, 3, 2]
-
-        # Core point tags
-        core_point_tags = []
-        if self.mesh.component.air_gaps.number == 0:
-            core_point_tags = [4, 3, 2, 1]
-        else:
-            core_point_tags = [5, 4, 3, 2]
-
-        return {
-            "core_tag": core_tag,
-            "background_tag": background_tag,
-            "winding_tags": winding_tags,
-            "core_line_tags": core_line_tags,
-            "core_point_tags": core_point_tags
-        }
+        return core_height * core_width - winding_height * winding_width - air_gap_area
 
     # Start thermal simulation
-    def thermal_simulation(self, thermal_conductivity) -> None:
+    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot) -> None:
         """
         
         Starts the thermal simulation using thermal.py
 
         :return: -
         """
-
-        # Set necessary path
-        model_mesh_file_path = os.path.join(self.mesh_folder_path, "thermal_mesh.msh")
+        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot)
 
         if not os.path.exists(self.e_m_results_log_path):
             # Simulation results file not created
-            # TODO Add error message handling?
-            print("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
+            raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
 
-        # Create copy of the current mesh, because it will be changed for the thermal simulation
-        shutil.copy(self.e_m_mesh_file, model_mesh_file_path)
-
-        tags = self.extract_tags_from_model()
-
-        # Mesh size -> Used when creating the case
-        # TODO Currently fixed.. Can be changed dynamically?
-        mesh_size = 0.001
+        tags = {
+            "core_tag": self.mesh.ps_core,
+            "background_tag": self.mesh.ps_air,
+            "winding_tags": self.mesh.ps_cond,
+            "air_gaps_tag": self.mesh.ps_air_gaps,
+            "boundary_regions": self.mesh.thermal_boundary_region_tags
+        }
 
         # Core area -> Is needed to estimate the heat flux
-        # TODO Needs to be calculated dynamically
-        core_area = 0.00077
+        # Power density for volumes W/m^3
+        core_area = 2 * np.pi * self.calculate_core_area()
+
+        # Power density for surfaces W/m^2
+        #core_area = self.calculate_core_area()
 
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
@@ -265,7 +255,23 @@ class MagneticComponent:
         # When a gmsh window should open showing the simulation results
         show_results = True
 
-        run_thermal(self.onelab_folder_path, model_mesh_file_path, self.e_m_results_log_path, tags, thermal_conductivity, mesh_size, core_area, wire_radii, show_results)
+        thermal_parameters = {
+            "onelab_folder_path": self.onelab_folder_path,
+            "model_mesh_file_path": self.thermal_mesh_file,
+            "results_log_file_path": self.e_m_results_log_path,
+            "tags_dict": tags,
+            "thermal_conductivity_dict": thermal_conductivity,
+            "boundary_temperatures": boundary_temperatures,
+            "boundary_flags": boundary_flags,
+            "boundary_physical_groups": self.mesh.thermal_boundary_ps_groups,
+            "core_area": core_area,
+            "conductor_radii": wire_radii,
+            "show_results": show_results,
+            "pretty_colors": False,
+            "show_before_simulation": False
+        }
+
+        run_thermal(**thermal_parameters)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
@@ -521,7 +527,7 @@ class MagneticComponent:
 
     class AirGaps:
         """
-
+        Contains methods and arguments to describe the air gaps in a magnetic component
         """
 
         def __init__(self, component):
@@ -530,10 +536,10 @@ class MagneticComponent:
             """
             self.component = component
             # self.number = 1
-            self.number = None  # Number of air gaps [==1: air gap in center | >1: random air gaps]
+            self.number = None  #: Number of air gaps [==1: air gap in center | >1: random air gaps]
 
             # self.midpoints = np.empty((self.number, 4))
-            self.midpoints = None  # list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
+            self.midpoints = None  #: list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
 
         def update(self, method: str = None, n_air_gaps: Union[int, None] = None,
                    position_tag: List[float] = None,
@@ -546,9 +552,8 @@ class MagneticComponent:
             - All dimensions are in meters
             - all parameters are in lists!
             - first chose the method, second, transfer parameters:
-
+            - Method overview:
                 - "center": ONE air gap exactly in core's middle
-                - "random": random count of air gaps in the inner/outer leg
                 - "percent": Easy way to split air gaps over the inner/outer leg
                 - "manually": Place air gaps manually
 
@@ -564,23 +569,24 @@ class MagneticComponent:
             :type air_gap_h: float
             :param air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
             :type air_gap_position: float
-            :param method: "random", "center", "percent", "manually"
+            :param method: "center", "percent", "manually"
             :type method: str
 
             :return: None
+            :rtype: None
 
             :Example:
-
+            >>> import femmt as fmt
+            >>> geo = fmt.MagneticComponent(component_type='inductor')
             >>> geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002]) # 'center': single air gap in the middle
             >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # 'percent': Place air gaps manually using percentages
-            >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # random
             >>> geo.air_gaps.update(method="manually", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[0.000, 0.003]) # manually
 
             """
             self.number = n_air_gaps
-            position_tag = position_tag
+            self.position_tag = position_tag
             air_gap_position = air_gap_position
-            air_gap_h = air_gap_h
+            self.air_gap_h = air_gap_h
 
             print(f"Update the air gaps.\n"
                   f"---")
@@ -633,78 +639,122 @@ class MagneticComponent:
 
             #  TODO: Proof whether air gaps are valid
 
-            # Random
-            if method == "random" and self.component.dimensionality == "2D":
-                position_tag = [0] * self.number
-
-                i = 0
-                while i in range(0, self.number):
-                    height = np.random.rand(1) * 0.001 + 0.001
-                    position = np.random.rand(1) * (self.component.core.window_h - height) - (
-                            self.component.core.window_h / 2 - height / 2)
-                    self.component.mesh.c_air_gap[i] = height * self.component.mesh.global_accuracy
-                    # Overlapping Control
-                    for j in range(0, self.midpoints.shape[0]):
-                        if self.midpoints[j, 1] + self.midpoints[j, 2] / 2 > position > self.midpoints[j, 1] - \
-                                self.midpoints[j, 2] / 2:
-                            if position_tag[i] == self.midpoints[j, 0]:
-                                print(f"Overlapping air Gaps have been corrected")
-                    else:
-                        self.midpoints[i, :] = np.array([position_tag[i],
-                                                         position,
-                                                         height,
-                                                         self.component.mesh.c_air_gap[i]])
-                        i += 1
-
     class Isolation:
         """
 
         """
 
-        def __init__(self, cond_cond=None, core_cond=None):
+        def __init__(self, cond_cond: List = None, core_cond: List = None) -> None:
             """
-            - Isolation
+            Isolation
                 - Between two turns of common conductors: first n_conductor arguments of cond_cond
                 - Between two neighboured conductors: last n_conductor-1 arguments
 
+            :param cond_cond: list of floats to describe the isolations between conductors
+            :type cond_cond: List
+            :param core_cond: list of floats to describe the isolations between conductors and the core
+            :type core_cond: List
+            :return: None
+            :rtype: None
+
+            :Inductor Example:
+            core_cond_isolation=[winding2core],
+            cond_cond_isolation=[winding2primary]
+
+            :Transformer Example:
+            core_cond_isolation=[primary2core, secondary2core],
+            cond_cond_isolation=[primary2primary, secondary2secondary, primary2secondary]
             """
             self.cond_cond = cond_cond or []
             self.core_cond = core_cond or []
 
     # Update Methods
-    def update_conductors(self, n_turns=None, conductor_type=None, winding=None, scheme=None, conductor_radii=None,
-                          litz_para_type=None, ff=None, strands_numbers=None, strand_radii=None, thickness=None,
-                          wrap_para=None, cond_cond_isolation=None, core_cond_isolation=None) -> None:
+    def update_conductors(self, n_turns: List = None, conductor_type: List = None, winding: List = None,
+                          scheme: List = None, conductor_radii: List = None, litz_para_type: List = None,
+                          ff: List = None, strands_numbers: List = None, strand_radii: List = None,
+                          thickness: List = None, wrap_para: List = None, cond_cond_isolation: List = None,
+                          core_cond_isolation: List = None) -> None:
         """
         This Method allows the user to easily update/initialize the Windings in terms of their conductors and
         arrangement.
 
         Note: set all parameters in a list!
 
-        :param wrap_para:
-        :param ff: fill-factor, values between [0....1]
-        :param winding:
-                - "interleaved"
-                - ""
-        :param scheme:
-        :param litz_para_type: there is one degree of freedom.
-                - "implicit_litz_radius":
-                - "implicit_ff":
-                - "implicit_strands_number":
+        :param n_turns: Number of turns in a list [[n_primary], [n_secondary]].
+        :type n_turns: List
 
-        :param thickness:
-        :param cond_cond_isolation:
-        :param core_cond_isolation:
-        :param n_turns:
-        :param strand_radii:
-        :param strands_numbers:
-        :param conductor_radii:
+        # Winding Scheme
+        :param winding: Sets the mode how to insert windings in a virtual winding window
+                - "interleaved": interleaves primary and secondary windings in a single virtual winding window
+                - "primary": the primary winding in a single virtual winding window
+                - "secondary": the primary winding in a single virtual winding window
+        :type winding: List
+        :param scheme:
+            if winding != "interleaved" (e.g. "primary" or "secondary")
+                - "hexa": hexagonal turn scheme
+                - "square": square turn scheme
+            if winding == "interleaved" (works only for transformer, not for inductor!)
+                - "horizontal": horizontal winding interleaving
+                - "vertical": vertical winding interleaving
+                - "bifilar": bifilar winding
+                - "blockwise": two windings in ONE virtual winding window
+
+        :type scheme: List
+
+        # Conductor Type Parameters
         :param conductor_type:  - "stacked"  # Vertical packing of conductors
-                                - "full"     # One massive Conductor in each window
-                                - "foil"     # Horizontal packing of conductors
-                                - "solid"    # Massive wires
-                                - "litz"     # Litz wires
-        :return:
+                        - "full"     # One massive Conductor in each window
+                        - "foil"     # Horizontal packing of conductors
+                        - "solid"    # Massive wires
+                        - "litz"     # Litz wires
+        :type conductor_type: List
+
+        # Litz parameters
+        :param litz_para_type: 4 litz parameters, one degree of freedom (3 necessary), e.g. [litz_para_type_primary, litz_para_type_secondary]
+                - "implicit_litz_radius": needs conductor_radii, ff, strands_numbers
+                - "implicit_ff": needs conductor_radii, strand_radii, strands_numbers
+                - "implicit_strands_number": needs conductor_radii, ff, strand_radii
+        :param strand_radii: radius for a single strand-wire in a litz wire, e.g. [strand_radii_primary, strand_radii_secondary]
+        :type strand_radii: List
+        :param strands_numbers: Number of single strands in a litz wire, e.g. [strands_numbers_primary, strands_numbers_secondary]
+        :type strands_numbers: List
+        :param conductor_radii: Conductor radii of the litz or solid wire, e.g. [conductor_radii_primary, conductor_radii_secondary]
+        :type conductor_radii: List
+        :param ff: fill-factor, values between [0....1]
+        :type ff: List
+
+
+        # Foil parameters
+        :param thickness: foil thickness
+        :type thickness: List
+        :param wrap_para:
+        :type wrap_para: List
+
+        # Isolation parameters
+        :param cond_cond_isolation: Isolation between windings and windings, e.g. [primary2primary, secondary2secondary, primary2secondary]
+        :type cond_cond_isolation: List
+        :param core_cond_isolation: Isolation between windings and the core, e.g. [primary2core, secondary2core],
+        :type core_cond_isolation: List
+
+        :return: None
+        :rtype: None
+
+        :Example Inductor:
+        >>> import femmt as fmt
+        >>> geo = fmt.MagneticComponent(component_type="Inductor")
+        >>> geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
+        >>>               winding=["primary"], scheme=["square"],
+        >>>               core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
+
+        :Example Transformer with solid (primary) winding and litz (secondary) winding:
+        >>> import femmt as fmt
+        >>> geo = fmt.MagneticComponent(component_type="transformer")
+        >>> geo.update_conductors(n_turns=[[36], [11]], conductor_type=["solid", "litz"],
+        >>>            litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
+        >>>             ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
+        >>>             conductor_radii=[0.0011, None],
+        >>>             winding=["interleaved"], scheme=["horizontal"],
+        >>>             core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
         """
         n_turns = n_turns or []
@@ -2684,10 +2734,12 @@ class MagneticComponent:
             self.l_core_air = []
             self.l_cond = [[], []]
             self.l_region = []
-            self.curve_loop_cond = [[], []]
+            self.l_air_gaps_air = []
             # Curve Loops
+            self.curve_loop_cond = [[], []]
             self.curve_loop_island = []
             self.curve_loop_air = []
+            self.curve_loop_air_gaps = []
             # curve_loop_outer_air = []
             # curve_loop_bound = []
             # Plane Surfaces
@@ -2695,8 +2747,9 @@ class MagneticComponent:
             self.plane_surface_cond = [[], []]
             self.plane_surface_air = []
             self.plane_surface_outer_air = []
+            self.plane_surface_air_gaps = []
 
-        def generate_mesh(self, refine=0, alternative_error=0):
+        def generate_hybrid_mesh(self, refine=0, alternative_error=0):
             """
             - interaction with gmsh
             - mesh generation
@@ -2881,6 +2934,7 @@ class MagneticComponent:
                 if self.component.air_gaps.number == 0:
                     self.l_core_air.append(gmsh.model.geo.addLine(self.p_core[10],
                                                                   self.p_core[7]))
+
                 # Plane: Main Core --> plane_surface_core[0]
                 if self.component.air_gaps.number > 0:
                     curve_loop_core = gmsh.model.geo.addCurveLoop(self.l_bound_core + self.l_core_air)
@@ -2933,6 +2987,41 @@ class MagneticComponent:
                         if i == int(len(self.p_island) / 4) - 1:  # Last Line
                             self.l_bound_air.append(gmsh.model.geo.addLine(self.p_island[-2], self.p_core[5]))
 
+                
+                # Curves: Close air gap
+                if self.component.air_gaps.number > 0:
+                    for i in range(0, self.component.air_gaps.number):
+                        bottom_point = 0
+                        top_point = 0
+                        if i == 0:
+                            bottom_point = self.p_core[11]
+                        else:
+                            bottom_point = self.p_island[(i-1)*4+3]
+                        if i == self.component.air_gaps.number-1:
+                            top_point = self.p_core[6]
+                        else:
+                            top_point = self.p_island[i*4+1]
+
+                        self.l_air_gaps_air.append(gmsh.model.geo.addLine(bottom_point, top_point))
+
+                for i in range(0, self.component.air_gaps.number):
+                    left = self.l_bound_air[i]
+                    top = None
+                    bottom = None
+                    right  = self.l_air_gaps_air[i]
+                    if i == 0:
+                        bottom = self.l_core_air[6]
+                    else:
+                        bottom = self.l_core_air[6+3*i]
+                    if i == self.component.air_gaps.number-1:
+                        top = self.l_core_air[0]
+                    else:
+                        top = self.l_core_air[7+3*i]
+
+                    curve_loop = gmsh.model.geo.addCurveLoop([left, top, bottom, right], -1, True)
+                    self.curve_loop_air_gaps.append(curve_loop)
+                    self.plane_surface_air_gaps.append(gmsh.model.geo.addPlaneSurface([curve_loop]))
+                
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Conductors
                 # Points of Conductors
@@ -2996,6 +3085,7 @@ class MagneticComponent:
                 # Air
                 # Points are partwise double designated
 
+                """ This is without the split of the air gaps
                 l_air_tmp = self.l_core_air[:7]
                 for i in range(0, len(self.l_bound_air)):
                     l_air_tmp.append(self.l_bound_air[i])
@@ -3005,6 +3095,18 @@ class MagneticComponent:
                         l_air_tmp.append(self.l_core_air[7 + 3 * i + 2])
 
                 self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp))
+                """
+
+                # With splitted air gaps
+                l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
+                for i in range(self.component.air_gaps.number - 1):
+                    l_air_tmp.append(self.l_core_air[8+3*i])
+                #for i in range(0, self.component.air_gaps.number):
+                #    l_air_tmp.append(self.l_air_gaps_air[i])
+                #    l_air_tmp.append(self.l_air_gaps_air[i+1])
+
+
+                self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
 
                 # Need flatten list of all! conductors
                 flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
@@ -3014,11 +3116,11 @@ class MagneticComponent:
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Boundary
                 if self.component.region is None:
-                    l_bound_tmp = self.l_bound_core[:5]
+                    self.l_bound_tmp = self.l_bound_core[:5]
                     for i in range(0, len(self.l_bound_air)):
-                        l_bound_tmp.append(self.l_bound_air[-i - 1])
+                        self.l_bound_tmp.append(self.l_bound_air[-i - 1])
                         if i != len(self.l_bound_air) - 1:  # last run
-                            l_bound_tmp.append(self.l_bound_core[-i - 1])
+                            self.l_bound_tmp.append(self.l_bound_core[-i - 1])
 
                 else:
                     # Generate Lines of Region
@@ -3056,27 +3158,26 @@ class MagneticComponent:
                                                                 self.p_core[1]))
 
                     # Boundary Line
-                    l_bound_tmp = [self.l_bound_core[4]]
+                    self.l_bound_tmp = [self.l_bound_core[4]]
 
                     for i in range(0, len(self.l_region)):
-                        l_bound_tmp.append(self.l_region[i])
+                        self.l_bound_tmp.append(self.l_region[i])
 
-                    l_bound_tmp.append(self.l_bound_core[0])
+                    self.l_bound_tmp.append(self.l_bound_core[0])
 
                     for i in range(0, len(self.l_bound_air)):
-                        l_bound_tmp.append(self.l_bound_air[-i - 1])
+                        self.l_bound_tmp.append(self.l_bound_air[-i - 1])
                         if i != len(self.l_bound_air) - 1:  # last run
-                            l_bound_tmp.append(self.l_bound_core[-i - 1])
+                            self.l_bound_tmp.append(self.l_bound_core[-i - 1])
 
                     # Outer Air Surface
                     curve_loop_outer_air = gmsh.model.geo.addCurveLoop(self.l_region + self.l_bound_core[1:4])
                     self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
 
+            gmsh.model.geo.synchronize()
+
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if self.component.visualize_before:
-                # synchronize must be placed before!!! the color properties are set
-
-                gmsh.model.geo.synchronize()
                 # Colors
                 for i in range(0, len(self.plane_surface_core)):
                     gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50)
@@ -3087,15 +3188,20 @@ class MagneticComponent:
 
                 # Output .msh file
                 gmsh.option.setNumber("Mesh.SaveAll", 1)
-                # gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
 
-                # gmsh.model.geo.synchronize()
-                # gmsh.write(self.component.path_mesh + "color.msh")
-
-                gmsh.write(os.path.join(self.component.mesh_folder_path, "color.msh"))
+                gmsh.write(self.component.hybrid_color_mesh_file)
 
                 gmsh.model.mesh.generate(2)
                 gmsh.fltk.run()
+            else:
+                gmsh.model.mesh.generate(2)
+                gmsh.write(self.component.hybrid_mesh_file)
+
+            gmsh.finalize()
+
+        def generate_electro_magnetic_mesh(self, refine = 0):
+            gmsh.initialize()
+            gmsh.open(self.component.hybrid_mesh_file)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Define physical Surfaces and Curves
@@ -3121,13 +3227,14 @@ class MagneticComponent:
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Air
-            self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=1000)
+            # Air and air_gaps
+            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps
+            self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=1000)
             # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Boundary
-            self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, l_bound_tmp, tag=1111)
+            self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=1111)
             # print(f"Physical Conductor Surfaces: {ps_cond}")
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3224,7 +3331,6 @@ class MagneticComponent:
                 gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
                 print("\nMeshing...\n")
                 gmsh.model.mesh.generate(2)
-                gmsh.write(os.path.join(self.component.mesh_folder_path, "geometry.msh"))
             else:
                 print("\nMeshing...\n")
                 gmsh.model.mesh.generate(2)
@@ -3232,18 +3338,233 @@ class MagneticComponent:
             if not os.path.exists(self.component.mesh_folder_path):
                 os.mkdir(self.component.mesh_folder_path)
 
-            gmsh.write(os.path.join(self.component.mesh_folder_path, "geometry.msh"))
+            gmsh.write(self.component.e_m_mesh_file)
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Open gmsh GUI for visualization
+            # gmsh.fltk.run()
+            # Terminate gmsh
+            gmsh.finalize()
 
-            """ No need to check the OS anymore?
-            # Check operating system
-            if sys.platform == "linux" or sys.platform == "linux2":
-                gmsh.write(self.component.path + "/" + self.component.path_mesh + "geometry.msh")
-            elif sys.platform == "darwin":  # OS X
-                gmsh.write(self.component.path + "/" + self.component.path_mesh + "geometry.msh")
-            elif sys.platform == "win32":
-                gmsh.write(
-                    self.component.path + "/" + self.component.path_mesh + "geometry.msh")  # Win10 can handle slash
-            """
+        def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, refine = 0):
+            gmsh.initialize()
+            gmsh.open(self.component.hybrid_mesh_file)
+
+            # TODO Set dynamically?
+            mesh_size = 0.01
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Create case around the core
+
+            # Core line tags
+            core_line_tags = []
+            if self.component.air_gaps.number == 0:
+                core_line_tags = [3, 2, 1]
+            else:
+                core_line_tags = [4, 3, 2]
+
+            # Core point tags
+            core_point_tags = []
+            if self.component.air_gaps.number == 0:
+                core_point_tags = [4, 3, 2, 1]
+            else:
+                core_point_tags = [5, 4, 3, 2]
+
+            tl_point = core_point_tags[0] # Top left - default 5
+            tr_point = core_point_tags[1] # Top right - default 4
+            br_point = core_point_tags[2] # Bottom right - default 3
+            bl_point = core_point_tags[3] # Bottom left - default 2
+
+            top_line = core_line_tags[0] # default 4
+            right_line = core_line_tags[1] # default 3 
+            bottom_line = core_line_tags[2] # default 2
+
+            # Get positions from points
+            tl_point_pos  = gmsh.model.getValue(0, tl_point, [])
+            tr_point_pos  = gmsh.model.getValue(0, tr_point, [])
+            br_point_pos  = gmsh.model.getValue(0, br_point, [])
+            bl_point_pos  = gmsh.model.getValue(0, bl_point, [])
+
+            # Create 5 new areas: top, top right, right, bottom right, bottom
+            # top
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh_size)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh_size)
+            top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
+            top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
+            top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
+            top_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_left_line, top_case_top_line, top_case_right_line, top_line])
+            top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
+
+            # top right
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh_size)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh_size)
+            top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
+            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
+            top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
+            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
+            top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
+
+            # right
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh_size)
+            right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
+            right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
+            right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
+            right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
+
+            # bottom right
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh_size)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh_size)
+            bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
+            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
+            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
+            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line, bottom_right_case_right_line])
+            bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
+
+            # bottom
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh_size)
+            bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
+            bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
+            bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
+            bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
+
+            gmsh.model.geo.synchronize()
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Define physical Surfaces and Curves
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Core
+            self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=2000)
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Conductors
+            self.ps_cond = [[], []]
+            for num in range(0, self.component.n_windings):
+                if self.component.windings[num].conductor_type == "foil" or \
+                        self.component.windings[num].conductor_type == "solid" or \
+                        self.component.windings[num].conductor_type == "full" or \
+                        self.component.windings[num].conductor_type == "stacked":
+                    for i in range(0, sum(self.component.windings[num].turns)):
+                        self.ps_cond[num].append(
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
+                if self.component.windings[num].conductor_type == "litz":
+                    for i in range(0, sum(self.component.windings[num].turns)):
+                        self.ps_cond[num].append(
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Air
+            self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=1000)
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Air gaps
+            self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=1001)
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Boundary
+            self.thermal_boundary_region_tags = {
+                "BOUNDARY_TOP"            : top_case_top_line,
+                "BOUNDARY_TOP_RIGHT"      : top_right_case_top_line,
+                "BOUNDARY_RIGHT_TOP"      : top_right_case_right_line,
+                "BOUNDARY_RIGHT"          : right_case_right_line,
+                "BOUNDARY_RIGHT_BOTTOM"   : bottom_right_case_right_line,
+                "BOUNDARY_BOTTOM_RIGHT"   : bottom_right_case_bottom_line,
+                "BOUNDARY_BOTTOM"         : bottom_case_bottom_line
+            }
+
+            for key in self.thermal_boundary_region_tags:
+                self.thermal_boundary_region_tags[key] = create_physical_group(1, [self.thermal_boundary_region_tags[key]], key)
+
+            # Add surface physical groups
+            # INFO: The physical groups are not created in the createRectWithPhysicalGroup because it causes a bug with the index counter when
+            # 1D physical groups (lines) are added after 2D physical groups (surfaces)
+            top_surface_physical_group = create_physical_group(2, [top_case_surface], "TopCase")
+            top_right_surface_physical_group = create_physical_group(2, [top_right_case_surface], "TopRightCase")
+            right_surface_physical_group = create_physical_group(2, [right_case_surface], "RightCase")
+            bottom_right_surface_physical_group = create_physical_group(2, [bottom_right_case_surface], "BottomRightCase")
+            bottom_surface_physical_group = create_physical_group(2, [bottom_case_surface], "BottomCase")
+
+            self.thermal_boundary_ps_groups = [top_surface_physical_group, top_right_surface_physical_group, 
+                right_surface_physical_group, bottom_right_surface_physical_group, bottom_surface_physical_group]
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Set names [optional]
+            gmsh.model.setPhysicalName(2, self.ps_core, "CORE")
+            for num in range(0, self.component.n_windings):
+                for i in range(0, len(self.ps_cond[num])):
+                    gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
+            gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
+            gmsh.model.setPhysicalName(2, self.ps_air_gaps, "AIR_GAPS")
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # - Forward Meshing -
+            p_inter = None
+            # Inter Conductors
+            for n_win in range(0, len(self.component.virtual_winding_windows)):
+                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                    for num in range(0, self.component.n_windings):
+                        p_inter = []
+                        x_inter = []
+                        y_inter = []
+                        j = 0
+
+                        if self.component.windings[num].conductor_type == "solid" and \
+                                self.component.windings[num].turns[n_win] > 1:
+                            while self.component.two_d_axi.p_conductor[num][5 * j][1] == \
+                                    self.component.two_d_axi.p_conductor[num][5 * j + 5][1]:
+                                x_inter.append(
+                                    0.5 * (self.component.two_d_axi.p_conductor[num][5 * j][0] +
+                                           self.component.two_d_axi.p_conductor[num][5 * j + 5][0]))
+                                j += 1
+                                if j == self.component.windings[num].turns[n_win] - 1:
+                                    break
+                            j += 1
+                            if int(self.component.windings[num].turns[n_win] / j) > 1:
+                                for i in range(0, int(self.component.windings[num].turns[n_win] / j)):
+                                    if 5 * j * i + 5 * j >= len(self.component.two_d_axi.p_conductor[num][:]):
+                                        break
+                                    y_inter.append(0.5 * (self.component.two_d_axi.p_conductor[num][5 * j * i][1] +
+                                                          self.component.two_d_axi.p_conductor[num][5 * j * i + 5 * j][1]))
+                                for x in x_inter:
+                                    for y in y_inter:
+                                        p_inter.append(gmsh.model.geo.addPoint(x,
+                                                                               y,
+                                                                               0,
+                                                                               self.c_center_conductor[num]))
+
+            # Synchronize
+            gmsh.model.geo.synchronize()
+
+            # Conductor Center
+            for num in range(0, self.component.n_windings):
+                for i in range(0, int(len(self.p_cond[num]) / 5)):
+                    gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
+
+            # Embed points for mesh refinement
+            # Inter Conductors
+            for n_win in range(0, len(self.component.virtual_winding_windows)):
+                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                    gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
+
+            # Synchronize again
+            gmsh.model.geo.synchronize()
+
+            # Output .msh file
+            # TODO: Adaptive Meshing
+            if refine == 1:
+                print("\n ------- \nRefined Mesh Creation ")
+                # mesh the new gmsh.model using the size field
+                bg_field = gmsh.model.mesh.field.add("PostView")
+                # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
+                gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
+                print("\nMeshing...\n")
+                gmsh.model.mesh.generate(2)
+            else:
+                print("\nMeshing...\n")
+                gmsh.model.mesh.generate(2)
+
+            if not os.path.exists(self.component.mesh_folder_path):
+                os.mkdir(self.component.mesh_folder_path)
+
+            gmsh.write(self.component.thermal_mesh_file)
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Open gmsh GUI for visualization
             # gmsh.fltk.run()
@@ -3253,7 +3574,8 @@ class MagneticComponent:
         def mesh(self, frequency=None, skin_mesh_factor=1):
             self.component.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
             if self.component.valid:
-                self.generate_mesh()
+                self.generate_hybrid_mesh()
+                self.generate_electro_magnetic_mesh()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
@@ -3882,7 +4204,7 @@ class MagneticComponent:
         """
         return (x1 + x2) / 2, (y1 + y2) / 2
 
-    def femm_thermal_validation(self, thermal_conductivity_dict):
+    def femm_thermal_validation(self, thermal_conductivity_dict, boundary_temperature):
         """
         Creates a thermal model in femm and simulates it with the given thermal conductivities
 
@@ -3902,9 +4224,6 @@ class MagneticComponent:
         # Extract wire_radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
 
-        # TODO Needs to be calculated by the model
-        core_area = 0.00077
-
         # == Init ==
         femm.openfemm(0)
         femm.newdocument(2)
@@ -3913,8 +4232,7 @@ class MagneticComponent:
         # == Materials ==
         # Core
         k_core = thermal_conductivity_dict["core"]
-        # q_vol_core = th_functions.calculate_heat_flux_core(losses["Core_Eddy_Current"], )
-        q_vol_core = losses["Core_Eddy_Current"] / core_area
+        q_vol_core = losses["Core_Eddy_Current"] / (2*np.pi*self.calculate_core_area())
         # c_core = 0.007
         c_core = 0
 
@@ -3954,7 +4272,7 @@ class MagneticComponent:
         femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case)
 
         # Add boundary condition
-        femm.hi_addboundprop("Boundary", 0, 273, 0, 0, 0, 0)
+        femm.hi_addboundprop("Boundary", 0, boundary_temperature, 0, 0, 0, 0)
         femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
 
         # == Geometry ==
@@ -4236,7 +4554,8 @@ class MagneticComponent:
 
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
-            self.mesh.generate_mesh()
+            self.mesh.generate_hybrid_mesh()
+            self.mesh.generate_electro_magnetic_mesh()
             self.excitation(f=freq, i=current, phases=phi_deg)  # frequency and current
             self.file_communication()
             self.pre_simulate()
@@ -4461,7 +4780,8 @@ class MagneticComponent:
         if meshing:
             self.high_level_geo_gen(frequency=frequencies[0])  # TODO: Must be changed for solid sim.
             if self.valid:
-                self.mesh.generate_mesh()
+                self.mesh.generate_hybrid_mesh()
+                self.mesh.generate_electro_magnetic_mesh()
 
         if self.valid:
 
