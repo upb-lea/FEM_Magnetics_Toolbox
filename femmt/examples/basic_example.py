@@ -56,21 +56,24 @@ if component == "transformer":
 
     thermal_conductivity_dict = {
             "air": 0.0263,
-            "case": 0.3,
-            "core": 5,
-            "winding": 400,
-            "air_gaps": 0.0263 # Air
+            "case": 0.3, # epoxy resign
+            "core": 5, # ferrite
+            "winding": 400, # copper
+            "air_gaps": 180 # aluminium nitride
     }
 
     boundary_temperatures = {
-        "value_boundary_top": 283,
-        "value_boundary_top_right": 283,
-        "value_boundary_right_top": 283,
-        "value_boundary_right": 283,
-        "value_boundary_right_bottom": 283,
-        "value_boundary_bottom_right": 283,
-        "value_boundary_bottom": 283
+        "value_boundary_top": 293,
+        "value_boundary_top_right": 293,
+        "value_boundary_right_top": 293,
+        "value_boundary_right": 293,
+        "value_boundary_right_bottom": 293,
+        "value_boundary_bottom_right": 293,
+        "value_boundary_bottom": 293
     }
+
+    # TODO Split the femm boundary condition in multiple lines just like with the femmt thermal simulation
+    femm_boundary_temperature = 293
 
     boundary_flags = {
         "flag_boundary_top": 1,
@@ -85,9 +88,6 @@ if component == "transformer":
     case_gap_top = 0.0015
     case_gap_right = 0.0025
     case_gap_bot = 0.002
-
-    # TODO Split the femm boundary condition in multiple lines just like with the femmt thermal simulation
-    femm_boundary_temperature = 283
 
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot)
     geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature) # TODO Update femm model 
