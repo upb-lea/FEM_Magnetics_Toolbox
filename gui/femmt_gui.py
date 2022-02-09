@@ -9,6 +9,7 @@ from PyQt5.QtGui import QIcon, QPixmap
 import femmt as fmt
 import json
 from typing import List, Union, Optional
+import os
 
 # import sys
 # import matplotlib
@@ -103,8 +104,8 @@ class MainWindow(QMainWindow):
         md_winding_material = ['Copper']
         md_winding_type = [self.translation_dict['litz'], self.translation_dict['solid']]
         md_implicit_litz = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"], self.translation_dict['implicit_strands_number']]
-        md_air_gap_method = [self.translation_dict['manually'], self.translation_dict["percent"]]
-        md_air_gap_counts = ['0', '1', '2', '3', '4', '5']
+        md_air_gap_method = [self.translation_dict["percent"], self.translation_dict['manually']]
+        md_air_gap_counts = ['1', '2', '3', '4', '5']
         md_winding_scheme = [self.translation_dict["square"], self.translation_dict["hexa"]]
 
         for option in md_simulation_type_options:
@@ -128,16 +129,36 @@ class MainWindow(QMainWindow):
             self.md_winding1_scheme_comboBox.addItem(option)
 
     def md_gmsh_pre_visualisation(self):
-        pass
         # geo = self.md_setup_geometry()
-        # geo.visualize_geometry()
+        # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
+        # geo.mesh.generate_hybrid_mesh(do_meshing=False)
         #
-        # if '-nopopup' not in sys.argv:
-        #     gmsh.fltk.initialize()
-        #
-        #
-        # gmsh.write("/home/nikolasf/onelabfile.jpg")
+        # pixmap = QPixmap(os.path.join(geo.mesh_folder_path, "geometry_preview.jpg"))
+        # self.md_graphic_winding_1.setPixmap(pixmap)
+        # self.md_graphic_winding_1.setMask(pixmap.mask())
+        # self.md_graphic_winding_1.show()
 
+        pass
+
+
+        # geo = fmt.MagneticComponent(component_type="inductor")
+        # geo.visualize_before = False
+        #
+        # # Update Geometry
+        # geo.core.update(window_h=0.03, window_w=0.011)
+        #
+        # # geo.air_gaps.update(method="percent", n_air_gaps=4, air_gap_h=[0.0005, 0.0005, 0.0005, 0.0005],
+        # #                     position_tag=[0, 0, 0, 0], air_gap_position=[20, 40, 60, 80])
+        # geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
+        #
+        # geo.update_conductors(n_turns=[[14]], conductor_type=["litz"], conductor_radii=[0.0015],
+        #                       litz_para_type=['implicit_litz_radius'],
+        #                       ff=[0.6], strands_numbers=[600], strand_radii=[35.5e-6],
+        #                       winding=["primary"], scheme=["square"],
+        #                       core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
+        #
+        # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
+        # geo.mesh.generate_hybrid_mesh(do_meshing=False)
 
 
 
@@ -456,8 +477,6 @@ class MainWindow(QMainWindow):
             self.md_winding1_fill_factor_lineEdit.setEnabled(False)
             self.md_winding1_strand_radius_comboBox.setEnabled(False)
             self.md_winding1_radius_lineEdit.setEnabled(True)
-
-
 
     def md_change_frequencies_1(self, status: int) -> None:
         """
@@ -846,7 +865,7 @@ class MainWindow(QMainWindow):
 
         winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
 
-        geo.excitation_sweep(self, winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list)
+        #geo.excitation_sweep(self, winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list)
 
         # -----------------------------------------------
         # Read back results

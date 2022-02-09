@@ -381,7 +381,11 @@
                     </widget>
                    </item>
                    <item row="2" column="3">
-                    <widget class="QLineEdit" name="md_air_gap_1_position_lineEdit"/>
+                    <widget class="QLineEdit" name="md_air_gap_1_position_lineEdit">
+                     <property name="text">
+                      <string>10</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="2" column="2">
                     <widget class="QLabel" name="md_air_gap_1_position_label">
@@ -428,7 +432,11 @@
                     </widget>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QLineEdit" name="md_air_gap_1_length_lineEdit"/>
+                    <widget class="QLineEdit" name="md_air_gap_1_length_lineEdit">
+                     <property name="text">
+                      <string>0.001</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="4" column="1">
                     <widget class="QLineEdit" name="md_air_gap_3_length_lineEdit"/>
