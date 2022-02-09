@@ -3683,11 +3683,6 @@ class MagneticComponent:
         text_file = open(os.path.join(self.electro_magnetic_folder_path, "Parameter.pro"), "w")
 
 
-        # Visualisation
-        if self.plot_fields == "standard":
-            text_file.write(f"Flag_show_standard_fields = 1;\n")
-        else:
-            text_file.write(f"Flag_show_standard_fields = 0;\n")
 
         # Magnetic Component Type
         if self.component_type == 'inductor':
@@ -3819,6 +3814,12 @@ class MagneticComponent:
         text_file.write(f"DirResValsPrimary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Primary/\";\n")
         text_file.write(f"DirResValsSecondary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Secondary/\";\n")
         text_file.write(f"DirResCirc = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_circuit_folder_path)}/\";\n")
+
+        # Visualisation
+        if self.plot_fields == "standard":
+            text_file.write(f"Flag_show_standard_fields = 1;\n")
+        else:
+            text_file.write(f"Flag_show_standard_fields = 0;\n")
 
         text_file.close()
 
