@@ -170,9 +170,10 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     Output vector includes only frequencies with amplitudes > 1% of input signal
 
     :Minimal Example:
-
+    >>> import femmt as fmt
+    >>> import numpy as np
     >>> example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
-    >>> out = fft(example_waveform, plot=True, mode='rad', f0=25000, title='ffT input current')
+    >>> out = fmt.fft(example_waveform, plot='yes', mode='rad', f0=25000, title='ffT input current')
 
     :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
     :type period_vector_t_i: np.array
@@ -456,70 +457,101 @@ def get_dict_with_unique_keys(data, *keys):
     return valid_data[0]
 
 
-def find_common_frequencies(amplitudes1, phases1, frequencies1, amplitudes2, phases2, frequencies2):
+def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phase_list_1_rad_or_deg: List,
+                            frequency_list_2: List, amplitude_list_2: List, phase_list_2_rad_or_deg: List) -> List:
     """
+    Finds common frequencies and returns a list of intersections.
 
-    :param amplitudes1:
-    :param phases1:
-    :param frequencies1:
-    :param amplitudes2:
-    :param phases2:
-    :param frequencies2:
-    :return:
+    :param amplitude_list_1: Amplitudes signal 1
+    :type amplitude_list_1: List
+    :param phase_list_1_rad_or_deg: Phases signal 1, can be degree or rad. return is same as input.
+    :type phase_list_1_rad_or_deg: List
+    :param frequency_list_1: Frequencies signal 1
+    :type frequency_list_1: List
+    :param amplitude_list_2: Amplitudes signal 2
+    :type amplitude_list_2: List
+    :param phase_list_2_rad_or_deg: Phases signal 2, can be degree or rad. return is same as input
+    :type phase_list_2_rad_or_deg: List
+    :param frequency_list_2: Frequencies signal 2
+    :type frequency_list_2: List
+    :return: [current_pair_list, phase_pair_list, common_frequency_list]
+    :rtype: Tuple
+
+    :Example:
+    >>> import femmt as fmt
+    >>> frequency_1 = [50, 100, 150, 200]
+    >>> frequency_2 = [50, 100, 150, 170, 200]
+    >>> amplitude_1 = [1, 2, 3, 4]
+    >>> amplitude_2 = [5, 6, 7, 8, 9]
+    >>> phase_1 = [10, 20, 30, 40]
+    >>> phase_2 = [50, 60, 70, 80, 90]
+    >>> common_f, common_a, common_phase = fmt.find_common_frequencies(frequency_1, amplitude_1, phase_1, frequency_2, amplitude_2, phase_2)
+    :Returns:
+    >>> common_f = [200, 50, 100, 150]
+    >>> common_a = [[4, 9], [1, 5], [2, 6], [3, 7]]
+    >>> common_phase = [[40, 90], [10, 50], [20, 60], [30, 70]]
     """
-    common_amplitudes1 = []
-    common_phases1 = []
-    common_amplitudes2 = []
-    common_phases2 = []
+    common_amplitude_list_1 = []
+    common_phase_list_1 = []
+    common_amplitude_list_2 = []
+    common_phases_list_2 = []
 
-    # Find all common frequencies
-    # print(f"{frequencies1=}")
-    # print(f"{frequencies2=}")
-    # print(f"{phases1=}")
-    # print(f"{phases2=}")
-    # print(f"{amplitudes1=}")
-    # print(f"{amplitudes2=}")
-
-    common_frequencies = list(set(frequencies1).intersection(frequencies2))
-    # print(f"{common_frequencies=}")
+    common_frequency_list = list(set(frequency_list_1).intersection(frequency_list_2))
+    print(f"{common_frequency_list = }")
+    common_frequency_list.sort()
+    print(f"{common_frequency_list = }")
 
     # Delete the corresponding phases and amplitudes
-    if isinstance(amplitudes1, list):
-        for frequency in common_frequencies:
-            common_amplitudes1.append(amplitudes1[frequencies1.index(frequency)])
-            common_phases1.append(phases1[frequencies1.index(frequency)])
-            common_amplitudes2.append(amplitudes2[frequencies2.index(frequency)])
-            common_phases2.append(phases2[frequencies2.index(frequency)])
-    if isinstance(amplitudes1, np.ndarray):
-        for frequency in common_frequencies:
-            common_amplitudes1.append(amplitudes1[np.where(frequencies1==frequency)][0])
-            common_phases1.append(phases1[np.where(frequencies1==frequency)][0])
-            common_amplitudes2.append(amplitudes2[np.where(frequencies2==frequency)][0])
-            common_phases2.append(phases2[np.where(frequencies2==frequency)][0])
+    if isinstance(amplitude_list_1, List):
+        for frequency in common_frequency_list:
+            common_amplitude_list_1.append(amplitude_list_1[frequency_list_1.index(frequency)])
+            common_phase_list_1.append(phase_list_1_rad_or_deg[frequency_list_1.index(frequency)])
+            common_amplitude_list_2.append(amplitude_list_2[frequency_list_2.index(frequency)])
+            common_phases_list_2.append(phase_list_2_rad_or_deg[frequency_list_2.index(frequency)])
+    elif isinstance(amplitude_list_1, np.ndarray):
+        for frequency in common_frequency_list:
+            common_amplitude_list_1.append(amplitude_list_1[np.where(frequency_list_1 == frequency)][0])
+            common_phase_list_1.append(phase_list_1_rad_or_deg[np.where(frequency_list_1 == frequency)][0])
+            common_amplitude_list_2.append(amplitude_list_2[np.where(frequency_list_2 == frequency)][0])
+            common_phases_list_2.append(phase_list_2_rad_or_deg[np.where(frequency_list_2 == frequency)][0])
     else:
         warnings.warn("Either a list or a np.ndarray must be provided!")
 
-    current_pairs = list(map(list, zip(common_amplitudes1, common_amplitudes2)))
-    phase_pairs = list(map(list, zip(common_phases1, common_phases2)))
+    current_pair_list = list(map(list, zip(common_amplitude_list_1, common_amplitude_list_2)))
+    phase_pair_list = list(map(list, zip(common_phase_list_1, common_phases_list_2)))
 
-    return current_pairs, phase_pairs, common_frequencies
+    return [common_frequency_list, current_pair_list, phase_pair_list]
 
 
-def sort_out_small_harmonics(phase_pairs, amplitude_pairs, frequencies, limes):
+def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
+                             phase_pair_list_rad_or_deg: List, sort_out_factor: float) -> List:
+    """
+    Sout out small harmonics.
+    :param frequency_list: List of input frequencies
+    :type frequency_list: List
+    :param amplitude_pair_list: list of amplitude pairs
+    :type amplitude_pair_list: List
+    :param phase_pair_list_rad_or_deg: list of phase pairs (can be rad or degree)
+    :type phase_pair_list_rad_or_deg: List
+    :param sort_out_factor: sort out factor [0...1]
+    :type sort_out_factor: float
+    :return: [frequency_list, amplitude_pair_list, phase_pair_list_rad_or_deg]
+    :rtype: List
+    """
     # Calculate geometric lengths
-    amp_tot = np.sqrt(np.sum(np.array(amplitude_pairs)**2, axis=0))
+    amp_tot = np.sqrt(np.sum(np.array(amplitude_pair_list) ** 2, axis=0))
     # amp_tot = np.max(amplitude_pairs, axis=0)
 
     invalid_index = []
-    for n, amplitude_pair in enumerate(amplitude_pairs):
-        if all(amplitude/amp_tot[i] < limes for i, amplitude in enumerate(amplitude_pair)):
+    for n, amplitude_pair in enumerate(amplitude_pair_list):
+        if all(amplitude / amp_tot[i] < sort_out_factor for i, amplitude in enumerate(amplitude_pair)):
             invalid_index.append(n)
 
-    phase_pairs = np.delete(phase_pairs, invalid_index, axis=0)
-    amplitude_pairs = np.delete(amplitude_pairs, invalid_index, axis=0)
-    frequencies = np.delete(frequencies, invalid_index)
+    phase_pair_list_rad_or_deg = np.delete(phase_pair_list_rad_or_deg, invalid_index, axis=0)
+    amplitude_pair_list = np.delete(amplitude_pair_list, invalid_index, axis=0)
+    frequency_list = np.delete(frequency_list, invalid_index)
 
-    return phase_pairs, amplitude_pairs, frequencies
+    return [frequency_list, amplitude_pair_list, phase_pair_list_rad_or_deg]
 
 
 

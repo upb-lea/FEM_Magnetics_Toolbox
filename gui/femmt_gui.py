@@ -8,6 +8,8 @@ from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap
 import femmt as fmt
 import json
+from typing import List, Union, Optional
+import os
 
 # import sys
 # import matplotlib
@@ -52,6 +54,7 @@ class MainWindow(QMainWindow):
         self.md_winding1_type_comboBox.currentTextChanged.connect(self.md_winding1_change_wire_type)
         self.md_air_gap_count_comboBox.currentTextChanged.connect(self.md_change_air_gap_count)
         self.md_air_gap_placement_method_comboBox.currentTextChanged.connect(self.md_change_air_gap_placement)
+        self.md_gmsh_visualisation_QPushButton.clicked.connect(self.md_gmsh_pre_visualisation)
 
         "Signals in Excitation Tab"
         self.md_fk1_checkBox.stateChanged.connect(self.md_change_frequencies_1)
@@ -89,14 +92,20 @@ class MainWindow(QMainWindow):
         "Init controls"
         self.md_initialize_controls()
 
-    def md_initialize_controls(self):
+    def md_initialize_controls(self) -> None:
+        """
+        Initialize the comboboxes with pre-defined values.
+
+        :return: None
+        :rtype: None
+        """
         md_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
         md_core_material_options = ['N95']
         md_winding_material = ['Copper']
         md_winding_type = [self.translation_dict['litz'], self.translation_dict['solid']]
         md_implicit_litz = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"], self.translation_dict['implicit_strands_number']]
-        md_air_gap_method = [self.translation_dict['manually'], self.translation_dict["percent"]]
-        md_air_gap_counts = ['0', '1', '2', '3', '4', '5']
+        md_air_gap_method = [self.translation_dict["percent"], self.translation_dict['manually']]
+        md_air_gap_counts = ['1', '2', '3', '4', '5']
         md_winding_scheme = [self.translation_dict["square"], self.translation_dict["hexa"]]
 
         for option in md_simulation_type_options:
@@ -118,6 +127,38 @@ class MainWindow(QMainWindow):
             self.md_air_gap_count_comboBox.addItem(option)
         for option in md_winding_scheme:
             self.md_winding1_scheme_comboBox.addItem(option)
+
+    def md_gmsh_pre_visualisation(self):
+        # geo = self.md_setup_geometry()
+        # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
+        # geo.mesh.generate_hybrid_mesh(do_meshing=False)
+        #
+        # pixmap = QPixmap(os.path.join(geo.mesh_folder_path, "geometry_preview.jpg"))
+        # self.md_graphic_winding_1.setPixmap(pixmap)
+        # self.md_graphic_winding_1.setMask(pixmap.mask())
+        # self.md_graphic_winding_1.show()
+
+        pass
+
+
+        # geo = fmt.MagneticComponent(component_type="inductor")
+        # geo.visualize_before = False
+        #
+        # # Update Geometry
+        # geo.core.update(window_h=0.03, window_w=0.011)
+        #
+        # # geo.air_gaps.update(method="percent", n_air_gaps=4, air_gap_h=[0.0005, 0.0005, 0.0005, 0.0005],
+        # #                     position_tag=[0, 0, 0, 0], air_gap_position=[20, 40, 60, 80])
+        # geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
+        #
+        # geo.update_conductors(n_turns=[[14]], conductor_type=["litz"], conductor_radii=[0.0015],
+        #                       litz_para_type=['implicit_litz_radius'],
+        #                       ff=[0.6], strands_numbers=[600], strand_radii=[35.5e-6],
+        #                       winding=["primary"], scheme=["square"],
+        #                       core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
+        #
+        # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
+        # geo.mesh.generate_hybrid_mesh(do_meshing=False)
 
 
 
@@ -165,6 +206,15 @@ class MainWindow(QMainWindow):
 
 
     def md_f1_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for frequency/phase No. 1
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+
         self.md_winding1_ik1_lineEdit.setEnabled(status)
         self.md_winding1_pk1_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -175,6 +225,14 @@ class MainWindow(QMainWindow):
             self.md_winding2_pk1_lineEdit.setEnabled(status)
 
     def md_f2_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for frequency/phase No. 2
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_winding1_ik2_lineEdit.setEnabled(status)
         self.md_winding1_pk2_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -185,6 +243,14 @@ class MainWindow(QMainWindow):
             self.md_winding2_pk2_lineEdit.setEnabled(status)
 
     def md_f3_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for frequency/phase No. 3
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_winding1_ik3_lineEdit.setEnabled(status)
         self.md_winding1_pk3_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -195,6 +261,14 @@ class MainWindow(QMainWindow):
             self.md_winding2_pk3_lineEdit.setEnabled(status)
 
     def md_f4_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for frequency/phase No. 4
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_winding1_ik4_lineEdit.setEnabled(status)
         self.md_winding1_pk4_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -205,6 +279,14 @@ class MainWindow(QMainWindow):
             self.md_winding2_pk4_lineEdit.setEnabled(status)
 
     def md_f5_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for frequency/phase No. 5
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_winding1_ik5_lineEdit.setEnabled(status)
         self.md_winding1_pk5_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -215,6 +297,14 @@ class MainWindow(QMainWindow):
             self.md_winding2_pk5_lineEdit.setEnabled(status)
 
     def md_f6_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for frequency/phase No. 6
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_winding1_ik6_lineEdit.setEnabled(status)
         self.md_winding1_pk6_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -225,6 +315,14 @@ class MainWindow(QMainWindow):
             self.md_winding2_pk6_lineEdit.setEnabled(status)
 
     def md_f7_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for frequency/phase No. 7
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_winding1_ik7_lineEdit.setEnabled(status)
         self.md_winding1_pk7_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -235,6 +333,14 @@ class MainWindow(QMainWindow):
             self.md_winding2_pk7_lineEdit.setEnabled(status)
 
     def md_f8_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for frequency/phase No. 8
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_winding1_ik8_lineEdit.setEnabled(status)
         self.md_winding1_pk8_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -245,22 +351,62 @@ class MainWindow(QMainWindow):
             self.md_winding2_pk8_lineEdit.setEnabled(status)
 
     def md_air_gap_1_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 1
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_air_gap_1_length_lineEdit.setEnabled(status)
         self.md_air_gap_1_position_lineEdit.setEnabled(status)
 
     def md_air_gap_2_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 2
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_air_gap_2_length_lineEdit.setEnabled(status)
         self.md_air_gap_2_position_lineEdit.setEnabled(status)
 
     def md_air_gap_3_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 3
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_air_gap_3_length_lineEdit.setEnabled(status)
         self.md_air_gap_3_position_lineEdit.setEnabled(status)
 
     def md_air_gap_4_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 4
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_air_gap_4_length_lineEdit.setEnabled(status)
         self.md_air_gap_4_position_lineEdit.setEnabled(status)
 
     def md_air_gap_5_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 5
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
         self.md_air_gap_5_length_lineEdit.setEnabled(status)
         self.md_air_gap_5_position_lineEdit.setEnabled(status)
 
@@ -286,6 +432,13 @@ class MainWindow(QMainWindow):
             self.md_winding2_enable(True)
 
     def md_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
+        """
+        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        :param implicit_type_from_combo_box: input type to implicit
+        :type implicit_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
         if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
             self.md_winding1_strands_lineEdit.setEnabled(True)
             self.md_winding1_fill_factor_lineEdit.setEnabled(True)
@@ -303,6 +456,13 @@ class MainWindow(QMainWindow):
             self.md_winding1_radius_lineEdit.setEnabled(True)
 
     def md_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
+        """
+        Enables / Disables input parameter for litz/solid wire
+        :param wire_type_from_combot_box: wire type
+        :type wire_type_from_combot_box: str
+        :return: None
+        :rtype: None
+        """
         self.md_winding1_change_litz_implicit(self.md_winding1_implicit_litz_comboBox.currentText())
         if wire_type_from_combot_box == self.translation_dict['litz']:
             self.md_winding1_strands_lineEdit.setEnabled(True)
@@ -318,34 +478,102 @@ class MainWindow(QMainWindow):
             self.md_winding1_strand_radius_comboBox.setEnabled(False)
             self.md_winding1_radius_lineEdit.setEnabled(True)
 
+    def md_change_frequencies_1(self, status: int) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
 
-
-    def md_change_frequencies_1(self, status) -> None:
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
         self.md_f1_enable(False) if status == 0 else self.md_f1_enable(True)
 
     def md_change_frequencies_2(self, status) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
         self.md_f2_enable(False) if status == 0 else self.md_f2_enable(True)
 
     def md_change_frequencies_3(self, status) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
         self.md_f3_enable(False) if status == 0 else self.md_f3_enable(True)
 
     def md_change_frequencies_4(self, status) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
         self.md_f4_enable(False) if status == 0 else self.md_f4_enable(True)
 
     def md_change_frequencies_5(self, status) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
         self.md_f5_enable(False) if status == 0 else self.md_f5_enable(True)
 
     def md_change_frequencies_6(self, status) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
         self.md_f6_enable(False) if status == 0 else self.md_f6_enable(True)
 
     def md_change_frequencies_7(self, status) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
         self.md_f7_enable(False) if status == 0 else self.md_f7_enable(True)
 
     def md_change_frequencies_8(self, status) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
         self.md_f8_enable(False) if status == 0 else self.md_f8_enable(True)
 
-    def md_redraw_input_signals(self):
 
+    def md_get_frequency_lists(self) -> List:
+        """
+        Read frequency, amplitude and phase depending on the checked frequencies and return it as a list.
+
+        :return: [winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list]
+        :rtype: List
+        """
         winding1_frequency_list = []
         winding1_amplitude_list = []
         winding1_phi_rad_list = []
@@ -419,6 +647,18 @@ class MainWindow(QMainWindow):
                 winding2_amplitude_list.append(float(self.md_winding2_ik8_lineEdit.text()))
                 winding2_phi_rad_list.append(float(self.md_winding2_pk8_lineEdit.text()))
 
+        return winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list
+
+    def md_redraw_input_signals(self) -> None:
+        """
+        Generate visual graphics for the input signals
+        Generates a graphic. This graphic is read and insertet to the gui.
+
+        :return: None
+        :rtype: None
+        """
+
+        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
 
 
         fmt.plot_fourier_coefficients(winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, figure_directory =  "./md_winding_1.png")
@@ -436,7 +676,14 @@ class MainWindow(QMainWindow):
 
 
 
-    def md_change_air_gap_count(self, air_gap_count_from_combo_box):
+    def md_change_air_gap_count(self, air_gap_count_from_combo_box: str) -> None:
+        """
+        Sets the number of editable air gap fields in dependence of the air gap count combobox.
+        :param air_gap_count_from_combo_box: Number of editable air gaps
+        :type air_gap_count_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
         self.md_air_gap_placement_method_comboBox.setEnabled(False)
         self.md_air_gap_1_enable(False)
         self.md_air_gap_2_enable(False)
@@ -455,7 +702,14 @@ class MainWindow(QMainWindow):
         if int(air_gap_count_from_combo_box) >= 5:
             self.md_air_gap_5_enable(True)
 
-    def md_change_air_gap_placement(self, air_gap_placement_from_combo_box):
+    def md_change_air_gap_placement(self, air_gap_placement_from_combo_box: str) -> None:
+        """
+        Changes the labels in case of different air gap placement methods
+        :param air_gap_placement_from_combo_box: Air gap placement method
+        :type air_gap_placement_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
         if air_gap_placement_from_combo_box == self.translation_dict['manually']:
             md_air_gap_placement_text = 'Position'
         elif air_gap_placement_from_combo_box == self.translation_dict['percent']:
@@ -467,16 +721,7 @@ class MainWindow(QMainWindow):
         self.md_air_gap_5_position_label.setText(md_air_gap_placement_text)
 
 
-    def md_action_run_simulation(self) -> None:
-        """
-        Run the simulation.
-
-        :return: None
-        :rtype: None
-        """
-
-
-
+    def md_setup_geometry(self):
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.md_simulation_QLabel.setText('simulation startet...')
 
@@ -592,34 +837,50 @@ class MainWindow(QMainWindow):
                                       strand_radii=[float(self.md_winding1_strand_radius_comboBox.text())],
                                       core_cond_isolation=[float(self.md_isolation_p2p_lineEdit.text())],
                                       cond_cond_isolation=[float(self.md_isolation_p2core_lineEdit.text())])
-
-            # -----------------------------------------------
-            # Simulation
-            # -----------------------------------------------
-
-            geo.single_simulation(freq=int(self.md_base_frequency_lineEdit.text()), current=[int(self.md_winding1_ik1_lineEdit.text())])
-
-            # -----------------------------------------------
-            # Read back results
-            # -----------------------------------------------
-
-            self.md_simulation_QLabel.setText('simulation fertig.')
-
-            # log_path = geo.path + "/" + geo.path_res + 'result_log_electro_magnetic.json'
-            # simulation_results = str(fmt.read_results_log(log_path))
-            # print(simulation_results)
-            # self.md_simulation_output_textBrowser.setText(simulation_results)
-
-            #geo.core
-            geo.onelab_client
-            gmsh.write('simulation.jpg')
-
-
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
             pass
 
         elif self.md_simulation_type_comboBox.currentText() == 'integrated transformer':
             pass
+
+        return geo
+
+
+    def md_action_run_simulation(self) -> None:
+        """
+        Read all input parameters from the fields.
+        Run the simulation in dependence of input fields.
+
+        :return: None
+        :rtype: None
+        """
+
+
+        geo = self.md_setup_geometry()
+        # -----------------------------------------------
+        # Simulation
+        # -----------------------------------------------
+
+        geo.single_simulation(freq=int(self.md_base_frequency_lineEdit.text()), current=[int(self.md_winding1_ik1_lineEdit.text())])
+
+        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
+
+        #geo.excitation_sweep(self, winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list)
+
+        # -----------------------------------------------
+        # Read back results
+        # -----------------------------------------------
+
+        self.md_simulation_QLabel.setText('simulation fertig.')
+
+        # log_path = geo.path + "/" + geo.path_res + 'result_log_electro_magnetic.json'
+        # simulation_results = str(fmt.read_results_log(log_path))
+        # print(simulation_results)
+        # self.md_simulation_output_textBrowser.setText(simulation_results)
+
+
+
+
 
 
 def clear_layout(layout):
