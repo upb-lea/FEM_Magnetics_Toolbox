@@ -13,6 +13,7 @@ from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import warnings
 import shutil
+
 from typing import List, Union, Optional
 from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import *
