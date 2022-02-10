@@ -3867,6 +3867,7 @@ class MagneticComponent:
         log["Losses"] = {}
 
         log["Losses"]["Core_Eddy_Current"] = self.load_result(res_name="CoreEddyCurrentLosses")[0]
+        log["Losses"]["Core_Hysteresis"] = self.load_result(res_name="p_hyst")[0]
 
         # Write Winding Losses
         total_winding_losses = 0
