@@ -13,8 +13,28 @@ import pandas as pd
 import time
 import gmsh
 import warnings
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Dict
 
+
+def core_database(core_type: str) -> Dict:
+    """
+    Returns core geometry for defined core structures
+
+    :param core_type: core type, e.g. "PQ4040"
+    :type core_type: str
+    :return: Dict including core_h, core_w, window_h, window_w
+    :rtype: Dict
+    """
+    core_dict = {}
+    PQ4040_dict = {
+        "core_h": 39.8e-3,
+        "core_w": 14.5e-3,
+        "window_h": 29.5e-3 ,
+        "window_w": 11.05e-3,
+    }
+    core_dict["PQ4040"] = PQ4040_dict
+
+    return core_dict[core_type]
 
 # Static Functions
 #  Used somewhere in the Code of femmt.py

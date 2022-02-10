@@ -4834,24 +4834,34 @@ class MagneticComponent:
         if show_last:
             self.visualize()
 
-    def excitation_sweep(self, frequencies, currents, phi, show_last=False, return_results=False, meshing=True):
+    def excitation_sweep(self, frequency_list: List, current_list: List, phi_deg_list: List,
+                         show_last: bool = False, return_results: bool = False, meshing: bool = True) -> Dict:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
 
         :Example Code:
-            #. geo = MagneticComponent()
-            #. geo.mesh()
-            #. fs = np.linspace(0, 250000, 6)
-            #. cs = [10, 2, 1, 0.5, 0.2, 0.1]
-            #. geo.excitation_sweep(frequencies=fs, currents=cs)
+        >>> import femmt as fmt
+        >>> geo = fmt.MagneticComponent()
+        >>> fs = np.linspace(0, 250000, 6)
+        >>> cs = [10, 2, 1, 0.5, 0.2, 0.1]
+        >>> geo.excitation_sweep(frequencies=fs, currents=cs)
 
-        :param phi:
-        :param currents:
-        :param frequencies:
-        :param show_last:
+        :param phi_deg_list:
+        :type phi_deg_list: List
+        :param current_list:
+        :type current_list: List
+        :param frequency_list:
+        :type frequency_list: List
+        :param show_last: shows last simulation in gmsh if set to True
+        :type show_last: bool
+        :param return_results: returns results in a dictionary
+        :type return_results: bool
+        :param meshing:
+        :type meshing: bool
 
-        :return:
+        :return: Results in a dictionary
+        :rtype: Dict
 
         """
         # frequencies = frequencies or []
@@ -4863,15 +4873,15 @@ class MagneticComponent:
             self.plot_fields = False
 
         if meshing:
-            self.high_level_geo_gen(frequency=frequencies[0])  # TODO: Must be changed for solid sim.
+            self.high_level_geo_gen(frequency=frequency_list[0])  # TODO: Must be changed for solid sim.
             if self.valid:
                 self.mesh.generate_hybrid_mesh()
                 self.mesh.generate_electro_magnetic_mesh()
 
         if self.valid:
 
-            for i in range(0, len(frequencies)):
-                self.excitation(f=frequencies[i], i=currents[i], phases=phi[i])  # frequency and current
+            for i in range(0, len(frequency_list)):
+                self.excitation(f=frequency_list[i], i=current_list[i], phases=phi_deg_list[i])  # frequency and current
                 self.file_communication()
                 self.pre_simulate()
                 self.simulate()
@@ -4881,9 +4891,9 @@ class MagneticComponent:
 
             if return_results:
                 # Return a Dictionary with the results
-                results = {"j2F": self.load_result("j2F", len(frequencies), "real"),
-                           "j2H": self.load_result("j2H", len(frequencies), "real"),
-                           "p_hyst": self.load_result("p_hyst", len(frequencies), "real")}
+                results = {"j2F": self.load_result("j2F", len(frequency_list), "real"),
+                           "j2H": self.load_result("j2H", len(frequency_list), "real"),
+                           "p_hyst": self.load_result("p_hyst", len(frequency_list), "real")}
                 return results
 
         else:
