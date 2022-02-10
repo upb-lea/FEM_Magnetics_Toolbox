@@ -25,7 +25,6 @@ CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
 e_0                     = 8.8541878128e-12;
 
 
-Flag_Conducting_Core    = 1;
 sigma_core              = e_r_imag * 2*Pi*Freq * e_0;
 
 // ----------------------
@@ -435,66 +434,76 @@ PostProcessing {
   { Name MagDyn_a ; NameOfFormulation MagDyn_a ; NameOfSystem A;
     PostQuantity {
 
+
+
+      // ------------------------------------------------------------------------------------------------
       // Potentials
+
       { Name a ; Value { Term { [ {a} ] ; In Domain ; Jacobian Vol  ;} } }
       { Name az ; Value { Term { [ CompZ[{a}] ] ; In Domain ; Jacobian Vol  ;} } }
       { Name az_int ; Value { Integral { [ CompZ[{a}] ] ; In Domain ; Jacobian Vol  ; Integration II ; } } }
       { Name raz ; Value { Term { [ CompZ[{a}]*X[] ] ; In Domain ; Jacobian Vol  ;} } }
       { Name ur ; Value { Term { [ {ur} ] ; In Domain  ; Jacobian Vol  ;} } }
 
+
+
+      // ------------------------------------------------------------------------------------------------
       // Electrical Field
+
       { Name e ; Value { Term { [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ; In Domain ; Jacobian Vol ; } } }
       { Name MagEz ; Value { Term { [ Norm [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ] ; In Domain ; Jacobian Vol ; } } }
 
+
+
+      // ------------------------------------------------------------------------------------------------
       // Magnetic Field
+
       { Name h ; Value { Term { [ nu[{d a}]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
       { Name Magh ; Value { Term { [ Norm[ nu[{d a}]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
 
+
+
+      // ------------------------------------------------------------------------------------------------
       // Magnetic Flux Density
+
       { Name b ; Value { Term { [ {d a} ] ; In Domain ; Jacobian Vol ; } } }
       { Name b_pol ; Value { Term { [ Norm [ Re [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name im_b_pol ; Value { Term { [ Norm [ Im [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name Magb ; Value { Term { [ Norm[ {d a} ] ]; In Domain ; Jacobian Vol ; } } }
 
 
+
+      // ------------------------------------------------------------------------------------------------
       // Permeability Plot
+
       { Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
 
-      // Hysteresis Losses (According To Complex Core Parameters)
-      { Name p_hyst ; Value { Integral {
-        [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
-        In Iron ; Jacobian Vol ; Integration II ;} } }
-      { Name p_hyst_density ; Value { Integral {
-        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
-        In Iron ; Jacobian Vol ; Integration II ;} } }
 
-      // Energy
-      { Name MagEnergy ; Value {
-          Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
-            In Domain ; Jacobian Vol ; Integration II ; } } }
-      { Name ElectEnergy ; Value {
-          Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
-            In Domain ; Jacobian Vol ; Integration II ; } } }
-      //{ Name b2F ; Value { Integral { // Magnetic Energy
-      //      [ CoefGeo*nu[{d a}]*SquNorm[{d a}] ] ;
-      //     In Domain ; Jacobian Vol ; Integration II ; } } }
-      //{ Name b2av ; Value { Integral { [ CoefGeo*{d a}/AreaCell[] ] ;
-      //      In Domain ; Jacobian Vol  ; Integration II ; } } }
 
+      // ------------------------------------------------------------------------------------------------
       // Current Density
+
       { Name j ; Value {
             Term { [ -sigma[]*(Dt[{a}]+{ur}/CoefGeo) ] ; In DomainC ; Jacobian Vol ; }
             Term { [ -1/AreaCell[]*{ir} ] ; In DomainS ; Jacobian Vol ; } } }
+
       { Name jz ; Value {
             Term { [ CompZ[ -sigma[]*(Dt[{a}]+{ur}/CoefGeo) ] ] ; In DomainC ; Jacobian Vol ; }
             Term { [ CompZ[ -1/AreaCell[]*{ir} ] ] ; In DomainS ; Jacobian Vol ; } } }
+
       { Name J_rms ; Value {
             Term { [ Norm[ CompZ[ -sigma[]*(Dt[{a}]+{ur}/CoefGeo) ] ] ] ; In DomainC ; Jacobian Vol ; }
             Term { [ Norm[ CompZ[ {ir}/AreaCell[] ] ] ] ; In DomainS ; Jacobian Vol ; }
             Term { [ Norm[ 0 ] ] ; In Domain_Lin_NoJs ; Jacobian Vol ; } } } //non_lin case is missing
 
-      // Ohmic Loss
+
+
+      // ------------------------------------------------------------------------------------------------
+      // Power Loss
+
+
       // DomainC (Solid Conductors)
+
       If(Freq==0.0)
           { Name j2F ; Value { Integral {
              [ CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)]] ;
@@ -502,7 +511,6 @@ PostProcessing {
           { Name j2F_density ; Value { Integral {
              [ CoefGeo/ElementVol[]*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
              In DomainC ; Jacobian Vol ; Integration II ; } } }
-
       Else
            { Name j2F ; Value { Integral {
              [ 0.5*CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
@@ -513,7 +521,9 @@ PostProcessing {
              In DomainC ; Jacobian Vol ; Integration II ; } } }
       EndIf
 
+
       // DomainS (Stranded Conductors)
+
       If(Freq==0.0)
            { Name j2H ; Value { Integral {
              [ CoefGeo*( Re[{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
@@ -530,64 +540,21 @@ PostProcessing {
            { Name j2Hprox ; Value { Integral {
             [ 0.5*CoefGeo*Re[{d a}*Conj[nuOm[]*{d a}]] ] ;// 0.5 added by Till
             In DomainS ; Jacobian Vol ; Integration II ; } } }
+
            { Name j2Hskin ; Value { Integral {
             [ 0.5*CoefGeo*kkk[]*SquNorm[-1/AreaCell[]*{ir}] ] ;// 0.5 added by Till
             In DomainS ; Jacobian Vol ; Integration II ; } } }
       EndIf
 
-      { Name SoF ; Value {
-          Integral {
-            [ CoefGeo * Complex[ sigma[] * SquNorm[(Dt[{a}]+{ur}/CoefGeo)], nu[{d a}]*SquNorm[{d a}] ] ] ; // added {d a} in nu[...]
-            In DomainC ; Jacobian Vol ; Integration II ; }
-        } }//Complex power
-        // together: Domain -> DomainC
-
-      { Name SoH ; Value { Integral { // Complex power = Active power +j * Reactive power => S = P+j*Q
-            [ CoefGeo * ({d a}*Conj[nuOm[{d a}]*{d a}] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
-            In DomainC ; Jacobian Vol ; Integration II ; } } } //Complex power
-            // xfmr changed Domain to DomainC
-            // to prevent from div by zero error in "Air" and "Core" domains
-
-      // Voltage (Voltage_i = dFlux_Linkage_i / dt)
-      { Name Voltage_1 ; Value {
-        Integral { [ CoefGeo / AreaCell1 * CompZ[Dt[{a}]] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
-      If(Flag_Transformer)
-        { Name Voltage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * CompZ[Dt[{a}]] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
-      EndIf
-
-      // Flux (Linkage)
-      { Name Flux_Linkage_1 ; Value {
-        Integral { [ CoefGeo / AreaCell1 * CompZ[{a}] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
-      If(Flag_Transformer)
-        { Name Flux_Linkage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * CompZ[{a}] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
-      EndIf
-
-      // (Self) Inductances
-      If(Val_EE_1!=0)
-        { Name L_11 ; Value { Integral {
-          [ Sign1 * CoefGeo / AreaCell1 * CompZ[{a}] / Val_EE_1 ]; In DomainCond1; Jacobian Vol; Integration II; } } }
-        { Name L_11_from_MagEnergy ; Value { Integral {
-          [ 2 * CoefGeo*nu[{d a}]*({d a}*{d a})/2 / (Val_EE_1*Val_EE_1) ]; In Domain; Jacobian Vol; Integration II; } } }
-      EndIf
-
-      If(Flag_Transformer)
-        If(Val_EE_2!=0)
-          { Name L_22 ; Value { Integral {
-            [ Sign2 * CoefGeo / AreaCell2 * CompZ[{a}] / Val_EE_2 ]; In DomainCond2; Jacobian Vol; Integration II; } } }
-          { Name L_22_from_MagEnergy ; Value { Integral {
-            [ 2 * CoefGeo*nu[{d a}]*({d a}*{d a})/2 / (Val_EE_2*Val_EE_2) ]; In Domain; Jacobian Vol; Integration II; } } }
-        EndIf
-     EndIf
 
 
-      // Core Loss
+      // ------------------------------------------------------------------------------------------------
+      // Steinmetz Core Loss
+
       // for piecewise linear currents
       // iGSE Integral explicitely solved
       // needs the result of Magb at peak current to evaluate the peak flux density
       // (Norm[{d a}]*2) is delta_B
-
 
       If(Flag_Generalized_Steinmetz_loss)
         { Name piGSE ; Value { Integral { [ Freq * ki * (Norm[{d a}]*2)^(beta-alpha) * (
@@ -605,6 +572,107 @@ PostProcessing {
         { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
                                      ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
       EndIf
+
+
+
+      // ------------------------------------------------------------------------------------------------
+      // Hysteresis Losses (According To Complex Core Parameters)
+
+      { Name p_hyst ; Value { Integral {
+        [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
+        In Iron ; Jacobian Vol ; Integration II ;} } }
+
+      { Name p_hyst_density ; Value { Integral {
+        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
+        In Iron ; Jacobian Vol ; Integration II ;} } }
+
+
+
+      // ------------------------------------------------------------------------------------------------
+      // Energy
+
+      { Name MagEnergy ; Value {
+          Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
+            In Domain ; Jacobian Vol ; Integration II ; } } }
+
+      { Name ElectEnergy ; Value {
+          Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
+            In Domain ; Jacobian Vol ; Integration II ; } } }
+
+      //{ Name b2F ; Value { Integral { // Magnetic Energy
+      //      [ CoefGeo*nu[{d a}]*SquNorm[{d a}] ] ;
+      //     In Domain ; Jacobian Vol ; Integration II ; } } }
+      //{ Name b2av ; Value { Integral { [ CoefGeo*{d a}/AreaCell[] ] ;
+      //      In Domain ; Jacobian Vol  ; Integration II ; } } }
+
+
+
+      // ------------------------------------------------------------------------------------------------
+      // Complex Power
+
+
+      // DomainC (Solid Conductors)
+
+      { Name SoF ; Value {
+          Integral {
+            [ CoefGeo * Complex[ sigma[] * SquNorm[(Dt[{a}]+{ur}/CoefGeo)], nu[{d a}]*SquNorm[{d a}] ] ] ; // added {d a} in nu[...]
+            In DomainC ; Jacobian Vol ; Integration II ; }
+        } }
+        // together: Domain -> DomainC
+
+
+      // DomainS (Stranded Conductors)
+
+      { Name SoH ; Value { Integral { // Complex power = Active power +j * Reactive power => S = P+j*Q
+            [ CoefGeo * ({d a}*Conj[nuOm[{d a}]*{d a}] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
+            In DomainC ; Jacobian Vol ; Integration II ; } } } //Complex power
+            // xfmr changed Domain to DomainC
+            // to prevent from div by zero error in "Air" and "Core" domains
+
+
+
+      // ------------------------------------------------------------------------------------------------
+      // Voltage (Voltage_i = dFlux_Linkage_i / dt)
+
+      { Name Voltage_1 ; Value {
+        Integral { [ CoefGeo / AreaCell1 * CompZ[Dt[{a}]] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+      If(Flag_Transformer)
+        { Name Voltage_2 ; Value {
+          Integral { [ CoefGeo / AreaCell2 * CompZ[Dt[{a}]] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+      EndIf
+
+
+
+      // ------------------------------------------------------------------------------------------------
+      // Flux (Linkage)
+
+      { Name Flux_Linkage_1 ; Value {
+        Integral { [ CoefGeo / AreaCell1 * CompZ[{a}] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+      If(Flag_Transformer)
+        { Name Flux_Linkage_2 ; Value {
+          Integral { [ CoefGeo / AreaCell2 * CompZ[{a}] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+      EndIf
+
+
+      // ------------------------------------------------------------------------------------------------
+      // (Self) Inductances
+
+      If(Val_EE_1!=0)
+        { Name L_11 ; Value { Integral {
+          [ Sign1 * CoefGeo / AreaCell1 * CompZ[{a}] / Val_EE_1 ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+        { Name L_11_from_MagEnergy ; Value { Integral {
+          [ 2 * CoefGeo*nu[{d a}]*({d a}*{d a})/2 / (Val_EE_1*Val_EE_1) ]; In Domain; Jacobian Vol; Integration II; } } }
+      EndIf
+      If(Flag_Transformer)
+        If(Val_EE_2!=0)
+          { Name L_22 ; Value { Integral {
+            [ Sign2 * CoefGeo / AreaCell2 * CompZ[{a}] / Val_EE_2 ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+          { Name L_22_from_MagEnergy ; Value { Integral {
+            [ 2 * CoefGeo*nu[{d a}]*({d a}*{d a})/2 / (Val_EE_2*Val_EE_2) ]; In Domain; Jacobian Vol; Integration II; } } }
+        EndIf
+      EndIf
+
+
 
 
       // Circuit Quantities

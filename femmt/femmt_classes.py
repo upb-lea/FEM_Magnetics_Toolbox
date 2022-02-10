@@ -87,7 +87,7 @@ class MagneticComponent:
         # Control Flags
         self.visualize_before = False
         self.region = None  # Apply an outer Region or directly apply a constraint on the Core Boundary
-        self.plot_fields = "standard"
+        self.plot_fields = "standard"  # can be "standard" or False
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
@@ -436,6 +436,7 @@ class MagneticComponent:
             self.im_epsilon_rel = 6e+4 * np.sin(
                 20 * np.pi / 180)  # Imaginary part of complex equivalent permeability  [only frequency-dependent]
             self.material = 95_100  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
+            self.conducting = True
 
             # Steinmetz Loss
             self.steinmetz_loss = 0
@@ -3704,6 +3705,11 @@ class MagneticComponent:
         self.core.im_epsilon_rel = f_N95_er_imag(f=self.frequency)
         text_file.write(f"e_r_imag = {self.core.im_epsilon_rel};\n")
         text_file.write(f"mu_r_imag = {self.core.im_mu_rel};\n")
+
+        if self.core.conducting:
+            text_file.write(f"Flag_Conducting_Core = 1;\n")
+        else:
+            text_file.write(f"Flag_Conducting_Core = 0;\n")
 
         if self.core.steinmetz_loss:
             text_file.write(f"ki = {self.ki};\n")
