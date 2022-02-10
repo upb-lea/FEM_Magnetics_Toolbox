@@ -13,6 +13,7 @@ from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import warnings
 import shutil
+
 from typing import List, Union, Optional
 from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import *
@@ -3349,7 +3350,7 @@ class MagneticComponent:
             gmsh.open(self.component.hybrid_mesh_file)
 
             # TODO Set dynamically?
-            mesh_size = 0.01
+            mesh_size = 0.001
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Create case around the core
@@ -4252,6 +4253,11 @@ class MagneticComponent:
         # c_case = 0.01
         c_case = 0
 
+        # Air gap
+        k_air_gap = thermal_conductivity_dict["air_gaps"]
+        q_vol_air_gap = 0
+        c_air_gap = 0
+
         # Setup winding list
         winding_losses_list = []
         for i in range(1, 3):
@@ -4265,6 +4271,7 @@ class MagneticComponent:
         # Setup materials
         femm.hi_addmaterial('Core', k_core, k_core, q_vol_core, c_core)
         femm.hi_addmaterial('Air', k_air, k_air, q_vol_air, c_air)
+        femm.hi_addmaterial('Air Gaps', k_air_gap, k_air_gap, q_vol_air_gap, c_air_gap)
         for winding_index, winding in enumerate(winding_losses_list):
             for i in range(len(winding)):
                 femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index]), c_wire)
@@ -4329,6 +4336,10 @@ class MagneticComponent:
         # In order for the simulation to work the air_gap must be closed:
         femm.hi_drawline(0, self.two_d_axi.p_air_gaps[0, 1], 0, self.two_d_axi.p_air_gaps[2, 1])
 
+        # Close air gap to seperate from air
+        femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
+                            self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
+
         # Add case
         # Case size
         case_gap_top = 0.0015
@@ -4385,6 +4396,12 @@ class MagneticComponent:
         # femm.hi_makeABC()
 
         # == Labels/Designations ==
+        # Label for air gap
+        femm.hi_addblocklabel(0.001, 0)
+        femm.hi_selectlabel(0.001, 0)
+        femm.hi_setblockprop('Air Gaps', 1, 0, 0)
+        femm.hi_clearselected()
+
         # Label for core
         femm.hi_addblocklabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
         femm.hi_selectlabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
@@ -4392,8 +4409,10 @@ class MagneticComponent:
         femm.hi_clearselected()
 
         # Labels for air
-        femm.hi_addblocklabel(0.001, 0)
-        femm.hi_selectlabel(0.001, 0)
+        air_label_point = self.calculate_point_average(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
+                            self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
+        femm.hi_addblocklabel(air_label_point[0] + 0.0001, air_label_point[1])
+        femm.hi_selectlabel(air_label_point[0] + 0.0001, air_label_point[1])
         femm.hi_setblockprop('Air', 1, 0, 0)
         femm.hi_clearselected()
 
