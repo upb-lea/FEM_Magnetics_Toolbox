@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 plt.figure(figsize=(5, 2.5))
 
-directory = f"C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/data/Loss_Data_PHD_Keuck/mu_r_Plot"
+directory = f"C:/Users/tillp/sciebo/Exchange_FEMMT/05_Materials/data/Loss_Data_PHD_Keuck/mu_r_Plot"
 temperatures = [60, 80, 100]
 frequency_in_kHz = 300
 
@@ -37,5 +37,5 @@ plt.xlabel("$B$ / mT")
 # plt.ylim(2600, 3600)
 plt.legend(ncol=2)
 plt.grid()
-plt.savefig("C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Core loss/mu_r.pdf", bbox_inches="tight")
+plt.savefig("C:/Users/tillp/sciebo/Exchange_FEMMT/04_Documentation/mu_r.pdf", bbox_inches="tight")
 plt.show()

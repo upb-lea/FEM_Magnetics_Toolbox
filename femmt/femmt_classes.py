@@ -433,8 +433,7 @@ class MagneticComponent:
             # self.im_mu_rel = 1750 * np.sin(10 * np.pi / 180)  # Imaginary part of relative Core Permeability
             # B-Field and frequency-dependent:
             self.im_mu_rel = 2500 * np.sin(20 * np.pi / 180)  # Imaginary part of relative Core Permeability
-            self.im_epsilon_rel = 6e+4 * np.sin(
-                20 * np.pi / 180)  # Imaginary part of complex equivalent permeability  [only frequency-dependent]
+            self.im_epsilon_rel = 6e+4 * np.sin(20 * np.pi / 180)  # Imaginary part of complex equivalent permeability  [only frequency-dependent]
             self.material = 95_100  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
             self.conducting = True
 
