@@ -21,8 +21,9 @@ def PolyCoefficients(x, coeffs):
     return y
 
 
-directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/data/materials/N95/N95/100C"
-frequencies_in_kHz = [200, 300]
+# directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/data/materials/N95/N95/100C"
+directory = "C:/Users/tillp/sciebo/Exchange_FEMMT/05_Materials/data/Loss_Data_PHD_Keuck/mu_phi_Plot"
+frequencies_in_kHz = [100] # [100, 200, 300]
 
 for i, frequency_in_kHz in enumerate(frequencies_in_kHz):
     file_name = f"mu_phi_{frequency_in_kHz}kHz_N95_100C.txt"
@@ -59,8 +60,8 @@ for i, frequency_in_kHz in enumerate(frequencies_in_kHz):
     mu_imag_extrapolated = np.sin(phi_extrapolated*np.pi/180) * 3000
 
     # Saving
-    # np.savetxt(directory + "/ONELAB_READY_B_" + file_name, b_extrapolated, newline=', ')
-    # np.savetxt(directory + "/ONELAB_READY_MU_IMAG_" + file_name, mu_imag_extrapolated, newline=', ')
+    np.savetxt(directory + "/ONELAB_READY_B_" + file_name, b_extrapolated, newline=', ')
+    np.savetxt(directory + "/ONELAB_READY_MU_IMAG_" + file_name, mu_imag_extrapolated, newline=', ')
 
     if i == 0:
         col = "r"
@@ -76,5 +77,5 @@ plt.ylabel("$\mu''/\mu_0$")
 plt.xlabel("$B$ / mT")
 plt.legend()
 plt.grid()
-plt.savefig("C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Core loss/mu_imag.pdf", bbox_inches="tight")
+plt.savefig("C:/Users/tillp/sciebo/Exchange_FEMMT/04_Documentation//mu_imag.pdf", bbox_inches="tight")
 plt.show()

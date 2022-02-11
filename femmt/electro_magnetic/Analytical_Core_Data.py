@@ -1,6 +1,11 @@
 from scipy.interpolate import interp1d
 import numpy as np
 
+
+e_phi_100000 = 35
+e_r_100000 = 1.3969e+05
+
+
 e_phi_200000 = 30
 e_r_200000 = 1.1663e+05
 
@@ -13,13 +18,15 @@ def imag_deg(amp, phi_deg):
 
 
 def f_N95_er_imag(f):
-    if f < 200000:
-        return imag_deg(e_r_200000, e_phi_200000)
+    if f < 100000:
+        return imag_deg(e_r_100000, e_phi_100000)
     if f > 300000:
         return imag_deg(e_r_300000, e_phi_300000)
     else:
-        return imag_deg(e_r_200000, e_phi_200000) + \
-               (imag_deg(e_r_300000, e_phi_300000) - imag_deg(e_r_200000, e_phi_200000)) / 100000 * (f - 200000)
+        if f >= 200000:
+            return imag_deg(e_r_200000, e_phi_200000) + (imag_deg(e_r_300000, e_phi_300000) - imag_deg(e_r_200000, e_phi_200000)) / 100000 * (f - 200000)
+        if f < 200000:
+            return imag_deg(e_r_100000, e_phi_100000) + (imag_deg(e_r_200000, e_phi_200000) - imag_deg(e_r_100000, e_phi_100000)) / 100000 * (f - 100000)
 
 
 # --------------------------------------------------------------------------------------------------------
