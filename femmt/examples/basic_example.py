@@ -26,8 +26,6 @@ if component == "inductor":
     geo.femm_reference(freq=100000, current=[1], sigma_cu=58, sign=[1], non_visualize=0)
 
 if component == "transformer":
-    simulate_before_thermal = True
-
     geo = MagneticComponent(component_type="transformer")
     geo.visualize_before = False
 
@@ -45,15 +43,24 @@ if component == "transformer":
                         winding=["interleaved"], scheme=["horizontal"],
                         core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
-    if simulate_before_thermal:
-        # Perform a single simulation
-        geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
-        # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
-        #                                                                               - 1.47917789/np.pi*180 + 180])
+    # Perform a single simulation
+    geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
+    # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
+    #                                                                               - 1.47917789/np.pi*180 + 180])
 
-        # geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5)
-        # geo.femm_reference(freq=100000, current=[1, 2], sigma_cu=58, sign=[1, -1], non_visualize=0)
+    # geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5)
+    # geo.femm_reference(freq=100000, current=[1, 2], sigma_cu=58, sign=[1, -1], non_visualize=0)
 
+
+
+    # ----------------------------------------------------------------------------------
+    # Thermal simulation:
+    # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
+    # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
+    # which will be applied on the boundary of the simulation (dirichlet boundary condition).
+    
+    # The case parameter sets the thermal conductivity for a case which will be set around the core.
+    # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
             "air": 0.0263,
             "case": 0.3, # epoxy resign
@@ -62,6 +69,13 @@ if component == "transformer":
             "air_gaps": 180 # aluminium nitride
     }
 
+    # Here the case size can be determined
+    case_gap_top = 0.0015
+    case_gap_right = 0.0025
+    case_gap_bot = 0.002
+
+    # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
+    # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
     boundary_temperatures = {
         "value_boundary_top": 293,
         "value_boundary_top_right": 293,
@@ -71,10 +85,12 @@ if component == "transformer":
         "value_boundary_bottom_right": 293,
         "value_boundary_bottom": 293
     }
-
-    # TODO Split the femm boundary condition in multiple lines just like with the femmt thermal simulation
+    
+    # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
+    # Currently only one temperature can be applied which will be set on every boundary site.
     femm_boundary_temperature = 293
 
+    # Here the boundary sides can be turned on (1) or off (0)
     boundary_flags = {
         "flag_boundary_top": 1,
         "flag_boundary_top_right": 1,
@@ -85,12 +101,8 @@ if component == "transformer":
         "flag_boundary_bottom": 1
     }
 
-    case_gap_top = 0.0015
-    case_gap_right = 0.0025
-    case_gap_bot = 0.002
-
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot)
-    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature) # TODO Update femm model 
+    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
 
 if component == "integrated_transformer":
     geo = MagneticComponent(component_type="integrated_transformer")

@@ -37,14 +37,14 @@ pip install -e .
 Coming soon.
 
 ### 2.4 Minimal example and first run
-Run the example from here: [basic_example.py](/femmt/Examples/basic_example.py).
+Run the example from here: [basic_example.py](/femmt/examples/basic_example.py).
 FEMMT will ask you for the installation path of ONELAB during first use.
 
 
 ## 3. Examples
 ![](https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/FEMMT_Screenshot.png?raw=true)
 
-See examples in [basic_example.py](/femmt/Examples/)
+See examples in [basic_example.py](/femmt/examples/)
 
 
 ## 4. Roadmap

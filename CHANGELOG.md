@@ -7,15 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Updated
 - updated the winding generation
+- updated the femm reference model
+- updated project structure
+- updated meshing to hybrid mesh
 ### Fixed
 - fix #5: changed typo to L_h_conc = self.M**2 / self.L_22
 - fix #11: rename femmt.py to femmt_classes.py due to package problems
 ### Added
-- add 
 - add file Analytical_Core_Data.py
 - add file DAB_Input_Data.py
 - add file DAB_trafo_optimization.py
 - add file mu_imag.pro
+- add folder femmt/thermal
 - add class EIaxi
 - add class ReluctanceModel
 - add class Mesh
@@ -24,8 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add class Core
 - add class Virtual_Winding_Window
 - add class Winding
+- add result_log_electro_magnetic
 - add horizontal interleaved winding scheme
 - add method write_log() to femmt.py
+- add thermal simulation
+- add femm heat flow validation
 
 ## [0.1.2] - 2021-08-08
 ### Updated
