@@ -4081,9 +4081,6 @@ class MagneticComponent:
         # == Pre Geometry ==
         self.high_level_geo_gen()
 
-        if self.air_gaps.number != 1:
-            raise NotImplementedError
-
         # == Init ==
         femm.openfemm(non_visualize)
         femm.newdocument(0)
@@ -4108,55 +4105,91 @@ class MagneticComponent:
 
         # == Geometry ==
         # Add core
-        femm.mi_drawline(0,
-                         self.two_d_axi.p_air_gaps[0, 1],
-                         self.two_d_axi.p_air_gaps[1, 0],
-                         self.two_d_axi.p_air_gaps[1, 1])
-        femm.mi_drawline(self.two_d_axi.p_air_gaps[1, 0],
-                         self.two_d_axi.p_air_gaps[1, 1],
-                         self.two_d_axi.p_window[4, 0],
-                         self.two_d_axi.p_window[4, 1])
-        femm.mi_drawline(self.two_d_axi.p_window[4, 0],
-                         self.two_d_axi.p_window[4, 1],
-                         self.two_d_axi.p_window[5, 0],
-                         self.two_d_axi.p_window[5, 1])
-        femm.mi_drawline(self.two_d_axi.p_window[5, 0],
-                         self.two_d_axi.p_window[5, 1],
-                         self.two_d_axi.p_window[7, 0],
-                         self.two_d_axi.p_window[7, 1])
-        femm.mi_drawline(self.two_d_axi.p_window[7, 0],
-                         self.two_d_axi.p_window[7, 1],
-                         self.two_d_axi.p_window[6, 0],
-                         self.two_d_axi.p_window[6, 1])
-        femm.mi_drawline(self.two_d_axi.p_window[6, 0],
-                         self.two_d_axi.p_window[6, 1],
-                         self.two_d_axi.p_air_gaps[3, 0],
-                         self.two_d_axi.p_air_gaps[3, 1])
-        femm.mi_drawline(self.two_d_axi.p_air_gaps[3, 0],
-                         self.two_d_axi.p_air_gaps[3, 1],
-                         0,
-                         self.two_d_axi.p_air_gaps[2, 1])
-        femm.mi_drawline(0,
-                         self.two_d_axi.p_air_gaps[2, 1],
-                         0,
-                         self.two_d_axi.p_outer[2, 1])
-        femm.mi_drawline(0,
-                         self.two_d_axi.p_outer[2, 1],
-                         self.two_d_axi.p_outer[3, 0],
-                         self.two_d_axi.p_outer[3, 1])
-        femm.mi_drawline(self.two_d_axi.p_outer[3, 0],
-                         self.two_d_axi.p_outer[3, 1],
-                         self.two_d_axi.p_outer[1, 0],
-                         self.two_d_axi.p_outer[1, 1])
-        femm.mi_drawline(self.two_d_axi.p_outer[1, 0],
-                         self.two_d_axi.p_outer[1, 1],
-                         0,
-                         self.two_d_axi.p_outer[0, 1])
-        femm.mi_drawline(0,
-                         self.two_d_axi.p_outer[0, 1],
-                         0,
-                         self.two_d_axi.p_air_gaps[0, 1])
 
+        if self.air_gaps.number == 0:
+            femm.mi_drawline(self.two_d_axi.p_window[4, 0],
+                            self.two_d_axi.p_window[4, 1],
+                            self.two_d_axi.p_window[5, 0],
+                            self.two_d_axi.p_window[5, 1])
+            femm.mi_drawline(self.two_d_axi.p_window[5, 0],
+                            self.two_d_axi.p_window[5, 1],
+                            self.two_d_axi.p_window[7, 0],
+                            self.two_d_axi.p_window[7, 1])
+            femm.mi_drawline(self.two_d_axi.p_window[7, 0],
+                            self.two_d_axi.p_window[7, 1],
+                            self.two_d_axi.p_window[6, 0],
+                            self.two_d_axi.p_window[6, 1])
+            femm.mi_drawline(self.two_d_axi.p_window[6, 0],
+                            self.two_d_axi.p_window[6, 1],
+                            self.two_d_axi.p_window[4, 0],
+                            self.two_d_axi.p_window[4, 1])
+            femm.mi_drawline(0,
+                            self.two_d_axi.p_outer[2, 1],
+                            self.two_d_axi.p_outer[3, 0],
+                            self.two_d_axi.p_outer[3, 1])
+            femm.mi_drawline(self.two_d_axi.p_outer[3, 0],
+                            self.two_d_axi.p_outer[3, 1],
+                            self.two_d_axi.p_outer[1, 0],
+                            self.two_d_axi.p_outer[1, 1])
+            femm.mi_drawline(self.two_d_axi.p_outer[1, 0],
+                            self.two_d_axi.p_outer[1, 1],
+                            0,
+                            self.two_d_axi.p_outer[0, 1])
+            femm.mi_drawline(0,
+                            self.two_d_axi.p_outer[0, 1],
+                            0,
+                            self.two_d_axi.p_outer[2, 1])
+        elif self.air_gaps.number > 0:
+            femm.mi_drawline(0,
+                            self.two_d_axi.p_air_gaps[0, 1],
+                            self.two_d_axi.p_air_gaps[1, 0],
+                            self.two_d_axi.p_air_gaps[1, 1])
+            femm.mi_drawline(self.two_d_axi.p_air_gaps[1, 0],
+                            self.two_d_axi.p_air_gaps[1, 1],
+                            self.two_d_axi.p_window[4, 0],
+                            self.two_d_axi.p_window[4, 1])
+            femm.mi_drawline(self.two_d_axi.p_window[4, 0],
+                            self.two_d_axi.p_window[4, 1],
+                            self.two_d_axi.p_window[5, 0],
+                            self.two_d_axi.p_window[5, 1])
+            femm.mi_drawline(self.two_d_axi.p_window[5, 0],
+                            self.two_d_axi.p_window[5, 1],
+                            self.two_d_axi.p_window[7, 0],
+                            self.two_d_axi.p_window[7, 1])
+            femm.mi_drawline(self.two_d_axi.p_window[7, 0],
+                            self.two_d_axi.p_window[7, 1],
+                            self.two_d_axi.p_window[6, 0],
+                            self.two_d_axi.p_window[6, 1])
+            femm.mi_drawline(self.two_d_axi.p_window[6, 0],
+                            self.two_d_axi.p_window[6, 1],
+                            self.two_d_axi.p_air_gaps[3, 0],
+                            self.two_d_axi.p_air_gaps[3, 1])
+            femm.mi_drawline(self.two_d_axi.p_air_gaps[3, 0],
+                            self.two_d_axi.p_air_gaps[3, 1],
+                            0,
+                            self.two_d_axi.p_air_gaps[2, 1])
+            femm.mi_drawline(0,
+                            self.two_d_axi.p_air_gaps[2, 1],
+                            0,
+                            self.two_d_axi.p_outer[2, 1])
+            femm.mi_drawline(0,
+                            self.two_d_axi.p_outer[2, 1],
+                            self.two_d_axi.p_outer[3, 0],
+                            self.two_d_axi.p_outer[3, 1])
+            femm.mi_drawline(self.two_d_axi.p_outer[3, 0],
+                            self.two_d_axi.p_outer[3, 1],
+                            self.two_d_axi.p_outer[1, 0],
+                            self.two_d_axi.p_outer[1, 1])
+            femm.mi_drawline(self.two_d_axi.p_outer[1, 0],
+                            self.two_d_axi.p_outer[1, 1],
+                            0,
+                            self.two_d_axi.p_outer[0, 1])
+            femm.mi_drawline(0,
+                            self.two_d_axi.p_outer[0, 1],
+                            0,
+                            self.two_d_axi.p_air_gaps[0, 1])
+        else:
+            raise Exception("Negative air gap number is not allowed")
         # Add Coil
 
         # femm.mi_drawrectangle(self.two_d_axi.p_window[4, 0]+self.isolation.core_cond,
@@ -4218,10 +4251,16 @@ class MagneticComponent:
         femm.mi_clearselected()
 
         # Labels for air
-        femm.mi_addblocklabel(0.001, 0)
-        femm.mi_selectlabel(0.001, 0)
-        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
-        femm.mi_clearselected()
+        if self.air_gaps.number == 0:
+            femm.mi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
+            femm.mi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
+            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
+            femm.mi_clearselected()
+        else:
+            femm.mi_addblocklabel(0.001, 0)
+            femm.mi_selectlabel(0.001, 0)
+            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
+            femm.mi_clearselected()
         femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
         femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
         femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
@@ -4296,9 +4335,6 @@ class MagneticComponent:
         if not os.path.exists(self.femm_folder_path):
             os.mkdir(self.femm_folder_path)
 
-        if self.air_gaps.number != 1:
-            raise NotImplementedError
-
         # Extract losses
         losses = read_results_log(self.e_m_results_log_path)
 
@@ -4365,61 +4401,97 @@ class MagneticComponent:
         # == Geometry ==
         self.high_level_geo_gen()
         # Add core
-        femm.hi_drawline(0,
-                         self.two_d_axi.p_air_gaps[0, 1],
-                         self.two_d_axi.p_air_gaps[1, 0],
-                         self.two_d_axi.p_air_gaps[1, 1])
-        femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0],
-                         self.two_d_axi.p_air_gaps[1, 1],
-                         self.two_d_axi.p_window[4, 0],
-                         self.two_d_axi.p_window[4, 1])
-        femm.hi_drawline(self.two_d_axi.p_window[4, 0],
-                         self.two_d_axi.p_window[4, 1],
-                         self.two_d_axi.p_window[5, 0],
-                         self.two_d_axi.p_window[5, 1])
-        femm.hi_drawline(self.two_d_axi.p_window[5, 0],
-                         self.two_d_axi.p_window[5, 1],
-                         self.two_d_axi.p_window[7, 0],
-                         self.two_d_axi.p_window[7, 1])
-        femm.hi_drawline(self.two_d_axi.p_window[7, 0],
-                         self.two_d_axi.p_window[7, 1],
-                         self.two_d_axi.p_window[6, 0],
-                         self.two_d_axi.p_window[6, 1])
-        femm.hi_drawline(self.two_d_axi.p_window[6, 0],
-                         self.two_d_axi.p_window[6, 1],
-                         self.two_d_axi.p_air_gaps[3, 0],
-                         self.two_d_axi.p_air_gaps[3, 1])
-        femm.hi_drawline(self.two_d_axi.p_air_gaps[3, 0],
-                         self.two_d_axi.p_air_gaps[3, 1],
-                         0,
-                         self.two_d_axi.p_air_gaps[2, 1])
-        femm.hi_drawline(0,
-                         self.two_d_axi.p_air_gaps[2, 1],
-                         0,
-                         self.two_d_axi.p_outer[2, 1])
-        femm.hi_drawline(0,
-                         self.two_d_axi.p_outer[2, 1],
-                         self.two_d_axi.p_outer[3, 0],
-                         self.two_d_axi.p_outer[3, 1])
-        femm.hi_drawline(self.two_d_axi.p_outer[3, 0],
-                         self.two_d_axi.p_outer[3, 1],
-                         self.two_d_axi.p_outer[1, 0],
-                         self.two_d_axi.p_outer[1, 1])
-        femm.hi_drawline(self.two_d_axi.p_outer[1, 0],
-                         self.two_d_axi.p_outer[1, 1],
-                         0,
-                         self.two_d_axi.p_outer[0, 1])
-        femm.hi_drawline(0,
-                         self.two_d_axi.p_outer[0, 1],
-                         0,
-                         self.two_d_axi.p_air_gaps[0, 1])
+        if self.air_gaps.number == 0:
+            femm.hi_drawline(self.two_d_axi.p_window[4, 0],
+                            self.two_d_axi.p_window[4, 1],
+                            self.two_d_axi.p_window[5, 0],
+                            self.two_d_axi.p_window[5, 1])
+            femm.hi_drawline(self.two_d_axi.p_window[5, 0],
+                            self.two_d_axi.p_window[5, 1],
+                            self.two_d_axi.p_window[7, 0],
+                            self.two_d_axi.p_window[7, 1])
+            femm.hi_drawline(self.two_d_axi.p_window[7, 0],
+                            self.two_d_axi.p_window[7, 1],
+                            self.two_d_axi.p_window[6, 0],
+                            self.two_d_axi.p_window[6, 1])
+            femm.hi_drawline(self.two_d_axi.p_window[6, 0],
+                            self.two_d_axi.p_window[6, 1],
+                            self.two_d_axi.p_window[4, 0],
+                            self.two_d_axi.p_window[4, 1])
+            femm.hi_drawline(0,
+                            self.two_d_axi.p_outer[2, 1],
+                            self.two_d_axi.p_outer[3, 0],
+                            self.two_d_axi.p_outer[3, 1])
+            femm.hi_drawline(self.two_d_axi.p_outer[3, 0],
+                            self.two_d_axi.p_outer[3, 1],
+                            self.two_d_axi.p_outer[1, 0],
+                            self.two_d_axi.p_outer[1, 1])
+            femm.hi_drawline(self.two_d_axi.p_outer[1, 0],
+                            self.two_d_axi.p_outer[1, 1],
+                            0,
+                            self.two_d_axi.p_outer[0, 1])
+            femm.hi_drawline(0,
+                            self.two_d_axi.p_outer[0, 1],
+                            0,
+                            self.two_d_axi.p_outer[2, 1])
+        elif self.air_gaps.number > 0:
+            femm.hi_drawline(0,
+                            self.two_d_axi.p_air_gaps[0, 1],
+                            self.two_d_axi.p_air_gaps[1, 0],
+                            self.two_d_axi.p_air_gaps[1, 1])
+            femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0],
+                            self.two_d_axi.p_air_gaps[1, 1],
+                            self.two_d_axi.p_window[4, 0],
+                            self.two_d_axi.p_window[4, 1])
+            femm.hi_drawline(self.two_d_axi.p_window[4, 0],
+                            self.two_d_axi.p_window[4, 1],
+                            self.two_d_axi.p_window[5, 0],
+                            self.two_d_axi.p_window[5, 1])
+            femm.hi_drawline(self.two_d_axi.p_window[5, 0],
+                            self.two_d_axi.p_window[5, 1],
+                            self.two_d_axi.p_window[7, 0],
+                            self.two_d_axi.p_window[7, 1])
+            femm.hi_drawline(self.two_d_axi.p_window[7, 0],
+                            self.two_d_axi.p_window[7, 1],
+                            self.two_d_axi.p_window[6, 0],
+                            self.two_d_axi.p_window[6, 1])
+            femm.hi_drawline(self.two_d_axi.p_window[6, 0],
+                            self.two_d_axi.p_window[6, 1],
+                            self.two_d_axi.p_air_gaps[3, 0],
+                            self.two_d_axi.p_air_gaps[3, 1])
+            femm.hi_drawline(self.two_d_axi.p_air_gaps[3, 0],
+                            self.two_d_axi.p_air_gaps[3, 1],
+                            0,
+                            self.two_d_axi.p_air_gaps[2, 1])
+            femm.hi_drawline(0,
+                            self.two_d_axi.p_air_gaps[2, 1],
+                            0,
+                            self.two_d_axi.p_outer[2, 1])
+            femm.hi_drawline(0,
+                            self.two_d_axi.p_outer[2, 1],
+                            self.two_d_axi.p_outer[3, 0],
+                            self.two_d_axi.p_outer[3, 1])
+            femm.hi_drawline(self.two_d_axi.p_outer[3, 0],
+                            self.two_d_axi.p_outer[3, 1],
+                            self.two_d_axi.p_outer[1, 0],
+                            self.two_d_axi.p_outer[1, 1])
+            femm.hi_drawline(self.two_d_axi.p_outer[1, 0],
+                            self.two_d_axi.p_outer[1, 1],
+                            0,
+                            self.two_d_axi.p_outer[0, 1])
+            femm.hi_drawline(0,
+                            self.two_d_axi.p_outer[0, 1],
+                            0,
+                            self.two_d_axi.p_air_gaps[0, 1])
 
-        # In order for the simulation to work the air_gap must be closed:
-        femm.hi_drawline(0, self.two_d_axi.p_air_gaps[0, 1], 0, self.two_d_axi.p_air_gaps[2, 1])
+            # In order for the simulation to work the air_gap must be closed:
+            femm.hi_drawline(0, self.two_d_axi.p_air_gaps[0, 1], 0, self.two_d_axi.p_air_gaps[2, 1])
 
-        # Close air gap to seperate from air
-        femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
-                            self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
+            # Close air gap to seperate from air
+            femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
+                                self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
+        else:
+            raise Exception("Negative air gap number is not allowed")
 
         # Add case
         # Case size
@@ -4477,24 +4549,26 @@ class MagneticComponent:
         # femm.hi_makeABC()
 
         # == Labels/Designations ==
-        # Label for air gap
-        femm.hi_addblocklabel(0.001, 0)
-        femm.hi_selectlabel(0.001, 0)
-        femm.hi_setblockprop('Air Gaps', 1, 0, 0)
-        femm.hi_clearselected()
+        # Label for air and air gap
+        if self.air_gaps.number > 0:
+            femm.hi_addblocklabel(0.001, 0)
+            femm.hi_selectlabel(0.001, 0)
+            femm.hi_setblockprop('Air Gaps', 1, 0, 0)
+            femm.hi_clearselected()
+            femm.hi_addblocklabel(0.001, 0)
+            femm.hi_selectlabel(0.001, 0)
+            femm.hi_setblockprop('Air', 1, 0, 0)
+            femm.hi_clearselected()
+        else:
+            femm.hi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
+            femm.hi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
+            femm.hi_setblockprop('Air', 1, 0, 0)
+            femm.hi_clearselected()
 
         # Label for core
         femm.hi_addblocklabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
         femm.hi_selectlabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
         femm.hi_setblockprop('Core', 1, 0, 0)
-        femm.hi_clearselected()
-
-        # Labels for air
-        air_label_point = self.calculate_point_average(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
-                            self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
-        femm.hi_addblocklabel(air_label_point[0] + 0.0001, air_label_point[1])
-        femm.hi_selectlabel(air_label_point[0] + 0.0001, air_label_point[1])
-        femm.hi_setblockprop('Air', 1, 0, 0)
         femm.hi_clearselected()
 
         # Not needed when the core is the boundary
