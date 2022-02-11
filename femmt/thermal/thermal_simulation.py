@@ -40,22 +40,30 @@ def create_background(background_tag, k_air, function_pro: FunctionPro, group_pr
 
 def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_tag, k_air_gaps, function_pro: FunctionPro, group_pro: GroupPro):
     heat_flux = core_losses/core_area
-    k = {
+    
+    if air_gaps_tag is not None:
+        k = {
         "core": k_core,
         "air_gaps": k_air_gaps 
-    }
-    q_vol = {
-        "core": heat_flux,
-        "air_gaps": 0
-    }
+        }
+        q_vol = {
+            "core": heat_flux,
+            "air_gaps": 0
+        }
+        group_pro.add_regions({
+                "core": core_tag,
+                "air_gaps": air_gaps_tag
+        })
+        function_pro.add_dicts(k, q_vol)
+    else:
+        k = {"core": k_core}
+        q_vol = {"core": heat_flux}
+        group_pro.add_regions({"core": core_tag})
+        function_pro.add_dicts(k, q_vol)
+        
+    
 
-    function_pro.add_dicts(k, q_vol)
-    group_pro.add_regions({
-        "core": core_tag,
-        "air_gaps": air_gaps_tag
-    })
-
-    return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, core_tag)], [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, air_gaps_tag)]
+    return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, core_tag)], [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, air_gaps_tag)] if air_gaps_tag is not None else None
 
 def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, function_pro: FunctionPro, group_pro: GroupPro):
     q_vol = {}
@@ -157,7 +165,8 @@ def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path,
         gmsh.model.setColor(background_dim_tags, 255, 255, 255)
         gmsh.model.setColor(core_dim_tags, 110, 110, 110)
         gmsh.model.setColor(windings_dim_tags, 192, 28, 40)
-        gmsh.model.setColor(air_gaps_dim_tags, 203, 156, 190)
+        if air_gaps_dim_tags is not None:
+            gmsh.model.setColor(air_gaps_dim_tags, 203, 156, 190)
         
     gmsh.model.mesh.generate()
     gmsh.write(model_mesh_file_path)
@@ -170,7 +179,7 @@ def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path,
     # Create files
     parameters_pro.create_file(parameters_file)
     function_pro.create_file(function_file)
-    group_pro.create_file(group_file)
+    group_pro.create_file(group_file, tags_dict["air_gaps_tag"] != None)
     constraint_pro.create_file(constraint_file)
 
     simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file)

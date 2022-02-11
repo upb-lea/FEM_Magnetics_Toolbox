@@ -31,12 +31,15 @@ class GroupPro:
     def add_regions(self, more_regions):
         self.regions.update(more_regions)
 
-    def create_file(self, file_path):
+    def create_file(self, file_path, air_gaps_enabled = False):
         with open(file_path, "w") as fd:
             fd.write("Group {\n")
             for key, value in self.regions.items():
                 fd.write(f"\t{key} = Region[{value}];\n")
-            fd.write("\tCold = Region[{air, case, air_gaps}];\n")
+            if air_gaps_enabled:
+                fd.write("\tCold = Region[{air, case, air_gaps}];\n")
+            else:
+                fd.write("\tCold = Region[{air, case}];\n")
             fd.write("\tWarm = Region[{core, windings_total}];\n")
             fd.write("\tTotal = Region[{Warm, Cold}];\n")
             fd.write("}")

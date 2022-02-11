@@ -238,7 +238,7 @@ class MagneticComponent:
             "core_tag": self.mesh.ps_core,
             "background_tag": self.mesh.ps_air,
             "winding_tags": self.mesh.ps_cond,
-            "air_gaps_tag": self.mesh.ps_air_gaps,
+            "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
             "boundary_regions": self.mesh.thermal_boundary_region_tags
         }
 
@@ -3115,9 +3115,20 @@ class MagneticComponent:
                 """
 
                 # With splitted air gaps
-                l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
-                for i in range(self.component.air_gaps.number - 1):
-                    l_air_tmp.append(self.l_core_air[8+3*i])
+                l_air_tmp = []
+                if self.component.air_gaps.number == 0:
+                    l_air_tmp = self.l_core_air
+                elif self.component.air_gaps.number > 0:
+                    l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
+                    for i in range(self.component.air_gaps.number - 1):
+                        l_air_tmp.append(self.l_core_air[8+3*i])
+                else:
+                    raise Exception("Air gaps number is negative. Can only be positive")
+                #for i in range(0, self.component.air_gaps.number):
+                #    l_air_tmp.append(self.l_air_gaps_air[i])
+                #    l_air_tmp.append(self.l_air_gaps_air[i+1])
+
+                self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
                 #for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
@@ -4285,6 +4296,9 @@ class MagneticComponent:
 
         if not os.path.exists(self.femm_folder_path):
             os.mkdir(self.femm_folder_path)
+
+        if self.air_gaps.number != 1:
+            raise NotImplementedError
 
         # Extract losses
         losses = read_results_log(self.e_m_results_log_path)
