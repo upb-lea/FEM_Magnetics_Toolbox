@@ -576,6 +576,7 @@ class MagneticComponent:
             :rtype: None
 
             :Example:
+
             >>> import femmt as fmt
             >>> geo = fmt.MagneticComponent(component_type='inductor')
             >>> geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002]) # 'center': single air gap in the middle
@@ -658,10 +659,12 @@ class MagneticComponent:
             :rtype: None
 
             :Inductor Example:
+
             core_cond_isolation=[winding2core],
             cond_cond_isolation=[winding2primary]
 
             :Transformer Example:
+
             core_cond_isolation=[primary2core, secondary2core],
             cond_cond_isolation=[primary2primary, secondary2secondary, primary2secondary]
             """
@@ -685,16 +688,14 @@ class MagneticComponent:
         :param wrap_para:
         :param ff: fill-factor, values between [0....1]
         :param winding:
-                - "interleaved"
-                - ""
+            - "interleaved"
+            - ""
         :param n_turns: Number of turns in a list [[n_primary], [n_secondary]].
         :type n_turns: List
-
-        # Winding Scheme
         :param winding: Sets the mode how to insert windings in a virtual winding window
-                - "interleaved": interleaves primary and secondary windings in a single virtual winding window
-                - "primary": the primary winding in a single virtual winding window
-                - "secondary": the primary winding in a single virtual winding window
+            - "interleaved": interleaves primary and secondary windings in a single virtual winding window
+            - "primary": the primary winding in a single virtual winding window
+            - "secondary": the primary winding in a single virtual winding window
         :type winding: List
         :param scheme:
             if winding != "interleaved" (e.g. "primary" or "secondary")
@@ -705,22 +706,18 @@ class MagneticComponent:
                 - "vertical": vertical winding interleaving
                 - "bifilar": bifilar winding
                 - "blockwise": two windings in ONE virtual winding window
-
         :type scheme: List
-
-        # Conductor Type Parameters
-        :param conductor_type:  - "stacked"  # Vertical packing of conductors
-                        - "full"     # One massive Conductor in each window
-                        - "foil"     # Horizontal packing of conductors
-                        - "solid"    # Massive wires
-                        - "litz"     # Litz wires
+        :param conductor_type:
+            - "stacked"  # Vertical packing of conductors
+            - "full"     # One massive Conductor in each window
+            - "foil"     # Horizontal packing of conductors
+            - "solid"    # Massive wires
+            - "litz"     # Litz wires
         :type conductor_type: List
-
-        # Litz parameters
         :param litz_para_type: 4 litz parameters, one degree of freedom (3 necessary), e.g. [litz_para_type_primary, litz_para_type_secondary]
-                - "implicit_litz_radius": needs conductor_radii, ff, strands_numbers
-                - "implicit_ff": needs conductor_radii, strand_radii, strands_numbers
-                - "implicit_strands_number": needs conductor_radii, ff, strand_radii
+            - "implicit_litz_radius": needs conductor_radii, ff, strands_numbers
+            - "implicit_ff": needs conductor_radii, strand_radii, strands_numbers
+            - "implicit_strands_number": needs conductor_radii, ff, strand_radii
         :param strand_radii: radius for a single strand-wire in a litz wire, e.g. [strand_radii_primary, strand_radii_secondary]
         :type strand_radii: List
         :param strands_numbers: Number of single strands in a litz wire, e.g. [strands_numbers_primary, strands_numbers_secondary]
@@ -729,24 +726,19 @@ class MagneticComponent:
         :type conductor_radii: List
         :param ff: fill-factor, values between [0....1]
         :type ff: List
-
-
-        # Foil parameters
         :param thickness: foil thickness
         :type thickness: List
         :param wrap_para:
         :type wrap_para: List
-
-        # Isolation parameters
         :param cond_cond_isolation: Isolation between windings and windings, e.g. [primary2primary, secondary2secondary, primary2secondary]
         :type cond_cond_isolation: List
         :param core_cond_isolation: Isolation between windings and the core, e.g. [primary2core, secondary2core],
         :type core_cond_isolation: List
-
         :return: None
         :rtype: None
 
         :Example Inductor:
+
         >>> import femmt as fmt
         >>> geo = fmt.MagneticComponent(component_type="Inductor")
         >>> geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
@@ -754,6 +746,7 @@ class MagneticComponent:
         >>>               core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
 
         :Example Transformer with solid (primary) winding and litz (secondary) winding:
+
         >>> import femmt as fmt
         >>> geo = fmt.MagneticComponent(component_type="transformer")
         >>> geo.update_conductors(n_turns=[[36], [11]], conductor_type=["solid", "litz"],
@@ -1983,14 +1976,17 @@ class MagneticComponent:
             self.p_hyst_nom_1st = None
             self.p_hyst_nom = None
 
-        def calculate_air_gap_lengths_idealized(self, reluctances, types):
+        def calculate_air_gap_lengths_idealized(self, reluctances: List, types: str) -> List:
             """
-
-            :param reluctances:
+            :param reluctances: List with reluctances
+            :type reluctances: List
             :param types:
-
-            :return:
-
+                - "round-round":
+                - "round-inf":
+                - "cyl-cyl":
+            :type types: str
+            :return: air gap length idealized
+            :rtype: List
             """
             air_gap_lengths = [None] * len(reluctances)
 
@@ -2009,19 +2005,18 @@ class MagneticComponent:
 
             return air_gap_lengths
 
-        def calculate_air_gap_lengths_with_sct(self, reluctances):
+        def calculate_air_gap_lengths_with_sct(self, reluctances: List):
             """
             Method calculates air gap lengths according to the given reluctances.
             Method uses several instance variables of the Reluctance Model.
 
             .. TODO:: List with lists of air gap lengths important to always keep the order of elements [or use a dictionary] future use case integrated_transformer:
-                      [[l_top_1, l_top_2, ...], [l_bot_1, l_bot_2, ...], [l_stray_1, l_stray_2, ...]]
-                    use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
+                [[l_top_1, l_top_2, ...], [l_bot_1, l_bot_2, ...], [l_stray_1, l_stray_2, ...]]
+                use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
 
             :param reluctances:
-
+            :type reluctances: List
             :return: Dictionary with air gap names and the associated lengths
-
             """
             air_gap_lengths = {}
             b_peaks = {}
@@ -4929,6 +4924,7 @@ class MagneticComponent:
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
 
         :Example Code:
+
         >>> import femmt as fmt
         >>> geo = fmt.MagneticComponent()
         >>> fs = np.linspace(0, 250000, 6)

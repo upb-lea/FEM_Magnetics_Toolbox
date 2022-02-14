@@ -5,33 +5,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.0] - 2022-02-14
 ### Updated
 - updated the winding generation
 - updated the femm reference model
 - updated project structure
 - updated meshing to hybrid mesh
-### Fixed
-- fix #5: changed typo to L_h_conc = self.M**2 / self.L_22
-- fix #11: rename femmt.py to femmt_classes.py due to package problems
+- updated class structure
 ### Added
 - add file Analytical_Core_Data.py
-- add file DAB_Input_Data.py
-- add file DAB_trafo_optimization.py
+- add example files DAB_Input_Data.py, DAB_trafo_optimization.py
 - add file mu_imag.pro
 - add folder femmt/thermal
-- add class EIaxi
-- add class ReluctanceModel
-- add class Mesh
-- add class Isolation
-- add class AirGaps
-- add class Core
-- add class Virtual_Winding_Window
-- add class Winding
 - add result_log_electro_magnetic
 - add horizontal interleaved winding scheme
 - add method write_log() to femmt.py
-- add thermal simulation
-- add femm heat flow validation
+- add thermal simulation with onelab
+- add femm heat flow validation with femm
+### Fixed
+- fix #5: changed typo to L_h_conc = self.M**2 / self.L_22
+- fix #11: rename femmt.py to femmt_classes.py due to package problems
+
 
 ## [0.1.2] - 2021-08-08
 ### Updated
@@ -74,5 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/SimComparison.py
 - add femmt/SolidComp.py
 - add femmt/CompRes.py
+
+[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/upb-lea/transistordatabase/compare/0.1.2...0.2.0
+[0.1.2]: https://github.com/upb-lea/transistordatabase/compare/0.1.1...0.1.2
+[0.1.1]: https://github.com/upb-lea/transistordatabase/compare/0.1.0...0.1.1
+[0.1.0]: https://github.com/upb-lea/transistordatabase/compare/0.1.0...0.1.0
 
 

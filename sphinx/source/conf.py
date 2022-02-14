@@ -13,7 +13,7 @@
 import os
 import sys
 import time
-sys.path.insert(0, os.path.abspath('../../femmt'))
+sys.path.insert(0, os.path.abspath('../femmt'))
 
 
 # -- Project information -----------------------------------------------------
@@ -23,7 +23,7 @@ copyright = '{}, {}'.format(time.strftime('%Y'),  'LEA, Paderborn University')
 author = 'LEA-UPB'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.2'
+release = '0.2.0'
 
 # -- General configuration ---------------------------------------------------
 

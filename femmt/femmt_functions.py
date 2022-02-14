@@ -190,6 +190,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     Output vector includes only frequencies with amplitudes > 1% of input signal
 
     :Minimal Example:
+
     >>> import femmt as fmt
     >>> import numpy as np
     >>> example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28],[-175.69, 103.47, 175.69, -103.47,-175.69]])
@@ -498,6 +499,7 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     :rtype: Tuple
 
     :Example:
+    
     >>> import femmt as fmt
     >>> frequency_1 = [50, 100, 150, 200]
     >>> frequency_2 = [50, 100, 150, 170, 200]
