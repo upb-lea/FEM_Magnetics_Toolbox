@@ -26,6 +26,11 @@ Can be found [here](https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.h
 ### 2.3 install FEMMT
 Chose to install the development version of FEMMT or the release version.
 
+#### FEMMT release version (recommended)
+```
+pip install femmt
+```
+
 #### FEMMT development version (for developers)
 Note: You may need to install [git](https://git-scm.com/downloads).
 ```
