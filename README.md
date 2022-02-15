@@ -38,8 +38,6 @@ cd /Documents/Folder/of/Interest
 git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
 pip install -e .
 ```
-#### FEMMT official releases (recommended)
-Coming soon.
 
 ### 2.4 Minimal example and first run
 Run the example from here: [basic_example.py](/femmt/examples/basic_example.py).
