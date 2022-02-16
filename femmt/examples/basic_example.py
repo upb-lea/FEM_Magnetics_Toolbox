@@ -9,7 +9,7 @@ component = "transformer"
 
 # Create Object
 if component == "inductor":
-    geo = MagneticComponent(component_type="inductor")
+    geo = MagneticComponent(component_type="inductor", working_directory = "")
 
     # Update Geometry
     geo.core.update(window_h=0.03, window_w=0.011)

@@ -2,8 +2,6 @@ import pytest
 import femmt
 import numpy as np
 
-
-
 def test_fft():
     example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28], [-175.69, 103.47, 175.69, -103.47, -175.69]])
 
