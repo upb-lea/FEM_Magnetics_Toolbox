@@ -3862,6 +3862,7 @@ class MagneticComponent:
         text_file.write(f"DirResValsPrimary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Primary/\";\n")
         text_file.write(f"DirResValsSecondary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
         text_file.write(f"DirResCirc = \"{self.e_m_circuit_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"OptionPos = \"{self.results_folder_path.replace(backslash, '/')}/option.pos\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":

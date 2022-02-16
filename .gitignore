@@ -37,3 +37,7 @@ femmt/thermal/solver/Constraint.pro
 femmt/thermal/solver/Function.pro
 femmt/thermal/solver/Group.pro
 femmt/thermal/solver/Parameters.pro
+
+# Used for integration test
+!tests/integration/fixtures/mesh/electro_magnetic.msh
+!tests/integration/fixtures/mesh/thermal.msh

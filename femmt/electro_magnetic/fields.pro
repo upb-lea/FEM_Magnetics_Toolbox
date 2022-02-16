@@ -66,7 +66,7 @@ PostOperation Map_local UsingPost MagDyn_a {
              View[PostProcessing.NbViews-1].RangeType=3;
              View[PostProcessing.NbViews-1].IntervalsType=1;
              View[PostProcessing.NbViews-1].NbIso = 25;"],
-           File "../results/option.pos"];
+           File OptionPos];
   // RangeType = 1; // Value scale range type (1=default, 2=custom, 3=per time step)
   // IntervalsType = 2; // Type of interval display (1=iso, 2=continuous, 3=discrete, 4=numeric)
 
