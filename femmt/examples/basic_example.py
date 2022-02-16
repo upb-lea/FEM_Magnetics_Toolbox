@@ -47,11 +47,8 @@ if component == "transformer":
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
     # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
     #                                                                               - 1.47917789/np.pi*180 + 180])
-
     # geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5)
     # geo.femm_reference(freq=100000, current=[1, 2], sigma_cu=58, sign=[1, -1], non_visualize=0)
-
-
 
     # ----------------------------------------------------------------------------------
     # Thermal simulation:
@@ -66,7 +63,8 @@ if component == "transformer":
             "case": 0.3, # epoxy resign
             "core": 5, # ferrite
             "winding": 400, # copper
-            "air_gaps": 180 # aluminium nitride
+            "air_gaps": 180, # aluminium nitride
+            "isolation": 1 # TODO Find material
     }
 
     # Here the case size can be determined

@@ -239,7 +239,8 @@ class MagneticComponent:
             "background_tag": self.mesh.ps_air,
             "winding_tags": self.mesh.ps_cond,
             "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
-            "boundary_regions": self.mesh.thermal_boundary_region_tags
+            "boundary_regions": self.mesh.thermal_boundary_region_tags,
+            "isolations_tag": self.mesh.ps_isolation
         }
 
         # Core area -> Is needed to estimate the heat flux
@@ -953,6 +954,8 @@ class MagneticComponent:
             self.p_window = None  # np.zeros((4 * self.component.n_windows, 4))
             self.p_air_gaps = None  # np.zeros((4 * self.component.air_gaps.number, 4))
             self.p_conductor = []
+            self.p_iso_core_pri = []
+            self.p_iso_pri_sec = []
             for i in range(0, self.component.n_windings):
                 self.p_conductor.insert(i, [])
 
@@ -1878,6 +1881,7 @@ class MagneticComponent:
                         # TODO: break, but remove warning. valid bit should be set to False
                         #  Code must go to the next parameter-iteration step for geometric sweep
                         self.component.valid = False
+                        warnings.warn("Too many turns that do not fit in the winding window.")
 
             # Region for Boundary Condition
             self.p_region_bound[0][:] = [-self.r_outer * self.component.mesh.padding,
@@ -1900,6 +1904,75 @@ class MagneticComponent:
                                          * self.component.mesh.padding,
                                          0,
                                          self.component.mesh.c_core * self.component.mesh.padding]
+
+        def draw_isolations(self):
+            if not self.component.component_type == "integrated_transformer":
+                # A delta is used in order to keep small gaps between everything such that not the exact same points are needed.
+                #delta = 0.0001
+                vww = self.component.virtual_winding_windows[0]
+                iso = self.component.isolation
+                mesh = self.component.mesh
+
+                # Using the delta the lines and points from the isolation and the core/windings are not overlapping
+                # which makes creating the mesh more simpler
+                isolation_delta = 0.0001 
+
+                # Core to Pri isolation
+                # Format: [x, y, z, mesh_size]
+                self.p_iso_core_pri = [
+                    [
+                        self.component.core.core_w / 2 + isolation_delta,
+                        vww.top_bound,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        self.component.core.core_w / 2 + iso.core_cond[0] - isolation_delta,
+                        vww.top_bound,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        self.component.core.core_w / 2 + iso.core_cond[0] - isolation_delta,
+                        vww.bot_bound,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        self.component.core.core_w / 2 + isolation_delta,
+                        vww.bot_bound,
+                        0,
+                        mesh.c_window
+                    ]
+                ]
+
+                # Pri to sec isolation
+                self.p_iso_pri_sec = [
+                    [
+                        0,
+                        0,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        mesh.c_window
+                    ]
+                ]
 
         def update(self):
 
@@ -1924,6 +1997,8 @@ class MagneticComponent:
             self.draw_virtual_winding_windows()
 
             self.draw_conductors()
+
+            self.draw_isolations()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Pre-Processing
@@ -2744,6 +2819,8 @@ class MagneticComponent:
             self.p_island = []
             self.p_cond = [[], []]
             self.p_region = []
+            self.p_iso_core_pri = []
+            self.p_iso_pri_sec = []
             # Curves
             self.l_bound_core = []
             self.l_bound_air = []
@@ -2751,11 +2828,15 @@ class MagneticComponent:
             self.l_cond = [[], []]
             self.l_region = []
             self.l_air_gaps_air = []
+            self.l_iso_core_pri = []
+            self.l_iso_pri_sec = []
             # Curve Loops
             self.curve_loop_cond = [[], []]
             self.curve_loop_island = []
             self.curve_loop_air = []
             self.curve_loop_air_gaps = []
+            self.curve_loop_iso_core_pri = []
+            self.curve_loop_iso_pri_sec = []
             # curve_loop_outer_air = []
             # curve_loop_bound = []
             # Plane Surfaces
@@ -2764,6 +2845,8 @@ class MagneticComponent:
             self.plane_surface_air = []
             self.plane_surface_outer_air = []
             self.plane_surface_air_gaps = []
+            self.plane_surface_iso_core_pri = []
+            self.plane_surface_iso_pri_sec = []
 
         def generate_hybrid_mesh(self, refine=0, alternative_error=0):
             """
@@ -3098,6 +3181,22 @@ class MagneticComponent:
                                 gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # Isolations
+                # Core to Pri
+                for i in self.component.two_d_axi.p_iso_core_pri:
+                    self.p_iso_core_pri.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+
+                for i in range(len(self.p_iso_core_pri)):
+                    currentTag = self.p_iso_core_pri[i] 
+                    nextTag = self.p_iso_core_pri[(i + 1) % len(self.p_iso_core_pri)]
+                    self.l_iso_core_pri.append(gmsh.model.geo.addLine(currentTag, nextTag))
+
+                self.curve_loop_iso_core_pri.append(gmsh.model.geo.addCurveLoop(self.l_iso_core_pri))
+                self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_core_pri))
+
+                # Pri to Sec
+
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Air
                 # Points are partwise double designated
 
@@ -3127,7 +3226,7 @@ class MagneticComponent:
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
 
-                self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
+                #self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
                 #for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
@@ -3138,7 +3237,7 @@ class MagneticComponent:
                 # Need flatten list of all! conductors
                 flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
                 self.plane_surface_air.append(
-                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond))
+                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond + self.curve_loop_iso_core_pri))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Boundary
@@ -3254,8 +3353,8 @@ class MagneticComponent:
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Air and air_gaps
-            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps
+            # Air, air_gaps and iso (since isolation is handled as air, as well as the air gaps)
+            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core_pri + self.plane_surface_iso_pri_sec
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=1000)
             # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
 
@@ -3376,9 +3475,6 @@ class MagneticComponent:
             gmsh.initialize()
             gmsh.open(self.component.hybrid_mesh_file)
 
-            # TODO Set dynamically?
-            mesh_size = 0.001
-
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Create case around the core
 
@@ -3413,8 +3509,8 @@ class MagneticComponent:
 
             # Create 5 new areas: top, top right, right, bottom right, bottom
             # top
-            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh_size)
-            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh_size)
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], self.c_core)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], self.c_core)
             top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
             top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
             top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
@@ -3422,8 +3518,8 @@ class MagneticComponent:
             top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
 
             # top right
-            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh_size)
-            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh_size)
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], self.c_core)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], self.c_core)
             top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
             top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
             top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
@@ -3431,15 +3527,15 @@ class MagneticComponent:
             top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
 
             # right
-            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh_size)
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], self.c_core)
             right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
             right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
             right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
             right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
 
             # bottom right
-            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh_size)
-            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh_size)
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], self.c_core)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], self.c_core)
             bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
             bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
             bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
@@ -3447,7 +3543,7 @@ class MagneticComponent:
             bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
 
             # bottom
-            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh_size)
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], self.c_core)
             bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
             bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
             bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
@@ -3486,6 +3582,11 @@ class MagneticComponent:
             self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=1001)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Isolations
+            # TODO Currently isolations can only have the same material
+            self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_pri_sec + self.plane_surface_iso_core_pri)
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Boundary
             self.thermal_boundary_region_tags = {
                 "BOUNDARY_TOP"            : top_case_top_line,
@@ -3520,7 +3621,7 @@ class MagneticComponent:
                     gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
             gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
             gmsh.model.setPhysicalName(2, self.ps_air_gaps, "AIR_GAPS")
-
+            gmsh.model.setPhysicalName(2, self.ps_isolation, "ISOLATIONS")
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # - Forward Meshing -
             p_inter = None
@@ -4550,11 +4651,7 @@ class MagneticComponent:
 
         # == Labels/Designations ==
         # Label for air and air gap
-        if self.air_gaps.number > 0:
-            femm.hi_addblocklabel(0.001, 0)
-            femm.hi_selectlabel(0.001, 0)
-            femm.hi_setblockprop('Air Gaps', 1, 0, 0)
-            femm.hi_clearselected()
+        if self.air_gaps.number == 0:
             femm.hi_addblocklabel(0.001, 0)
             femm.hi_selectlabel(0.001, 0)
             femm.hi_setblockprop('Air', 1, 0, 0)
@@ -4563,6 +4660,10 @@ class MagneticComponent:
             femm.hi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
             femm.hi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
             femm.hi_setblockprop('Air', 1, 0, 0)
+            femm.hi_clearselected()
+            femm.hi_addblocklabel(0.001, 0)
+            femm.hi_selectlabel(0.001, 0)
+            femm.hi_setblockprop('Air Gaps', 1, 0, 0)
             femm.hi_clearselected()
 
         # Label for core
@@ -4735,7 +4836,8 @@ class MagneticComponent:
             self.simulate()
             self.write_log()
             self.visualize()
-
+        else:
+            raise Exception("Geometry is not valid. Mesh cannt be generated.")
         # results =
 
         # return results
