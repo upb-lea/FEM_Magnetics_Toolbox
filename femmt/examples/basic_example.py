@@ -24,6 +24,7 @@ if component == "inductor":
 
 
     # Single simulation
+    geo.create_model(freq=100000)
     geo.single_simulation(freq=100000, current=[1])
     
     # Excitation Sweep Example
@@ -54,6 +55,7 @@ if component == "transformer":
                         core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
     # Perform a single simulation
+    geo.create_model(freq=250000)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
     # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
     #                                                                               - 1.47917789/np.pi*180 + 180])
@@ -111,6 +113,11 @@ if component == "transformer":
         "flag_boundary_bottom": 1
     }
 
+    # In order for the thermal simulation to work an electro_magnetic simulation has to run before.
+    # The em-simulation will create a file containing the losses.
+    # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
+    # order for the thermal simulation to work (geo.single_simulation is not needed).
+    # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot)
     geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
 
@@ -135,6 +142,7 @@ if component == "integrated_transformer":
                           radius=geo.core.core_w / 2 + geo.core.window_w - 0.001)
 
     # Perform a single simulation
+    geo.create_model(freq=250000)
     geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 180])
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
 
