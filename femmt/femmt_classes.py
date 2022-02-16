@@ -819,7 +819,8 @@ class MagneticComponent:
         for vww in range(0, len(self.virtual_winding_windows)):
             self.virtual_winding_windows[vww].winding = winding[vww]
             self.virtual_winding_windows[vww].scheme = scheme[vww]
-            self.virtual_winding_windows[vww].turns = list(map(list, zip(*n_turns)))[vww]
+            #self.virtual_winding_windows[vww].turns = list(map(list, zip(*n_turns)))[vww] OLD CODE
+            self.virtual_winding_windows[vww].turns = n_turns[vww]
             # Need number of turns per VWW but given is a form of [list_of_primary_turns, list_of_secondary_turns]
 
         # - - - - - - - - - - - - - - - - - Definition of the Isolation Parameters - - - - - - - - - - - - - - - - - - -
@@ -1909,7 +1910,7 @@ class MagneticComponent:
             if not self.component.component_type == "integrated_transformer":
                 # A delta is used in order to keep small gaps between everything such that not the exact same points are needed.
                 #delta = 0.0001
-                vww = self.component.virtual_winding_windows[0]
+                window_h = self.component.core.window_h
                 iso = self.component.isolation
                 mesh = self.component.mesh
 
@@ -1922,57 +1923,64 @@ class MagneticComponent:
                 self.p_iso_core_pri = [
                     [
                         self.component.core.core_w / 2 + isolation_delta,
-                        vww.top_bound,
+                        window_h / 2 - isolation_delta,
                         0,
                         mesh.c_window
                     ],
                     [
                         self.component.core.core_w / 2 + iso.core_cond[0] - isolation_delta,
-                        vww.top_bound,
+                        window_h / 2 - isolation_delta,
                         0,
                         mesh.c_window
                     ],
                     [
                         self.component.core.core_w / 2 + iso.core_cond[0] - isolation_delta,
-                        vww.bot_bound,
+                        -window_h / 2 + isolation_delta,
                         0,
                         mesh.c_window
                     ],
                     [
                         self.component.core.core_w / 2 + isolation_delta,
-                        vww.bot_bound,
+                        -window_h / 2 + isolation_delta,
                         0,
                         mesh.c_window
                     ]
                 ]
 
-                # Pri to sec isolation
-                self.p_iso_pri_sec = [
-                    [
-                        0,
-                        0,
-                        0,
-                        mesh.c_window
-                    ],
-                    [
-                        0,
-                        0,
-                        0,
-                        mesh.c_window
-                    ],
-                    [
-                        0,
-                        0,
-                        0,
-                        mesh.c_window
-                    ],
-                    [
-                        0,
-                        0,
-                        0,
-                        mesh.c_window
+                self.p_iso_vww = []
+
+                # Isolation between virtual winding windows
+                for index, vww in enumerate(self.draw_virtual_winding_windows):
+                    iso = []
+
+                    self.p_iso_pri_sec = [
+                        [
+                            vww.left_bound - iso.cond_cond[index] + isolation_delta,
+                            window_h,
+                            0,
+                            mesh.c_window
+                        ],
+                        [
+                            self.r_inner - isolation_delta,
+                            window_h / 2 - isolation_delta,
+                            0,
+                            mesh.c_window
+                        ],
+                        [
+                            self.r_inner - isolation_delta,
+                            -window_h / 2 + isolation_delta,
+                            0,
+                            mesh.c_window
+                        ],
+                        [
+                            self.r_inner - iso.core_cond[1] + isolation_delta,
+                            -window_h / 2 + isolation_delta,
+                            0,
+                            mesh.c_window
+                        ]
                     ]
-                ]
+
+                    self.p_iso_vww.append(iso)
 
         def update(self):
 
@@ -3182,19 +3190,33 @@ class MagneticComponent:
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Isolations
+
+                # Points
                 # Core to Pri
                 for i in self.component.two_d_axi.p_iso_core_pri:
                     self.p_iso_core_pri.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
 
-                for i in range(len(self.p_iso_core_pri)):
-                    currentTag = self.p_iso_core_pri[i] 
-                    nextTag = self.p_iso_core_pri[(i + 1) % len(self.p_iso_core_pri)]
-                    self.l_iso_core_pri.append(gmsh.model.geo.addLine(currentTag, nextTag))
+                # Pri to Sec
+               # for i in self.component.two_d_axi.p_iso_pri_sec:
+                #    self.p_iso_pri_sec.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
 
+                # Lines
+                for i in range(4): # Always 4 points for each isolation
+                    core_pri_current_tag = self.p_iso_core_pri[i] 
+                    core_pri_next_tag = self.p_iso_core_pri[(i + 1) % 4]
+                    #pri_sec_current_tag = self.p_iso_pri_sec[i]
+                    #pri_sec_next_tag = self.p_iso_pri_sec[(i + 1) % 4]
+                    self.l_iso_core_pri.append(gmsh.model.geo.addLine(core_pri_current_tag, core_pri_next_tag))
+                    #self.l_iso_pri_sec.append(gmsh.model.geo.addLine(pri_sec_current_tag, pri_sec_next_tag))
+
+                # Curve loops and surfaces
+                # Core to Pri
                 self.curve_loop_iso_core_pri.append(gmsh.model.geo.addCurveLoop(self.l_iso_core_pri))
                 self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_core_pri))
 
                 # Pri to Sec
+               # self.curve_loop_iso_pri_sec.append(gmsh.model.geo.addCurveLoop(self.l_iso_pri_sec))
+               # self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_pri_sec))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Air
@@ -3236,8 +3258,10 @@ class MagneticComponent:
 
                 # Need flatten list of all! conductors
                 flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
+                # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
+                # The other curve loops represent holes in the surface -> For each conductor as well as each isolation
                 self.plane_surface_air.append(
-                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond + self.curve_loop_iso_core_pri))
+                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond + self.curve_loop_iso_core_pri + self.curve_loop_iso_pri_sec))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Boundary
