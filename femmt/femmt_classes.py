@@ -3601,42 +3601,49 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, f, i, phases=None, ex_type='current', imposed_red_f=0):
+    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current', imposed_red_f=0) -> None:
         """
         - excitation of the electromagnetic problem
         - current, voltage or current density
         - frequency or reduced frequency
 
-        :param phases:
-        :param f:
-        :param i:
-        :param ex_type:
-        :param imposed_red_f:
 
-        :return:
+        :param frequency: Frequency in a list
+        :type frequency: float
+        :param amplitude_list: Amplitude in a list
+        :type amplitude_list: List
+        :param phase_deg_list: Phase in degree in a list
+        :type phase_deg_list: List
+        :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
+        :type ex_type: str
+        :param imposed_red_f:
+        :type imposed_red_f:
+
+        :return: None
+        :rtype: None
 
         """
-        phases = phases or []
+        phase_deg_list = phase_deg_list or []
 
         print(f"\n---\n"
               f"Excitation: \n"
-              f"Frequency: {f}\n"
-              f"Current(s): {i}\n"
-              f"Phase(s): {phases}\n")
+              f"Frequency: {frequency}\n"
+              f"Current(s): {amplitude_list}\n"
+              f"Phase(s): {phase_deg_list}\n")
 
         # -- Excitation --
         self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
 
-        phases = np.asarray(phases)
+        phase_deg_list = np.asarray(phase_deg_list)
         self.red_freq = np.empty(2)
 
         for num in range(0, self.n_windings):
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
-                self.current[num] = i[num]
-                if len(phases) != 0:
-                    self.phase_tmp = phases / 180
+                self.current[num] = amplitude_list[num]
+                if len(phase_deg_list) != 0:
+                    self.phase_tmp = phase_deg_list / 180
             if self.flag_excitation_type == 'current_density':
                 raise NotImplementedError
             if self.flag_excitation_type == 'voltage':
@@ -3644,7 +3651,7 @@ class MagneticComponent:
                 # self.voltage = 2
 
             # -- Frequency --
-            self.frequency = f  # in Hz
+            self.frequency = frequency  # in Hz
             if self.flag_imposed_reduced_frequency == 1:
                 self.red_freq[num] = 4
             else:
@@ -4695,7 +4702,7 @@ class MagneticComponent:
 
         """
         self.high_level_geo_gen()
-        self.excitation(f=100000, i=1)  # arbitrary values: frequency and current
+        self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
         self.file_communication()
         self.pre_simulate()
 
@@ -4724,7 +4731,7 @@ class MagneticComponent:
         if self.valid:
             self.mesh.generate_hybrid_mesh()
             self.mesh.generate_electro_magnetic_mesh()
-            self.excitation(f=freq, i=current, phases=phi_deg)  # frequency and current
+            self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
             self.file_communication()
             self.pre_simulate()
             self.simulate()
@@ -4910,33 +4917,33 @@ class MagneticComponent:
         # phi = phi or []
         print(frequencies, currents, phi)
         for i in range(0, len(frequencies)):
-            self.excitation(f=frequencies[i], i=currents[i], phases=phi[i])  # frequency and current
+            self.excitation(frequency=frequencies[i], amplitude_list=currents[i], phase_deg_list=phi[i])  # frequency and current
             self.file_communication()
             self.pre_simulate()
             self.simulate()
         if show_last:
             self.visualize()
 
-    def excitation_sweep(self, frequency_list: List, current_list: List, phi_deg_list: List,
+    def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last: bool = False, return_results: bool = False, meshing: bool = True) -> Dict:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
 
-        :Example Code:
+        :Example Code for Inductor:
 
         >>> import femmt as fmt
-        >>> geo = fmt.MagneticComponent()
-        >>> fs = np.linspace(0, 250000, 6)
-        >>> cs = [10, 2, 1, 0.5, 0.2, 0.1]
-        >>> geo.excitation_sweep(frequencies=fs, currents=cs)
+        >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
+        >>> amplitue_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+        >>> phase_list_list = [[0], [10], [20], [30], [40], [50]]
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
 
-        :param phi_deg_list:
-        :type phi_deg_list: List
-        :param current_list:
-        :type current_list: List
-        :param frequency_list:
+        :param frequency_list: Frequency in a list
         :type frequency_list: List
+        :param current_list_list: current amplitude, must be a list in a list, see example!
+        :type current_list_list: List
+        :param phi_deg_list_list: phase in degree, must be a list in a list, see example!
+        :type phi_deg_list_list: List
         :param show_last: shows last simulation in gmsh if set to True
         :type show_last: bool
         :param return_results: returns results in a dictionary
@@ -4965,7 +4972,7 @@ class MagneticComponent:
         if self.valid:
 
             for i in range(0, len(frequency_list)):
-                self.excitation(f=frequency_list[i], i=current_list[i], phases=phi_deg_list[i])  # frequency and current
+                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i], phase_deg_list=phi_deg_list_list[i])  # frequency and current
                 self.file_communication()
                 self.pre_simulate()
                 self.simulate()
@@ -5018,7 +5025,7 @@ class MagneticComponent:
         # Call Simulation
         # self.high_level_geo_gen(frequency=0, skin_mesh_factor=skin_mesh_factor)
         # self.mesh.generate_mesh()
-        self.excitation(f=f_switch, i=Ipeak, phases=[0, 180])  # frequency and current
+        self.excitation(frequency=f_switch, amplitude_list=Ipeak, phase_deg_list=[0, 180])  # frequency and current
         self.file_communication()
         self.pre_simulate()
         self.simulate()

@@ -22,8 +22,18 @@ if component == "inductor":
                           winding=["primary"], scheme=["square"],
                           core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
 
-    # geo.single_simulation(freq=100000, current=[1])
-    geo.femm_reference(freq=100000, current=[1], sigma_cu=58, sign=[1], non_visualize=0)
+
+    # Single simulation
+    geo.single_simulation(freq=100000, current=[1])
+    
+    # Excitation Sweep Example
+    # fs = [0, 10000, 30000, 60000, 100000, 150000]
+    # amplitue_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+    # phase_list = [[0], [10], [20], [30], [40], [50]]
+    # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitue_list, phi_deg_list_list=phase_list)
+
+    # Reference simulation using FEMM
+    # geo.femm_reference(freq=100000, current=[1], sigma_cu=58, sign=[1], non_visualize=0)
 
 if component == "transformer":
     geo = MagneticComponent(component_type="transformer")
