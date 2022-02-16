@@ -98,7 +98,7 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
     mygetdp = path.join(onelab_folder_path, "getdp")
     c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2")
 
-def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path, 
+def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
     tags_dict, thermal_conductivity_dict, boundary_temperatures, 
     boundary_flags, boundary_physical_groups, core_area, conductor_radii, 
     show_results, pretty_colors = False, show_before_simulation = False):
@@ -122,14 +122,15 @@ def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path,
     
     losses = read_results_log(results_log_file_path)
 
-    # Realtive paths
-    solver_folder = path.join(path.dirname(__file__), "solver")
-    map_pos_file = path.join(solver_folder, "map.pos")
-    thermal_template_file = path.join(solver_folder, "Thermal.pro")
-    parameters_file = path.join(solver_folder, "Parameters.pro")
-    function_file = path.join(solver_folder, "Function.pro")
-    group_file = path.join(solver_folder, "Group.pro")
-    constraint_file = path.join(solver_folder, "Constraint.pro")
+    # Relative paths
+    map_pos_file = path.join(results_folder_path, "thermal.pos")
+    influx_pos_file = path.join(results_folder_path, "thermal_influx.pos")
+    solver_folder_path = path.join(os.path.dirname(__file__), "solver")
+    thermal_template_file = path.join(solver_folder_path, "Thermal.pro")
+    parameters_file = path.join(solver_folder_path, "Parameters.pro")
+    function_file = path.join(solver_folder_path, "Function.pro")
+    group_file = path.join(solver_folder_path, "Group.pro")
+    constraint_file = path.join(solver_folder_path, "Constraint.pro")
     
     gmsh.initialize()
     gmsh.open(model_mesh_file_path)
@@ -139,6 +140,11 @@ def run_thermal(onelab_folder_path, model_mesh_file_path, results_log_file_path,
     function_pro = FunctionPro()
     group_pro = GroupPro()
     constraint_pro = ConstraintPro()
+
+    parameters_pro.add_to_parameters({
+        "thermal_file": map_pos_file.replace("\\", "/"),
+        "thermal_influx_file": influx_pos_file.replace("\\", "/")
+    })
 
     # Extract losses
     winding_losses = []
