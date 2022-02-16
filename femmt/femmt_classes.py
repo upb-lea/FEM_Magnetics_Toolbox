@@ -1871,6 +1871,7 @@ class MagneticComponent:
                         # TODO: break, but remove warning. valid bit should be set to False
                         #  Code must go to the next parameter-iteration step for geometric sweep
                         self.component.valid = False
+                        warnings.warn("Too many turns that do not fit in the winding window.")
 
             # Region for Boundary Condition
             self.p_region_bound[0][:] = [-self.r_outer * self.component.mesh.padding,
@@ -4712,6 +4713,8 @@ class MagneticComponent:
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
             self.mesh.generate_hybrid_mesh()
+        else:
+            raise Exception("The model is not valid. The simulation won't start.")
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None) -> None:
         """
