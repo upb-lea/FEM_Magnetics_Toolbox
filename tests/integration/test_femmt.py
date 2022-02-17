@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import os
+import json
 import shutil
 from femmt import MagneticComponent
 
@@ -23,6 +24,16 @@ def temp_folder():
 
     if not os.path.exists(temp_folder_path):
         os.mkdir(temp_folder_path)
+
+    # Create config.json
+    config_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
+    if os.path.exists(config_file_path):
+        config_content = {"onelab": config_file_path}
+        with open(os.path.join(temp_folder_path, "config.json"), "w") as fd:
+            fd.write(json.dumps(config_content))
+    else:
+        assert 0, "onelab folder not found"
+        exit(0)
 
     # Test
     yield temp_folder_path
