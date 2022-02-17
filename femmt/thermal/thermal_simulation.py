@@ -100,7 +100,7 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
 
 def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
     tags_dict, thermal_conductivity_dict, boundary_temperatures, 
-    boundary_flags, boundary_physical_groups, core_area, conductor_radii, 
+    boundary_flags, boundary_physical_groups, core_area, conductor_radii,
     show_results, pretty_colors = False, show_before_simulation = False):
     """
     Runs a thermal simulation.

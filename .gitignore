@@ -26,6 +26,7 @@ build/
 dist/
 femmt.egg-info/
 .eggs/
+onelab/
 
 # FEMMT: generated files
 femmt/electro_magnetic/Parameter.pro
@@ -39,5 +40,4 @@ femmt/thermal/solver/Group.pro
 femmt/thermal/solver/Parameters.pro
 
 # Used for integration test
-!tests/integration/fixtures/mesh/electro_magnetic.msh
-!tests/integration/fixtures/mesh/thermal.msh
+!tests/integration/fixtures/results/result_log_electro_magnetic.json
