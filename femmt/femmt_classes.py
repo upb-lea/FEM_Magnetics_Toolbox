@@ -3321,18 +3321,19 @@ class MagneticComponent:
             # Synchronize
             gmsh.model.geo.synchronize()
 
-            # Conductor Center
-            for num in range(0, self.component.n_windings):
-                for i in range(0, int(len(self.p_cond[num]) / 5)):
-                    gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
+            if all(winding.conductor_type == "solid" for winding in self.component.windings):
+                for num in range(0, self.component.n_windings):
+                    for i in range(0, int(len(self.p_cond[num]) / 5)):
+                        gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
 
-            # Embed points for mesh refinement
-            # Inter Conductors
-            for n_win in range(0, len(self.component.virtual_winding_windows)):
-                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
-                    gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
-            # Stray path
-            # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
+
+                # Embed points for mesh refinement
+                # Inter Conductors
+                for n_win in range(0, len(self.component.virtual_winding_windows)):
+                    if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                        gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
+                # Stray path
+                # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
 
             # Synchronize again
             gmsh.model.geo.synchronize()
@@ -4965,6 +4966,12 @@ class MagneticComponent:
         if self.valid:
 
             for i in range(0, len(frequency_list)):
+                print(i)
+                print(f"{frequency_list[i]=}")
+                print(f"{current_list[i]=}")
+                print(f"{current_list=}")
+                print(f"{phi_deg_list[i]=}")
+                print(f"{phi_deg_list=}")
                 self.excitation(f=frequency_list[i], i=current_list[i], phases=phi_deg_list[i])  # frequency and current
                 self.file_communication()
                 self.pre_simulate()
