@@ -720,7 +720,8 @@ class MagneticComponent:
         :param scheme:
             if winding != "interleaved" (e.g. "primary" or "secondary")
                 - "hexa": hexagonal turn scheme
-                - "square": square turn scheme
+                - "square": square turn scheme using the full winding window height (most common use case)
+                - "square_full_width": square turn scheme using the full winding window width
             if winding == "interleaved" (works only for transformer, not for inductor!)
                 - "horizontal": horizontal winding interleaving
                 - "vertical": vertical winding interleaving
@@ -1794,6 +1795,31 @@ class MagneticComponent:
                             self.component.windings[num].conductor_type == "solid":
 
                         if self.component.virtual_winding_windows[num].scheme == "square":
+                            y = bot_bound + self.component.windings[num].conductor_radius
+                            x = left_bound + self.component.windings[num].conductor_radius
+                            i = 0
+                            # Case n_conductors higher that "allowed" is missing
+                            while x < right_bound - self.component.windings[num].conductor_radius and i < self.component.windings[num].turns[n_win]:
+                                while y < top_bound - self.component.windings[num].conductor_radius and i < self.component.windings[num].turns[n_win]:
+                                    self.p_conductor[num].append([x, y, 0, self.component.mesh.c_center_conductor[num]])
+                                    self.p_conductor[num].append(
+                                        [x - self.component.windings[num].conductor_radius, y, 0,
+                                         self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append(
+                                        [x, y + self.component.windings[num].conductor_radius, 0,
+                                         self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append(
+                                        [x + self.component.windings[num].conductor_radius, y, 0,
+                                         self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append(
+                                        [x, y - self.component.windings[num].conductor_radius, 0,
+                                         self.component.mesh.c_conductor[num]])
+                                    i += 1
+                                    y += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # one step from left to right
+                                x += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # from left to top
+                                y = bot_bound + self.component.windings[num].conductor_radius
+
+                        if self.component.virtual_winding_windows[num].scheme == "square_full_width":
                             y = bot_bound + self.component.windings[num].conductor_radius
                             x = left_bound + self.component.windings[num].conductor_radius
                             i = 0
@@ -3344,18 +3370,19 @@ class MagneticComponent:
             # Synchronize
             gmsh.model.geo.synchronize()
 
-            # Conductor Center
-            for num in range(0, self.component.n_windings):
-                for i in range(0, int(len(self.p_cond[num]) / 5)):
-                    gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
+            if all(winding.conductor_type == "solid" for winding in self.component.windings):
+                for num in range(0, self.component.n_windings):
+                    for i in range(0, int(len(self.p_cond[num]) / 5)):
+                        gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
 
-            # Embed points for mesh refinement
-            # Inter Conductors
-            for n_win in range(0, len(self.component.virtual_winding_windows)):
-                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
-                    gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
-            # Stray path
-            # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
+
+                # Embed points for mesh refinement
+                # Inter Conductors
+                for n_win in range(0, len(self.component.virtual_winding_windows)):
+                    if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                        gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
+                # Stray path
+                # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
 
             # Synchronize again
             gmsh.model.geo.synchronize()
