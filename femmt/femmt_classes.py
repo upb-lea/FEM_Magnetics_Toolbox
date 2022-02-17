@@ -304,7 +304,7 @@ class MagneticComponent:
         :return: -
         """
         # find out path of femmt (installed module or directly opened in git)?
-        config_file_path = os.path.join(self.femmt_folder_path, 'config.json')
+        config_file_path = os.path.join(self.working_directory, 'config.json')
 
         # check if config.json is available and not empty
         if os.path.isfile(config_file_path) and os.stat(config_file_path).st_size != 0:

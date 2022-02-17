@@ -101,6 +101,9 @@ def femmt_simulation(temp_folder):
 def test_femmt(femmt_simulation):
     test_e_m_mesh_file, test_thermal_mesh_file = femmt_simulation
 
+    assert os.path.exists(test_e_m_mesh_file), "Electro magnetic mesh file not found!"
+    assert os.path.exists(test_thermal_mesh_file), "Thermal mesh file not found"
+
     # Compare with existing mesh
     fixture_mesh_folder_path = os.path.join(os.path.dirname(__file__), "fixtures", "mesh")
     print("Comparing meshes...")
