@@ -5,7 +5,7 @@ import json
 import shutil
 from femmt import MagneticComponent
 
-def compare_mesh(first_mesh, second_mesh):
+def compare_results(first_mesh, second_mesh):
     first_content = None
     second_content = None
 
@@ -61,6 +61,9 @@ def femmt_simulation(temp_folder):
         geo.create_model(freq=250000, visualize_before=False)
         geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170], show_results=False)
 
+        """
+        Currently only the magnetics simulation is tested
+
         thermal_conductivity_dict = {
                 "air": 0.0263,
                 "case": 0.3,
@@ -91,27 +94,28 @@ def femmt_simulation(temp_folder):
         }
 
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, show_results=False)
+        """
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
     except KeyboardInterrupt:
         print("Keyboard interrupt..")
 
-    return os.path.join(temp_folder, "mesh", "electro_magnetic.msh"), os.path.join(temp_folder, "mesh", "thermal.msh")
+    return os.path.join(temp_folder, "results", "result_log_electro_magnetic.json")
 
 def test_femmt(femmt_simulation):
-    test_e_m_mesh_file, test_thermal_mesh_file = femmt_simulation
+    """
+    The first idea was to compare the simulated meshes with test meshes simulated manually.
+    It turns out that the meshes cannot be compared because even slightly differences in the mesh,
+    can cause to a test failure, because the meshes are binary files.
+    Those differences could even occur when running the simulation on different machines
+    -> This was observed when creating a docker image and running the tests.
 
-    assert os.path.exists(test_e_m_mesh_file), "Electro magnetic mesh file not found!"
-    assert os.path.exists(test_thermal_mesh_file), "Thermal mesh file not found"
+    Now as an exaple only the result log will be checked.
+    """
+    test_result_log = femmt_simulation
 
-    # Compare with existing mesh
-    fixture_mesh_folder_path = os.path.join(os.path.dirname(__file__), "fixtures", "mesh")
-    print("Comparing meshes...")
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_e_m_mesh_file = os.path.join(fixture_mesh_folder_path, "electro_magnetic.msh")
-    assert compare_mesh(test_e_m_mesh_file, fixture_e_m_mesh_file), "Electro magnetic mesh is wrong."
-
-    # thermal mesh
-    fixture_thermal_mesh_file = os.path.join(fixture_mesh_folder_path, "thermal.msh")
-    assert compare_mesh(test_thermal_mesh_file, fixture_thermal_mesh_file), "Thermal mesh is wrong."
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "result_log_electro_magnetic.json")
+    assert compare_results(test_result_log, fixture_result_log), "Electro magnetic mesh is wrong."
