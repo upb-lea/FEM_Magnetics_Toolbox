@@ -4,7 +4,7 @@ Documentation
 The ``MagneticComponent`` class
 *********************************
 
-.. currentmodule:: femmt
+.. currentmodule:: femmt.femmt_classes
 
 .. autoclass:: MagneticComponent
    :members:
@@ -15,6 +15,15 @@ The ``MagneticComponent`` class
 FEMMT methods
 **************
 
-.. automodule:: femmt_functions
+.. automodule:: femmt.femmt_functions
+    :members:
+    :undoc-members:
+    
+FEMMT Thermal
+**************
+
+.. currentmodule:: femmt.thermal_classes
+
+.. autoclass:: ConstraintPro
     :members:
     :undoc-members:
