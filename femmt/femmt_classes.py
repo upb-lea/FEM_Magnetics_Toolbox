@@ -73,7 +73,6 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
-        self.visualize_before = False
         self.region = None  # Apply an outer Region or directly apply a constraint on the Core Boundary
         self.plot_fields = "standard"  # can be "standard" or False
 
@@ -241,7 +240,7 @@ class MagneticComponent:
         return core_height * core_width - winding_height * winding_width - air_gap_area
 
     # Start thermal simulation
-    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot) -> None:
+    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, show_results=True) -> None:
         """
         
         Starts the thermal simulation using thermal.py
@@ -274,9 +273,6 @@ class MagneticComponent:
 
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
-
-        # When a gmsh window should open showing the simulation results
-        show_results = True
 
         thermal_parameters = {
             "onelab_folder_path": self.onelab_folder_path,
@@ -2787,7 +2783,7 @@ class MagneticComponent:
             self.plane_surface_outer_air = []
             self.plane_surface_air_gaps = []
 
-        def generate_hybrid_mesh(self, refine=0, alternative_error=0):
+        def generate_hybrid_mesh(self, refine=0, alternative_error=0, visualize_before=False):
             """
             - interaction with gmsh
             - mesh generation
@@ -3226,7 +3222,7 @@ class MagneticComponent:
             gmsh.model.geo.synchronize()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            if self.component.visualize_before:
+            if visualize_before:
                 # Colors
                 for i in range(0, len(self.plane_surface_core)):
                     gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50)
@@ -3614,10 +3610,6 @@ class MagneticComponent:
                 os.mkdir(self.component.mesh_folder_path)
 
             gmsh.write(self.component.thermal_mesh_file)
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Open gmsh GUI for visualization
-            # gmsh.fltk.run()
-            # Terminate gmsh
             gmsh.finalize()
 
         def mesh(self, frequency=None, skin_mesh_factor=1):
@@ -4740,14 +4732,14 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
-    def create_model(self, freq: float, skin_mesh_factor: float = 0.5):
+    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before = False):
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
-            self.mesh.generate_hybrid_mesh()
+            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before)
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
-    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None) -> None:
+    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None, show_results = True) -> None:
         """
 
         Start a _single_ ONELAB simulation.
@@ -4771,7 +4763,8 @@ class MagneticComponent:
         self.pre_simulate()
         self.simulate()
         self.write_log()
-        self.visualize()
+        if show_results:
+            self.visualize()
 
         # results =
 
