@@ -27,7 +27,7 @@ if component == "inductor":
 
     # Perform a frequency sweep simulation
     geo.visualize_before = False
-    geo.excitation_sweep(frequency_list=frequencies, current_list=current_amplitudes, phi_deg_list=phases, show_last=True)
+    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last=True)
 
 
 if component == "transformer":
@@ -53,4 +53,4 @@ if component == "transformer":
 
     # Perform a frequency sweep simulation
     geo.visualize_before = True
-    geo.excitation_sweep(frequency_list=frequencies, current_list=current_amplitudes, phi_deg_list=phases, show_last=True)
+    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last=True)
