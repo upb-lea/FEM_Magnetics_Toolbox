@@ -1871,6 +1871,7 @@ class MagneticComponent:
                         # TODO: break, but remove warning. valid bit should be set to False
                         #  Code must go to the next parameter-iteration step for geometric sweep
                         self.component.valid = False
+                        warnings.warn("Too many turns that do not fit in the winding window.")
 
             # Region for Boundary Condition
             self.p_region_bound[0][:] = [-self.r_outer * self.component.mesh.padding,
@@ -4708,8 +4709,14 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
-    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          skin_mesh_factor: float = 0.5, NL_core=0) -> None:
+    def create_model(self, freq: float, skin_mesh_factor: float = 0.5):
+        self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+        if self.valid:
+            self.mesh.generate_hybrid_mesh()
+        else:
+            raise Exception("The model is not valid. The simulation won't start.")
+
+    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None) -> None:
         """
 
         Start a _single_ ONELAB simulation.
@@ -4727,16 +4734,13 @@ class MagneticComponent:
         """
         phi_deg = phi_deg or []
 
-        self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
-        if self.valid:
-            self.mesh.generate_hybrid_mesh()
-            self.mesh.generate_electro_magnetic_mesh()
-            self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
-            self.file_communication()
-            self.pre_simulate()
-            self.simulate()
-            self.write_log()
-            self.visualize()
+        self.mesh.generate_electro_magnetic_mesh()
+        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
+        self.file_communication()
+        self.pre_simulate()
+        self.simulate()
+        self.write_log()
+        self.visualize()
 
         # results =
 
