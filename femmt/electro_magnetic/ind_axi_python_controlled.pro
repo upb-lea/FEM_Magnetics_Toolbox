@@ -401,12 +401,8 @@ Resolution {
     }
 
     Operation {
-      CreateDir[DirRes];
-      CreateDir[DirResFields];
-      CreateDir[DirResVals];
       CreateDir[DirResValsPrimary];
       CreateDir[DirResValsSecondary];
-      CreateDir[DirResCirc];
 
       If(!Flag_NL)
           Generate[A] ; Solve[A] ;

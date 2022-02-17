@@ -9,7 +9,7 @@ component = "transformer"
 
 # Create Object
 if component == "inductor":
-    geo = MagneticComponent(component_type="inductor")
+    geo = MagneticComponent(component_type="inductor", working_directory = "")
 
     # Update Geometry
     geo.core.update(window_h=0.03, window_w=0.011)
@@ -37,7 +37,7 @@ if component == "inductor":
     # geo.femm_reference(freq=100000, current=[1], sigma_cu=58, sign=[1], non_visualize=0)
 
 if component == "transformer":
-    geo = MagneticComponent(component_type="transformer")
+    geo = MagneticComponent(component_type="transformer", working_directory=r"C:\Uni\Bachelorarbeit\github\FEM_Magnetics_Toolbox\tests\integration\fixtures")
     geo.visualize_before = False
 
     # Update Geometry

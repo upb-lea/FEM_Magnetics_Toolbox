@@ -39,26 +39,7 @@ class MagneticComponent:
     # Initialization of all class variables
     # Common variables for all instances
 
-    # Setup folder paths 
-    femmt_folder_path = os.path.dirname(__file__)
     onelab_folder_path = None
-    mesh_folder_path = os.path.join(femmt_folder_path, "mesh")
-    electro_magnetic_folder_path = os.path.join(femmt_folder_path, "electro_magnetic")
-    results_folder_path = os.path.join(femmt_folder_path, "results")
-    e_m_values_folder_path = os.path.join(results_folder_path, "values")
-    e_m_fields_folder_path = os.path.join(results_folder_path, "fields")
-    e_m_circuit_folder_path = os.path.join(results_folder_path, "circuit")
-    e_m_strands_coefficients_folder_path = os.path.join(electro_magnetic_folder_path, "Strands_Coefficients")
-    femm_folder_path = os.path.join(femmt_folder_path, "femm")
-    reluctance_model_folder_path = os.path.join(femmt_folder_path, "reluctance_model")
-
-    # Setup file paths
-    e_m_results_log_path = os.path.join(results_folder_path, "result_log_electro_magnetic.json")
-    config_path = os.path.join(femmt_folder_path, "config.json")
-    e_m_mesh_file = os.path.join(mesh_folder_path, "electro_magnetic.msh")
-    hybrid_mesh_file = os.path.join(mesh_folder_path, "hybrid.msh")
-    hybrid_color_mesh_file = os.path.join(mesh_folder_path, "hybrid_color.msh")
-    thermal_mesh_file = os.path.join(mesh_folder_path, "thermal.msh")
 
     def __init__(self, component_type="inductor", **kwargs):
         """
@@ -67,10 +48,17 @@ class MagneticComponent:
                                - "transformer"
                                - "integrated_transformer" (Transformer with included stray-path)
         :type component_type: string
+        :param working_directory: Sets the working directory
+        _type working_directory: string
         """
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
+
+        wkdir = kwargs["working_directory"]
+        if wkdir is None or not os.path.exists(wkdir):
+            wkdir = os.path.dirname(__file__)
+        self.update_paths(wkdir)
 
         # Initialization of all instance variables
 
@@ -185,9 +173,41 @@ class MagneticComponent:
         self.onelab_setup()
         self.onelab_client = onelab.client(__file__)
 
+    def create_folders(self, folders):
+        if type(folders) is list:
+            for folder in folders:
+                if not os.path.exists(folder):
+                    os.mkdir(folder)
+        else:
+            raise Exception(f"{folders} needs to be a list of strings")
+
+    def update_paths(self, working_directory):
+        # Setup folder paths 
+        self.working_directory = working_directory
+        self.femmt_folder_path = os.path.dirname(__file__)
+        self.mesh_folder_path = os.path.join(self.working_directory, "mesh")
+        self.electro_magnetic_folder_path = os.path.join(self.femmt_folder_path, "electro_magnetic")
+        self.results_folder_path = os.path.join(self.working_directory, "results")
+        self.e_m_values_folder_path = os.path.join(self.results_folder_path, "values")
+        self.e_m_fields_folder_path = os.path.join(self.results_folder_path, "fields")
+        self.e_m_circuit_folder_path = os.path.join(self.results_folder_path, "circuit")
+        self.e_m_strands_coefficients_folder_path = os.path.join(self.electro_magnetic_folder_path, "Strands_Coefficients")
+        self.femm_folder_path = os.path.join(self.working_directory, "femm")
+        self.reluctance_model_folder_path = os.path.join(self.working_directory, "reluctance_model")
+        self.thermal_results_folder_path = os.path.join(self.results_folder_path, "thermal")
+
+        # Setup file paths
+        self.e_m_results_log_path = os.path.join(self.results_folder_path, "result_log_electro_magnetic.json")
+        self.config_path = os.path.join(self.femmt_folder_path, "config.json")
+        self.e_m_mesh_file = os.path.join(self.mesh_folder_path, "electro_magnetic.msh")
+        self.hybrid_mesh_file = os.path.join(self.mesh_folder_path, "hybrid.msh")
+        self.hybrid_color_mesh_file = os.path.join(self.mesh_folder_path, "hybrid_color.msh")
+        self.thermal_mesh_file = os.path.join(self.mesh_folder_path, "thermal.msh")
+
         # Create necessary folders
-        if not os.path.exists(self.e_m_strands_coefficients_folder_path):
-            os.mkdir(self.e_m_strands_coefficients_folder_path)
+        self.create_folders([self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
+            self.results_folder_path, self.e_m_values_folder_path, self.e_m_fields_folder_path, 
+            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path])
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
@@ -228,6 +248,9 @@ class MagneticComponent:
 
         :return: -
         """
+        # Create necessary folders
+        self.create_folders([self.thermal_results_folder_path])
+
         self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot)
 
         if not os.path.exists(self.e_m_results_log_path):
@@ -259,6 +282,7 @@ class MagneticComponent:
             "onelab_folder_path": self.onelab_folder_path,
             "model_mesh_file_path": self.thermal_mesh_file,
             "results_log_file_path": self.e_m_results_log_path,
+            "results_folder_path": self.thermal_results_folder_path,
             "tags_dict": tags,
             "thermal_conductivity_dict": thermal_conductivity,
             "boundary_temperatures": boundary_temperatures,
@@ -1976,6 +2000,8 @@ class MagneticComponent:
             # Results
             self.p_hyst_nom_1st = None
             self.p_hyst_nom = None
+
+            self.component.create_folders([self.component.reluctance_model_folder_path])
 
         def calculate_air_gap_lengths_idealized(self, reluctances: List, types: str) -> List:
             """
@@ -3826,14 +3852,18 @@ class MagneticComponent:
 
         :return:
         """
-        text_file = open(os.path.join(self.electro_magnetic_folder_path, "postquantities.pro"), "w")
+        text_file = open(os.path.join(self.electro_magnetic_folder_path, "postquantities.pro"), "w") 
 
-        text_file.write(f"DirRes = \"../{os.path.basename(self.results_folder_path)}/\";\n")
-        text_file.write(f"DirResFields = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_fields_folder_path)}/\";\n")
-        text_file.write(f"DirResVals = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/\";\n")
-        text_file.write(f"DirResValsPrimary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Primary/\";\n")
-        text_file.write(f"DirResValsSecondary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Secondary/\";\n")
-        text_file.write(f"DirResCirc = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_circuit_folder_path)}/\";\n")
+        # This is needed because the f string cant contain a \ in {}
+        backslash = "\\"
+
+        text_file.write(f"DirRes = \"{self.results_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"DirResFields = \"{self.e_m_fields_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"DirResVals = \"{self.e_m_values_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"DirResValsPrimary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Primary/\";\n")
+        text_file.write(f"DirResValsSecondary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
+        text_file.write(f"DirResCirc = \"{self.e_m_circuit_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"OptionPos = \"{self.results_folder_path.replace(backslash, '/')}/option.pos\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":
@@ -3859,6 +3889,8 @@ class MagneticComponent:
 
         # get model file names with correct path
         solver = os.path.join(self.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
+
+        os.chdir(self.working_directory)
 
         # Run simulations as sub clients (non blocking??)
         mygetdp = os.path.join(self.onelab_folder_path, "getdp")
@@ -4074,8 +4106,8 @@ class MagneticComponent:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
 
-        if not os.path.exists(self.femm_folder_path):
-            os.mkdir(self.femm_folder_path)
+
+        self.create_folders(self.femm_folder_path)
 
         sign = sign or [1]
 
@@ -4336,8 +4368,7 @@ class MagneticComponent:
         # Get paths
         femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")
 
-        if not os.path.exists(self.femm_folder_path):
-            os.mkdir(self.femm_folder_path)
+        self.create_folders([self.femm_folder_path])
 
         # Extract losses
         losses = read_results_log(self.e_m_results_log_path)
@@ -4605,7 +4636,7 @@ class MagneticComponent:
                 # That's why here a hard-coded 4 is implemented
                 # if os.path.isfile(self.path +
                 # f"/Strands_Coefficients/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
-                if os.path.isfile(os.path.join(self.e_m_strands_coefficients_folder_path, "coeff", f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
+                if os.path.exists(os.path.join(self.e_m_strands_coefficients_folder_path, "coeff", f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
                     print("Coefficients for stands approximation are found.")
 
                 else:
@@ -4675,7 +4706,7 @@ class MagneticComponent:
         #         self.path + f"/Strands_Coefficients/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
         #         self.path + f"/Strands_Coefficients/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
         #         self.path + f"/Strands_Coefficients/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
-        return
+        
         coeff_folder = os.path.join(self.e_m_strands_coefficients_folder_path, "coeff") 
         if not os.path.isdir(coeff_folder):
             os.mkdir(coeff_folder)
