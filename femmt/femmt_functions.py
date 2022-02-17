@@ -151,30 +151,34 @@ def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-def NbrStrands(n_layers):
+def NbrStrands(n_layers: int) -> int:
     """
     Returns the number of strands in a hexagonal litz winding with a
     specified number of layers (n_layers). CAUTION: Zero number of
     layers corresponds to a single strand.
 
-    :param n_layers:
+    :param n_layers: number of litz_layers
+    :type n_layers: int
 
-    :return:
+    :return: number of strands in a litz wire
+    :rtype: int
 
     """
     return 3 * (n_layers + 1) ** 2 - 3 * (n_layers + 1) + 1
 
 
-def NbrLayers(n_strands):
+def NbrLayers(n_strands: int) -> int:
     """
     Returns the number of layers in a hexagonal litz winding with a
     specified number of strands (n_strands).
 
     .. note:: Zero number of layers corresponds to a single strand.
 
-    :param n_strands:
+    :param n_strands: Number of strands in a litz
+    :type n_strands: int
 
-    :return:
+    :return: number of layers for a litz
+    :rtype: int
 
     """
     return np.sqrt(0.25+(n_strands-1)/3)-0.5
@@ -406,10 +410,22 @@ def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: 
     plt.show()
 
 
-def store_as_npy_in_directory(dir_path, file_name, data):
+def store_as_npy_in_directory(dir_path: str, file_name: str, numpy_data) -> None:
+    """
+    Stores a numpy array in a given directory
+
+    :param dir_path: directory path
+    :type dir_path: str
+    :param file_name: file name
+    :type file_name: str
+    :param numpy_data: numpy array
+    :type numpy_data:
+    :return: None
+    :rtype: None
+    """
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
-    np.save(dir_path + "/" + file_name, data)
+    np.save(dir_path + "/" + file_name, numpy_data)
 
 
 def data_logging(sim_choice):
@@ -445,8 +461,8 @@ def get_dicts_with_keys_and_values(data, **kwargs):
     """
     Returns a list of dictionaries out of a list of dictionaries which contains pairs of the given key(s) and value(s).
     :param data: list of dicts
+    :type data: List
     :param kwargs: keys and values in dicts
-    :return:
     """
     invalid_index = []
     for n, dictionary in enumerate(data):
@@ -581,106 +597,141 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 mu0 = 4e-7*np.pi
 
 
-def r_basis(l, w, h):
+def r_basis(basis_air_gap_length: float, basis_air_gap_width: float, basis_air_gap_height_core_material: float) -> None:
     """
     1-dim reluctance per-unit-of-length
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
-    :param w:
-    :param l:
-    :param h:
+    :param basis_air_gap_width: width of basis air gap
+    :type basis_air_gap_width: float
+    :param basis_air_gap_length: length of basis air gap
+    :type basis_air_gap_length: float
+    :param basis_air_gap_height_core_material: height of core material direct on the air gap
+    :type basis_air_gap_height_core_material: float
 
-    :return:
+    :return: basis air gap
+    :rtype: float
 
     """
-    if l <= 0:
-        l = 0.0000001
-    return 1 / (mu0 * (w/2/l + 2/np.pi * (1+np.log(np.pi*h/4/l))))
+    if basis_air_gap_length <= 0:
+        basis_air_gap_length = 0.0000001
+    return 1 / (mu0 * (basis_air_gap_width / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi * basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
 
 
-def sigma(l, w, R_equivalent):
+def sigma(l, w, r_equivalent):
     """
     1-dim fringing factor
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
     :param w:
+    :type w: float
     :param l:
-    :param R_equivalent:
+    :type l: float
+    :param r_equivalent:
+    :type r_equivalent: float
 
     :return:
+    :rtype: float
 
     """
-    return R_equivalent / (l/mu0/w)
+    return r_equivalent / (l / mu0 / w)
 
 
-def r_round_inf(l, sigma, r):
+def r_round_inf(air_gap_length: float, sigma: float, air_gap_radius: float) -> float:
     """
     3-dim reluctance for 2-dim axial-symmetric air gaps
+    Round to infinity structure
 
-    :param sigma:
-    :param r:
-    :param l:
+    :param sigma: fringing factor
+    :type sigma: float
+    :param air_gap_radius: air gap radius
+    :type air_gap_radius: float
+    :param air_gap_length: air gap length
+    :type air_gap_length: float
 
-    :return:
+    :return: air gap reluctance
+    :rtype: float
 
     """
-    return sigma**2 * l/mu0/r**2/np.pi
+    return sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
 
 
-def r_round_round(l, sigma, r):
+def r_round_round(air_gap_length: float, sigma: float, air_gap_radius: float) -> float:
     """
     3-dim reluctance for 2-dim axial-symmetric air gaps
+    Round to round structure
 
-    :param sigma:
-    :param r:
-    :param l:
+    :param sigma: fringing factor
+    :type sigma: float
+    :param air_gap_radius: air gap radius
+    :type air_gap_radius: float
+    :param air_gap_length: air gap length
+    :type air_gap_length: float
 
-    :return:
-
-    """
-    return sigma**2 * l/mu0/r**2/np.pi
-
-
-def r_cyl_cyl(l, sigma, w, r_o):
-    """
-
-    :param l:
-    :param sigma:
-    :param w:
-    :param r_o:
-
-    :return:
+    :return: air gap reluctance
+    :rtype: float
 
     """
-    return sigma * np.log(r_o/(r_o-l)) / 2/mu0/np.pi/w
+    return sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
 
 
-def r_cyl_cyl_real(l, sigma, w, r_o, h_real_core):
+def r_cyl_cyl(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer) -> float:
     """
+    Cylinder-cylinder air gap reluctance
 
-    :param l:
-    :param sigma:
-    :param w:
-    :param r_o:
+    :param air_gap_length: air gap length
+    :type air_gap_length: float
+    :param sigma: fringing factor
+    :type sigma: float
+    :param air_gap_width: air gap width
+    :type air_gap_width: float
+    :param radius_outer: outer cylinder radius
+    :type radius_outer: float
 
-    :return:
-
-    """
-    return sigma * np.log(r_o/(r_o-l)) / mu0 / (2*np.pi - 4*np.arccos(h_real_core/2/r_o)) / w
-
-
-def r_cheap_cyl_cyl(r_o, l, w):
-    """
-
-    :param r_o:
-    :param l:
-    :param w:
-
-    :return:
+    :return: air gap reluctance
+    :rtype: float
 
     """
-    r_i = r_o - l
-    return (r_o-r_i) / mu0/w/np.pi/(r_o+r_i)
+    return sigma * np.log(radius_outer / (radius_outer - air_gap_length)) / 2 / mu0 / np.pi / air_gap_width
+
+
+def r_cyl_cyl_real(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer: float,
+                   real_core_heigth: float) -> float:
+    """
+
+    :param air_gap_length: air gap length
+    :type air_gap_length: float
+    :param sigma: fringing factor
+    :type sigma: float
+    :param air_gap_width: air gap width
+    :type air_gap_width: float
+    :param radius_outer: outer cylinder radius
+    :type radius_outer: float
+
+    :return: air gap reluctance
+    :rtype: float
+
+    """
+    return sigma * np.log(radius_outer / (radius_outer - air_gap_length)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_heigth / 2 / radius_outer)) / air_gap_width
+
+
+def r_cheap_cyl_cyl(radius_outer: float, air_gap_length: float, air_gap_width: float) -> float:
+    """
+    Simplified method to calculate cylinder-cylinder air gap reluctance
+
+    :param radius_outer: outer cylinder radius
+    :type radius_outer: float
+    :param air_gap_length: air gap length
+    :type air_gap_length: float
+    :param air_gap_width: air gap width
+    :type air_gap_width: float
+
+    :return: air gap reluctance
+    :rtype: float
+
+    """
+    r_i = radius_outer - air_gap_length
+    return (radius_outer - r_i) / mu0 / air_gap_width / np.pi / (radius_outer + r_i)
 
 
 def calculate_reluctances(N, L):
