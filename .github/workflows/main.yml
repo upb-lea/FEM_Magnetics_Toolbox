@@ -31,6 +31,7 @@ jobs:
             # Problem with OSError: libGLU.so.1: connot open shared object file
             # Answer here: https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo
             sudo apt install libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libglu1
+            pip install --update pip
             pip install opencv-python
             pip install -e .
             pip install pytest
@@ -39,7 +40,7 @@ jobs:
         run: |
           echo Start testing...
           cd tests/
-          pytest femmt_test.py
+          pytest
           echo tests finished.
           
       - name: Install sphinx and build documentation with sphinx
