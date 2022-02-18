@@ -38,7 +38,6 @@ if component == "inductor":
 
 if component == "transformer":
     geo = MagneticComponent(component_type="transformer", working_directory=r"C:\Uni\Bachelorarbeit\github\FEM_Magnetics_Toolbox\tests\integration\fixtures")
-    geo.visualize_before = False
 
     # Update Geometry
     geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015)
@@ -55,8 +54,8 @@ if component == "transformer":
                         core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
     # Perform a single simulation
-    geo.create_model(freq=250000)
-    geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
+    geo.create_model(freq=250000, visualize_before=False)
+    geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170], show_results=True)
     # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
     #                                                                               - 1.47917789/np.pi*180 + 180])
 
@@ -118,8 +117,8 @@ if component == "transformer":
     # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
-    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot)
-    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
+    #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
 
 if component == "integrated_transformer":
     geo = MagneticComponent(component_type="integrated_transformer")
