@@ -39,26 +39,7 @@ class MagneticComponent:
     # Initialization of all class variables
     # Common variables for all instances
 
-    # Setup folder paths 
-    femmt_folder_path = os.path.dirname(__file__)
     onelab_folder_path = None
-    mesh_folder_path = os.path.join(femmt_folder_path, "mesh")
-    electro_magnetic_folder_path = os.path.join(femmt_folder_path, "electro_magnetic")
-    results_folder_path = os.path.join(femmt_folder_path, "results")
-    e_m_values_folder_path = os.path.join(results_folder_path, "values")
-    e_m_fields_folder_path = os.path.join(results_folder_path, "fields")
-    e_m_circuit_folder_path = os.path.join(results_folder_path, "circuit")
-    e_m_strands_coefficients_folder_path = os.path.join(electro_magnetic_folder_path, "Strands_Coefficients")
-    femm_folder_path = os.path.join(femmt_folder_path, "femm")
-    reluctance_model_folder_path = os.path.join(femmt_folder_path, "reluctance_model")
-
-    # Setup file paths
-    e_m_results_log_path = os.path.join(results_folder_path, "result_log_electro_magnetic.json")
-    config_path = os.path.join(femmt_folder_path, "config.json")
-    e_m_mesh_file = os.path.join(mesh_folder_path, "electro_magnetic.msh")
-    hybrid_mesh_file = os.path.join(mesh_folder_path, "hybrid.msh")
-    hybrid_color_mesh_file = os.path.join(mesh_folder_path, "hybrid_color.msh")
-    thermal_mesh_file = os.path.join(mesh_folder_path, "thermal.msh")
 
     def __init__(self, component_type="inductor", **kwargs):
         """
@@ -67,10 +48,17 @@ class MagneticComponent:
                                - "transformer"
                                - "integrated_transformer" (Transformer with included stray-path)
         :type component_type: string
+        :param working_directory: Sets the working directory
+        _type working_directory: string
         """
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
+
+        wkdir = kwargs["working_directory"]
+        if wkdir is None or not os.path.exists(wkdir):
+            wkdir = os.path.dirname(__file__)
+        self.update_paths(wkdir)
 
         # Initialization of all instance variables
 
@@ -85,7 +73,6 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
-        self.visualize_before = False
         self.region = None  # Apply an outer Region or directly apply a constraint on the Core Boundary
         self.plot_fields = "standard"  # can be "standard" or False
 
@@ -185,9 +172,41 @@ class MagneticComponent:
         self.onelab_setup()
         self.onelab_client = onelab.client(__file__)
 
+    def create_folders(self, folders):
+        if type(folders) is list:
+            for folder in folders:
+                if not os.path.exists(folder):
+                    os.mkdir(folder)
+        else:
+            raise Exception(f"{folders} needs to be a list of strings")
+
+    def update_paths(self, working_directory):
+        # Setup folder paths 
+        self.working_directory = working_directory
+        self.femmt_folder_path = os.path.dirname(__file__)
+        self.mesh_folder_path = os.path.join(self.working_directory, "mesh")
+        self.electro_magnetic_folder_path = os.path.join(self.femmt_folder_path, "electro_magnetic")
+        self.results_folder_path = os.path.join(self.working_directory, "results")
+        self.e_m_values_folder_path = os.path.join(self.results_folder_path, "values")
+        self.e_m_fields_folder_path = os.path.join(self.results_folder_path, "fields")
+        self.e_m_circuit_folder_path = os.path.join(self.results_folder_path, "circuit")
+        self.e_m_strands_coefficients_folder_path = os.path.join(self.electro_magnetic_folder_path, "Strands_Coefficients")
+        self.femm_folder_path = os.path.join(self.working_directory, "femm")
+        self.reluctance_model_folder_path = os.path.join(self.working_directory, "reluctance_model")
+        self.thermal_results_folder_path = os.path.join(self.results_folder_path, "thermal")
+
+        # Setup file paths
+        self.e_m_results_log_path = os.path.join(self.results_folder_path, "result_log_electro_magnetic.json")
+        self.config_path = os.path.join(self.femmt_folder_path, "config.json")
+        self.e_m_mesh_file = os.path.join(self.mesh_folder_path, "electro_magnetic.msh")
+        self.hybrid_mesh_file = os.path.join(self.mesh_folder_path, "hybrid.msh")
+        self.hybrid_color_mesh_file = os.path.join(self.mesh_folder_path, "hybrid_color.msh")
+        self.thermal_mesh_file = os.path.join(self.mesh_folder_path, "thermal.msh")
+
         # Create necessary folders
-        if not os.path.exists(self.e_m_strands_coefficients_folder_path):
-            os.mkdir(self.e_m_strands_coefficients_folder_path)
+        self.create_folders([self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
+            self.results_folder_path, self.e_m_values_folder_path, self.e_m_fields_folder_path, 
+            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path])
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
@@ -221,13 +240,16 @@ class MagneticComponent:
         return core_height * core_width - winding_height * winding_width - air_gap_area
 
     # Start thermal simulation
-    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot) -> None:
+    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, show_results=True) -> None:
         """
         
         Starts the thermal simulation using thermal.py
 
         :return: -
         """
+        # Create necessary folders
+        self.create_folders([self.thermal_results_folder_path])
+
         self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot)
 
         if not os.path.exists(self.e_m_results_log_path):
@@ -253,13 +275,11 @@ class MagneticComponent:
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
 
-        # When a gmsh window should open showing the simulation results
-        show_results = True
-
         thermal_parameters = {
             "onelab_folder_path": self.onelab_folder_path,
             "model_mesh_file_path": self.thermal_mesh_file,
             "results_log_file_path": self.e_m_results_log_path,
+            "results_folder_path": self.thermal_results_folder_path,
             "tags_dict": tags,
             "thermal_conductivity_dict": thermal_conductivity,
             "boundary_temperatures": boundary_temperatures,
@@ -285,7 +305,7 @@ class MagneticComponent:
         :return: -
         """
         # find out path of femmt (installed module or directly opened in git)?
-        config_file_path = os.path.join(self.femmt_folder_path, 'config.json')
+        config_file_path = os.path.join(self.working_directory, 'config.json')
 
         # check if config.json is available and not empty
         if os.path.isfile(config_file_path) and os.stat(config_file_path).st_size != 0:
@@ -577,6 +597,7 @@ class MagneticComponent:
             :rtype: None
 
             :Example:
+
             >>> import femmt as fmt
             >>> geo = fmt.MagneticComponent(component_type='inductor')
             >>> geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002]) # 'center': single air gap in the middle
@@ -659,10 +680,12 @@ class MagneticComponent:
             :rtype: None
 
             :Inductor Example:
+
             core_cond_isolation=[winding2core],
             cond_cond_isolation=[winding2primary]
 
             :Transformer Example:
+
             core_cond_isolation=[primary2core, secondary2core],
             cond_cond_isolation=[primary2primary, secondary2secondary, primary2secondary]
             """
@@ -686,42 +709,37 @@ class MagneticComponent:
         :param wrap_para:
         :param ff: fill-factor, values between [0....1]
         :param winding:
-                - "interleaved"
-                - ""
+            - "interleaved"
+            - ""
         :param n_turns: Number of turns in a list [[n_primary], [n_secondary]].
         :type n_turns: List
-
-        # Winding Scheme
         :param winding: Sets the mode how to insert windings in a virtual winding window
-                - "interleaved": interleaves primary and secondary windings in a single virtual winding window
-                - "primary": the primary winding in a single virtual winding window
-                - "secondary": the primary winding in a single virtual winding window
+            - "interleaved": interleaves primary and secondary windings in a single virtual winding window
+            - "primary": the primary winding in a single virtual winding window
+            - "secondary": the primary winding in a single virtual winding window
         :type winding: List
         :param scheme:
             if winding != "interleaved" (e.g. "primary" or "secondary")
                 - "hexa": hexagonal turn scheme
-                - "square": square turn scheme
+                - "square": square turn scheme using the full winding window height (most common use case)
+                - "square_full_width": square turn scheme using the full winding window width
             if winding == "interleaved" (works only for transformer, not for inductor!)
                 - "horizontal": horizontal winding interleaving
                 - "vertical": vertical winding interleaving
                 - "bifilar": bifilar winding
                 - "blockwise": two windings in ONE virtual winding window
-
         :type scheme: List
-
-        # Conductor Type Parameters
-        :param conductor_type:  - "stacked"  # Vertical packing of conductors
-                        - "full"     # One massive Conductor in each window
-                        - "foil"     # Horizontal packing of conductors
-                        - "solid"    # Massive wires
-                        - "litz"     # Litz wires
+        :param conductor_type:
+            - "stacked"  # Vertical packing of conductors
+            - "full"     # One massive Conductor in each window
+            - "foil"     # Horizontal packing of conductors
+            - "solid"    # Massive wires
+            - "litz"     # Litz wires
         :type conductor_type: List
-
-        # Litz parameters
         :param litz_para_type: 4 litz parameters, one degree of freedom (3 necessary), e.g. [litz_para_type_primary, litz_para_type_secondary]
-                - "implicit_litz_radius": needs conductor_radii, ff, strands_numbers
-                - "implicit_ff": needs conductor_radii, strand_radii, strands_numbers
-                - "implicit_strands_number": needs conductor_radii, ff, strand_radii
+            - "implicit_litz_radius": needs conductor_radii, ff, strands_numbers
+            - "implicit_ff": needs conductor_radii, strand_radii, strands_numbers
+            - "implicit_strands_number": needs conductor_radii, ff, strand_radii
         :param strand_radii: radius for a single strand-wire in a litz wire, e.g. [strand_radii_primary, strand_radii_secondary]
         :type strand_radii: List
         :param strands_numbers: Number of single strands in a litz wire, e.g. [strands_numbers_primary, strands_numbers_secondary]
@@ -730,24 +748,19 @@ class MagneticComponent:
         :type conductor_radii: List
         :param ff: fill-factor, values between [0....1]
         :type ff: List
-
-
-        # Foil parameters
         :param thickness: foil thickness
         :type thickness: List
         :param wrap_para:
         :type wrap_para: List
-
-        # Isolation parameters
         :param cond_cond_isolation: Isolation between windings and windings, e.g. [primary2primary, secondary2secondary, primary2secondary]
         :type cond_cond_isolation: List
         :param core_cond_isolation: Isolation between windings and the core, e.g. [primary2core, secondary2core],
         :type core_cond_isolation: List
-
         :return: None
         :rtype: None
 
         :Example Inductor:
+
         >>> import femmt as fmt
         >>> geo = fmt.MagneticComponent(component_type="Inductor")
         >>> geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
@@ -755,6 +768,7 @@ class MagneticComponent:
         >>>               core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
 
         :Example Transformer with solid (primary) winding and litz (secondary) winding:
+
         >>> import femmt as fmt
         >>> geo = fmt.MagneticComponent(component_type="transformer")
         >>> geo.update_conductors(n_turns=[[36], [11]], conductor_type=["solid", "litz"],
@@ -1789,6 +1803,31 @@ class MagneticComponent:
                             x = left_bound + self.component.windings[num].conductor_radius
                             i = 0
                             # Case n_conductors higher that "allowed" is missing
+                            while x < right_bound - self.component.windings[num].conductor_radius and i < self.component.windings[num].turns[n_win]:
+                                while y < top_bound - self.component.windings[num].conductor_radius and i < self.component.windings[num].turns[n_win]:
+                                    self.p_conductor[num].append([x, y, 0, self.component.mesh.c_center_conductor[num]])
+                                    self.p_conductor[num].append(
+                                        [x - self.component.windings[num].conductor_radius, y, 0,
+                                         self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append(
+                                        [x, y + self.component.windings[num].conductor_radius, 0,
+                                         self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append(
+                                        [x + self.component.windings[num].conductor_radius, y, 0,
+                                         self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append(
+                                        [x, y - self.component.windings[num].conductor_radius, 0,
+                                         self.component.mesh.c_conductor[num]])
+                                    i += 1
+                                    y += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # one step from left to right
+                                x += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # from left to top
+                                y = bot_bound + self.component.windings[num].conductor_radius
+
+                        if self.component.virtual_winding_windows[num].scheme == "square_full_width":
+                            y = bot_bound + self.component.windings[num].conductor_radius
+                            x = left_bound + self.component.windings[num].conductor_radius
+                            i = 0
+                            # Case n_conductors higher that "allowed" is missing
                             while y < top_bound - self.component.windings[num].conductor_radius \
                                     and i < self.component.windings[num].turns[n_win]:
                                 while x < right_bound - self.component.windings[num].conductor_radius \
@@ -2066,14 +2105,19 @@ class MagneticComponent:
             self.p_hyst_nom_1st = None
             self.p_hyst_nom = None
 
-        def calculate_air_gap_lengths_idealized(self, reluctances, types):
+            self.component.create_folders([self.component.reluctance_model_folder_path])
+
+        def calculate_air_gap_lengths_idealized(self, reluctances: List, types: str) -> List:
             """
-
-            :param reluctances:
+            :param reluctances: List with reluctances
+            :type reluctances: List
             :param types:
-
-            :return:
-
+                - "round-round":
+                - "round-inf":
+                - "cyl-cyl":
+            :type types: str
+            :return: air gap length idealized
+            :rtype: List
             """
             air_gap_lengths = [None] * len(reluctances)
 
@@ -2092,19 +2136,18 @@ class MagneticComponent:
 
             return air_gap_lengths
 
-        def calculate_air_gap_lengths_with_sct(self, reluctances):
+        def calculate_air_gap_lengths_with_sct(self, reluctances: List):
             """
             Method calculates air gap lengths according to the given reluctances.
             Method uses several instance variables of the Reluctance Model.
 
             .. TODO:: List with lists of air gap lengths important to always keep the order of elements [or use a dictionary] future use case integrated_transformer:
-                      [[l_top_1, l_top_2, ...], [l_bot_1, l_bot_2, ...], [l_stray_1, l_stray_2, ...]]
-                    use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
+                [[l_top_1, l_top_2, ...], [l_bot_1, l_bot_2, ...], [l_stray_1, l_stray_2, ...]]
+                use case now to be implemented:  [[l_top_1], [l_bot_1], [l_stray_1]]
 
             :param reluctances:
-
+            :type reluctances: List
             :return: Dictionary with air gap names and the associated lengths
-
             """
             air_gap_lengths = {}
             b_peaks = {}
@@ -2856,7 +2899,7 @@ class MagneticComponent:
             self.plane_surface_iso_core_pri = []
             self.plane_surface_iso_pri_sec = []
 
-        def generate_hybrid_mesh(self, refine=0, alternative_error=0):
+        def generate_hybrid_mesh(self, refine=0, alternative_error=0, visualize_before=False):
             """
             - interaction with gmsh
             - mesh generation
@@ -3327,7 +3370,7 @@ class MagneticComponent:
             gmsh.model.geo.synchronize()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            if self.component.visualize_before:
+            if visualize_before:
                 # Colors
                 for i in range(0, len(self.plane_surface_core)):
                     gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50)
@@ -3449,18 +3492,19 @@ class MagneticComponent:
             # Synchronize
             gmsh.model.geo.synchronize()
 
-            # Conductor Center
-            for num in range(0, self.component.n_windings):
-                for i in range(0, int(len(self.p_cond[num]) / 5)):
-                    gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
+            if all(winding.conductor_type == "solid" for winding in self.component.windings):
+                for num in range(0, self.component.n_windings):
+                    for i in range(0, int(len(self.p_cond[num]) / 5)):
+                        gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
 
-            # Embed points for mesh refinement
-            # Inter Conductors
-            for n_win in range(0, len(self.component.virtual_winding_windows)):
-                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
-                    gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
-            # Stray path
-            # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
+
+                # Embed points for mesh refinement
+                # Inter Conductors
+                for n_win in range(0, len(self.component.virtual_winding_windows)):
+                    if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                        gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
+                # Stray path
+                # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
 
             # Synchronize again
             gmsh.model.geo.synchronize()
@@ -3717,10 +3761,6 @@ class MagneticComponent:
                 os.mkdir(self.component.mesh_folder_path)
 
             gmsh.write(self.component.thermal_mesh_file)
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Open gmsh GUI for visualization
-            # gmsh.fltk.run()
-            # Terminate gmsh
             gmsh.finalize()
 
         def mesh(self, frequency=None, skin_mesh_factor=1):
@@ -3731,42 +3771,49 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, f, i, phases=None, ex_type='current', imposed_red_f=0):
+    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current', imposed_red_f=0) -> None:
         """
         - excitation of the electromagnetic problem
         - current, voltage or current density
         - frequency or reduced frequency
 
-        :param phases:
-        :param f:
-        :param i:
-        :param ex_type:
-        :param imposed_red_f:
 
-        :return:
+        :param frequency: Frequency in a list
+        :type frequency: float
+        :param amplitude_list: Amplitude in a list
+        :type amplitude_list: List
+        :param phase_deg_list: Phase in degree in a list
+        :type phase_deg_list: List
+        :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
+        :type ex_type: str
+        :param imposed_red_f:
+        :type imposed_red_f:
+
+        :return: None
+        :rtype: None
 
         """
-        phases = phases or []
+        phase_deg_list = phase_deg_list or []
 
         print(f"\n---\n"
               f"Excitation: \n"
-              f"Frequency: {f}\n"
-              f"Current(s): {i}\n"
-              f"Phase(s): {phases}\n")
+              f"Frequency: {frequency}\n"
+              f"Current(s): {amplitude_list}\n"
+              f"Phase(s): {phase_deg_list}\n")
 
         # -- Excitation --
         self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
 
-        phases = np.asarray(phases)
+        phase_deg_list = np.asarray(phase_deg_list)
         self.red_freq = np.empty(2)
 
         for num in range(0, self.n_windings):
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
-                self.current[num] = i[num]
-                if len(phases) != 0:
-                    self.phase_tmp = phases / 180
+                self.current[num] = amplitude_list[num]
+                if len(phase_deg_list) != 0:
+                    self.phase_tmp = phase_deg_list / 180
             if self.flag_excitation_type == 'current_density':
                 raise NotImplementedError
             if self.flag_excitation_type == 'voltage':
@@ -3774,7 +3821,7 @@ class MagneticComponent:
                 # self.voltage = 2
 
             # -- Frequency --
-            self.frequency = f  # in Hz
+            self.frequency = frequency  # in Hz
             if self.flag_imposed_reduced_frequency == 1:
                 self.red_freq[num] = 4
             else:
@@ -3947,14 +3994,18 @@ class MagneticComponent:
 
         :return:
         """
-        text_file = open(os.path.join(self.electro_magnetic_folder_path, "postquantities.pro"), "w")
+        text_file = open(os.path.join(self.electro_magnetic_folder_path, "postquantities.pro"), "w") 
 
-        text_file.write(f"DirRes = \"../{os.path.basename(self.results_folder_path)}/\";\n")
-        text_file.write(f"DirResFields = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_fields_folder_path)}/\";\n")
-        text_file.write(f"DirResVals = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/\";\n")
-        text_file.write(f"DirResValsPrimary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Primary/\";\n")
-        text_file.write(f"DirResValsSecondary = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_values_folder_path)}/Secondary/\";\n")
-        text_file.write(f"DirResCirc = \"../{os.path.basename(self.results_folder_path)}/{os.path.basename(self.e_m_circuit_folder_path)}/\";\n")
+        # This is needed because the f string cant contain a \ in {}
+        backslash = "\\"
+
+        text_file.write(f"DirRes = \"{self.results_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"DirResFields = \"{self.e_m_fields_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"DirResVals = \"{self.e_m_values_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"DirResValsPrimary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Primary/\";\n")
+        text_file.write(f"DirResValsSecondary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
+        text_file.write(f"DirResCirc = \"{self.e_m_circuit_folder_path.replace(backslash, '/')}/\";\n")
+        text_file.write(f"OptionPos = \"{self.results_folder_path.replace(backslash, '/')}/option.pos\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":
@@ -3980,6 +4031,8 @@ class MagneticComponent:
 
         # get model file names with correct path
         solver = os.path.join(self.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
+
+        os.chdir(self.working_directory)
 
         # Run simulations as sub clients (non blocking??)
         mygetdp = os.path.join(self.onelab_folder_path, "getdp")
@@ -4195,8 +4248,8 @@ class MagneticComponent:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
 
-        if not os.path.exists(self.femm_folder_path):
-            os.mkdir(self.femm_folder_path)
+
+        self.create_folders(self.femm_folder_path)
 
         sign = sign or [1]
 
@@ -4457,8 +4510,7 @@ class MagneticComponent:
         # Get paths
         femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")
 
-        if not os.path.exists(self.femm_folder_path):
-            os.mkdir(self.femm_folder_path)
+        self.create_folders([self.femm_folder_path])
 
         # Extract losses
         losses = read_results_log(self.e_m_results_log_path)
@@ -4726,7 +4778,7 @@ class MagneticComponent:
                 # That's why here a hard-coded 4 is implemented
                 # if os.path.isfile(self.path +
                 # f"/Strands_Coefficients/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
-                if os.path.isfile(os.path.join(self.e_m_strands_coefficients_folder_path, "coeff", f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
+                if os.path.exists(os.path.join(self.e_m_strands_coefficients_folder_path, "coeff", f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
                     print("Coefficients for stands approximation are found.")
 
                 else:
@@ -4796,7 +4848,7 @@ class MagneticComponent:
         #         self.path + f"/Strands_Coefficients/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
         #         self.path + f"/Strands_Coefficients/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
         #         self.path + f"/Strands_Coefficients/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
-        return
+        
         coeff_folder = os.path.join(self.e_m_strands_coefficients_folder_path, "coeff") 
         if not os.path.isdir(coeff_folder):
             os.mkdir(coeff_folder)
@@ -4825,14 +4877,20 @@ class MagneticComponent:
 
         """
         self.high_level_geo_gen()
-        self.excitation(f=100000, i=1)  # arbitrary values: frequency and current
+        self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
         self.file_communication()
         self.pre_simulate()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
-    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          skin_mesh_factor: float = 0.5, NL_core=0) -> None:
+    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before = False):
+        self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+        if self.valid:
+            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before)
+        else:
+            raise Exception("The model is not valid. The simulation won't start.")
+
+    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None, show_results = True) -> None:
         """
 
         Start a _single_ ONELAB simulation.
@@ -4850,15 +4908,13 @@ class MagneticComponent:
         """
         phi_deg = phi_deg or []
 
-        self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
-        if self.valid:
-            self.mesh.generate_hybrid_mesh()
-            self.mesh.generate_electro_magnetic_mesh()
-            self.excitation(f=freq, i=current, phases=phi_deg)  # frequency and current
-            self.file_communication()
-            self.pre_simulate()
-            self.simulate()
-            self.write_log()
+        self.mesh.generate_electro_magnetic_mesh()
+        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
+        self.file_communication()
+        self.pre_simulate()
+        self.simulate()
+        self.write_log()
+        if show_results:
             self.visualize()
         else:
             raise Exception("Geometry is not valid. Mesh cannt be generated.")
@@ -5041,32 +5097,33 @@ class MagneticComponent:
         # phi = phi or []
         print(frequencies, currents, phi)
         for i in range(0, len(frequencies)):
-            self.excitation(f=frequencies[i], i=currents[i], phases=phi[i])  # frequency and current
+            self.excitation(frequency=frequencies[i], amplitude_list=currents[i], phase_deg_list=phi[i])  # frequency and current
             self.file_communication()
             self.pre_simulate()
             self.simulate()
         if show_last:
             self.visualize()
 
-    def excitation_sweep(self, frequency_list: List, current_list: List, phi_deg_list: List,
+    def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last: bool = False, return_results: bool = False, meshing: bool = True) -> Dict:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
 
-        :Example Code:
-        >>> import femmt as fmt
-        >>> geo = fmt.MagneticComponent()
-        >>> fs = np.linspace(0, 250000, 6)
-        >>> cs = [10, 2, 1, 0.5, 0.2, 0.1]
-        >>> geo.excitation_sweep(frequencies=fs, currents=cs)
+        :Example Code for Inductor:
 
-        :param phi_deg_list:
-        :type phi_deg_list: List
-        :param current_list:
-        :type current_list: List
-        :param frequency_list:
+        >>> import femmt as fmt
+        >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
+        >>> amplitue_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+        >>> phase_list_list = [[0], [10], [20], [30], [40], [50]]
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+
+        :param frequency_list: Frequency in a list
         :type frequency_list: List
+        :param current_list_list: current amplitude, must be a list in a list, see example!
+        :type current_list_list: List
+        :param phi_deg_list_list: phase in degree, must be a list in a list, see example!
+        :type phi_deg_list_list: List
         :param show_last: shows last simulation in gmsh if set to True
         :type show_last: bool
         :param return_results: returns results in a dictionary
@@ -5095,7 +5152,7 @@ class MagneticComponent:
         if self.valid:
 
             for i in range(0, len(frequency_list)):
-                self.excitation(f=frequency_list[i], i=current_list[i], phases=phi_deg_list[i])  # frequency and current
+                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i], phase_deg_list=phi_deg_list_list[i])  # frequency and current
                 self.file_communication()
                 self.pre_simulate()
                 self.simulate()
@@ -5148,7 +5205,7 @@ class MagneticComponent:
         # Call Simulation
         # self.high_level_geo_gen(frequency=0, skin_mesh_factor=skin_mesh_factor)
         # self.mesh.generate_mesh()
-        self.excitation(f=f_switch, i=Ipeak, phases=[0, 180])  # frequency and current
+        self.excitation(frequency=f_switch, amplitude_list=Ipeak, phase_deg_list=[0, 180])  # frequency and current
         self.file_communication()
         self.pre_simulate()
         self.simulate()

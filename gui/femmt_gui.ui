@@ -67,14 +67,14 @@
                    <item row="6" column="0">
                     <widget class="QLabel" name="label_4">
                      <property name="text">
-                      <string>Core Width</string>
+                      <string>Core Width [m]</string>
                      </property>
                     </widget>
                    </item>
                    <item row="4" column="2">
                     <widget class="QLabel" name="label_6">
                      <property name="text">
-                      <string>Window Height</string>
+                      <string>Window Height [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -88,7 +88,7 @@
                    <item row="6" column="2">
                     <widget class="QLabel" name="label_7">
                      <property name="text">
-                      <string>Window Width</string>
+                      <string>Window Width [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -116,7 +116,7 @@
                    <item row="4" column="0">
                     <widget class="QLabel" name="label_3">
                      <property name="text">
-                      <string>Core Height</string>
+                      <string>Core Height [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -142,7 +142,7 @@
                    <item row="1" column="2">
                     <widget class="QLabel" name="label_9">
                      <property name="text">
-                      <string>Wire Radius</string>
+                      <string>Wire Radius [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -180,7 +180,7 @@
                    <item row="3" column="2">
                     <widget class="QLabel" name="label_61">
                      <property name="text">
-                      <string>Strand Radius</string>
+                      <string>Strand Radius [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -237,14 +237,14 @@
                    <item row="3" column="2">
                     <widget class="QLabel" name="label_60">
                      <property name="text">
-                      <string>Strand Radius</string>
+                      <string>Strand Radius [m]</string>
                      </property>
                     </widget>
                    </item>
                    <item row="1" column="2">
                     <widget class="QLabel" name="label_16">
                      <property name="text">
-                      <string>Wire Radius</string>
+                      <string>Wire Radius [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -376,7 +376,7 @@
                    <item row="4" column="0">
                     <widget class="QLabel" name="label_65">
                      <property name="text">
-                      <string>3. Length</string>
+                      <string>3. Length [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -404,7 +404,7 @@
                    <item row="2" column="0">
                     <widget class="QLabel" name="label_67">
                      <property name="text">
-                      <string>1. Length</string>
+                      <string>1. Length [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -420,7 +420,7 @@
                    <item row="5" column="0">
                     <widget class="QLabel" name="label_64">
                      <property name="text">
-                      <string>4. Length</string>
+                      <string>4. Length [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -454,7 +454,7 @@
                    <item row="3" column="0">
                     <widget class="QLabel" name="label_66">
                      <property name="text">
-                      <string>2. Lenght</string>
+                      <string>2. Lenght [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -477,7 +477,7 @@
                    <item row="6" column="0">
                     <widget class="QLabel" name="label_72">
                      <property name="text">
-                      <string>5. Length</string>
+                      <string>5. Length [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -510,7 +510,7 @@
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_53">
                      <property name="text">
-                      <string>P2P</string>
+                      <string>P2P [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -531,7 +531,7 @@
                    <item row="0" column="2">
                     <widget class="QLabel" name="label_54">
                      <property name="text">
-                      <string>P2Core</string>
+                      <string>P2Core [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -547,21 +547,21 @@
                    <item row="1" column="0">
                     <widget class="QLabel" name="label_55">
                      <property name="text">
-                      <string>S2S</string>
+                      <string>S2S [m]</string>
                      </property>
                     </widget>
                    </item>
                    <item row="1" column="2">
                     <widget class="QLabel" name="label_56">
                      <property name="text">
-                      <string>S2Core</string>
+                      <string>S2Core [m]</string>
                      </property>
                     </widget>
                    </item>
                    <item row="2" column="0">
                     <widget class="QLabel" name="label_57">
                      <property name="text">
-                      <string>P2S</string>
+                      <string>P2S [m]</string>
                      </property>
                     </widget>
                    </item>

@@ -138,7 +138,10 @@ class MainWindow(QMainWindow):
         # self.md_graphic_winding_1.setMask(pixmap.mask())
         # self.md_graphic_winding_1.show()
 
-        pass
+        pixmap = QPixmap("./geometry_preview.jpg")
+        self.md_gmsh_visualisation_QLabel.setPixmap(pixmap)
+        self.md_gmsh_visualisation_QLabel.setMask(pixmap.mask())
+        self.md_gmsh_visualisation_QLabel.show()
 
 
         # geo = fmt.MagneticComponent(component_type="inductor")
