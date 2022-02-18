@@ -3,9 +3,9 @@ from femmt import *
 import numpy as np
 
 # component = "inductor"
-component = "transformer interleaved"
+component = "transformer"
 # component = "integrated_transformer"
-
+# component = "transformer"
 
 # Create Object
 if component == "inductor":
@@ -54,7 +54,7 @@ if component == "transformer-interleaved":
                         core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
     # Perform a single simulation
-    geo.create_model(freq=250000, visualize_before=False)
+    geo.create_model(freq=250000)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170], show_results=True)
     # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
     #                                                                               - 1.47917789/np.pi*180 + 180])
@@ -121,7 +121,6 @@ if component == "transformer-interleaved":
 if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
     geo = MagneticComponent(component_type="transformer")
-    geo.visualize_before = True
 
     # Update Geometry
     geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015)
@@ -138,6 +137,7 @@ if component == "transformer":
                         core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
 
+    geo.create_model(freq=250000)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
 
 
