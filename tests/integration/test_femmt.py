@@ -118,4 +118,4 @@ def test_femmt(femmt_simulation):
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "result_log_electro_magnetic.json")
-    assert compare_results(test_result_log, fixture_result_log), "Electro magnetic mesh is wrong."
+    assert compare_results(test_result_log, fixture_result_log), "Electro magnetic results file is wrong."
