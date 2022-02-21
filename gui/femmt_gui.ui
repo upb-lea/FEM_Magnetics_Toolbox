@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1219</width>
-    <height>980</height>
+    <height>981</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,6 +64,51 @@
                    <string>Core Definition</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_2">
+                   <item row="7" column="3">
+                    <widget class="QLineEdit" name="md_window_width_lineEdit">
+                     <property name="text">
+                      <string>0.011</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QComboBox" name="md_core_geometry_comboBox"/>
+                   </item>
+                   <item row="7" column="0">
+                    <widget class="QLabel" name="label_4">
+                     <property name="text">
+                      <string>Core Width [m]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="7" column="2">
+                    <widget class="QLabel" name="label_7">
+                     <property name="text">
+                      <string>Window Width [m]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="2">
+                    <widget class="QLabel" name="label_6">
+                     <property name="text">
+                      <string>Window Height [m]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="3">
+                    <widget class="QLineEdit" name="md_window_height_lineEdit">
+                     <property name="text">
+                      <string>0.03</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="7" column="1">
+                    <widget class="QLineEdit" name="md_core_width_lineEdit">
+                     <property name="text">
+                      <string>0.02</string>
+                     </property>
+                    </widget>
+                   </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_2">
                      <property name="text">
@@ -74,45 +119,24 @@
                    <item row="0" column="1">
                     <widget class="QComboBox" name="md_core_material_comboBox"/>
                    </item>
-                   <item row="4" column="0">
-                    <widget class="QLabel" name="label_4">
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_74">
                      <property name="text">
-                      <string>Core Width [m]</string>
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Core from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="4" column="1">
-                    <widget class="QLineEdit" name="md_core_width_lineEdit">
+                   <item row="3" column="1">
+                    <widget class="QPushButton" name="md_core_geometry_pushButton">
                      <property name="text">
-                      <string>0.02</string>
+                      <string>Set Core</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="3">
-                    <widget class="QLineEdit" name="md_window_height_lineEdit">
+                   <item row="4" column="0" colspan="2">
+                    <widget class="QLabel" name="label_73">
                      <property name="text">
-                      <string>0.03</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="2">
-                    <widget class="QLabel" name="label_6">
-                     <property name="text">
-                      <string>Window Height [m]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="2">
-                    <widget class="QLabel" name="label_7">
-                     <property name="text">
-                      <string>Window Width [m]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="3">
-                    <widget class="QLineEdit" name="md_window_width_lineEdit">
-                     <property name="text">
-                      <string>0.011</string>
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Manual core parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
                     </widget>
                    </item>
@@ -125,24 +149,89 @@
                    <string>Winding 1: Conductor Definition</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_3">
-                   <item row="1" column="2">
+                   <item row="5" column="0">
+                    <widget class="QLabel" name="label_58">
+                     <property name="text">
+                      <string>Implicit</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QPushButton" name="md_winding1_litz_material_pushButton">
+                     <property name="text">
+                      <string>Set litz</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="2">
+                    <widget class="QLabel" name="label_10">
+                     <property name="text">
+                      <string>Fill Factor</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="0">
                     <widget class="QLabel" name="label_9">
                      <property name="text">
                       <string>Wire Radius [m]</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="3">
+                   <item row="5" column="1">
+                    <widget class="QComboBox" name="md_winding1_implicit_litz_comboBox"/>
+                   </item>
+                   <item row="6" column="2">
+                    <widget class="QLabel" name="label_61">
+                     <property name="text">
+                      <string>Strand Radius [m]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="3">
                     <widget class="QLineEdit" name="md_winding1_fill_factor_lineEdit">
                      <property name="text">
                       <string>0.6</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="2">
-                    <widget class="QLabel" name="label_10">
+                   <item row="0" column="2">
+                    <widget class="QLabel" name="label_12">
                      <property name="text">
-                      <string>Fill Factor</string>
+                      <string>Wire Type</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_3">
+                     <property name="text">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Litz from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QComboBox" name="md_winding1_litz_material_comboBox"/>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QComboBox" name="md_winding1_type_comboBox"/>
+                   </item>
+                   <item row="6" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="text">
+                      <string>Number Strands</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0" colspan="2">
+                    <widget class="QLabel" name="label_71">
+                     <property name="text">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Manual wire parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="1">
+                    <widget class="QLineEdit" name="md_winding1_radius_lineEdit">
+                     <property name="text">
+                      <string>0.0015</string>
                      </property>
                     </widget>
                    </item>
@@ -156,58 +245,17 @@
                    <item row="0" column="1">
                     <widget class="QComboBox" name="md_winding1_material_comboBox"/>
                    </item>
-                   <item row="1" column="3">
-                    <widget class="QLineEdit" name="md_winding1_radius_lineEdit">
-                     <property name="text">
-                      <string>0.0015</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="2">
-                    <widget class="QLabel" name="label_61">
-                     <property name="text">
-                      <string>Strand Radius [m]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="3">
-                    <widget class="QLineEdit" name="md_winding1_strand_radius_comboBox">
-                     <property name="text">
-                      <string>35.5e-6</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_12">
-                     <property name="text">
-                      <string>Wire Type</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QComboBox" name="md_winding1_type_comboBox"/>
-                   </item>
-                   <item row="2" column="1">
-                    <widget class="QComboBox" name="md_winding1_implicit_litz_comboBox"/>
-                   </item>
-                   <item row="2" column="0">
-                    <widget class="QLabel" name="label_58">
-                     <property name="text">
-                      <string>Implicit</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="0">
-                    <widget class="QLabel" name="label_5">
-                     <property name="text">
-                      <string>Number Strands</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="1">
+                   <item row="6" column="1">
                     <widget class="QLineEdit" name="md_winding1_strands_lineEdit">
                      <property name="text">
                       <string>600</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="3">
+                    <widget class="QLineEdit" name="md_winding1_strand_radius_lineEdit">
+                     <property name="text">
+                      <string>35.5e-6</string>
                      </property>
                     </widget>
                    </item>
@@ -220,22 +268,55 @@
                    <string>Winding 2: Conductor Definition</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_4">
-                   <item row="3" column="2">
-                    <widget class="QLabel" name="label_60">
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="md_winding2_material_comboBox"/>
+                   </item>
+                   <item row="6" column="0">
+                    <widget class="QLabel" name="label_15">
                      <property name="text">
-                      <string>Strand Radius [m]</string>
+                      <string>Number Strands</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="2">
+                   <item row="0" column="2">
+                    <widget class="QLabel" name="label_18">
+                     <property name="text">
+                      <string>Wire Type</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="1">
+                    <widget class="QLineEdit" name="md_winding2_radius_lineEdit"/>
+                   </item>
+                   <item row="6" column="3">
+                    <widget class="QLineEdit" name="md_winding2_strand_radius_lineEdit"/>
+                   </item>
+                   <item row="5" column="1">
+                    <widget class="QComboBox" name="md_winding2_implicit_litz_comboBox"/>
+                   </item>
+                   <item row="4" column="0">
                     <widget class="QLabel" name="label_16">
                      <property name="text">
                       <string>Wire Radius [m]</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="3">
-                    <widget class="QLineEdit" name="md_winding2_strand_radius_comboBox"/>
+                   <item row="3" column="0" colspan="2">
+                    <widget class="QLabel" name="label_76">
+                     <property name="text">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Manual wire parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="0">
+                    <widget class="QLabel" name="label_59">
+                     <property name="text">
+                      <string>Implicit</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QComboBox" name="md_winding2_type_comboBox"/>
                    </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_13">
@@ -244,16 +325,13 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="3">
-                    <widget class="QLineEdit" name="md_winding2_radius_lineEdit"/>
-                   </item>
-                   <item row="2" column="3">
+                   <item row="5" column="3">
                     <widget class="QLineEdit" name="md_winding2_fill_factor_lineEdit"/>
                    </item>
-                   <item row="0" column="1">
-                    <widget class="QComboBox" name="md_winding2_material_comboBox"/>
+                   <item row="6" column="1">
+                    <widget class="QLineEdit" name="md_winding2_strands_lineEdit"/>
                    </item>
-                   <item row="2" column="2">
+                   <item row="5" column="2">
                     <widget class="QLabel" name="label_17">
                      <property name="text">
                       <string>Fill Factor</string>
@@ -261,34 +339,28 @@
                     </widget>
                    </item>
                    <item row="1" column="0">
-                    <widget class="QLabel" name="label_18">
+                    <widget class="QLabel" name="label_75">
                      <property name="text">
-                      <string>Wire Type</string>
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Litz from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="1">
-                    <widget class="QComboBox" name="md_winding2_type_comboBox"/>
-                   </item>
-                   <item row="3" column="1">
-                    <widget class="QLineEdit" name="md_winding2_strands_lineEdit"/>
+                   <item row="6" column="2">
+                    <widget class="QLabel" name="label_60">
+                     <property name="text">
+                      <string>Strand Radius [m]</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="2" column="0">
-                    <widget class="QLabel" name="label_59">
-                     <property name="text">
-                      <string>Implicit</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="0">
-                    <widget class="QLabel" name="label_15">
-                     <property name="text">
-                      <string>Number Strands</string>
-                     </property>
-                    </widget>
+                    <widget class="QComboBox" name="md_winding2_litz_material_comboBox"/>
                    </item>
                    <item row="2" column="1">
-                    <widget class="QComboBox" name="md_winding2_implicit_litz_comboBox"/>
+                    <widget class="QPushButton" name="md_winding2_litz_material_pushButton">
+                     <property name="text">
+                      <string>Set litz</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>

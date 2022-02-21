@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         uic.loadUi('femmt_gui.ui', self)
         _translate = QtCore.QCoreApplication.translate
         # self.setWindowIcon(QIcon('Images\\logo.png'))
-        self.setWindowTitle(_translate("MainWindow", "Femmt ToolBox"))
+        self.setWindowTitle(_translate("MainWindow", "FEM Magnetics Toolbox"))
         pixmap = QPixmap('ferriteCore.png')
         #self.coreImageLabel.setPixmap(pixmap)
         #self.imageBoxImageLabel.setPixmap(pixmap)
@@ -56,6 +56,10 @@ class MainWindow(QMainWindow):
         self.md_air_gap_placement_method_comboBox.currentTextChanged.connect(self.md_change_air_gap_placement)
         self.md_gmsh_visualisation_QPushButton.clicked.connect(self.md_gmsh_pre_visualisation)
 
+
+        self.md_winding1_litz_material_pushButton.clicked.connect(self.md_winding1_set_litz_parameters_from_litz_database)
+        self.md_winding2_litz_material_pushButton.clicked.connect(self.md_winding2_set_litz_parameters_from_litz_database)
+
         "Signals in Excitation Tab"
         self.md_fk1_checkBox.stateChanged.connect(self.md_change_frequencies_1)
         self.md_fk2_checkBox.stateChanged.connect(self.md_change_frequencies_2)
@@ -66,6 +70,7 @@ class MainWindow(QMainWindow):
         self.md_fk7_checkBox.stateChanged.connect(self.md_change_frequencies_7)
         self.md_fk8_checkBox.stateChanged.connect(self.md_change_frequencies_8)
         self.md_excitation_update_graph_Button.clicked.connect(self.md_redraw_input_signals)
+        self.md_core_geometry_pushButton.clicked.connect(self.md_set_core_geometry_from_database)
 
         "Signals in Simulation Tab"
         self.md_simulation_QPushButton.clicked.connect(self.md_action_run_simulation)
@@ -107,6 +112,9 @@ class MainWindow(QMainWindow):
         md_air_gap_method = [self.translation_dict["percent"], self.translation_dict['manually']]
         md_air_gap_counts = ['1', '2', '3', '4', '5']
         md_winding_scheme = [self.translation_dict["square"], self.translation_dict["hexa"]]
+        md_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
+
+        md_winding1_litz_material = [key for key in fmt.litz_database()]
 
         for option in md_simulation_type_options:
             self.md_simulation_type_comboBox.addItem(option)
@@ -127,6 +135,12 @@ class MainWindow(QMainWindow):
             self.md_air_gap_count_comboBox.addItem(option)
         for option in md_winding_scheme:
             self.md_winding1_scheme_comboBox.addItem(option)
+        for option in md_winding1_litz_material:
+            self.md_winding1_litz_material_comboBox.addItem(option)
+            self.md_winding2_litz_material_comboBox.addItem(option)
+        for option in md_core_geometry_options:
+            self.md_core_geometry_comboBox.addItem(option)
+
 
     def md_gmsh_pre_visualisation(self):
         # geo = self.md_setup_geometry()
@@ -163,8 +177,40 @@ class MainWindow(QMainWindow):
         # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
         # geo.mesh.generate_hybrid_mesh(do_meshing=False)
 
+    def md_winding1_set_litz_parameters_from_litz_database(self):
+        litz_dict = fmt.litz_database()
+        litz_type = self.md_winding1_litz_material_comboBox.currentText()
+        litz = litz_dict[litz_type]
 
+        self.md_winding1_strands_lineEdit.setText(str(litz["strands_numbers"]))
+        self.md_winding1_strand_radius_lineEdit.setText(str(litz["strand_radii"]))
+        self.md_winding1_radius_lineEdit.setText(str(litz["conductor_radii"]))
 
+        for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
+            if value == litz["implicit"]:
+                self.md_winding1_implicit_litz_comboBox.setCurrentIndex(key)
+
+    def md_winding2_set_litz_parameters_from_litz_database(self):
+        litz_dict = fmt.litz_database()
+        litz_type = self.md_winding2_litz_material_comboBox.currentText()
+        litz = litz_dict[litz_type]
+
+        self.md_winding2_strands_lineEdit.setText(str(litz["strands_numbers"]))
+        self.md_winding2_strand_radius_lineEdit.setText(str(litz["strand_radii"]))
+        self.md_winding2_radius_lineEdit.setText(str(litz["conductor_radii"]))
+
+        for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
+            if value == litz["implicit"]:
+                self.md_winding2_implicit_litz_comboBox.setCurrentIndex(key)
+
+    def md_set_core_geometry_from_database(self):
+        core_dict = fmt.core_database()
+        core_type = self.md_core_geometry_comboBox.currentText()
+        core = core_dict[core_type]
+
+        self.md_core_width_lineEdit.setText(str(core["core_w"]))
+        self.md_window_height_lineEdit.setText(str(core["window_h"]))
+        self.md_window_width_lineEdit.setText(str(core["window_w"]))
 
     def md_winding2_enable(self, status: bool) -> None:
         """
@@ -183,7 +229,9 @@ class MainWindow(QMainWindow):
         self.md_winding2_strands_lineEdit.setEnabled(status)
         self.md_winding2_radius_lineEdit.setEnabled(status)
         self.md_winding2_fill_factor_lineEdit.setEnabled(status)
-        self.md_winding2_strand_radius_comboBox.setEnabled(status)
+        self.md_winding2_strand_radius_lineEdit.setEnabled(status)
+        self.md_winding2_litz_material_comboBox.setEnabled(status)
+        self.md_winding2_litz_material_pushButton.setEnabled(status)
 
         # set current shapes of winding 2
         self.md_winding2_ik1_lineEdit.setEnabled(status)
@@ -205,7 +253,6 @@ class MainWindow(QMainWindow):
 
         self.md_isolation_s2s_lineEdit.setEnabled(status)
         self.md_isolation_p2s_lineEdit.setEnabled(status)
-
 
     def md_f1_enable(self, status: bool) -> None:
         """
@@ -444,17 +491,17 @@ class MainWindow(QMainWindow):
         if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
             self.md_winding1_strands_lineEdit.setEnabled(True)
             self.md_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.md_winding1_strand_radius_comboBox.setEnabled(True)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
             self.md_winding1_radius_lineEdit.setEnabled(False)
         if implicit_type_from_combo_box == self.translation_dict['implicit_strands_number']:
             self.md_winding1_strands_lineEdit.setEnabled(False)
             self.md_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.md_winding1_strand_radius_comboBox.setEnabled(True)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
             self.md_winding1_radius_lineEdit.setEnabled(True)
         if implicit_type_from_combo_box == self.translation_dict['implicit_ff']:
             self.md_winding1_strands_lineEdit.setEnabled(True)
             self.md_winding1_fill_factor_lineEdit.setEnabled(False)
-            self.md_winding1_strand_radius_comboBox.setEnabled(True)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
             self.md_winding1_radius_lineEdit.setEnabled(True)
 
     def md_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
@@ -470,15 +517,19 @@ class MainWindow(QMainWindow):
             self.md_winding1_strands_lineEdit.setEnabled(True)
             self.md_winding1_implicit_litz_comboBox.setEnabled(True)
             self.md_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.md_winding1_strand_radius_comboBox.setEnabled(True)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
             self.md_winding1_radius_lineEdit.setEnabled(True)
+            self.md_winding1_litz_material_comboBox.setEnabled(True)
+            self.md_winding1_litz_material_pushButton.setEnabled(True)
 
         elif wire_type_from_combot_box == self.translation_dict['solid']:
             self.md_winding1_strands_lineEdit.setEnabled(False)
             self.md_winding1_implicit_litz_comboBox.setEnabled(False)
             self.md_winding1_fill_factor_lineEdit.setEnabled(False)
-            self.md_winding1_strand_radius_comboBox.setEnabled(False)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(False)
             self.md_winding1_radius_lineEdit.setEnabled(True)
+            self.md_winding1_litz_material_comboBox.setEnabled(False)
+            self.md_winding1_litz_material_pushButton.setEnabled(False)
 
     def md_change_frequencies_1(self, status: int) -> None:
         """
@@ -844,7 +895,7 @@ class MainWindow(QMainWindow):
                                       litz_para_type=[litz_para_type],
                                       ff=[float(self.md_winding1_fill_factor_lineEdit.text())],
                                       strands_numbers=[float(self.md_winding1_strands_lineEdit.text())],
-                                      strand_radii=[float(self.md_winding1_strand_radius_comboBox.text())],
+                                      strand_radii=[float(self.md_winding1_strand_radius_lineEdit.text())],
                                       core_cond_isolation=[float(self.md_isolation_core2cond_top_lineEdit.text()),
                                                            float(self.md_isolation_core2cond_bot_lineEdit.text()),
                                                            float(self.md_isolation_core2cond_inner_lineEdit.text()),

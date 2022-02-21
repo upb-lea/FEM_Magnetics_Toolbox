@@ -16,12 +16,10 @@ import warnings
 from typing import Union, List, Tuple, Dict
 
 
-def core_database(core_type: str) -> Dict:
+def core_database() -> Dict:
     """
     Returns core geometry for defined core structures
 
-    :param core_type: core type, e.g. "PQ4040"
-    :type core_type: str
     :return: Dict including core_h, core_w, window_h, window_w
     :rtype: Dict
     """
@@ -34,34 +32,35 @@ def core_database(core_type: str) -> Dict:
     }
     core_dict["PQ4040"] = PQ4040_dict
 
-    return core_dict[core_type]
+    return core_dict
 
-
-def litz_database(litz_type: str) -> Dict:
+def litz_database() -> Dict:
     """
     Returns litz parameters for defined litz wires.
 
-    :param litz_type: str
-    :type litz_type: str
     :return: Dict including litz parameters like strand_numbers, strand_radii and conductor_radii
     :rtype: Dict
     """
     litz_dict = {}
 
-    litz_dict["105x0.1"] = {"strands_numbers": 105,
+    litz_dict["105x0.1"] = {"implicit": "implicit_ff",
+                            "strands_numbers": 105,
                             "strand_radii": 0.1e-3 / 2,
                             "conductor_radii": 1.5e-3 / 2}
-    litz_dict["200x0.071"] = {"strands_numbers": 200,
+    litz_dict["200x0.071"] = {"implicit": "implicit_ff",
+                              "strands_numbers": 200,
                               "strand_radii": 0.071e-3 / 2,
                               "conductor_radii": 1.4e-3 / 2}
-    litz_dict["405x0.071"] = {"strands_numbers": 405,
+    litz_dict["405x0.071"] = {"implicit": "implicit_ff",
+                              "strands_numbers": 405,
                               "strand_radii": 0.071e-3 / 2,
                               "conductor_radii": 2.0e-3 / 2}
-    litz_dict["800x0.05"] = {"strands_numbers": 800,
+    litz_dict["800x0.05"] = {"implicit": "implicit_ff",
+                             "strands_numbers": 800,
                              "strand_radii": 0.05e-3 / 2,
                              "conductor_radii": 2e-3 / 2}
 
-    return litz_dict[litz_type]
+    return litz_dict
 
 
 # Static Functions
