@@ -2,8 +2,8 @@
 from femmt import *
 import numpy as np
 
-component = "inductor"
-# component = "transformer"
+# component = "inductor"
+component = "transformer"
 
 # Create Object
 if component == "inductor":

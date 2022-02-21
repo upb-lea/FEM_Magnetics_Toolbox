@@ -2,9 +2,9 @@
 from femmt import *
 import numpy as np
 
-# component = "inductor"
+component = "inductor"
 # component = "transformer"
-component = "integrated_transformer"
+# component = "integrated_transformer"
 
 
 # Create Object
@@ -24,8 +24,9 @@ if component == "inductor":
 
 
     # Single simulation
-    geo.create_model(freq=100000)
-    geo.single_simulation(freq=100000, current=[1])
+    # geo.create_model(freq=100000)
+    geo.create_model(freq=500000, visualize_before=True)
+    geo.single_simulation(freq=500000, current=[1])
     
     # Excitation Sweep Example
     # fs = [0, 10000, 30000, 60000, 100000, 150000]
@@ -54,7 +55,7 @@ if component == "transformer":
                         core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
     # Perform a single simulation
-    geo.create_model(freq=250000, visualize_before=False)
+    geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170], show_results=True)
     # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
     #                                                                               - 1.47917789/np.pi*180 + 180])

@@ -373,8 +373,7 @@ class MagneticComponent:
                 self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
             for i in range(0, self.n_windings):
                 if self.windings[i].conductor_type == "solid":
-                    self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor,
-                                                    self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor])
+                    self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor])
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor
                 elif self.windings[i].conductor_type == "litz":
                     self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
@@ -1352,8 +1351,7 @@ class MagneticComponent:
                                         if x < right_bound - self.component.windings[col_cond].conductor_radius:
                                             while y > bot_bound + self.component.windings[col_cond].conductor_radius and \
                                                     N_completed[col_cond] < self.component.windings[col_cond].turns[n_win]:
-                                                self.p_conductor[col_cond].append(
-                                                    [x, y, 0, self.component.mesh.c_center_conductor[col_cond]])
+                                                self.p_conductor[col_cond].append([x, y, 0, self.component.mesh.c_center_conductor[col_cond]])
 
                                                 self.p_conductor[col_cond].append(
                                                     [x - self.component.windings[col_cond].conductor_radius,
@@ -1362,11 +1360,9 @@ class MagneticComponent:
                                                      self.component.mesh.c_conductor[col_cond]])
 
                                                 self.p_conductor[col_cond].append([x,
-                                                                                   y + self.component.windings[
-                                                                                       col_cond].conductor_radius,
+                                                                                   y + self.component.windings[col_cond].conductor_radius,
                                                                                    0,
-                                                                                   self.component.mesh.c_conductor[
-                                                                                       col_cond]])
+                                                                                   self.component.mesh.c_conductor[col_cond]])
 
                                                 self.p_conductor[col_cond].append(
                                                     [x + self.component.windings[col_cond].conductor_radius,
@@ -1375,16 +1371,13 @@ class MagneticComponent:
                                                      self.component.mesh.c_conductor[col_cond]])
 
                                                 self.p_conductor[col_cond].append([x,
-                                                                                   y - self.component.windings[
-                                                                                       col_cond].conductor_radius,
+                                                                                   y - self.component.windings[col_cond].conductor_radius,
                                                                                    0,
-                                                                                   self.component.mesh.c_conductor[
-                                                                                       col_cond]])
+                                                                                   self.component.mesh.c_conductor[col_cond]])
 
                                                 N_completed[col_cond] += 1
 
-                                                y -= self.component.windings[col_cond].conductor_radius * 2 + \
-                                                     self.component.isolation.cond_cond[col_cond]  # one from bot to top
+                                                y -= self.component.windings[col_cond].conductor_radius * 2 + self.component.isolation.cond_cond[col_cond]  # one from bot to top
 
                                             x += self.component.windings[col_cond].conductor_radius + \
                                                  self.component.windings[(col_cond + 1) % 2].conductor_radius + \
@@ -3179,8 +3172,7 @@ class MagneticComponent:
 
                 # Need flatten list of all! conductors
                 flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
-                self.plane_surface_air.append(
-                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond))
+                self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Boundary
@@ -3246,25 +3238,29 @@ class MagneticComponent:
             gmsh.model.geo.synchronize()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # - Forward Meshing -
+            self.forward_meshing()
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if visualize_before:
                 # Colors
                 for i in range(0, len(self.plane_surface_core)):
-                    gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50)
-                gmsh.model.setColor([(2, self.plane_surface_air[0])], 255, 255, 255)
+                    gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50, recursive=True)  # Core in gray
+                # gmsh.model.setColor([(2, self.plane_surface_air[0])], 0, 0, 0, recursive=True)
+                # gmsh.model.setColor([(2, self.plane_surface_air[0])], 255, 255, 255, recursive=True)  # Air in white
                 for num in range(0, self.component.n_windings):
                     for i in range(0, len(self.plane_surface_cond[num])):
-                        gmsh.model.setColor([(2, self.plane_surface_cond[num][i])], 200 * num, 200 * (1 - num), 0)
+                        gmsh.model.setColor([(2, self.plane_surface_cond[num][i])], 200 * num, 200 * (1 - num), 0, recursive=True)   # Conductors in green/red
 
                 # Output .msh file
-                gmsh.option.setNumber("Mesh.SaveAll", 1)
+                # gmsh.option.setNumber("Mesh.SaveAll", 1)
 
-                gmsh.write(self.component.hybrid_color_mesh_file)
+                # gmsh.write(self.component.hybrid_color_mesh_file)
 
-                # gmsh.model.mesh.generate(2)
                 gmsh.fltk.run()
-            else:
-                gmsh.model.mesh.generate(2)
-                gmsh.write(self.component.hybrid_mesh_file)
+
+            gmsh.model.mesh.generate(2)
+            gmsh.write(self.component.hybrid_mesh_file)
 
             gmsh.finalize()
 
@@ -3315,41 +3311,8 @@ class MagneticComponent:
             gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
             gmsh.model.setPhysicalName(1, self.pc_bound, "BOUND")
 
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # - Forward Meshing -
-            p_inter = None
-            # Inter Conductors
-            for n_win in range(0, len(self.component.virtual_winding_windows)):
-                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
-                    for num in range(0, self.component.n_windings):
-                        p_inter = []
-                        x_inter = []
-                        y_inter = []
-                        j = 0
 
-                        if self.component.windings[num].conductor_type == "solid" and \
-                                self.component.windings[num].turns[n_win] > 1:
-                            while self.component.two_d_axi.p_conductor[num][5 * j][1] == \
-                                    self.component.two_d_axi.p_conductor[num][5 * j + 5][1]:
-                                x_inter.append(
-                                    0.5 * (self.component.two_d_axi.p_conductor[num][5 * j][0] +
-                                           self.component.two_d_axi.p_conductor[num][5 * j + 5][0]))
-                                j += 1
-                                if j == self.component.windings[num].turns[n_win] - 1:
-                                    break
-                            j += 1
-                            if int(self.component.windings[num].turns[n_win] / j) > 1:
-                                for i in range(0, int(self.component.windings[num].turns[n_win] / j)):
-                                    if 5 * j * i + 5 * j >= len(self.component.two_d_axi.p_conductor[num][:]):
-                                        break
-                                    y_inter.append(0.5 * (self.component.two_d_axi.p_conductor[num][5 * j * i][1] +
-                                                          self.component.two_d_axi.p_conductor[num][5 * j * i + 5 * j][1]))
-                                for x in x_inter:
-                                    for y in y_inter:
-                                        p_inter.append(gmsh.model.geo.addPoint(x,
-                                                                               y,
-                                                                               0,
-                                                                               self.c_center_conductor[num]))
+
 
             # mshopt # Explicit stray path air gap optimization
             # mshopt if not self.component.component_type == "integrated_transformer":
@@ -3366,23 +3329,6 @@ class MagneticComponent:
             # stray_path_gap[1][3]}")
 
             # Synchronize
-            gmsh.model.geo.synchronize()
-
-            if all(winding.conductor_type == "solid" for winding in self.component.windings):
-                for num in range(0, self.component.n_windings):
-                    for i in range(0, int(len(self.p_cond[num]) / 5)):
-                        gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
-
-
-                # Embed points for mesh refinement
-                # Inter Conductors
-                for n_win in range(0, len(self.component.virtual_winding_windows)):
-                    if self.component.virtual_winding_windows[n_win].winding != "interleaved":
-                        gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
-                # Stray path
-                # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
-
-            # Synchronize again
             gmsh.model.geo.synchronize()
 
             # Output .msh file
@@ -3642,6 +3588,66 @@ class MagneticComponent:
             if self.component.valid:
                 self.generate_hybrid_mesh()
                 self.generate_electro_magnetic_mesh()
+
+        def forward_meshing(self):
+            """
+
+            :return:
+            """
+            p_inter = None
+            # Inter Conductors
+            for n_win in range(0, len(self.component.virtual_winding_windows)):
+                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                    for num in range(0, self.component.n_windings):
+                        p_inter = []
+                        x_inter = []
+                        y_inter = []
+                        j = 0
+
+                        if self.component.windings[num].conductor_type == "solid" and \
+                                self.component.windings[num].turns[n_win] > 1:
+                            while self.component.two_d_axi.p_conductor[num][5 * j][1] == \
+                                    self.component.two_d_axi.p_conductor[num][5 * j + 5][1]:
+                                x_inter.append(
+                                    0.5 * (self.component.two_d_axi.p_conductor[num][5 * j][0] +
+                                           self.component.two_d_axi.p_conductor[num][5 * j + 5][0]))
+                                j += 1
+                                if j == self.component.windings[num].turns[n_win] - 1:
+                                    break
+                            j += 1
+                            if int(self.component.windings[num].turns[n_win] / j) > 1:
+                                for i in range(0, int(self.component.windings[num].turns[n_win] / j)):
+                                    if 5 * j * i + 5 * j >= len(self.component.two_d_axi.p_conductor[num][:]):
+                                        break
+                                    y_inter.append(0.5 * (self.component.two_d_axi.p_conductor[num][5 * j * i][1] +
+                                                          self.component.two_d_axi.p_conductor[num][5 * j * i + 5 * j][1]))
+                                for x in x_inter:
+                                    for y in y_inter:
+                                        p_inter.append(gmsh.model.geo.addPoint(x,
+                                                                               y,
+                                                                               0,
+                                                                               self.c_center_conductor[num]))
+
+
+
+            # TODO: Inter conductor meshing!
+            if all(winding.conductor_type == "solid" for winding in self.component.windings):
+                print(f"Making use of skin based meshing\n")
+                for num in range(0, self.component.n_windings):
+                    for i in range(0, int(len(self.p_cond[num]) / 5)):
+                        gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
+
+
+                # Embed points for mesh refinement
+                # Inter Conductors
+                for n_win in range(0, len(self.component.virtual_winding_windows)):
+                    if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                        gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
+                # Stray path
+                # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
+
+            # Synchronize again
+            gmsh.model.geo.synchronize()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
@@ -3970,9 +3976,9 @@ class MagneticComponent:
             log = content
 
         return log
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
-
     def visualize(self):
         """
         - a post simulation viewer
