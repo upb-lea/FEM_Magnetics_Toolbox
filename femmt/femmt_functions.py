@@ -36,6 +36,34 @@ def core_database(core_type: str) -> Dict:
 
     return core_dict[core_type]
 
+
+def litz_database(litz_type: str) -> Dict:
+    """
+    Returns litz parameters for defined litz wires.
+
+    :param litz_type: str
+    :type litz_type: str
+    :return: Dict including litz parameters like strand_numbers, strand_radii and conductor_radii
+    :rtype: Dict
+    """
+    litz_dict = {}
+
+    litz_dict["105x0.1"] = {"strands_numbers": 105,
+                            "strand_radii": 0.1e-3 / 2,
+                            "conductor_radii": 1.5e-3 / 2}
+    litz_dict["200x0.071"] = {"strands_numbers": 200,
+                              "strand_radii": 0.071e-3 / 2,
+                              "conductor_radii": 1.4e-3 / 2}
+    litz_dict["405x0.071"] = {"strands_numbers": 405,
+                              "strand_radii": 0.071e-3 / 2,
+                              "conductor_radii": 2.0e-3 / 2}
+    litz_dict["800x0.05"] = {"strands_numbers": 800,
+                             "strand_radii": 0.05e-3 / 2,
+                             "conductor_radii": 2e-3 / 2}
+
+    return litz_dict[litz_type]
+
+
 # Static Functions
 #  Used somewhere in the Code of femmt.py
 def install_femm_if_missing() -> None:
