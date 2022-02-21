@@ -352,7 +352,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
-    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=1.0):
+    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=1.0, isolation_deltas = None):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
@@ -393,7 +393,7 @@ class MagneticComponent:
         self.dimensionality = dimensionality
         if self.dimensionality == "2D":
             self.two_d_axi = self.TwoDaxiSymmetric(self)
-            self.two_d_axi.update()
+            self.two_d_axi.update(isolation_deltas)
 
     class VirtualWindingWindow:
         """
@@ -1352,7 +1352,7 @@ class MagneticComponent:
                                 # Initialize the x and y coordinate
                                 x = left_bound + self.component.windings[col_cond].conductor_radius
                                 y = top_bound - self.component.windings[col_cond].conductor_radius
-
+                                self.top_window_iso_counter = 0
                                 # Continue placing as long as not all conductors have been placed
                                 while (self.component.windings[0].turns[n_win] - N_completed[0] != 0) or \
                                         (self.component.windings[1].turns[n_win] - N_completed[1] != 0):
@@ -1402,7 +1402,7 @@ class MagneticComponent:
                                             # Reset y
                                             col_cond = (col_cond + 1) % 2
                                             y = top_bound - self.component.windings[col_cond].conductor_radius
-
+                                            self.top_window_iso_counter += 1
                                         else:
                                             break
 
@@ -1417,7 +1417,7 @@ class MagneticComponent:
                                                  col_cond]
 
                                         y = top_bound - self.component.windings[col_cond].conductor_radius
-
+                                        self.top_window_iso_counter -= 1
                             #  bottom window
                             if n_win == 1:
                                 # Initialize the list, that counts the already placed conductors
@@ -1948,7 +1948,7 @@ class MagneticComponent:
                                          0,
                                          self.component.mesh.c_core * self.component.mesh.padding]
 
-        def draw_isolations(self):
+        def draw_isolations(self, isolation_deltas):
             """
             DISCLAIMER
             Because the distance from the core to the winding is set by
@@ -1960,24 +1960,28 @@ class MagneticComponent:
             iso = self.component.isolation
             mesh = self.component.mesh
 
+            # Using the delta the lines and points from the isolation and the core/windings are not overlapping
+            # which makes creating the mesh more simpler
+            # Isolation between winding and core
+            iso_core_delta_left = isolation_deltas["core_left"] # Distance from iso to the core (left)
+            iso_core_delta_top = isolation_deltas["core_top"] # Distance from iso to the core (top)
+            iso_core_delta_bot = isolation_deltas["core_bot"] # Distance from iso to the core (bot)
+            iso_winding_delta = isolation_deltas["winding"] # Distance from iso to the winding
+
+            # Only used in primary/secondary winding scheme
+            # Distance between the core-winding iso and the winding-winding iso 
+            # (only when 2 virtual winding windows are set and therefore the winding-winding iso is horizontal)
+            iso_iso_delta = isolation_deltas["iso_iso_hor"] 
+
+            # Distance from the right end of the horizontal isolation to the core
+            # (only exists when 2 vww are set)
+            hor_iso_delta_right = isolation_deltas["iso_iso_right"]
+
+
             if self.component.component_type == "integrated_transformer":
                 # TODO implement for integrated_transformers
                 pass
             else:
-                # A delta is used in order to keep small gaps between everything such that not the exact same points are needed.
-                #delta = 0.0001
-
-                # Using the delta the lines and points from the isolation and the core/windings are not overlapping
-                # which makes creating the mesh more simpler
-                iso_core_delta_left = 0.0001
-                iso_core_delta_top = 0.0001
-                iso_core_delta_bot = 0.0001
-                iso_winding_delta = 0.0001 # distance from iso to the winding
-
-                # Only used in primary/secondary winding scheme
-                iso_iso_delta = 0.0001
-                hor_iso_delta_right = 0.0001 # distance from the right end of the isolation to the core
-
                 # Core to Pri isolation
                 self.p_iso_core_pri = [
                     [
@@ -2007,19 +2011,61 @@ class MagneticComponent:
                 ]
 
                 # Isolation between virtual winding windows
+                self.p_iso_pri_sec = [] 
                 if self.component.vw_type == "full_window":
-                    # Only one vww -> The window can be interleaved 
-                    # -> still a isolation between pri and sec necessary
-                    if len(self.component.virtual_winding_windows) == 1 and self.component.virtual_winding_windows[0].scheme == "interleaved":
+                    # Only one vww -> The winding can be interleaved 
+                    # -> still an isolation between pri and sec necessary
+                    if len(self.component.virtual_winding_windows) == 1 and self.component.virtual_winding_windows[0].winding == "interleaved":
                         # vertical isolations needed between the layers
-                        # how many layers exist?
-                        pass
-
-                if self.component.vw_type == "center":
+                        # bifilar and vertical do not exist yet
+                        vww = self.component.virtual_winding_windows[0]
+                        winding_0 = self.component.windings[0]
+                        winding_1 = self.component.windings[1]
+                        current_x = vww.left_bound + 2 * winding_0.conductor_radius
+                        if vww.scheme == "horizontal":
+                            self.p_iso_pri_sec = []
+                            for index in range(self.top_window_iso_counter-1):
+                                self.p_iso_pri_sec.append([
+                                    [
+                                        current_x + iso_winding_delta,
+                                        window_h / 2 - iso_core_delta_top,
+                                        0,
+                                        mesh.c_window
+                                    ],
+                                    [
+                                        current_x + iso.cond_cond[2] - iso_winding_delta,
+                                        window_h / 2 - iso_core_delta_top,
+                                        0,
+                                        mesh.c_window
+                                    ],
+                                    [
+                                        current_x + iso.cond_cond[2] - iso_winding_delta,
+                                        -window_h / 2 + iso_core_delta_bot,
+                                        0,
+                                        mesh.c_window
+                                    ],
+                                    [
+                                        current_x + iso_winding_delta,
+                                        -window_h / 2 + iso_core_delta_bot,
+                                        0,
+                                        mesh.c_window
+                                    ]
+                                ])
+                                if index % 2 == 0:
+                                    current_x += iso.cond_cond[2] + 2 * winding_1.conductor_radius
+                                else:
+                                    current_x += iso.cond_cond[2] + 2 * winding_0.conductor_radius
+                        elif vww.scheme == "vertical":
+                            raise Exception("Vertical scheme not implemented yet!")
+                        elif vww.scheme == "bifilar":
+                            raise Exception("Bifilar scheme not implemented yet!")
+                        else:
+                            raise Exception(f"The winding scheme {vww.scheme} is unknown.")
+                elif self.component.vw_type == "center":
                     # Two vwws -> a horizontal isolation is needed
                     vww_bot = self.component.virtual_winding_windows[0]
                     vww_top = self.component.virtual_winding_windows[1]
-                    self.p_iso_pri_sec = [
+                    self.p_iso_pri_sec.append([
                         [
                             vww_top.left_bound - iso_winding_delta + iso_iso_delta,
                             vww_top.bot_bound - iso_winding_delta,
@@ -2044,8 +2090,9 @@ class MagneticComponent:
                             0,
                             mesh.c_window
                         ]
-                    ]
-        def update(self):
+                    ])
+        
+        def update(self, isolation_deltas = None):
 
             # Preallocate the arrays, in which the geometries' point coordinates will be stored
             self.p_outer = np.zeros((4, 4))
@@ -2069,7 +2116,17 @@ class MagneticComponent:
 
             self.draw_conductors()
 
-            self.draw_isolations()
+            if isolation_deltas is None:
+                isolation_deltas = {
+                    "core_left": 0.0001,
+                    "core_top": 0.0001,
+                    "core_bot": 0.0001,
+                    "winding": 0.0001,
+                    "iso_iso_hor" : 0.0001,
+                    "iso_iso_right": 0.0001
+                }
+
+            self.draw_isolations(isolation_deltas)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Pre-Processing
@@ -3264,26 +3321,30 @@ class MagneticComponent:
                     self.p_iso_core_pri.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
 
                 # Pri to Sec
-                for i in self.component.two_d_axi.p_iso_pri_sec:
-                    self.p_iso_pri_sec.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                for iso in self.component.two_d_axi.p_iso_pri_sec:
+                    p_iso = []
+                    for i in iso:
+                        p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                    self.p_iso_pri_sec.append(p_iso)
 
                 # Lines
-                for i in range(4): # Always 4 points for each isolation
-                    core_pri_current_tag = self.p_iso_core_pri[i] 
-                    core_pri_next_tag = self.p_iso_core_pri[(i + 1) % 4]
-                    pri_sec_current_tag = self.p_iso_pri_sec[i]
-                    pri_sec_next_tag = self.p_iso_pri_sec[(i + 1) % 4]
-                    self.l_iso_core_pri.append(gmsh.model.geo.addLine(core_pri_current_tag, core_pri_next_tag))
-                    self.l_iso_pri_sec.append(gmsh.model.geo.addLine(pri_sec_current_tag, pri_sec_next_tag))
-
+                # Adds lines according to the points from the list
+                # iso_pri_sec contains a list of multiple isolations
+                self.l_iso_core_pri = [gmsh.model.geo.addLine(self.p_iso_core_pri[i], self.p_iso_core_pri[(i+1)%4]) for i in range(4)] 
+                self.l_iso_pri_sec = [[gmsh.model.geo.addLine(iso[i], iso[(i+1)%4]) for i in range(4)] for iso in self.p_iso_pri_sec]
+                    
                 # Curve loops and surfaces
                 # Core to Pri
                 self.curve_loop_iso_core_pri.append(gmsh.model.geo.addCurveLoop(self.l_iso_core_pri))
                 self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_core_pri))
 
                 # Pri to Sec
-                self.curve_loop_iso_pri_sec.append(gmsh.model.geo.addCurveLoop(self.l_iso_pri_sec))
-                self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_pri_sec))
+                self.curve_loop_iso_pri_sec = []
+                self.plane_surface_iso_pri_sec = []
+                for iso in self.l_iso_pri_sec:
+                    cl = gmsh.model.geo.addCurveLoop(iso)
+                    self.curve_loop_iso_pri_sec.append(cl)
+                    self.plane_surface_iso_pri_sec.append(gmsh.model.geo.addPlaneSurface([cl]))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Air
@@ -3325,6 +3386,7 @@ class MagneticComponent:
 
                 # Need flatten list of all! conductors
                 flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
+
                 # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
                 # The other curve loops represent holes in the surface -> For each conductor as well as each isolation
                 self.plane_surface_air.append(
@@ -3410,9 +3472,9 @@ class MagneticComponent:
 
                 # gmsh.model.mesh.generate(2)
                 gmsh.fltk.run()
-            else:
-                gmsh.model.mesh.generate(2)
-                gmsh.write(self.component.hybrid_mesh_file)
+            
+            gmsh.model.mesh.generate(2)
+            gmsh.write(self.component.hybrid_mesh_file)
 
             gmsh.finalize()
 

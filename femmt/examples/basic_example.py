@@ -3,7 +3,7 @@ from femmt import *
 import numpy as np
 
 # component = "inductor"
-component = "transformer"
+component = "transformer-interleaved"
 # component = "integrated_transformer"
 # component = "transformer"
 
@@ -54,7 +54,7 @@ if component == "transformer-interleaved":
                         core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
     # Perform a single simulation
-    geo.create_model(freq=250000)
+    geo.create_model(freq=250000, visualize_before=False)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170], show_results=True)
     # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
     #                                                                               - 1.47917789/np.pi*180 + 180])
