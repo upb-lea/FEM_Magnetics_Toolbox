@@ -48,15 +48,20 @@ def femmt_simulation(temp_folder):
     try:
         geo = MagneticComponent(component_type="transformer", working_directory=temp_folder)
 
+        # Update Geometry
         geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015)
+
+        # geo.air_gaps.update(n_air_gaps=0)
         geo.air_gaps.update(method="percent", n_air_gaps=1, air_gap_h=[0.0005],
                             air_gap_position=[50], position_tag=[0])
-        geo.update_conductors(n_turns=[[36], [11]], conductor_type=["solid", "litz"],
+
+        geo.update_conductors(n_turns=[[10, 0], [0, 10]], conductor_type=["solid", "litz"],
                             litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
                             ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
                             conductor_radii=[0.0011, None],
-                            winding=["interleaved"], scheme=["horizontal"],
-                            core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+                            winding=["primary", "secondary"], scheme=["square", "square"],
+                            core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+
 
         geo.create_model(freq=250000, visualize_before=False)
         geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170], show_results=False)

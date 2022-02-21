@@ -4,8 +4,8 @@ import numpy as np
 
 #component = "inductor"
 #component = "transformer-interleaved"
-component = "integrated_transformer"
-#component = "transformer"
+#component = "integrated_transformer"
+component = "transformer"
 
 # Create Object
 if component == "inductor":
