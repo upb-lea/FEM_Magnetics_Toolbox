@@ -757,7 +757,7 @@ class MagneticComponent:
         :type wrap_para: List
         :param cond_cond_isolation: Isolation between windings and windings, e.g. [primary2primary, secondary2secondary, primary2secondary]
         :type cond_cond_isolation: List
-        :param core_cond_isolation: Isolation between windings and the core, e.g. [primary2core, secondary2core],
+        :param core_cond_isolation: Isolation between windings and the core, e.g. [windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
         :type core_cond_isolation: List
         :return: None
         :rtype: None
@@ -768,7 +768,7 @@ class MagneticComponent:
         >>> geo = fmt.MagneticComponent(component_type="Inductor")
         >>> geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
         >>>               winding=["primary"], scheme=["square"],
-        >>>               core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
+        >>>               core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0001])
 
         :Example Transformer with solid (primary) winding and litz (secondary) winding:
 
@@ -779,7 +779,7 @@ class MagneticComponent:
         >>>             ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
         >>>             conductor_radii=[0.0011, None],
         >>>             winding=["interleaved"], scheme=["horizontal"],
-        >>>             core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+        >>>             core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
         """
         n_turns = n_turns or []
@@ -1135,10 +1135,10 @@ class MagneticComponent:
                     In case of a transformer, an interleaved winding scheme must be used.
                     """
                     # top window
-                    minimum = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0] / 2  # bottom
-                    maximum = self.component.core.window_h / 2 - self.component.isolation.core_cond[0]  # top
-                    left = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
-                    right = self.r_inner - self.component.isolation.core_cond[0]
+                    minimum = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0]  # bottom
+                    maximum = self.component.core.window_h / 2 - self.component.isolation.core_cond[1]  # top
+                    left = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
+                    right = self.r_inner - self.component.isolation.core_cond[3]
 
                     # Sum the windows up in a list
                     # self.virtual_windows = [[min, max, left, right]]
@@ -1158,14 +1158,14 @@ class MagneticComponent:
                     # top window
                     min21 = -separation_hor + self.component.isolation.cond_cond[-1] / 2  # separation_hor
                     max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[0]  # top
-                    left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
-                    right21 = self.r_inner - self.component.isolation.core_cond[0]
+                    left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
+                    right21 = self.r_inner - self.component.isolation.core_cond[3]
 
                     # bottom window
-                    min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0] / 2  # bottom
+                    min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1] / 2  # bottom
                     max11 = -separation_hor - self.component.isolation.cond_cond[-1] / 2  # separation_hor
-                    left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
-                    right11 = self.r_inner - self.component.isolation.core_cond[0]
+                    left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
+                    right11 = self.r_inner - self.component.isolation.core_cond[3]
 
                     # Sum the windows up in a list
                     virtual_windows = [[min11, max11, left11, right11],
@@ -1213,17 +1213,15 @@ class MagneticComponent:
                 # bot window
                 island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
                 min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1]  # bottom
-                max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - \
-                        self.component.isolation.core_cond[0]  # sep_hor
-                left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
-                right11 = self.r_inner - self.component.isolation.core_cond[1]
+                max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - self.component.isolation.core_cond[0]  # sep_hor
+                left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
+                right11 = self.r_inner - self.component.isolation.core_cond[3]
 
                 # top window
-                min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + \
-                        self.component.isolation.core_cond[0] * 1.5  # TODO:remove 1.5 # sep_hor
-                max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[1]  # top
-                left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
-                right21 = self.r_inner - self.component.isolation.core_cond[1]
+                min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + self.component.isolation.core_cond[1]
+                max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[0]  # top
+                left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
+                right21 = self.r_inner - self.component.isolation.core_cond[3]
 
                 # Store the window boarders in the VWW objects
                 virtual_windows = [[min21, max21, left21, right21], [min11, max11, left11, right11]]
