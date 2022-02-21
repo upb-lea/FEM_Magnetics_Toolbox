@@ -205,7 +205,6 @@ class MainWindow(QMainWindow):
 
         self.md_isolation_s2s_lineEdit.setEnabled(status)
         self.md_isolation_p2s_lineEdit.setEnabled(status)
-        self.md_isolation_s2core_lineEdit.setEnabled(status)
 
 
     def md_f1_enable(self, status: bool) -> None:
@@ -725,17 +724,22 @@ class MainWindow(QMainWindow):
 
 
     def md_setup_geometry(self):
+        """
+        Sets up the core and conductor geometry depending on the GUI input parameters
+
+        returns: femmt MagneticComponent
+
+        """
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.md_simulation_QLabel.setText('simulation startet...')
 
-            geo = fmt.MagneticComponent(component_type="inductor")
+            geo = fmt.MagneticComponent(component_type="inductor", working_directory=None)
 
             # -----------------------------------------------
             # Core
             # -----------------------------------------------
 
             geo.core.update(type="EI",
-                            core_h=float(self.md_core_height_lineEdit.text()),
                             core_w=float(self.md_core_width_lineEdit.text()),
                             window_h=float(self.md_window_height_lineEdit.text()),
                             window_w=float(self.md_window_width_lineEdit.text()))
@@ -816,8 +820,11 @@ class MainWindow(QMainWindow):
                                       conductor_radii=[float(self.md_winding1_radius_lineEdit.text())],
                                       winding=["primary"],
                                       scheme=[scheme],
-                                      core_cond_isolation=[float(self.self.md_isolation_p2p_lineEdit.text())],
-                                      cond_cond_isolation=[float(self.self.md_isolation_p2core_lineEdit.text())])
+                                      core_cond_isolation=[float(self.md_isolation_core2cond_top_lineEdit.text()),
+                                                           float(self.md_isolation_core2cond_bot_lineEdit.text()),
+                                                           float(self.md_isolation_core2cond_inner_lineEdit.text()),
+                                                           float(self.md_isolation_core2cond_outer_lineEdit.text())],
+                                      cond_cond_isolation=[float(self.self.md_isolation_p2p_lineEdit.text())])
             elif self.md_winding1_type_comboBox.currentText() == self.translation_dict['litz']:
                 litz_para_type = ''
                 if self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_litz_radius']:
@@ -838,8 +845,11 @@ class MainWindow(QMainWindow):
                                       ff=[float(self.md_winding1_fill_factor_lineEdit.text())],
                                       strands_numbers=[float(self.md_winding1_strands_lineEdit.text())],
                                       strand_radii=[float(self.md_winding1_strand_radius_comboBox.text())],
-                                      core_cond_isolation=[float(self.md_isolation_p2p_lineEdit.text())],
-                                      cond_cond_isolation=[float(self.md_isolation_p2core_lineEdit.text())])
+                                      core_cond_isolation=[float(self.md_isolation_core2cond_top_lineEdit.text()),
+                                                           float(self.md_isolation_core2cond_bot_lineEdit.text()),
+                                                           float(self.md_isolation_core2cond_inner_lineEdit.text()),
+                                                           float(self.md_isolation_core2cond_outer_lineEdit.text())],
+                                      cond_cond_isolation=[float(self.md_isolation_p2p_lineEdit.text())])
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
             pass
 
@@ -863,8 +873,8 @@ class MainWindow(QMainWindow):
         # -----------------------------------------------
         # Simulation
         # -----------------------------------------------
-
-        geo.single_simulation(freq=int(self.md_base_frequency_lineEdit.text()), current=[int(self.md_winding1_ik1_lineEdit.text())])
+        geo.create_model(freq=int(self.md_base_frequency_lineEdit.text()))
+        geo.single_simulation(freq=int(self.md_base_frequency_lineEdit.text()), current=[float(self.md_winding1_ik1_lineEdit.text())])
 
         winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
 
