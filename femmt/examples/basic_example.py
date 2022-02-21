@@ -2,14 +2,14 @@
 from femmt import *
 import numpy as np
 
-# component = "inductor"
-component = "transformer-interleaved"
-# component = "integrated_transformer"
-# component = "transformer"
+#component = "inductor"
+#component = "transformer-interleaved"
+component = "integrated_transformer"
+#component = "transformer"
 
 # Create Object
 if component == "inductor":
-    geo = MagneticComponent(component_type="inductor", working_directory="")
+    geo = MagneticComponent(component_type="inductor")
 
     # Update Geometry
     geo.core.update(window_h=0.03, window_w=0.011)
@@ -24,7 +24,7 @@ if component == "inductor":
 
 
     # Single simulation
-    geo.create_model(freq=100000)
+    geo.create_model(freq=100000, visualize_before=True)
     geo.single_simulation(freq=100000, current=[1])
     
     # Excitation Sweep Example
@@ -54,7 +54,7 @@ if component == "transformer-interleaved":
                         core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
     # Perform a single simulation
-    geo.create_model(freq=250000, visualize_before=False)
+    geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170], show_results=True)
     # geo.single_simulation(freq=250000, current=[4.18368713, 4.28975166], phi_deg=[-1.09710805/np.pi*180,
     #                                                                               - 1.47917789/np.pi*180 + 180])
@@ -134,15 +134,15 @@ if component == "transformer":
                         ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
                         conductor_radii=[0.0011, None],
                         winding=["primary", "secondary"], scheme=["square", "square"],
-                        core_cond_isolation=[0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+                        core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
 
-    geo.create_model(freq=250000)
+    geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
 
 
 if component == "integrated_transformer":
-    geo = MagneticComponent(component_type="integrated_transformer", working_directory="")
+    geo = MagneticComponent(component_type="integrated_transformer")
 
     geo.update_conductors(n_turns=[[1, 3], [2, 6]], conductor_type=["litz", "litz"],
                           litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
@@ -162,7 +162,7 @@ if component == "integrated_transformer":
                           radius=geo.core.core_w / 2 + geo.core.window_w - 0.001)
 
     # Perform a single simulation
-    geo.create_model(freq=250000)
+    geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 180])
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
 

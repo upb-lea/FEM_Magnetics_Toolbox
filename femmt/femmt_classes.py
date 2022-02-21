@@ -825,7 +825,7 @@ class MagneticComponent:
         else:
             # Dedicated stray path: Two virtual winding windows
             # TODO: Subdivision into further Virtual Winding Windows
-            raise Exception("Currently there cannot be more than 2 virtual winding windows")
+            pass
 
         self.virtual_winding_windows = []
         for windows in range(0, len(winding)):
@@ -1343,9 +1343,13 @@ class MagneticComponent:
 
                                 # Initialize the starting conductor
                                 if self.component.windings[0].turns[n_win] >= self.component.windings[1].turns[n_win]:
-                                    col_cond = 0
+                                    # Primary starts first
+                                    self.col_cond_start = 0
                                 else:
-                                    col_cond = 1
+                                    # Secondary starts fist
+                                    self.col_cond_start = 1
+
+                                col_cond = self.col_cond_start
 
                                 # Initialize the x and y coordinate
                                 x = left_bound + self.component.windings[col_cond].conductor_radius
@@ -1975,10 +1979,12 @@ class MagneticComponent:
             # (only exists when 2 vww are set)
             hor_iso_delta_right = isolation_deltas["iso_iso_right"]
 
+            self.p_iso_core_pri = []
+            self.p_iso_pri_sec = []
 
             if self.component.component_type == "integrated_transformer":
                 # TODO implement for integrated_transformers
-                pass
+                warnings.warn("Isolations are not set because they are not implemented for integrated transformers.")
             else:
                 # Core to Pri isolation
                 self.p_iso_core_pri = [
@@ -1989,13 +1995,13 @@ class MagneticComponent:
                         mesh.c_window
                     ],
                     [
-                        self.component.core.core_w / 2 + iso.core_cond[0] - iso_winding_delta,
+                        self.component.core.core_w / 2 + iso.core_cond[2] - iso_winding_delta,
                         window_h / 2 - iso_core_delta_top,
                         0,
                         mesh.c_window
                     ],
                     [
-                        self.component.core.core_w / 2 + iso.core_cond[0] - iso_winding_delta,
+                        self.component.core.core_w / 2 + iso.core_cond[2] - iso_winding_delta,
                         -window_h / 2 + iso_core_delta_bot,
                         0,
                         mesh.c_window
@@ -2009,7 +2015,6 @@ class MagneticComponent:
                 ]
 
                 # Isolation between virtual winding windows
-                self.p_iso_pri_sec = [] 
                 if self.component.vw_type == "full_window":
                     # Only one vww -> The winding can be interleaved 
                     # -> still an isolation between pri and sec necessary
@@ -2049,7 +2054,9 @@ class MagneticComponent:
                                         mesh.c_window
                                     ]
                                 ])
-                                if index % 2 == 0:
+                                # The sec winding can start first when it has a higher number of turns
+                                # col_cond
+                                if index % 2 == self.col_cond_start:
                                     current_x += iso.cond_cond[2] + 2 * winding_1.conductor_radius
                                 else:
                                     current_x += iso.cond_cond[2] + 2 * winding_0.conductor_radius
@@ -2089,7 +2096,8 @@ class MagneticComponent:
                             mesh.c_window
                         ]
                     ])
-        
+                else:
+                    warnings.warn(f"Isolations are not implemented for components with type {self.component.vw_type}")
         def update(self, isolation_deltas = None):
 
             # Preallocate the arrays, in which the geometries' point coordinates will be stored
@@ -3312,37 +3320,39 @@ class MagneticComponent:
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Isolations
-
-                # Points
                 # Core to Pri
-                for i in self.component.two_d_axi.p_iso_core_pri:
-                    self.p_iso_core_pri.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
-
-                # Pri to Sec
-                for iso in self.component.two_d_axi.p_iso_pri_sec:
-                    p_iso = []
-                    for i in iso:
-                        p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
-                    self.p_iso_pri_sec.append(p_iso)
-
-                # Lines
-                # Adds lines according to the points from the list
-                # iso_pri_sec contains a list of multiple isolations
-                self.l_iso_core_pri = [gmsh.model.geo.addLine(self.p_iso_core_pri[i], self.p_iso_core_pri[(i+1)%4]) for i in range(4)] 
-                self.l_iso_pri_sec = [[gmsh.model.geo.addLine(iso[i], iso[(i+1)%4]) for i in range(4)] for iso in self.p_iso_pri_sec]
+                if self.component.two_d_axi.p_iso_core_pri: # Check if list is not empty
+                    # Points
+                    for i in self.component.two_d_axi.p_iso_core_pri:
+                                        self.p_iso_core_pri.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
                     
-                # Curve loops and surfaces
-                # Core to Pri
-                self.curve_loop_iso_core_pri.append(gmsh.model.geo.addCurveLoop(self.l_iso_core_pri))
-                self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_core_pri))
+                    # Lines
+                    self.l_iso_core_pri = [gmsh.model.geo.addLine(self.p_iso_core_pri[i], self.p_iso_core_pri[(i+1)%4]) for i in range(4)] 
+
+                    # Curve loop and surface
+                    self.curve_loop_iso_core_pri.append(gmsh.model.geo.addCurveLoop(self.l_iso_core_pri))
+                    self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_core_pri))
 
                 # Pri to Sec
-                self.curve_loop_iso_pri_sec = []
-                self.plane_surface_iso_pri_sec = []
-                for iso in self.l_iso_pri_sec:
-                    cl = gmsh.model.geo.addCurveLoop(iso)
-                    self.curve_loop_iso_pri_sec.append(cl)
-                    self.plane_surface_iso_pri_sec.append(gmsh.model.geo.addPlaneSurface([cl]))
+                if self.component.two_d_axi.p_iso_pri_sec: # Check if list is not empty
+                    # Points
+                    for iso in self.component.two_d_axi.p_iso_pri_sec:
+                        p_iso = []
+                        for i in iso:
+                            p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                        self.p_iso_pri_sec.append(p_iso)
+
+                    # Lines
+                    # iso_pri_sec contains a list of multiple isolations
+                    self.l_iso_pri_sec = [[gmsh.model.geo.addLine(iso[i], iso[(i+1)%4]) for i in range(4)] for iso in self.p_iso_pri_sec]
+                        
+                    # Curve loops and surfaces
+                    self.curve_loop_iso_pri_sec = []
+                    self.plane_surface_iso_pri_sec = []
+                    for iso in self.l_iso_pri_sec:
+                        cl = gmsh.model.geo.addCurveLoop(iso)
+                        self.curve_loop_iso_pri_sec.append(cl)
+                        self.plane_surface_iso_pri_sec.append(gmsh.model.geo.addPlaneSurface([cl]))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Air
@@ -3465,10 +3475,7 @@ class MagneticComponent:
 
                 # Output .msh file
                 gmsh.option.setNumber("Mesh.SaveAll", 1)
-
                 gmsh.write(self.component.hybrid_color_mesh_file)
-
-                # gmsh.model.mesh.generate(2)
                 gmsh.fltk.run()
             
             gmsh.model.mesh.generate(2)
