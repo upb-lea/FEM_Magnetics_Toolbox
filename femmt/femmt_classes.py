@@ -2995,8 +2995,7 @@ class MagneticComponent:
             """
             print("Initialize Gmsh")
             # Initialization
-            if not do_meshing:
-                gmsh.initialize()
+            gmsh.initialize()
 
             """
             if refine == 1:
