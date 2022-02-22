@@ -944,7 +944,24 @@ class MainWindow(QMainWindow):
 
         self.md_simulation_QLabel.setText('simulation fertig.')
 
-        # log_path = geo.path + "/" + geo.path_res + 'result_log_electro_magnetic.json'
+        loaded_results_dict = fmt.visualize_simulation_results(geo.e_m_results_log_path, './results.png', show_plot=False)
+
+        pixmap = QPixmap("./results.png")
+        self.md_loss_plot_label.setPixmap(pixmap)
+        self.md_loss_plot_label.setMask(pixmap.mask())
+        self.md_loss_plot_label.show()
+
+        inductance = loaded_results_dict["Fluxes"]["L_11"][0]
+        loss_core_eddy_current = loaded_results_dict["Losses"]["Core_Eddy_Current"]
+        loss_core_hysteresis = loaded_results_dict["Losses"]["Core_Hysteresis"]
+        loss_winding_1 = loaded_results_dict["Losses"]["Winding_1"]["total_winding"]
+
+        self.md_loss_core_hysteresis_label.setText(f"Core Hysteresis loss: {loss_core_hysteresis} W")
+        self.md_loss_core_eddy_current_label.setText(f"Core Eddy Current loss: {loss_core_eddy_current} W")
+        self.md_loss_winding1_label.setText(f"Winding 1 loss: {loss_winding_1} W")
+        self.md_inductance_label.setText(f"Inductance: {inductance} H")
+
+        #log_path = geo.e_m_results_log_path
         # simulation_results = str(fmt.read_results_log(log_path))
         # print(simulation_results)
         # self.md_simulation_output_textBrowser.setText(simulation_results)
