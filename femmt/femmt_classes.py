@@ -55,10 +55,13 @@ class MagneticComponent:
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
 
-        wkdir = kwargs["working_directory"]
-        if wkdir is None or not os.path.exists(wkdir):
-            wkdir = os.path.dirname(__file__)
-        self.update_paths(wkdir)
+        
+        if "working_directory" in kwargs:
+            wkdir = kwargs["working_directory"]
+            if wkdir is not None and os.path.exists(wkdir):
+                self.update_paths(wkdir)
+        else:
+            self.update_paths(os.path.dirname(__file__))
 
         # Initialization of all instance variables
 
@@ -201,6 +204,7 @@ class MagneticComponent:
         self.e_m_mesh_file = os.path.join(self.mesh_folder_path, "electro_magnetic.msh")
         self.hybrid_mesh_file = os.path.join(self.mesh_folder_path, "hybrid.msh")
         self.hybrid_color_mesh_file = os.path.join(self.mesh_folder_path, "hybrid_color.msh")
+        self.hybrid_color_visualize_file = os.path.join(self.mesh_folder_path, "hybrid_color.png")
         self.thermal_mesh_file = os.path.join(self.mesh_folder_path, "thermal.msh")
 
         # Create necessary folders
@@ -261,7 +265,8 @@ class MagneticComponent:
             "background_tag": self.mesh.ps_air,
             "winding_tags": self.mesh.ps_cond,
             "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
-            "boundary_regions": self.mesh.thermal_boundary_region_tags
+            "boundary_regions": self.mesh.thermal_boundary_region_tags,
+            "isolations_tag": self.mesh.ps_isolation
         }
 
         # Core area -> Is needed to estimate the heat flux
@@ -348,7 +353,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
-    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=1.0):
+    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=1.0, isolation_deltas = None):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
@@ -388,7 +393,7 @@ class MagneticComponent:
         self.dimensionality = dimensionality
         if self.dimensionality == "2D":
             self.two_d_axi = self.TwoDaxiSymmetric(self)
-            self.two_d_axi.update()
+            self.two_d_axi.update(isolation_deltas)
 
     class VirtualWindingWindow:
         """
@@ -818,9 +823,9 @@ class MagneticComponent:
             if len(winding) == 2:
                 self.vw_type = "center"  # Two Virtual Winding Windows #TODO: Adjust center (no longer just zero line)
         else:
-            pass
             # Dedicated stray path: Two virtual winding windows
             # TODO: Subdivision into further Virtual Winding Windows
+            pass
 
         self.virtual_winding_windows = []
         for windows in range(0, len(winding)):
@@ -831,7 +836,8 @@ class MagneticComponent:
         for vww in range(0, len(self.virtual_winding_windows)):
             self.virtual_winding_windows[vww].winding = winding[vww]
             self.virtual_winding_windows[vww].scheme = scheme[vww]
-            self.virtual_winding_windows[vww].turns = list(map(list, zip(*n_turns)))[vww]
+            #self.virtual_winding_windows[vww].turns = list(map(list, zip(*n_turns)))[vww] OLD CODE
+            self.virtual_winding_windows[vww].turns = n_turns[vww]
             # Need number of turns per VWW but given is a form of [list_of_primary_turns, list_of_secondary_turns]
 
         # - - - - - - - - - - - - - - - - - Definition of the Isolation Parameters - - - - - - - - - - - - - - - - - - -
@@ -952,7 +958,7 @@ class MagneticComponent:
     # Full Geometry
     class TwoDaxiSymmetric:
         """
-        - creates all points needed for the radial axi-symmetric core typology
+        - creates all points needed for the radial axi-symmetric core topology
 
         :return:
 
@@ -966,6 +972,8 @@ class MagneticComponent:
             self.p_window = None  # np.zeros((4 * self.component.n_windows, 4))
             self.p_air_gaps = None  # np.zeros((4 * self.component.air_gaps.number, 4))
             self.p_conductor = []
+            self.p_iso_core_pri = []
+            self.p_iso_pri_sec = []
             for i in range(0, self.component.n_windings):
                 self.p_conductor.insert(i, [])
 
@@ -1335,14 +1343,18 @@ class MagneticComponent:
 
                                 # Initialize the starting conductor
                                 if self.component.windings[0].turns[n_win] >= self.component.windings[1].turns[n_win]:
-                                    col_cond = 0
+                                    # Primary starts first
+                                    self.col_cond_start = 0
                                 else:
-                                    col_cond = 1
+                                    # Secondary starts fist
+                                    self.col_cond_start = 1
+
+                                col_cond = self.col_cond_start
 
                                 # Initialize the x and y coordinate
                                 x = left_bound + self.component.windings[col_cond].conductor_radius
                                 y = top_bound - self.component.windings[col_cond].conductor_radius
-
+                                self.top_window_iso_counter = 0
                                 # Continue placing as long as not all conductors have been placed
                                 while (self.component.windings[0].turns[n_win] - N_completed[0] != 0) or \
                                         (self.component.windings[1].turns[n_win] - N_completed[1] != 0):
@@ -1386,7 +1398,7 @@ class MagneticComponent:
                                             # Reset y
                                             col_cond = (col_cond + 1) % 2
                                             y = top_bound - self.component.windings[col_cond].conductor_radius
-
+                                            self.top_window_iso_counter += 1
                                         else:
                                             break
 
@@ -1401,7 +1413,7 @@ class MagneticComponent:
                                                  col_cond]
 
                                         y = top_bound - self.component.windings[col_cond].conductor_radius
-
+                                        self.top_window_iso_counter -= 1
                             #  bottom window
                             if n_win == 1:
                                 # Initialize the list, that counts the already placed conductors
@@ -1932,7 +1944,156 @@ class MagneticComponent:
                                          0,
                                          self.component.mesh.c_core * self.component.mesh.padding]
 
-        def update(self):
+        def draw_isolations(self, isolation_deltas):
+            """
+            DISCLAIMER
+            Because the distance from the core to the winding is set by
+            iso.core_cond, a delta, which is used in order for no overlapping lines will cause
+            the "real" isolation to be slightly smaller than set by the user.
+            """
+
+            window_h = self.component.core.window_h
+            iso = self.component.isolation
+            mesh = self.component.mesh
+
+            # Using the delta the lines and points from the isolation and the core/windings are not overlapping
+            # which makes creating the mesh more simpler
+            # Isolation between winding and core
+            iso_core_delta_left = isolation_deltas["core_left"] # Distance from iso to the core (left)
+            iso_core_delta_top = isolation_deltas["core_top"] # Distance from iso to the core (top)
+            iso_core_delta_bot = isolation_deltas["core_bot"] # Distance from iso to the core (bot)
+            iso_winding_delta = isolation_deltas["winding"] # Distance from iso to the winding
+
+            # Only used in primary/secondary winding scheme
+            # Distance between the core-winding iso and the winding-winding iso 
+            # (only when 2 virtual winding windows are set and therefore the winding-winding iso is horizontal)
+            iso_iso_delta = isolation_deltas["iso_iso_hor"] 
+
+            # Distance from the right end of the horizontal isolation to the core
+            # (only exists when 2 vww are set)
+            hor_iso_delta_right = isolation_deltas["iso_iso_right"]
+
+            self.p_iso_core_pri = []
+            self.p_iso_pri_sec = []
+
+            if self.component.component_type == "integrated_transformer":
+                # TODO implement for integrated_transformers
+                warnings.warn("Isolations are not set because they are not implemented for integrated transformers.")
+            else:
+                # Core to Pri isolation
+                self.p_iso_core_pri = [
+                    [
+                        self.component.core.core_w / 2 + iso_core_delta_left,
+                        window_h / 2 - iso_core_delta_top,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        self.component.core.core_w / 2 + iso.core_cond[2] - iso_winding_delta,
+                        window_h / 2 - iso_core_delta_top,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        self.component.core.core_w / 2 + iso.core_cond[2] - iso_winding_delta,
+                        -window_h / 2 + iso_core_delta_bot,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        self.component.core.core_w / 2 + iso_core_delta_left,
+                        -window_h / 2 + iso_core_delta_bot,
+                        0,
+                        mesh.c_window
+                    ]
+                ]
+
+                # Isolation between virtual winding windows
+                if self.component.vw_type == "full_window":
+                    # Only one vww -> The winding can be interleaved 
+                    # -> still an isolation between pri and sec necessary
+                    if len(self.component.virtual_winding_windows) == 1 and self.component.virtual_winding_windows[0].winding == "interleaved":
+                        # vertical isolations needed between the layers
+                        # bifilar and vertical do not exist yet
+                        vww = self.component.virtual_winding_windows[0]
+                        winding_0 = self.component.windings[0]
+                        winding_1 = self.component.windings[1]
+                        current_x = vww.left_bound + 2 * winding_0.conductor_radius
+                        if vww.scheme == "horizontal":
+                            self.p_iso_pri_sec = []
+                            for index in range(self.top_window_iso_counter-1):
+                                self.p_iso_pri_sec.append([
+                                    [
+                                        current_x + iso_winding_delta,
+                                        window_h / 2 - iso_core_delta_top,
+                                        0,
+                                        mesh.c_window
+                                    ],
+                                    [
+                                        current_x + iso.cond_cond[2] - iso_winding_delta,
+                                        window_h / 2 - iso_core_delta_top,
+                                        0,
+                                        mesh.c_window
+                                    ],
+                                    [
+                                        current_x + iso.cond_cond[2] - iso_winding_delta,
+                                        -window_h / 2 + iso_core_delta_bot,
+                                        0,
+                                        mesh.c_window
+                                    ],
+                                    [
+                                        current_x + iso_winding_delta,
+                                        -window_h / 2 + iso_core_delta_bot,
+                                        0,
+                                        mesh.c_window
+                                    ]
+                                ])
+                                # The sec winding can start first when it has a higher number of turns
+                                # col_cond
+                                if index % 2 == self.col_cond_start:
+                                    current_x += iso.cond_cond[2] + 2 * winding_1.conductor_radius
+                                else:
+                                    current_x += iso.cond_cond[2] + 2 * winding_0.conductor_radius
+                        elif vww.scheme == "vertical":
+                            raise Exception("Vertical scheme not implemented yet!")
+                        elif vww.scheme == "bifilar":
+                            raise Exception("Bifilar scheme not implemented yet!")
+                        else:
+                            raise Exception(f"The winding scheme {vww.scheme} is unknown.")
+                elif self.component.vw_type == "center":
+                    # Two vwws -> a horizontal isolation is needed
+                    vww_bot = self.component.virtual_winding_windows[0]
+                    vww_top = self.component.virtual_winding_windows[1]
+                    self.p_iso_pri_sec.append([
+                        [
+                            vww_top.left_bound - iso_winding_delta + iso_iso_delta,
+                            vww_top.bot_bound - iso_winding_delta,
+                            0,
+                            mesh.c_window
+                        ],
+                        [
+                            vww_top.right_bound - hor_iso_delta_right,
+                            vww_top.bot_bound - iso_winding_delta,
+                            0,
+                            mesh.c_window
+                        ],
+                        [
+                            vww_top.right_bound - hor_iso_delta_right,
+                            vww_bot.top_bound + iso_winding_delta,
+                            0,
+                            mesh.c_window
+                        ],
+                        [
+                            vww_top.left_bound - iso_winding_delta + iso_iso_delta,
+                            vww_bot.top_bound + iso_winding_delta,
+                            0,
+                            mesh.c_window
+                        ]
+                    ])
+                else:
+                    warnings.warn(f"Isolations are not implemented for components with type {self.component.vw_type}")
+
+        def update(self, isolation_deltas = None):
 
             # Preallocate the arrays, in which the geometries' point coordinates will be stored
             self.p_outer = np.zeros((4, 4))
@@ -1955,6 +2116,18 @@ class MagneticComponent:
             self.draw_virtual_winding_windows()
 
             self.draw_conductors()
+
+            if isolation_deltas is None:
+                isolation_deltas = {
+                    "core_left": 0.0001,
+                    "core_top": 0.0001,
+                    "core_bot": 0.0001,
+                    "winding": 0.0001,
+                    "iso_iso_hor" : 0.0001,
+                    "iso_iso_right": 0.0001
+                }
+
+            self.draw_isolations(isolation_deltas)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Pre-Processing
@@ -2779,6 +2952,8 @@ class MagneticComponent:
             self.p_island = []
             self.p_cond = [[], []]
             self.p_region = []
+            self.p_iso_core_pri = []
+            self.p_iso_pri_sec = []
             # Curves
             self.l_bound_core = []
             self.l_bound_air = []
@@ -2786,11 +2961,15 @@ class MagneticComponent:
             self.l_cond = [[], []]
             self.l_region = []
             self.l_air_gaps_air = []
+            self.l_iso_core_pri = []
+            self.l_iso_pri_sec = []
             # Curve Loops
             self.curve_loop_cond = [[], []]
             self.curve_loop_island = []
             self.curve_loop_air = []
             self.curve_loop_air_gaps = []
+            self.curve_loop_iso_core_pri = []
+            self.curve_loop_iso_pri_sec = []
             # curve_loop_outer_air = []
             # curve_loop_bound = []
             # Plane Surfaces
@@ -2799,21 +2978,25 @@ class MagneticComponent:
             self.plane_surface_air = []
             self.plane_surface_outer_air = []
             self.plane_surface_air_gaps = []
+            self.plane_surface_iso_core_pri = []
+            self.plane_surface_iso_pri_sec = []
 
-        def generate_hybrid_mesh(self, refine=0, alternative_error=0, visualize_before=False):
+        def generate_hybrid_mesh(self, do_meshing=True, visualize_before=False, save_png=True, refine=0, alternative_error=0):
             """
             - interaction with gmsh
             - mesh generation
                 - Skin depth based forward meshing
-                - adaptive refinement
+                - adaptive refinement [future TODO]
                     - with the help of mesh-size-fields/background meshes
                     - with an appropriate local error metric
 
             :return:
 
             """
+            print("Initialize Gmsh")
             # Initialization
-            gmsh.initialize()
+            if not do_meshing:
+                gmsh.initialize()
 
             """
             if refine == 1:
@@ -2827,9 +3010,10 @@ class MagneticComponent:
                 self.create_background_mesh(local_error)
             """
 
-            gmsh.option.setNumber("General.Terminal", 1)
+            # gmsh.option.setNumber("General.Terminal", 1)
             gmsh.model.add(os.path.join(self.component.e_m_mesh_file, "geometry"))
-            
+
+
             # ------------------------------------------ Geometry -------------------------------------------
             # Core generation
             # --------------------------------------- Points --------------------------------------------
@@ -3133,6 +3317,42 @@ class MagneticComponent:
                                 gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                # Isolations
+                # Core to Pri
+                if self.component.two_d_axi.p_iso_core_pri: # Check if list is not empty
+                    # Points
+                    for i in self.component.two_d_axi.p_iso_core_pri:
+                                        self.p_iso_core_pri.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                    
+                    # Lines
+                    self.l_iso_core_pri = [gmsh.model.geo.addLine(self.p_iso_core_pri[i], self.p_iso_core_pri[(i+1)%4]) for i in range(4)] 
+
+                    # Curve loop and surface
+                    self.curve_loop_iso_core_pri.append(gmsh.model.geo.addCurveLoop(self.l_iso_core_pri))
+                    self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_core_pri))
+
+                # Pri to Sec
+                if self.component.two_d_axi.p_iso_pri_sec: # Check if list is not empty
+                    # Points
+                    for iso in self.component.two_d_axi.p_iso_pri_sec:
+                        p_iso = []
+                        for i in iso:
+                            p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                        self.p_iso_pri_sec.append(p_iso)
+
+                    # Lines
+                    # iso_pri_sec contains a list of multiple isolations
+                    self.l_iso_pri_sec = [[gmsh.model.geo.addLine(iso[i], iso[(i+1)%4]) for i in range(4)] for iso in self.p_iso_pri_sec]
+                        
+                    # Curve loops and surfaces
+                    self.curve_loop_iso_pri_sec = []
+                    self.plane_surface_iso_pri_sec = []
+                    for iso in self.l_iso_pri_sec:
+                        cl = gmsh.model.geo.addCurveLoop(iso)
+                        self.curve_loop_iso_pri_sec.append(cl)
+                        self.plane_surface_iso_pri_sec.append(gmsh.model.geo.addPlaneSurface([cl]))
+
+                # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Air
                 # Points are partwise double designated
 
@@ -3162,7 +3382,7 @@ class MagneticComponent:
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
 
-                self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
+                #self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
                 #for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
@@ -3172,7 +3392,12 @@ class MagneticComponent:
 
                 # Need flatten list of all! conductors
                 flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
-                self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond))
+
+
+                # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
+                # The other curve loops represent holes in the surface -> For each conductor as well as each isolation
+                self.plane_surface_air.append(
+                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond + self.curve_loop_iso_core_pri + self.curve_loop_iso_pri_sec))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Boundary
@@ -3242,7 +3467,8 @@ class MagneticComponent:
             self.forward_meshing()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            if visualize_before:
+            if visualize_before or save_png:
+
                 # Colors
                 for i in range(0, len(self.plane_surface_core)):
                     gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50, recursive=True)  # Core in gray
@@ -3252,17 +3478,25 @@ class MagneticComponent:
                     for i in range(0, len(self.plane_surface_cond[num])):
                         gmsh.model.setColor([(2, self.plane_surface_cond[num][i])], 200 * num, 200 * (1 - num), 0, recursive=True)   # Conductors in green/red
 
+
+                if visualize_before:
+                    gmsh.fltk.run()
+
                 # Output .msh file
                 # gmsh.option.setNumber("Mesh.SaveAll", 1)
+                if save_png:
+                    if '-nopopup' not in sys.argv:
+                        gmsh.fltk.initialize()
+                    gmsh.write(self.component.hybrid_color_visualize_file)  # save png
 
-                # gmsh.write(self.component.hybrid_color_mesh_file)
+                    # gmsh.model.mesh.generate(2)
 
-                gmsh.fltk.run()
-
-            gmsh.model.mesh.generate(2)
-            gmsh.write(self.component.hybrid_mesh_file)
+            if do_meshing:
+                gmsh.model.mesh.generate(2)
+                gmsh.write(self.component.hybrid_mesh_file)
 
             gmsh.finalize()
+
 
         def generate_electro_magnetic_mesh(self, refine = 0):
             gmsh.initialize()
@@ -3292,8 +3526,8 @@ class MagneticComponent:
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Air and air_gaps
-            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps
+            # Air, air_gaps and iso (since isolation is handled as air, as well as the air gaps)
+            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core_pri + self.plane_surface_iso_pri_sec
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=1000)
             # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
 
@@ -3365,9 +3599,6 @@ class MagneticComponent:
             gmsh.initialize()
             gmsh.open(self.component.hybrid_mesh_file)
 
-            # TODO Set dynamically?
-            mesh_size = 0.001
-
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Create case around the core
 
@@ -3402,8 +3633,8 @@ class MagneticComponent:
 
             # Create 5 new areas: top, top right, right, bottom right, bottom
             # top
-            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh_size)
-            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh_size)
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], self.c_core)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], self.c_core)
             top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
             top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
             top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
@@ -3411,8 +3642,8 @@ class MagneticComponent:
             top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
 
             # top right
-            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh_size)
-            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh_size)
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], self.c_core)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], self.c_core)
             top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
             top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
             top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
@@ -3420,15 +3651,15 @@ class MagneticComponent:
             top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
 
             # right
-            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh_size)
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], self.c_core)
             right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
             right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
             right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
             right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
 
             # bottom right
-            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh_size)
-            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh_size)
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], self.c_core)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], self.c_core)
             bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
             bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
             bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
@@ -3436,7 +3667,7 @@ class MagneticComponent:
             bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
 
             # bottom
-            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh_size)
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], self.c_core)
             bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
             bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
             bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
@@ -3475,6 +3706,11 @@ class MagneticComponent:
             self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=1001)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # Isolations
+            # TODO Currently isolations can only have the same material
+            self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_pri_sec + self.plane_surface_iso_core_pri)
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Boundary
             self.thermal_boundary_region_tags = {
                 "BOUNDARY_TOP"            : top_case_top_line,
@@ -3509,7 +3745,7 @@ class MagneticComponent:
                     gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
             gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
             gmsh.model.setPhysicalName(2, self.ps_air_gaps, "AIR_GAPS")
-
+            gmsh.model.setPhysicalName(2, self.ps_isolation, "ISOLATIONS")
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # - Forward Meshing -
             p_inter = None
@@ -4607,11 +4843,7 @@ class MagneticComponent:
 
         # == Labels/Designations ==
         # Label for air and air gap
-        if self.air_gaps.number > 0:
-            femm.hi_addblocklabel(0.001, 0)
-            femm.hi_selectlabel(0.001, 0)
-            femm.hi_setblockprop('Air Gaps', 1, 0, 0)
-            femm.hi_clearselected()
+        if self.air_gaps.number == 0:
             femm.hi_addblocklabel(0.001, 0)
             femm.hi_selectlabel(0.001, 0)
             femm.hi_setblockprop('Air', 1, 0, 0)
@@ -4620,6 +4852,10 @@ class MagneticComponent:
             femm.hi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
             femm.hi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
             femm.hi_setblockprop('Air', 1, 0, 0)
+            femm.hi_clearselected()
+            femm.hi_addblocklabel(0.001, 0)
+            femm.hi_selectlabel(0.001, 0)
+            femm.hi_setblockprop('Air Gaps', 1, 0, 0)
             femm.hi_clearselected()
 
         # Label for core
@@ -4763,17 +4999,17 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
-    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before = False):
+    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False, do_meshing: bool = True, save_png: bool = False):
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
-            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before)
+            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, do_meshing=do_meshing, save_png=save_png)
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None, show_results = True) -> None:
         """
 
-        Start a _single_ ONELAB simulation.
+        Start a _single_ electromagnetic ONELAB simulation.
         :param NL_core:
         :param freq: frequency to simulate
         :type freq: float
@@ -4796,7 +5032,8 @@ class MagneticComponent:
         self.write_log()
         if show_results:
             self.visualize()
-
+        else:
+            raise Exception("Geometry is not valid. Mesh cannt be generated.")
         # results =
 
         # return results

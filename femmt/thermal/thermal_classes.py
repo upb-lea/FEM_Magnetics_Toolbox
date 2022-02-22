@@ -37,7 +37,7 @@ class GroupPro:
             for key, value in self.regions.items():
                 fd.write(f"\t{key} = Region[{value}];\n")
             if air_gaps_enabled:
-                fd.write("\tCold = Region[{air, case, air_gaps}];\n")
+                fd.write("\tCold = Region[{air, case, air_gaps, isolation}];\n")
             else:
                 fd.write("\tCold = Region[{air, case}];\n")
             fd.write("\tWarm = Region[{core, windings_total}];\n")
