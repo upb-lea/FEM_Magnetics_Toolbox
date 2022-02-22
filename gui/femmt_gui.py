@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
         md_winding_type = [self.translation_dict['litz'], self.translation_dict['solid']]
         md_implicit_litz = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"], self.translation_dict['implicit_strands_number']]
         md_air_gap_method = [self.translation_dict["percent"], self.translation_dict['manually']]
-        md_air_gap_counts = ['1', '2', '3', '4', '5']
+        md_air_gap_counts = ['0', '1', '2', '3', '4', '5']
         md_winding_scheme = [self.translation_dict["square"], self.translation_dict["hexa"]]
         md_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
 
@@ -232,24 +232,10 @@ class MainWindow(QMainWindow):
         self.md_winding2_strand_radius_lineEdit.setEnabled(status)
         self.md_winding2_litz_material_comboBox.setEnabled(status)
         self.md_winding2_litz_material_pushButton.setEnabled(status)
+        self.md_winding2_groupBox.setVisible(status)
 
         # set current shapes of winding 2
-        self.md_winding2_ik1_lineEdit.setEnabled(status)
-        self.md_winding2_ik2_lineEdit.setEnabled(status)
-        self.md_winding2_ik3_lineEdit.setEnabled(status)
-        self.md_winding2_ik4_lineEdit.setEnabled(status)
-        self.md_winding2_ik5_lineEdit.setEnabled(status)
-        self.md_winding2_ik6_lineEdit.setEnabled(status)
-        self.md_winding2_ik7_lineEdit.setEnabled(status)
-        self.md_winding2_ik8_lineEdit.setEnabled(status)
-        self.md_winding2_pk1_lineEdit.setEnabled(status)
-        self.md_winding2_pk2_lineEdit.setEnabled(status)
-        self.md_winding2_pk3_lineEdit.setEnabled(status)
-        self.md_winding2_pk4_lineEdit.setEnabled(status)
-        self.md_winding2_pk5_lineEdit.setEnabled(status)
-        self.md_winding2_pk6_lineEdit.setEnabled(status)
-        self.md_winding2_pk7_lineEdit.setEnabled(status)
-        self.md_winding2_pk8_lineEdit.setEnabled(status)
+        self.md_winding2_current_groupBox.setVisible(status)
 
         self.md_isolation_s2s_lineEdit.setEnabled(status)
         self.md_isolation_p2s_lineEdit.setEnabled(status)
@@ -410,6 +396,11 @@ class MainWindow(QMainWindow):
         """
         self.md_air_gap_1_length_lineEdit.setEnabled(status)
         self.md_air_gap_1_position_lineEdit.setEnabled(status)
+        self.md_air_gap_1_length_label.setVisible(status)
+        self.md_air_gap_1_length_lineEdit.setVisible(status)
+        self.md_air_gap_1_position_label.setVisible(status)
+        self.md_air_gap_1_position_lineEdit.setVisible(status)
+
 
     def md_air_gap_2_enable(self, status: bool) -> None:
         """
@@ -422,6 +413,10 @@ class MainWindow(QMainWindow):
         """
         self.md_air_gap_2_length_lineEdit.setEnabled(status)
         self.md_air_gap_2_position_lineEdit.setEnabled(status)
+        self.md_air_gap_2_length_label.setVisible(status)
+        self.md_air_gap_2_length_lineEdit.setVisible(status)
+        self.md_air_gap_2_position_label.setVisible(status)
+        self.md_air_gap_2_position_lineEdit.setVisible(status)
 
     def md_air_gap_3_enable(self, status: bool) -> None:
         """
@@ -434,6 +429,10 @@ class MainWindow(QMainWindow):
         """
         self.md_air_gap_3_length_lineEdit.setEnabled(status)
         self.md_air_gap_3_position_lineEdit.setEnabled(status)
+        self.md_air_gap_3_length_label.setVisible(status)
+        self.md_air_gap_3_length_lineEdit.setVisible(status)
+        self.md_air_gap_3_position_label.setVisible(status)
+        self.md_air_gap_3_position_lineEdit.setVisible(status)
 
     def md_air_gap_4_enable(self, status: bool) -> None:
         """
@@ -446,6 +445,10 @@ class MainWindow(QMainWindow):
         """
         self.md_air_gap_4_length_lineEdit.setEnabled(status)
         self.md_air_gap_4_position_lineEdit.setEnabled(status)
+        self.md_air_gap_4_length_label.setVisible(status)
+        self.md_air_gap_4_length_lineEdit.setVisible(status)
+        self.md_air_gap_4_position_label.setVisible(status)
+        self.md_air_gap_4_position_lineEdit.setVisible(status)
 
     def md_air_gap_5_enable(self, status: bool) -> None:
         """
@@ -458,6 +461,10 @@ class MainWindow(QMainWindow):
         """
         self.md_air_gap_5_length_lineEdit.setEnabled(status)
         self.md_air_gap_5_position_lineEdit.setEnabled(status)
+        self.md_air_gap_5_length_label.setVisible(status)
+        self.md_air_gap_5_length_lineEdit.setVisible(status)
+        self.md_air_gap_5_position_label.setVisible(status)
+        self.md_air_gap_5_position_lineEdit.setVisible(status)
 
     def md_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
         """
