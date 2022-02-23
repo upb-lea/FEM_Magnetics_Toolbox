@@ -48,17 +48,27 @@ class MainWindow(QMainWindow):
             "square": "Square"
         }
 
+
+
+
         "Signals in Definition Tab"
+        # simulation
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.md_change_simulation_type)
-        self.md_winding1_implicit_litz_comboBox.currentTextChanged.connect(self.md_winding1_change_litz_implicit)
+        # core
+        self.md_core_geometry_comboBox.currentTextChanged.connect(self.md_set_core_geometry_from_database)
+
+        # windings
         self.md_winding1_type_comboBox.currentTextChanged.connect(self.md_winding1_change_wire_type)
+        self.md_winding2_type_comboBox.currentTextChanged.connect(self.md_winding2_change_wire_type)
+        self.md_winding1_litz_material_comboBox.currentTextChanged.connect(self.md_winding1_set_litz_parameters_from_litz_database)
+        self.md_winding2_litz_material_comboBox.currentTextChanged.connect(self.md_winding2_set_litz_parameters_from_litz_database)
+        self.md_winding1_implicit_litz_comboBox.currentTextChanged.connect(self.md_winding1_change_litz_implicit)
+        self.md_winding2_implicit_litz_comboBox.currentTextChanged.connect(self.md_winding2_change_litz_implicit)
+
+        # air gaps
         self.md_air_gap_count_comboBox.currentTextChanged.connect(self.md_change_air_gap_count)
         self.md_air_gap_placement_method_comboBox.currentTextChanged.connect(self.md_change_air_gap_placement)
         self.md_gmsh_visualisation_QPushButton.clicked.connect(self.md_gmsh_pre_visualisation)
-
-
-        self.md_winding1_litz_material_pushButton.clicked.connect(self.md_winding1_set_litz_parameters_from_litz_database)
-        self.md_winding2_litz_material_pushButton.clicked.connect(self.md_winding2_set_litz_parameters_from_litz_database)
 
         "Signals in Excitation Tab"
         self.md_dc_checkBox.stateChanged.connect(self.md_dc_enable)
@@ -71,7 +81,7 @@ class MainWindow(QMainWindow):
         self.md_fk7_checkBox.stateChanged.connect(self.md_change_frequencies_7)
         self.md_fk8_checkBox.stateChanged.connect(self.md_change_frequencies_8)
         self.md_excitation_update_graph_Button.clicked.connect(self.md_redraw_input_signals)
-        self.md_core_geometry_pushButton.clicked.connect(self.md_set_core_geometry_from_database)
+
 
         "Signals in Simulation Tab"
         self.md_simulation_QPushButton.clicked.connect(self.md_action_run_simulation)
@@ -109,41 +119,94 @@ class MainWindow(QMainWindow):
         """
         md_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
         md_core_material_options = ['N95']
-        md_winding_material = ['Copper']
-        md_winding_type = [self.translation_dict['litz'], self.translation_dict['solid']]
-        md_implicit_litz = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"], self.translation_dict['implicit_strands_number']]
-        md_air_gap_method = [self.translation_dict["percent"], self.translation_dict['manually']]
-        md_air_gap_counts = ['0', '1', '2', '3', '4', '5']
-        md_winding_scheme = [self.translation_dict["square"], self.translation_dict["hexa"]]
+        md_winding_material_options = ['Copper']
+        md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
+        md_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"], self.translation_dict['implicit_strands_number']]
+        md_air_gap_method_options = [self.translation_dict["percent"], self.translation_dict['manually']]
+        md_air_gap_counts_options = ['0', '1', '2', '3', '4', '5']
+        md_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
         md_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
+        md_core_geometry_options.insert(0, '')
 
-        md_winding1_litz_material = [key for key in fmt.litz_database()]
+        md_winding_litz_material_options = [key for key in fmt.litz_database()]
+        md_winding_litz_material_options.insert(0, '')
 
         for option in md_simulation_type_options:
             self.md_simulation_type_comboBox.addItem(option)
         for option in md_core_material_options:
             self.md_core_material_comboBox.addItem(option)
-        for option in md_winding_material:
+        for option in md_winding_material_options:
             self.md_winding1_material_comboBox.addItem(option)
             self.md_winding2_material_comboBox.addItem(option)
-        for option in md_winding_type:
+        for option in md_winding_type_options:
             self.md_winding1_type_comboBox.addItem(option)
             self.md_winding2_type_comboBox.addItem(option)
-        for option in md_implicit_litz:
+        for option in md_implicit_litz_options:
             self.md_winding1_implicit_litz_comboBox.addItem(option)
             self.md_winding2_implicit_litz_comboBox.addItem(option)
-        for option in md_air_gap_method:
+        for option in md_air_gap_method_options:
             self.md_air_gap_placement_method_comboBox.addItem(option)
-        for option in md_air_gap_counts:
+        for option in md_air_gap_counts_options:
             self.md_air_gap_count_comboBox.addItem(option)
-        for option in md_winding_scheme:
+        for option in md_winding_scheme_options:
             self.md_winding1_scheme_comboBox.addItem(option)
-        for option in md_winding1_litz_material:
+        for option in md_winding_litz_material_options:
             self.md_winding1_litz_material_comboBox.addItem(option)
             self.md_winding2_litz_material_comboBox.addItem(option)
         for option in md_core_geometry_options:
             self.md_core_geometry_comboBox.addItem(option)
 
+
+    # ----------------------------------------------------------
+    # Definition tab
+    # ----------------------------------------------------------
+    def md_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
+        """
+        Action performed when signal of md_simulation_type_comboBox text has changed.
+        Action will be enabling / disabling user inputs for not-used windings.
+
+        :param simulation_type_from_combo_box:
+        :type simulation_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if simulation_type_from_combo_box == self.translation_dict['inductor']:
+            self.md_winding2_enable(False)
+
+        elif simulation_type_from_combo_box == self.translation_dict['transformer']:
+            # set winding definitions of winding 2 to editable
+            self.md_winding2_enable(True)
+
+        elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
+            # set winding definitions of winding 2 to editable
+            self.md_winding2_enable(True)
+
+    def md_winding2_enable(self, status: bool) -> None:
+        """
+        Enable/disable all fields being in contact with winding 2.
+
+        :param status: True / False
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        # set winding definitions of winding 2
+        self.md_winding2_material_comboBox.setEnabled(status)
+        self.md_winding2_type_comboBox.setEnabled(status)
+        self.md_winding2_turns_lineEdit.setEnabled(status)
+        self.md_winding2_implicit_litz_comboBox.setEnabled(status)
+        self.md_winding2_strands_lineEdit.setEnabled(status)
+        self.md_winding2_radius_lineEdit.setEnabled(status)
+        self.md_winding2_fill_factor_lineEdit.setEnabled(status)
+        self.md_winding2_strand_radius_lineEdit.setEnabled(status)
+        self.md_winding2_litz_material_comboBox.setEnabled(status)
+        self.md_winding2_groupBox.setVisible(status)
+
+        # set current shapes of winding 2
+        self.md_winding2_current_groupBox.setVisible(status)
+
+        self.md_isolation_s2s_lineEdit.setEnabled(status)
+        self.md_isolation_p2s_lineEdit.setEnabled(status)
 
     def md_gmsh_pre_visualisation(self):
         # geo = self.md_setup_geometry()
@@ -180,68 +243,305 @@ class MainWindow(QMainWindow):
         # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
         # geo.mesh.generate_hybrid_mesh(do_meshing=False)
 
+    def md_set_core_geometry_from_database(self):
+        core_dict = fmt.core_database()
+        core_type = self.md_core_geometry_comboBox.currentText()
+
+        if core_type != '':
+            core = core_dict[core_type]
+
+            self.md_core_width_lineEdit.setText(str(core["core_w"]))
+            self.md_window_height_lineEdit.setText(str(core["window_h"]))
+            self.md_window_width_lineEdit.setText(str(core["window_w"]))
+            self.md_core_width_lineEdit.setEnabled(True)
+            self.md_window_height_lineEdit.setEnabled(True)
+            self.md_window_width_lineEdit.setEnabled(True)
+        else:
+            self.md_core_width_lineEdit.setEnabled(False)
+            self.md_window_height_lineEdit.setEnabled(False)
+            self.md_window_width_lineEdit.setEnabled(False)
+
     def md_winding1_set_litz_parameters_from_litz_database(self):
         litz_dict = fmt.litz_database()
         litz_type = self.md_winding1_litz_material_comboBox.currentText()
-        litz = litz_dict[litz_type]
 
-        self.md_winding1_strands_lineEdit.setText(str(litz["strands_numbers"]))
-        self.md_winding1_strand_radius_lineEdit.setText(str(litz["strand_radii"]))
-        self.md_winding1_radius_lineEdit.setText(str(litz["conductor_radii"]))
+        if litz_type != '':
+            litz = litz_dict[litz_type]
 
-        for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
-            if value == litz["implicit"]:
-                self.md_winding1_implicit_litz_comboBox.setCurrentIndex(key)
+            self.md_winding1_strands_lineEdit.setText(str(litz["strands_numbers"]))
+            self.md_winding1_strand_radius_lineEdit.setText(str(litz["strand_radii"]))
+            self.md_winding1_radius_lineEdit.setText(str(litz["conductor_radii"]))
+            self.md_winding1_fill_factor_lineEdit.setText(str(litz["ff"]))
+
+            for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
+                if value == litz["implicit"]:
+                    self.md_winding1_implicit_litz_comboBox.setCurrentIndex(key)
+
+            self.md_winding1_radius_lineEdit.setEnabled(False)
+            self.md_winding1_implicit_litz_comboBox.setEnabled(False)
+            self.md_winding1_strands_lineEdit.setEnabled(False)
+            self.md_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(False)
+        else:
+            self.md_winding1_change_litz_implicit(self.md_winding1_implicit_litz_comboBox.currentText())
+            self.md_winding1_implicit_litz_comboBox.setEnabled(True)
+
+    def md_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
+        """
+        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        :param implicit_type_from_combo_box: input type to implicit
+        :type implicit_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
+            self.md_winding1_strands_lineEdit.setEnabled(True)
+            self.md_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.md_winding1_radius_lineEdit.setEnabled(False)
+        if implicit_type_from_combo_box == self.translation_dict['implicit_strands_number']:
+            self.md_winding1_strands_lineEdit.setEnabled(False)
+            self.md_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.md_winding1_radius_lineEdit.setEnabled(True)
+        if implicit_type_from_combo_box == self.translation_dict['implicit_ff']:
+            self.md_winding1_strands_lineEdit.setEnabled(True)
+            self.md_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.md_winding1_radius_lineEdit.setEnabled(True)
+
+    def md_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
+        """
+        Enables / Disables input parameter for litz/solid wire
+        :param wire_type_from_combot_box: wire type
+        :type wire_type_from_combot_box: str
+        :return: None
+        :rtype: None
+        """
+        self.md_winding1_change_litz_implicit(self.md_winding1_implicit_litz_comboBox.currentText())
+        if wire_type_from_combot_box == self.translation_dict['litz']:
+            self.md_winding1_strands_lineEdit.setEnabled(True)
+            self.md_winding1_implicit_litz_comboBox.setEnabled(True)
+            self.md_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.md_winding1_radius_lineEdit.setEnabled(True)
+            self.md_winding1_litz_material_comboBox.setEnabled(True)
+            self.md_winding1_change_litz_implicit(self.md_winding1_implicit_litz_comboBox.currentText())
+
+        elif wire_type_from_combot_box == self.translation_dict['solid']:
+            self.md_winding1_strands_lineEdit.setEnabled(False)
+            self.md_winding1_implicit_litz_comboBox.setEnabled(False)
+            self.md_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.md_winding1_strand_radius_lineEdit.setEnabled(False)
+            self.md_winding1_radius_lineEdit.setEnabled(True)
+            self.md_winding1_litz_material_comboBox.setEnabled(False)
 
     def md_winding2_set_litz_parameters_from_litz_database(self):
         litz_dict = fmt.litz_database()
         litz_type = self.md_winding2_litz_material_comboBox.currentText()
-        litz = litz_dict[litz_type]
+        if litz_type != '':
+            litz = litz_dict[litz_type]
 
-        self.md_winding2_strands_lineEdit.setText(str(litz["strands_numbers"]))
-        self.md_winding2_strand_radius_lineEdit.setText(str(litz["strand_radii"]))
-        self.md_winding2_radius_lineEdit.setText(str(litz["conductor_radii"]))
+            self.md_winding2_strands_lineEdit.setText(str(litz["strands_numbers"]))
+            self.md_winding2_strand_radius_lineEdit.setText(str(litz["strand_radii"]))
+            self.md_winding2_radius_lineEdit.setText(str(litz["conductor_radii"]))
+            self.md_winding2_fill_factor_lineEdit.setText(str(litz["ff"]))
 
-        for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
-            if value == litz["implicit"]:
-                self.md_winding2_implicit_litz_comboBox.setCurrentIndex(key)
+            for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
+                if value == litz["implicit"]:
+                    self.md_winding2_implicit_litz_comboBox.setCurrentIndex(key)
 
-    def md_set_core_geometry_from_database(self):
-        core_dict = fmt.core_database()
-        core_type = self.md_core_geometry_comboBox.currentText()
-        core = core_dict[core_type]
+        else:
+            self.md_winding2_change_litz_implicit(self.md_winding2_implicit_litz_comboBox.currentText())
+            self.md_winding2_implicit_litz_comboBox.setEnabled(True)
 
-        self.md_core_width_lineEdit.setText(str(core["core_w"]))
-        self.md_window_height_lineEdit.setText(str(core["window_h"]))
-        self.md_window_width_lineEdit.setText(str(core["window_w"]))
-
-    def md_winding2_enable(self, status: bool) -> None:
+    def md_winding2_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
         """
-        Enable/disable all fields being in contact with winding 2.
+        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        :param implicit_type_from_combo_box: input type to implicit
+        :type implicit_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
+            self.md_winding2_strands_lineEdit.setEnabled(True)
+            self.md_winding2_fill_factor_lineEdit.setEnabled(True)
+            self.md_winding2_strand_radius_lineEdit.setEnabled(True)
+            self.md_winding2_radius_lineEdit.setEnabled(False)
+        if implicit_type_from_combo_box == self.translation_dict['implicit_strands_number']:
+            self.md_winding2_strands_lineEdit.setEnabled(False)
+            self.md_winding2_fill_factor_lineEdit.setEnabled(True)
+            self.md_winding2_strand_radius_lineEdit.setEnabled(True)
+            self.md_winding2_radius_lineEdit.setEnabled(True)
+        if implicit_type_from_combo_box == self.translation_dict['implicit_ff']:
+            self.md_winding2_strands_lineEdit.setEnabled(True)
+            self.md_winding2_fill_factor_lineEdit.setEnabled(False)
+            self.md_winding2_strand_radius_lineEdit.setEnabled(True)
+            self.md_winding2_radius_lineEdit.setEnabled(True)
 
-        :param status: True / False
+    def md_winding2_change_wire_type(self, wire_type_from_combot_box: str) -> None:
+        """
+        Enables / Disables input parameter for litz/solid wire
+        :param wire_type_from_combot_box: wire type
+        :type wire_type_from_combot_box: str
+        :return: None
+        :rtype: None
+        """
+        self.md_winding2_change_litz_implicit(self.md_winding2_implicit_litz_comboBox.currentText())
+        if wire_type_from_combot_box == self.translation_dict['litz']:
+            self.md_winding2_strands_lineEdit.setEnabled(True)
+            self.md_winding2_implicit_litz_comboBox.setEnabled(True)
+            self.md_winding2_fill_factor_lineEdit.setEnabled(True)
+            self.md_winding2_strand_radius_lineEdit.setEnabled(True)
+            self.md_winding2_radius_lineEdit.setEnabled(True)
+            self.md_winding2_litz_material_comboBox.setEnabled(True)
+            self.md_winding2_change_litz_implicit(self.md_winding2_implicit_litz_comboBox.currentText())
+
+
+        elif wire_type_from_combot_box == self.translation_dict['solid']:
+            self.md_winding2_strands_lineEdit.setEnabled(False)
+            self.md_winding2_implicit_litz_comboBox.setEnabled(False)
+            self.md_winding2_fill_factor_lineEdit.setEnabled(False)
+            self.md_winding2_strand_radius_lineEdit.setEnabled(False)
+            self.md_winding2_radius_lineEdit.setEnabled(True)
+            self.md_winding2_litz_material_comboBox.setEnabled(False)
+
+    def md_change_air_gap_count(self, air_gap_count_from_combo_box: str) -> None:
+        """
+        Sets the number of editable air gap fields in dependence of the air gap count combobox.
+        :param air_gap_count_from_combo_box: Number of editable air gaps
+        :type air_gap_count_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        self.md_air_gap_placement_method_comboBox.setEnabled(False)
+        self.md_air_gap_1_enable(False)
+        self.md_air_gap_2_enable(False)
+        self.md_air_gap_3_enable(False)
+        self.md_air_gap_4_enable(False)
+        self.md_air_gap_5_enable(False)
+        if int(air_gap_count_from_combo_box) >= 1:
+            self.md_air_gap_1_enable(True)
+            self.md_air_gap_placement_method_comboBox.setEnabled(True)
+        if int(air_gap_count_from_combo_box) >= 2:
+            self.md_air_gap_2_enable(True)
+        if int(air_gap_count_from_combo_box) >= 3:
+            self.md_air_gap_3_enable(True)
+        if int(air_gap_count_from_combo_box) >= 4:
+            self.md_air_gap_4_enable(True)
+        if int(air_gap_count_from_combo_box) >= 5:
+            self.md_air_gap_5_enable(True)
+
+    def md_change_air_gap_placement(self, air_gap_placement_from_combo_box: str) -> None:
+        """
+        Changes the labels in case of different air gap placement methods
+        :param air_gap_placement_from_combo_box: Air gap placement method
+        :type air_gap_placement_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if air_gap_placement_from_combo_box == self.translation_dict['manually']:
+            md_air_gap_placement_text = 'Position'
+        elif air_gap_placement_from_combo_box == self.translation_dict['percent']:
+            md_air_gap_placement_text = 'Position in [%]'
+        self.md_air_gap_1_position_label.setText(md_air_gap_placement_text)
+        self.md_air_gap_2_position_label.setText(md_air_gap_placement_text)
+        self.md_air_gap_3_position_label.setText(md_air_gap_placement_text)
+        self.md_air_gap_4_position_label.setText(md_air_gap_placement_text)
+        self.md_air_gap_5_position_label.setText(md_air_gap_placement_text)
+
+    def md_air_gap_1_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 1
+
+        :param status: True for enable fields, False for disable fields
         :type status: bool
         :return: None
         :rtype: None
         """
-        # set winding definitions of winding 2
-        self.md_winding2_material_comboBox.setEnabled(status)
-        self.md_winding2_type_comboBox.setEnabled(status)
-        self.md_winding2_turns_lineEdit.setEnabled(status)
-        self.md_winding2_implicit_litz_comboBox.setEnabled(status)
-        self.md_winding2_strands_lineEdit.setEnabled(status)
-        self.md_winding2_radius_lineEdit.setEnabled(status)
-        self.md_winding2_fill_factor_lineEdit.setEnabled(status)
-        self.md_winding2_strand_radius_lineEdit.setEnabled(status)
-        self.md_winding2_litz_material_comboBox.setEnabled(status)
-        self.md_winding2_litz_material_pushButton.setEnabled(status)
-        self.md_winding2_groupBox.setVisible(status)
+        self.md_air_gap_1_length_lineEdit.setEnabled(status)
+        self.md_air_gap_1_position_lineEdit.setEnabled(status)
+        self.md_air_gap_1_length_label.setVisible(status)
+        self.md_air_gap_1_length_lineEdit.setVisible(status)
+        self.md_air_gap_1_position_label.setVisible(status)
+        self.md_air_gap_1_position_lineEdit.setVisible(status)
 
-        # set current shapes of winding 2
-        self.md_winding2_current_groupBox.setVisible(status)
+    def md_air_gap_2_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 2
 
-        self.md_isolation_s2s_lineEdit.setEnabled(status)
-        self.md_isolation_p2s_lineEdit.setEnabled(status)
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        self.md_air_gap_2_length_lineEdit.setEnabled(status)
+        self.md_air_gap_2_position_lineEdit.setEnabled(status)
+        self.md_air_gap_2_length_label.setVisible(status)
+        self.md_air_gap_2_length_lineEdit.setVisible(status)
+        self.md_air_gap_2_position_label.setVisible(status)
+        self.md_air_gap_2_position_lineEdit.setVisible(status)
+
+    def md_air_gap_3_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 3
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        self.md_air_gap_3_length_lineEdit.setEnabled(status)
+        self.md_air_gap_3_position_lineEdit.setEnabled(status)
+        self.md_air_gap_3_length_label.setVisible(status)
+        self.md_air_gap_3_length_lineEdit.setVisible(status)
+        self.md_air_gap_3_position_label.setVisible(status)
+        self.md_air_gap_3_position_lineEdit.setVisible(status)
+
+    def md_air_gap_4_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 4
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        self.md_air_gap_4_length_lineEdit.setEnabled(status)
+        self.md_air_gap_4_position_lineEdit.setEnabled(status)
+        self.md_air_gap_4_length_label.setVisible(status)
+        self.md_air_gap_4_length_lineEdit.setVisible(status)
+        self.md_air_gap_4_position_label.setVisible(status)
+        self.md_air_gap_4_position_lineEdit.setVisible(status)
+
+    def md_air_gap_5_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for air gap No. 5
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        self.md_air_gap_5_length_lineEdit.setEnabled(status)
+        self.md_air_gap_5_position_lineEdit.setEnabled(status)
+        self.md_air_gap_5_length_label.setVisible(status)
+        self.md_air_gap_5_length_lineEdit.setVisible(status)
+        self.md_air_gap_5_position_label.setVisible(status)
+        self.md_air_gap_5_position_lineEdit.setVisible(status)
+
+
+
+
+
+
+
+
+
+
+    # ----------------------------------------------------------
+    # Excitation tab
+    # ----------------------------------------------------------
 
     def md_dc_enable(self, status: bool) -> None:
         """
@@ -406,159 +706,6 @@ class MainWindow(QMainWindow):
             self.md_winding2_ik8_lineEdit.setEnabled(status)
             self.md_winding2_pk8_lineEdit.setEnabled(status)
 
-    def md_air_gap_1_enable(self, status: bool) -> None:
-        """
-        Enables / Disables the input fields for air gap No. 1
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_air_gap_1_length_lineEdit.setEnabled(status)
-        self.md_air_gap_1_position_lineEdit.setEnabled(status)
-        self.md_air_gap_1_length_label.setVisible(status)
-        self.md_air_gap_1_length_lineEdit.setVisible(status)
-        self.md_air_gap_1_position_label.setVisible(status)
-        self.md_air_gap_1_position_lineEdit.setVisible(status)
-
-
-    def md_air_gap_2_enable(self, status: bool) -> None:
-        """
-        Enables / Disables the input fields for air gap No. 2
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_air_gap_2_length_lineEdit.setEnabled(status)
-        self.md_air_gap_2_position_lineEdit.setEnabled(status)
-        self.md_air_gap_2_length_label.setVisible(status)
-        self.md_air_gap_2_length_lineEdit.setVisible(status)
-        self.md_air_gap_2_position_label.setVisible(status)
-        self.md_air_gap_2_position_lineEdit.setVisible(status)
-
-    def md_air_gap_3_enable(self, status: bool) -> None:
-        """
-        Enables / Disables the input fields for air gap No. 3
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_air_gap_3_length_lineEdit.setEnabled(status)
-        self.md_air_gap_3_position_lineEdit.setEnabled(status)
-        self.md_air_gap_3_length_label.setVisible(status)
-        self.md_air_gap_3_length_lineEdit.setVisible(status)
-        self.md_air_gap_3_position_label.setVisible(status)
-        self.md_air_gap_3_position_lineEdit.setVisible(status)
-
-    def md_air_gap_4_enable(self, status: bool) -> None:
-        """
-        Enables / Disables the input fields for air gap No. 4
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_air_gap_4_length_lineEdit.setEnabled(status)
-        self.md_air_gap_4_position_lineEdit.setEnabled(status)
-        self.md_air_gap_4_length_label.setVisible(status)
-        self.md_air_gap_4_length_lineEdit.setVisible(status)
-        self.md_air_gap_4_position_label.setVisible(status)
-        self.md_air_gap_4_position_lineEdit.setVisible(status)
-
-    def md_air_gap_5_enable(self, status: bool) -> None:
-        """
-        Enables / Disables the input fields for air gap No. 5
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_air_gap_5_length_lineEdit.setEnabled(status)
-        self.md_air_gap_5_position_lineEdit.setEnabled(status)
-        self.md_air_gap_5_length_label.setVisible(status)
-        self.md_air_gap_5_length_lineEdit.setVisible(status)
-        self.md_air_gap_5_position_label.setVisible(status)
-        self.md_air_gap_5_position_lineEdit.setVisible(status)
-
-    def md_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
-        """
-        Action performed when signal of md_simulation_type_comboBox text has changed.
-        Action will be enabling / disabling user inputs for not-used windings.
-
-        :param simulation_type_from_combo_box:
-        :type simulation_type_from_combo_box: str
-        :return: None
-        :rtype: None
-        """
-        if simulation_type_from_combo_box == self.translation_dict['inductor']:
-            self.md_winding2_enable(False)
-
-        elif simulation_type_from_combo_box == self.translation_dict['transformer']:
-            # set winding definitions of winding 2 to editable
-            self.md_winding2_enable(True)
-
-        elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
-            # set winding definitions of winding 2 to editable
-            self.md_winding2_enable(True)
-
-    def md_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
-        """
-        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
-        :param implicit_type_from_combo_box: input type to implicit
-        :type implicit_type_from_combo_box: str
-        :return: None
-        :rtype: None
-        """
-        if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
-            self.md_winding1_strands_lineEdit.setEnabled(True)
-            self.md_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.md_winding1_radius_lineEdit.setEnabled(False)
-        if implicit_type_from_combo_box == self.translation_dict['implicit_strands_number']:
-            self.md_winding1_strands_lineEdit.setEnabled(False)
-            self.md_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.md_winding1_radius_lineEdit.setEnabled(True)
-        if implicit_type_from_combo_box == self.translation_dict['implicit_ff']:
-            self.md_winding1_strands_lineEdit.setEnabled(True)
-            self.md_winding1_fill_factor_lineEdit.setEnabled(False)
-            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.md_winding1_radius_lineEdit.setEnabled(True)
-
-    def md_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
-        """
-        Enables / Disables input parameter for litz/solid wire
-        :param wire_type_from_combot_box: wire type
-        :type wire_type_from_combot_box: str
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_change_litz_implicit(self.md_winding1_implicit_litz_comboBox.currentText())
-        if wire_type_from_combot_box == self.translation_dict['litz']:
-            self.md_winding1_strands_lineEdit.setEnabled(True)
-            self.md_winding1_implicit_litz_comboBox.setEnabled(True)
-            self.md_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.md_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.md_winding1_radius_lineEdit.setEnabled(True)
-            self.md_winding1_litz_material_comboBox.setEnabled(True)
-            self.md_winding1_litz_material_pushButton.setEnabled(True)
-
-        elif wire_type_from_combot_box == self.translation_dict['solid']:
-            self.md_winding1_strands_lineEdit.setEnabled(False)
-            self.md_winding1_implicit_litz_comboBox.setEnabled(False)
-            self.md_winding1_fill_factor_lineEdit.setEnabled(False)
-            self.md_winding1_strand_radius_lineEdit.setEnabled(False)
-            self.md_winding1_radius_lineEdit.setEnabled(True)
-            self.md_winding1_litz_material_comboBox.setEnabled(False)
-            self.md_winding1_litz_material_pushButton.setEnabled(False)
-
     def md_change_frequencies_dc(self, status: int) -> None:
         """
         Changes the frequency field in case of checking/unchecking the frequency-checkboxes
@@ -657,7 +804,6 @@ class MainWindow(QMainWindow):
         :rtype: None
         """
         self.md_f8_enable(False) if status == 0 else self.md_f8_enable(True)
-
 
     def md_get_frequency_lists(self) -> List:
         """
@@ -765,53 +911,9 @@ class MainWindow(QMainWindow):
             self.md_graphic_winding_2.setMask(pixmap.mask())
             self.md_graphic_winding_2.show()
 
-
-
-
-    def md_change_air_gap_count(self, air_gap_count_from_combo_box: str) -> None:
-        """
-        Sets the number of editable air gap fields in dependence of the air gap count combobox.
-        :param air_gap_count_from_combo_box: Number of editable air gaps
-        :type air_gap_count_from_combo_box: str
-        :return: None
-        :rtype: None
-        """
-        self.md_air_gap_placement_method_comboBox.setEnabled(False)
-        self.md_air_gap_1_enable(False)
-        self.md_air_gap_2_enable(False)
-        self.md_air_gap_3_enable(False)
-        self.md_air_gap_4_enable(False)
-        self.md_air_gap_5_enable(False)
-        if int(air_gap_count_from_combo_box) >= 1:
-            self.md_air_gap_1_enable(True)
-            self.md_air_gap_placement_method_comboBox.setEnabled(True)
-        if int(air_gap_count_from_combo_box) >= 2:
-            self.md_air_gap_2_enable(True)
-        if int(air_gap_count_from_combo_box) >= 3:
-            self.md_air_gap_3_enable(True)
-        if int(air_gap_count_from_combo_box) >= 4:
-            self.md_air_gap_4_enable(True)
-        if int(air_gap_count_from_combo_box) >= 5:
-            self.md_air_gap_5_enable(True)
-
-    def md_change_air_gap_placement(self, air_gap_placement_from_combo_box: str) -> None:
-        """
-        Changes the labels in case of different air gap placement methods
-        :param air_gap_placement_from_combo_box: Air gap placement method
-        :type air_gap_placement_from_combo_box: str
-        :return: None
-        :rtype: None
-        """
-        if air_gap_placement_from_combo_box == self.translation_dict['manually']:
-            md_air_gap_placement_text = 'Position'
-        elif air_gap_placement_from_combo_box == self.translation_dict['percent']:
-            md_air_gap_placement_text = 'Position in [%]'
-        self.md_air_gap_1_position_label.setText(md_air_gap_placement_text)
-        self.md_air_gap_2_position_label.setText(md_air_gap_placement_text)
-        self.md_air_gap_3_position_label.setText(md_air_gap_placement_text)
-        self.md_air_gap_4_position_label.setText(md_air_gap_placement_text)
-        self.md_air_gap_5_position_label.setText(md_air_gap_placement_text)
-
+    # ----------------------------------------------------------
+    # Simulation tab
+    # ----------------------------------------------------------
 
     def md_setup_geometry(self):
         """
@@ -947,7 +1049,6 @@ class MainWindow(QMainWindow):
             pass
 
         return geo
-
 
     def md_action_run_simulation(self) -> None:
         """

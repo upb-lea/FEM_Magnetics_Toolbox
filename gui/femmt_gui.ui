@@ -28,7 +28,7 @@
         <item row="0" column="0">
          <widget class="QTabWidget" name="md_QTabWidget">
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="md_QWidget">
            <attribute name="title">
@@ -113,16 +113,6 @@
                     <widget class="QLabel" name="label_4">
                      <property name="text">
                       <string>Core inner diameter [m]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="1">
-                    <widget class="QPushButton" name="md_core_geometry_pushButton">
-                     <property name="toolTip">
-                      <string>Pre-sets the 2D axisymmetric core parameters</string>
-                     </property>
-                     <property name="text">
-                      <string>Set Core</string>
                      </property>
                     </widget>
                    </item>
@@ -223,13 +213,6 @@
                    </item>
                    <item row="0" column="1">
                     <widget class="QComboBox" name="md_winding1_material_comboBox"/>
-                   </item>
-                   <item row="2" column="1">
-                    <widget class="QPushButton" name="md_winding1_litz_material_pushButton">
-                     <property name="text">
-                      <string>Set litz</string>
-                     </property>
-                    </widget>
                    </item>
                    <item row="6" column="4">
                     <widget class="QLineEdit" name="md_winding1_strand_radius_lineEdit">
@@ -451,13 +434,6 @@
                    </item>
                    <item row="2" column="0">
                     <widget class="QComboBox" name="md_winding2_litz_material_comboBox"/>
-                   </item>
-                   <item row="2" column="1">
-                    <widget class="QPushButton" name="md_winding2_litz_material_pushButton">
-                     <property name="text">
-                      <string>Set litz</string>
-                     </property>
-                    </widget>
                    </item>
                   </layout>
                  </widget>
