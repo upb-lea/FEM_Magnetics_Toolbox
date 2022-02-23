@@ -805,6 +805,34 @@ class MainWindow(QMainWindow):
         """
         self.md_f8_enable(False) if status == 0 else self.md_f8_enable(True)
 
+    def md_redraw_input_signals(self) -> None:
+        """
+        Generate visual graphics for the input signals
+        Generates a graphic. This graphic is read and insertet to the gui.
+
+        :return: None
+        :rtype: None
+        """
+
+        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
+
+
+        fmt.plot_fourier_coefficients(winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, figure_directory =  "./md_winding_1.png")
+        pixmap = QPixmap("./md_winding_1.png")
+        self.md_graphic_winding_1.setPixmap(pixmap)
+        self.md_graphic_winding_1.setMask(pixmap.mask())
+        self.md_graphic_winding_1.show()
+        if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
+            fmt.plot_fourier_coefficients(winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list, figure_directory = "./md_winding_2.png")
+            pixmap = QPixmap("./md_winding_2.png")
+            self.md_graphic_winding_2.setPixmap(pixmap)
+            self.md_graphic_winding_2.setMask(pixmap.mask())
+            self.md_graphic_winding_2.show()
+
+    # ----------------------------------------------------------
+    # Simulation tab
+    # ----------------------------------------------------------
+
     def md_get_frequency_lists(self) -> List:
         """
         Read frequency, amplitude and phase depending on the checked frequencies and return it as a list.
@@ -887,34 +915,6 @@ class MainWindow(QMainWindow):
 
         return winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list
 
-    def md_redraw_input_signals(self) -> None:
-        """
-        Generate visual graphics for the input signals
-        Generates a graphic. This graphic is read and insertet to the gui.
-
-        :return: None
-        :rtype: None
-        """
-
-        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
-
-
-        fmt.plot_fourier_coefficients(winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, figure_directory =  "./md_winding_1.png")
-        pixmap = QPixmap("./md_winding_1.png")
-        self.md_graphic_winding_1.setPixmap(pixmap)
-        self.md_graphic_winding_1.setMask(pixmap.mask())
-        self.md_graphic_winding_1.show()
-        if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-            fmt.plot_fourier_coefficients(winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list, figure_directory = "./md_winding_2.png")
-            pixmap = QPixmap("./md_winding_2.png")
-            self.md_graphic_winding_2.setPixmap(pixmap)
-            self.md_graphic_winding_2.setMask(pixmap.mask())
-            self.md_graphic_winding_2.show()
-
-    # ----------------------------------------------------------
-    # Simulation tab
-    # ----------------------------------------------------------
-
     def md_setup_geometry(self):
         """
         Sets up the core and conductor geometry depending on the GUI input parameters
@@ -925,7 +925,7 @@ class MainWindow(QMainWindow):
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.md_simulation_QLabel.setText('simulation startet...')
 
-            geo = fmt.MagneticComponent(component_type="inductor", working_directory=None)
+            geo = fmt.MagneticComponent(component_type="inductor")
 
             # -----------------------------------------------
             # Core
@@ -1064,7 +1064,7 @@ class MainWindow(QMainWindow):
         # -----------------------------------------------
         # Simulation
         # -----------------------------------------------
-        geo.create_model(freq=int(self.md_base_frequency_lineEdit.text()))
+        geo.create_model(freq=int(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
         geo.single_simulation(freq=int(self.md_base_frequency_lineEdit.text()), current=[float(self.md_winding1_ik1_lineEdit.text())])
 
         winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
