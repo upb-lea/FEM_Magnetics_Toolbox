@@ -784,6 +784,35 @@ def create_physical_group(dim, entities, name):
 
     return tag
 
+def visualize_simulation_results(simulation_result_file_path: str, store_figure_file_path: str, show_plot = True) -> None:
+    with open(simulation_result_file_path, "r") as fd:
+        loaded_results_dict = json.loads(fd.read())
+
+    inductance = loaded_results_dict["Fluxes"]["L_11"][0]
+    loss_core_eddy_current = loaded_results_dict["Losses"]["Core_Eddy_Current"]
+    loss_core_hysteresis = loaded_results_dict["Losses"]["Core_Hysteresis"]
+    loss_winding_1 = loaded_results_dict["Losses"]["Winding_1"]["total_winding"]
+
+    print(inductance)
+    print(loss_core_eddy_current)
+    print(loss_core_hysteresis)
+    print(loss_winding_1)
+
+    bar_width = 0.35
+    plt.bar(0, loss_core_hysteresis, width=bar_width)
+    plt.bar(0, loss_core_eddy_current, bottom= loss_core_hysteresis, width=bar_width)
+    plt.bar(1, loss_winding_1, width=bar_width)
+    plt.legend(['Hysteresis loss', 'Eddy current loss', 'Winding loss'])
+    plt.ylabel('Losses in W')
+    plt.xticks([0, 1, 2], ['Core', 'Winding 1', 'Winding 2'])
+    plt.grid()
+    plt.savefig(store_figure_file_path, bbox_inches="tight")
+
+    if show_plot:
+        plt.show()
+
+    return loaded_results_dict
+
 
 if __name__ == '__main__':
-    pass
+    visualize_simulation_results('/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/results/result_log_electro_magnetic.json')
