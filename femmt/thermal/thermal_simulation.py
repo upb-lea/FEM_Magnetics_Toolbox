@@ -128,6 +128,9 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
 
     :param return: -
     """
+
+    # Initial Clearing of gmsh data
+    gmsh.clear()
     
     losses = read_results_log(results_log_file_path)
 
@@ -140,8 +143,9 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     function_file = path.join(solver_folder_path, "Function.pro")
     group_file = path.join(solver_folder_path, "Group.pro")
     constraint_file = path.join(solver_folder_path, "Constraint.pro")
-    
-    gmsh.initialize()
+
+    if not gmsh.isInitialized():
+        gmsh.initialize()
     gmsh.open(model_mesh_file_path)
     
     # Create file wrappers
@@ -192,8 +196,6 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     if show_before_simulation:
         gmsh.fltk.run()
 
-    gmsh.finalize()
-
     # Create files
     parameters_pro.create_file(parameters_file)
     function_pro.create_file(function_file)
@@ -203,10 +205,8 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file)
 
     if show_results:
-        gmsh.initialize()
         gmsh.open(map_pos_file)
         gmsh.fltk.run()
-        gmsh.finalize()
 
 if __name__ == "__main__":
 

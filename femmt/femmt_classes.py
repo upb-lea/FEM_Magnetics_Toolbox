@@ -55,7 +55,7 @@ class MagneticComponent:
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
 
-        
+
         if "working_directory" in kwargs:
             wkdir = kwargs["working_directory"]
             if wkdir is not None and os.path.exists(wkdir):
@@ -684,12 +684,12 @@ class MagneticComponent:
 
             :Inductor Example:
 
-            core_cond_isolation=[winding2core],
+            core_cond_isolation=[windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
             cond_cond_isolation=[winding2primary]
 
             :Transformer Example:
 
-            core_cond_isolation=[primary2core, secondary2core],
+            core_cond_isolation=[windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
             cond_cond_isolation=[primary2primary, secondary2secondary, primary2secondary]
             """
             self.cond_cond = cond_cond or []
@@ -2934,6 +2934,10 @@ class MagneticComponent:
         def __init__(self, component):
             self.component = component
 
+            # Initialize gmsh once
+            if not gmsh.isInitialized():
+                gmsh.initialize()
+
             # Characteristic lengths [for mesh sizes]
             self.global_accuracy = 0.5  # Parameter for mesh-accuracy
             self.padding = 1.5  # ... > 1
@@ -2947,6 +2951,8 @@ class MagneticComponent:
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Pre-Definitions
+
+        def set_empty_lists(self):
             # Points
             self.p_core = []
             self.p_island = []
@@ -2993,9 +2999,10 @@ class MagneticComponent:
             :return:
 
             """
-            print("Initialize Gmsh")
             # Initialization
-            gmsh.initialize()
+            self.set_empty_lists()
+
+            print("Hybrid Mesh Generation in Gmsh")
 
             """
             if refine == 1:
@@ -3182,20 +3189,22 @@ class MagneticComponent:
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # - Core parts between Air Gaps
                 # Points of Core Islands (index refers to sketch)
+
                 if self.component.air_gaps.number != 0:
-                    while island_right.shape[0] > 0:
+                    island_right_tmp = island_right
+                    while island_right_tmp.shape[0] > 0:
                         # take two points with lowest y-coordinates
-                        min_island_right = np.argmin(island_right[:, 1])
+                        min_island_right_tmp = np.argmin(island_right_tmp[:, 1])
                         self.p_island.append(gmsh.model.geo.addPoint(0,
-                                                                     island_right[min_island_right, 1],
-                                                                     island_right[min_island_right, 2],
+                                                                     island_right_tmp[min_island_right_tmp, 1],
+                                                                     island_right_tmp[min_island_right_tmp, 2],
                                                                      self.c_core))
-                        self.p_island.append(gmsh.model.geo.addPoint(island_right[min_island_right, 0],
-                                                                     island_right[min_island_right, 1],
-                                                                     island_right[min_island_right, 2],
+                        self.p_island.append(gmsh.model.geo.addPoint(island_right_tmp[min_island_right_tmp, 0],
+                                                                     island_right_tmp[min_island_right_tmp, 1],
+                                                                     island_right_tmp[min_island_right_tmp, 2],
                                                                      self.c_window))
 
-                        island_right = np.delete(island_right, min_island_right, 0)
+                        island_right_tmp = np.delete(island_right_tmp, min_island_right_tmp, 0)
 
                     # Curves of Core Islands (index refers to sketch)
                     for i in range(0, int(len(self.p_island) / 4)):
@@ -3486,19 +3495,25 @@ class MagneticComponent:
                 if save_png:
                     if '-nopopup' not in sys.argv:
                         gmsh.fltk.initialize()
+
+                    x = np.random.rand()
+                    x_str = str(x)[-5]
+
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
+                    gmsh.write(os.path.join(self.component.mesh_folder_path, x_str+"hybrid_color.png"))  # save png
+                    gmsh.write(self.component.hybrid_color_mesh_file)  # save png
 
                     # gmsh.model.mesh.generate(2)
+                # gmsh.clear()
 
             if do_meshing:
                 gmsh.model.mesh.generate(2)
+                random_value = str(np.random.rand())[-5]
                 gmsh.write(self.component.hybrid_mesh_file)
 
-            gmsh.finalize()
-
-
         def generate_electro_magnetic_mesh(self, refine = 0):
-            gmsh.initialize()
+            print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
+
             gmsh.open(self.component.hybrid_mesh_file)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3568,21 +3583,23 @@ class MagneticComponent:
             # TODO: What are these flags about???
             gmsh.option.setNumber("Mesh.SaveAll", 1)
             gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
-            gmsh.option.setNumber("Mesh.SurfaceFaces", 1)
+            gmsh.option.setNumber("Mesh.SurfaceFaces", 0)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # TODO: Adaptive Meshing
-            if refine == 1:
-                print("\n ------- \nRefined Mesh Creation ")
-                # mesh the new gmsh.model using the size field
-                bg_field = gmsh.model.mesh.field.add("PostView")
-                # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
-                gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-                print("\nMeshing...\n")
-                gmsh.model.mesh.generate(2)
-            else:
-                print("\nMeshing...\n")
-                gmsh.model.mesh.generate(2)
+            # if refine == 1:
+            #     print("\n ------- \nRefined Mesh Creation ")
+            #     # mesh the new gmsh.model using the size field
+            #     bg_field = gmsh.model.mesh.field.add("PostView")
+            #     # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
+            #     gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
+            #     print("\nMeshing...\n")
+            #     gmsh.model.mesh.generate(2)
+            # else:
+            #     print("\nMeshing...\n")
+            #     gmsh.model.mesh.generate(2)
+
+
 
             if not os.path.exists(self.component.mesh_folder_path):
                 os.mkdir(self.component.mesh_folder_path)
@@ -3592,10 +3609,8 @@ class MagneticComponent:
             # Open gmsh GUI for visualization
             # gmsh.fltk.run()
             # Terminate gmsh
-            gmsh.finalize()
 
         def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, refine = 0):
-            gmsh.initialize()
             gmsh.open(self.component.hybrid_mesh_file)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3816,7 +3831,6 @@ class MagneticComponent:
                 os.mkdir(self.component.mesh_folder_path)
 
             gmsh.write(self.component.thermal_mesh_file)
-            gmsh.finalize()
 
         def mesh(self, frequency=None, skin_mesh_factor=1):
             self.component.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
@@ -4144,6 +4158,9 @@ class MagneticComponent:
         # -- Simulation --
         # create a new onelab client
 
+        # Initial Clearing of gmsh data
+        gmsh.clear()
+
         # get model file names with correct path
         solver = os.path.join(self.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
 
@@ -4227,7 +4244,7 @@ class MagneticComponent:
         print(f"\n---\n"
               f"Visualize fields in GMSH front end:\n")
 
-        gmsh.initialize()
+        # gmsh.initialize()
         epsilon = 1e-9
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4299,7 +4316,7 @@ class MagneticComponent:
         """
 
         gmsh.fltk.run()
-        gmsh.finalize()
+        # gmsh.finalize()
 
     def get_loss_data(self, last_n_values, loss_type='litz_loss'):
         """
