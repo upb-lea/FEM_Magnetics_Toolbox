@@ -481,7 +481,7 @@ class MagneticComponent:
                    re_mu_rel: float = 3000,
                    im_mu_rel: float = 2500 * np.sin(20 * np.pi / 180),
                    im_epsilon_rel: float = 6e+4 * np.sin(20 * np.pi / 180),
-                   material=95,
+                   material=95_100,
                    non_linear: bool = False,
                    **kwargs) -> None:
             """
@@ -4381,7 +4381,7 @@ class MagneticComponent:
                             'This command is only executable on Windows computers.')
 
 
-        self.create_folders(self.femm_folder_path)
+        self.create_folders([self.femm_folder_path])
 
         sign = sign or [1]
 
