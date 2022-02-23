@@ -18,20 +18,27 @@ if component == "inductor":
     #                     position_tag=[0, 0, 0, 0], air_gap_position=[20, 40, 60, 80])
     geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
 
-    geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
+    geo.update_conductors(n_turns=[[1]], conductor_type=["solid"], conductor_radii=[0.0015],
                           winding=["primary"], scheme=["square"],
                           core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001])
 
     geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
+
+    geo.update_conductors(n_turns=[[2]], conductor_type=["solid"], conductor_radii=[0.0015],
+                          winding=["primary"], scheme=["square"],
+                          core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001])
+
+    geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
+
     geo.create_model(freq=100000, visualize_before=False, do_meshing=True, save_png=False)
 
     geo.single_simulation(freq=100000, current=[1])
 
     # Excitation Sweep Example
     # fs = [0, 10000, 30000, 60000, 100000, 150000]
-    # amplitue_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+    # amplitude_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
     # phase_list = [[0], [10], [20], [30], [40], [50]]
-    # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitue_list, phi_deg_list_list=phase_list)
+    # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
 
     # Reference simulation using FEMM
     # geo.femm_reference(freq=100000, current=[1], sigma_cu=58, sign=[1], non_visualize=0)
@@ -139,7 +146,6 @@ if component == "transformer":
 
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
-
 
 if component == "integrated_transformer":
     geo = MagneticComponent(component_type="integrated_transformer")
