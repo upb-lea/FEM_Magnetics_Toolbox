@@ -28,7 +28,7 @@
         <item row="0" column="0">
          <widget class="QTabWidget" name="md_QTabWidget">
           <property name="currentIndex">
-           <number>2</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="md_QWidget">
            <attribute name="title">
@@ -916,173 +916,183 @@
                    <string>Winding 1: current shape</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_5">
-                   <item row="0" column="10">
-                    <widget class="QLabel" name="label_26">
-                     <property name="text">
-                      <string>Ik6 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="4">
-                    <widget class="QLabel" name="label_23">
-                     <property name="text">
-                      <string>Ik3 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="3">
-                    <widget class="QLineEdit" name="md_winding1_ik2_lineEdit"/>
-                   </item>
-                   <item row="0" column="2">
-                    <widget class="QLabel" name="label_22">
-                     <property name="text">
-                      <string>Ik2 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="11">
-                    <widget class="QLineEdit" name="md_winding1_ik6_lineEdit"/>
-                   </item>
-                   <item row="0" column="7">
-                    <widget class="QLineEdit" name="md_winding1_ik4_lineEdit"/>
-                   </item>
-                   <item row="0" column="6">
-                    <widget class="QLabel" name="label_24">
-                     <property name="text">
-                      <string>Ik4 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="9">
-                    <widget class="QLineEdit" name="md_winding1_ik5_lineEdit"/>
-                   </item>
-                   <item row="0" column="13">
-                    <widget class="QLineEdit" name="md_winding1_ik7_lineEdit"/>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QLineEdit" name="md_winding1_ik1_lineEdit">
-                     <property name="text">
-                      <string>10</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="14">
-                    <widget class="QLabel" name="label_32">
-                     <property name="text">
-                      <string>Ik8 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="2">
-                    <widget class="QLabel" name="label_21">
-                     <property name="text">
-                      <string>pk2 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="12">
-                    <widget class="QLabel" name="label_31">
-                     <property name="text">
-                      <string>Ik7 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="8">
-                    <widget class="QLabel" name="label_25">
-                     <property name="text">
-                      <string>Ik5 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="5">
-                    <widget class="QLineEdit" name="md_winding1_ik3_lineEdit"/>
-                   </item>
-                   <item row="1" column="10">
-                    <widget class="QLabel" name="label_30">
-                     <property name="text">
-                      <string>pk6 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="6">
-                    <widget class="QLabel" name="label_28">
-                     <property name="text">
-                      <string>pk4 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="8">
-                    <widget class="QLabel" name="label_29">
-                     <property name="text">
-                      <string>pk5 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_20">
-                     <property name="text">
-                      <string>pk1 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="4">
-                    <widget class="QLabel" name="label_27">
-                     <property name="text">
-                      <string>pk3 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_19">
-                     <property name="text">
-                      <string>Ik1 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="15">
-                    <widget class="QLineEdit" name="md_winding1_ik8_lineEdit"/>
-                   </item>
-                   <item row="1" column="12">
-                    <widget class="QLabel" name="label_33">
-                     <property name="text">
-                      <string>pk7 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="14">
+                   <item row="1" column="16">
                     <widget class="QLabel" name="label_34">
                      <property name="text">
                       <string>pk8 [°]</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="1">
+                   <item row="1" column="11">
+                    <widget class="QLineEdit" name="md_winding1_pk5_lineEdit"/>
+                   </item>
+                   <item row="0" column="15">
+                    <widget class="QLineEdit" name="md_winding1_ik7_lineEdit"/>
+                   </item>
+                   <item row="0" column="5">
+                    <widget class="QLineEdit" name="md_winding1_ik2_lineEdit"/>
+                   </item>
+                   <item row="1" column="8">
+                    <widget class="QLabel" name="label_28">
+                     <property name="text">
+                      <string>pk4 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QLabel" name="label_22">
+                     <property name="text">
+                      <string>Ik2 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="10">
+                    <widget class="QLabel" name="label_25">
+                     <property name="text">
+                      <string>Ik5 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QLineEdit" name="md_winding1_ik1_lineEdit">
+                     <property name="text">
+                      <string>10</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="12">
+                    <widget class="QLabel" name="label_26">
+                     <property name="text">
+                      <string>Ik6 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="16">
+                    <widget class="QLabel" name="label_32">
+                     <property name="text">
+                      <string>Ik8 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_winding1_idc_lineEdit"/>
+                   </item>
+                   <item row="1" column="13">
+                    <widget class="QLineEdit" name="md_winding1_pk6_lineEdit"/>
+                   </item>
+                   <item row="1" column="9">
+                    <widget class="QLineEdit" name="md_winding1_pk4_lineEdit"/>
+                   </item>
+                   <item row="1" column="3">
                     <widget class="QLineEdit" name="md_winding1_pk1_lineEdit">
                      <property name="text">
                       <string>0</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="3">
-                    <widget class="QLineEdit" name="md_winding1_pk2_lineEdit"/>
+                   <item row="0" column="7">
+                    <widget class="QLineEdit" name="md_winding1_ik3_lineEdit"/>
                    </item>
-                   <item row="1" column="5">
-                    <widget class="QLineEdit" name="md_winding1_pk3_lineEdit"/>
+                   <item row="0" column="14">
+                    <widget class="QLabel" name="label_31">
+                     <property name="text">
+                      <string>Ik7 [A]</string>
+                     </property>
+                    </widget>
                    </item>
-                   <item row="1" column="7">
-                    <widget class="QLineEdit" name="md_winding1_pk4_lineEdit"/>
+                   <item row="1" column="6">
+                    <widget class="QLabel" name="label_27">
+                     <property name="text">
+                      <string>pk3 [°]</string>
+                     </property>
+                    </widget>
                    </item>
-                   <item row="1" column="9">
-                    <widget class="QLineEdit" name="md_winding1_pk5_lineEdit"/>
-                   </item>
-                   <item row="1" column="11">
-                    <widget class="QLineEdit" name="md_winding1_pk6_lineEdit"/>
-                   </item>
-                   <item row="1" column="13">
-                    <widget class="QLineEdit" name="md_winding1_pk7_lineEdit"/>
+                   <item row="0" column="2">
+                    <widget class="QLabel" name="label_19">
+                     <property name="text">
+                      <string>Ik1 [A]</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="15">
+                    <widget class="QLineEdit" name="md_winding1_pk7_lineEdit"/>
+                   </item>
+                   <item row="0" column="11">
+                    <widget class="QLineEdit" name="md_winding1_ik5_lineEdit"/>
+                   </item>
+                   <item row="1" column="2">
+                    <widget class="QLabel" name="label_20">
+                     <property name="text">
+                      <string>pk1 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="14">
+                    <widget class="QLabel" name="label_33">
+                     <property name="text">
+                      <string>pk7 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="12">
+                    <widget class="QLabel" name="label_30">
+                     <property name="text">
+                      <string>pk6 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="10">
+                    <widget class="QLabel" name="label_29">
+                     <property name="text">
+                      <string>pk5 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="17">
                     <widget class="QLineEdit" name="md_winding1_pk8_lineEdit"/>
+                   </item>
+                   <item row="0" column="6">
+                    <widget class="QLabel" name="label_23">
+                     <property name="text">
+                      <string>Ik3 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="4">
+                    <widget class="QLabel" name="label_21">
+                     <property name="text">
+                      <string>pk2 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="9">
+                    <widget class="QLineEdit" name="md_winding1_ik4_lineEdit"/>
+                   </item>
+                   <item row="0" column="17">
+                    <widget class="QLineEdit" name="md_winding1_ik8_lineEdit"/>
+                   </item>
+                   <item row="1" column="7">
+                    <widget class="QLineEdit" name="md_winding1_pk3_lineEdit"/>
+                   </item>
+                   <item row="0" column="8">
+                    <widget class="QLabel" name="label_24">
+                     <property name="text">
+                      <string>Ik4 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="13">
+                    <widget class="QLineEdit" name="md_winding1_ik6_lineEdit"/>
+                   </item>
+                   <item row="1" column="5">
+                    <widget class="QLineEdit" name="md_winding1_pk2_lineEdit"/>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_64">
+                     <property name="text">
+                      <string>DC [A]</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
@@ -1093,154 +1103,30 @@
                    <string>Winding 2: current shape</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_6">
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_36">
-                     <property name="text">
-                      <string>Ik1 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="13">
-                    <widget class="QLineEdit" name="md_winding2_pk7_lineEdit"/>
-                   </item>
-                   <item row="0" column="12">
-                    <widget class="QLabel" name="label_39">
-                     <property name="text">
-                      <string>Ik7 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="14">
-                    <widget class="QLabel" name="label_35">
-                     <property name="text">
-                      <string>Ik8 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="6">
-                    <widget class="QLabel" name="label_44">
-                     <property name="text">
-                      <string>pk4 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="8">
-                    <widget class="QLabel" name="label_45">
-                     <property name="text">
-                      <string>pk5 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="9">
-                    <widget class="QLineEdit" name="md_winding2_pk5_lineEdit"/>
-                   </item>
-                   <item row="1" column="4">
-                    <widget class="QLabel" name="label_50">
-                     <property name="text">
-                      <string>pk3 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="13">
-                    <widget class="QLineEdit" name="md_winding2_ik7_lineEdit"/>
-                   </item>
-                   <item row="1" column="0">
+                   <item row="1" column="2">
                     <widget class="QLabel" name="label_42">
                      <property name="text">
                       <string>pk1 [°]</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="11">
-                    <widget class="QLineEdit" name="md_winding2_ik6_lineEdit"/>
-                   </item>
-                   <item row="0" column="4">
-                    <widget class="QLabel" name="label_49">
+                   <item row="0" column="16">
+                    <widget class="QLabel" name="label_35">
                      <property name="text">
-                      <string>Ik3 [A]</string>
+                      <string>Ik8 [A]</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="7">
-                    <widget class="QLineEdit" name="md_winding2_ik4_lineEdit"/>
-                   </item>
-                   <item row="1" column="10">
-                    <widget class="QLabel" name="label_46">
-                     <property name="text">
-                      <string>pk6 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="8">
-                    <widget class="QLabel" name="label_37">
-                     <property name="text">
-                      <string>Ik5 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="6">
-                    <widget class="QLabel" name="label_41">
-                     <property name="text">
-                      <string>Ik4 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="14">
-                    <widget class="QLabel" name="label_48">
-                     <property name="text">
-                      <string>pk8 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="7">
-                    <widget class="QLineEdit" name="md_winding2_pk4_lineEdit"/>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QLineEdit" name="md_winding2_ik1_lineEdit"/>
-                   </item>
-                   <item row="0" column="3">
-                    <widget class="QLineEdit" name="md_winding2_ik2_lineEdit"/>
-                   </item>
-                   <item row="0" column="2">
-                    <widget class="QLabel" name="label_40">
-                     <property name="text">
-                      <string>Ik2 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="3">
-                    <widget class="QLineEdit" name="md_winding2_pk2_lineEdit"/>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QLineEdit" name="md_winding2_pk1_lineEdit"/>
-                   </item>
-                   <item row="0" column="9">
-                    <widget class="QLineEdit" name="md_winding2_ik5_lineEdit"/>
-                   </item>
-                   <item row="1" column="12">
-                    <widget class="QLabel" name="label_47">
-                     <property name="text">
-                      <string>pk7 [°]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="11">
-                    <widget class="QLineEdit" name="md_winding2_pk6_lineEdit"/>
+                   <item row="1" column="15">
+                    <widget class="QLineEdit" name="md_winding2_pk7_lineEdit"/>
                    </item>
                    <item row="0" column="5">
-                    <widget class="QLineEdit" name="md_winding2_ik3_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_ik2_lineEdit"/>
                    </item>
-                   <item row="1" column="5">
-                    <widget class="QLineEdit" name="md_winding2_pk3_lineEdit"/>
+                   <item row="1" column="3">
+                    <widget class="QLineEdit" name="md_winding2_pk1_lineEdit"/>
                    </item>
-                   <item row="0" column="10">
-                    <widget class="QLabel" name="label_38">
-                     <property name="text">
-                      <string>Ik6 [A]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="2">
+                   <item row="1" column="4">
                     <widget class="QLabel" name="label_43">
                      <property name="text">
                       <string>pk2 [°]</string>
@@ -1248,10 +1134,144 @@
                     </widget>
                    </item>
                    <item row="0" column="15">
+                    <widget class="QLineEdit" name="md_winding2_ik7_lineEdit"/>
+                   </item>
+                   <item row="0" column="13">
+                    <widget class="QLineEdit" name="md_winding2_ik6_lineEdit"/>
+                   </item>
+                   <item row="0" column="17">
                     <widget class="QLineEdit" name="md_winding2_ik8_lineEdit"/>
                    </item>
-                   <item row="1" column="15">
+                   <item row="1" column="8">
+                    <widget class="QLabel" name="label_44">
+                     <property name="text">
+                      <string>pk4 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QLabel" name="label_40">
+                     <property name="text">
+                      <string>Ik2 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="14">
+                    <widget class="QLabel" name="label_39">
+                     <property name="text">
+                      <string>Ik7 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="6">
+                    <widget class="QLabel" name="label_50">
+                     <property name="text">
+                      <string>pk3 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="2">
+                    <widget class="QLabel" name="label_36">
+                     <property name="text">
+                      <string>Ik1 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="17">
                     <widget class="QLineEdit" name="md_winding2_pk8_lineEdit"/>
+                   </item>
+                   <item row="0" column="12">
+                    <widget class="QLabel" name="label_38">
+                     <property name="text">
+                      <string>Ik6 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="6">
+                    <widget class="QLabel" name="label_49">
+                     <property name="text">
+                      <string>Ik3 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="11">
+                    <widget class="QLineEdit" name="md_winding2_pk5_lineEdit"/>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_66">
+                     <property name="text">
+                      <string>DC [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="5">
+                    <widget class="QLineEdit" name="md_winding2_pk2_lineEdit"/>
+                   </item>
+                   <item row="1" column="10">
+                    <widget class="QLabel" name="label_45">
+                     <property name="text">
+                      <string>pk5 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QLineEdit" name="md_winding2_ik1_lineEdit"/>
+                   </item>
+                   <item row="1" column="13">
+                    <widget class="QLineEdit" name="md_winding2_pk6_lineEdit"/>
+                   </item>
+                   <item row="1" column="16">
+                    <widget class="QLabel" name="label_48">
+                     <property name="text">
+                      <string>pk8 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="9">
+                    <widget class="QLineEdit" name="md_winding2_pk4_lineEdit"/>
+                   </item>
+                   <item row="1" column="7">
+                    <widget class="QLineEdit" name="md_winding2_pk3_lineEdit"/>
+                   </item>
+                   <item row="0" column="7">
+                    <widget class="QLineEdit" name="md_winding2_ik3_lineEdit"/>
+                   </item>
+                   <item row="0" column="10">
+                    <widget class="QLabel" name="label_37">
+                     <property name="text">
+                      <string>Ik5 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="12">
+                    <widget class="QLabel" name="label_46">
+                     <property name="text">
+                      <string>pk6 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="8">
+                    <widget class="QLabel" name="label_41">
+                     <property name="text">
+                      <string>Ik4 [A]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="11">
+                    <widget class="QLineEdit" name="md_winding2_ik5_lineEdit"/>
+                   </item>
+                   <item row="1" column="14">
+                    <widget class="QLabel" name="label_47">
+                     <property name="text">
+                      <string>pk7 [°]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="9">
+                    <widget class="QLineEdit" name="md_winding2_ik4_lineEdit"/>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_winding2_idc_lineEdit"/>
                    </item>
                   </layout>
                  </widget>
@@ -1350,35 +1370,14 @@
                    <string>Harmonics</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_11">
-                   <item row="0" column="5">
+                   <item row="0" column="6">
                     <widget class="QCheckBox" name="md_fk6_checkBox">
                      <property name="text">
                       <string>fk6</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="6">
-                    <widget class="QCheckBox" name="md_fk7_checkBox">
-                     <property name="text">
-                      <string>fk7</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QCheckBox" name="md_fk2_checkBox">
-                     <property name="text">
-                      <string>fk2</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="4">
-                    <widget class="QCheckBox" name="md_fk5_checkBox">
-                     <property name="text">
-                      <string>fk5</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="8">
+                   <item row="0" column="9">
                     <spacer name="horizontalSpacer_2">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
@@ -1391,14 +1390,14 @@
                      </property>
                     </spacer>
                    </item>
-                   <item row="0" column="2">
-                    <widget class="QCheckBox" name="md_fk3_checkBox">
+                   <item row="0" column="8">
+                    <widget class="QCheckBox" name="md_fk8_checkBox">
                      <property name="text">
-                      <string>fk3</string>
+                      <string>fk8</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="0">
+                   <item row="0" column="1">
                     <widget class="QCheckBox" name="md_fk1_checkBox">
                      <property name="text">
                       <string>fk1</string>
@@ -1406,6 +1405,13 @@
                     </widget>
                    </item>
                    <item row="0" column="3">
+                    <widget class="QCheckBox" name="md_fk3_checkBox">
+                     <property name="text">
+                      <string>fk3</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
                     <widget class="QCheckBox" name="md_fk4_checkBox">
                      <property name="text">
                       <string>fk4</string>
@@ -1413,9 +1419,30 @@
                     </widget>
                    </item>
                    <item row="0" column="7">
-                    <widget class="QCheckBox" name="md_fk8_checkBox">
+                    <widget class="QCheckBox" name="md_fk7_checkBox">
                      <property name="text">
-                      <string>fk8</string>
+                      <string>fk7</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="2">
+                    <widget class="QCheckBox" name="md_fk2_checkBox">
+                     <property name="text">
+                      <string>fk2</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="5">
+                    <widget class="QCheckBox" name="md_fk5_checkBox">
+                     <property name="text">
+                      <string>fk5</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QCheckBox" name="md_dc_checkBox">
+                     <property name="text">
+                      <string>DC</string>
                      </property>
                     </widget>
                    </item>

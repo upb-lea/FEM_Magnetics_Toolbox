@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
         self.md_winding2_litz_material_pushButton.clicked.connect(self.md_winding2_set_litz_parameters_from_litz_database)
 
         "Signals in Excitation Tab"
+        self.md_dc_checkBox.stateChanged.connect(self.md_dc_enable)
         self.md_fk1_checkBox.stateChanged.connect(self.md_change_frequencies_1)
         self.md_fk2_checkBox.stateChanged.connect(self.md_change_frequencies_2)
         self.md_fk3_checkBox.stateChanged.connect(self.md_change_frequencies_3)
@@ -77,6 +78,7 @@ class MainWindow(QMainWindow):
 
         # initialize checkboxes. Need to be set to True and then to False, so represent a change and the signal
         # triggers the action to uncheck all boxes
+        self.md_dc_checkBox.setChecked(True)
         self.md_fk1_checkBox.setChecked(True)
         self.md_fk2_checkBox.setChecked(True)
         self.md_fk3_checkBox.setChecked(True)
@@ -86,6 +88,7 @@ class MainWindow(QMainWindow):
         self.md_fk7_checkBox.setChecked(True)
         self.md_fk8_checkBox.setChecked(True)
         # self.md_fk1_checkBox.setChecked(False)
+        self.md_dc_checkBox.setChecked(False)
         self.md_fk2_checkBox.setChecked(False)
         self.md_fk3_checkBox.setChecked(False)
         self.md_fk4_checkBox.setChecked(False)
@@ -239,6 +242,24 @@ class MainWindow(QMainWindow):
 
         self.md_isolation_s2s_lineEdit.setEnabled(status)
         self.md_isolation_p2s_lineEdit.setEnabled(status)
+
+    def md_dc_enable(self, status: bool) -> None:
+        """
+        Enables / Disables the input fields for dc current.
+
+        :param status: True for enable fields, False for disable fields
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        self.md_winding1_idc_lineEdit.setEnabled(status)
+        self.md_winding2_idc_lineEdit.setEnabled(status)
+        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
+            self.md_winding2_idc_lineEdit.setEnabled(False)
+            self.md_winding2_idc_lineEdit.setEnabled(False)
+        else:
+            self.md_winding2_idc_lineEdit.setEnabled(status)
+            self.md_winding2_idc_lineEdit.setEnabled(status)
 
     def md_f1_enable(self, status: bool) -> None:
         """
@@ -537,6 +558,17 @@ class MainWindow(QMainWindow):
             self.md_winding1_radius_lineEdit.setEnabled(True)
             self.md_winding1_litz_material_comboBox.setEnabled(False)
             self.md_winding1_litz_material_pushButton.setEnabled(False)
+
+    def md_change_frequencies_dc(self, status: int) -> None:
+        """
+        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+
+        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :type status: int
+        :return: None
+        :rtype: None
+        """
+        self.md_dc_enable(False) if status == 0 else self.md_dc_enable(True)
 
     def md_change_frequencies_1(self, status: int) -> None:
         """
