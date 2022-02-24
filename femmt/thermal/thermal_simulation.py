@@ -16,15 +16,33 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
     parameters_pro.add_to_parameters(boundary_flags)
     constraint_pro.add_boundary_constraint([x for x in zip(boundary_flags.keys(), boundary_regions.keys(), boundary_temperatures.keys())])
     
-    k = {"case": k_case}
-    q_vol = {"case": 0}
+    k = {
+        "case_top": k_case["top"],
+        "case_top_right": k_case["top_right"],
+        "case_right": k_case["right"],
+        "case_bot_right": k_case["bot_right"],
+        "case_bot": k_case["bot"] 
+    }
+    q_vol = {
+        "case_top": 0,
+        "case_top_right": 0,
+        "case_right": 0,
+        "case_bot_right": 0,
+        "case_bot": 0 
+    }
 
     function_pro.add_dicts(k, q_vol)
-    group_pro.add_regions({"case": f"{{{str(boundary_physical_groups)[1:-1]}}}"})
+    group_pro.add_regions({
+        "case_top": boundary_physical_groups["top"],
+        "case_top_right": boundary_physical_groups["top_right"],
+        "case_right": boundary_physical_groups["right"],
+        "case_bot_right": boundary_physical_groups["bot_right"],
+        "case_bot": boundary_physical_groups["bot"] 
+    })
 
     dim_tags = []
-    for physical_group in boundary_physical_groups:
-        for tag in gmsh.model.getEntitiesForPhysicalGroup(2, physical_group):
+    for key in boundary_physical_groups:
+        for tag in gmsh.model.getEntitiesForPhysicalGroup(2, boundary_physical_groups[key]):
             dim_tags.append([2, tag])
 
     return dim_tags
@@ -207,84 +225,3 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     if show_results:
         gmsh.open(map_pos_file)
         gmsh.fltk.run()
-
-if __name__ == "__main__":
-
-    # Simulation parameters
-    pretty_colors = True
-    show_before_simulation = False
-
-    # Currently absolute paths
-    onelab_folder_path = r"C:\Uni\Bachelorarbeit\onelab-Windows64"
-    results_log_file_path = r"C:\Uni\Bachelorarbeit\github\FEM_Magnetics_Toolbox\femmt\results\result_log.json"
-    model_mesh_file_path = r"C:\Uni\Bachelorarbeit\github\FEM_Magnetics_Toolbox\femmt\thermal\thermal_mesh.msh"
-    winding_tags = [list(range(4000, 4036)), list(range(7000, 7011)), None]
-    
-    tags = {
-        "core_tag": 2000,
-        "background_tag": 1000,
-        "winding_tags": winding_tags,
-        "core_line_tags": [4, 3, 2],
-        "core_point_tags": [5, 4, 3, 2], # Order: top left, top right, bottom right, bottom left
-        "air_gaps_tag": 1001,
-        "boundary_regions": {
-            "BOUNDARY_TOP"            : 1112,
-            "BOUNDARY_TOP_RIGHT"      : 1113,
-            "BOUNDARY_RIGHT_TOP"      : 1114,
-            "BOUNDARY_RIGHT"          : 1115,
-            "BOUNDARY_RIGHT_BOTTOM"   : 1116,
-            "BOUNDARY_BOTTOM_RIGHT"   : 1117,
-            "BOUNDARY_BOTTOM"         : 1118
-        }
-    }
-    thermal_conductivity_dict = {
-        "air": 0.0263,
-        "case": 0.3,
-        "core": 5,
-        "winding": 400,
-        "air_gaps": 0.0263 # Air
-    }
-
-    boundary_temperatures = {
-        "value_boundary_top": 283,
-        "value_boundary_top_right": 283,
-        "value_boundary_right_top": 283,
-        "value_boundary_right": 283,
-        "value_boundary_right_bottom": 283,
-        "value_boundary_bottom_right": 283,
-        "value_boundary_bottom": 283
-    }
-
-    boundary_flags = {
-        "flag_boundary_top": 1,
-        "flag_boundary_top_right": 1,
-        "flag_boundary_right_top": 1,
-        "flag_boundary_right": 1,
-        "flag_boundary_right_bottom": 1,
-        "flag_boundary_bottom_right": 1,
-        "flag_boundary_bottom": 1
-    }
-
-    boundary_physical_groups = [] # Only needed for colorization
-
-    core_area = 0.00077
-    conductor_radii = [0.0011, 0.0011]
-    show_results = True
-
-    thermal_parameters = {
-        "onelab_folder_path": onelab_folder_path,
-        "model_mesh_file_path": model_mesh_file_path,
-        "results_log_file_path": results_log_file_path,
-        "tags_dict": tags,
-        "thermal_conductivity_dict": thermal_conductivity_dict,
-        "boundary_temperatures": boundary_temperatures,
-        "boundary_flags": boundary_flags,
-        "boundary_physical_groups": boundary_physical_groups,
-        "core_area": core_area,
-        "conductor_radii": conductor_radii,
-        "show_results": show_results,
-        "pretty_colors": False,
-        "show_before_simulation": False
-    }
-
-    run_thermal(**thermal_parameters)

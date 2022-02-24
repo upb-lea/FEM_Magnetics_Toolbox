@@ -288,7 +288,13 @@ class MagneticComponent:
             "thermal_conductivity_dict": thermal_conductivity,
             "boundary_temperatures": boundary_temperatures,
             "boundary_flags": boundary_flags,
-            "boundary_physical_groups": self.mesh.thermal_boundary_ps_groups,
+            "boundary_physical_groups": {
+                "top": self.mesh.thermal_boundary_ps_groups[0],
+                "top_right": self.mesh.thermal_boundary_ps_groups[1],
+                "right": self.mesh.thermal_boundary_ps_groups[2],
+                "bot_right": self.mesh.thermal_boundary_ps_groups[3],
+                "bot": self.mesh.thermal_boundary_ps_groups[4]
+            },
             "core_area": core_area,
             "conductor_radii": wire_radii,
             "show_results": show_results,
@@ -972,7 +978,7 @@ class MagneticComponent:
             self.p_window = None  # np.zeros((4 * self.component.n_windows, 4))
             self.p_air_gaps = None  # np.zeros((4 * self.component.air_gaps.number, 4))
             self.p_conductor = []
-            self.p_iso_core_pri = []
+            self.p_iso_core = []
             self.p_iso_pri_sec = []
             for i in range(0, self.component.n_windings):
                 self.p_conductor.insert(i, [])
@@ -1165,7 +1171,7 @@ class MagneticComponent:
                     right21 = self.r_inner - self.component.isolation.core_cond[3]
 
                     # bottom window
-                    min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1] / 2  # bottom
+                    min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1]  # bottom
                     max11 = -separation_hor - self.component.isolation.cond_cond[-1] / 2  # separation_hor
                     left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
                     right11 = self.r_inner - self.component.isolation.core_cond[3]
@@ -1181,13 +1187,13 @@ class MagneticComponent:
 
                 if self.component.vw_type == "something_else":
                     # bottom left window
-                    min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0] / 2  # bottom
+                    min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0]  # bottom
                     max11 = -separation_hor - self.component.isolation.cond_cond[-1] / 2  # separation_hor
                     left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[0]
                     right11 = self.r_inner - self.component.isolation.cond_cond[0] - separation_vert
 
                     # bottom right window
-                    min12 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0] / 2  # bottom
+                    min12 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0]  # bottom
                     max12 = -separation_hor - self.component.isolation.cond_cond[-1] / 2  # separation_hor
                     left12 = self.r_inner + self.component.isolation.cond_cond[0] - separation_vert
                     right12 = self.r_inner - self.component.isolation.core_cond[0]
@@ -1959,54 +1965,142 @@ class MagneticComponent:
             # Using the delta the lines and points from the isolation and the core/windings are not overlapping
             # which makes creating the mesh more simpler
             # Isolation between winding and core
-            iso_core_delta_left = isolation_deltas["core_left"] # Distance from iso to the core (left)
-            iso_core_delta_top = isolation_deltas["core_top"] # Distance from iso to the core (top)
-            iso_core_delta_bot = isolation_deltas["core_bot"] # Distance from iso to the core (bot)
-            iso_winding_delta = isolation_deltas["winding"] # Distance from iso to the winding
+            iso_core_delta_left = isolation_deltas["core_left"]
+            iso_core_delta_top = isolation_deltas["core_top"]
+            iso_core_delta_right = isolation_deltas["core_right"]
+            iso_core_delta_bot = isolation_deltas["core_bot"]
+            iso_iso_delta = isolation_deltas["iso_iso"]
+            iso_winding_delta_left = isolation_deltas["winding_left"]
+            iso_winding_delta_top = isolation_deltas["winding_top"]
+            iso_winding_delta_right = isolation_deltas["winding_right"]
+            iso_winding_delta_bot = isolation_deltas["winding_bot"]
 
-            # Only used in primary/secondary winding scheme
-            # Distance between the core-winding iso and the winding-winding iso 
-            # (only when 2 virtual winding windows are set and therefore the winding-winding iso is horizontal)
-            iso_iso_delta = isolation_deltas["iso_iso_hor"] 
-
-            # Distance from the right end of the horizontal isolation to the core
-            # (only exists when 2 vww are set)
-            hor_iso_delta_right = isolation_deltas["iso_iso_right"]
-
-            self.p_iso_core_pri = []
+            self.p_iso_core = [] # Order: Left, Top, Right, Bot
             self.p_iso_pri_sec = []
 
             if self.component.component_type == "integrated_transformer":
                 # TODO implement for integrated_transformers
                 warnings.warn("Isolations are not set because they are not implemented for integrated transformers.")
             else:
+                # Useful points for isolation creation
+                left_x = self.component.core.core_w / 2 + iso_core_delta_left
+                top_y = window_h / 2 - iso_core_delta_top
+                right_x = self.r_inner - iso_core_delta_right
+                bot_y = -window_h / 2 + iso_core_delta_bot
+
+                # Useful lengths
+                left_iso_width = iso.core_cond[2] - iso_core_delta_left - iso_winding_delta_left
+                top_iso_height = iso.core_cond[0] - iso_core_delta_top - iso_winding_delta_top
+                right_iso_width = iso.core_cond[3] - iso_core_delta_right - iso_winding_delta_right
+                bot_iso_height = iso.core_cond[1] - iso_core_delta_bot - iso_winding_delta_bot
+
                 # Core to Pri isolation
-                self.p_iso_core_pri = [
+                iso_core_left = [
                     [
-                        self.component.core.core_w / 2 + iso_core_delta_left,
-                        window_h / 2 - iso_core_delta_top,
+                        left_x,
+                        top_y - top_iso_height - iso_iso_delta,
                         0,
                         mesh.c_window
                     ],
                     [
-                        self.component.core.core_w / 2 + iso.core_cond[2] - iso_winding_delta,
-                        window_h / 2 - iso_core_delta_top,
+                        left_x + left_iso_width,
+                        top_y - top_iso_height - iso_iso_delta,
                         0,
                         mesh.c_window
                     ],
                     [
-                        self.component.core.core_w / 2 + iso.core_cond[2] - iso_winding_delta,
-                        -window_h / 2 + iso_core_delta_bot,
+                        left_x + left_iso_width,
+                        bot_y + bot_iso_height + iso_iso_delta,
                         0,
                         mesh.c_window
                     ],
                     [
-                        self.component.core.core_w / 2 + iso_core_delta_left,
-                        -window_h / 2 + iso_core_delta_bot,
+                        left_x,
+                        bot_y + bot_iso_height + iso_iso_delta,
                         0,
                         mesh.c_window
                     ]
                 ]
+                iso_core_top = [
+                    [
+                        left_x,
+                        top_y,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        right_x,
+                        top_y,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        left_x,
+                        top_y - top_iso_height,
+                        0,
+                        mesh.c_window
+                    ]
+                ]
+                iso_core_right = [
+                    [
+                        right_x - right_iso_width,
+                        top_y - top_iso_height - iso_iso_delta,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        right_x,
+                        top_y - top_iso_height - iso_iso_delta,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height + iso_iso_delta,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        right_x - right_iso_width,
+                        bot_y + bot_iso_height + iso_iso_delta,
+                        0,
+                        mesh.c_window
+                    ]
+                ]
+                iso_core_bot = [
+                    [
+                        left_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        right_x,
+                        bot_y + bot_iso_height,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        right_x,
+                        bot_y,
+                        0,
+                        mesh.c_window
+                    ],
+                    [
+                        left_x,
+                        bot_y,
+                        0,
+                        mesh.c_window
+                    ]
+                ]
+
+                self.p_iso_core = [iso_core_left, iso_core_top, iso_core_right, iso_core_bot]
 
                 # Isolation between virtual winding windows
                 if self.component.vw_type == "full_window":
@@ -2024,26 +2118,26 @@ class MagneticComponent:
                             for index in range(self.top_window_iso_counter-1):
                                 self.p_iso_pri_sec.append([
                                     [
-                                        current_x + iso_winding_delta,
-                                        window_h / 2 - iso_core_delta_top,
+                                        current_x + iso_winding_delta_left,
+                                        top_y - top_iso_height - iso_iso_delta,
                                         0,
                                         mesh.c_window
                                     ],
                                     [
-                                        current_x + iso.cond_cond[2] - iso_winding_delta,
-                                        window_h / 2 - iso_core_delta_top,
+                                        current_x + iso.cond_cond[2] - iso_winding_delta_right,
+                                        top_y - top_iso_height - iso_iso_delta,
                                         0,
                                         mesh.c_window
                                     ],
                                     [
-                                        current_x + iso.cond_cond[2] - iso_winding_delta,
-                                        -window_h / 2 + iso_core_delta_bot,
+                                        current_x + iso.cond_cond[2] - iso_winding_delta_right,
+                                        bot_y + bot_iso_height + iso_iso_delta,
                                         0,
                                         mesh.c_window
                                     ],
                                     [
-                                        current_x + iso_winding_delta,
-                                        -window_h / 2 + iso_core_delta_bot,
+                                        current_x + iso_winding_delta_left,
+                                        bot_y + bot_iso_height + iso_iso_delta,
                                         0,
                                         mesh.c_window
                                     ]
@@ -2066,26 +2160,26 @@ class MagneticComponent:
                     vww_top = self.component.virtual_winding_windows[1]
                     self.p_iso_pri_sec.append([
                         [
-                            vww_top.left_bound - iso_winding_delta + iso_iso_delta,
-                            vww_top.bot_bound - iso_winding_delta,
+                            vww_top.left_bound,
+                            vww_top.bot_bound - iso_winding_delta_top,
                             0,
                             mesh.c_window
                         ],
                         [
-                            vww_top.right_bound - hor_iso_delta_right,
-                            vww_top.bot_bound - iso_winding_delta,
+                            vww_top.right_bound,
+                            vww_top.bot_bound - iso_winding_delta_top,
                             0,
                             mesh.c_window
                         ],
                         [
-                            vww_top.right_bound - hor_iso_delta_right,
-                            vww_bot.top_bound + iso_winding_delta,
+                            vww_top.right_bound,
+                            vww_bot.top_bound + iso_winding_delta_bot,
                             0,
                             mesh.c_window
                         ],
                         [
-                            vww_top.left_bound - iso_winding_delta + iso_iso_delta,
-                            vww_bot.top_bound + iso_winding_delta,
+                            vww_top.left_bound,
+                            vww_bot.top_bound + iso_winding_delta_bot,
                             0,
                             mesh.c_window
                         ]
@@ -2122,9 +2216,12 @@ class MagneticComponent:
                     "core_left": 0.0001,
                     "core_top": 0.0001,
                     "core_bot": 0.0001,
-                    "winding": 0.0001,
-                    "iso_iso_hor" : 0.0001,
-                    "iso_iso_right": 0.0001
+                    "core_right": 0.0001,
+                    "iso_iso" : 0.0001,
+                    "winding_left": 0.0001,
+                    "winding_top": 0.0001,
+                    "winding_right": 0.0001,
+                    "winding_bot": 0.0001
                 }
 
             self.draw_isolations(isolation_deltas)
@@ -2958,7 +3055,7 @@ class MagneticComponent:
             self.p_island = []
             self.p_cond = [[], []]
             self.p_region = []
-            self.p_iso_core_pri = []
+            self.p_iso_core = []
             self.p_iso_pri_sec = []
             # Curves
             self.l_bound_core = []
@@ -2967,14 +3064,14 @@ class MagneticComponent:
             self.l_cond = [[], []]
             self.l_region = []
             self.l_air_gaps_air = []
-            self.l_iso_core_pri = []
+            self.l_iso_core = []
             self.l_iso_pri_sec = []
             # Curve Loops
             self.curve_loop_cond = [[], []]
             self.curve_loop_island = []
             self.curve_loop_air = []
             self.curve_loop_air_gaps = []
-            self.curve_loop_iso_core_pri = []
+            self.curve_loop_iso_core = []
             self.curve_loop_iso_pri_sec = []
             # curve_loop_outer_air = []
             # curve_loop_bound = []
@@ -2984,7 +3081,7 @@ class MagneticComponent:
             self.plane_surface_air = []
             self.plane_surface_outer_air = []
             self.plane_surface_air_gaps = []
-            self.plane_surface_iso_core_pri = []
+            self.plane_surface_iso_core = []
             self.plane_surface_iso_pri_sec = []
 
         def generate_hybrid_mesh(self, do_meshing=True, visualize_before=False, save_png=True, refine=0, alternative_error=0):
@@ -3327,17 +3424,23 @@ class MagneticComponent:
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Isolations
                 # Core to Pri
-                if self.component.two_d_axi.p_iso_core_pri: # Check if list is not empty
+                if self.component.two_d_axi.p_iso_core: # Check if list is not empty
                     # Points
-                    for i in self.component.two_d_axi.p_iso_core_pri:
-                                        self.p_iso_core_pri.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
-                    
+                    for iso in self.component.two_d_axi.p_iso_core:
+                        p_iso = []
+                        for i in iso:
+                            p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+                        self.p_iso_core.append(p_iso)
                     # Lines
-                    self.l_iso_core_pri = [gmsh.model.geo.addLine(self.p_iso_core_pri[i], self.p_iso_core_pri[(i+1)%4]) for i in range(4)] 
+                    self.l_iso_core = [[gmsh.model.geo.addLine(iso[i], iso[(i+1)%4]) for i in range(4)] for iso in self.p_iso_core]
 
                     # Curve loop and surface
-                    self.curve_loop_iso_core_pri.append(gmsh.model.geo.addCurveLoop(self.l_iso_core_pri))
-                    self.plane_surface_iso_core_pri.append(gmsh.model.geo.addPlaneSurface(self.curve_loop_iso_core_pri))
+                    self.curve_loop_iso_core = []
+                    self.plane_surface_iso_core = []
+                    for iso in self.l_iso_core:
+                        cl = gmsh.model.geo.addCurveLoop(iso)
+                        self.curve_loop_iso_core.append(cl)
+                        self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
 
                 # Pri to Sec
                 if self.component.two_d_axi.p_iso_pri_sec: # Check if list is not empty
@@ -3401,11 +3504,10 @@ class MagneticComponent:
                 # Need flatten list of all! conductors
                 flatten_curve_loop_cond = [j for sub in self.curve_loop_cond for j in sub]
 
-
                 # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
                 # The other curve loops represent holes in the surface -> For each conductor as well as each isolation
                 self.plane_surface_air.append(
-                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond + self.curve_loop_iso_core_pri + self.curve_loop_iso_pri_sec))
+                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond + self.curve_loop_iso_core + self.curve_loop_iso_pri_sec))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Boundary
@@ -3541,7 +3643,7 @@ class MagneticComponent:
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Air, air_gaps and iso (since isolation is handled as air, as well as the air gaps)
-            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core_pri + self.plane_surface_iso_pri_sec
+            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core + self.plane_surface_iso_pri_sec
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=1000)
             # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
 
@@ -3722,7 +3824,7 @@ class MagneticComponent:
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Isolations
             # TODO Currently isolations can only have the same material
-            self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_pri_sec + self.plane_surface_iso_core_pri)
+            self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_pri_sec + self.plane_surface_iso_core)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Boundary
