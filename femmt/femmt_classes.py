@@ -288,7 +288,13 @@ class MagneticComponent:
             "thermal_conductivity_dict": thermal_conductivity,
             "boundary_temperatures": boundary_temperatures,
             "boundary_flags": boundary_flags,
-            "boundary_physical_groups": self.mesh.thermal_boundary_ps_groups,
+            "boundary_physical_groups": {
+                "top": self.mesh.thermal_boundary_ps_groups[0],
+                "top_right": self.mesh.thermal_boundary_ps_groups[1],
+                "right": self.mesh.thermal_boundary_ps_groups[2],
+                "bot_right": self.mesh.thermal_boundary_ps_groups[3],
+                "bot": self.mesh.thermal_boundary_ps_groups[4]
+            },
             "core_area": core_area,
             "conductor_radii": wire_radii,
             "show_results": show_results,
