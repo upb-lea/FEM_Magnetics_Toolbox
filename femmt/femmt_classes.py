@@ -140,9 +140,9 @@ class MagneticComponent:
         self.core.steinmetz_loss = 0
         self.core.generalized_steinmetz_loss = 0
         self.Ipeak = None
-        self.ki = None
-        self.alpha = None
-        self.beta = None
+        # self.ki = None
+        # self.alpha = None
+        # self.beta = None
         self.t_rise = None
         self.t_fall = None
         self.f_switch = None
@@ -4023,9 +4023,9 @@ class MagneticComponent:
             text_file.write(f"Flag_Conducting_Core = 0;\n")
 
         if self.core.steinmetz_loss:
-            text_file.write(f"ki = {self.ki};\n")
-            text_file.write(f"alpha = {self.alpha};\n")
-            text_file.write(f"beta = {self.beta};\n")
+            text_file.write(f"ki = {self.core.ki};\n")
+            text_file.write(f"alpha = {self.core.alpha};\n")
+            text_file.write(f"beta = {self.core.beta};\n")
         if self.core.generalized_steinmetz_loss:
             text_file.write(f"t_rise = {self.t_rise};\n")
             text_file.write(f"t_fall = {self.t_fall};\n")
@@ -5048,10 +5048,7 @@ class MagneticComponent:
         self.write_log()
         if show_results:
             self.visualize()
-        else:
-            raise Exception("Geometry is not valid. Mesh cannt be generated.")
         # results =
-
         # return results
 
     def get_inductances(self, I0, op_frequency=0, skin_mesh_factor=1, visualize=False):

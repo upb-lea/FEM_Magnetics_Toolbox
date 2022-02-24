@@ -32,7 +32,7 @@ if component == "inductor":
 
     geo.create_model(freq=100000, visualize_before=False, do_meshing=True, save_png=False)
 
-    geo.single_simulation(freq=100000, current=[1])
+    geo.single_simulation(freq=100000, current=[1], show_results=False)
 
     # Excitation Sweep Example
     # fs = [0, 10000, 30000, 60000, 100000, 150000]
@@ -171,4 +171,3 @@ if component == "integrated_transformer":
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 180])
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
-

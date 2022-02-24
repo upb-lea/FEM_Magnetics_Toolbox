@@ -27,7 +27,7 @@ def core_database() -> Dict:
     PQ4040_dict = {
         "core_h": 39.8e-3,
         "core_w": 14.5e-3,
-        "window_h": 29.5e-3 ,
+        "window_h": 29.5e-3,
         "window_w": 11.05e-3,
     }
     core_dict["PQ4040"] = PQ4040_dict
