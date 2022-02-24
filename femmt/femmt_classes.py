@@ -5144,11 +5144,6 @@ class MagneticComponent:
         self.write_log()
         if show_results:
             self.visualize()
-        else:
-            raise Exception("Geometry is not valid. Mesh cannt be generated.")
-        # results =
-
-        # return results
 
     def get_inductances(self, I0, op_frequency=0, skin_mesh_factor=1, visualize=False):
         """
