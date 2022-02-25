@@ -485,6 +485,7 @@ class MagneticComponent:
 
         def update(self,
                    re_mu_rel: float = 3000,
+                   phi_mu_deg: float = None,
                    im_mu_rel: float = 2500 * np.sin(20 * np.pi / 180),
                    im_epsilon_rel: float = 6e+4 * np.sin(20 * np.pi / 180),
                    material=95_100,
@@ -527,6 +528,7 @@ class MagneticComponent:
             # Material Properties
             self.non_linear = non_linear
             self.re_mu_rel = re_mu_rel
+            self.phi_mu_deg = phi_mu_deg
             self.im_mu_rel = im_mu_rel
             self.im_epsilon_rel = im_epsilon_rel
             self.material = material
@@ -3598,11 +3600,7 @@ class MagneticComponent:
                     if '-nopopup' not in sys.argv:
                         gmsh.fltk.initialize()
 
-                    x = np.random.rand()
-                    x_str = str(x)[-5]
-
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
-                    gmsh.write(os.path.join(self.component.mesh_folder_path, x_str+"hybrid_color.png"))  # save png
                     gmsh.write(self.component.hybrid_color_mesh_file)  # save png
 
                     # gmsh.model.mesh.generate(2)
@@ -4188,32 +4186,28 @@ class MagneticComponent:
             # Reduced Frequency
             text_file.write(f"Rr{num + 1} = {self.red_freq[num]};\n")
 
-        """
-        # Coordinates of the rectangular winding window
-        if self.dimensionality == "2D":
-            text_file.write("Xw1 = %s;\n" % self.two_d_axi.p_window[4, 0])
-            text_file.write("Xw2 = %s;\n" % self.two_d_axi.p_window[5, 0])
-        else:
-            raise NotImplementedError("Only axi-symmetric case implemented :(")
-        """
         # -- Materials --
 
         # Nature Constants
         text_file.write(f"mu0 = 4.e-7 * Pi;\n")
         text_file.write(f"nu0 = 1 / mu0;\n")
+        text_file.write(f"e0 = 8.8541878128e-12;\n")
 
         # Material Properties
         # Conductor Material
-        text_file.write(f"SigmaCu = {self.windings[0].cond_sigma};\n")
+        text_file.write(f"SigmaConductor = {self.windings[0].cond_sigma};\n")
 
         # Core Material
         # if self.frequency == 0:
         if self.core.non_linear:
             text_file.write(f"Flag_NL = 1;\n")
-            text_file.write(f"Core_Material = {self.core.material};\n")
+            text_file.write(f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime
         else:
             text_file.write(f"Flag_NL = 0;\n")
-            text_file.write(f"mur = {self.core.re_mu_rel};\n")
+            text_file.write(f"mur = {self.core.re_mu_rel};\n")  # mur is predefined to a fixed value
+            text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")  # loss angle for complex representation of hysteresis loss
+            text_file.write(f"mur_real = {self.core.re_mu_rel * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")  # loss angle for complex representation of hysteresis loss
+            text_file.write(f"mur_imag = {self.core.re_mu_rel * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")  # loss angle for complex representation of hysteresis loss
         # if self.frequency != 0:
         #    text_file.write(f"Flag_NL = 0;\n")
         #    text_file.write(f"mur = {self.core.re_mu_rel};\n")
@@ -4499,7 +4493,7 @@ class MagneticComponent:
         femm.mi_probdef(freq, 'meters', 'axi', 1.e-8, 0, 30)
 
         # == Materials ==
-        femm.mi_addmaterial('Ferrite', self.core.re_mu_rel, self.core.re_mu_rel, 0, 0, 0, 0, 0, 1, 0, 0, 0)
+        femm.mi_addmaterial('Ferrite', self.core.re_mu_rel, self.core.re_mu_rel, 0, 0, 0, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         if self.windings[0].conductor_type == "litz":
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, sigma_cu, 0, 0, 1, 5, 0, 0, self.windings[0].n_strands,

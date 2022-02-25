@@ -3,11 +3,9 @@
 // ----------------------
 Include "Parameter.pro";
 Include "postquantities.pro";
-
 Include "BH.pro";
 Include "mu_imag.pro";
 ExtGmsh = ".pos";
-
 
 
 // ----------------------
@@ -22,10 +20,7 @@ Flag_Circuit            = Flag_ImposedVoltage;
 // 1 means full zylinder
 SymFactor               = 1. ;
 CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
-e_0                     = 8.8541878128e-12;
 
-
-sigma_core              = e_r_imag * 2*Pi*Freq * e_0;
 
 // ----------------------
 // Physical numbers
@@ -173,10 +168,11 @@ Function {
 
 
   // Material Properties
+  sigma_core              = e_r_imag * 2*Pi*Freq * e0;
 
   // sigma: conductivity (= imaginary part of complex permitivity)
   //rho[] = 1/sigma[];
-  sigma[#{Winding1, Winding2}] = SigmaCu ;
+  sigma[#{Winding1, Winding2}] = SigmaConductor ;
   If(Flag_Conducting_Core)
     sigma[#{Iron}] = sigma_core;
   EndIf
@@ -192,11 +188,14 @@ Function {
   // Hysteresis Loss
   // Imaginary Part Of Permeability
   // Liste von Lukas hinterlegen
-  mu_imag[ #{Iron} ] = mu0 * f_N95_mu_imag[$1, $2];
+  //mu_imag[ #{Iron} ] = mu0 * f_N95_mu_imag[$1, $2];
+  mu_imag[ #{Iron} ] = (mu0 * mur)^(0.5);
   //mu_imag[#{Iron}] = mu0 * mu_r_imag;
 
   If(!Flag_NL)
-    nu[#{Iron}]   = nu0/mur;
+    // nu[#{Iron}]   = nu0/mur;
+    mu[#{Iron}]   = Complex[mu0*mur_real, mu0*mur_imag] ;  // changed 25022022
+    nu[#{Iron}]   = 1/Complex[mu0*mur_real, mu0*mur_imag] ;  // changed 25022022
   Else
     //nu[ #{Iron} ] = nu_3kW[$1] ;
     //h[ #{Iron} ]  = h_3kW[$1];
@@ -249,7 +248,7 @@ Function {
     prox_nui_1[]  = InterpolationLinear[$1]{ prox_nui_list_1() } ;
     nu[#{StrandedWinding1}] = nu0*Complex[prox_nur_1[Rr1], prox_nui_1[Rr1]*Fill1*Rr1^2/2];
     nuOm[#{StrandedWinding1}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
-    kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / SigmaCu / Fill1 ;
+    kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / SigmaConductor / Fill1 ;
   EndIf
 
   If(Flag_Transformer)
@@ -270,7 +269,7 @@ Function {
       // Formula from Paper:
       nu[#{StrandedWinding2}] = nu0*Complex[prox_nur_2[Rr2], prox_nui_2[Rr2]*Fill2*Rr2^2/2];
       nuOm[#{StrandedWinding2}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
-      kkk[#{StrandedWinding2}] =  SymFactor * skin_rhor_2[Rr2] / SigmaCu / Fill2 ;
+      kkk[#{StrandedWinding2}] =  SymFactor * skin_rhor_2[Rr2] / SigmaConductor / Fill2 ;
     EndIf
   EndIf
 
@@ -456,6 +455,8 @@ PostProcessing {
 
       { Name h ; Value { Term { [ nu[{d a}]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
       { Name Magh ; Value { Term { [ Norm[ nu[{d a}]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Mag_h_real ; Value { Term { [ Norm[ Re [ nu[{d a}]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Mag_h_imag ; Value { Term { [ Norm[ Im [ nu[{d a}]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
 
 
 
@@ -466,6 +467,8 @@ PostProcessing {
       { Name b_pol ; Value { Term { [ Norm [ Re [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name im_b_pol ; Value { Term { [ Norm [ Im [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name Magb ; Value { Term { [ Norm[ {d a} ] ]; In Domain ; Jacobian Vol ; } } }
+      { Name Mag_b_real ; Value { Term { [ Norm[ Re [ {d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Mag_b_imag ; Value { Term { [ Norm[ Im [ {d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
 
 
 
@@ -575,11 +578,11 @@ PostProcessing {
       // Hysteresis Losses (According To Complex Core Parameters)
 
       { Name p_hyst ; Value { Integral {
-        [ 0.5 * CoefGeo * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
-        In Iron ; Jacobian Vol ; Integration II ;} } }
+        [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[{d a}] * {d a}] ] ;
+        In Iron ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
 
       { Name p_hyst_density ; Value { Integral {
-        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[{d a}, Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
+        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[Norm[{d a}], Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }
 
 
