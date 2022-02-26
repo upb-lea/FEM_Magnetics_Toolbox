@@ -119,17 +119,18 @@ class MainWindow(QMainWindow):
         """
         md_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
         md_core_material_options = ['N95']
-        md_winding_material_options = ['Copper']
+        md_winding_material_options = [key for key in fmt.wire_material_database()]
         md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         md_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"], self.translation_dict['implicit_strands_number']]
         md_air_gap_method_options = [self.translation_dict["percent"], self.translation_dict['manually']]
         md_air_gap_counts_options = ['0', '1', '2', '3', '4', '5']
         md_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
         md_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
-        md_core_geometry_options.insert(0, '')
+        md_core_geometry_options.insert(0, 'Manual')
 
         md_winding_litz_material_options = [key for key in fmt.litz_database()]
-        md_winding_litz_material_options.insert(0, '')
+        md_winding_litz_material_options.insert(0, 'Manual')
+
 
         for option in md_simulation_type_options:
             self.md_simulation_type_comboBox.addItem(option)
@@ -247,25 +248,25 @@ class MainWindow(QMainWindow):
         core_dict = fmt.core_database()
         core_type = self.md_core_geometry_comboBox.currentText()
 
-        if core_type != '':
+        if core_type != 'Manual':
             core = core_dict[core_type]
 
             self.md_core_width_lineEdit.setText(str(core["core_w"]))
             self.md_window_height_lineEdit.setText(str(core["window_h"]))
             self.md_window_width_lineEdit.setText(str(core["window_w"]))
-            self.md_core_width_lineEdit.setEnabled(True)
-            self.md_window_height_lineEdit.setEnabled(True)
-            self.md_window_width_lineEdit.setEnabled(True)
-        else:
             self.md_core_width_lineEdit.setEnabled(False)
             self.md_window_height_lineEdit.setEnabled(False)
             self.md_window_width_lineEdit.setEnabled(False)
+        else:
+            self.md_core_width_lineEdit.setEnabled(True)
+            self.md_window_height_lineEdit.setEnabled(True)
+            self.md_window_width_lineEdit.setEnabled(True)
 
     def md_winding1_set_litz_parameters_from_litz_database(self):
         litz_dict = fmt.litz_database()
         litz_type = self.md_winding1_litz_material_comboBox.currentText()
 
-        if litz_type != '':
+        if litz_type != 'Manual':
             litz = litz_dict[litz_type]
 
             self.md_winding1_strands_lineEdit.setText(str(litz["strands_numbers"]))
@@ -339,7 +340,7 @@ class MainWindow(QMainWindow):
     def md_winding2_set_litz_parameters_from_litz_database(self):
         litz_dict = fmt.litz_database()
         litz_type = self.md_winding2_litz_material_comboBox.currentText()
-        if litz_type != '':
+        if litz_type != 'Manual':
             litz = litz_dict[litz_type]
 
             self.md_winding2_strands_lineEdit.setText(str(litz["strands_numbers"]))
@@ -1016,7 +1017,8 @@ class MainWindow(QMainWindow):
                                                            float(self.md_isolation_core2cond_bot_lineEdit.text()),
                                                            float(self.md_isolation_core2cond_inner_lineEdit.text()),
                                                            float(self.md_isolation_core2cond_outer_lineEdit.text())],
-                                      cond_cond_isolation=[float(self.self.md_isolation_p2p_lineEdit.text())])
+                                      cond_cond_isolation=[float(self.self.md_isolation_p2p_lineEdit.text())],
+                                      conductivity_sigma=[self.md_winding1_material_comboBox.currentText()])
             elif self.md_winding1_type_comboBox.currentText() == self.translation_dict['litz']:
                 litz_para_type = ''
                 if self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_litz_radius']:
@@ -1041,7 +1043,8 @@ class MainWindow(QMainWindow):
                                                            float(self.md_isolation_core2cond_bot_lineEdit.text()),
                                                            float(self.md_isolation_core2cond_inner_lineEdit.text()),
                                                            float(self.md_isolation_core2cond_outer_lineEdit.text())],
-                                      cond_cond_isolation=[float(self.md_isolation_p2p_lineEdit.text())])
+                                      cond_cond_isolation=[float(self.md_isolation_p2p_lineEdit.text())],
+                                      conductivity_sigma=[self.md_winding1_material_comboBox.currentText()])
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
             pass
 

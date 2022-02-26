@@ -32,6 +32,14 @@ def core_database() -> Dict:
     }
     core_dict["PQ4040"] = PQ4040_dict
 
+    PQ5050_dict = {
+        "core_h": 50e-3,
+        "core_w": 20e-3,
+        "window_h": 36.1e-3,
+        "window_w": 12e-3,
+    }
+    core_dict["PQ5050"] = PQ5050_dict
+
     return core_dict
 
 def litz_database() -> Dict:
@@ -66,6 +74,26 @@ def litz_database() -> Dict:
 
     return litz_dict
 
+
+def wire_material_database() -> Dict:
+    """
+    Returns wire materials e.g. copper, aluminium in a dictionary
+
+    :return: Dict with materials and conductivity
+    :rtype: Dict
+    """
+
+    wire_material = {}
+
+    wire_material["copper"] = {
+        "sigma": 5.8e7,
+    }
+
+    wire_material["aluminium"] = {
+        "sigma": 3.7e7,
+    }
+
+    return wire_material
 
 # Static Functions
 #  Used somewhere in the Code of femmt.py

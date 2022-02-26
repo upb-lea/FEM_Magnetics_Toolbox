@@ -176,7 +176,10 @@ Function {
 
   // sigma: conductivity (= imaginary part of complex permitivity)
   //rho[] = 1/sigma[];
-  sigma[#{Winding1, Winding2}] = SigmaCu ;
+  sigma[#{Winding1}] = sigma_winding_1 ;
+  If(Flag_Transformer)
+    sigma[#{Winding2}] = sigma_winding_2 ;
+  EndIf
   If(Flag_Conducting_Core)
     sigma[#{Iron}] = sigma_core;
   EndIf
@@ -249,7 +252,7 @@ Function {
     prox_nui_1[]  = InterpolationLinear[$1]{ prox_nui_list_1() } ;
     nu[#{StrandedWinding1}] = nu0*Complex[prox_nur_1[Rr1], prox_nui_1[Rr1]*Fill1*Rr1^2/2];
     nuOm[#{StrandedWinding1}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
-    kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / SigmaCu / Fill1 ;
+    kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;
   EndIf
 
   If(Flag_Transformer)
@@ -270,7 +273,7 @@ Function {
       // Formula from Paper:
       nu[#{StrandedWinding2}] = nu0*Complex[prox_nur_2[Rr2], prox_nui_2[Rr2]*Fill2*Rr2^2/2];
       nuOm[#{StrandedWinding2}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
-      kkk[#{StrandedWinding2}] =  SymFactor * skin_rhor_2[Rr2] / SigmaCu / Fill2 ;
+      kkk[#{StrandedWinding2}] =  SymFactor * skin_rhor_2[Rr2] / sigma_winding_2 / Fill2 ;
     EndIf
   EndIf
 

@@ -2,8 +2,8 @@
 from femmt import *
 import numpy as np
 
-# component = "inductor"
-component = "transformer-interleaved"
+component = "inductor"
+# component = "transformer-interleaved"
 # component = "integrated_transformer"
 # component = "transformer"
 
@@ -20,17 +20,10 @@ if component == "inductor":
 
     geo.update_conductors(n_turns=[[1]], conductor_type=["solid"], conductor_radii=[0.0015],
                           winding=["primary"], scheme=["square"],
-                          core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001])
+                          core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001],
+                          conductivity_sigma=["copper"])
 
     geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
-
-    geo.update_conductors(n_turns=[[2]], conductor_type=["solid"], conductor_radii=[0.0015],
-                          winding=["primary"], scheme=["square"],
-                          core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001])
-
-    #geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
-
-    #geo.create_model(freq=100000, visualize_before=False, do_meshing=True, save_png=False)
 
     geo.single_simulation(freq=100000, current=[1], show_results=False)
 
@@ -59,7 +52,8 @@ if component == "transformer-interleaved":
                         ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
                         conductor_radii=[0.0011, None],
                         winding=["interleaved"], scheme=["horizontal"],
-                        core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+                        core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
+                        conductivity_sigma=["copper", "copper"])
 
     # Perform a single simulation
     geo.create_model(freq=250000, visualize_before=True)
@@ -148,7 +142,8 @@ if component == "transformer":
                         ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
                         conductor_radii=[0.0011, None],
                         winding=["primary", "secondary"], scheme=["square", "square"],
-                        core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+                        core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
+                        conductivity_sigma=["copper", "copper"])
 
 
     geo.create_model(freq=250000, visualize_before=True)
@@ -161,7 +156,8 @@ if component == "integrated_transformer":
                           litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
                           ff=[0.5, 0.5], strands_numbers=[100, 100], strand_radii=[70e-6, 70e-6],
                           winding=["interleaved", "interleaved"], scheme=["horizontal", "horizontal"],
-                          core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+                          core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
+                          conductivity_sigma=["copper", "copper"])
 
     geo.core.update(window_h=0.03, window_w=0.011)
 
