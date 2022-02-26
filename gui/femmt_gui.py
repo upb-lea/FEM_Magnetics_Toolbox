@@ -110,6 +110,65 @@ class MainWindow(QMainWindow):
         "Init controls"
         self.md_initialize_controls()
 
+        "Set Tool Tips in Definition tab"
+        self.md_core_geometry_comboBox.setToolTip("Chose a core geometry from the database. Chose 'Manual' to insert any parameters.")
+        self.md_winding1_litz_material_comboBox.setToolTip("Chose a litz from the database. Chose 'Manual' to insert any parameters")
+        self.md_winding1_implicit_litz_comboBox.setToolTip(
+            "To describe a strand, 3 arguments are sufficient. Select here which of the arguments should not be entered.")
+        self.md_winding2_implicit_litz_comboBox.setToolTip("To describe a strand, 3 arguments are sufficient. Select here which of the arguments should not be entered.")
+        self.md_winding2_litz_material_comboBox.setToolTip(
+            "Chose a litz from the database. Chose 'Manual' to insert any parameters")
+
+
+        "Set Tool Tips in exitation tab"
+        self.md_winding1_idc_lineEdit.setToolTip("DC Current")
+        self.md_winding1_ik1_lineEdit.setToolTip("Amplitude base frequency")
+        self.md_winding1_ik2_lineEdit.setToolTip("Amplitude 2 * base frequency")
+        self.md_winding1_ik3_lineEdit.setToolTip("Amplitude 3 * base frequency")
+        self.md_winding1_ik4_lineEdit.setToolTip("Amplitude 4 * base frequency")
+        self.md_winding1_ik5_lineEdit.setToolTip("Amplitude 5 * base frequency")
+        self.md_winding1_ik6_lineEdit.setToolTip("Amplitude 6 * base frequency")
+        self.md_winding1_ik7_lineEdit.setToolTip("Amplitude 7 * base frequency")
+        self.md_winding1_ik8_lineEdit.setToolTip("Amplitude 8 * base frequency")
+        self.md_winding1_pk1_lineEdit.setToolTip("Phase for base frequency")
+        self.md_winding1_pk2_lineEdit.setToolTip("Phase for 2 * base frequency")
+        self.md_winding1_pk3_lineEdit.setToolTip("Phase for 3 * base frequency")
+        self.md_winding1_pk4_lineEdit.setToolTip("Phase for 4 * base frequency")
+        self.md_winding1_pk5_lineEdit.setToolTip("Phase for 5 * base frequency")
+        self.md_winding1_pk6_lineEdit.setToolTip("Phase for 6 * base frequency")
+        self.md_winding1_pk7_lineEdit.setToolTip("Phase for 7 * base frequency")
+        self.md_winding1_pk8_lineEdit.setToolTip("Phase for 8 * base frequency")
+
+        self.md_winding2_idc_lineEdit.setToolTip("DC Current")
+        self.md_winding2_ik1_lineEdit.setToolTip("Amplitude base frequency")
+        self.md_winding2_ik2_lineEdit.setToolTip("Amplitude 2 * base frequency")
+        self.md_winding2_ik3_lineEdit.setToolTip("Amplitude 3 * base frequency")
+        self.md_winding2_ik4_lineEdit.setToolTip("Amplitude 4 * base frequency")
+        self.md_winding2_ik5_lineEdit.setToolTip("Amplitude 5 * base frequency")
+        self.md_winding2_ik6_lineEdit.setToolTip("Amplitude 6 * base frequency")
+        self.md_winding2_ik7_lineEdit.setToolTip("Amplitude 7 * base frequency")
+        self.md_winding2_ik8_lineEdit.setToolTip("Amplitude 8 * base frequency")
+        self.md_winding2_pk1_lineEdit.setToolTip("Phase for base frequency")
+        self.md_winding2_pk2_lineEdit.setToolTip("Phase for 2 * base frequency")
+        self.md_winding2_pk3_lineEdit.setToolTip("Phase for 3 * base frequency")
+        self.md_winding2_pk4_lineEdit.setToolTip("Phase for 4 * base frequency")
+        self.md_winding2_pk5_lineEdit.setToolTip("Phase for 5 * base frequency")
+        self.md_winding2_pk6_lineEdit.setToolTip("Phase for 6 * base frequency")
+        self.md_winding2_pk7_lineEdit.setToolTip("Phase for 7 * base frequency")
+        self.md_winding2_pk8_lineEdit.setToolTip("Phase for 8 * base frequency")
+
+
+        self.md_dc_checkBox.setToolTip("Enable/Disable DC current")
+        self.md_fk1_checkBox.setToolTip("Enable/Disable base frequency")
+        self.md_fk2_checkBox.setToolTip("Enable/Disable 2 * base frequency")
+        self.md_fk3_checkBox.setToolTip("Enable/Disable 3 * base frequency")
+        self.md_fk4_checkBox.setToolTip("Enable/Disable 4 * base frequency")
+        self.md_fk5_checkBox.setToolTip("Enable/Disable 5 * base frequency")
+        self.md_fk6_checkBox.setToolTip("Enable/Disable 6 * base frequency")
+        self.md_fk7_checkBox.setToolTip("Enable/Disable 7 * base frequency")
+        self.md_fk8_checkBox.setToolTip("Enable/Disable 8 * base frequency")
+
+
     def md_initialize_controls(self) -> None:
         """
         Initialize the comboboxes with pre-defined values.
