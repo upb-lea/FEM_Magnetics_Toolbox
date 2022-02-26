@@ -3612,15 +3612,10 @@ class MagneticComponent:
                     if '-nopopup' not in sys.argv:
                         gmsh.fltk.initialize()
 
-                    x = np.random.rand()
-                    x_str = str(x)[-5]
-
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
-                    gmsh.write(os.path.join(self.component.mesh_folder_path, x_str+"hybrid_color.png"))  # save png
-                    gmsh.write(self.component.hybrid_color_mesh_file)  # save png
+                    # gmsh.write(self.component.hybrid_color_mesh_file)
 
-                    # gmsh.model.mesh.generate(2)
-                # gmsh.clear()
+
 
             if do_meshing:
                 gmsh.model.mesh.generate(2)
