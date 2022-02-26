@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
 import json
 from typing import List, Union, Optional
@@ -19,6 +19,9 @@ import PIL
 #
 # from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 # from matplotlib.figure import Figure
+
+float_validator = QDoubleValidator()
+int_validator = QIntValidator()
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -110,6 +113,78 @@ class MainWindow(QMainWindow):
 
         "Init controls"
         self.md_initialize_controls()
+
+        "Set validators in Definition tab"
+        self.md_core_width_lineEdit.setValidator(float_validator)
+        self.md_window_height_lineEdit.setValidator(float_validator)
+        self.md_window_width_lineEdit.setValidator(float_validator)
+        self.md_winding1_radius_lineEdit.setValidator(float_validator)
+        self.md_winding1_strands_lineEdit.setValidator(int_validator)
+        self.md_winding1_fill_factor_lineEdit.setValidator(float_validator)
+        self.md_winding1_strand_radius_lineEdit.setValidator(float_validator)
+        self.md_winding2_radius_lineEdit.setValidator(float_validator)
+        self.md_winding2_strands_lineEdit.setValidator(int_validator)
+        self.md_winding2_fill_factor_lineEdit.setValidator(float_validator)
+        self.md_winding2_strand_radius_lineEdit.setValidator(float_validator)
+        self.md_winding1_turns_lineEdit.setValidator(int_validator)
+        self.md_winding2_turns_lineEdit.setValidator(int_validator)
+        self.md_air_gap_1_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_2_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_3_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_4_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_5_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_1_position_lineEdit.setValidator(float_validator)
+        self.md_air_gap_2_position_lineEdit.setValidator(float_validator)
+        self.md_air_gap_3_position_lineEdit.setValidator(float_validator)
+        self.md_air_gap_4_position_lineEdit.setValidator(float_validator)
+        self.md_air_gap_5_position_lineEdit.setValidator(float_validator)
+        self.md_isolation_p2p_lineEdit.setValidator(float_validator)
+        self.md_isolation_s2s_lineEdit.setValidator(float_validator)
+        self.md_isolation_p2s_lineEdit.setValidator(float_validator)
+        self.md_isolation_core2cond_top_lineEdit.setValidator(float_validator)
+        self.md_isolation_core2cond_bot_lineEdit.setValidator(float_validator)
+        self.md_isolation_core2cond_inner_lineEdit.setValidator(float_validator)
+        self.md_isolation_core2cond_outer_lineEdit.setValidator(float_validator)
+
+        "Set Validators in Excitation Tab"
+        self.md_winding1_idc_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik1_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik2_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik3_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik4_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik5_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik6_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik7_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik8_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk1_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk2_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk3_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk4_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk5_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk6_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk7_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk8_lineEdit.setValidator(float_validator)
+
+        self.md_winding2_idc_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik1_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik2_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik3_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik4_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik5_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik6_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik7_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik8_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk1_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk2_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk3_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk4_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk5_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk6_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk7_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk8_lineEdit.setValidator(float_validator)
+
+        self.md_base_frequency_lineEdit.setValidator(int_validator)
+
 
         "Set Tool Tips in Definition tab"
         self.md_core_geometry_comboBox.setToolTip("Chose a core geometry from the database. Chose 'Manual' to insert any parameters.")
