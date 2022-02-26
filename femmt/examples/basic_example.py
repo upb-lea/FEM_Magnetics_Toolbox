@@ -2,8 +2,8 @@
 from femmt import *
 import numpy as np
 
-component = "inductor"
-# component = "transformer-interleaved"
+# component = "inductor"
+component = "transformer-interleaved"
 # component = "integrated_transformer"
 # component = "transformer"
 
@@ -28,11 +28,12 @@ if component == "inductor":
                           winding=["primary"], scheme=["square"],
                           core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001])
 
-    geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
+    #geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
 
-    geo.create_model(freq=100000, visualize_before=False, do_meshing=True, save_png=False)
+    #geo.create_model(freq=100000, visualize_before=False, do_meshing=True, save_png=False)
 
-    geo.single_simulation(freq=100000, current=[1])
+    geo.single_simulation(freq=100000, current=[1], show_results=False)
+
 
     # Excitation Sweep Example
     # fs = [0, 10000, 30000, 60000, 100000, 150000]
@@ -78,7 +79,13 @@ if component == "transformer-interleaved":
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
             "air": 0.0263,
-            "case": 0.3, # epoxy resign
+            "case": { # epoxy resign
+                "top": 0.3,
+                "top_right": 0.3,
+                "right": 0.3,
+                "bot_right": 0.3,
+                "bot": 0.3
+            },
             "core": 5, # ferrite
             "winding": 400, # copper
             "air_gaps": 180, # aluminium nitride
@@ -171,4 +178,3 @@ if component == "integrated_transformer":
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 180])
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
-
