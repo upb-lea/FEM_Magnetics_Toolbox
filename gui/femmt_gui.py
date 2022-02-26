@@ -1202,11 +1202,26 @@ class MainWindow(QMainWindow):
         # Simulation
         # -----------------------------------------------
         geo.create_model(freq=int(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
-        geo.single_simulation(freq=int(self.md_base_frequency_lineEdit.text()), current=[float(self.md_winding1_ik1_lineEdit.text())])
 
         winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
 
-        #geo.excitation_sweep(self, winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list)
+
+        if len(winding1_frequency_list) == 1:
+            geo.single_simulation(freq=winding1_frequency_list[0], current=winding1_amplitude_list)
+
+        else:
+            amplitude_list = []
+
+            print(f"{winding1_amplitude_list = }")
+            for amplitude_value in winding1_amplitude_list:
+                amplitude_list.append([amplitude_value])
+            phase_rad_list = []
+            for phase_value in winding1_phi_rad_list:
+                phase_rad_list.append([phase_value])
+
+
+
+            geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
 
         # -----------------------------------------------
         # Read back results
