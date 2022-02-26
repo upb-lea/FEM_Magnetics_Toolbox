@@ -10,6 +10,7 @@ import femmt as fmt
 import json
 from typing import List, Union, Optional
 import os
+import PIL
 
 # import sys
 # import matplotlib
@@ -210,39 +211,38 @@ class MainWindow(QMainWindow):
         self.md_isolation_p2s_lineEdit.setEnabled(status)
 
     def md_gmsh_pre_visualisation(self):
-        # geo = self.md_setup_geometry()
-        # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
-        # geo.mesh.generate_hybrid_mesh(do_meshing=False)
-        #
-        # pixmap = QPixmap(os.path.join(geo.mesh_folder_path, "geometry_preview.jpg"))
-        # self.md_graphic_winding_1.setPixmap(pixmap)
-        # self.md_graphic_winding_1.setMask(pixmap.mask())
-        # self.md_graphic_winding_1.show()
+        geo = self.md_setup_geometry()
+        geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
+        image_pre_visualisation = PIL.Image.open(geo.hybrid_color_visualize_file)
 
-        pixmap = QPixmap("./geometry_preview.jpg")
+        px = image_pre_visualisation.load()
+        image_width, image_height = image_pre_visualisation.size
+
+        for cut_x_left in range(0, image_width):
+            if px[cut_x_left, image_height / 2] != (255, 255, 255):
+                cut_x_left -= 1
+                break
+        for cut_x_right in reversed(range(0, image_width)):
+            if px[cut_x_right, image_height / 2] != (255, 255, 255):
+                cut_x_right += 1
+                break
+
+        for cut_y_bot in reversed(range(0, image_height)):
+            if px[image_width / 2, cut_y_bot] != (255, 255, 255):
+                cut_y_bot += 1
+                break
+        for cut_y_top in range(0, image_height):
+            if px[image_width / 2, cut_y_top] != (255, 255, 255):
+                cut_y_top -= 1
+                break
+
+        im_crop = image_pre_visualisation.crop((cut_x_left, cut_y_top, cut_x_right, cut_y_bot))
+        im_crop.save(geo.hybrid_color_visualize_file, quality=95)
+
+        pixmap = QPixmap(geo.hybrid_color_visualize_file)
         self.md_gmsh_visualisation_QLabel.setPixmap(pixmap)
         self.md_gmsh_visualisation_QLabel.setMask(pixmap.mask())
         self.md_gmsh_visualisation_QLabel.show()
-
-
-        # geo = fmt.MagneticComponent(component_type="inductor")
-        # geo.visualize_before = False
-        #
-        # # Update Geometry
-        # geo.core.update(window_h=0.03, window_w=0.011)
-        #
-        # # geo.air_gaps.update(method="percent", n_air_gaps=4, air_gap_h=[0.0005, 0.0005, 0.0005, 0.0005],
-        # #                     position_tag=[0, 0, 0, 0], air_gap_position=[20, 40, 60, 80])
-        # geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
-        #
-        # geo.update_conductors(n_turns=[[14]], conductor_type=["litz"], conductor_radii=[0.0015],
-        #                       litz_para_type=['implicit_litz_radius'],
-        #                       ff=[0.6], strands_numbers=[600], strand_radii=[35.5e-6],
-        #                       winding=["primary"], scheme=["square"],
-        #                       core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
-        #
-        # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
-        # geo.mesh.generate_hybrid_mesh(do_meshing=False)
 
     def md_set_core_geometry_from_database(self):
         core_dict = fmt.core_database()
