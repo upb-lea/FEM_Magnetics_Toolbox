@@ -328,9 +328,9 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
         print(f"{f0 = }")
         print(f"{Fs = }")
         print(f"{sample_factor = }")
-        print(f"f_out = {np.around(f_out, 0)}")
-        print(f"x_out = {np.around(x_out, 1)}")
-        print(f"phi_rad_out = {np.around(phi_rad_out, 1)}")
+        print(f"f_out = {np.around(f_out, decimals=0)}")
+        print(f"x_out = {np.around(x_out, decimals=3)}")
+        print(f"phi_rad_out = {np.around(phi_rad_out, decimals=3)}")
 
         reconstructed_signal = 0
         for i_range in range(len(f_out)):
