@@ -462,7 +462,7 @@
                   </property>
                   <layout class="QGridLayout" name="gridLayout_10">
                    <item row="4" column="0">
-                    <widget class="QLabel" name="label_69">
+                    <widget class="QLabel" name="md_winding2_scheme_label">
                      <property name="text">
                       <string>Winding Scheme Winding 2</string>
                      </property>
@@ -472,7 +472,7 @@
                     <widget class="QComboBox" name="md_winding1_scheme_comboBox"/>
                    </item>
                    <item row="1" column="0">
-                    <widget class="QLabel" name="label_68">
+                    <widget class="QLabel" name="md_winding1_scheme_label">
                      <property name="text">
                       <string>Winding Scheme Winding 1</string>
                      </property>
@@ -489,14 +489,14 @@
                     </widget>
                    </item>
                    <item row="0" column="0">
-                    <widget class="QLabel" name="label_8">
+                    <widget class="QLabel" name="md_winding1_turns_label">
                      <property name="text">
                       <string>Number Turns Winding 1</string>
                      </property>
                     </widget>
                    </item>
                    <item row="3" column="0">
-                    <widget class="QLabel" name="label_14">
+                    <widget class="QLabel" name="md_winding2_turns_label">
                      <property name="text">
                       <string>Number Turns Winding 2</string>
                      </property>
@@ -671,7 +671,7 @@
                     <widget class="QLineEdit" name="md_isolation_s2s_lineEdit"/>
                    </item>
                    <item row="1" column="0">
-                    <widget class="QLabel" name="label_57">
+                    <widget class="QLabel" name="md_isolation_p2s_label">
                      <property name="text">
                       <string>P2S [m]</string>
                      </property>
@@ -685,14 +685,14 @@
                     </widget>
                    </item>
                    <item row="0" column="3">
-                    <widget class="QLabel" name="label_55">
+                    <widget class="QLabel" name="md_isolation_s2s_label">
                      <property name="text">
                       <string>S2S [m]</string>
                      </property>
                     </widget>
                    </item>
                    <item row="0" column="0">
-                    <widget class="QLabel" name="label_53">
+                    <widget class="QLabel" name="md_isolation_p2p_label">
                      <property name="text">
                       <string>P2P [m]</string>
                      </property>
