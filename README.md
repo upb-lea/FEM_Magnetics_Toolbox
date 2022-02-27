@@ -66,7 +66,7 @@ There is a first preview for a GUI. Installing this is a bit cumbersome at first
 * Download the complete repository via `Code` -> `Download ZIP` and unpack it.
 * install the development version of femmt as described above
 * run python `downloads/path-to_femmt/femmt/gui/femmt_gui.py`
-![](https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/femmt_gui_definition.png.png?raw=true)
+![](https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/femmt_gui_definition.png?raw=true)
 
 ## 5. Roadmap
 Planned features in 2021
