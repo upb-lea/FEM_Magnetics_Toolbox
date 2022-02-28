@@ -359,7 +359,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
-    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=1.0, isolation_deltas = None):
+    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=None, isolation_deltas = None):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
@@ -384,8 +384,8 @@ class MagneticComponent:
                 self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
             for i in range(0, self.n_windings):
                 if self.windings[i].conductor_type == "solid":
-                    self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor])
-                    self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor
+                    self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy]) #* self.mesh.skin_mesh_factor])
+                    self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy  # * self.mesh.skin_mesh_factor
                 elif self.windings[i].conductor_type == "litz":
                     self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
@@ -431,7 +431,7 @@ class MagneticComponent:
         """
 
         def __init__(self):
-            self.cond_sigma = 5.8e7  # perfect copper
+            self.cond_sigma = None
             self.turns = None
             self.conductor_type = None  # List of possible conductor types
             self.ff = None
@@ -710,7 +710,7 @@ class MagneticComponent:
                           scheme: List = None, conductor_radii: List = None, litz_para_type: List = None,
                           ff: List = None, strands_numbers: List = None, strand_radii: List = None,
                           thickness: List = None, wrap_para: List = None, cond_cond_isolation: List = None,
-                          core_cond_isolation: List = None) -> None:
+                          core_cond_isolation: List = None, conductivity_sigma: List = None) -> None:
         """
         This Method allows the user to easily update/initialize the Windings in terms of their conductors and
         arrangement.
@@ -769,6 +769,8 @@ class MagneticComponent:
         :type cond_cond_isolation: List
         :param core_cond_isolation: Isolation between windings and the core, e.g. [windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
         :type core_cond_isolation: List
+        :param conductivity_sigma: electrical conductivity (sigma) of conductor, e.g. [cond_sigma_primary, cond_sigma_secondary]
+        :type conductivity_sigma: List
         :return: None
         :rtype: None
 
@@ -792,6 +794,8 @@ class MagneticComponent:
         >>>             core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
 
         """
+
+        # list initialize to avoid mutable lists.
         n_turns = n_turns or []
         parallel = parallel or []
         conductor_type = conductor_type or []
@@ -806,6 +810,7 @@ class MagneticComponent:
         wrap_para = wrap_para or []
         cond_cond_isolation = cond_cond_isolation or []
         core_cond_isolation = core_cond_isolation or []
+        conductivity_sigma = conductivity_sigma or []
 
         print(f"Update the conductors...\n"
               f"---")
@@ -854,6 +859,7 @@ class MagneticComponent:
         # isolation parameters as lists:
         self.isolation.core_cond = core_cond_isolation
         self.isolation.cond_cond = cond_cond_isolation
+
 
         # - - - - - - - - - - - - - - - - - Definition of the Conductor Parameters - - - - - - - - - - - - - - - - - - -
         # self.n_windings is implied by component type
@@ -908,6 +914,14 @@ class MagneticComponent:
                 self.windings[i].conductor_radius = 1  # revisit
                 # Surface of the litz approximated hexagonal cell
                 # self.a_cell = np.pi * self.conductor_radius**2  # * self.ff
+
+            # assign conductivity to the windings (e.g. copper or aluminium)
+            dict_material_database = wire_material_database()
+
+            if conductivity_sigma[i] in list(dict_material_database.keys()):
+                self.windings[i].cond_sigma = dict_material_database[conductivity_sigma[i]]["sigma"]
+            else:
+                self.windings[i].cond_sigma = conductivity_sigma[i]
 
     def update_litz_configuration(self, num=0, litz_parametrization_type='implicit_ff', strand_radius=None, ff=None,
                                   conductor_radius=None, n_strands=None):
@@ -3603,10 +3617,8 @@ class MagneticComponent:
                         gmsh.fltk.initialize()
 
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
-                    gmsh.write(self.component.hybrid_color_mesh_file)  # save png
+                    # gmsh.write(self.component.hybrid_color_mesh_file)  # save png
 
-                    # gmsh.model.mesh.generate(2)
-                # gmsh.clear()
 
             if do_meshing:
                 gmsh.model.mesh.generate(2)
@@ -3934,7 +3946,7 @@ class MagneticComponent:
 
             gmsh.write(self.component.thermal_mesh_file)
 
-        def mesh(self, frequency=None, skin_mesh_factor=1):
+        def mesh(self, frequency=None, skin_mesh_factor=None):
             self.component.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
             if self.component.valid:
                 self.generate_hybrid_mesh()
@@ -4091,8 +4103,12 @@ class MagneticComponent:
 
     def write_electro_magnetic_parameter_pro(self):
         """
+        Write materials and other parameters to the "Parameter.pro" file.
+        This file is generated by python and is read by gmsh to hand over some parameters.
 
-        :return:
+        Source for the parameters is the MagneticComponent object.
+        :return: None
+        :rtype: None
         """
         text_file = open(os.path.join(self.electro_magnetic_folder_path, "Parameter.pro"), "w")
 
@@ -4186,6 +4202,10 @@ class MagneticComponent:
             # Reduced Frequency
             text_file.write(f"Rr{num + 1} = {self.red_freq[num]};\n")
 
+            # Material Properties
+            # Conductor Material
+            text_file.write(f"sigma_winding_{num + 1} = {self.windings[num].cond_sigma};\n")
+
         # -- Materials --
 
         # Nature Constants
@@ -4194,8 +4214,6 @@ class MagneticComponent:
         text_file.write(f"e0 = 8.8541878128e-12;\n")
 
         # Material Properties
-        # Conductor Material
-        text_file.write(f"SigmaConductor = {self.windings[0].cond_sigma};\n")
 
         # Core Material
         # if self.frequency == 0:

@@ -5,11 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
 import json
 from typing import List, Union, Optional
 import os
+import PIL
 
 # import sys
 # import matplotlib
@@ -18,6 +19,32 @@ import os
 #
 # from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 # from matplotlib.figure import Figure
+
+float_validator = QDoubleValidator()
+int_validator = QIntValidator()
+
+
+def comma_str_to_point_float(input_str: str) -> float:
+    """
+    Workaround to convert a comma (depends on the user input) in a point (needed for python)
+
+    :param input_str: input string
+    :type input_str: str
+    :return: converts comma to point and returns a float
+    :rtype: float
+    """
+    output = ""
+    for letter in input_str:
+        if letter != ",":
+            output += letter
+        else:
+            output += "."
+
+    if output == "":
+        output = 0
+
+    return float(output)
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -110,6 +137,137 @@ class MainWindow(QMainWindow):
         "Init controls"
         self.md_initialize_controls()
 
+        "Set validators in Definition tab"
+        self.md_core_width_lineEdit.setValidator(float_validator)
+        self.md_window_height_lineEdit.setValidator(float_validator)
+        self.md_window_width_lineEdit.setValidator(float_validator)
+        self.md_winding1_radius_lineEdit.setValidator(float_validator)
+        self.md_winding1_strands_lineEdit.setValidator(int_validator)
+        self.md_winding1_fill_factor_lineEdit.setValidator(float_validator)
+        self.md_winding1_strand_radius_lineEdit.setValidator(float_validator)
+        self.md_winding2_radius_lineEdit.setValidator(float_validator)
+        self.md_winding2_strands_lineEdit.setValidator(int_validator)
+        self.md_winding2_fill_factor_lineEdit.setValidator(float_validator)
+        self.md_winding2_strand_radius_lineEdit.setValidator(float_validator)
+        self.md_winding1_turns_lineEdit.setValidator(int_validator)
+        self.md_winding2_turns_lineEdit.setValidator(int_validator)
+        self.md_air_gap_1_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_2_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_3_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_4_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_5_length_lineEdit.setValidator(float_validator)
+        self.md_air_gap_1_position_lineEdit.setValidator(float_validator)
+        self.md_air_gap_2_position_lineEdit.setValidator(float_validator)
+        self.md_air_gap_3_position_lineEdit.setValidator(float_validator)
+        self.md_air_gap_4_position_lineEdit.setValidator(float_validator)
+        self.md_air_gap_5_position_lineEdit.setValidator(float_validator)
+        self.md_isolation_p2p_lineEdit.setValidator(float_validator)
+        self.md_isolation_s2s_lineEdit.setValidator(float_validator)
+        self.md_isolation_p2s_lineEdit.setValidator(float_validator)
+        self.md_isolation_core2cond_top_lineEdit.setValidator(float_validator)
+        self.md_isolation_core2cond_bot_lineEdit.setValidator(float_validator)
+        self.md_isolation_core2cond_inner_lineEdit.setValidator(float_validator)
+        self.md_isolation_core2cond_outer_lineEdit.setValidator(float_validator)
+
+        "Set Validators in Excitation Tab"
+        self.md_winding1_idc_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik1_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik2_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik3_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik4_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik5_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik6_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik7_lineEdit.setValidator(float_validator)
+        self.md_winding1_ik8_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk1_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk2_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk3_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk4_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk5_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk6_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk7_lineEdit.setValidator(float_validator)
+        self.md_winding1_pk8_lineEdit.setValidator(float_validator)
+
+        self.md_winding2_idc_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik1_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik2_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik3_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik4_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik5_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik6_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik7_lineEdit.setValidator(float_validator)
+        self.md_winding2_ik8_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk1_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk2_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk3_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk4_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk5_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk6_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk7_lineEdit.setValidator(float_validator)
+        self.md_winding2_pk8_lineEdit.setValidator(float_validator)
+
+        self.md_base_frequency_lineEdit.setValidator(int_validator)
+
+
+        "Set Tool Tips in Definition tab"
+        self.md_core_geometry_comboBox.setToolTip("Chose a core geometry from the database. Chose 'Manual' to insert any parameters.")
+        self.md_winding1_litz_material_comboBox.setToolTip("Chose a litz from the database. Chose 'Manual' to insert any parameters")
+        self.md_winding1_implicit_litz_comboBox.setToolTip(
+            "To describe a strand, 3 arguments are sufficient. Select here which of the arguments should not be entered.")
+        self.md_winding2_implicit_litz_comboBox.setToolTip("To describe a strand, 3 arguments are sufficient. Select here which of the arguments should not be entered.")
+        self.md_winding2_litz_material_comboBox.setToolTip(
+            "Chose a litz from the database. Chose 'Manual' to insert any parameters")
+
+
+        "Set Tool Tips in exitation tab"
+        self.md_winding1_idc_lineEdit.setToolTip("DC Current")
+        self.md_winding1_ik1_lineEdit.setToolTip("Amplitude base frequency")
+        self.md_winding1_ik2_lineEdit.setToolTip("Amplitude 2 * base frequency")
+        self.md_winding1_ik3_lineEdit.setToolTip("Amplitude 3 * base frequency")
+        self.md_winding1_ik4_lineEdit.setToolTip("Amplitude 4 * base frequency")
+        self.md_winding1_ik5_lineEdit.setToolTip("Amplitude 5 * base frequency")
+        self.md_winding1_ik6_lineEdit.setToolTip("Amplitude 6 * base frequency")
+        self.md_winding1_ik7_lineEdit.setToolTip("Amplitude 7 * base frequency")
+        self.md_winding1_ik8_lineEdit.setToolTip("Amplitude 8 * base frequency")
+        self.md_winding1_pk1_lineEdit.setToolTip("Phase for base frequency")
+        self.md_winding1_pk2_lineEdit.setToolTip("Phase for 2 * base frequency")
+        self.md_winding1_pk3_lineEdit.setToolTip("Phase for 3 * base frequency")
+        self.md_winding1_pk4_lineEdit.setToolTip("Phase for 4 * base frequency")
+        self.md_winding1_pk5_lineEdit.setToolTip("Phase for 5 * base frequency")
+        self.md_winding1_pk6_lineEdit.setToolTip("Phase for 6 * base frequency")
+        self.md_winding1_pk7_lineEdit.setToolTip("Phase for 7 * base frequency")
+        self.md_winding1_pk8_lineEdit.setToolTip("Phase for 8 * base frequency")
+
+        self.md_winding2_idc_lineEdit.setToolTip("DC Current")
+        self.md_winding2_ik1_lineEdit.setToolTip("Amplitude base frequency")
+        self.md_winding2_ik2_lineEdit.setToolTip("Amplitude 2 * base frequency")
+        self.md_winding2_ik3_lineEdit.setToolTip("Amplitude 3 * base frequency")
+        self.md_winding2_ik4_lineEdit.setToolTip("Amplitude 4 * base frequency")
+        self.md_winding2_ik5_lineEdit.setToolTip("Amplitude 5 * base frequency")
+        self.md_winding2_ik6_lineEdit.setToolTip("Amplitude 6 * base frequency")
+        self.md_winding2_ik7_lineEdit.setToolTip("Amplitude 7 * base frequency")
+        self.md_winding2_ik8_lineEdit.setToolTip("Amplitude 8 * base frequency")
+        self.md_winding2_pk1_lineEdit.setToolTip("Phase for base frequency")
+        self.md_winding2_pk2_lineEdit.setToolTip("Phase for 2 * base frequency")
+        self.md_winding2_pk3_lineEdit.setToolTip("Phase for 3 * base frequency")
+        self.md_winding2_pk4_lineEdit.setToolTip("Phase for 4 * base frequency")
+        self.md_winding2_pk5_lineEdit.setToolTip("Phase for 5 * base frequency")
+        self.md_winding2_pk6_lineEdit.setToolTip("Phase for 6 * base frequency")
+        self.md_winding2_pk7_lineEdit.setToolTip("Phase for 7 * base frequency")
+        self.md_winding2_pk8_lineEdit.setToolTip("Phase for 8 * base frequency")
+
+
+        self.md_dc_checkBox.setToolTip("Enable/Disable DC current")
+        self.md_fk1_checkBox.setToolTip("Enable/Disable base frequency")
+        self.md_fk2_checkBox.setToolTip("Enable/Disable 2 * base frequency")
+        self.md_fk3_checkBox.setToolTip("Enable/Disable 3 * base frequency")
+        self.md_fk4_checkBox.setToolTip("Enable/Disable 4 * base frequency")
+        self.md_fk5_checkBox.setToolTip("Enable/Disable 5 * base frequency")
+        self.md_fk6_checkBox.setToolTip("Enable/Disable 6 * base frequency")
+        self.md_fk7_checkBox.setToolTip("Enable/Disable 7 * base frequency")
+        self.md_fk8_checkBox.setToolTip("Enable/Disable 8 * base frequency")
+
+
     def md_initialize_controls(self) -> None:
         """
         Initialize the comboboxes with pre-defined values.
@@ -119,17 +277,18 @@ class MainWindow(QMainWindow):
         """
         md_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
         md_core_material_options = ['N95']
-        md_winding_material_options = ['Copper']
+        md_winding_material_options = [key for key in fmt.wire_material_database()]
         md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         md_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"], self.translation_dict['implicit_strands_number']]
         md_air_gap_method_options = [self.translation_dict["percent"], self.translation_dict['manually']]
         md_air_gap_counts_options = ['0', '1', '2', '3', '4', '5']
         md_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
         md_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
-        md_core_geometry_options.insert(0, '')
+        md_core_geometry_options.insert(0, 'Manual')
 
         md_winding_litz_material_options = [key for key in fmt.litz_database()]
-        md_winding_litz_material_options.insert(0, '')
+        md_winding_litz_material_options.insert(0, 'Manual')
+
 
         for option in md_simulation_type_options:
             self.md_simulation_type_comboBox.addItem(option)
@@ -190,7 +349,7 @@ class MainWindow(QMainWindow):
         :return: None
         :rtype: None
         """
-        # set winding definitions of winding 2
+        # set winding definitions of winding 2 (enable and visible)
         self.md_winding2_material_comboBox.setEnabled(status)
         self.md_winding2_type_comboBox.setEnabled(status)
         self.md_winding2_turns_lineEdit.setEnabled(status)
@@ -202,70 +361,85 @@ class MainWindow(QMainWindow):
         self.md_winding2_litz_material_comboBox.setEnabled(status)
         self.md_winding2_groupBox.setVisible(status)
 
-        # set current shapes of winding 2
+        # Set turns of winding 2 (enable and visible
+        self.md_winding2_turns_lineEdit.setVisible(status)
+        self.md_winding2_scheme_comboBox.setVisible(status)
+        self.md_winding2_turns_label.setVisible(status)
+        self.md_winding2_scheme_label.setVisible(status)
+
+        # set current shapes of winding 2 (enable and visible)
         self.md_winding2_current_groupBox.setVisible(status)
 
+        # set isolation of winding 2 (enable and visible)
         self.md_isolation_s2s_lineEdit.setEnabled(status)
         self.md_isolation_p2s_lineEdit.setEnabled(status)
+        self.md_isolation_s2s_lineEdit.setVisible(status)
+        self.md_isolation_p2s_lineEdit.setVisible(status)
+        self.md_isolation_s2s_label.setVisible(status)
+        self.md_isolation_p2s_label.setVisible(status)
+
+
+
+
+
 
     def md_gmsh_pre_visualisation(self):
-        # geo = self.md_setup_geometry()
-        # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
-        # geo.mesh.generate_hybrid_mesh(do_meshing=False)
-        #
-        # pixmap = QPixmap(os.path.join(geo.mesh_folder_path, "geometry_preview.jpg"))
-        # self.md_graphic_winding_1.setPixmap(pixmap)
-        # self.md_graphic_winding_1.setMask(pixmap.mask())
-        # self.md_graphic_winding_1.show()
+        geo = self.md_setup_geometry()
+        geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
+        image_pre_visualisation = PIL.Image.open(geo.hybrid_color_visualize_file)
 
-        pixmap = QPixmap("./geometry_preview.jpg")
+        px = image_pre_visualisation.load()
+        image_width, image_height = image_pre_visualisation.size
+
+        for cut_x_left in range(0, image_width):
+            if px[cut_x_left, image_height / 2] != (255, 255, 255):
+                cut_x_left -= 1
+                break
+        for cut_x_right in reversed(range(0, image_width)):
+            if px[cut_x_right, image_height / 2] != (255, 255, 255):
+                cut_x_right += 1
+                break
+
+        for cut_y_bot in reversed(range(0, image_height)):
+            if px[image_width / 2, cut_y_bot] != (255, 255, 255):
+                cut_y_bot += 1
+                break
+        for cut_y_top in range(0, image_height):
+            if px[image_width / 2, cut_y_top] != (255, 255, 255):
+                cut_y_top -= 1
+                break
+
+        im_crop = image_pre_visualisation.crop((cut_x_left, cut_y_top, cut_x_right, cut_y_bot))
+        im_crop.save(geo.hybrid_color_visualize_file, quality=95)
+
+        pixmap = QPixmap(geo.hybrid_color_visualize_file)
         self.md_gmsh_visualisation_QLabel.setPixmap(pixmap)
         self.md_gmsh_visualisation_QLabel.setMask(pixmap.mask())
         self.md_gmsh_visualisation_QLabel.show()
-
-
-        # geo = fmt.MagneticComponent(component_type="inductor")
-        # geo.visualize_before = False
-        #
-        # # Update Geometry
-        # geo.core.update(window_h=0.03, window_w=0.011)
-        #
-        # # geo.air_gaps.update(method="percent", n_air_gaps=4, air_gap_h=[0.0005, 0.0005, 0.0005, 0.0005],
-        # #                     position_tag=[0, 0, 0, 0], air_gap_position=[20, 40, 60, 80])
-        # geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
-        #
-        # geo.update_conductors(n_turns=[[14]], conductor_type=["litz"], conductor_radii=[0.0015],
-        #                       litz_para_type=['implicit_litz_radius'],
-        #                       ff=[0.6], strands_numbers=[600], strand_radii=[35.5e-6],
-        #                       winding=["primary"], scheme=["square"],
-        #                       core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
-        #
-        # geo.high_level_geo_gen(frequency=50, skin_mesh_factor=1)
-        # geo.mesh.generate_hybrid_mesh(do_meshing=False)
 
     def md_set_core_geometry_from_database(self):
         core_dict = fmt.core_database()
         core_type = self.md_core_geometry_comboBox.currentText()
 
-        if core_type != '':
+        if core_type != 'Manual':
             core = core_dict[core_type]
 
             self.md_core_width_lineEdit.setText(str(core["core_w"]))
             self.md_window_height_lineEdit.setText(str(core["window_h"]))
             self.md_window_width_lineEdit.setText(str(core["window_w"]))
-            self.md_core_width_lineEdit.setEnabled(True)
-            self.md_window_height_lineEdit.setEnabled(True)
-            self.md_window_width_lineEdit.setEnabled(True)
-        else:
             self.md_core_width_lineEdit.setEnabled(False)
             self.md_window_height_lineEdit.setEnabled(False)
             self.md_window_width_lineEdit.setEnabled(False)
+        else:
+            self.md_core_width_lineEdit.setEnabled(True)
+            self.md_window_height_lineEdit.setEnabled(True)
+            self.md_window_width_lineEdit.setEnabled(True)
 
     def md_winding1_set_litz_parameters_from_litz_database(self):
         litz_dict = fmt.litz_database()
         litz_type = self.md_winding1_litz_material_comboBox.currentText()
 
-        if litz_type != '':
+        if litz_type != 'Manual':
             litz = litz_dict[litz_type]
 
             self.md_winding1_strands_lineEdit.setText(str(litz["strands_numbers"]))
@@ -339,7 +513,7 @@ class MainWindow(QMainWindow):
     def md_winding2_set_litz_parameters_from_litz_database(self):
         litz_dict = fmt.litz_database()
         litz_type = self.md_winding2_litz_material_comboBox.currentText()
-        if litz_type != '':
+        if litz_type != 'Manual':
             litz = litz_dict[litz_type]
 
             self.md_winding2_strands_lineEdit.setText(str(litz["strands_numbers"]))
@@ -849,69 +1023,69 @@ class MainWindow(QMainWindow):
         winding2_phi_rad_list = []
 
         if self.md_fk1_checkBox.isChecked():
-            winding1_frequency_list.append(1 * float(self.md_base_frequency_lineEdit.text()))
-            winding1_amplitude_list.append(float(self.md_winding1_ik1_lineEdit.text()))
-            winding1_phi_rad_list.append(float(self.md_winding1_pk1_lineEdit.text()))
+            winding1_frequency_list.append(1 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik1_lineEdit.text()))
+            winding1_phi_rad_list.append(comma_str_to_point_float(self.md_winding1_pk1_lineEdit.text()))
             if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-                winding2_frequency_list.append(1 * float(self.md_base_frequency_lineEdit.text()))
-                winding2_amplitude_list.append(float(self.md_winding2_ik1_lineEdit.text()))
-                winding2_phi_rad_list.append(float(self.md_winding2_pk1_lineEdit.text()))
+                winding2_frequency_list.append(1 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_ik1_lineEdit.text()))
+                winding2_phi_rad_list.append(comma_str_to_point_float(self.md_winding2_pk1_lineEdit.text()))
         if self.md_fk2_checkBox.isChecked():
-            winding1_frequency_list.append(2 * float(self.md_base_frequency_lineEdit.text()))
-            winding1_amplitude_list.append(float(self.md_winding1_ik2_lineEdit.text()))
-            winding1_phi_rad_list.append(float(self.md_winding1_pk2_lineEdit.text()))
+            winding1_frequency_list.append(2 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik2_lineEdit.text()))
+            winding1_phi_rad_list.append(comma_str_to_point_float(self.md_winding1_pk2_lineEdit.text()))
             if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-                winding2_frequency_list.append(2 * float(self.md_base_frequency_lineEdit.text()))
-                winding2_amplitude_list.append(float(self.md_winding2_ik2_lineEdit.text()))
-                winding2_phi_rad_list.append(float(self.md_winding2_pk2_lineEdit.text()))
+                winding2_frequency_list.append(2 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_ik2_lineEdit.text()))
+                winding2_phi_rad_list.append(comma_str_to_point_float(self.md_winding2_pk2_lineEdit.text()))
         if self.md_fk3_checkBox.isChecked():
-            winding1_frequency_list.append(3 * float(self.md_base_frequency_lineEdit.text()))
-            winding1_amplitude_list.append(float(self.md_winding1_ik3_lineEdit.text()))
-            winding1_phi_rad_list.append(float(self.md_winding1_pk3_lineEdit.text()))
+            winding1_frequency_list.append(3 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik3_lineEdit.text()))
+            winding1_phi_rad_list.append(comma_str_to_point_float(self.md_winding1_pk3_lineEdit.text()))
             if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-                winding2_frequency_list.append(3 * float(self.md_base_frequency_lineEdit.text()))
-                winding2_amplitude_list.append(float(self.md_winding2_ik2_lineEdit.text()))
-                winding2_phi_rad_list.append(float(self.md_winding2_pk2_lineEdit.text()))
+                winding2_frequency_list.append(3 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_ik2_lineEdit.text()))
+                winding2_phi_rad_list.append(comma_str_to_point_float(self.md_winding2_pk2_lineEdit.text()))
         if self.md_fk4_checkBox.isChecked():
-            winding1_frequency_list.append(4 * float(self.md_base_frequency_lineEdit.text()))
-            winding1_amplitude_list.append(float(self.md_winding1_ik4_lineEdit.text()))
-            winding1_phi_rad_list.append(float(self.md_winding1_pk4_lineEdit.text()))
+            winding1_frequency_list.append(4 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik4_lineEdit.text()))
+            winding1_phi_rad_list.append(comma_str_to_point_float(self.md_winding1_pk4_lineEdit.text()))
             if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-                winding2_frequency_list.append(4 * float(self.md_base_frequency_lineEdit.text()))
-                winding2_amplitude_list.append(float(self.md_winding2_ik4_lineEdit.text()))
-                winding2_phi_rad_list.append(float(self.md_winding2_pk4_lineEdit.text()))
+                winding2_frequency_list.append(4 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_ik4_lineEdit.text()))
+                winding2_phi_rad_list.append(comma_str_to_point_float(self.md_winding2_pk4_lineEdit.text()))
         if self.md_fk5_checkBox.isChecked():
-            winding1_frequency_list.append(5 * float(self.md_base_frequency_lineEdit.text()))
-            winding1_amplitude_list.append(float(self.md_winding1_ik5_lineEdit.text()))
-            winding1_phi_rad_list.append(float(self.md_winding1_pk5_lineEdit.text()))
+            winding1_frequency_list.append(5 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik5_lineEdit.text()))
+            winding1_phi_rad_list.append(comma_str_to_point_float(self.md_winding1_pk5_lineEdit.text()))
             if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-                winding2_frequency_list.append(5 * float(self.md_base_frequency_lineEdit.text()))
-                winding2_amplitude_list.append(float(self.md_winding2_ik5_lineEdit.text()))
-                winding2_phi_rad_list.append(float(self.md_winding2_pk5_lineEdit.text()))
+                winding2_frequency_list.append(5 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_ik5_lineEdit.text()))
+                winding2_phi_rad_list.append(comma_str_to_point_float(self.md_winding2_pk5_lineEdit.text()))
         if self.md_fk6_checkBox.isChecked():
-            winding1_frequency_list.append(6 * float(self.md_base_frequency_lineEdit.text()))
-            winding1_amplitude_list.append(float(self.md_winding1_ik6_lineEdit.text()))
-            winding1_phi_rad_list.append(float(self.md_winding1_pk6_lineEdit.text()))
+            winding1_frequency_list.append(6 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik6_lineEdit.text()))
+            winding1_phi_rad_list.append(comma_str_to_point_float(self.md_winding1_pk6_lineEdit.text()))
             if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-                winding2_frequency_list.append(6 * float(self.md_base_frequency_lineEdit.text()))
-                winding2_amplitude_list.append(float(self.md_winding2_ik6_lineEdit.text()))
-                winding2_phi_rad_list.append(float(self.md_winding2_pk6_lineEdit.text()))
+                winding2_frequency_list.append(6 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_ik6_lineEdit.text()))
+                winding2_phi_rad_list.append(comma_str_to_point_float(self.md_winding2_pk6_lineEdit.text()))
         if self.md_fk7_checkBox.isChecked():
-            winding1_frequency_list.append(7 * float(self.md_base_frequency_lineEdit.text()))
-            winding1_amplitude_list.append(float(self.md_winding1_ik7_lineEdit.text()))
-            winding1_phi_rad_list.append(float(self.md_winding1_pk7_lineEdit.text()))
+            winding1_frequency_list.append(7 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik7_lineEdit.text()))
+            winding1_phi_rad_list.append(comma_str_to_point_float(self.md_winding1_pk7_lineEdit.text()))
             if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-                winding2_frequency_list.append(7 * float(self.md_base_frequency_lineEdit.text()))
-                winding2_amplitude_list.append(float(self.md_winding2_ik7_lineEdit.text()))
-                winding2_phi_rad_list.append(float(self.md_winding2_pk7_lineEdit.text()))
+                winding2_frequency_list.append(7 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_ik7_lineEdit.text()))
+                winding2_phi_rad_list.append(comma_str_to_point_float(self.md_winding2_pk7_lineEdit.text()))
         if self.md_fk8_checkBox.isChecked():
-            winding1_frequency_list.append(8 * float(self.md_base_frequency_lineEdit.text()))
-            winding1_amplitude_list.append(float(self.md_winding1_ik8_lineEdit.text()))
-            winding1_phi_rad_list.append(float(self.md_winding1_pk8_lineEdit.text()))
+            winding1_frequency_list.append(8 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik8_lineEdit.text()))
+            winding1_phi_rad_list.append(comma_str_to_point_float(self.md_winding1_pk8_lineEdit.text()))
             if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
-                winding2_frequency_list.append(8 * float(self.md_base_frequency_lineEdit.text()))
-                winding2_amplitude_list.append(float(self.md_winding2_ik8_lineEdit.text()))
-                winding2_phi_rad_list.append(float(self.md_winding2_pk8_lineEdit.text()))
+                winding2_frequency_list.append(8 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_ik8_lineEdit.text()))
+                winding2_phi_rad_list.append(comma_str_to_point_float(self.md_winding2_pk8_lineEdit.text()))
 
         return winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list
 
@@ -932,9 +1106,9 @@ class MainWindow(QMainWindow):
             # -----------------------------------------------
 
             geo.core.update(type="EI",
-                            core_w=float(self.md_core_width_lineEdit.text()),
-                            window_h=float(self.md_window_height_lineEdit.text()),
-                            window_w=float(self.md_window_width_lineEdit.text()))
+                            core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
+                            window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
+                            window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()))
 
             # -----------------------------------------------
             # Air Gaps
@@ -946,32 +1120,32 @@ class MainWindow(QMainWindow):
             air_gap_position_tag_array = []
 
             if air_gap_count >= 1:
-                md_air_gap_1_height = float(self.md_air_gap_1_length_lineEdit.text())
-                md_air_gap_1_position = float(self.md_air_gap_1_position_lineEdit.text())
+                md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
+                md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
                 air_gap_heigth_array.append(md_air_gap_1_height)
                 air_gap_position_array.append(md_air_gap_1_position)
                 air_gap_position_tag_array.append(0)
             if air_gap_count >= 2:
-                md_air_gap_2_height = float(self.md_air_gap_2_length_lineEdit.text())
-                md_air_gap_2_position = float(self.md_air_gap_2_position_lineEdit.text())
+                md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
+                md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
                 air_gap_heigth_array.append(md_air_gap_2_height)
                 air_gap_position_array.append(md_air_gap_2_position)
                 air_gap_position_tag_array.append(0)
             if air_gap_count >= 3:
-                md_air_gap_3_height = float(self.md_air_gap_3_length_lineEdit.text())
-                md_air_gap_3_position = float(self.md_air_gap_3_position_lineEdit.text())
+                md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
+                md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
                 air_gap_heigth_array.append(md_air_gap_3_height)
                 air_gap_position_array.append(md_air_gap_3_position)
                 air_gap_position_tag_array.append(0)
             if air_gap_count >= 4:
-                md_air_gap_4_height = float(self.md_air_gap_4_length_lineEdit.text())
-                md_air_gap_4_position = float(self.md_air_gap_4_position_lineEdit.text())
+                md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
+                md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
                 air_gap_heigth_array.append(md_air_gap_4_height)
                 air_gap_position_array.append(md_air_gap_4_position)
                 air_gap_position_tag_array.append(0)
             if air_gap_count >= 5:
-                md_air_gap_5_height = float(self.md_air_gap_5_length_lineEdit.text())
-                md_air_gap_5_position = float(self.md_air_gap_5_position_lineEdit.text())
+                md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
+                md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
                 air_gap_heigth_array.append(md_air_gap_5_height)
                 air_gap_position_array.append(md_air_gap_5_position)
                 air_gap_position_tag_array.append(0)
@@ -1009,14 +1183,15 @@ class MainWindow(QMainWindow):
                 self.md_simulation_QLabel.setText('setze conductors')
                 geo.update_conductors(n_turns=[[int(self.md_winding1_turns_lineEdit.text())]],
                                       conductor_type=['solid'],
-                                      conductor_radii=[float(self.md_winding1_radius_lineEdit.text())],
+                                      conductor_radii=[comma_str_to_point_float(self.md_winding1_radius_lineEdit.text())],
                                       winding=["primary"],
                                       scheme=[scheme],
-                                      core_cond_isolation=[float(self.md_isolation_core2cond_top_lineEdit.text()),
-                                                           float(self.md_isolation_core2cond_bot_lineEdit.text()),
-                                                           float(self.md_isolation_core2cond_inner_lineEdit.text()),
-                                                           float(self.md_isolation_core2cond_outer_lineEdit.text())],
-                                      cond_cond_isolation=[float(self.self.md_isolation_p2p_lineEdit.text())])
+                                      core_cond_isolation=[comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
+                                                           comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
+                                                           comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
+                                                           comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text())],
+                                      cond_cond_isolation=[comma_str_to_point_float(self.self.md_isolation_p2p_lineEdit.text())],
+                                      conductivity_sigma=[self.md_winding1_material_comboBox.currentText()])
             elif self.md_winding1_type_comboBox.currentText() == self.translation_dict['litz']:
                 litz_para_type = ''
                 if self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_litz_radius']:
@@ -1030,18 +1205,19 @@ class MainWindow(QMainWindow):
 
                 geo.update_conductors(n_turns=[[int(self.md_winding1_turns_lineEdit.text())]],
                                       conductor_type=['litz'],
-                                      conductor_radii=[float(self.md_winding1_radius_lineEdit.text())],
+                                      conductor_radii=[comma_str_to_point_float(self.md_winding1_radius_lineEdit.text())],
                                       winding=["primary"],
                                       scheme=[scheme],
                                       litz_para_type=[litz_para_type],
-                                      ff=[float(self.md_winding1_fill_factor_lineEdit.text())],
-                                      strands_numbers=[float(self.md_winding1_strands_lineEdit.text())],
-                                      strand_radii=[float(self.md_winding1_strand_radius_lineEdit.text())],
-                                      core_cond_isolation=[float(self.md_isolation_core2cond_top_lineEdit.text()),
-                                                           float(self.md_isolation_core2cond_bot_lineEdit.text()),
-                                                           float(self.md_isolation_core2cond_inner_lineEdit.text()),
-                                                           float(self.md_isolation_core2cond_outer_lineEdit.text())],
-                                      cond_cond_isolation=[float(self.md_isolation_p2p_lineEdit.text())])
+                                      ff=[comma_str_to_point_float(self.md_winding1_fill_factor_lineEdit.text())],
+                                      strands_numbers=[comma_str_to_point_float(self.md_winding1_strands_lineEdit.text())],
+                                      strand_radii=[comma_str_to_point_float(self.md_winding1_strand_radius_lineEdit.text())],
+                                      core_cond_isolation=[comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
+                                                           comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
+                                                           comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
+                                                           comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text())],
+                                      cond_cond_isolation=[comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text())],
+                                      conductivity_sigma=[self.md_winding1_material_comboBox.currentText()])
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
             pass
 
@@ -1064,12 +1240,27 @@ class MainWindow(QMainWindow):
         # -----------------------------------------------
         # Simulation
         # -----------------------------------------------
-        geo.create_model(freq=int(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
-        geo.single_simulation(freq=int(self.md_base_frequency_lineEdit.text()), current=[float(self.md_winding1_ik1_lineEdit.text())])
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
 
         winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
 
-        #geo.excitation_sweep(self, winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list)
+
+        if len(winding1_frequency_list) == 1:
+            geo.single_simulation(freq=winding1_frequency_list[0], current=winding1_amplitude_list)
+
+        else:
+            amplitude_list = []
+
+            print(f"{winding1_amplitude_list = }")
+            for amplitude_value in winding1_amplitude_list:
+                amplitude_list.append([amplitude_value])
+            phase_rad_list = []
+            for phase_value in winding1_phi_rad_list:
+                phase_rad_list.append([phase_value])
+
+
+
+            geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
 
         # -----------------------------------------------
         # Read back results
