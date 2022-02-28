@@ -359,7 +359,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
-    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=1.0, isolation_deltas = None):
+    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=None, isolation_deltas = None):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
@@ -384,8 +384,8 @@ class MagneticComponent:
                 self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
             for i in range(0, self.n_windings):
                 if self.windings[i].conductor_type == "solid":
-                    self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor])
-                    self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.skin_mesh_factor
+                    self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy]) #* self.mesh.skin_mesh_factor])
+                    self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy  # * self.mesh.skin_mesh_factor
                 elif self.windings[i].conductor_type == "litz":
                     self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
@@ -3943,7 +3943,7 @@ class MagneticComponent:
 
             gmsh.write(self.component.thermal_mesh_file)
 
-        def mesh(self, frequency=None, skin_mesh_factor=1):
+        def mesh(self, frequency=None, skin_mesh_factor=None):
             self.component.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
             if self.component.valid:
                 self.generate_hybrid_mesh()
