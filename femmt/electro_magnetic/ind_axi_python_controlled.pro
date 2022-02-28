@@ -189,19 +189,18 @@ Function {
   // Imaginary Part Of Permeability
   // Liste von Lukas hinterlegen
   //mu_imag[ #{Iron} ] = mu0 * f_N95_mu_imag[$1, $2];
-  mu_imag[ #{Iron} ] = (mu0 * mur)^(0.5);
   //mu_imag[#{Iron}] = mu0 * mu_r_imag;
 
   If(!Flag_NL)
     // nu[#{Iron}]   = nu0/mur;
     mu[#{Iron}]   = Complex[mu0*mur_real, mu0*mur_imag] ;  // changed 25022022
-    nu[#{Iron}]   = 1/Complex[mu0*mur_real, mu0*mur_imag] ;  // changed 25022022
+    //mu[#{Iron}]   = Complex[mu0*(mur^2-f_N95_mu_imag[$1, $2]^2)^(0.5), mu0*f_N95_mu_imag[$1, $2]] ;  // changed 25022022
+    nu[#{Iron}]   = 1/mu[$1, $2] ;  // changed 25022022
   Else
     //nu[ #{Iron} ] = nu_3kW[$1] ;
     //h[ #{Iron} ]  = h_3kW[$1];
     //dhdb_NL[ #{Iron} ]= dhdb_3kW_NL[$1] ;
     //dhdb[ #{Iron} ]   = dhdb_3kW[$1] ;
-
 
     //nu[ #{Iron} ] = nu_N95[$1] ;
     nu[ #{Iron} ] = nu~{Core_Material}[$1] ;
@@ -475,7 +474,10 @@ PostProcessing {
       // ------------------------------------------------------------------------------------------------
       // Permeability Plot
 
-      { Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name nur ; Value { Term { [ Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      //{ Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
+      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
 
 
 
@@ -578,11 +580,11 @@ PostProcessing {
       // Hysteresis Losses (According To Complex Core Parameters)
 
       { Name p_hyst ; Value { Integral {
-        [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[{d a}] * {d a}] ] ;
+        [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
 
       { Name p_hyst_density ; Value { Integral {
-        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * mu_imag[Norm[{d a}], Freq] * SquNorm[nu[{d a}]*{d a}] ] ;
+        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }
 
 
@@ -591,7 +593,7 @@ PostProcessing {
       // Energy
 
       { Name MagEnergy ; Value {
-          Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
+          Integral { [ CoefGeo*nu[{d a}, Freq]*({d a}*{d a})/2] ;
             In Domain ; Jacobian Vol ; Integration II ; } } }
 
       { Name ElectEnergy ; Value {
@@ -660,14 +662,14 @@ PostProcessing {
         { Name L_11 ; Value { Integral {
           [ Sign1 * CoefGeo / AreaCell1 * CompZ[{a}] / Val_EE_1 ]; In DomainCond1; Jacobian Vol; Integration II; } } }
         { Name L_11_from_MagEnergy ; Value { Integral {
-          [ 2 * CoefGeo*nu[{d a}]*({d a}*{d a})/2 / (Val_EE_1*Val_EE_1) ]; In Domain; Jacobian Vol; Integration II; } } }
+          [ 2 * CoefGeo*nu[{d a}, Freq]*({d a}*{d a})/2 / (Val_EE_1*Val_EE_1) ]; In Domain; Jacobian Vol; Integration II; } } }
       EndIf
       If(Flag_Transformer)
         If(Val_EE_2!=0)
           { Name L_22 ; Value { Integral {
             [ Sign2 * CoefGeo / AreaCell2 * CompZ[{a}] / Val_EE_2 ]; In DomainCond2; Jacobian Vol; Integration II; } } }
           { Name L_22_from_MagEnergy ; Value { Integral {
-            [ 2 * CoefGeo*nu[{d a}]*({d a}*{d a})/2 / (Val_EE_2*Val_EE_2) ]; In Domain; Jacobian Vol; Integration II; } } }
+            [ 2 * CoefGeo*nu[{d a}, Freq]*({d a}*{d a})/2 / (Val_EE_2*Val_EE_2) ]; In Domain; Jacobian Vol; Integration II; } } }
         EndIf
       EndIf
 

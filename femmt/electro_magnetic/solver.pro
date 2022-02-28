@@ -133,10 +133,10 @@ Formulation {
     Equation {
 
       // 1
-      Galerkin { [ nu[] * Dof{d a} , {d a} ]  ;
+      Galerkin { [ nu[Norm[{d a}], Freq] * Dof{d a} , {d a} ]  ;
         In Domain_Lin ; Jacobian Vol ; Integration II ; }
       If(Flag_NL)
-        Galerkin { [ nu[{d a}] * Dof{d a} , {d a} ]  ;
+        Galerkin { [ nu[{d a}, Freq] * Dof{d a} , {d a} ]  ;
           In Domain_NonLin ; Jacobian Vol ; Integration II ; }
         Galerkin { JacNL [ dhdb_NL[{d a}] * Dof{d a} , {d a} ] ;
           In Domain_NonLin ; Jacobian Vol ; Integration II ; }

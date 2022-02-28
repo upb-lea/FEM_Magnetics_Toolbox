@@ -54,6 +54,8 @@ Function{
   //f_N95_mu_imag[] = f_N95_mu_imag_300000[$1];
 
   // frequency interpolation
+
+
   // Abfrage bei welcher Frequenz ->> Fallunterscheidung
   If(Freq<200000)
     f_N95_mu_imag[] = f_N95_mu_imag_100000[$1] + (f_N95_mu_imag_200000[$1] - f_N95_mu_imag_100000[$1]) / 100000 * ($2 - 100000);

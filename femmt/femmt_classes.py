@@ -489,6 +489,7 @@ class MagneticComponent:
                    im_mu_rel: float = 2500 * np.sin(20 * np.pi / 180),
                    im_epsilon_rel: float = 6e+4 * np.sin(20 * np.pi / 180),
                    material=95_100,
+                   conducting: bool = True,
                    non_linear: bool = False,
                    **kwargs) -> None:
             """
@@ -532,6 +533,7 @@ class MagneticComponent:
             self.im_mu_rel = im_mu_rel
             self.im_epsilon_rel = im_epsilon_rel
             self.material = material
+            self.conducting = conducting
             self.type = type
 
             # Set attributes of core with given keywords
@@ -4094,8 +4096,6 @@ class MagneticComponent:
         """
         text_file = open(os.path.join(self.electro_magnetic_folder_path, "Parameter.pro"), "w")
 
-
-
         # Magnetic Component Type
         if self.component_type == 'inductor':
             text_file.write(f"Flag_Transformer = 0;\n")
@@ -4201,7 +4201,12 @@ class MagneticComponent:
         # if self.frequency == 0:
         if self.core.non_linear:
             text_file.write(f"Flag_NL = 1;\n")
-            text_file.write(f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime
+            text_file.write(f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime            text_file.write(f"Flag_NL = 0;\n")
+            text_file.write(f"mur = {self.core.re_mu_rel};\n")  # mur is predefined to a fixed value
+            text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")  # loss angle for complex representation of hysteresis loss
+            text_file.write(f"mur_real = {self.core.re_mu_rel * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")  # loss angle for complex representation of hysteresis loss
+            text_file.write(f"mur_imag = {self.core.re_mu_rel * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")  # loss angle for complex representation of hysteresis loss
+
         else:
             text_file.write(f"Flag_NL = 0;\n")
             text_file.write(f"mur = {self.core.re_mu_rel};\n")  # mur is predefined to a fixed value
