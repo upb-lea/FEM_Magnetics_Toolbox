@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Updated
+- new isolation scheme (looking from core to all windings): core_cond_isolation=[top, bottom, inner, outer] instead of core_cond_isolation=[prim2core, sec2core]
+- gmsh 4.9.5 as minimum requirement
 
 ### Added
 - conductor material can be chosen from a small material database, used in update_conductors(), e.g. conductivity_sigma=["copper"]
