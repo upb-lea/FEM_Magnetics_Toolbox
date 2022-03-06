@@ -9,7 +9,7 @@ Jacobian {
   { Name Sur ; Case { { Region All ; Jacobian SurAxi ; } } }
 }
 
-// ... so oder so ähnlich für den nicht-radialaxialsymmetrischen Fall
+// ... that or almost that way for the non radial symmetrc case (z-symmetry)
 //Jacobian {
 //  { Name Vol;
 //    Case {
@@ -76,7 +76,6 @@ FunctionSpace {
     }
   }
 
-
   // For circuit equations
   { Name Hregion_Z ; Type Scalar ;
     BasisFunction {
@@ -106,7 +105,7 @@ Formulation {
        //{ Name tmp  ; Type Local  ; NameOfSpace Hcurl_a_2D ; }
        //{ Name jc  ; Type Local  ; NameOfSpace Hcurl_a_2D ; }
 
-       { Name ur ; Type Local  ; NameOfSpace Hregion_u_2D  ; }  // = nabla*el.potential = grad*phi
+       { Name ur ; Type Local  ; NameOfSpace Hregion_u_2D  ; }  // = nabla*el.potential = grad(phi)
        { Name I  ; Type Global ; NameOfSpace Hregion_u_2D[I] ; }
        { Name U  ; Type Global ; NameOfSpace Hregion_u_2D[U] ; }
 
@@ -132,7 +131,7 @@ Formulation {
 
     Equation {
 
-      // 1
+      // Nabla x ( 1/mu Nabla x A)
       Galerkin { [ nu[Norm[{d a}], Freq] * Dof{d a} , {d a} ]  ;
         In Domain_Lin ; Jacobian Vol ; Integration II ; }
       If(Flag_NL)
@@ -142,24 +141,33 @@ Formulation {
           In Domain_NonLin ; Jacobian Vol ; Integration II ; }
       EndIf
 
-      // 2
-      Galerkin { DtDof [ sigma[] * Dof{a} , {a} ] ;
+      // sigma d/dt A
+      // technical current direction can be applied with neg. sigma (right hand rule)
+      Galerkin { DtDof [ -sigma[] * Dof{a} , {a} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
-      Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {a} ] ;
-        In DomainC ; Jacobian Vol ; Integration II ; }
-
-      // 3
-      Galerkin { DtDof [ sigma[] * Dof{a} , {ur} ] ;
-        In DomainC ; Jacobian Vol ; Integration II ; }
-      Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
+      Galerkin { DtDof [ -sigma[] * Dof{a} , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
 
+      // sigma Nabla PHI
+      Galerkin { [ -sigma[] * Dof{ur}/CoefGeo , {a} ] ;
+        In DomainC ; Jacobian Vol ; Integration II ; }
+      Galerkin { [ -sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
+        In DomainC ; Jacobian Vol ; Integration II ; }
 
+      // Je (imprinted current density)
+      Galerkin { [ -1/AreaCell[] *  Dof{ir}, {a} ] ;
+        In DomainS ; Jacobian Vol ; Integration II ; }
+      Galerkin { DtDof [ -1/AreaCell[] * Dof{a}, {ir} ] ;
+        In DomainS ; Jacobian Vol ; Integration II ; }
+      //GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In DomainS ; }
+
+      /*
       If(Flag_Conducting_Core)
         GlobalTerm { [ Dof{I}, {U} ] ; In Iron ; }
       EndIf
+      */
 
-
+      // GlobalTerms are used for the current imprinting
       If(!Flag_HomogenisedModel1)
         If(Val_EE_1!=0)
           GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
@@ -173,28 +181,23 @@ Formulation {
         EndIf
       EndIf
 
-      // 4
-      // together
-      Galerkin { [ -1/AreaCell[] * Dof{ir}, {a} ] ;
-        In DomainS ; Jacobian Vol ; Integration II ; }
-      Galerkin { DtDof [ 1/AreaCell[] * Dof{a}, {ir} ] ;
-        In DomainS ; Jacobian Vol ; Integration II ; }
-      //GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In DomainS ; }
-
 
       /*
-      If(Flag_HomogenisedModel1)
+      If(!Flag_HomogenisedModel1)
         If(Val_EE_1!=0)
-          GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding1 ; }
-          //GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
+          GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
         EndIf
+      Else
+        GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding1 ; }
       EndIf
+
       If(Flag_Transformer)
-        If(Flag_HomogenisedModel2)
+        If(!Flag_HomogenisedModel2)
           If(Val_EE_2!=0)
-            //GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
-            GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding2 ; }
+            GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
           EndIf
+        Else
+          GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding2 ; }
         EndIf
       EndIf
       */

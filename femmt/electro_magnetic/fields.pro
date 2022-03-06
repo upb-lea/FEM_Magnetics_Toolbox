@@ -27,10 +27,12 @@ PostOperation Map_local UsingPost MagDyn_a {
     Print[ pSE_density,  OnElementsOf Domain,  File StrCat[DirResFields, "pSE_density", ExtGmsh],  LastTimeStepOnly ] ;
   EndIf
 
-  Print[ mur,  OnElementsOf Domain,  File StrCat[DirResFields, "mur", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ mur_norm,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_norm", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ p_hyst,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst", ExtGmsh],  LastTimeStepOnly ] ;
-  Print[ p_hyst_density,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ mur,  OnElementsOf Domain,  File StrCat[DirResFields, "mur", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ mur_norm,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_norm", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ nur_re,  OnElementsOf Domain,  File StrCat[DirResFields, "nur_re", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ nur_im,  OnElementsOf Domain,  File StrCat[DirResFields, "nur_im", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ p_hyst,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst", ExtGmsh],  LastTimeStepOnly ] ;
+  //Print[ p_hyst_density,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst_density", ExtGmsh],  LastTimeStepOnly ] ;
 
   // Magnetic Flux (Density)
   //Print[ b,  OnElementsOf Domain,  File StrCat[DirResFields, "b", ExtGmsh],  LastTimeStepOnly ] ;
@@ -50,6 +52,10 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ jz, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirResFields, "jz", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ j, OnElementsOf Region[{DomainC,DomainS}], File StrCat[DirResFields, "j", ExtGmsh], LastTimeStepOnly ] ;
   //Print[ J_rms, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "J_rms", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ ir, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "ir", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ ir_re, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "ir_re", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ ir_im, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "ir_im", ExtGmsh], LastTimeStepOnly ] ;
+  //Print[ ir_norm, OnElementsOf Region[{Domain}], File StrCat[DirResFields, "ir_norm", ExtGmsh], LastTimeStepOnly ] ;
 
   // Ohmic Loss
   If(Flag_show_standard_fields)
@@ -60,7 +66,6 @@ PostOperation Map_local UsingPost MagDyn_a {
     Print[ j2H,   OnElementsOf DomainS, File StrCat[DirResFields,"jH",ExtGmsh] ] ;
   EndIf
   //Print[ j2H_density,   OnElementsOf DomainS, File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
-
   //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
   //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
 

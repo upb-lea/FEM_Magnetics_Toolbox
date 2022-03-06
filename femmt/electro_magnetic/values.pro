@@ -4,26 +4,26 @@ PostOperation Get_global UsingPost MagDyn_a {
 
   // Losses
 
-  // Core
-  Print[ j2F[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"CoreEddyCurrentLosses.dat"]] ;
 
   // Windings Total
-  //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // Complex power
-  Print[ j2H[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"LossesStrandedWindings.dat"] ] ;
+  // Solid
+  //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // TODO: Complex power
   Print[ j2F[ Winding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_1.dat"]] ;
   Print[ j2F[ Winding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_2.dat"]] ;
-
+  // Stranded
+  //Print[ SoH[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"SH_1.dat"] ] ;  // TODO: Complex power
+  //Print[ SoH[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"SH.dat"] ] ;
+  //Print[ j2H[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"LossesStrandedWindings.dat"] ] ;
   Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
-  Print[ SoH[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"SH_1.dat"] ] ;  // TODO
-
   //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
   Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
   //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
+  //Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
+  //Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];
+  //Print[ j2Hskin[StrandedWinding2],   OnGlobal , Format Table];
+  //Print[ j2Hprox[StrandedWinding2],   OnGlobal , Format Table];
 
   // Single Turns
-
-
-
   If(Flag_HomogenisedModel1) // Differentiate fine und hom
     For isF In {1:nbturns1}
       Print[ j2H[ TurnStrand1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"Losses_turn_%g.dat"], isF] ] ;
@@ -31,7 +31,7 @@ PostOperation Get_global UsingPost MagDyn_a {
   Else
     For isF In {1:nbturns1}
       Print[ j2F[ Turn1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"Losses_turn_%g.dat"], isF] ] ;
-      Print[ az_int[ Turn1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"a_turn_%g.dat"], isF] ] ;
+      //Print[ az_int[ Turn1~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsPrimary,"a_turn_%g.dat"], isF] ] ;
     EndFor
   EndIf
 
@@ -48,14 +48,15 @@ PostOperation Get_global UsingPost MagDyn_a {
   EndIf
 
 
+  // Core
 
-  //Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
-  //Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];
-  //Print[ j2Hskin[StrandedWinding2],   OnGlobal , Format Table];
-  //Print[ j2Hprox[StrandedWinding2],   OnGlobal , Format Table];
+  // Eddy Current Losses according to sigma in core/iron
+  Print[ j2F[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"CoreEddyCurrentLosses.dat"]] ;
 
-  Print[ SoH[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"SH.dat"] ] ;
+  // Hysteresis Losses according to complex permeability in core/iron
+  Print[ p_hyst[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"p_hyst.dat"]] ;// Core losses
 
+  // Steinmetz Core Losses
   If(Flag_Generalized_Steinmetz_loss)
     Print[ piGSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"piGSE.dat"]] ;// Core losses
     Print[ piGSE[ Iron ], OnGlobal, Format Table];
@@ -66,21 +67,19 @@ PostOperation Get_global UsingPost MagDyn_a {
     Print[ pSE[ Iron ], OnGlobal, Format Table];
   EndIf
 
-  Print[ p_hyst[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"p_hyst.dat"]] ;// Core losses
-
-
 
   // Stored Energy
-  Print[ MagEnergy[Domain], OnGlobal, Format TimeTable,
-   File > StrCat[DirResVals,"ME.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
-  //Print[ MagEnergy, OnRegion Domain, Format Table, File Sprintf("results/MagEnergy.dat") ];
+  Print[ MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
+  // Print[ MagEnergy[Iron], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_iron.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
+  // Print[ MagEnergy[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_air.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
+  // Print[ MagEnergy[Winding1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_winding1.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
 
   // Flux (Linkage)
   Print[ Flux_Linkage_1[DomainCond1], OnGlobal, Format Table, File > StrCat[DirResVals,"Flux_Linkage_1.dat"]];
-  Print[ Flux_Linkage_1[DomainCond1], OnGlobal, Format Table];
+  // Print[ Flux_Linkage_1[DomainCond1], OnGlobal, Format Table];
   If(Flag_Transformer)
     Print[ Flux_Linkage_2[DomainCond2], OnGlobal, Format Table, File > StrCat[DirResVals,"Flux_Linkage_2.dat"]];
-    Print[ Flux_Linkage_2[DomainCond2], OnGlobal, Format Table];
+    // Print[ Flux_Linkage_2[DomainCond2], OnGlobal, Format Table];
   EndIf
 
   // Inductances
@@ -103,12 +102,28 @@ PostOperation Get_global UsingPost MagDyn_a {
 
   // Circuit Quantities
   If(!Flag_Circuit)
-    Print[ I, OnRegion Winding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_f%g.dat"], Freq] , LastTimeStepOnly];
-    Print[ U, OnRegion Winding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_f%g.dat"], Freq] , LastTimeStepOnly];
+    If(!Flag_HomogenisedModel1)
+      Print[ I, OnRegion Winding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_1_f%g.dat"], Freq] , LastTimeStepOnly];
+      Print[ U, OnRegion Winding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_1_f%g.dat"], Freq] , LastTimeStepOnly];
+    Else
+      Print[ I, OnRegion StrandedWinding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_1_f%g.dat"], Freq] , LastTimeStepOnly];
+      Print[ U, OnRegion StrandedWinding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_1_f%g.dat"], Freq] , LastTimeStepOnly];
+    EndIf
+
+    If(Flag_Transformer)
+      If(!Flag_HomogenisedModel1)
+        Print[ I, OnRegion Winding2, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_2_f%g.dat"], Freq] , LastTimeStepOnly];
+        Print[ U, OnRegion Winding2, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_2_f%g.dat"], Freq] , LastTimeStepOnly];
+      Else
+        Print[ I, OnRegion StrandedWinding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_2_f%g.dat"], Freq] , LastTimeStepOnly];
+        Print[ U, OnRegion StrandedWinding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_2_f%g.dat"], Freq] , LastTimeStepOnly];
+      EndIf
+    EndIf
+
+
   Else
     Print[ I, OnRegion Input, Format TimeTable, File >Sprintf("results/I_f%g.dat", Freq), LastTimeStepOnly];
     Print[ U, OnRegion Input, Format TimeTable, File >Sprintf("results/U_f%g.dat", Freq), LastTimeStepOnly];
   EndIf
 
 }
-
