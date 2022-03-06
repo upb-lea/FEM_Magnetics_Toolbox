@@ -2,7 +2,7 @@ from scipy.interpolate import interp1d
 import numpy as np
 
 
-e_phi_100000 = 35
+e_phi_100000 = 37
 e_r_100000 = 1.3969e+05
 
 

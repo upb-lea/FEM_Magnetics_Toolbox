@@ -458,7 +458,7 @@ class MagneticComponent:
             self.component = component  # Convention: parent
 
             # Standard material data
-            self.material = 95_100  # 95 := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
+            self.material = None  # "95_100" := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
 
             # Permeability
             # TDK N95 as standard material:
@@ -491,7 +491,7 @@ class MagneticComponent:
                    mu_rel: float = 3000,
                    phi_mu_deg: float = None,
                    sigma: float = None,
-                   material = 95_100,
+                   material: str = None,  # "95_100"
                    non_linear: bool = False,
                    **kwargs) -> None:
             """
@@ -526,12 +526,17 @@ class MagneticComponent:
             self.material = material
             self.non_linear = non_linear
 
+            # Conductivity
+            self.sigma = sigma
+            if self.material is not None:
+                self.sigma = self.material
+
             # Permeability
             self.mu_rel = mu_rel
             self.phi_mu_deg = phi_mu_deg
 
             # Check for which kind of permeability definition is used
-            if self.mu_rel is not None:
+            if self.mu_rel is not None and not isinstance(self.material, str):
                 if self.phi_mu_deg is not None and self.phi_mu_deg!=0:
                     self.permeability_type = "fixed_loss_angle"
                 else:
@@ -542,8 +547,6 @@ class MagneticComponent:
                 else:
                     raise Exception(f"Permeability must be specified with real_value, fixed_loss_angle or from_data")
 
-            # Conductivity
-            self.sigma = sigma
 
             # Set attributes of core with given keywords
             for key, value in kwargs.items():
@@ -4135,11 +4138,11 @@ class MagneticComponent:
         text_file.write(f"Flag_Steinmetz_loss = {self.core.steinmetz_loss};\n")
         text_file.write(f"Flag_Generalized_Steinmetz_loss = {self.core.generalized_steinmetz_loss};\n")
 
-        if self.core.sigma != 0:
+        if self.core.sigma != 0 and self.core.sigma is not None:
             text_file.write(f"Flag_Conducting_Core = 1;\n")
             if isinstance(self.core.sigma, str):
                 # TODO: Make following definition general
-                self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6 + 100
+                self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
             text_file.write(f"sigma_core = {self.core.sigma};\n")
         else:
             text_file.write(f"Flag_Conducting_Core = 0;\n")
@@ -4233,7 +4236,6 @@ class MagneticComponent:
                 text_file.write(f"Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
             else:
                 text_file.write(f"Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
-            print(f"{self.core.permeability_type=}")
             if self.core.permeability_type == "fixed_loss_angle":
                 text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")  # loss angle for complex representation of hysteresis loss
                 text_file.write(f"mur_real = {self.core.mu_rel * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")  # Real part of complex permeability
@@ -4585,7 +4587,7 @@ class MagneticComponent:
         if self.core.sigma != 0:
             if isinstance(self.core.sigma, str):
                 # TODO: Make following definition general
-                self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6 + 100
+                self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
 
 
         print(f"{self.core.permeability_type=}, {self.core.sigma=}")
