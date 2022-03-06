@@ -2231,15 +2231,15 @@ class MagneticComponent:
 
             if isolation_deltas is None:
                 isolation_deltas = {
-                    "core_left": 0.0001,
-                    "core_top": 0.0001,
-                    "core_bot": 0.0001,
-                    "core_right": 0.0001,
-                    "iso_iso" : 0.0001,
-                    "winding_left": 0.0001,
-                    "winding_top": 0.0001,
-                    "winding_right": 0.0001,
-                    "winding_bot": 0.0001
+                    "core_left": 0.00001,
+                    "core_top": 0.00001,
+                    "core_bot": 0.00001,
+                    "core_right": 0.00001,
+                    "iso_iso" : 0.00001,
+                    "winding_left": 0.00001,
+                    "winding_top": 0.00001,
+                    "winding_right": 0.00001,
+                    "winding_bot": 0.00001
                 }
 
             self.draw_isolations(isolation_deltas)
