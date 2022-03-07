@@ -1,85 +1,73 @@
 *****************
- Basics of Usage
+Examples
 *****************
-.. image:: /images/Transformer_Screenshot.png
+
+This toolbox is able to build a complete FEM simulation from simple Python code. The following figure shows the Python code on the left and the corresponding FEM simulation on the right.
+
+.. image:: ../../documentation/FEMMT_Screenshot.png
     :width: 500px
     :align: center
-    :height: 200px
     :alt: Why FEM Magnetics Toolbox?
 
-====================================
-How to use the FEM Magnetics Toolbox
-====================================
+======
+Basics
+======
+Code examples can be found in this [example file](/femmt/examples/basic_example.py). This file is updated regulary.
 
-1) Import the class with
+The magnetic component can be an inductor, a transformer, or a transformer with integrated stray path. The parameterization process is divided into the following steps:
+    1. Chose simulation type,
+    2. set core parameters (geometry, material),
+    3. set air gap parameters (position, height),
+    4. set conductor parameters (litz/solid wire),
+    5. start simulation with given frequencies and currents and phases.
 
-.. code-block::
-
-    from FEMMT import MagneticComponent
-
-2) Create instance with for example
-
-.. code-block::
-
-    geo = MagneticComponent(component_type="transformer") #or
-    geo = MagneticComponent(component_type="inductor")
-
-3) Define/Update the Core geometry with
+Find an example here, and check out the [example file](/femmt/examples/basic_example.py) for more examples!
 
 .. code-block::
 
-    geo.update_core(core_type="EI", window_h=0.03)
+	import femmt as fmt
+	# 1. chose simulation type
+	geo = fmt.MagneticComponent(component_type="inductor")
 
-4) Add/Update the various air gaps with
+	# 2. set core parameters
+	geo.core.update(window_h=0.03, window_w=0.011,
+		            mu_rel=3100, phi_mu_deg=12,
+		            sigma=0.6)
 
-.. code-block::
+	# 3. set air gap parameters
+	geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
 
-    geo.update_air_gaps(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.001, 0.001], air_gap_position=[20, 80]) #or
-    geo.update_air_gaps(method="center", n_air_gaps=1, air_gap_h=[0.002])
+	# 4. set conductor parameters
+	geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
+		                  winding=["primary"], scheme=["square"],
+		                  core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001],
+		                  conductivity_sigma=["copper"])
 
-5) Define/Update conductor(s) for a transformer with
+	# 5. start simulation with given frequency, currents and phases
+	geo.create_model(freq=100000)
+	geo.single_simulation(freq=100000, current=[3])
 
-.. code-block::
+The examples contain among other things:
+    * Geometries: Coil, transformer, transformer with integrated stray path,
+    * wire and stranded wire definition,
+    * air gaps definition,
+    * excitation with different frequencies, amplitudes and phases.
 
-    geo.update_conductors(n_turns=[8, 12], conductor_type=["solid", "solid"], conductor_radix=[0.0015, 0.001])
-    #or for an inductor with
-    geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radix=[0.0015], winding=["primary"], scheme=["square"], core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
+The simulation results can be found in the file /python-side-packages-path/femmt/femmt/results/result_log_electro_magnetic.json. In it you can find
+    * power loss in the core: hysteresis losses and eddy current losses,
+    * losses per winding and for each individual winding,
+    * self- and mutual inductances.
 
-6) Start a single simulation with
+======
+GUI
+======
 
-.. code-block::
+There is a first preview for a GUI. Installing this is a bit cumbersome at first, but will be simplified in the future:
+    * Download the complete repository via `Code` -> `Download ZIP` and unpack it.
+    * install the development version of femmt as described above
+    * run python `downloads/path-to_femmt/femmt/gui/femmt_gui.py`
 
-    geo.single_simulation(freq=100000, current=[5, 10], phi=[0, 0], skin_mesh_factor=accuracy)
-
-==========================
-Installed as a pip-package
-==========================
-
-Minimal example for a single simulation with displayed result in ONELAB:
-
-.. code-block::
-
-    # minimal example for installation from pip-package
-    import femmt as fmt
-
-    # Create Object
-    # geo = fmt.MagneticComponent(component_type="inductor")
-    geo = fmt.MagneticComponent(component_type="transformer")
-
-    # Update Geometry
-    geo.update_core(type="EI", window_h=0.03)
-
-    geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.001])
-
-    # geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
-    #                      winding=["primary"], scheme=["square"],
-    #                      core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])
-
-    geo.update_conductors(n_turns=[[6, 0], [0, 6]], conductor_type=["solid", "solid"],
-                          conductor_radii=[0.0015, 0.0015], winding=["interleaved", "interleaved"],
-                          scheme=["horizontal", "horizontal"],
-                          cond_cond_isolation=[0.0001, 0.0001, 0.0003], core_cond_isolation=[0.0005])
-
-    # Perform a single simulation
-    # geo.single_simulation(freq=1000000, current=[10])
-    geo.single_simulation(freq=1000000, current=[10, 10])
+.. image:: ../../documentation/femmt_gui_definition.png
+    :width: 500px
+    :align: center
+    :alt: FEMMT GUI

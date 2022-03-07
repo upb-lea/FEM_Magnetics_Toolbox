@@ -49,7 +49,7 @@ class MagneticComponent:
                                - "integrated_transformer" (Transformer with included stray-path)
         :type component_type: string
         :param working_directory: Sets the working directory
-        _type working_directory: string
+        :type working_directory: string
         """
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
