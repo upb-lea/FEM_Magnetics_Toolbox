@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 
 plt.figure(figsize=(6, 3))
 
+
 def PolyCoefficients(x, coeffs):
     """ Returns a polynomial for ``x`` values for the ``coeffs`` provided.
 
@@ -23,7 +24,7 @@ def PolyCoefficients(x, coeffs):
 
 # directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/data/materials/N95/N95/100C"
 directory = "C:/Users/tillp/sciebo/Exchange_FEMMT/05_Materials/data/Loss_Data_PHD_Keuck/mu_phi_Plot"
-frequencies_in_kHz = [200] # [100, 200, 300]
+frequencies_in_kHz = [100]  # [100, 200, 300]
 temperatures = [60, 100]
 
 for j, temperature in enumerate(temperatures):

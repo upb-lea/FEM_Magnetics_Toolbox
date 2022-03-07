@@ -4,7 +4,8 @@
 Include "Parameter.pro";
 Include "postquantities.pro";
 Include "BH.pro";
-Include "mu_imag.pro";
+//Include "mu_imag.pro";
+Include "core_materials.pro";
 ExtGmsh = ".pos";
 
 
@@ -183,6 +184,7 @@ Function {
   // nu: reluctivity
   // nu = 1/mu
   nu[#{Air}] = Complex[nu0, 0];
+  mu[#{Air}] = Complex[mu0, 0];
   nu[#{Winding1, Winding2}] = Complex[nu0, 0];
 
   // Hysteresis Loss
@@ -195,7 +197,8 @@ Function {
         mu[#{Iron}]   = Complex[mu0*mur_real, mu0*mur_imag] ;
         nu[#{Iron}]   = 1/mu[$1, $2] ;
     ElseIf(Flag_Permeability_From_Data)
-        mu[#{Iron}]   = Complex[mu0*(mur^2-f_N95_mu_imag[$1, $2]^2)^(0.5), mu0*f_N95_mu_imag[$1, $2]] ;  // TODO
+        //mu[#{Iron}]   = Complex[mu0*(mur^2-f_N95_mu_imag[$1, $2]^2)^(0.5), mu0*f_N95_mu_imag[$1, $2]] ;  // TODO
+        mu[#{Iron}]   = Complex[mu0*f_N95_mu_real[$1], mu0*f_N95_mu_imag[$1]] ;
         nu[#{Iron}]   = 1/mu[$1, $2] ;
     Else
         mu[#{Iron}]   = mu0*mur ;
@@ -486,7 +489,8 @@ PostProcessing {
       //{ Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
       { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-
+      { Name mur_re ; Value { Term { [ Re[ mu[{d a}, Freq] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
+      { Name mur_im ; Value { Term { [ Im[ mu[{d a}, Freq] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
       { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
 
