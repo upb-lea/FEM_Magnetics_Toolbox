@@ -78,9 +78,7 @@ html_context = {
 
 # Code for adding html side bars to theme
 html_sidebars = {
-    '**': [
-        'versioning.html',
-    ],
+    '**': ['versioning.html']
  }
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

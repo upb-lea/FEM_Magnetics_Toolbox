@@ -13,11 +13,9 @@ The ``MagneticComponent`` class
    :member-order: bysource
 
 FEMMT functions
-**************
+***************
 
 .. currentmodule:: femmt.femmt_functions
-    :members:
-    :undoc-members:
     
 .. autoclass:: femmt.femmt_functions
    :members:
