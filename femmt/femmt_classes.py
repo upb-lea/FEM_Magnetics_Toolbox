@@ -63,6 +63,8 @@ class MagneticComponent:
         else:
             self.update_paths(os.path.dirname(__file__))
 
+        self.correct = False
+
         # Initialization of all instance variables
 
         # Breaking variable
@@ -1017,10 +1019,9 @@ class MagneticComponent:
 
         def draw_outer(self):
             """
-            Draws the
+            Draws the outer points
 
             :return:
-
             """
             # Outer Core
             # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
@@ -2226,7 +2227,12 @@ class MagneticComponent:
 
             # Fitting the outer radius to ensure surface area
             self.r_inner = self.component.core.window_w + self.component.core.core_w / 2
-            self.r_outer = np.sqrt((self.component.core.core_w / 2) ** 2 + self.r_inner ** 2)
+            if self.component.correct:
+                A_out = 200 * 10 ** -6
+                self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
+            else:
+                self.r_outer = np.sqrt((self.component.core.core_w / 2) ** 2 + self.r_inner ** 2)
+
             # np.sqrt(window_w**2 + window_w * core_w + core_w**2/2)
 
             #
@@ -3191,18 +3197,23 @@ class MagneticComponent:
 
                 # Go down and counter-clockwise
                 # Four points around the core
+                if self.component.correct:
+                    correction_of_outer_points = 0.0025
+                else:
+                    correction_of_outer_points = 0
+
                 self.p_core.append(gmsh.model.geo.addPoint(0,
                                                            self.component.two_d_axi.p_outer[1][1],
                                                            self.component.two_d_axi.p_outer[1][2],
                                                            self.component.two_d_axi.p_outer[1][3]))
 
                 self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_outer[1][0],
-                                                           self.component.two_d_axi.p_outer[1][1],
+                                                           self.component.two_d_axi.p_outer[1][1] + correction_of_outer_points,
                                                            self.component.two_d_axi.p_outer[1][2],
                                                            self.component.two_d_axi.p_outer[1][3]))
 
                 self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_outer[3][0],
-                                                           self.component.two_d_axi.p_outer[3][1],
+                                                           self.component.two_d_axi.p_outer[3][1] - correction_of_outer_points,
                                                            self.component.two_d_axi.p_outer[3][2],
                                                            self.component.two_d_axi.p_outer[3][3]))
 

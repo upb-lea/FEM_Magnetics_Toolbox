@@ -83,7 +83,7 @@ def PolyCoefficients(x, coeffs):
     return y
 
 
-def create_arithmetic_form(temperatures: list[int], frequencies: list[int], material: str, mu_r_frequency: int =None):
+def create_arithmetic_form(temperatures: list[int], frequencies: list[int], material: str, mu_r_frequency: int = None, poly_degree: int = 1):
     # static read-directory
     read_directory=f"materials/{material}/"
     write_directory = f"materials/{material}/"
@@ -112,14 +112,13 @@ def create_arithmetic_form(temperatures: list[int], frequencies: list[int], mate
             mu_r_sorted = np.delete(mu_r_sorted, to_delete)
 
             # Fit polynomial factors
-            poly_degree = 1
             z_mur = np.polyfit(b_mu_r_sorted, mu_r_sorted, poly_degree)
             z_mur = np.flip(z_mur, 0)
             mu_r_fitted = PolyCoefficients(x=b_mu_r_sorted, coeffs=z_mur)
 
 
-            # plt.plot(b_mu_r_sorted, mu_r_sorted)
-            # plt.plot(b_mu_r_sorted, mu_r_fitted)
+            plt.plot(b_mu_r_sorted, mu_r_sorted, label=f"mu_r at {mu_r_frequency}Hz")
+            plt.plot(b_mu_r_sorted, mu_r_fitted, label=f"mu_r fitted at {mu_r_frequency}Hz")
 
             # Get permeability loss angle data
             b = np.genfromtxt(read_directory+f"mu_phi/b_{int(frequency / 1000)}kHz_{material}_{temperature}C.csv", delimiter=',', dtype=None)
@@ -150,9 +149,14 @@ def create_arithmetic_form(temperatures: list[int], frequencies: list[int], mate
             b_full_range = np.concatenate((b_sorted, max(b_sorted)+b_sorted))
 
             # Fit polynomial factors
-            z = np.polyfit(b_sorted, mu_phi_sorted, poly_degree)
+            z = np.polyfit(b_sorted, mu_phi_sorted, 1)
+            # z = np.polyfit(b_sorted, mu_phi_sorted, poly_degree-1)
             z = np.flip(z, 0)
             phi_full_range = PolyCoefficients(x=b_full_range, coeffs=z)
+            if not os.path.isdir(write_directory+"/phi_full_range"):
+                os.mkdir(write_directory+"/phi_full_range")
+            np.savetxt(write_directory + f"phi_full_range/phi_full_range_{int(frequency/1000)}kHz_{material}_{temperature}C.csv", phi_full_range, newline=', ', fmt='%f')
+
 
             # mu_r with b from current mu_phi data
             # plt.plot(b_sorted, PolyCoefficients(x=b_sorted, coeffs=z_mur))
@@ -165,12 +169,18 @@ def create_arithmetic_form(temperatures: list[int], frequencies: list[int], mate
             # plt.plot(b_sorted, mu_imag_1)
             # plt.plot(b_full_range, PolyCoefficients(x=b_full_range, coeffs=z_mur), label="amplitude")
 
-            mu_imag = np.sin(np.deg2rad(phi_full_range)) * PolyCoefficients(x=b_full_range, coeffs=z_mur)
+            b_max = 0.4
+
+            mu_imag = np.sin(np.deg2rad(phi_full_range)) * PolyCoefficients(x=b_full_range, coeffs=z_mur)  # * (1+np.sign(b_max-b_full_range))/2
             plt.plot(b_full_range, mu_imag, label="imaginary part")
-            mu_real = np.cos(np.deg2rad(phi_full_range)) * PolyCoefficients(x=b_full_range, coeffs=z_mur)
+
+            mu_real
+
+            mu_real = np.cos(np.deg2rad(phi_full_range)) * PolyCoefficients(x=b_full_range, coeffs=z_mur)  # * (1+np.sign(b_max-b_full_range))/2 + (1-np.sign(b_max-b_full_range))/2
             plt.plot(b_full_range, mu_real, label="real part")
 
             plt.legend()
+            plt.xlabel("$B$ / T")
             plt.grid()
             plt.show()
 

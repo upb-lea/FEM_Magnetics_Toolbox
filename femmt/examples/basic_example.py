@@ -8,8 +8,8 @@ import numpy as np
 # Find the result file here: /python-side-packages-path/femmt/femmt/results/result_log_electro_magnetic.json
 
 # component = "inductor"
-# component = "transformer-interleaved"
-component = "integrated_transformer"
+component = "transformer-interleaved"
+# component = "integrated_transformer"
 # component = "transformer"
 
 # Create Object
@@ -154,7 +154,7 @@ if component == "transformer-interleaved":
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
 
     # perform a thermal simulation using ONELAB
-    # geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
 
     # perform a thermal validation simulation using FEMM
     # geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)

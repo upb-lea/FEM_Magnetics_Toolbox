@@ -606,6 +606,7 @@ PostProcessing {
       // Hysteresis Losses (According To Complex Core Parameters)
 
       { Name p_hyst ; Value { Integral {
+        // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
         [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
 
