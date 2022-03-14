@@ -12,14 +12,6 @@ The ``MagneticComponent`` class
    :special-members: __init__
    :member-order: bysource
 
-The ``VirtualWindingWindow`` class
-***********************************
-.. autoclass:: femmt::MagneticComponent.VirtualWindingWindow
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :noindex:
-
 FEMMT methods
 **************
 
