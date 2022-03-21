@@ -64,8 +64,8 @@ def example_thermal_simulation():
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
     #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
 
-component = "inductor"
-# component = "transformer-interleaved"
+# component = "inductor"
+component = "transformer-interleaved"
 #component = "integrated_transformer"
 # component = "transformer"
 
@@ -74,7 +74,7 @@ if component == "inductor":
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type="inductor")
 
-    # Update Geometry
+    # 2. set core parameters
     geo.core.update(window_h=0.02, window_w=0.0075,
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=0.6)
