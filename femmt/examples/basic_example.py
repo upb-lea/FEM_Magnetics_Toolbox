@@ -21,7 +21,7 @@ def example_thermal_simulation():
             "core": 5, # ferrite
             "winding": 400, # copper
             "air_gaps": 180, # aluminium nitride
-            "isolation": 1 # TODO Find material
+            "isolation": 0.0263 # TODO Find material
     }
 
     # Here the case size can be determined
@@ -62,11 +62,11 @@ def example_thermal_simulation():
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
-    #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
+    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
 
-# component = "inductor"
-component = "transformer-interleaved"
-#component = "integrated_transformer"
+component = "inductor"
+# component = "transformer-interleaved"
+# component = "integrated_transformer"
 # component = "transformer"
 
 # Create Object
@@ -89,7 +89,7 @@ if component == "inductor":
 
     geo.create_model(freq=100000, visualize_before=True, do_meshing=True, save_png=False)
 
-    geo.single_simulation(freq=100000, current=[3], show_results=False)
+    #geo.single_simulation(freq=100000, current=[3], show_results=False)
 
     example_thermal_simulation()
 

@@ -4909,7 +4909,7 @@ class MagneticComponent:
         c_wire = 0
 
         # Case
-        k_case = thermal_conductivity_dict["case"]
+        k_case = thermal_conductivity_dict["case"]["top"] # Does not matter when the regions all have the same thermal coductivity.
         q_vol_case = 0
         # c_case = 0.01
         c_case = 0
