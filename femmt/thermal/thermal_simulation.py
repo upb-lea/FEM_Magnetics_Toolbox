@@ -70,8 +70,8 @@ def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_
     
     if air_gaps_tag is not None:
         k = {
-        "core": k_core,
-        "air_gaps": k_air_gaps 
+            "core": k_core,
+            "air_gaps": k_air_gaps 
         }
         q_vol = {
             "core": heat_flux,
@@ -187,7 +187,7 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
                 inner_winding_list.append(loss)
         winding_losses.append(inner_winding_list)
 
-    core_losses = losses["Core_Eddy_Current"]
+    core_losses = losses["Core_Eddy_Current"] + losses["Core_Hysteresis"]
 
     # TODO All those pro classes could be used as global variables
     case_dim_tags = create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags, thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)

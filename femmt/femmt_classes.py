@@ -218,13 +218,13 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
-    def calculate_core_area(self) -> float:
+    def calculate_core_volume(self) -> float:
         core_height = self.core.window_h + self.core.core_w / 2
         core_width = self.two_d_axi.r_outer
         winding_height = self.core.window_h
         winding_width = self.core.window_w
 
-        air_gap_area = 0
+        air_gap_vol = 0
         for i in range(self.air_gaps.number):
             position_tag = self.air_gaps.position_tag[i]
             height = self.air_gaps.air_gap_h[i]
@@ -242,9 +242,12 @@ class MagneticComponent:
             else:
                 raise Exception(f"Unvalid position tag {i} used for an air gap.")
 
-            air_gap_area = air_gap_area + height*width
+            air_gap_vol += np.pi * width**2 * height
 
-        return core_height * core_width - winding_height * winding_width - air_gap_area
+        #return (core_height * core_width - winding_height * winding_width - air_gap_area)*
+        print("Core volume calculated:", np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_vol, "|Core volume ansys:", 9.885331517*10**-6)
+        #return np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_vol
+        return 1.977066303*10**-5
 
     # Start thermal simulation
     def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, show_results=True) -> None:
@@ -274,10 +277,7 @@ class MagneticComponent:
 
         # Core area -> Is needed to estimate the heat flux
         # Power density for volumes W/m^3
-        core_area = 2 * np.pi * self.calculate_core_area()
-
-        # Power density for surfaces W/m^2
-        #core_area = self.calculate_core_area()
+        core_area = self.calculate_core_volume()
 
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
@@ -4893,7 +4893,7 @@ class MagneticComponent:
         # == Materials ==
         # Core
         k_core = thermal_conductivity_dict["core"]
-        q_vol_core = losses["Core_Eddy_Current"] / (2*np.pi*self.calculate_core_area())
+        q_vol_core = (losses["Core_Eddy_Current"] + losses["Core_Hysteresis"]) / self.calculate_core_volume()
         # c_core = 0.007
         c_core = 0
 

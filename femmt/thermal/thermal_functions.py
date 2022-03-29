@@ -2,19 +2,20 @@ import json
 import numpy as np
 import os
 
-def calculate_heat_flux_round_wire(power, radius):
+def calculate_heat_flux_round_wire(power, wire_radius):
     """
     :param power: losses in Watts
     :param radius: wire thickness in m
     """
-
-    wire_thickness = radius
-
     # Power density for volumes W/m^3
-    return power/(2*np.pi**2 * wire_thickness**2)
+    #volume = 2 * np.pi**2 * wire_radius**2 * wire_position_x
+    volume = 2 * np.pi**2 * wire_radius**2 * 0.011
+    ansys_volume = 4.863247569*10**-7
 
-    # Power density for surfaces W/m^2
-    #return power/(np.pi * wire_thickness**2)
+    print("Calculated winding volume:", volume, "|ANSYS winding volume:", ansys_volume)
+
+    return power/ansys_volume
+    #return power/2*np.pi*wire_radius
 
 def read_results_log(results_log_file_path):
     losses = {}

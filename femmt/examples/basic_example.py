@@ -10,7 +10,7 @@ def example_thermal_simulation():
     # The case parameter sets the thermal conductivity for a case which will be set around the core.
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
-            "air": 0.0263,
+            "air": 0.0261,
             "case": { # epoxy resign
                 "top": 0.3,
                 "top_right": 0.3,
@@ -20,30 +20,32 @@ def example_thermal_simulation():
             },
             "core": 5, # ferrite
             "winding": 400, # copper
-            "air_gaps": 180, # aluminium nitride
-            "isolation": 0.0263 # TODO Find material
+            #"air_gaps": 180, # aluminium nitride
+            #"air_gaps": 5, # aluminium nitride
+            "air_gaps": 0.0261,
+            "isolation": 0.0261 # TODO Find material
     }
 
     # Here the case size can be determined
-    case_gap_top = 0.0015
+    case_gap_top = 0.002
     case_gap_right = 0.0025
     case_gap_bot = 0.002
 
     # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
     # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
     boundary_temperatures = {
-        "value_boundary_top": 293,
-        "value_boundary_top_right": 293,
-        "value_boundary_right_top": 293,
-        "value_boundary_right": 293,
-        "value_boundary_right_bottom": 293,
-        "value_boundary_bottom_right": 293,
-        "value_boundary_bottom": 293
+        "value_boundary_top": 20,
+        "value_boundary_top_right": 20,
+        "value_boundary_right_top": 20,
+        "value_boundary_right": 20,
+        "value_boundary_right_bottom": 20,
+        "value_boundary_bottom_right": 20,
+        "value_boundary_bottom": 20
     }
     
     # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
     # Currently only one temperature can be applied which will be set on every boundary site.
-    femm_boundary_temperature = 293
+    femm_boundary_temperature = 20
 
     # Here the boundary sides can be turned on (1) or off (0)
     boundary_flags = {
@@ -75,14 +77,18 @@ if component == "inductor":
     geo = fmt.MagneticComponent(component_type="inductor")
 
     # 2. set core parameters
-    geo.core.update(window_h=0.02, window_w=0.0075,
+    core = fmt.core_database()["PQ 40/40"]
+    #geo.core.update(window_h=0.04, window_w=0.00745,
+    #                mu_rel=3100, phi_mu_deg=12,
+    #                sigma=0.6)
+    geo.core.update(core_w=core["core_w"], window_w=core["window_w"], window_h=core["window_h"],
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=0.6)
 
     # 3. set air gap parameters
     geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
 
-    geo.update_conductors(n_turns=[[4]], conductor_type=["solid"], conductor_radii=[0.0015],
+    geo.update_conductors(n_turns=[[8]], conductor_type=["solid"], conductor_radii=[0.0015],
                           winding=["primary"], scheme=["square"],
                           core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001],
                           conductivity_sigma=["copper"])
