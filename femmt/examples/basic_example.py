@@ -62,7 +62,7 @@ def example_thermal_simulation():
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
-    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
+    #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
 
 component = "inductor"
 # component = "transformer-interleaved"

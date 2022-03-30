@@ -22,8 +22,7 @@ geo.update_air_gaps(method="percent",
                     air_gap_h=[0.0005, 0.0005, 0.0005, 0.0005, 0.0005],
                     air_gap_position=[15, 35, 55, 75, 95])
 """
-geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002])
-# geo.update_air_gaps(method="manually", n_air_gaps=0, air_gap_h=[0.002])
+geo.air_gaps.update(method="percent", n_air_gaps=3, position_tag=[0, 0, 0], air_gap_h=[0.0001, 0.0002, 0.0004], air_gap_position=[20, 50, 80])
 """geo.update_conductors(n_turns=[[N1, 0], [0, N2]],  # n_turns=[[N1, Ns1], [N2, Ns2]],
                       conductor_type=["litz", "solid"],
                       winding=["primary", "secondary"],
@@ -57,8 +56,7 @@ if inductance_calculation and not flag_reference:
     geo.get_inductances(I0=I0, op_frequency=frequency, skin_mesh_factor=skin_accuracy)
 else:
     if flag_reference:
-        geo.femm_reference(freq=frequency, current=[I0, N1 / N2 * I0], sign=[1, -1], sigma_cu=58, non_visualize=0)
-        # geo.femm_reference(freq=frequency, current=[I0, 0], sign=[1, -1], sigma=58, non_visualize=0)
+        geo.femm_reference(freq=frequency, current=[I0, N1 / N2 * I0], sign=[1, -1], non_visualize=0)
     else:
         geo.create_model(freq=frequency, visualize_before=True)
         geo.single_simulation(freq=frequency, current=[I0, N1 / N2 * I0], phi_deg=[0, 180], show_results=True)
