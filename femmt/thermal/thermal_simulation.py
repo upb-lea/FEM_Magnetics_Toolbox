@@ -97,7 +97,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, f
     k = {}
     regions = {}
     windings_total_str = "{"
-    entities = []
+    entities = [[], []]
 
     for winding_index, winding in enumerate(winding_tags):
         if winding is not None and len(winding) > 0:
@@ -108,7 +108,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, f
                 k[name] = k_windings
                 regions[name] = tag
                 for entity in gmsh.model.getEntitiesForPhysicalGroup(2, tag):
-                    entities.append(entity)
+                    entities[winding_index].append(entity)
                 
     # Needs to be added. [:-2] removes the last ', '
     regions["windings_total"] = windings_total_str[:-2] + "}"
@@ -116,7 +116,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, f
     function_pro.add_dicts(k, q_vol)
     group_pro.add_regions(regions)
 
-    return [[2, tag] for tag in entities]
+    return [[[2, tag] for tag in entities[0]], [[2, tag] for tag in entities[1]]]
     
 def simulate(onelab_folder_path, mesh_file, solver_file):
     c = onelab.client(__file__)
@@ -201,12 +201,13 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     # Colorize
     if pretty_colors:
         gmsh.model.setColor(case_dim_tags, 50, 50, 50)
-        gmsh.model.setColor(background_dim_tags, 255, 255, 255)
-        gmsh.model.setColor(core_dim_tags, 110, 110, 110)
-        gmsh.model.setColor(windings_dim_tags, 192, 28, 40)
+        gmsh.model.setColor(background_dim_tags, 193, 193, 193)
+        gmsh.model.setColor(core_dim_tags, 58, 58, 58)
+        gmsh.model.setColor(windings_dim_tags[0], 6, 213, 6)
+        gmsh.model.setColor(windings_dim_tags[1], 213, 6, 6)
         if air_gaps_dim_tags is not None:
-            gmsh.model.setColor(air_gaps_dim_tags, 203, 156, 190)
-        gmsh.model.setColor(isolation_dim_tags, 59, 59, 59)
+            gmsh.model.setColor(air_gaps_dim_tags, 255, 171, 6)
+        gmsh.model.setColor(isolation_dim_tags, 109, 109, 109)
         
     gmsh.model.mesh.generate()
     gmsh.write(model_mesh_file_path)
