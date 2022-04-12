@@ -1,6 +1,6 @@
 import femmt as fmt
 
-def example_thermal_simulation():
+def example_thermal_simulation(geo):
     # Thermal simulation:
     # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
     # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -11,38 +11,38 @@ def example_thermal_simulation():
     thermal_conductivity_dict = {
             "air": 0.0263,
             "case": { # epoxy resign
-                "top": 0.3,
-                "top_right": 0.3,
-                "right": 0.3,
-                "bot_right": 0.3,
-                "bot": 0.3
+                "top": 0.0263,
+                "top_right": 0.0263,
+                "right": 0.0263,
+                "bot_right": 0.0263,
+                "bot": 0.0263
             },
             "core": 5, # ferrite
             "winding": 400, # copper
-            "air_gaps": 180, # aluminium nitride
+            "air_gaps": 0.0263, # aluminium nitride
             "isolation": 0.0263 # TODO Find material
     }
 
     # Here the case size can be determined
-    case_gap_top = 0.0015
-    case_gap_right = 0.0025
-    case_gap_bot = 0.002
+    case_gap_top = 0.001
+    case_gap_right = 0.001
+    case_gap_bot = 0.001
 
     # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
     # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
     boundary_temperatures = {
-        "value_boundary_top": 293,
-        "value_boundary_top_right": 293,
-        "value_boundary_right_top": 293,
-        "value_boundary_right": 293,
-        "value_boundary_right_bottom": 293,
-        "value_boundary_bottom_right": 293,
-        "value_boundary_bottom": 293
+        "value_boundary_top": 20,
+        "value_boundary_top_right": 20,
+        "value_boundary_right_top": 20,
+        "value_boundary_right": 20,
+        "value_boundary_right_bottom": 20,
+        "value_boundary_bottom_right": 20,
+        "value_boundary_bottom": 20
     }
     
     # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
     # Currently only one temperature can be applied which will be set on every boundary site.
-    femm_boundary_temperature = 293
+    femm_boundary_temperature = 20
 
     # Here the boundary sides can be turned on (1) or off (0)
     boundary_flags = {
@@ -61,12 +61,12 @@ def example_thermal_simulation():
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
-    #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
+    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 def pq4040():
-    geo  = fmt.MagneticComponent(component_type="inductor")
+    geo = fmt.MagneticComponent(component_type="inductor")
 
-    geo.core.update(window_h=0.0278, window_w=0.01105, mu_rel=3100, phi_mu_deg=12, sigma=0.6)
+    geo.core.update(core_h=0.04, core_w=0.0149, window_h=0.0278, window_w=0.01105, mu_rel=3100, phi_mu_deg=12, sigma=0.6)
     geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
 
     geo.update_conductors(n_turns=[[8]], conductor_type=["solid"], conductor_radii=[0.0015],
@@ -75,8 +75,8 @@ def pq4040():
                         conductivity_sigma=["copper"])
 
     geo.create_model(freq=100000, visualize_before=True, do_meshing=True, save_png=False)
-
-    example_thermal_simulation()
+    #geo.single_simulation(freq=100000, current=[3], show_results=False)
+    example_thermal_simulation(geo)
 
 def basic_example():
     geo = fmt.MagneticComponent(component_type="transformer")
