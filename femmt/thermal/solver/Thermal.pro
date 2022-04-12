@@ -20,6 +20,7 @@ PostProcessing {
     PostQuantity {
       { Name T; Value{ Local{ [ {T} ] ; In Total; Jacobian JVol; } } }
       { Name influx; Value{ Local{ [ {influx} ] ; In Warm; Jacobian JVol; } } }
+	  { Name material; Value{ Local{ [ k[] ] ; In Total; Jacobian JVol; } } }
     }
   }
 }
@@ -28,5 +29,5 @@ PostOperation map UsingPost The {
 
   Print[ T, OnElementsOf Total , File thermal_file];
   Print[ influx, OnElementsOf Warm , File thermal_influx_file];
-  
+  Print[ material, OnElementsOf Total , File "material.pos"];
 }

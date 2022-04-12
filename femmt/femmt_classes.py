@@ -218,13 +218,18 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
-    def calculate_core_area(self) -> float:
-        core_height = self.core.window_h + self.core.core_w / 2
-        core_width = self.two_d_axi.r_outer
+    def calculate_core_volume(self) -> float:
+        # TODO core_h and core_w should always be set
+        if self.core.core_h is not None and self.core.core_w is not None:
+            core_height = self.core.core_h
+            core_width = self.core.core_w
+        else:
+            core_height = self.core.window_h + self.core.core_w / 2
+            core_width = self.two_d_axi.r_outer
         winding_height = self.core.window_h
         winding_width = self.core.window_w
 
-        air_gap_area = 0
+        air_gap_volume = 0
         for i in range(self.air_gaps.number):
             position_tag = self.air_gaps.position_tag[i]
             height = self.air_gaps.air_gap_h[i]
@@ -242,9 +247,25 @@ class MagneticComponent:
             else:
                 raise Exception(f"Unvalid position tag {i} used for an air gap.")
 
-            air_gap_area = air_gap_area + height*width
+            air_gap_volume += np.pi * width**2 * height
 
-        return core_height * core_width - winding_height * winding_width - air_gap_area
+        #return (core_height * core_width - winding_height * winding_width - air_gap_area)*
+        print("Core volume calculated:", np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_volume, "|Core volume ansys:", 1.996159905*10**-5)
+        #return np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_volume
+        return 1.996159905*10**-5
+
+    def get_wire_distances(self):
+        wire_distance = []
+        for winding in self.two_d_axi.p_conductor:
+            # 5 points are for 1 wire
+            num_points = len(winding)
+            num_windings = num_points//5
+            winding_list = []
+            for i in range(num_windings):
+                winding_list.append(winding[i*5][0])
+            wire_distance.append(winding_list)
+
+        return wire_distance
 
     # Start thermal simulation
     def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, show_results=True) -> None:
@@ -274,10 +295,7 @@ class MagneticComponent:
 
         # Core area -> Is needed to estimate the heat flux
         # Power density for volumes W/m^3
-        core_area = 2 * np.pi * self.calculate_core_area()
-
-        # Power density for surfaces W/m^2
-        #core_area = self.calculate_core_area()
+        core_area = self.calculate_core_volume()
 
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
@@ -300,6 +318,7 @@ class MagneticComponent:
             },
             "core_area": core_area,
             "conductor_radii": wire_radii,
+            "wire_distances": self.get_wire_distances(),
             "show_results": show_results,
             "pretty_colors": False,
             "show_before_simulation": False
@@ -486,6 +505,7 @@ class MagneticComponent:
             # Dimensions
             self.type = "EI"  # Basic shape of magnetic conductor
             self.core_w = None  # Axi symmetric case | core_w := core radius
+            self.core_h = None
             self.window_w = None  # Winding window width
             self.window_h = None  # Winding window height
 
@@ -1025,25 +1045,46 @@ class MagneticComponent:
             """
             # Outer Core
             # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
-            self.p_outer[0][:] = [-self.r_outer,
-                                  -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
-                                  0,
-                                  self.component.mesh.c_core]
+            if self.component.core.core_h is None:
+                self.p_outer[0][:] = [-self.r_outer,
+                                    -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
+                                    0,
+                                    self.component.mesh.c_core]
 
-            self.p_outer[1][:] = [self.r_outer,
-                                  -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
-                                  0,
-                                  self.component.mesh.c_core]
+                self.p_outer[1][:] = [self.r_outer,
+                                    -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
+                                    0,
+                                    self.component.mesh.c_core]
 
-            self.p_outer[2][:] = [-self.r_outer,
-                                  (self.component.core.window_h / 2 + self.component.core.core_w / 4),
-                                  0,
-                                  self.component.mesh.c_core]
+                self.p_outer[2][:] = [-self.r_outer,
+                                    (self.component.core.window_h / 2 + self.component.core.core_w / 4),
+                                    0,
+                                    self.component.mesh.c_core]
 
-            self.p_outer[3][:] = [self.r_outer,
-                                  (self.component.core.window_h / 2 + self.component.core.core_w / 4),
-                                  0,
-                                  self.component.mesh.c_core]
+                self.p_outer[3][:] = [self.r_outer,
+                                    (self.component.core.window_h / 2 + self.component.core.core_w / 4),
+                                    0,
+                                    self.component.mesh.c_core]
+            else:
+                self.p_outer[0][:] = [-self.r_outer,
+                                    -self.component.core.core_h/2,
+                                    0,
+                                    self.component.mesh.c_core]
+
+                self.p_outer[1][:] = [self.r_outer,
+                                    -self.component.core.core_h/2,
+                                    0,
+                                    self.component.mesh.c_core]
+
+                self.p_outer[2][:] = [-self.r_outer,
+                                    self.component.core.core_h/2,
+                                    0,
+                                    self.component.mesh.c_core]
+
+                self.p_outer[3][:] = [self.r_outer,
+                                    self.component.core.core_h/2,
+                                    0,
+                                    self.component.mesh.c_core]
 
         def draw_window(self):
             # Window
@@ -2234,7 +2275,6 @@ class MagneticComponent:
                 self.r_outer = np.sqrt((self.component.core.core_w / 2) ** 2 + self.r_inner ** 2)
 
             # np.sqrt(window_w**2 + window_w * core_w + core_w**2/2)
-
             #
             self.draw_outer()
 
@@ -4866,7 +4906,7 @@ class MagneticComponent:
         """
         return (x1 + x2) / 2, (y1 + y2) / 2
 
-    def femm_thermal_validation(self, thermal_conductivity_dict, boundary_temperature):
+    def femm_thermal_validation(self, thermal_conductivity_dict, boundary_temperature, case_gap_top, case_gap_right, case_gap_bot):
         """
         Creates a thermal model in femm and simulates it with the given thermal conductivities
 
@@ -4893,7 +4933,7 @@ class MagneticComponent:
         # == Materials ==
         # Core
         k_core = thermal_conductivity_dict["core"]
-        q_vol_core = losses["Core_Eddy_Current"] / (2*np.pi*self.calculate_core_area())
+        q_vol_core = (losses["Core_Eddy_Current"] + losses["Core_Hysteresis"]) / self.calculate_core_volume()
         # c_core = 0.007
         c_core = 0
 
@@ -4933,9 +4973,10 @@ class MagneticComponent:
         femm.hi_addmaterial('Core', k_core, k_core, q_vol_core, c_core)
         femm.hi_addmaterial('Air', k_air, k_air, q_vol_air, c_air)
         femm.hi_addmaterial('Air Gaps', k_air_gap, k_air_gap, q_vol_air_gap, c_air_gap)
+        wire_distances = self.get_wire_distances()
         for winding_index, winding in enumerate(winding_losses_list):
             for i in range(len(winding)):
-                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index]), c_wire)
+                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index], wire_distances[winding_index][i]), c_wire)
         femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case)
 
         # Add boundary condition
@@ -5038,11 +5079,6 @@ class MagneticComponent:
             raise Exception("Negative air gap number is not allowed")
 
         # Add case
-        # Case size
-        case_gap_top = 0.0015
-        case_gap_right = 0.0025
-        case_gap_bot = 0.002
-
         femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + case_gap_top)  # Top left line
         femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top)  # Top line
         femm.hi_drawline(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top, self.two_d_axi.p_outer[1, 0] + case_gap_right,
