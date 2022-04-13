@@ -4353,105 +4353,100 @@ class MagneticComponent:
         mygetdp = os.path.join(self.onelab_folder_path, "getdp")
         self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.e_m_mesh_file + " -solve Analysis -v2")
 
-    def write_log(self):
+    def write_log(self, sweep_number: int = 1, current_list_list_of_log: List = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
-        them in a JSON log file.
+        them in a dictionary variable. From this data type a JSON log file is created.
+        :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
+        :param current_list_list_of_log: Current values of the sweep iterations. Not needed for single simulation
         :return:
-        :rtype: None
         """
-        file = open(self.e_m_results_log_path, 'w+', encoding='utf-8')
 
-        winding_result_path = ["Primary", "Secondary", "Tertiary"]
+        # ======load data=============
 
-        log = {}
+        #create the main dictionary. 'single_sweeps' will contain a list of n=sweep_number sweep_dicts and
+        #'total_losses_core' etc. as single values
+        all_sweep_dict = {"single_sweeps": [], "total_eddy_losses_core": [], "hyst_losses_core_fundamental_freq": [], "total_losses_core": [], "total_losses_winding": []}
+        for sweep_run in range(0, sweep_number):
 
-        # Write Core Losses
-        log["Losses"] = {}
+            #create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
+            #Single values, recieved during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
+            sweep_dict = {"winding": [], "core_eddy_losses": [], "core_hyst_losses": [], "losses_all_windings": [],"mag_field_energy": []}
 
-        print(self.load_result(res_name="CoreEddyCurrentLosses")[0])
-        log["Losses"]["Core_Eddy_Current"] = self.load_result(res_name="CoreEddyCurrentLosses")[0]
-        log["Losses"]["Core_Hysteresis"] = self.load_result(res_name="p_hyst")[0]
+            for winding in range(0, self.n_windings):
 
-        # Write Winding Losses
-        total_winding_losses = 0
-        for winding in range(0, self.n_windings):
-            log["Losses"][f"Winding_{winding + 1}"] = {}
-            log["Losses"][f"Winding_{winding + 1}"][f"Turns"] = []
-            if self.windings[winding].conductor_type == "litz":
-                losses_winding = self.load_result(res_name=f"j2H_{winding + 1}")
-                for turn in range(0, self.windings[winding].turns[0]):
-                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding] + f"/Losses_turn_{turn + 1}")[0])
-            else:
-                losses_winding = self.load_result(res_name=f"j2F_{winding + 1}")
-                for turn in range(0, self.windings[winding].turns[0]):
-                    log["Losses"][f"Winding_{winding + 1}"][f"Turns"].append(self.load_result(res_name=winding_result_path[winding] + f"/Losses_turn_{turn + 1}")[0])
+                #create dictionary winding_dict with 'losses_turns' as list of the j=number_turns turn losses.
+                #Single values related to one winding are added as 'losses_winding' etc.
+                winding_dict = {"number_turns": [], "losses_turns": [], "losses_winding": [], "flux": [], "self_induction": [], "I": [], "V": [], "P": [], "Q": [], "S": []}
 
-            log["Losses"][f"Winding_{winding + 1}"]["total_winding"] = losses_winding[0]
+                winding_result_path = ["Primary", "Secondary", "Tertiary"]
 
-            total_winding_losses += losses_winding[0]
-        log["Losses"]["all_windings"] = total_winding_losses
+                winding_dict["number_turns"].append(self.windings[winding].turns[0])
+                if self.windings[winding].conductor_type == "litz":
+                    winding_dict["losses_winding"].append(self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run])
+                    for turn in range(0, self.windings[winding].turns[0]):
+                        winding_dict["losses_turns"].append(
+                            self.load_result(res_name=winding_result_path[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+                    # ToDo: alternative?
+                    #winding_dict["losses_winding"].append(sum(winding_dict["losses_turns"]))
+                else:
+                    winding_dict["losses_winding"].append(self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run])
+                    for turn in range(0, self.windings[winding].turns[0]):
+                        winding_dict["losses_turns"].append(
+                            self.load_result(res_name=winding_result_path[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+                    # ToDo: alternative?
+                    # winding_dict["losses_winding"].append(sum(winding_dict["losses_turns"]))
+                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
+                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
-        # loss_log["Winding_Total"] = self.load_result(res_name="WindingTotal")
+                winding_dict["self_induction"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                winding_dict["self_induction"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
-        log[f"Mag_Field_Energy"] = self.load_result(res_name=f"ME")[0], self.load_result(res_name=f"ME", part="imaginary")[0]
+                # When running single_simulation, current is used, otherwise current_list_list_of_log ToDo: not very nice.
+                if sweep_number > 1:
+                    winding_dict["I"].append(current_list_list_of_log[sweep_run][winding])
+                else:
+                    winding_dict["I"].append(self.current[winding])
 
-        for winding in range(0, self.n_windings):
-            log[f"Winding {winding+1}"] = {}
+                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
-            # Write Flux
-            log[f"Winding {winding+1}"][f"Flux_Linkage_{winding+1}"] = self.load_result(res_name=f"Flux_Linkage_{winding+1}")[0], self.load_result(res_name=f"Flux_Linkage_{winding+1}", part="imaginary")[0]
+                # calculate power
+                # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
+                winding_dict["P"].append(winding_dict["V"][0] * winding_dict["I"][0] / 2)
+                winding_dict["Q"].append(winding_dict["V"][1] * winding_dict["I"][0] / 2)
+                winding_dict["S"].append(np.sqrt(winding_dict["P"][0] ** 2 + winding_dict["Q"][0] ** 2))
 
-            # Write Self Inductance
-            log[f"Winding {winding+1}"][f"L_{winding+1}{winding+1}"] = self.load_result(res_name=f"L_{winding+1}{winding+1}")[0], self.load_result(res_name=f"L_{winding+1}{winding+1}", part="imaginary")[0]
+                sweep_dict["winding"].append(winding_dict)
 
-            # Write Complex Power: S, Q, P from magnetic Flux
-            # log[f"Winding {winding+1}"][f"Active"] = 0.5 * log[f"Winding {winding+1}"]["Flux_Linkage_1"][1] * self.current[winding] * self.frequency * 2 * np.pi  # P = d/dt (1/2 * L * I^2) = d/dt E_ind [DC Losses are not included]
-            # log[f"Winding {winding+1}"][f"Reactive"] = 0.5 * log[f"Winding {winding+1}"]["Flux_Linkage_1"][0] * self.current[winding] * self.frequency * 2 * np.pi
-            # log[f"Winding {winding+1}"][f"Apparent"] = np.sqrt(log[f"Winding {winding+1}"][f"Active"] ** 2 + log[f"Winding {winding+1}"][f"Reactive"] ** 2)
+            sweep_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
+            sweep_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
 
-            # # Current
-            # I = self.load_result(res_name=f"I_{winding+1}_f{self.frequency}", res_type="circuit", last_n=1, part="real", position=1)[0]
-            # log[f"Winding {winding+1}"][f"I"] = I
-            #
-            # # Voltage
-            # voltage_re = []
-            # voltage_im = []
-            # for turn in range(0, sum(self.windings[winding].turns)):
-            #     voltage_re.append(self.load_result(res_name=f"U_{winding+1}_f{self.frequency}", res_type="circuit", last_n=1, part="real", position=turn)[0])
-            #     voltage_im.append(self.load_result(res_name=f"U_{winding+1}_f{self.frequency}", res_type="circuit", last_n=1, part="imaginary", position=turn)[0])
-            # V = [sum(voltage_re), sum(voltage_im)]
-            # log[f"Winding {winding+1}"][f"V"] = V
-            #
-            # # Power
-            # P = V[0] * I / 2
-            # Q = V[1] * I / 2
-            # S = np.sqrt(P**2+Q**2)
-            #
-            # log[f"Winding {winding+1}"][f"P"] = P
-            # log[f"Winding {winding+1}"][f"Q"] = Q
-            # log[f"Winding {winding+1}"][f"S"] = S
+            sweep_dict["core_eddy_losses"].append(self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run])
+            sweep_dict["core_hyst_losses"].append(self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run])
 
-            # Current and Voltage
-            I = self.current[winding]
-            V = [self.load_result(res_name=f"Voltage_{winding+1}", part="real")[0], self.load_result(res_name=f"Voltage_{winding+1}", part="imaginary")[0]]
-            log[f"Winding {winding+1}"][f"I"] = I
-            log[f"Winding {winding+1}"][f"V"] = V
+            #Sum losses of all windings of one sweep run
+            sweep_dict["losses_all_windings"].append(sum(sweep_dict["winding"][d]["losses_winding"][0] for d in range(len(sweep_dict["winding"]))))
 
-            # Power
-            P = V[0] * I / 2
-            Q = V[1] * I / 2
-            S = np.sqrt(P**2+Q**2)
+            all_sweep_dict["single_sweeps"].append(sweep_dict)
 
-            log[f"Winding {winding+1}"][f"P"] = P
-            log[f"Winding {winding+1}"][f"Q"] = Q
-            log[f"Winding {winding+1}"][f"S"] = S
+        # Sum losses of all sweep runs. For core losses just use hyst_losses of the fundamental frequency
+        all_sweep_dict["total_losses_winding"].append(sum(all_sweep_dict["single_sweeps"][d]["losses_all_windings"][0] for d in range(len(all_sweep_dict["single_sweeps"]))))
 
+        all_sweep_dict["total_eddy_losses_core"].append(sum(all_sweep_dict["single_sweeps"][d]["core_eddy_losses"][0] for d in range(len(all_sweep_dict["single_sweeps"]))))
 
+        #For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frquency is at [0]
+        # => just an approximation for excitation sweeps!
+        if sweep_number > 1:
+            all_sweep_dict["hyst_losses_core_fundamental_freq"].append(all_sweep_dict["single_sweeps"][1]["core_hyst_losses"][0])
+        else:
+            all_sweep_dict["hyst_losses_core_fundamental_freq"].append(all_sweep_dict["single_sweeps"][0]["core_hyst_losses"][0])
 
+        all_sweep_dict["total_losses_core"].append(all_sweep_dict["hyst_losses_core_fundamental_freq"][0] + all_sweep_dict["total_eddy_losses_core"][0])
 
-        json.dump(log, file, indent=2, ensure_ascii=False)
-        file.close()
+        # ======save data as JSON=============
+        with open(self.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(all_sweep_dict, outfile, ensure_ascii=False)
 
     def read_log(self):
         log = {}
@@ -5552,10 +5547,12 @@ class MagneticComponent:
         if self.valid:
 
             for i in range(0, len(frequency_list)):
-                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i], phase_deg_list=phi_deg_list_list[i])  # frequency and current
+                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
+                                phase_deg_list=phi_deg_list_list[i])  # frequency and current
                 self.file_communication()
                 self.pre_simulate()
                 self.simulate()
+            self.write_log(len(frequency_list), current_list_list)
 
             if show_last:
                 self.visualize()
