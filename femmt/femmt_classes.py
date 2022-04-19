@@ -2299,7 +2299,7 @@ class MagneticComponent:
                     "winding_bot": 0.00001
                 }
 
-            #self.draw_isolations(isolation_deltas)
+            self.draw_isolations(isolation_deltas)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Pre-Processing
