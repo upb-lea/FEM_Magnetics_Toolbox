@@ -10,20 +10,20 @@ def example_thermal_simulation():
     # The case parameter sets the thermal conductivity for a case which will be set around the core.
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
-            "air": 0.0261,
+            "air": 3,
             "case": { # epoxy resign
-                "top": 0.3,
-                "top_right": 0.3,
-                "right": 0.3,
-                "bot_right": 0.3,
-                "bot": 0.3
+                "top": 3,
+                "top_right": 3,
+                "right": 3,
+                "bot_right": 3,
+                "bot": 3
             },
             "core": 5, # ferrite
             "winding": 400, # copper
             #"air_gaps": 180, # aluminium nitride
             #"air_gaps": 5, # aluminium nitride
-            "air_gaps": 0.0261,
-            "isolation": 0.0261 # TODO Find material
+            "air_gaps": 3,
+            "isolation": 3 # TODO Find material
     }
 
     # Here the case size can be determined

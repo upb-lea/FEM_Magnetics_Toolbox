@@ -15,18 +15,14 @@ The ``MagneticComponent`` class
 FEMMT functions
 ***************
 
-.. currentmodule:: femmt.femmt_functions
-    
-.. autoclass:: femmt.femmt_functions
-   :members:
-   :undoc-members:
-   :special-members: __init__
-   :member-order: bysource
-    
+.. automodule:: femmt.femmt_functions
+    :members:
+    :undoc-members:
+  
 FEMMT Thermal
 **************
 
-.. currentmodule:: femmt.thermal_classes
+.. currentmodule:: femmt.thermal.thermal_classes
 
 .. autoclass:: ConstraintPro
     :members:
