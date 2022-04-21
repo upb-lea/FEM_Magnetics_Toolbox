@@ -63,7 +63,7 @@ class MagneticComponent:
         else:
             self.update_paths(os.path.dirname(__file__))
 
-        self.correct = False
+        self.correct_outer_leg = False
 
         # Initialization of all instance variables
 
@@ -2268,7 +2268,7 @@ class MagneticComponent:
 
             # Fitting the outer radius to ensure surface area
             self.r_inner = self.component.core.window_w + self.component.core.core_w / 2
-            if self.component.correct:
+            if self.component.correct_outer_leg:
                 A_out = 200 * 10 ** -6
                 self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
             else:
@@ -3237,8 +3237,8 @@ class MagneticComponent:
 
                 # Go down and counter-clockwise
                 # Four points around the core
-                if self.component.correct:
-                    correction_of_outer_points = 0.0025
+                if self.component.correct_outer_leg:
+                    correction_of_outer_points = 0.00
                 else:
                     correction_of_outer_points = 0
 
@@ -4196,7 +4196,8 @@ class MagneticComponent:
             text_file.write(f"Flag_Conducting_Core = 1;\n")
             if isinstance(self.core.sigma, str):
                 # TODO: Make following definition general
-                self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                self.core.sigma = 1 / 6
             text_file.write(f"sigma_core = {self.core.sigma};\n")
         else:
             text_file.write(f"Flag_Conducting_Core = 0;\n")
