@@ -1,13 +1,13 @@
 # minimal example for github clone
-from femmt import *
+import femmt as fmt
 import numpy as np
 
-# component = "inductor"
-component = "transformer"
+component = "inductor"
+#component = "transformer"
 
 # Create Object
 if component == "inductor":
-    geo = MagneticComponent(component_type="inductor", working_directory="")
+    geo = fmt.MagneticComponent(component_type="inductor")
 
     frequencies = [100000, 200000]
     current_amplitudes = [[10], [4]]
@@ -23,7 +23,8 @@ if component == "inductor":
     geo.update_conductors(n_turns=[[17]], conductor_type=["litz"], conductor_radii=[0.0012],
                           litz_para_type=['implicit_ff'], strands_numbers=[500], strand_radii=[35e-6],
                           winding=["primary"], scheme=["square_full_width"],
-                          core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0002])
+                          core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0002],
+                          conductivity_sigma=["copper", "copper"])
 
     # Perform a frequency sweep simulation
     geo.visualize_before = False
@@ -31,7 +32,7 @@ if component == "inductor":
 
 
 if component == "transformer":
-    geo = MagneticComponent(component_type="transformer", working_directory="")
+    geo = fmt.MagneticComponent(component_type="transformer")
 
     frequencies = [100000, 200000]
     current_amplitudes = [[4, 14.5], [2, 6]]
@@ -49,7 +50,8 @@ if component == "transformer":
                           strands_numbers=[400, 600], strand_radii=[35e-6, 35e-6],
                           conductor_radii=[0.0010, 0.0012],
                           winding=["interleaved"], scheme=["horizontal"],
-                          core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+                          core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
+                          conductivity_sigma=["copper", "copper"])
 
     # Perform a frequency sweep simulation
     geo.visualize_before = True

@@ -54,6 +54,7 @@ def create_isolation(isolation_tag, k_iso, function_pro: FunctionPro, group_pro:
     function_pro.add_dicts(k_iso, q_vol_iso)
     group_pro.add_regions({"isolation": isolation_tag})
 
+    return None
     return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, isolation_tag)]
 
 def create_background(background_tag, k_air, function_pro: FunctionPro, group_pro: GroupPro):
@@ -70,8 +71,8 @@ def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_
     
     if air_gaps_tag is not None:
         k = {
-        "core": k_core,
-        "air_gaps": k_air_gaps 
+            "core": k_core,
+            "air_gaps": k_air_gaps 
         }
         q_vol = {
             "core": heat_flux,
@@ -92,23 +93,23 @@ def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_
 
     return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, core_tag)], [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, air_gaps_tag)] if air_gaps_tag is not None else None
 
-def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, function_pro: FunctionPro, group_pro: GroupPro):
+def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, wire_distances, function_pro: FunctionPro, group_pro: GroupPro):
     q_vol = {}
     k = {}
     regions = {}
     windings_total_str = "{"
-    entities = []
+    entities = [[], []]
 
     for winding_index, winding in enumerate(winding_tags):
         if winding is not None and len(winding) > 0:
             for index, tag in enumerate(winding):
                 name = f"winding_{winding_index}_{index}"
                 windings_total_str += f"{name}, "
-                q_vol[name] = calculate_heat_flux_round_wire(winding_losses[winding_index][index], conductor_radii[winding_index])
+                q_vol[name] = calculate_heat_flux_round_wire(winding_losses[winding_index][index], conductor_radii[winding_index], wire_distances[winding_index][index])
                 k[name] = k_windings
                 regions[name] = tag
                 for entity in gmsh.model.getEntitiesForPhysicalGroup(2, tag):
-                    entities.append(entity)
+                    entities[winding_index].append(entity)
                 
     # Needs to be added. [:-2] removes the last ', '
     regions["windings_total"] = windings_total_str[:-2] + "}"
@@ -116,7 +117,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, f
     function_pro.add_dicts(k, q_vol)
     group_pro.add_regions(regions)
 
-    return [[2, tag] for tag in entities]
+    return [[[2, tag] for tag in entities[0]], [[2, tag] for tag in entities[1]]]
     
 def simulate(onelab_folder_path, mesh_file, solver_file):
     c = onelab.client(__file__)
@@ -127,7 +128,7 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
 
 def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
     tags_dict, thermal_conductivity_dict, boundary_temperatures, 
-    boundary_flags, boundary_physical_groups, core_area, conductor_radii,
+    boundary_flags, boundary_physical_groups, core_area, conductor_radii, wire_distances,
     show_results, pretty_colors = False, show_before_simulation = False):
     """
     Runs a thermal simulation.
@@ -140,6 +141,7 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     :param mesh_size: Settings the mesh size for the case wihich will be constructed around the core
     :param core_area: Area of the cross-section of the core
     :param conductor_radii: List of the radius for each winding 
+    :param wire_distances: List of the outer radius for each winding
     :param show_results: Boolean - Set true when the results shall be shown in a gmsh window
     :param pretty_colors: Boolean - Set true if a specified colorization should be applied
     :param show_before_simulation: -  Set true if the mesh should be shown before running the thermal simulation (e.g. to see the colorization)
@@ -187,13 +189,13 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
                 inner_winding_list.append(loss)
         winding_losses.append(inner_winding_list)
 
-    core_losses = losses["Core_Eddy_Current"]
+    core_losses = losses["Core_Eddy_Current"] + losses["Core_Hysteresis"]
 
     # TODO All those pro classes could be used as global variables
     case_dim_tags = create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags, thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)
     background_dim_tags = create_background(tags_dict["background_tag"], thermal_conductivity_dict["air"], function_pro, group_pro)
     core_dim_tags, air_gaps_dim_tags = create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, tags_dict["air_gaps_tag"], thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
-    windings_dim_tags = create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, function_pro, group_pro)
+    windings_dim_tags = create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, wire_distances, function_pro, group_pro)
     isolation_dim_tags = create_isolation(tags_dict["isolations_tag"], thermal_conductivity_dict["isolation"], function_pro, group_pro)
 
     gmsh.model.geo.synchronize()
@@ -201,12 +203,14 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     # Colorize
     if pretty_colors:
         gmsh.model.setColor(case_dim_tags, 50, 50, 50)
-        gmsh.model.setColor(background_dim_tags, 255, 255, 255)
-        gmsh.model.setColor(core_dim_tags, 110, 110, 110)
-        gmsh.model.setColor(windings_dim_tags, 192, 28, 40)
+        gmsh.model.setColor(background_dim_tags, 193, 193, 193)
+        gmsh.model.setColor(core_dim_tags, 58, 58, 58)
+        gmsh.model.setColor(windings_dim_tags[0], 6, 213, 6)
+        gmsh.model.setColor(windings_dim_tags[1], 213, 6, 6)
         if air_gaps_dim_tags is not None:
-            gmsh.model.setColor(air_gaps_dim_tags, 203, 156, 190)
-        gmsh.model.setColor(isolation_dim_tags, 59, 59, 59)
+            gmsh.model.setColor(air_gaps_dim_tags, 255, 171, 6)
+        if isolation_dim_tags is not None:
+            gmsh.model.setColor(isolation_dim_tags, 109, 109, 109)
         
     gmsh.model.mesh.generate()
     gmsh.write(model_mesh_file_path)

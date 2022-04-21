@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Others &mdash; FEM Magnetics Toolbox 0.2.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> FEM Magnetics Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html"><span class="sectnum">1</span> Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#fem-magnetics-toolbox-femmt"><span class="sectnum">1.1</span> FEM Magnetics Toolbox (FEMMT)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#installation"><span class="sectnum">2</span> Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#onelab-installation"><span class="sectnum">2.1</span> ONELAB installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#femm-installation-for-windows-user-only"><span class="sectnum">2.2</span> FEMM installation [for Windows User only]</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#install-femmt"><span class="sectnum">2.3</span> Install FEMMT</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt-release-version-recommended"><span class="sectnum">2.3.1</span> FEMMT release version (recommended)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt-development-version-for-developers-only"><span class="sectnum">2.3.2</span> FEMMT development version (for developers only)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#minimal-example-and-first-run"><span class="sectnum">2.4</span> Minimal example and first run</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#examples"><span class="sectnum">3</span> Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#basics"><span class="sectnum">3.1</span> Basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#gui"><span class="sectnum">3.2</span> GUI</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#others"><span class="sectnum">4</span> Others</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#roadmap"><span class="sectnum">4.1</span> Roadmap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#bug-reports"><span class="sectnum">4.2</span> Bug Reports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#contributing"><span class="sectnum">4.3</span> Contributing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#changelog"><span class="sectnum">4.4</span> Changelog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#license"><span class="sectnum">4.5</span> License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#history-and-project-status"><span class="sectnum">4.6</span> History and project status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="femmt.html">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="femmt.html#the-magneticcomponent-class">The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="femmt.html#femmt-functions">FEMMT functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="femmt.html#femmt-thermal">FEMMT Thermal</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Others</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/others.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="others">
+<h1>Others<a class="headerlink" href="#others" title="Permalink to this headline"></a></h1>
+<section id="roadmap">
+<h2>Roadmap<a class="headerlink" href="#roadmap" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>Planned features in 2022:</dt><dd><ul class="simple">
+<li><p>Software stability and general improvements,</p></li>
+<li><p>add more Functionality to the GUI,</p></li>
+<li><p>implement basics for thermal simulation in python code.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="bug-reports">
+<h2>Bug Reports<a class="headerlink" href="#bug-reports" title="Permalink to this headline"></a></h2>
+<p>Please use the issues report button within github to report bugs.</p>
+</section>
+<section id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline"></a></h2>
+<p>Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+For contributing, please refer to this [section](Contributing.md).</p>
+</section>
+<section id="changelog">
+<h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline"></a></h2>
+<p>Find the changelog <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/CHANGELOG.md">here</a>.</p>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h2>
+<p>Licensed under <a class="reference external" href="https://choosealicense.com/licenses/gpl-3.0/">GPLv3</a>.</p>
+</section>
+<section id="history-and-project-status">
+<h2>History and project status<a class="headerlink" href="#history-and-project-status" title="Permalink to this headline"></a></h2>
+<p>This project was initially written in matlab using FEMM simulation tool. It became clear that the project was no longer a small project. The project should be completely rewritten, because many new complex levels have been added. To place the project in the open source world, the programming language python is used.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, LEA, Paderborn University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
