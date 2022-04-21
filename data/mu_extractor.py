@@ -193,3 +193,31 @@ def create_arithmetic_form(temperatures: list[int], frequencies: list[int], mate
             np.savetxt(write_directory + f"mu_real/b_{int(frequency/1000)}kHz_{material}_{temperature}C.csv", b_full_range, newline=', ', fmt='%f')
             np.savetxt(write_directory + f"mu_imag/mu_imag_{int(frequency/1000)}kHz_{material}_{temperature}C.csv", mu_imag, newline=', ', fmt='%f')
             np.savetxt(write_directory + f"mu_imag/b_{int(frequency/1000)}kHz_{material}_{temperature}C.csv", b_full_range, newline=', ', fmt='%f')
+
+
+def mur_from_losses(b, p, f, phi):
+    # define
+    w = 2 * np.pi * f
+    mu0 = np.pi * 4e-7
+    mur = 0.5 / (p*1000) * w * np.sin(np.deg2rad(phi)) * (b/1000)**2 / mu0
+    print(mur)
+
+
+def phi_mu_from_losses(b, p, f, mur):
+    # define
+    w = 2 * np.pi * f
+    mu0 = np.pi * 4e-7
+    # P = w * Im(mu_) * (H_)^2 = 1/2 * w * |mu_| * sin(phi_mu) * (b_peak/|mu_|)^2
+    phi = np.rad2deg(np.arcsin((2 * mur * mu0 * p * 1000) / (w * (b/1000)**2)))
+    return phi
+
+#
+# def curve_fit():
+#     # extrapolate by quadratic curve fitting
+#     # Fit polynomial factors
+#     z_p_hyst = np.polyfit(b_amp, p_hyst, 2)
+#     z_p_hyst = np.flip(z_p_hyst, 0)
+#     p_hyst_extrapolated = PolyCoefficients(x=b_amp, coeffs=z_p_hyst)
+#     # p_hyst_extrapolated = np.flip(np.minimum.accumulate(np.flip(p_hyst_extrapolated)))
+#     p_hyst_extrapolated[0] = 2
+#     print(f"{p_hyst_extrapolated=}")
