@@ -490,7 +490,7 @@ class MagneticComponent:
             # self.im_mu_rel = None # Imaginary part of relative Core Permeability
 
             # Permitivity - [Conductivity in a magneto-quasistatic sense]
-            self.sigma = None  # Imaginary part of complex equivalent permeability [frequency-dependent]
+            self.sigma = None  # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
             # Steinmetz Loss
             self.steinmetz_loss = 0
@@ -510,10 +510,12 @@ class MagneticComponent:
             self.window_h = None  # Winding window height
 
         def update(self,
+                   material: str = "custom",  # "95_100"
+                   loss_approach: str = None,
+                   loss_data_source: str = "custom",
                    mu_rel: float = 3000,
                    phi_mu_deg: float = None,
                    sigma: float = None,
-                   material: str = None,  # "95_100"
                    non_linear: bool = False,
                    **kwargs) -> None:
             """
@@ -549,25 +551,28 @@ class MagneticComponent:
             self.non_linear = non_linear
 
             # Conductivity
-            self.sigma = sigma
-            if self.material is not None:
-                self.sigma = self.material
+            if self.material == "custom":  # user defines the conductivity
+                self.sigma = sigma
+            if loss_approach == "Steinmetz":  # conductivity must be set to 0 for Steinmetz approach
+                self.sigma = 0
+            else:
+                self.sigma = f"sigma_from_{self.material}"
 
             # Permeability
             self.mu_rel = mu_rel
             self.phi_mu_deg = phi_mu_deg
 
             # Check for which kind of permeability definition is used
-            if self.mu_rel is not None and not isinstance(self.material, str):
-                if self.phi_mu_deg is not None and self.phi_mu_deg!=0:
+            if loss_approach == "loss_angle":
+                if self.phi_mu_deg is not None and self.phi_mu_deg != 0:
                     self.permeability_type = "fixed_loss_angle"
                 else:
                     self.permeability_type = "real_value"
             else:
-                if self.material is not None:
+                if self.material != "custom":
                     self.permeability_type = "from_data"
-                else:
-                    raise Exception(f"Permeability must be specified with real_value, fixed_loss_angle or from_data")
+                # else:
+                #     raise Exception(f"Permeability must be specified with real_value, fixed_loss_angle or from_data")
 
 
             # Set attributes of core with given keywords
@@ -912,7 +917,7 @@ class MagneticComponent:
                 self.windings[i].parallel = 1
 
             self.windings[i].conductor_type = conductor_type[i]
-            if self.windings[i].conductor_type == ('stacked' or 'full' or 'foil'):
+            if self.windings[i].conductor_type == 'foil' or 'stacked' or 'full':
                 # foil/stacked parameters
                 self.windings[i].thickness = thickness[i]
                 self.windings[i].wrap_para = wrap_para[i]
@@ -943,7 +948,7 @@ class MagneticComponent:
                                                    conductor_radius=conductor_radii[i],
                                                    strand_radius=strand_radii[i])
 
-            if self.windings[i].conductor_type == ('stacked' or 'full' or 'foil'):
+            if self.windings[i].conductor_type == 'stacked' or 'full' or 'foil':
                 self.windings[i].a_cell = 1  # TODO: Surface size needed?
                 self.windings[i].conductor_radius = 1  # revisit
                 # Surface of the litz approximated hexagonal cell
@@ -1829,8 +1834,9 @@ class MagneticComponent:
                                                               self.component.mesh.c_conductor[num]])
 
                     if self.component.windings[num].conductor_type == "foil":
+                        print(f"at foil: {self.component.windings[num].wrap_para}")
                         # Wrap defined number of turns and chosen thickness
-                        if self.component.wrap_para[num] == "fixed_thickness":
+                        if self.component.windings[num].wrap_para == "fixed_thickness":
                             for i in range(0, self.component.windings[num].turns[n_win]):
                                 # CHECK if right bound is reached
                                 if (left_bound + (i + 1) * self.component.windings[num].thickness +
@@ -1854,7 +1860,7 @@ class MagneticComponent:
                                          self.component.mesh.c_conductor[num]])
 
                         # Fill the allowed space in the Winding Window with a chosen number of turns
-                        if self.component.wrap_para[num] == "interpolate":
+                        if self.component.windings[num].wrap_para == "interpolate":
                             x_interpol = np.linspace(left_bound, right_bound + self.component.isolation.cond_cond[num],
                                                      self.component.windings[num].turns + 1)
                             for i in range(0, self.component.windings[num].turns):
@@ -4676,7 +4682,8 @@ class MagneticComponent:
         if self.core.sigma != 0:
             if isinstance(self.core.sigma, str):
                 # TODO: Make following definition general
-                self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                self.core.sigma = 1 / 6
 
 
         print(f"{self.core.permeability_type=}, {self.core.sigma=}")
