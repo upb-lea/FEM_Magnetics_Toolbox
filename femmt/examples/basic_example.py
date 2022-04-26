@@ -95,9 +95,9 @@ if component == "inductor":
 
     geo.create_model(freq=100000, visualize_before=True, do_meshing=True, save_png=False)
 
-    #geo.single_simulation(freq=100000, current=[3], show_results=False)
+    geo.single_simulation(freq=100000, current=[3], show_results=True)
 
-    example_thermal_simulation()
+    # example_thermal_simulation()
 
     # Excitation Sweep Example
     # Perform a sweep using more than one frequency

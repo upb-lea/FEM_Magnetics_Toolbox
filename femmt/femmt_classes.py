@@ -917,7 +917,8 @@ class MagneticComponent:
                 self.windings[i].parallel = 1
 
             self.windings[i].conductor_type = conductor_type[i]
-            if self.windings[i].conductor_type == 'foil' or 'stacked' or 'full':
+
+            if self.windings[i].conductor_type in ['stacked', 'foil', 'full']:
                 # foil/stacked parameters
                 self.windings[i].thickness = thickness[i]
                 self.windings[i].wrap_para = wrap_para[i]
@@ -948,7 +949,7 @@ class MagneticComponent:
                                                    conductor_radius=conductor_radii[i],
                                                    strand_radius=strand_radii[i])
 
-            if self.windings[i].conductor_type == 'stacked' or 'full' or 'foil':
+            if self.windings[i].conductor_type in ['foil', 'stacked', 'full']:
                 self.windings[i].a_cell = 1  # TODO: Surface size needed?
                 self.windings[i].conductor_radius = 1  # revisit
                 # Surface of the litz approximated hexagonal cell
