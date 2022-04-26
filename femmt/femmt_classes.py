@@ -917,7 +917,6 @@ class MagneticComponent:
                 self.windings[i].parallel = 1
 
             self.windings[i].conductor_type = conductor_type[i]
-
             if self.windings[i].conductor_type in ['stacked', 'foil', 'full']:
                 # foil/stacked parameters
                 self.windings[i].thickness = thickness[i]
