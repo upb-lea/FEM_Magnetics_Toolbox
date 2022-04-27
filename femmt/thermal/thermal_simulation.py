@@ -54,6 +54,7 @@ def create_isolation(isolation_tag, k_iso, function_pro: FunctionPro, group_pro:
     function_pro.add_dicts(k_iso, q_vol_iso)
     group_pro.add_regions({"isolation": isolation_tag})
 
+    return None
     return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, isolation_tag)]
 
 def create_background(background_tag, k_air, function_pro: FunctionPro, group_pro: GroupPro):
@@ -208,7 +209,8 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
         gmsh.model.setColor(windings_dim_tags[1], 213, 6, 6)
         if air_gaps_dim_tags is not None:
             gmsh.model.setColor(air_gaps_dim_tags, 255, 171, 6)
-        gmsh.model.setColor(isolation_dim_tags, 109, 109, 109)
+        if isolation_dim_tags is not None:
+            gmsh.model.setColor(isolation_dim_tags, 109, 109, 109)
         
     gmsh.model.mesh.generate()
     gmsh.write(model_mesh_file_path)

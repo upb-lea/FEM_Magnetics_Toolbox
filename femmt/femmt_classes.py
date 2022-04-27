@@ -63,7 +63,7 @@ class MagneticComponent:
         else:
             self.update_paths(os.path.dirname(__file__))
 
-        self.correct = False
+        self.correct_outer_leg = False
 
         # Initialization of all instance variables
 
@@ -320,8 +320,8 @@ class MagneticComponent:
             "conductor_radii": wire_radii,
             "wire_distances": self.get_wire_distances(),
             "show_results": show_results,
-            "pretty_colors": False,
-            "show_before_simulation": False
+            "pretty_colors": True,
+            "show_before_simulation": True
         }
 
         run_thermal(**thermal_parameters)
@@ -377,7 +377,7 @@ class MagneticComponent:
         # Write the path to the config.json
         onelab_path_dict = {"onelab": onelab_path}
         with open(os.path.join(config_file_path), 'w', encoding='utf-8') as fd:
-            json.dump(onelab_path_dict, fd, ensure_ascii=False)
+            json.dump(onelab_path_dict, fd, indent=2, ensure_ascii=False)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
@@ -490,7 +490,7 @@ class MagneticComponent:
             # self.im_mu_rel = None # Imaginary part of relative Core Permeability
 
             # Permitivity - [Conductivity in a magneto-quasistatic sense]
-            self.sigma = None  # Imaginary part of complex equivalent permeability [frequency-dependent]
+            self.sigma = None  # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
             # Steinmetz Loss
             self.steinmetz_loss = 0
@@ -510,10 +510,12 @@ class MagneticComponent:
             self.window_h = None  # Winding window height
 
         def update(self,
+                   material: str = "custom",  # "95_100"
+                   loss_approach: str = None,
+                   loss_data_source: str = "custom",
                    mu_rel: float = 3000,
                    phi_mu_deg: float = None,
                    sigma: float = None,
-                   material: str = None,  # "95_100"
                    non_linear: bool = False,
                    **kwargs) -> None:
             """
@@ -549,25 +551,28 @@ class MagneticComponent:
             self.non_linear = non_linear
 
             # Conductivity
-            self.sigma = sigma
-            if self.material is not None:
-                self.sigma = self.material
+            if self.material == "custom":  # user defines the conductivity
+                self.sigma = sigma
+            if loss_approach == "Steinmetz":  # conductivity must be set to 0 for Steinmetz approach
+                self.sigma = 0
+            else:
+                self.sigma = f"sigma_from_{self.material}"
 
             # Permeability
             self.mu_rel = mu_rel
             self.phi_mu_deg = phi_mu_deg
 
             # Check for which kind of permeability definition is used
-            if self.mu_rel is not None and not isinstance(self.material, str):
-                if self.phi_mu_deg is not None and self.phi_mu_deg!=0:
+            if loss_approach == "loss_angle":
+                if self.phi_mu_deg is not None and self.phi_mu_deg != 0:
                     self.permeability_type = "fixed_loss_angle"
                 else:
                     self.permeability_type = "real_value"
             else:
-                if self.material is not None:
+                if self.material != "custom":
                     self.permeability_type = "from_data"
-                else:
-                    raise Exception(f"Permeability must be specified with real_value, fixed_loss_angle or from_data")
+                # else:
+                #     raise Exception(f"Permeability must be specified with real_value, fixed_loss_angle or from_data")
 
 
             # Set attributes of core with given keywords
@@ -912,7 +917,7 @@ class MagneticComponent:
                 self.windings[i].parallel = 1
 
             self.windings[i].conductor_type = conductor_type[i]
-            if self.windings[i].conductor_type == ('stacked' or 'full' or 'foil'):
+            if self.windings[i].conductor_type in ['stacked', 'foil', 'full']:
                 # foil/stacked parameters
                 self.windings[i].thickness = thickness[i]
                 self.windings[i].wrap_para = wrap_para[i]
@@ -943,7 +948,7 @@ class MagneticComponent:
                                                    conductor_radius=conductor_radii[i],
                                                    strand_radius=strand_radii[i])
 
-            if self.windings[i].conductor_type == ('stacked' or 'full' or 'foil'):
+            if self.windings[i].conductor_type in ['foil', 'stacked', 'full']:
                 self.windings[i].a_cell = 1  # TODO: Surface size needed?
                 self.windings[i].conductor_radius = 1  # revisit
                 # Surface of the litz approximated hexagonal cell
@@ -1829,8 +1834,9 @@ class MagneticComponent:
                                                               self.component.mesh.c_conductor[num]])
 
                     if self.component.windings[num].conductor_type == "foil":
+                        print(f"at foil: {self.component.windings[num].wrap_para}")
                         # Wrap defined number of turns and chosen thickness
-                        if self.component.wrap_para[num] == "fixed_thickness":
+                        if self.component.windings[num].wrap_para == "fixed_thickness":
                             for i in range(0, self.component.windings[num].turns[n_win]):
                                 # CHECK if right bound is reached
                                 if (left_bound + (i + 1) * self.component.windings[num].thickness +
@@ -1854,7 +1860,7 @@ class MagneticComponent:
                                          self.component.mesh.c_conductor[num]])
 
                         # Fill the allowed space in the Winding Window with a chosen number of turns
-                        if self.component.wrap_para[num] == "interpolate":
+                        if self.component.windings[num].wrap_para == "interpolate":
                             x_interpol = np.linspace(left_bound, right_bound + self.component.isolation.cond_cond[num],
                                                      self.component.windings[num].turns + 1)
                             for i in range(0, self.component.windings[num].turns):
@@ -2268,7 +2274,7 @@ class MagneticComponent:
 
             # Fitting the outer radius to ensure surface area
             self.r_inner = self.component.core.window_w + self.component.core.core_w / 2
-            if self.component.correct:
+            if self.component.correct_outer_leg:
                 A_out = 200 * 10 ** -6
                 self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
             else:
@@ -3237,8 +3243,8 @@ class MagneticComponent:
 
                 # Go down and counter-clockwise
                 # Four points around the core
-                if self.component.correct:
-                    correction_of_outer_points = 0.0025
+                if self.component.correct_outer_leg:
+                    correction_of_outer_points = 0.00
                 else:
                     correction_of_outer_points = 0
 
@@ -3661,8 +3667,11 @@ class MagneticComponent:
                 # Colors
                 for i in range(0, len(self.plane_surface_core)):
                     gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50, recursive=True)  # Core in gray
-                # gmsh.model.setColor([(2, self.plane_surface_air[0])], 0, 0, 0, recursive=True)
-                # gmsh.model.setColor([(2, self.plane_surface_air[0])], 255, 255, 255, recursive=True)  # Air in white
+                #gmsh.model.setColor([(2, self.plane_surface_air[0])], 0, 0, 0, recursive=True)
+                #gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 181, 181, 181, recursive=True)
+                gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 100, 60, 60, recursive=True)
+                #gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], 100, 100, 100, recursive=True)
+                #gmsh.model.setColor([(2, self.plane_surface_air[0])], 181, 181, 181, recursive=True)  # Air in white
                 for num in range(0, self.component.n_windings):
                     for i in range(0, len(self.plane_surface_cond[num])):
                         gmsh.model.setColor([(2, self.plane_surface_cond[num][i])], 200 * num, 200 * (1 - num), 0, recursive=True)   # Conductors in green/red
@@ -4193,7 +4202,8 @@ class MagneticComponent:
             text_file.write(f"Flag_Conducting_Core = 1;\n")
             if isinstance(self.core.sigma, str):
                 # TODO: Make following definition general
-                self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                self.core.sigma = 1 / 6
             text_file.write(f"sigma_core = {self.core.sigma};\n")
         else:
             text_file.write(f"Flag_Conducting_Core = 0;\n")
@@ -4353,100 +4363,139 @@ class MagneticComponent:
         mygetdp = os.path.join(self.onelab_folder_path, "getdp")
         self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.e_m_mesh_file + " -solve Analysis -v2")
 
-    def write_log(self, sweep_number: int = 1, current_list_list_of_log: List = None):
+    def write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
-        them in a dictionary variable. From this data type a JSON log file is created.
+        them in a dictionary. From this data type a JSON log file is created.
         :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
-        :param current_list_list_of_log: Current values of the sweep iterations. Not needed for single simulation
+        :param currents: Current values of the sweep iterations. Not needed for single simulation
         :return:
         """
+        fundamental_index = 0  # index of the fundamental frequency
 
-        # ======load data=============
+        # create the dictionary used to log the result data
+        #   - 'single_sweeps' contains a list of n=sweep_number sweep_dicts
+        #   - 'total_losses' contains the sums of all sweeps
+        #       - in case complex core parameters are used:
+        #           - hysteresis losses are taken only from fundamental frequency
+        #               - fundamental frequency is smallest frequency != 0
+        log_dict = {"single_sweeps": [], "total_losses": {}}
 
-        #create the main dictionary. 'single_sweeps' will contain a list of n=sweep_number sweep_dicts and
-        #'total_losses_core' etc. as single values
-        all_sweep_dict = {"single_sweeps": [], "total_eddy_losses_core": [], "hyst_losses_core_fundamental_freq": [], "total_losses_core": [], "total_losses_winding": []}
         for sweep_run in range(0, sweep_number):
+            # create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
+            # Single values, recieved during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
+            sweep_dict = {}
 
-            #create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
-            #Single values, recieved during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
-            sweep_dict = {"winding": [], "core_eddy_losses": [], "core_hyst_losses": [], "losses_all_windings": [],"mag_field_energy": []}
+            # Frequencies
+            if sweep_number > 1:
+                # sweep_simulation -> get frequencies from passed currents
+                sweep_dict["f"] = frequencies[sweep_run]
+                fundamental_index = np.argmin(np.ma.masked_where(np.array(frequencies) == 0, np.array(frequencies)))
+            else:
+                # single_simulation -> get frequency from instance variable
+                sweep_dict["f"] = self.frequency
+
+            # Winding names are needed to find the logging path
+            winding_name = ["Primary", "Secondary", "Tertiary"]
 
             for winding in range(0, self.n_windings):
 
-                #create dictionary winding_dict with 'losses_turns' as list of the j=number_turns turn losses.
-                #Single values related to one winding are added as 'losses_winding' etc.
-                winding_dict = {"number_turns": [], "losses_turns": [], "losses_winding": [], "flux": [], "self_induction": [], "I": [], "V": [], "P": [], "Q": [], "S": []}
+                # Create empty winding dictionary
+                # create dictionary winding_dict with 'turn_losses' as list of the j=number_turns turn losses.
+                # Single values related to one winding are added as 'winding_losses' etc.
+                winding_dict = {"turn_losses": [],
+                                "flux": [],
+                                "self_inductivity": [],
+                                "mag_field_energy": [],
+                                "V": []}
 
-                winding_result_path = ["Primary", "Secondary", "Tertiary"]
+                # Number turns
+                winding_dict["number_turns"] = self.windings[winding].turns[0]
 
-                winding_dict["number_turns"].append(self.windings[winding].turns[0])
-                if self.windings[winding].conductor_type == "litz":
-                    winding_dict["losses_winding"].append(self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run])
-                    for turn in range(0, self.windings[winding].turns[0]):
-                        winding_dict["losses_turns"].append(
-                            self.load_result(res_name=winding_result_path[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
-                    # ToDo: alternative?
-                    #winding_dict["losses_winding"].append(sum(winding_dict["losses_turns"]))
+                # Currents
+                if sweep_number > 1:
+                    # sweep_simulation -> get currents from passed currents
+                    winding_dict["I"] = currents[sweep_run][winding]
                 else:
-                    winding_dict["losses_winding"].append(self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run])
+                    # single_simulation -> get current from instance variable
+                    winding_dict["I"] = self.current[winding]
+
+
+                # Case litz: Load homogenized results
+                if self.windings[winding].conductor_type == "litz":
+                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, self.windings[winding].turns[0]):
-                        winding_dict["losses_turns"].append(
-                            self.load_result(res_name=winding_result_path[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
-                    # ToDo: alternative?
-                    # winding_dict["losses_winding"].append(sum(winding_dict["losses_turns"]))
+                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+
+                # Case litz: Load homogenized results
+                else:
+                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
+                    for turn in range(0, self.windings[winding].turns[0]):
+                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+
+                # Flux
                 winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
                 winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
-                winding_dict["self_induction"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["self_induction"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                # Inductance
+                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
-                # When running single_simulation, current is used, otherwise current_list_list_of_log ToDo: not very nice.
-                if sweep_number > 1:
-                    winding_dict["I"].append(current_list_list_of_log[sweep_run][winding])
-                else:
-                    winding_dict["I"].append(self.current[winding])
+                # Magnetic Field Energy
+                winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
+                winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
 
+                # Voltage
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
-                # calculate power
+                # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
-                winding_dict["P"].append(winding_dict["V"][0] * winding_dict["I"][0] / 2)
-                winding_dict["Q"].append(winding_dict["V"][1] * winding_dict["I"][0] / 2)
-                winding_dict["S"].append(np.sqrt(winding_dict["P"][0] ** 2 + winding_dict["Q"][0] ** 2))
+                winding_dict["P"] = winding_dict["V"][0] * winding_dict["I"] / 2
+                winding_dict["Q"] = winding_dict["V"][1] * winding_dict["I"] / 2
+                winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
 
-                sweep_dict["winding"].append(winding_dict)
+                sweep_dict[f"winding{winding+1}"] = winding_dict
 
-            sweep_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
-            sweep_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
 
-            sweep_dict["core_eddy_losses"].append(self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run])
-            sweep_dict["core_hyst_losses"].append(self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run])
+            # Core losses TODO: Choose between Steinmetz or complex core losses
+            sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run]
+            sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
 
-            #Sum losses of all windings of one sweep run
-            sweep_dict["losses_all_windings"].append(sum(sweep_dict["winding"][d]["losses_winding"][0] for d in range(len(sweep_dict["winding"]))))
+            # Sum losses of all windings of one single run
+            sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(0, self.n_windings))
 
-            all_sweep_dict["single_sweeps"].append(sweep_dict)
+            log_dict["single_sweeps"].append(sweep_dict)
 
-        # Sum losses of all sweep runs. For core losses just use hyst_losses of the fundamental frequency
-        all_sweep_dict["total_losses_winding"].append(sum(all_sweep_dict["single_sweeps"][d]["losses_all_windings"][0] for d in range(len(all_sweep_dict["single_sweeps"]))))
 
-        all_sweep_dict["total_eddy_losses_core"].append(sum(all_sweep_dict["single_sweeps"][d]["core_eddy_losses"][0] for d in range(len(all_sweep_dict["single_sweeps"]))))
+        # Total losses of excitation sweep
+        # Sum losses of all sweep runs. For core losses just use hyst_losses of the fundamental frequency.
+        # Also needed as excitation for steady state thermal simulations
 
-        #For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frquency is at [0]
+        # Single Windings
+        for winding in range(0, self.n_windings):
+            log_dict["total_losses"][f"winding{winding + 1}"] = {}
+            log_dict["total_losses"][f"winding{winding + 1}"]["total"] = sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"])))
+            # Single Turns
+            log_dict["total_losses"][f"winding{winding + 1}"]["turns"] = []
+            for turn in range(0, self.windings[winding].turns[0]):
+                log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
+
+        # Winding (all windings)
+        log_dict["total_losses"]["all_windings"] = sum(log_dict["single_sweeps"][d]["all_winding_losses"] for d in range(len(log_dict["single_sweeps"])))
+
+        # Core
+        log_dict["total_losses"]["eddy_core"] = sum(log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
+        # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frquency is at [0]
         # => just an approximation for excitation sweeps!
-        if sweep_number > 1:
-            all_sweep_dict["hyst_losses_core_fundamental_freq"].append(all_sweep_dict["single_sweeps"][1]["core_hyst_losses"][0])
-        else:
-            all_sweep_dict["hyst_losses_core_fundamental_freq"].append(all_sweep_dict["single_sweeps"][0]["core_hyst_losses"][0])
+        log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
 
-        all_sweep_dict["total_losses_core"].append(all_sweep_dict["hyst_losses_core_fundamental_freq"][0] + all_sweep_dict["total_eddy_losses_core"][0])
+        # Total losses of inductive component according to single or sweep simulation
+        log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
 
-        # ======save data as JSON=============
+        # ====== save data as JSON ======
         with open(self.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
-            json.dump(all_sweep_dict, outfile, ensure_ascii=False)
+            json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
 
     def read_log(self):
         log = {}
@@ -4567,7 +4616,7 @@ class MagneticComponent:
             data = list(reader)
         return data[-last_n_values:-1] + [data[-1]]
 
-    def load_result(self, res_name, res_type="value", last_n: bool = 1, part="real", position: int = 0):
+    def load_result(self, res_name, res_type="value", last_n: int = 1, part="real", position: int = 0):
         """
         Loads the "last_n" parameters from a result file of the scalar quantity "res_name".
         Either the real or imaginary part can be chosen.
@@ -4633,7 +4682,8 @@ class MagneticComponent:
         if self.core.sigma != 0:
             if isinstance(self.core.sigma, str):
                 # TODO: Make following definition general
-                self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                self.core.sigma = 1 / 6
 
 
         print(f"{self.core.permeability_type=}, {self.core.sigma=}")
@@ -5552,7 +5602,9 @@ class MagneticComponent:
                 self.file_communication()
                 self.pre_simulate()
                 self.simulate()
-            self.write_log(len(frequency_list), current_list_list)
+                # self.visualize()
+
+            self.write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
             if show_last:
                 self.visualize()

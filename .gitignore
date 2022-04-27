@@ -18,6 +18,7 @@
 femmt/femm
 femmt/mesh
 femmt/results
+femmt/unversioned
 femmt/.idea/
 .idea/
 femmt/__pycache__/

@@ -24,7 +24,7 @@ if component == "inductor":
                           litz_para_type=['implicit_ff'], strands_numbers=[500], strand_radii=[35e-6],
                           winding=["primary"], scheme=["square_full_width"],
                           core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0002],
-                          conductivity_sigma=["copper", "copper"])
+                          conductivity_sigma=["copper"])
 
     # Perform a frequency sweep simulation
     geo.visualize_before = False
