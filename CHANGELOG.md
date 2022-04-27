@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - conductor material can be chosen from a small material database, used in update_conductors(), e.g. conductivity_sigma=["copper"]
+- isolations for thermal simulation
 
 ### Fixed
 - fix #15: Secondary to Core isolation thickness not working
