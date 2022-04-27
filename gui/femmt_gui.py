@@ -1275,10 +1275,10 @@ class MainWindow(QMainWindow):
         self.md_loss_plot_label.setMask(pixmap.mask())
         self.md_loss_plot_label.show()
 
-        inductance = loaded_results_dict["Fluxes"]["L_11"][0]
-        loss_core_eddy_current = loaded_results_dict["Losses"]["Core_Eddy_Current"]
-        loss_core_hysteresis = loaded_results_dict["Losses"]["Core_Hysteresis"]
-        loss_winding_1 = loaded_results_dict["Losses"]["Winding_1"]["total_winding"]
+        inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductivity"][0]
+        loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
+        loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
+        loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
 
         self.md_loss_core_hysteresis_label.setText(f"Core Hysteresis loss: {loss_core_hysteresis} W")
         self.md_loss_core_eddy_current_label.setText(f"Core Eddy Current loss: {loss_core_eddy_current} W")
