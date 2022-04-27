@@ -3669,7 +3669,10 @@ class MagneticComponent:
                     gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50, recursive=True)  # Core in gray
                 #gmsh.model.setColor([(2, self.plane_surface_air[0])], 0, 0, 0, recursive=True)
                 #gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 181, 181, 181, recursive=True)
-                gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 100, 60, 60, recursive=True)
+                if self.plane_surface_air_gaps:
+                    # only colorize air-gap in case of air gaps
+                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 100, 60,
+                                        60, recursive=True)
                 #gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], 100, 100, 100, recursive=True)
                 #gmsh.model.setColor([(2, self.plane_surface_air[0])], 181, 181, 181, recursive=True)  # Air in white
                 for num in range(0, self.component.n_windings):

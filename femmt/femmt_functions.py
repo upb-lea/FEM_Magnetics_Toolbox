@@ -943,10 +943,10 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     with open(simulation_result_file_path, "r") as fd:
         loaded_results_dict = json.loads(fd.read())
 
-    inductance = loaded_results_dict["Fluxes"]["L_11"][0]
-    loss_core_eddy_current = loaded_results_dict["Losses"]["Core_Eddy_Current"]
-    loss_core_hysteresis = loaded_results_dict["Losses"]["Core_Hysteresis"]
-    loss_winding_1 = loaded_results_dict["Losses"]["Winding_1"]["total_winding"]
+    inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductivity"][0]
+    loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
+    loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
+    loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
 
     print(inductance)
     print(loss_core_eddy_current)
