@@ -42,3 +42,6 @@ femmt/thermal/solver/Parameters.pro
 
 # Used for integration test
 !tests/integration/fixtures/results/result_log_electro_magnetic.json
+
+# Example files
+femmt/examples/paper_thermal_validation
