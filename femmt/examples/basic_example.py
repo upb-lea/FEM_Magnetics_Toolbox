@@ -10,20 +10,18 @@ def example_thermal_simulation():
     # The case parameter sets the thermal conductivity for a case which will be set around the core.
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
-            "air": 3,
+            "air": 0.0263,
             "case": { # epoxy resign
-                "top": 3,
-                "top_right": 3,
-                "right": 3,
-                "bot_right": 3,
-                "bot": 3
+                "top": 0.122,
+                "top_right": 0.122,
+                "right": 0.122,
+                "bot_right": 0.122,
+                "bot": 0.122
             },
             "core": 5, # ferrite
             "winding": 400, # copper
-            #"air_gaps": 180, # aluminium nitride
-            #"air_gaps": 5, # aluminium nitride
-            "air_gaps": 3,
-            "isolation": 3 # TODO Find material
+            "air_gaps": 180, # aluminiumnitride
+            "isolation": 0.42 # polyethylen
     }
 
     # Here the case size can be determined
@@ -64,7 +62,10 @@ def example_thermal_simulation():
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
-    #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature)
+
+    # Because the isolations inside of the winding window are not implemented in femm simulation.
+    # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
+    # geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 component = "inductor"
 # component = "transformer-interleaved"

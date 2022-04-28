@@ -43,6 +43,7 @@ setup(
 					  'onelab>=1.0',
 					  'scipy>=1.7.2',
                       'pytest',
+                      'PyQt5>=5.15.6',
 					  ],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,

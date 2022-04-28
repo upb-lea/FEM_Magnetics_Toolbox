@@ -68,7 +68,7 @@ def create_background(background_tag, k_air, function_pro: FunctionPro, group_pr
 
 def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_tag, k_air_gaps, function_pro: FunctionPro, group_pro: GroupPro):
     heat_flux = core_losses/core_area
-    
+    print(heat_flux)
     if air_gaps_tag is not None:
         k = {
             "core": k_core,
@@ -106,6 +106,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
                 name = f"winding_{winding_index}_{index}"
                 windings_total_str += f"{name}, "
                 q_vol[name] = calculate_heat_flux_round_wire(winding_losses[winding_index][index], conductor_radii[winding_index], wire_distances[winding_index][index])
+                print(q_vol[name])
                 k[name] = k_windings
                 regions[name] = tag
                 for entity in gmsh.model.getEntitiesForPhysicalGroup(2, tag):
@@ -157,6 +158,7 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     # Relative paths
     map_pos_file = path.join(results_folder_path, "thermal.pos")
     influx_pos_file = path.join(results_folder_path, "thermal_influx.pos")
+    material_pos_file = path.join(results_folder_path, "thermal_material.pos")
     solver_folder_path = path.join(os.path.dirname(__file__), "solver")
     thermal_template_file = path.join(solver_folder_path, "Thermal.pro")
     parameters_file = path.join(solver_folder_path, "Parameters.pro")
@@ -176,20 +178,21 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
 
     parameters_pro.add_to_parameters({
         "thermal_file": map_pos_file.replace("\\", "/"),
-        "thermal_influx_file": influx_pos_file.replace("\\", "/")
+        "thermal_influx_file": influx_pos_file.replace("\\", "/"),
+        "thermal_material_file": material_pos_file.replace("\\", "/")
     })
 
     # Extract losses
     winding_losses = []
     for i in range(1, 3):
-        key = f"Winding_{i}"
+        key = f"winding{i}"
         inner_winding_list = []
         if key in losses:
-            for loss in losses[key]["Turns"]:
-                inner_winding_list.append(loss)
+            for winding in losses[key]["turns"]:
+                inner_winding_list.append(winding)
         winding_losses.append(inner_winding_list)
 
-    core_losses = losses["Core_Eddy_Current"] + losses["Core_Hysteresis"]
+    core_losses = losses["core"]
 
     # TODO All those pro classes could be used as global variables
     case_dim_tags = create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags, thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)

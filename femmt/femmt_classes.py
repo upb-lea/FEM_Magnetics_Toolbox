@@ -249,10 +249,8 @@ class MagneticComponent:
 
             air_gap_volume += np.pi * width**2 * height
 
-        #return (core_height * core_width - winding_height * winding_width - air_gap_area)*
-        print("Core volume calculated:", np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_volume, "|Core volume ansys:", 1.996159905*10**-5)
-        #return np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_volume
-        return 1.996159905*10**-5
+        # TODO Is this right?
+        return np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_volume
 
     def get_wire_distances(self):
         wire_distance = []
@@ -321,7 +319,7 @@ class MagneticComponent:
             "wire_distances": self.get_wire_distances(),
             "show_results": show_results,
             "pretty_colors": True,
-            "show_before_simulation": True
+            "show_before_simulation": False
         }
 
         run_thermal(**thermal_parameters)
@@ -3669,7 +3667,10 @@ class MagneticComponent:
                     gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50, recursive=True)  # Core in gray
                 #gmsh.model.setColor([(2, self.plane_surface_air[0])], 0, 0, 0, recursive=True)
                 #gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 181, 181, 181, recursive=True)
-                gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 100, 60, 60, recursive=True)
+                if self.plane_surface_air_gaps:
+                    # only colorize air-gap in case of air gaps
+                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 100, 60,
+                                        60, recursive=True)
                 #gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], 100, 100, 100, recursive=True)
                 #gmsh.model.setColor([(2, self.plane_surface_air[0])], 181, 181, 181, recursive=True)  # Air in white
                 for num in range(0, self.component.n_windings):
@@ -4978,7 +4979,7 @@ class MagneticComponent:
         # == Materials ==
         # Core
         k_core = thermal_conductivity_dict["core"]
-        q_vol_core = (losses["Core_Eddy_Current"] + losses["Core_Hysteresis"]) / self.calculate_core_volume()
+        q_vol_core = losses["core"] / self.calculate_core_volume()
         # c_core = 0.007
         c_core = 0
 
@@ -5007,11 +5008,11 @@ class MagneticComponent:
         # Setup winding list
         winding_losses_list = []
         for i in range(1, 3):
-            key = f"Winding_{i}"
+            key = f"winding{i}"
             inner_winding_list = []
             if key in losses:
-                for loss in losses[key]["Turns"]:
-                    inner_winding_list.append(loss)
+                for winding in losses[key]["turns"]:
+                    inner_winding_list.append(winding)
             winding_losses_list.append(inner_winding_list)
 
         # Setup materials

@@ -9,18 +9,18 @@ def example_thermal_simulation(geo):
     # The case parameter sets the thermal conductivity for a case which will be set around the core.
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
-            "air": 3, # potting
+            "air": 0.122, # potting
             "case": { # epoxy resign
-                "top": 3,
-                "top_right": 3,
-                "right": 3,
-                "bot_right": 3,
-                "bot": 3
+                "top": 0.122,
+                "top_right": 0.122,
+                "right": 0.122,
+                "bot_right": 0.122,
+                "bot": 0.122
             },
             "core": 5, # ferrite
             "winding": 400, # copper
-            "air_gaps": 3, # aluminium nitride
-            "isolation": 3 # TODO Find material
+            "air_gaps": 0.122, # aluminium nitride
+            "isolation": 0.122 # TODO Find material
     }
 
     # Here the case size can be determined
@@ -91,14 +91,58 @@ def basic_example():
     # Add conductors
     geo.update_conductors(n_turns=[[21], [7]], conductor_type=["solid", "solid"],
                         litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
-                        ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
+                        ff=[None, None], strands_numbers=[None, None], strand_radii=[None, None],
                         conductor_radii=[0.0011, 0.0011],
                         winding=["interleaved"], scheme=["horizontal"],
                         core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
                         conductivity_sigma=["copper", "copper"])
 
     # Create model
-    geo.create_model(freq=100000, visualize_before=True, do_meshing=False)
+    geo.create_model(freq=250000, visualize_before=True)
+
+    #geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_results=True)
+
+    thermal_conductivity_dict = {
+        "air": 0.0263,
+        "case": {
+            "top": 1.54,
+            "top_right": 1.54,
+            "right": 1.54,
+            "bot_right": 1.54,
+            "bot": 1.54
+        },
+        "core": 5,
+        "winding": 400,
+        "air_gaps": 180,
+        "isolation": 0.42
+    }
+
+    case_gap_top = 0.002
+    case_gap_right = 0.0025
+    case_gap_bot = 0.002
+
+    boundary_temperatures = {
+        "value_boundary_top": 20,
+        "value_boundary_top_right": 20,
+        "value_boundary_right_top": 20,
+        "value_boundary_right": 20,
+        "value_boundary_right_bottom": 20,
+        "value_boundary_bottom_right": 20,
+        "value_boundary_bottom": 20
+    }
+    boundary_flags = {
+        "flag_boundary_top": 1,
+        "flag_boundary_top_right": 1,
+        "flag_boundary_right_top": 1,
+        "flag_boundary_right": 1,
+        "flag_boundary_right_bottom": 1,
+        "flag_boundary_bottom_right": 1,
+        "flag_boundary_bottom": 1
+    }
+
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
+
 
 if __name__ == "__main__":
     pq4040()
+    #basic_example()
