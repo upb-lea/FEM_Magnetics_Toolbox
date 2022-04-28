@@ -22,3 +22,4 @@ geo.update_conductors(n_turns=[[5]], conductor_type=["foil"], thickness=[1e-3], 
 
 geo.create_model(freq=100000, visualize_before=True, do_meshing=True, save_png=False)
 geo.single_simulation(freq=100000, current=[3], show_results=True)
+
