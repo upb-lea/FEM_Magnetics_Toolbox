@@ -64,12 +64,12 @@ Formulation {
                  In Total; Integration I1; Jacobian JVol;  }
 
       Galerkin { [ -qVol[] , {T} ];
-                 In Total; Integration I1; Jacobian JVol;  }
+                 In Warm; Integration I1; Jacobian JVol;  }
 
-      Integral { [ -qVol[] , {influx} ];
+      Galerkin { [ -qVol[] , {influx} ];
                  In Warm; Integration I1; Jacobian JVol;  }
 				 
-      Integral { [ Dof{influx} , {influx} ];
+      Galerkin { [ Dof{influx} , {influx} ];
                  In Warm; Integration I1; Jacobian JVol;  }
     }
   }

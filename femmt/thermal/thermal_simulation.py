@@ -24,15 +24,8 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
         "case_bot_right": k_case["bot_right"],
         "case_bot": k_case["bot"]
     }
-    q_vol = {
-        "case_top": 0,
-        "case_top_right": 0,
-        "case_right": 0,
-        "case_bot_right": 0,
-        "case_bot": 0
-    }
 
-    function_pro.add_dicts(k, q_vol)
+    function_pro.add_dicts(k, None)
     group_pro.add_regions({
         "case_top": boundary_physical_groups["top"],
         "case_top_right": boundary_physical_groups["top_right"],
@@ -50,9 +43,8 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
 
 def create_isolation(isolation_tag, k_iso, function_pro: FunctionPro, group_pro: GroupPro):
     k_iso = {"isolation": k_iso}
-    q_vol_iso = {"isolation": 0}
 
-    function_pro.add_dicts(k_iso, q_vol_iso)
+    function_pro.add_dicts(k_iso, None)
     group_pro.add_regions({"isolation": isolation_tag})
 
     return None
@@ -60,9 +52,8 @@ def create_isolation(isolation_tag, k_iso, function_pro: FunctionPro, group_pro:
 
 def create_background(background_tag, k_air, function_pro: FunctionPro, group_pro: GroupPro):
     k_air = {"air": k_air}
-    q_vol_air = {"air": 0}
 
-    function_pro.add_dicts(k_air, q_vol_air)
+    function_pro.add_dicts(k_air, None)
     group_pro.add_regions({"air": background_tag})
     
     return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, background_tag)]
@@ -76,8 +67,7 @@ def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_
             "air_gaps": k_air_gaps 
         }
         q_vol = {
-            "core": heat_flux,
-            "air_gaps": 0
+            "core": heat_flux
         }
         group_pro.add_regions({
                 "core": core_tag,
