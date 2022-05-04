@@ -93,7 +93,7 @@ class FunctionPro:
 
     def add_dicts(self, k, q_vol):
         """
-        Order is important: k, rho, c, qVol
+        Order is important: k, qVol
         """
         self.k.update(k)
         self.q_vol.update(q_vol)

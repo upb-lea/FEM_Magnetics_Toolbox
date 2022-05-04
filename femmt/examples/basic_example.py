@@ -46,9 +46,10 @@ def example_thermal_simulation():
     femm_boundary_temperature = 20
 
     # Here the boundary sides can be turned on (1) or off (0)
+    # By turning off the flag a neumann boundary will be applied at this point with heat flux = 0
     boundary_flags = {
-        "flag_boundary_top": 1,
-        "flag_boundary_top_right": 1,
+        "flag_boundary_top": 0,
+        "flag_boundary_top_right": 0,
         "flag_boundary_right_top": 1,
         "flag_boundary_right": 1,
         "flag_boundary_right_bottom": 1,
@@ -98,7 +99,7 @@ if component == "inductor":
 
     geo.single_simulation(freq=100000, current=[3], show_results=True)
 
-    # example_thermal_simulation()
+    example_thermal_simulation()
 
     # Excitation Sweep Example
     # Perform a sweep using more than one frequency

@@ -11,6 +11,7 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
     TODO Set docstring
     
     """
+    
     group_pro.add_regions(boundary_regions)
     parameters_pro.add_to_parameters(boundary_temperatures)
     parameters_pro.add_to_parameters(boundary_flags)
@@ -21,14 +22,14 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
         "case_top_right": k_case["top_right"],
         "case_right": k_case["right"],
         "case_bot_right": k_case["bot_right"],
-        "case_bot": k_case["bot"] 
+        "case_bot": k_case["bot"]
     }
     q_vol = {
         "case_top": 0,
         "case_top_right": 0,
         "case_right": 0,
         "case_bot_right": 0,
-        "case_bot": 0 
+        "case_bot": 0
     }
 
     function_pro.add_dicts(k, q_vol)
