@@ -5027,7 +5027,7 @@ class MagneticComponent:
 
         # Add boundary condition
         femm.hi_addboundprop("Boundary", 0, boundary_temperature, 0, 0, 0, 0)
-        femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
+        femm.hi_addboundprop("NeumannBoundary", 1, 0, 0, 0, 0, 0)
 
         # == Geometry ==
         self.high_level_geo_gen()
@@ -5136,12 +5136,16 @@ class MagneticComponent:
         # femm.hi_selectsegment(*self.calculatePointAverage(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + caseGapTop))
         femm.hi_selectsegment(*MagneticComponent.calculate_point_average(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right,
                                                                          self.two_d_axi.p_outer[3, 1] + case_gap_top))
+        femm.hi_setsegmentprop("NeumannBoundary", 0, 1, 0, 2, "<None>")
+        femm.hi_clearselected()
+
         femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top,
                                                                          self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot))
         femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0,
                                                                          self.two_d_axi.p_outer[0, 1] - case_gap_bot))
         # femm.hi_selectsegment(*self.calculatePointAverage(0, self.two_d_axi.p_outer[0, 1] - caseGapBot, 0, self.two_d_axi.p_outer[0, 1]))
         femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
+        femm.hi_clearselected()
 
         # Add case material
         material_x, material_y = self.calculate_point_average(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + case_gap_top)
