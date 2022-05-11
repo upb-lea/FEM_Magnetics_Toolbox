@@ -206,6 +206,7 @@ class MagneticComponent:
         self.femm_results_log_path = os.path.join(self.femm_folder_path, "result_log_femm.json")
         self.config_path = os.path.join(self.femmt_folder_path, "config.json")
         self.e_m_mesh_file = os.path.join(self.mesh_folder_path, "electro_magnetic.msh")
+        self.model_geo_file = os.path.join(self.mesh_folder_path, "model.geo_unrolled")
         self.hybrid_mesh_file = os.path.join(self.mesh_folder_path, "hybrid.msh")
         self.hybrid_color_mesh_file = os.path.join(self.mesh_folder_path, "hybrid_color.msh")
         self.hybrid_color_visualize_file = os.path.join(self.mesh_folder_path, "hybrid_color.png")
@@ -3163,7 +3164,7 @@ class MagneticComponent:
             self.plane_surface_iso_core = []
             self.plane_surface_iso_pri_sec = []
 
-        def generate_hybrid_mesh(self, do_meshing=True, visualize_before=False, save_png=True, refine=0, alternative_error=0):
+        def generate_hybrid_mesh(self, visualize_before=False, save_png=True, refine=0, alternative_error=0):
             """
             - interaction with gmsh
             - mesh generation
@@ -3688,18 +3689,17 @@ class MagneticComponent:
                         gmsh.fltk.initialize()
 
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
-                    # gmsh.write(self.component.hybrid_color_mesh_file)  # save png
 
-
-            if do_meshing:
-                gmsh.model.mesh.generate(2)
-                random_value = str(np.random.rand())[-5]
-                gmsh.write(self.component.hybrid_mesh_file)
+            # No mesh is generated here because generating a mesh, saving it as *.msh loading it and appending more geometry data
+            # and the meshing again can cause bugs in the mesh
+            # Therefore only the model geometry is saved and the mesh will be generated later
+            # -> Save file as geo: File extension must be *.geo_unrolled
+            gmsh.write(os.path.splitext(self.component.model_geo_file))
 
         def generate_electro_magnetic_mesh(self, refine = 0):
             print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
-            gmsh.open(self.component.hybrid_mesh_file)
+            gmsh.open(self.component.model_geo_file)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Define physical Surfaces and Curves
@@ -3744,9 +3744,6 @@ class MagneticComponent:
             gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
             gmsh.model.setPhysicalName(1, self.pc_bound, "BOUND")
 
-
-
-
             # mshopt # Explicit stray path air gap optimization
             # mshopt if not self.component.component_type == "integrated_transformer":
             # mshopt     stray_path_mesh_optimizer = []
@@ -3772,31 +3769,27 @@ class MagneticComponent:
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # TODO: Adaptive Meshing
-            # if refine == 1:
-            #     print("\n ------- \nRefined Mesh Creation ")
-            #     # mesh the new gmsh.model using the size field
-            #     bg_field = gmsh.model.mesh.field.add("PostView")
-            #     # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
-            #     gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-            #     print("\nMeshing...\n")
-            #     gmsh.model.mesh.generate(2)
-            # else:
-            #     print("\nMeshing...\n")
-            #     gmsh.model.mesh.generate(2)
-
-
+            if refine == 1:
+                print("\n ------- \nRefined Mesh Creation ")
+                # mesh the new gmsh.model using the size field
+                bg_field = gmsh.model.mesh.field.add("PostView")
+                # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
+                gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
+                print("\nMeshing...\n")
+                gmsh.model.mesh.generate(2)
+            else:
+                print("\nMeshing...\n")
+                gmsh.model.mesh.generate(2)
 
             if not os.path.exists(self.component.mesh_folder_path):
                 os.mkdir(self.component.mesh_folder_path)
 
             gmsh.write(self.component.e_m_mesh_file)
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Open gmsh GUI for visualization
-            # gmsh.fltk.run()
-            # Terminate gmsh
 
         def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, refine = 0):
-            gmsh.open(self.component.hybrid_mesh_file)
+            print("Thermal Mesh Generation in Gmsh (write physical entities)")
+
+            gmsh.open(self.component.model_geo_file)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Create case around the core
@@ -3830,10 +3823,12 @@ class MagneticComponent:
             br_point_pos  = gmsh.model.getValue(0, br_point, [])
             bl_point_pos  = gmsh.model.getValue(0, bl_point, [])
 
+            mesh = self.c_core
+
             # Create 5 new areas: top, top right, right, bottom right, bottom
             # top
-            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], self.c_core)
-            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], self.c_core)
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
             top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
             top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
             top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
@@ -3841,8 +3836,8 @@ class MagneticComponent:
             top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
 
             # top right
-            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], self.c_core)
-            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], self.c_core)
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh)
             top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
             top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
             top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
@@ -3850,15 +3845,15 @@ class MagneticComponent:
             top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
 
             # right
-            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], self.c_core)
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh)
             right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
             right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
             right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
             right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
 
             # bottom right
-            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], self.c_core)
-            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], self.c_core)
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
             bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
             bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
             bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
@@ -3866,7 +3861,7 @@ class MagneticComponent:
             bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
 
             # bottom
-            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], self.c_core)
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh)
             bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
             bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
             bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
@@ -3998,6 +3993,10 @@ class MagneticComponent:
             # Synchronize again
             gmsh.model.geo.synchronize()
 
+            # Set case color to core color
+            for sf in [top_case_surface, top_right_case_surface, right_case_surface, bottom_right_case_surface, bottom_case_surface]:
+                gmsh.model.setColor([(2, sf)], 50, 50, 50, recursive=True)
+            
             # Output .msh file
             # TODO: Adaptive Meshing
             if refine == 1:
@@ -5336,10 +5335,10 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
-    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False, do_meshing: bool = True, save_png: bool = False):
+    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False, save_png: bool = False):
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
-            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, do_meshing=do_meshing, save_png=save_png)
+            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, save_png=save_png)
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
