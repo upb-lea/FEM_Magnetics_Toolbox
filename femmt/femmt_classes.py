@@ -26,7 +26,6 @@ if os.name == 'nt':
     install_femm_if_missing()
     import femm
 
-
 #  ===== Main Class  =====
 class MagneticComponent:
     """
@@ -54,7 +53,6 @@ class MagneticComponent:
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
-
 
         if "working_directory" in kwargs:
             wkdir = kwargs["working_directory"]
@@ -1833,7 +1831,6 @@ class MagneticComponent:
                                                               self.component.mesh.c_conductor[num]])
 
                     if self.component.windings[num].conductor_type == "foil":
-                        print(f"at foil: {self.component.windings[num].wrap_para}")
                         # Wrap defined number of turns and chosen thickness
                         if self.component.windings[num].wrap_para == "fixed_thickness":
                             for i in range(0, self.component.windings[num].turns[n_win]):
@@ -1876,8 +1873,7 @@ class MagneticComponent:
                                      self.component.mesh.c_conductor[num]])
 
                     # Round Conductors:
-                    if self.component.windings[num].conductor_type == "litz" or \
-                            self.component.windings[num].conductor_type == "solid":
+                    if self.component.windings[num].conductor_type in ["litz", "solid"]:
 
                         if self.component.virtual_winding_windows[num].scheme == "square":
                             y = bot_bound + self.component.windings[num].conductor_radius
@@ -1994,8 +1990,7 @@ class MagneticComponent:
                 """
 
                 # CHECK: round conductors with 5 points
-                if self.component.windings[num].conductor_type == "solid" or \
-                        self.component.windings[num].conductor_type == "litz":
+                if self.component.windings[num].conductor_type in ["solid", "litz"]:
                     if int(self.p_conductor[num].shape[0] / 5) < sum(self.component.windings[num].turns):
                         # Warning: warnings.warn("Too many turns that do not fit in the winding window.")
                         # Correct: self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
@@ -2626,7 +2621,7 @@ class MagneticComponent:
                 plt.yticks([-0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03])
                 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
                 plt.grid()
-
+                # ToDo: general path
                 plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/core_loss.pdf",
                             bbox_inches="tight")
 
@@ -2836,7 +2831,7 @@ class MagneticComponent:
 
             axis[0].grid()
             axis[1].grid()
-
+            #ToDo: general path
             plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/{I1[0]}.pdf",
                         bbox_inches="tight")
 
@@ -2948,8 +2943,8 @@ class MagneticComponent:
                         # print(air_gap_lengths.values())
 
                         # Check for invalid data
-                        if "saturated" in self.air_gap_lengths.values() or \
-                                "out of bounds" in self.air_gap_lengths.values():
+                        if self.air_gap_lengths.values() in ['saturated', 'out of bounds']:
+
                             results = None
                             # print("Invalid Data\n\n")
 
@@ -3459,8 +3454,7 @@ class MagneticComponent:
                                 self.component.two_d_axi.p_conductor[num][i][3]))
 
                     # Curves of Conductors
-                    if self.component.windings[num].conductor_type == "litz" or \
-                            self.component.windings[num].conductor_type == "solid":
+                    if self.component.windings[num].conductor_type in ['litz', 'solid']:
                         for i in range(0, int(len(self.p_cond[num]) / 5)):
                             self.l_cond[num].append(gmsh.model.geo.addCircleArc(
                                 self.p_cond[num][5 * i + 1],
@@ -3504,6 +3498,7 @@ class MagneticComponent:
                                                                                           self.l_cond[num][i * 4 + 3]]))
                             self.plane_surface_cond[num].append(
                                 gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
+
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Isolations
@@ -3712,10 +3707,7 @@ class MagneticComponent:
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
 
-                if self.component.windings[num].conductor_type == "foil" or \
-                        self.component.windings[num].conductor_type == "solid" or \
-                        self.component.windings[num].conductor_type == "full" or \
-                        self.component.windings[num].conductor_type == "stacked":
+                if self.component.windings[num].conductor_type in ['foil', 'solid', 'full', 'stacked']:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
@@ -3879,10 +3871,7 @@ class MagneticComponent:
             # Conductors
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
-                if self.component.windings[num].conductor_type == "foil" or \
-                        self.component.windings[num].conductor_type == "solid" or \
-                        self.component.windings[num].conductor_type == "full" or \
-                        self.component.windings[num].conductor_type == "stacked":
+                if self.component.windings[num].conductor_type in ['foil', 'solid', 'full', 'stacked']:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
@@ -4811,7 +4800,7 @@ class MagneticComponent:
         # femm.mi_clearselected()
 
         for num in range(0, self.n_windings):
-            if self.windings[num].conductor_type == "litz" or self.windings[num].conductor_type == "solid":
+            if self.windings[num].conductor_type in ["litz", "solid"]:
                 for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
                     # 0: center | 1: left | 2: top | 3: right | 4.bottom
                     femm.mi_drawarc(self.two_d_axi.p_conductor[num][5 * i + 1][0],
