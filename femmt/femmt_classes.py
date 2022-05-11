@@ -3689,7 +3689,7 @@ class MagneticComponent:
             # and the meshing again can cause bugs in the mesh
             # Therefore only the model geometry is saved and the mesh will be generated later
             # -> Save file as geo: File extension must be *.geo_unrolled
-            gmsh.write(os.path.splitext(self.component.model_geo_file))
+            gmsh.write(self.component.model_geo_file)
 
         def generate_electro_magnetic_mesh(self, refine = 0):
             print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
@@ -3815,7 +3815,7 @@ class MagneticComponent:
             br_point_pos  = gmsh.model.getValue(0, br_point, [])
             bl_point_pos  = gmsh.model.getValue(0, bl_point, [])
 
-            mesh = self.c_core
+            mesh = self.c_core*4 # It typically does not need to be the same size as c_core, but it shouldn't be too big either
 
             # Create 5 new areas: top, top right, right, bottom right, bottom
             # top
@@ -3987,18 +3987,7 @@ class MagneticComponent:
                 gmsh.model.setColor([(2, sf)], 50, 50, 50, recursive=True)
             
             # Output .msh file
-            # TODO: Adaptive Meshing
-            if refine == 1:
-                print("\n ------- \nRefined Mesh Creation ")
-                # mesh the new gmsh.model using the size field
-                bg_field = gmsh.model.mesh.field.add("PostView")
-                # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
-                gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-                print("\nMeshing...\n")
-                gmsh.model.mesh.generate(2)
-            else:
-                print("\nMeshing...\n")
-                gmsh.model.mesh.generate(2)
+            gmsh.model.mesh.generate(2)
 
             if not os.path.exists(self.component.mesh_folder_path):
                 os.mkdir(self.component.mesh_folder_path)
