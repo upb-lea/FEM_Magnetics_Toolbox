@@ -44,4 +44,4 @@ femmt/thermal/solver/Parameters.pro
 !tests/integration/fixtures/results/result_log_electro_magnetic.json
 
 # Example files
-femmt/examples/paper_thermal_validation
+femmt/examples/paper_thermal_validation.py
