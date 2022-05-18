@@ -229,7 +229,7 @@ class MagneticComponent:
         winding_width = self.core.window_w
 
         air_gap_volume = 0
-        inner_leg_width = core_width - self.r_inner
+        inner_leg_width = self.two_d_axi.r_inner - winding_width
         for i in range(self.air_gaps.number):
             position_tag = self.air_gaps.position_tag[i]
             height = self.air_gaps.air_gap_h[i]
@@ -237,15 +237,15 @@ class MagneticComponent:
 
             if position_tag == -1:
                 # left leg
-                width = inner_leg_width
+                # TODO this is wrong since the airgap is not centered on the y axis 
+                width = core_width - self.two_d_axi.r_inner
             elif position_tag == 0:
                 # center leg
-                # TODO this is wrong since the airgap is not centered on the y axis 
-                width = self.two_d_axi.r_inner - winding_width
+                width = inner_leg_width
             elif position_tag == 1:
                 # right leg
                 # TODO this is wrong since the airgap is not centered on the y axis
-                width = core_width - self.r_inner
+                width = core_width - self.two_d_axi.r_inner
             else:
                 raise Exception(f"Unvalid position tag {i} used for an air gap.")
 
