@@ -229,6 +229,7 @@ class MagneticComponent:
         winding_width = self.core.window_w
 
         air_gap_volume = 0
+        inner_leg_width = core_width - self.r_inner
         for i in range(self.air_gaps.number):
             position_tag = self.air_gaps.position_tag[i]
             height = self.air_gaps.air_gap_h[i]
@@ -236,20 +237,21 @@ class MagneticComponent:
 
             if position_tag == -1:
                 # left leg
-                width = core_width - self.r_inner
+                width = inner_leg_width
             elif position_tag == 0:
                 # center leg
+                # TODO this is wrong since the airgap is not centered on the y axis 
                 width = self.two_d_axi.r_inner - winding_width
             elif position_tag == 1:
                 # right leg
+                # TODO this is wrong since the airgap is not centered on the y axis
                 width = core_width - self.r_inner
             else:
                 raise Exception(f"Unvalid position tag {i} used for an air gap.")
 
             air_gap_volume += np.pi * width**2 * height
 
-        # TODO Is this right?
-        return np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_volume
+        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * core_height) - air_gap_volume
 
     def get_wire_distances(self):
         wire_distance = []
