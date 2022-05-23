@@ -26,7 +26,6 @@ if os.name == 'nt':
     install_femm_if_missing()
     import femm
 
-
 #  ===== Main Class  =====
 class MagneticComponent:
     """
@@ -54,7 +53,6 @@ class MagneticComponent:
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
-
 
         if "working_directory" in kwargs:
             wkdir = kwargs["working_directory"]
@@ -206,6 +204,7 @@ class MagneticComponent:
         self.femm_results_log_path = os.path.join(self.femm_folder_path, "result_log_femm.json")
         self.config_path = os.path.join(self.femmt_folder_path, "config.json")
         self.e_m_mesh_file = os.path.join(self.mesh_folder_path, "electro_magnetic.msh")
+        self.model_geo_file = os.path.join(self.mesh_folder_path, "model.geo_unrolled")
         self.hybrid_mesh_file = os.path.join(self.mesh_folder_path, "hybrid.msh")
         self.hybrid_color_mesh_file = os.path.join(self.mesh_folder_path, "hybrid_color.msh")
         self.hybrid_color_visualize_file = os.path.join(self.mesh_folder_path, "hybrid_color.png")
@@ -230,6 +229,7 @@ class MagneticComponent:
         winding_width = self.core.window_w
 
         air_gap_volume = 0
+        inner_leg_width = self.two_d_axi.r_inner - winding_width
         for i in range(self.air_gaps.number):
             position_tag = self.air_gaps.position_tag[i]
             height = self.air_gaps.air_gap_h[i]
@@ -237,20 +237,21 @@ class MagneticComponent:
 
             if position_tag == -1:
                 # left leg
-                width = core_width - self.r_inner
+                # TODO this is wrong since the airgap is not centered on the y axis 
+                width = core_width - self.two_d_axi.r_inner
             elif position_tag == 0:
                 # center leg
-                width = self.two_d_axi.r_inner - winding_width
+                width = inner_leg_width
             elif position_tag == 1:
                 # right leg
-                width = core_width - self.r_inner
+                # TODO this is wrong since the airgap is not centered on the y axis
+                width = core_width - self.two_d_axi.r_inner
             else:
                 raise Exception(f"Unvalid position tag {i} used for an air gap.")
 
             air_gap_volume += np.pi * width**2 * height
 
-        # TODO Is this right?
-        return np.pi*(core_width**2 * core_height - winding_width**2 * winding_height) - air_gap_volume
+        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * core_height) - air_gap_volume
 
     def get_wire_distances(self):
         wire_distance = []
@@ -1840,7 +1841,6 @@ class MagneticComponent:
                                                               self.component.mesh.c_conductor[num]])
 
                     if self.component.windings[num].conductor_type == "foil":
-                        print(f"at foil: {self.component.windings[num].wrap_para}")
                         # Wrap defined number of turns and chosen thickness
                         if self.component.windings[num].wrap_para == "fixed_thickness":
                             for i in range(0, self.component.windings[num].turns[n_win]):
@@ -1883,8 +1883,7 @@ class MagneticComponent:
                                      self.component.mesh.c_conductor[num]])
 
                     # Round Conductors:
-                    if self.component.windings[num].conductor_type == "litz" or \
-                            self.component.windings[num].conductor_type == "solid":
+                    if self.component.windings[num].conductor_type in ["litz", "solid"]:
 
                         if self.component.virtual_winding_windows[num].scheme == "square":
                             y = bot_bound + self.component.windings[num].conductor_radius
@@ -2001,8 +2000,7 @@ class MagneticComponent:
                 """
 
                 # CHECK: round conductors with 5 points
-                if self.component.windings[num].conductor_type == "solid" or \
-                        self.component.windings[num].conductor_type == "litz":
+                if self.component.windings[num].conductor_type in ["solid", "litz"]:
                     if int(self.p_conductor[num].shape[0] / 5) < sum(self.component.windings[num].turns):
                         # Warning: warnings.warn("Too many turns that do not fit in the winding window.")
                         # Correct: self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
@@ -2633,7 +2631,7 @@ class MagneticComponent:
                 plt.yticks([-0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03])
                 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
                 plt.grid()
-
+                # ToDo: general path
                 plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/core_loss.pdf",
                             bbox_inches="tight")
 
@@ -2843,7 +2841,7 @@ class MagneticComponent:
 
             axis[0].grid()
             axis[1].grid()
-
+            #ToDo: general path
             plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/{I1[0]}.pdf",
                         bbox_inches="tight")
 
@@ -2955,8 +2953,8 @@ class MagneticComponent:
                         # print(air_gap_lengths.values())
 
                         # Check for invalid data
-                        if "saturated" in self.air_gap_lengths.values() or \
-                                "out of bounds" in self.air_gap_lengths.values():
+                        if self.air_gap_lengths.values() in ['saturated', 'out of bounds']:
+
                             results = None
                             # print("Invalid Data\n\n")
 
@@ -3172,7 +3170,7 @@ class MagneticComponent:
             self.plane_surface_iso_pri_sec = []
 
         def generate_hybrid_mesh(self, color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default,
-                                 do_meshing: bool = True, visualize_before: bool = False,
+                                 visualize_before: bool = False,
                                  save_png: bool = True, refine=0, alternative_error=0):
             """
             - interaction with gmsh
@@ -3468,8 +3466,7 @@ class MagneticComponent:
                                 self.component.two_d_axi.p_conductor[num][i][3]))
 
                     # Curves of Conductors
-                    if self.component.windings[num].conductor_type == "litz" or \
-                            self.component.windings[num].conductor_type == "solid":
+                    if self.component.windings[num].conductor_type in ['litz', 'solid']:
                         for i in range(0, int(len(self.p_cond[num]) / 5)):
                             self.l_cond[num].append(gmsh.model.geo.addCircleArc(
                                 self.p_cond[num][5 * i + 1],
@@ -3513,6 +3510,7 @@ class MagneticComponent:
                                                                                           self.l_cond[num][i * 4 + 3]]))
                             self.plane_surface_cond[num].append(
                                 gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
+
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Isolations
@@ -3712,18 +3710,17 @@ class MagneticComponent:
                         gmsh.fltk.initialize()
 
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
-                    # gmsh.write(self.component.hybrid_color_mesh_file)  # save png
 
-
-            if do_meshing:
-                gmsh.model.mesh.generate(2)
-                random_value = str(np.random.rand())[-5]
-                gmsh.write(self.component.hybrid_mesh_file)
+            # No mesh is generated here because generating a mesh, saving it as *.msh loading it and appending more geometry data
+            # and the meshing again can cause bugs in the mesh
+            # Therefore only the model geometry is saved and the mesh will be generated later
+            # -> Save file as geo: File extension must be *.geo_unrolled
+            gmsh.write(self.component.model_geo_file)
 
         def generate_electro_magnetic_mesh(self, refine = 0):
             print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
-            gmsh.open(self.component.hybrid_mesh_file)
+            gmsh.open(self.component.model_geo_file)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Define physical Surfaces and Curves
@@ -3736,10 +3733,7 @@ class MagneticComponent:
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
 
-                if self.component.windings[num].conductor_type == "foil" or \
-                        self.component.windings[num].conductor_type == "solid" or \
-                        self.component.windings[num].conductor_type == "full" or \
-                        self.component.windings[num].conductor_type == "stacked":
+                if self.component.windings[num].conductor_type in ['foil', 'solid', 'full', 'stacked']:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
@@ -3768,9 +3762,6 @@ class MagneticComponent:
             gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
             gmsh.model.setPhysicalName(1, self.pc_bound, "BOUND")
 
-
-
-
             # mshopt # Explicit stray path air gap optimization
             # mshopt if not self.component.component_type == "integrated_transformer":
             # mshopt     stray_path_mesh_optimizer = []
@@ -3796,31 +3787,27 @@ class MagneticComponent:
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # TODO: Adaptive Meshing
-            # if refine == 1:
-            #     print("\n ------- \nRefined Mesh Creation ")
-            #     # mesh the new gmsh.model using the size field
-            #     bg_field = gmsh.model.mesh.field.add("PostView")
-            #     # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
-            #     gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-            #     print("\nMeshing...\n")
-            #     gmsh.model.mesh.generate(2)
-            # else:
-            #     print("\nMeshing...\n")
-            #     gmsh.model.mesh.generate(2)
-
-
+            if refine == 1:
+                print("\n ------- \nRefined Mesh Creation ")
+                # mesh the new gmsh.model using the size field
+                bg_field = gmsh.model.mesh.field.add("PostView")
+                # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
+                gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
+                print("\nMeshing...\n")
+                gmsh.model.mesh.generate(2)
+            else:
+                print("\nMeshing...\n")
+                gmsh.model.mesh.generate(2)
 
             if not os.path.exists(self.component.mesh_folder_path):
                 os.mkdir(self.component.mesh_folder_path)
 
             gmsh.write(self.component.e_m_mesh_file)
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # Open gmsh GUI for visualization
-            # gmsh.fltk.run()
-            # Terminate gmsh
 
         def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, refine = 0):
-            gmsh.open(self.component.hybrid_mesh_file)
+            print("Thermal Mesh Generation in Gmsh (write physical entities)")
+
+            gmsh.open(self.component.model_geo_file)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Create case around the core
@@ -3854,10 +3841,12 @@ class MagneticComponent:
             br_point_pos  = gmsh.model.getValue(0, br_point, [])
             bl_point_pos  = gmsh.model.getValue(0, bl_point, [])
 
+            mesh = self.c_core*4 # It typically does not need to be the same size as c_core, but it shouldn't be too big either
+
             # Create 5 new areas: top, top right, right, bottom right, bottom
             # top
-            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], self.c_core)
-            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], self.c_core)
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
             top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
             top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
             top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
@@ -3865,8 +3854,8 @@ class MagneticComponent:
             top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
 
             # top right
-            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], self.c_core)
-            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], self.c_core)
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh)
             top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
             top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
             top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
@@ -3874,15 +3863,15 @@ class MagneticComponent:
             top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
 
             # right
-            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], self.c_core)
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh)
             right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
             right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
             right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
             right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
 
             # bottom right
-            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], self.c_core)
-            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], self.c_core)
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
             bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
             bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
             bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
@@ -3890,7 +3879,7 @@ class MagneticComponent:
             bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
 
             # bottom
-            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], self.c_core)
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh)
             bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
             bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
             bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
@@ -3908,10 +3897,7 @@ class MagneticComponent:
             # Conductors
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
-                if self.component.windings[num].conductor_type == "foil" or \
-                        self.component.windings[num].conductor_type == "solid" or \
-                        self.component.windings[num].conductor_type == "full" or \
-                        self.component.windings[num].conductor_type == "stacked":
+                if self.component.windings[num].conductor_type in ['foil', 'solid', 'full', 'stacked']:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
@@ -4022,19 +4008,12 @@ class MagneticComponent:
             # Synchronize again
             gmsh.model.geo.synchronize()
 
+            # Set case color to core color
+            for sf in [top_case_surface, top_right_case_surface, right_case_surface, bottom_right_case_surface, bottom_case_surface]:
+                gmsh.model.setColor([(2, sf)], 50, 50, 50, recursive=True)
+            
             # Output .msh file
-            # TODO: Adaptive Meshing
-            if refine == 1:
-                print("\n ------- \nRefined Mesh Creation ")
-                # mesh the new gmsh.model using the size field
-                bg_field = gmsh.model.mesh.field.add("PostView")
-                # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
-                gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-                print("\nMeshing...\n")
-                gmsh.model.mesh.generate(2)
-            else:
-                print("\nMeshing...\n")
-                gmsh.model.mesh.generate(2)
+            gmsh.model.mesh.generate(2)
 
             if not os.path.exists(self.component.mesh_folder_path):
                 os.mkdir(self.component.mesh_folder_path)
@@ -4836,7 +4815,7 @@ class MagneticComponent:
         # femm.mi_clearselected()
 
         for num in range(0, self.n_windings):
-            if self.windings[num].conductor_type == "litz" or self.windings[num].conductor_type == "solid":
+            if self.windings[num].conductor_type in ["litz", "solid"]:
                 for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
                     # 0: center | 1: left | 2: top | 3: right | 4.bottom
                     femm.mi_drawarc(self.two_d_axi.p_conductor[num][5 * i + 1][0],
@@ -5361,8 +5340,8 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False,
-                     do_meshing: bool = True, save_png: bool = False,
-                     color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default):
+                     save_png: bool = False, color_scheme: Dict = colors_femmt_default,
+                     colors_geometry: Dict = colors_geometry_femmt_default):
         """
         Create a model from the abstract geometry description inside onelab including optional mesh generation
 
@@ -5384,7 +5363,7 @@ class MagneticComponent:
         """
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
-            self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, do_meshing=do_meshing, save_png=save_png)
+            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, save_png=save_png)
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 

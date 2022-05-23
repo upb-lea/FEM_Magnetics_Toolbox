@@ -12,7 +12,7 @@ def example_thermal_simulation():
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
             "air": 0.0263,
-            "case": { # epoxy resign
+            "case": { # (epoxy resign) | transformer oil
                 "top": 0.122,
                 "top_right": 0.122,
                 "right": 0.122,
@@ -99,7 +99,8 @@ if component == "inductor":
                           conductivity_sigma=["copper"])
 
     # 5. start simulation with given frequency, currents and phases
-    geo.create_model(freq=100000, visualize_before=True, do_meshing=True, save_png=False)
+    geo.create_model(freq=100000, visualize_before=True, save_png=False)
+
 
     geo.single_simulation(freq=100000, current=[3], show_results=True)
 
