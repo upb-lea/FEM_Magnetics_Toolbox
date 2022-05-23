@@ -3,6 +3,7 @@ from os import path
 from onelab import onelab
 from .thermal_functions import *
 from .thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro
+from ..femmt_functions import *
 
 def create_case(boundary_regions, boundary_physical_groups, boundary_temperatures, boundary_flags, k_case, function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro, constraint_pro: ConstraintPro):
     """
@@ -47,7 +48,7 @@ def create_isolation(isolation_tag, k_iso, function_pro: FunctionPro, group_pro:
     function_pro.add_dicts(k_iso, None)
     group_pro.add_regions({"isolation": isolation_tag})
 
-    return None
+    # return None
     return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, isolation_tag)]
 
 def create_background(background_tag, k_air, function_pro: FunctionPro, group_pro: GroupPro):
@@ -121,7 +122,8 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
 def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
     tags_dict, thermal_conductivity_dict, boundary_temperatures, 
     boundary_flags, boundary_physical_groups, core_area, conductor_radii, wire_distances,
-    show_results, pretty_colors = False, show_before_simulation = False):
+    show_results: bool, show_before_simulation: bool = False,
+    color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default):
     """
     Runs a thermal simulation.
     
@@ -135,8 +137,13 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     :param conductor_radii: List of the radius for each winding 
     :param wire_distances: List of the outer radius for each winding
     :param show_results: Boolean - Set true when the results shall be shown in a gmsh window
-    :param pretty_colors: Boolean - Set true if a specified colorization should be applied
-    :param show_before_simulation: -  Set true if the mesh should be shown before running the thermal simulation (e.g. to see the colorization)
+    :type show_results: bool
+    :param show_before_simulation: Boolean -  Set true if the mesh should be shown before running the thermal simulation (e.g. to see the colorization)
+    :type show_before_simulation: bool
+    :param color_scheme: colorfile (definition for red, green, blue, ...)
+    :type color_scheme: Dict
+    :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
+    :type colors_geometry: Dict
 
     :param return: -
     """
@@ -194,17 +201,26 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
 
     gmsh.model.geo.synchronize()
 
-    # Colorize
-    if pretty_colors:
-        gmsh.model.setColor(case_dim_tags, 50, 50, 50)
-        gmsh.model.setColor(background_dim_tags, 193, 193, 193)
-        gmsh.model.setColor(core_dim_tags, 58, 58, 58)
-        gmsh.model.setColor(windings_dim_tags[0], 6, 213, 6)
-        gmsh.model.setColor(windings_dim_tags[1], 213, 6, 6)
-        if air_gaps_dim_tags is not None:
-            gmsh.model.setColor(air_gaps_dim_tags, 255, 171, 6)
-        if isolation_dim_tags is not None:
-            gmsh.model.setColor(isolation_dim_tags, 109, 109, 109)
+    # inner potting material color
+    gmsh.model.setColor(case_dim_tags, color_scheme[colors_geometry["potting_outer"]][0], color_scheme[colors_geometry["potting_outer"]][1], color_scheme[colors_geometry["potting_outer"]][2])
+
+    # outer potting material color
+    gmsh.model.setColor(background_dim_tags, color_scheme[colors_geometry["potting_inner"]][0], color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2])
+
+    # core color
+    gmsh.model.setColor(core_dim_tags, color_scheme[colors_geometry["core"]][0], color_scheme[colors_geometry["core"]][1], color_scheme[colors_geometry["core"]][2])
+
+    # winding colors
+    for winding_number, val in enumerate(windings_dim_tags):
+            gmsh.model.setColor(windings_dim_tags[winding_number], color_scheme[colors_geometry["winding"][winding_number]][0], color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2])
+
+    # air gap color
+    if air_gaps_dim_tags is not None:
+        gmsh.model.setColor(air_gaps_dim_tags, color_scheme[colors_geometry["air_gap"]][0], color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2])
+
+    # isolation / bobbin color
+    if isolation_dim_tags is not None:
+        gmsh.model.setColor(isolation_dim_tags, color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2])
         
     gmsh.model.mesh.generate()
     gmsh.write(model_mesh_file_path)

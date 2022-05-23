@@ -1,3 +1,4 @@
+import femmt
 import femmt as fmt
 import numpy as np
 
@@ -62,7 +63,8 @@ def example_thermal_simulation():
     # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
-    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                           case_gap_right, case_gap_bot, True, color_scheme=femmt.colors_ba_jonas, colors_geometry=femmt.colors_geometry_ba_jonas)
 
     # Because the isolations inside of the winding window are not implemented in femm simulation.
     # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
@@ -90,12 +92,15 @@ if component == "inductor":
     # 3. set air gap parameters
     geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
 
+    # 4. set conductor parameters: use solid wires
     geo.update_conductors(n_turns=[[8]], conductor_type=["solid"], conductor_radii=[0.0015],
                           winding=["primary"], scheme=["square"],
                           core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001],
                           conductivity_sigma=["copper"])
 
+    # 5. start simulation with given frequency, currents and phases
     geo.create_model(freq=100000, visualize_before=True, save_png=False)
+
 
     geo.single_simulation(freq=100000, current=[3], show_results=True)
 

@@ -15,6 +15,51 @@ import gmsh
 import warnings
 from typing import Union, List, Tuple, Dict
 
+colors_femmt_default = {"blue": (28, 113, 216),
+                        'red': (192, 28, 40),
+                        "green": (46, 194, 126),
+                        "orange": (230, 97, 0),
+                        "purple": (129, 61, 156),
+                        "brown": (134, 94, 60),
+                        "grey": (119, 118, 123),
+                        "yellow": (245, 194, 17),
+                        "black": (0, 0, 0),
+                        "white": (255, 255, 255)
+                        }
+
+colors_geometry_femmt_default = {
+                    "core": "grey",
+                    "air_gap": "yellow",
+                    "winding": ["orange", "brown", "yellow"],
+                    "isolation": "blue",
+                    "potting_inner": "yellow",
+                    "potting_outer": "yellow",
+                }
+
+
+
+colors_ba_jonas = {"blue": (28, 113, 216),
+                        'red': (213, 6, 6),
+                        "green":  (6, 213, 6),
+                        "orange": (230, 97, 0),
+                        "purple": (129, 61, 156),
+                        "brown": (134, 94, 60),
+                        "grey": (193, 193, 193),
+                        "yellow": (255, 171, 6),
+                        "black": (58, 58, 58),
+                        "white": (255, 255, 255),
+                        "grey_dark": (109, 109, 109),
+                        "grey_dark_dark": (50, 50, 50)
+                        }
+
+colors_geometry_ba_jonas = {
+                    "core": "black",
+                    "air_gap": "yellow",
+                    "winding": ["green", "red", "yellow"],
+                    "isolation": "grey_dark",
+                    "potting_inner": "grey",
+                    "potting_outer": "grey_dark_dark",
+                }
 
 def core_database() -> Dict:
     """
