@@ -14,7 +14,7 @@ from scipy.interpolate import interp1d
 import warnings
 import shutil
 
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict
 from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import *
 from .femmt_functions import *
@@ -266,10 +266,17 @@ class MagneticComponent:
         return wire_distance
 
     # Start thermal simulation
-    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, show_results=True) -> None:
+    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top,
+                           case_gap_right, case_gap_bot, show_results=True, color_scheme: Dict = colors_femmt_default,
+                           colors_geometry: Dict = colors_geometry_femmt_default) -> None:
         """
         
         Starts the thermal simulation using thermal.py
+
+        :param color_scheme: colorfile (definition for red, green, blue, ...)
+        :type color_scheme: Dict
+        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
+        :type colors_geometry: Dict
 
         :return: -
         """
@@ -318,8 +325,9 @@ class MagneticComponent:
             "conductor_radii": wire_radii,
             "wire_distances": self.get_wire_distances(),
             "show_results": show_results,
-            "pretty_colors": True,
-            "show_before_simulation": False
+            "show_before_simulation": True,
+            "color_scheme": color_scheme,
+            "colors_geometry": colors_geometry
         }
 
         run_thermal(**thermal_parameters)
@@ -3163,7 +3171,9 @@ class MagneticComponent:
             self.plane_surface_iso_core = []
             self.plane_surface_iso_pri_sec = []
 
-        def generate_hybrid_mesh(self, do_meshing=True, visualize_before=False, save_png=True, refine=0, alternative_error=0):
+        def generate_hybrid_mesh(self, color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default,
+                                 do_meshing: bool = True, visualize_before: bool = False,
+                                 save_png: bool = True, refine=0, alternative_error=0):
             """
             - interaction with gmsh
             - mesh generation
@@ -3662,20 +3672,34 @@ class MagneticComponent:
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if visualize_before or save_png:
 
-                # Colors
+
+                color_scheme = colors_femmt_default
+                colors_geometry = colors_geometry_femmt_default
+
+                # core color
                 for i in range(0, len(self.plane_surface_core)):
-                    gmsh.model.setColor([(2, self.plane_surface_core[i])], 50, 50, 50, recursive=True)  # Core in gray
+                    gmsh.model.setColor([(2, self.plane_surface_core[i])], color_scheme[colors_geometry["core"]][0], color_scheme[colors_geometry["core"]][1], color_scheme[colors_geometry["core"]][2], recursive=True)  # Core in gray
+
+
                 #gmsh.model.setColor([(2, self.plane_surface_air[0])], 0, 0, 0, recursive=True)
                 #gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 181, 181, 181, recursive=True)
+
+                # air gap color
                 if self.plane_surface_air_gaps:
                     # only colorize air-gap in case of air gaps
-                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 100, 60,
-                                        60, recursive=True)
-                #gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], 100, 100, 100, recursive=True)
-                #gmsh.model.setColor([(2, self.plane_surface_air[0])], 181, 181, 181, recursive=True)  # Air in white
-                for num in range(0, self.component.n_windings):
-                    for i in range(0, len(self.plane_surface_cond[num])):
-                        gmsh.model.setColor([(2, self.plane_surface_cond[num][i])], 200 * num, 200 * (1 - num), 0, recursive=True)   # Conductors in green/red
+                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_scheme[colors_geometry["air_gap"]][0], color_scheme[colors_geometry["air_gap"]][1],
+                                        color_scheme[colors_geometry["air_gap"]][2], recursive=True)
+
+                # air/potting-material inside core window
+                gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0], color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2], recursive=True)  # Air in white
+
+                # winding colors
+                for winding_number in range(0, self.component.n_windings):
+                    for turn_number in range(0, len(self.plane_surface_cond[winding_number])):
+                        gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], color_scheme[colors_geometry["winding"][winding_number]][0], color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
+
+                # isolation color (inner isolation / bobbin)
+                gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2], recursive=True)
 
 
                 if visualize_before:
@@ -5336,10 +5360,31 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Standard Simulations
-    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False, do_meshing: bool = True, save_png: bool = False):
+    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False,
+                     do_meshing: bool = True, save_png: bool = False,
+                     color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default):
+        """
+        Create a model from the abstract geometry description inside onelab including optional mesh generation
+
+        :param freq: Frequency [Hz]
+        :type freq: float
+        :param skin_mesh_factor: [default to 0.5]
+        :type skin_mesh_factor: float
+        :param visualize_before: True for a pre-visualisation (e.g. check your geometry) and after this a simulation runs, False for a direct simulation
+        :type visualize_before: bool
+        :param: do_meshing: [default to True], internal use only (e.g. for GUI)
+        :type do_meshing: bool
+        :param save_png: True to save a png-figure, false for no figure
+        :type save_png: bool
+        :param color_scheme: colorfile (definition for red, green, blue, ...)
+        :type color_scheme: Dict
+        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
+        :type colors_geometry: Dict
+
+        """
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
-            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, do_meshing=do_meshing, save_png=save_png)
+            self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, do_meshing=do_meshing, save_png=save_png)
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
@@ -5555,7 +5600,8 @@ class MagneticComponent:
             self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last: bool = False, return_results: bool = False, meshing: bool = True) -> Dict:
+                         show_last: bool = False, return_results: bool = False, meshing: bool = True,
+                         color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default) -> Dict:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -5580,6 +5626,11 @@ class MagneticComponent:
         :type return_results: bool
         :param meshing:
         :type meshing: bool
+        :param color_scheme: colorfile (definition for red, green, blue, ...)
+        :type color_scheme: Dict
+        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
+        :type colors_geometry: Dict
+
 
         :return: Results in a dictionary
         :rtype: Dict
@@ -5596,7 +5647,7 @@ class MagneticComponent:
         if meshing:
             self.high_level_geo_gen(frequency=frequency_list[0])  # TODO: Must be changed for solid sim.
             if self.valid:
-                self.mesh.generate_hybrid_mesh()
+                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry)
                 self.mesh.generate_electro_magnetic_mesh()
 
         if self.valid:
