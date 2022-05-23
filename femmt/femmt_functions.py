@@ -61,10 +61,6 @@ colors_geometry_ba_jonas = {
                     "potting_outer": "grey_dark_dark",
                 }
 
-colors_black_and_green = {"green":  (6, 213, 6),
-                        "grey_dark": (80, 80, 80)
-                        }
-
 colors_geometry_draw_only_lines = {
                     "core": "grey_dark",
                     "air_gap": "grey_dark",
