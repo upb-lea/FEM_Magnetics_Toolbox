@@ -66,7 +66,7 @@ def example_thermal_simulation():
 
     # Because the isolations inside of the winding window are not implemented in femm simulation.
     # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
-    # geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
+    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 component = "inductor"
 # component = "transformer-interleaved"

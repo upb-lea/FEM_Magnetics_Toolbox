@@ -9,18 +9,18 @@ def example_thermal_simulation(geo):
     # The case parameter sets the thermal conductivity for a case which will be set around the core.
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
-            "air": 0.122, # potting
-            "case": { # epoxy resign
-                "top": 0.122,
-                "top_right": 0.122,
-                "right": 0.122,
-                "bot_right": 0.122,
-                "bot": 0.122
+            "air": 1.57, # potting epoxy resign
+            "case": {
+                "top": 1.57,
+                "top_right": 1.57,
+                "right": 1.57,
+                "bot_right": 1.57,
+                "bot": 1.57
             },
             "core": 5, # ferrite
             "winding": 400, # copper
-            "air_gaps": 0.122, # aluminium nitride
-            "isolation": 0.122 # TODO Find material
+            "air_gaps": 1.57,
+            "isolation": 1.57
     }
 
     # Here the case size can be determined
@@ -61,9 +61,11 @@ def example_thermal_simulation(geo):
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
-    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
+    #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 def pq4040():
+    # This simulation is used for the ansys simulation comparison
+
     geo = fmt.MagneticComponent(component_type="inductor")
 
     geo.core.update(core_h=0.04, core_w=0.0149, window_h=0.0278, window_w=0.01105, mu_rel=3100, phi_mu_deg=12, sigma=0.6)
@@ -74,7 +76,7 @@ def pq4040():
                         core_cond_isolation=[0.001, 0.001, 0.001, 0.001], cond_cond_isolation=[0.0001],
                         conductivity_sigma=["copper"])
 
-    geo.create_model(freq=100000, visualize_before=True, do_meshing=True, save_png=False)
+    geo.create_model(freq=100000, visualize_before=True, save_png=False)
     #geo.single_simulation(freq=100000, current=[3], show_results=False)
     example_thermal_simulation(geo)
 
