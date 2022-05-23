@@ -251,7 +251,7 @@ class MagneticComponent:
 
             air_gap_volume += np.pi * width**2 * height
 
-        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * core_height) - air_gap_volume
+        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
 
     def get_wire_distances(self):
         wire_distance = []
