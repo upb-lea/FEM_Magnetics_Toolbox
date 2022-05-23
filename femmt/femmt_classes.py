@@ -3665,7 +3665,6 @@ class MagneticComponent:
             self.forward_meshing()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            """
             if visualize_before or save_png:
                 color_scheme = colors_femmt_default
                 colors_geometry = colors_geometry_femmt_default
@@ -3706,7 +3705,6 @@ class MagneticComponent:
                         gmsh.fltk.initialize()
 
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
-            """
             # No mesh is generated here because generating a mesh, saving it as *.msh loading it and appending more geometry data
             # and the meshing again can cause bugs in the mesh
             # Therefore only the model geometry is saved and the mesh will be generated later
