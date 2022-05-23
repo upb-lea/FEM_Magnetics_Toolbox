@@ -268,7 +268,7 @@ class MagneticComponent:
 
     # Start thermal simulation
     def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top,
-                           case_gap_right, case_gap_bot, show_results=True, color_scheme: Dict = colors_femmt_default,
+                           case_gap_right, case_gap_bot, show_results=True, visualize_before=False, color_scheme: Dict = colors_femmt_default,
                            colors_geometry: Dict = colors_geometry_femmt_default) -> None:
         """
         
@@ -284,7 +284,7 @@ class MagneticComponent:
         # Create necessary folders
         self.create_folders([self.thermal_results_folder_path])
 
-        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot)
+        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before)
 
         if not os.path.exists(self.e_m_results_log_path):
             # Simulation results file not created
@@ -325,10 +325,7 @@ class MagneticComponent:
             "core_area": core_area,
             "conductor_radii": wire_radii,
             "wire_distances": self.get_wire_distances(),
-            "show_results": show_results,
-            "show_before_simulation": True,
-            "color_scheme": color_scheme,
-            "colors_geometry": colors_geometry
+            "show_results": show_results
         }
 
         run_thermal(**thermal_parameters)
@@ -3668,37 +3665,36 @@ class MagneticComponent:
             self.forward_meshing()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            """
             if visualize_before or save_png:
-
-
                 color_scheme = colors_femmt_default
                 colors_geometry = colors_geometry_femmt_default
 
                 # core color
                 for i in range(0, len(self.plane_surface_core)):
-                    gmsh.model.setColor([(2, self.plane_surface_core[i])], color_scheme[colors_geometry["core"]][0], color_scheme[colors_geometry["core"]][1], color_scheme[colors_geometry["core"]][2], recursive=True)  # Core in gray
-
-
-                #gmsh.model.setColor([(2, self.plane_surface_air[0])], 0, 0, 0, recursive=True)
-                #gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], 181, 181, 181, recursive=True)
+                    gmsh.model.setColor([(2, self.plane_surface_core[i])], color_scheme[colors_geometry["core"]][0], 
+                    color_scheme[colors_geometry["core"]][1], color_scheme[colors_geometry["core"]][2], recursive=True)
 
                 # air gap color
                 if self.plane_surface_air_gaps:
                     # only colorize air-gap in case of air gaps
-                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_scheme[colors_geometry["air_gap"]][0], color_scheme[colors_geometry["air_gap"]][1],
-                                        color_scheme[colors_geometry["air_gap"]][2], recursive=True)
+                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_scheme[colors_geometry["air_gap"]][0], 
+                        color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2], recursive=True)
 
                 # air/potting-material inside core window
-                gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0], color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2], recursive=True)  # Air in white
+                gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0], 
+                color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2], recursive=True)
 
                 # winding colors
                 for winding_number in range(0, self.component.n_windings):
                     for turn_number in range(0, len(self.plane_surface_cond[winding_number])):
-                        gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], color_scheme[colors_geometry["winding"][winding_number]][0], color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
+                        gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], 
+                        color_scheme[colors_geometry["winding"][winding_number]][0], color_scheme[colors_geometry["winding"][winding_number]][1], 
+                        color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
                 # isolation color (inner isolation / bobbin)
-                gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2], recursive=True)
-
+                gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], 
+                    color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2], recursive=True)
 
                 if visualize_before:
                     gmsh.fltk.run()
@@ -3710,7 +3706,7 @@ class MagneticComponent:
                         gmsh.fltk.initialize()
 
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
-
+            """
             # No mesh is generated here because generating a mesh, saving it as *.msh loading it and appending more geometry data
             # and the meshing again can cause bugs in the mesh
             # Therefore only the model geometry is saved and the mesh will be generated later
@@ -3804,7 +3800,7 @@ class MagneticComponent:
 
             gmsh.write(self.component.e_m_mesh_file)
 
-        def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, refine = 0):
+        def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before):
             print("Thermal Mesh Generation in Gmsh (write physical entities)")
 
             gmsh.open(self.component.model_geo_file)
@@ -4008,9 +4004,42 @@ class MagneticComponent:
             # Synchronize again
             gmsh.model.geo.synchronize()
 
+            # Set colors:
+            color_case = color_scheme[colors_geometry["potting_outer"]]
+            color_background = color_scheme[colors_geometry["potting_inner"]]
+            color_core = color_scheme[colors_geometry["core"]]
+            color_air_gap = color_scheme[colors_geometry["air_gap"]]
+            color_isolation = color_scheme[colors_geometry["isolation"]]
+
             # Set case color to core color
             for sf in [top_case_surface, top_right_case_surface, right_case_surface, bottom_right_case_surface, bottom_case_surface]:
-                gmsh.model.setColor([(2, sf)], 50, 50, 50, recursive=True)
+                gmsh.model.setColor([(2, sf)], color_case[0], color_case[1], color_case[2], recursive=True)
+
+            # core color
+            for i in range(0, len(self.plane_surface_core)):
+                gmsh.model.setColor([(2, self.plane_surface_core[i])], color_core[0], color_core[1], color_core[2], recursive=True)
+
+            # air gap color
+            if self.plane_surface_air_gaps:
+                # only colorize air-gap in case of air gaps
+                gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_air_gap[0], color_air_gap[1],
+                                    color_air_gap[2], recursive=True)
+
+            # air/potting-material inside core window
+            gmsh.model.setColor([(2, self.plane_surface_air[0])], color_background[0], color_background[1], color_background[2], recursive=True)
+
+            # winding colors
+            for winding_number in range(0, self.component.n_windings):
+                for turn_number in range(0, len(self.plane_surface_cond[winding_number])):
+                    gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], color_scheme[colors_geometry["winding"][winding_number]][0], 
+                        color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
+
+            # isolation color (inner isolation / bobbin)
+            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], color_isolation[0], color_isolation[1], 
+                color_isolation[2], recursive=True)
+
+            if visualize_before:
+                gmsh.fltk.run()
             
             # Output .msh file
             gmsh.model.mesh.generate(2)

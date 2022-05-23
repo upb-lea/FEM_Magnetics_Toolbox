@@ -1,68 +1,5 @@
 import femmt as fmt
 
-def example_thermal_simulation(geo):
-    # Thermal simulation:
-    # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
-    # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
-    # which will be applied on the boundary of the simulation (dirichlet boundary condition).
-    
-    # The case parameter sets the thermal conductivity for a case which will be set around the core.
-    # This could model some case in which the transformer is placed in together with a set potting material.
-    thermal_conductivity_dict = {
-            "air": 1.57, # potting epoxy resign
-            "case": {
-                "top": 1.57,
-                "top_right": 1.57,
-                "right": 1.57,
-                "bot_right": 1.57,
-                "bot": 1.57
-            },
-            "core": 5, # ferrite
-            "winding": 400, # copper
-            "air_gaps": 1.57,
-            "isolation": 1.57
-    }
-
-    # Here the case size can be determined
-    case_gap_top = 0.001
-    case_gap_right = 0.001
-    case_gap_bot = 0.001
-
-    # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
-    # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
-    boundary_temperatures = {
-        "value_boundary_top": 20,
-        "value_boundary_top_right": 20,
-        "value_boundary_right_top": 20,
-        "value_boundary_right": 20,
-        "value_boundary_right_bottom": 20,
-        "value_boundary_bottom_right": 20,
-        "value_boundary_bottom": 20
-    }
-    
-    # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
-    # Currently only one temperature can be applied which will be set on every boundary site.
-    femm_boundary_temperature = 20
-
-    # Here the boundary sides can be turned on (1) or off (0)
-    boundary_flags = {
-        "flag_boundary_top": 1,
-        "flag_boundary_top_right": 1,
-        "flag_boundary_right_top": 1,
-        "flag_boundary_right": 1,
-        "flag_boundary_right_bottom": 1,
-        "flag_boundary_bottom_right": 1,
-        "flag_boundary_bottom": 1
-    }
-
-    # In order for the thermal simulation to work an electro_magnetic simulation has to run before.
-    # The em-simulation will create a file containing the losses.
-    # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
-    # order for the thermal simulation to work (geo.single_simulation is not needed).
-    # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
-    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
-    #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
-
 def pq4040():
     # This simulation is used for the ansys simulation comparison
 
@@ -78,7 +15,57 @@ def pq4040():
 
     geo.create_model(freq=100000, visualize_before=True, save_png=False)
     #geo.single_simulation(freq=100000, current=[3], show_results=False)
-    example_thermal_simulation(geo)
+
+    thermal_conductivity_dict = {
+            "air": 1.57, # potting epoxy resign
+            "case": {
+                "top": 1.57,
+                "top_right": 1.57,
+                "right": 1.57,
+                "bot_right": 1.57,
+                "bot": 1.57
+            },
+            "core": 5, # ferrite
+            "winding": 400, # copper
+            "air_gaps": 1.57,
+            "isolation": 1.57
+    }
+
+    case_gap_top = 0.001
+    case_gap_right = 0.001
+    case_gap_bot = 0.001
+
+    boundary_temperatures = {
+        "value_boundary_top": 20,
+        "value_boundary_top_right": 20,
+        "value_boundary_right_top": 20,
+        "value_boundary_right": 20,
+        "value_boundary_right_bottom": 20,
+        "value_boundary_bottom_right": 20,
+        "value_boundary_bottom": 20
+    }
+    
+    femm_boundary_temperature = 20
+
+    boundary_flags = {
+        "flag_boundary_top": 1,
+        "flag_boundary_top_right": 1,
+        "flag_boundary_right_top": 1,
+        "flag_boundary_right": 1,
+        "flag_boundary_right_bottom": 1,
+        "flag_boundary_bottom_right": 1,
+        "flag_boundary_bottom": 1
+    }
+
+    #color_scheme = fmt.colors_ba_jonas
+    #colors_geometry = fmt.colors_geometry_ba_jonas
+    color_scheme = fmt.colors_ba_jonas
+    colors_geometry = fmt.colors_geometry_draw_only_lines
+
+
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, 
+        case_gap_bot, show_results=True, visualize_before=True, color_scheme=color_scheme, colors_geometry=colors_geometry)
+    #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 def basic_example():
     geo = fmt.MagneticComponent(component_type="transformer")
@@ -142,7 +129,7 @@ def basic_example():
         "flag_boundary_bottom": 1
     }
 
-    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, show_results=True, visualize_before=True)
 
 
 if __name__ == "__main__":

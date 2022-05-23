@@ -12,7 +12,6 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
     TODO Set docstring
     
     """
-    
     group_pro.add_regions(boundary_regions)
     parameters_pro.add_to_parameters(boundary_temperatures)
     parameters_pro.add_to_parameters(boundary_flags)
@@ -35,29 +34,17 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
         "case_bot": boundary_physical_groups["bot"] 
     })
 
-    dim_tags = []
-    for key in boundary_physical_groups:
-        for tag in gmsh.model.getEntitiesForPhysicalGroup(2, boundary_physical_groups[key]):
-            dim_tags.append([2, tag])
-
-    return dim_tags
-
 def create_isolation(isolation_tag, k_iso, function_pro: FunctionPro, group_pro: GroupPro):
     k_iso = {"isolation": k_iso}
 
     function_pro.add_dicts(k_iso, None)
     group_pro.add_regions({"isolation": isolation_tag})
 
-    # return None
-    return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, isolation_tag)]
-
 def create_background(background_tag, k_air, function_pro: FunctionPro, group_pro: GroupPro):
     k_air = {"air": k_air}
 
     function_pro.add_dicts(k_air, None)
     group_pro.add_regions({"air": background_tag})
-    
-    return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, background_tag)]
 
 def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_tag, k_air_gaps, function_pro: FunctionPro, group_pro: GroupPro):
     heat_flux = core_losses/core_area
@@ -80,17 +67,12 @@ def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_
         q_vol = {"core": heat_flux}
         group_pro.add_regions({"core": core_tag})
         function_pro.add_dicts(k, q_vol)
-        
-    
-
-    return [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, core_tag)], [[2, tag] for tag in gmsh.model.getEntitiesForPhysicalGroup(2, air_gaps_tag)] if air_gaps_tag is not None else None
 
 def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, wire_distances, function_pro: FunctionPro, group_pro: GroupPro):
     q_vol = {}
     k = {}
     regions = {}
     windings_total_str = "{"
-    entities = [[], []]
 
     for winding_index, winding in enumerate(winding_tags):
         if winding is not None and len(winding) > 0:
@@ -101,16 +83,12 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
                 print(q_vol[name])
                 k[name] = k_windings
                 regions[name] = tag
-                for entity in gmsh.model.getEntitiesForPhysicalGroup(2, tag):
-                    entities[winding_index].append(entity)
                 
     # Needs to be added. [:-2] removes the last ', '
     regions["windings_total"] = windings_total_str[:-2] + "}"
 
     function_pro.add_dicts(k, q_vol)
     group_pro.add_regions(regions)
-
-    return [[[2, tag] for tag in entities[0]], [[2, tag] for tag in entities[1]]]
     
 def simulate(onelab_folder_path, mesh_file, solver_file):
     c = onelab.client(__file__)
@@ -122,8 +100,7 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
 def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
     tags_dict, thermal_conductivity_dict, boundary_temperatures, 
     boundary_flags, boundary_physical_groups, core_area, conductor_radii, wire_distances,
-    show_results: bool, show_before_simulation: bool = False,
-    color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default):
+    show_results: bool):
     """
     Runs a thermal simulation.
     
@@ -138,12 +115,6 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     :param wire_distances: List of the outer radius for each winding
     :param show_results: Boolean - Set true when the results shall be shown in a gmsh window
     :type show_results: bool
-    :param show_before_simulation: Boolean -  Set true if the mesh should be shown before running the thermal simulation (e.g. to see the colorization)
-    :type show_before_simulation: bool
-    :param color_scheme: colorfile (definition for red, green, blue, ...)
-    :type color_scheme: Dict
-    :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
-    :type colors_geometry: Dict
 
     :param return: -
     """
@@ -193,40 +164,11 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     core_losses = losses["core"]
 
     # TODO All those pro classes could be used as global variables
-    case_dim_tags = create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags, thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)
-    background_dim_tags = create_background(tags_dict["background_tag"], thermal_conductivity_dict["air"], function_pro, group_pro)
-    core_dim_tags, air_gaps_dim_tags = create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, tags_dict["air_gaps_tag"], thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
-    windings_dim_tags = create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, wire_distances, function_pro, group_pro)
-    isolation_dim_tags = create_isolation(tags_dict["isolations_tag"], thermal_conductivity_dict["isolation"], function_pro, group_pro)
-
-    gmsh.model.geo.synchronize()
-
-    # inner potting material color
-    gmsh.model.setColor(case_dim_tags, color_scheme[colors_geometry["potting_outer"]][0], color_scheme[colors_geometry["potting_outer"]][1], color_scheme[colors_geometry["potting_outer"]][2])
-
-    # outer potting material color
-    gmsh.model.setColor(background_dim_tags, color_scheme[colors_geometry["potting_inner"]][0], color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2])
-
-    # core color
-    gmsh.model.setColor(core_dim_tags, color_scheme[colors_geometry["core"]][0], color_scheme[colors_geometry["core"]][1], color_scheme[colors_geometry["core"]][2])
-
-    # winding colors
-    for winding_number, val in enumerate(windings_dim_tags):
-            gmsh.model.setColor(windings_dim_tags[winding_number], color_scheme[colors_geometry["winding"][winding_number]][0], color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2])
-
-    # air gap color
-    if air_gaps_dim_tags is not None:
-        gmsh.model.setColor(air_gaps_dim_tags, color_scheme[colors_geometry["air_gap"]][0], color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2])
-
-    # isolation / bobbin color
-    if isolation_dim_tags is not None:
-        gmsh.model.setColor(isolation_dim_tags, color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2])
-        
-    gmsh.model.mesh.generate()
-    gmsh.write(model_mesh_file_path)
-
-    if show_before_simulation:
-        gmsh.fltk.run()
+    create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags, thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)
+    create_background(tags_dict["background_tag"], thermal_conductivity_dict["air"], function_pro, group_pro)
+    create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, tags_dict["air_gaps_tag"], thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
+    create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, wire_distances, function_pro, group_pro)
+    create_isolation(tags_dict["isolations_tag"], thermal_conductivity_dict["isolation"], function_pro, group_pro)
 
     # Create files
     parameters_pro.create_file(parameters_file)

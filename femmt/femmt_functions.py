@@ -61,6 +61,19 @@ colors_geometry_ba_jonas = {
                     "potting_outer": "grey_dark_dark",
                 }
 
+colors_black_and_green = {"green":  (6, 213, 6),
+                        "grey_dark": (80, 80, 80)
+                        }
+
+colors_geometry_draw_only_lines = {
+                    "core": "grey_dark",
+                    "air_gap": "grey_dark",
+                    "winding": ["green", "green", "green"],
+                    "isolation": "grey_dark",
+                    "potting_inner": "grey_dark",
+                    "potting_outer": "grey_dark",
+                }
+
 def core_database() -> Dict:
     """
     Returns core geometry for defined core structures
