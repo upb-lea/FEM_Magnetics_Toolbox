@@ -1,8 +1,10 @@
 import gmsh
+import re
+import json
 from os import path
 from onelab import onelab
 from .thermal_functions import *
-from .thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro
+from .thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
 from ..femmt_functions import *
 
 def create_case(boundary_regions, boundary_physical_groups, boundary_temperatures, boundary_flags, k_case, function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro, constraint_pro: ConstraintPro):
@@ -89,13 +91,130 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
 
     function_pro.add_dicts(k, q_vol)
     group_pro.add_regions(regions)
-    
+
+def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_material_file_path, sensor_points_file, core_file, isolation_file, winding_file, windings, post_operation_pro: PostOperationPro):
+
+    # Add pos file generation
+    post_operation_pro.add_on_elements_of_statement("T", "Total", thermal_file_path)
+    post_operation_pro.add_on_elements_of_statement("influx", "Warm", thermal_influx_file_path)
+    post_operation_pro.add_on_elements_of_statement("material", "Total", thermal_material_file_path)
+
+    # Add sensor points file generation
+    post_operation_pro.add_on_point_statement("T", 0.0084, -0.0114, "GmshParsed", sensor_points_file, "first_bottom")
+    post_operation_pro.add_on_point_statement("T", 0.0084, 0.0002, "GmshParsed", sensor_points_file, "first_middle", True)
+    post_operation_pro.add_on_point_statement("T", 0.0084, 0.0072, "GmshParsed", sensor_points_file, "first_top", True)
+    post_operation_pro.add_on_point_statement("T", 0.011, -0.0114, "GmshParsed", sensor_points_file, "second_bottom", True)
+    post_operation_pro.add_on_point_statement("T", 0.011, 0.0002, "GmshParsed", sensor_points_file, "second_middle", True)
+    post_operation_pro.add_on_point_statement("T", 0.011, 0.0072, "GmshParsed", sensor_points_file, "second_top", True)
+    post_operation_pro.add_on_point_statement("T", 0.0132, -0.0089, "GmshParsed", sensor_points_file, "third_bottom", True)
+    post_operation_pro.add_on_point_statement("T", 0.0036, 0.0011, "GmshParsed", sensor_points_file, "air_gap_upper", True)
+    post_operation_pro.add_on_point_statement("T", 0.0036, -0.0011, "GmshParsed", sensor_points_file, "air_gap_lower", True)
+
+    # Add regions
+    post_operation_pro.add_on_elements_of_statement("T", "core", core_file, "SimpleTable", 0)
+    post_operation_pro.add_on_elements_of_statement("T", "isolation", isolation_file, "SimpleTable", 0)
+
+    append = False
+    for winding_index, winding in enumerate(windings):
+        if winding is not None and len(winding) > 0:
+            for index, tag in enumerate(winding):
+                name = f"winding_{winding_index}_{index}"
+                post_operation_pro.add_on_elements_of_statement("T", name, winding_file, "GmshParsed", 0, name, append)
+                if not append:
+                    append = True
+
 def simulate(onelab_folder_path, mesh_file, solver_file):
     c = onelab.client(__file__)
 
     # Run simulations as sub clients (non blocking??)
     mygetdp = path.join(onelab_folder_path, "getdp")
     c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2")
+
+def parse_simple_table(file_path):
+    with open(file_path, "r") as fd:
+        lines = fd.readlines()
+        print("lastline", lines[-1])
+        np_array = np.zeros(len(lines))
+        for i, line in enumerate(lines):
+            np_array[i] = float(line.split(" ")[5])
+
+        return np_array
+
+def parse_gmsh_parsed(file_path):
+    regex_view_line = "View \"(?P<key>\w+)\" \{\n"
+    regex_SP_line = "SP\(-?\d+\.\d+(e-\d+)?,-?\d+\.\d+(e-\d+)?,0\)\{(?P<value>-?\d+\.\d+)\};\n"
+
+    value_dict = {}
+
+    with open(file_path, "r") as fd:
+        lines = fd.readlines()
+        current_values = []
+        current_key = None
+        for line in lines:
+            if line.startswith("View"):
+                if current_values:
+                    if len(current_values) == 1:
+                        value_dict[current_key] = current_values[0]
+                    else:
+                        value_dict[current_key] = np.array(current_values)
+                    current_values = []
+                current_key = re.search(regex_view_line, line).groupdict()["key"]
+            elif line.startswith("SP"):
+                if current_key is None:
+                    raise Exception("Invalid file format: A 'View'-line must be read before a 'SP'-line")
+                current_values.append(float(re.search(regex_SP_line, line).groupdict()["value"]))
+            elif line.startswith("}"):
+                continue
+            else:
+                raise Exception(f"Unknown line: {line}")
+
+    return value_dict
+
+def post_operation(output_file, sensor_points_file, core_file, isolation_file, winding_file):
+    # Extract sensor_points
+    sensor_point_values = parse_gmsh_parsed(sensor_points_file)
+
+    # Extract min/max/averages from core, isolations and windings (and air?)
+    # core
+    core_values = parse_simple_table(core_file)
+    core_min = core_values.min()
+    core_max = core_values.max()
+    core_mean = core_values.mean()
+
+    # isolations
+    isolation_values = parse_simple_table(isolation_file)
+    isolation_min = isolation_values.min()
+    isolation_max = isolation_values.max()
+    isolation_mean = isolation_values.mean()
+
+    # windings
+    winding_values = parse_gmsh_parsed(winding_file)
+    windings = {}
+
+    for winding_name, winding_values in winding_values.items():
+        windings[winding_name] = {
+            "min": winding_values.min(),
+            "max": winding_values.max(),
+            "mean": winding_values.mean()
+        }
+
+    data = {
+        "sensor_points": sensor_point_values,
+        "core": {
+            "min": core_min,
+            "max": core_max,
+            "mean": core_mean
+        },
+        "isolations": {
+            "min": isolation_min,
+            "max": isolation_max,
+            "mean": isolation_mean
+        },
+        "windings": windings,
+    }
+
+    with open(output_file, "w") as fd:
+        json.dump(data, fd, indent=2)
 
 def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
     tags_dict, thermal_conductivity_dict, boundary_temperatures, 
@@ -134,6 +253,12 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     function_file = path.join(solver_folder_path, "Function.pro")
     group_file = path.join(solver_folder_path, "Group.pro")
     constraint_file = path.join(solver_folder_path, "Constraint.pro")
+    post_operation_file = path.join(solver_folder_path, "PostOperation.pro")
+    sensor_points_file = path.join(results_folder_path, "sensor_points.txt")
+    core_file = path.join(results_folder_path, "core.txt")
+    isolation_file = path.join(results_folder_path, "isolation.txt")
+    winding_file = path.join(results_folder_path, "winding.txt")
+    output_file = path.join(results_folder_path, "output.json")
 
     if not gmsh.isInitialized():
         gmsh.initialize()
@@ -144,12 +269,7 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     function_pro = FunctionPro()
     group_pro = GroupPro()
     constraint_pro = ConstraintPro()
-
-    parameters_pro.add_to_parameters({
-        "thermal_file": map_pos_file.replace("\\", "/"),
-        "thermal_influx_file": influx_pos_file.replace("\\", "/"),
-        "thermal_material_file": material_pos_file.replace("\\", "/")
-    })
+    post_operation_pro = PostOperationPro()
 
     # Extract losses
     winding_losses = []
@@ -164,19 +284,28 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     core_losses = losses["core"]
 
     # TODO All those pro classes could be used as global variables
-    create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags, thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)
+    create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags,
+         thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)
     create_background(tags_dict["background_tag"], thermal_conductivity_dict["air"], function_pro, group_pro)
-    create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, tags_dict["air_gaps_tag"], thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
+    create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, tags_dict["air_gaps_tag"], 
+        thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
     create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, wire_distances, function_pro, group_pro)
     create_isolation(tags_dict["isolations_tag"], thermal_conductivity_dict["isolation"], function_pro, group_pro)
+    #create_post_operation(map_pos_file.replace("\\", "/"), influx_pos_file.replace("\\", "/"), material_pos_file.replace("\\", "/"), sensor_points_file, core_file,
+    #    isolation_file, winding_file, tags_dict["winding_tags"], post_operation_pro)
+    create_post_operation(map_pos_file, influx_pos_file, material_pos_file, sensor_points_file, core_file,
+        isolation_file, winding_file, tags_dict["winding_tags"], post_operation_pro)
 
     # Create files
     parameters_pro.create_file(parameters_file)
     function_pro.create_file(function_file)
     group_pro.create_file(group_file, tags_dict["air_gaps_tag"] != None)
     constraint_pro.create_file(constraint_file)
+    post_operation_pro.create_file(post_operation_file)
 
     simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file)
+
+    post_operation(output_file, sensor_points_file, core_file, isolation_file, winding_file)
 
     if show_results:
         gmsh.open(map_pos_file)

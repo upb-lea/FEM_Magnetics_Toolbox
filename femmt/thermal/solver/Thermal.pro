@@ -25,9 +25,4 @@ PostProcessing {
   }
 }
 
-PostOperation map UsingPost The {
-
-  Print[ T, OnElementsOf Total , File thermal_file];
-  Print[ influx, OnElementsOf Warm , File thermal_influx_file];
-  Print[ material, OnElementsOf Total , File thermal_material_file];
-}
+Include "PostOperation.pro";
