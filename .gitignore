@@ -39,6 +39,7 @@ femmt/thermal/solver/Constraint.pro
 femmt/thermal/solver/Function.pro
 femmt/thermal/solver/Group.pro
 femmt/thermal/solver/Parameters.pro
+femmt/thermal/solver/PostOperation.pro
 
 # Used for integration test
 !tests/integration/fixtures/results/result_log_electro_magnetic.json

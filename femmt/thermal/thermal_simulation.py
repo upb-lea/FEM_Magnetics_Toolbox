@@ -191,13 +191,36 @@ def post_operation(output_file, sensor_points_file, core_file, isolation_file, w
     winding_values = parse_gmsh_parsed(winding_file)
     windings = {}
 
-    for winding_name, winding_values in winding_values.items():
+    winding_min = float('inf')
+    winding_max = -float('inf')
+    mean_sum = 0
+
+    for winding_name, winding_value in winding_values.items():
+        current_min = winding_value.min()
+        current_max = winding_value.max()
+        current_mean = winding_value.mean()
+
         windings[winding_name] = {
-            "min": winding_values.min(),
-            "max": winding_values.max(),
-            "mean": winding_values.mean()
+            "min": current_min,
+            "max": current_max,
+            "mean": current_mean
         }
 
+        if current_min < winding_min:
+            winding_min = current_min
+
+        if current_max > winding_max:
+            winding_max = current_max
+
+        mean_sum += current_mean
+
+    windings["total"] = {
+        "min": winding_min,
+        "max": winding_max,
+        "mean": mean_sum/len(winding_values.keys())
+    }
+
+    # fill data for json file
     data = {
         "sensor_points": sensor_point_values,
         "core": {
@@ -258,7 +281,7 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     core_file = path.join(results_folder_path, "core.txt")
     isolation_file = path.join(results_folder_path, "isolation.txt")
     winding_file = path.join(results_folder_path, "winding.txt")
-    output_file = path.join(results_folder_path, "output.json")
+    output_file = path.join(results_folder_path, "results_thermal.json")
 
     if not gmsh.isInitialized():
         gmsh.initialize()
