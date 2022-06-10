@@ -92,7 +92,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
     function_pro.add_dicts(k, q_vol)
     group_pro.add_regions(regions)
 
-def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_material_file_path, sensor_points_file, core_file, isolation_file, winding_file, windings, post_operation_pro: PostOperationPro):
+def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_material_file_path, sensor_points_file, core_file, isolation_file, winding_file, windings, print_sensor_values, post_operation_pro: PostOperationPro):
 
     # Add pos file generation
     post_operation_pro.add_on_elements_of_statement("T", "Total", thermal_file_path)
@@ -100,15 +100,16 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
     post_operation_pro.add_on_elements_of_statement("material", "Total", thermal_material_file_path)
 
     # Add sensor points file generation
-    post_operation_pro.add_on_point_statement("T", 0.0084, -0.0114, "GmshParsed", sensor_points_file, "first_bottom")
-    post_operation_pro.add_on_point_statement("T", 0.0084, 0.0002, "GmshParsed", sensor_points_file, "first_middle", True)
-    post_operation_pro.add_on_point_statement("T", 0.0084, 0.0072, "GmshParsed", sensor_points_file, "first_top", True)
-    post_operation_pro.add_on_point_statement("T", 0.011, -0.0114, "GmshParsed", sensor_points_file, "second_bottom", True)
-    post_operation_pro.add_on_point_statement("T", 0.011, 0.0002, "GmshParsed", sensor_points_file, "second_middle", True)
-    post_operation_pro.add_on_point_statement("T", 0.011, 0.0072, "GmshParsed", sensor_points_file, "second_top", True)
-    post_operation_pro.add_on_point_statement("T", 0.0132, -0.0089, "GmshParsed", sensor_points_file, "third_bottom", True)
-    post_operation_pro.add_on_point_statement("T", 0.0036, 0.0011, "GmshParsed", sensor_points_file, "air_gap_upper", True)
-    post_operation_pro.add_on_point_statement("T", 0.0036, -0.0011, "GmshParsed", sensor_points_file, "air_gap_lower", True)
+    if print_sensor_values:
+        post_operation_pro.add_on_point_statement("T", 0.0084, -0.0114, "GmshParsed", sensor_points_file, "first_bottom")
+        post_operation_pro.add_on_point_statement("T", 0.0084, 0.0002, "GmshParsed", sensor_points_file, "first_middle", True)
+        post_operation_pro.add_on_point_statement("T", 0.0084, 0.0072, "GmshParsed", sensor_points_file, "first_top", True)
+        post_operation_pro.add_on_point_statement("T", 0.011, -0.0114, "GmshParsed", sensor_points_file, "second_bottom", True)
+        post_operation_pro.add_on_point_statement("T", 0.011, 0.0002, "GmshParsed", sensor_points_file, "second_middle", True)
+        post_operation_pro.add_on_point_statement("T", 0.011, 0.0072, "GmshParsed", sensor_points_file, "second_top", True)
+        post_operation_pro.add_on_point_statement("T", 0.0132, -0.0089, "GmshParsed", sensor_points_file, "third_bottom", True)
+        post_operation_pro.add_on_point_statement("T", 0.0036, 0.0011, "GmshParsed", sensor_points_file, "air_gap_upper", True)
+        post_operation_pro.add_on_point_statement("T", 0.0036, -0.0011, "GmshParsed", sensor_points_file, "air_gap_lower", True)
 
     # Add regions
     post_operation_pro.add_on_elements_of_statement("T", "core", core_file, "SimpleTable", 0)
@@ -172,7 +173,9 @@ def parse_gmsh_parsed(file_path):
 
 def post_operation(output_file, sensor_points_file, core_file, isolation_file, winding_file):
     # Extract sensor_points
-    sensor_point_values = parse_gmsh_parsed(sensor_points_file)
+    sensor_point_values = None
+    if sensor_points_file is not None:
+        sensor_point_values = parse_gmsh_parsed(sensor_points_file)
 
     # Extract min/max/averages from core, isolations and windings (and air?)
     # core
@@ -221,8 +224,8 @@ def post_operation(output_file, sensor_points_file, core_file, isolation_file, w
     }
 
     # fill data for json file
+
     data = {
-        "sensor_points": sensor_point_values,
         "core": {
             "min": core_min,
             "max": core_max,
@@ -236,13 +239,16 @@ def post_operation(output_file, sensor_points_file, core_file, isolation_file, w
         "windings": windings,
     }
 
+    if sensor_point_values is not None:
+        data["sensor_points"] = sensor_point_values
+
     with open(output_file, "w") as fd:
         json.dump(data, fd, indent=2)
 
 def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
     tags_dict, thermal_conductivity_dict, boundary_temperatures, 
     boundary_flags, boundary_physical_groups, core_area, conductor_radii, wire_distances,
-    show_results: bool):
+    show_results: bool, print_sensor_values: bool):
     """
     Runs a thermal simulation.
     
@@ -277,7 +283,7 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     group_file = path.join(solver_folder_path, "Group.pro")
     constraint_file = path.join(solver_folder_path, "Constraint.pro")
     post_operation_file = path.join(solver_folder_path, "PostOperation.pro")
-    sensor_points_file = path.join(results_folder_path, "sensor_points.txt")
+    sensor_points_file = path.join(results_folder_path, "sensor_points.txt") if print_sensor_values else None
     core_file = path.join(results_folder_path, "core.txt")
     isolation_file = path.join(results_folder_path, "isolation.txt")
     winding_file = path.join(results_folder_path, "winding.txt")
@@ -317,7 +323,7 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     #create_post_operation(map_pos_file.replace("\\", "/"), influx_pos_file.replace("\\", "/"), material_pos_file.replace("\\", "/"), sensor_points_file, core_file,
     #    isolation_file, winding_file, tags_dict["winding_tags"], post_operation_pro)
     create_post_operation(map_pos_file, influx_pos_file, material_pos_file, sensor_points_file, core_file,
-        isolation_file, winding_file, tags_dict["winding_tags"], post_operation_pro)
+        isolation_file, winding_file, tags_dict["winding_tags"], print_sensor_values, post_operation_pro)
 
     # Create files
     parameters_pro.create_file(parameters_file)

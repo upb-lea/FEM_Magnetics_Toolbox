@@ -320,7 +320,8 @@ class MagneticComponent:
             "core_area": core_area,
             "conductor_radii": wire_radii,
             "wire_distances": self.get_wire_distances(),
-            "show_results": show_results
+            "show_results": show_results,
+            "print_sensor_values": False
         }
 
         run_thermal(**thermal_parameters)
