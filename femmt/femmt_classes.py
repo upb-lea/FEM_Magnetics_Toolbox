@@ -4582,6 +4582,7 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
             gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
             print(gmsh.option.getNumber(f"View[{view}].Max"))
             view += 1
 
@@ -4595,6 +4596,7 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
             gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
             gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
             view += 1
 
@@ -4606,6 +4608,7 @@ class MagneticComponent:
         gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
         gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
         gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+        gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
         gmsh.option.setNumber(f"View[{view}].NbIso", 40)
         view += 1
 

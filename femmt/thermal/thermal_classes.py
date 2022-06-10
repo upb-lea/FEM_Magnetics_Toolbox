@@ -123,7 +123,7 @@ class PostOperationPro:
 
         append_str = "> " if append else ""
 
-        self.statements.append(f"Print [ {field}, OnPoint {{{x}, {y}, 0}}, {format_str}File {append_str}\"{file_name}\", Name \"{point_name}\" ];")
+        self.statements.append(f"Print [ {field}, OnPoint {{{x}, {y}, 0}}, {format_str}Name \"{point_name}\", File {append_str}\"{file_name}\" ];")
 
     def add_on_elements_of_statement(self, field, region, file_name, format = None, depth = None, name = None, append = False):
         format_str = ""
