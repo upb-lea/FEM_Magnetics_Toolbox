@@ -20,6 +20,7 @@ femmt/mesh
 femmt/results
 femmt/unversioned
 femmt/.idea/
+femmt/examples/working_directory
 .idea/
 femmt/__pycache__/
 gpgit/
