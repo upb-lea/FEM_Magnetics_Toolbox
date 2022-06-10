@@ -40,7 +40,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type="inductor", **kwargs):
+    def __init__(self, component_type="inductor", working_directory = os.path.dirname(__file__)):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -54,12 +54,7 @@ class MagneticComponent:
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
 
-        if "working_directory" in kwargs:
-            wkdir = kwargs["working_directory"]
-            if wkdir is not None and os.path.exists(wkdir):
-                self.update_paths(wkdir)
-        else:
-            self.update_paths(os.path.dirname(__file__))
+        self.update_paths(working_directory)
 
         self.correct_outer_leg = False
 

@@ -1,6 +1,7 @@
 import femmt
 import femmt as fmt
 import numpy as np
+import os
 
 def example_thermal_simulation():
     # Thermal simulation:
@@ -77,8 +78,11 @@ component = "inductor"
 
 # Create Object
 if component == "inductor":
+    # Working directory can be set arbitrarily
+    working_directory = os.path.join(os.path.dirname(__file__), "working_directory")
+
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type="inductor")
+    geo = fmt.MagneticComponent(component_type="inductor", working_directory=working_directory)
 
     # 2. set core parameters
     core = fmt.core_database()["PQ 40/40"]
