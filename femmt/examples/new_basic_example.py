@@ -9,12 +9,7 @@ geo = fmt.MagneticComponent(component_type="transformer")
 geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015,
                 mu_rel=3100, phi_mu_deg=12,
                 sigma=0.6)
-
-"""
-geo.air_gaps.update(method="percent", n_air_gaps=1, air_gap_h=[0.0005],
-                    air_gap_position=[50], position_tag=[0])
-"""
-
+                
 # Add air gaps
 air_gaps = AirGaps(AirGapMethods.Percent)
 air_gaps.add_air_gap(AirGapLegPositions.CenterLeg, 50, 0.0005)
