@@ -1,19 +1,19 @@
 from enum import Enum
 from typing import List
 
-class ConductorTypes(Enum):
+class ConductorType(Enum):
     Stacked = "stacked"
     Full = "full"
     Foil = "foil"
     Solid = "solid"
     Litz = "litz"
 
-class WindingTypes(Enum):
+class WindingType(Enum):
     Interleaved = "interleaved"
     Primary = "primary"
     Secondary = "secondary"
 
-class WindingSchemes(Enum):
+class WindingScheme(Enum):
     # If winding is primary or secondary
     Hexagonal = "hexa"
     Square = "square"
@@ -25,50 +25,50 @@ class WindingSchemes(Enum):
     Bifilar = "bifilar"
     Blockwise = "blockwise"
 
-class LitzImplicitTypes(Enum):
+class LitzImplicitType(Enum):
     default = ""
     Implicit_litz_radius = "implicit_litz_radius"
     Implicit_ff = "implicit_ff"
     Implicit_strands_number = "implicit_strands_number"
 
-class WrapParaTypes(Enum):
+class WrapParaType(Enum):
     default = ""
     Fixed_Thickness = "fixed_thickness"
     Interpolare = "interpolate"
 
-class Conductivities(Enum):
+class Conductivity(Enum):
     default = ""
     Copper = "copper"
 
 class Winding:
     turns_primary: int
     turns_secondary: int
-    conductor_type: ConductorTypes = None
+    conductor_type: ConductorType = None
     ff: float = None
     strand_radius: float = None
     number_strands: int = None
     conductor_radius: float = None
     thickness: float = None
-    wrap_para: WrapParaTypes = WrapParaTypes.default
-    conductivity: Conductivities = Conductivities.default
-    implicit_litz_type: LitzImplicitTypes = LitzImplicitTypes.default
+    wrap_para: WrapParaType = WrapParaType.default
+    conductivity: Conductivity = Conductivity.default
+    implicit_litz_type: LitzImplicitType = LitzImplicitType.default
     parallel: int = None # TODO What is this parameter?
-    winding_type: WindingTypes
-    winding_scheme: WindingSchemes
+    winding_type: WindingType
+    winding_scheme: WindingScheme
 
-    def __init__(self, turns_primary: int, turns_secondary:int, conductivity: Conductivities, winding_type: WindingTypes, winding_scheme: WindingSchemes):
+    def __init__(self, turns_primary: int, turns_secondary:int, conductivity: Conductivity, winding_type: WindingType, winding_scheme: WindingScheme):
         if turns_primary < 1 and turns_secondary < 1:
             raise Exception("Either number of primary or number of secondary turns need to be at least 1.")
 
         self.winding_type = winding_type
 
-        if winding_scheme in [WindingSchemes.Hexagonal, WindingSchemes.Square, WindingSchemes.Square_Full_Width]:
+        if winding_scheme in [WindingScheme.Hexagonal, WindingScheme.Square, WindingScheme.Square_Full_Width]:
             # winding type needs to be primary or secondary
-            if self.winding_type != WindingTypes.Primary and self.winding_type != WindingTypes.Secondary:
+            if self.winding_type != WindingType.Primary and self.winding_type != WindingType.Secondary:
                 raise Exception(f"For {winding_scheme} winding type needs to be primary or secondary")
-        elif winding_scheme in [WindingSchemes.Horizontal, WindingSchemes.Vertical, WindingSchemes.Bifilar, WindingSchemes.Blockwise]:
+        elif winding_scheme in [WindingScheme.Horizontal, WindingScheme.Vertical, WindingScheme.Bifilar, WindingScheme.Blockwise]:
             # winding type needs to be interleaved
-            if self.winding_type != WindingTypes.Interleaved:
+            if self.winding_type != WindingType.Interleaved:
                 raise Exception(f"For {winding_scheme} winding type needs to be interleaved")
         else:
             raise Exception(f"{winding_scheme} does not fit into any possible winding schemes")
@@ -79,27 +79,27 @@ class Winding:
         self.turns_secondary = turns_secondary
         self.conductivity = conductivity
 
-    def set_stacked_conductor(self, thickness: float, wrap_para: WrapParaTypes):
+    def set_stacked_conductor(self, thickness: float, wrap_para: WrapParaType):
         if self.conductor_type is not None:
             raise Exception("Only one conductor can be set for each winding!")
 
-        self.conductor_type = ConductorTypes.Stacked
+        self.conductor_type = ConductorType.Stacked
         self.thickness = thickness
         self.wrap_para = wrap_para
 
-    def set_full_conductor(self, thickness: float, wrap_para: WrapParaTypes):
+    def set_full_conductor(self, thickness: float, wrap_para: WrapParaType):
         if self.conductor_type is not None:
             raise Exception("Only one conductor can be set for each winding!")
 
-        self.conductor_type = ConductorTypes.Full
+        self.conductor_type = ConductorType.Full
         self.thickness = thickness
         self.wrap_para = wrap_para
 
-    def set_foil_conductor(self, thickness: float, wrap_para: WrapParaTypes):
+    def set_foil_conductor(self, thickness: float, wrap_para: WrapParaType):
         if self.conductor_type is not None:
             raise Exception("Only one conductor can be set for each winding!")
 
-        self.conductor_type = ConductorTypes.Foil
+        self.conductor_type = ConductorType.Foil
         self.thickness = thickness
         self.wrap_para = wrap_para
 
@@ -107,7 +107,7 @@ class Winding:
         if self.conductor_type is not None:
             raise Exception("Only one conductor can be set for each winding!")
 
-        self.conductor_type = ConductorTypes.Solid
+        self.conductor_type = ConductorType.Solid
         self.conductor_radius = conductor_radius
 
     def set_litz_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float, fill_factor: float):
@@ -117,18 +117,18 @@ class Winding:
         if self.conductor_type is not None:
             raise Exception("Only one conductor can be set for each winding!")
 
-        self.conductor_type = ConductorTypes.Litz
+        self.conductor_type = ConductorType.Litz
         self.conductor_radius = conductor_radius
         self.number_strands = number_strands
         self.strand_radius = strand_radius
         self.ff = fill_factor 
 
         if number_strands is None:
-            self.implicit_litz_type = LitzImplicitTypes.Implicit_strands_number
+            self.implicit_litz_type = LitzImplicitType.Implicit_strands_number
         elif conductor_radius is None:
-            self.implicit_litz_type = LitzImplicitTypes.Implicit_litz_radius
+            self.implicit_litz_type = LitzImplicitType.Implicit_litz_radius
         elif fill_factor is None:
-            self.implicit_litz_type = LitzImplicitTypes.Implicit_ff
+            self.implicit_litz_type = LitzImplicitType.Implicit_ff
         else:
             raise Exception("Wrong inputs for litz conductor")
 

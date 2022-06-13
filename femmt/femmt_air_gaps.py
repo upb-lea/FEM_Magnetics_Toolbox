@@ -1,26 +1,26 @@
 from enum import Enum
 from typing import List
 
-class AirGapMethods(Enum):
+class AirGapMethod(Enum):
     Center = "center"
     Percent = "percent"
     Manually = "manually"
 
-class AirGapLegPositions(Enum):
+class AirGapLegPosition(Enum):
     LeftLeg = -1
     CenterLeg = 0
     RightLeg = 1
 
 class AirGaps():
-    method: AirGapMethods
-    leg_positions: List[AirGapLegPositions] = []
+    method: AirGapMethod
+    leg_positions: List[AirGapLegPosition] = []
     positions: List[float] = []
     heights: List[float] = []
 
-    def __init__(self, method: AirGapMethods):
+    def __init__(self, method: AirGapMethod):
         self.method = method
 
-    def add_air_gap(self, leg_position: AirGapLegPositions, position_value: float, height: float):
+    def add_air_gap(self, leg_position: AirGapLegPosition, position_value: float, height: float):
         self.leg_positions.append(leg_position)
         self.positions.append(position_value)
         self.heights.append(height)
