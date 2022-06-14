@@ -1,8 +1,7 @@
-import femmt
 import femmt as fmt
 import numpy as np
-from femmt_windings import *
-from femmt_air_gaps import *
+from femmt.femmt_windings import *
+from femmt.femmt_air_gaps import *
 
 geo = fmt.MagneticComponent(component_type="transformer")
 

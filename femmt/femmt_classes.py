@@ -1,5 +1,6 @@
 # Usual Python libraries
 import csv
+from femmt_model_classes import *
 import fileinput
 import numpy as np
 import os
@@ -12,13 +13,15 @@ import json
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import warnings
-import shutil
 
 from typing import List, Union, Optional, Dict
 from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import *
 from .femmt_functions import *
 from .electro_magnetic.Analytical_Core_Data import *
+from .femmt_air_gaps import *
+from .femmt_windings import *
+from .femmt_core import *
 
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
@@ -88,30 +91,19 @@ class MagneticComponent:
         self.n_windings = None  # Number of conductors/windings
         if component_type == "inductor":
             self.n_windings = 1
-            self.windings = [self.Winding()]
-
-        if component_type == "transformer":
+        elif component_type == "transformer":
             self.n_windings = 2
-            self.windings = [self.Winding(), self.Winding()]
-
-        if component_type == "integrated_transformer":
+        elif component_type == "integrated_transformer":
             self.n_windings = 2
-            self.windings = [self.Winding(), self.Winding()]
-            self.stray_path = self.StrayPath()
-
-        if component_type == "three_phase_transformer":
+        elif component_type == "three_phase_transformer":
             self.n_windings = 3
-            self.windings = [self.Winding(), self.Winding(), self.Winding()]
-            raise NotImplemented
-
+            raise NotImplemented("Three phase transformer is not implemented yet")
+        else:
+            raise Exception("Unknown component type")
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Virtual Winding Windows
         self.virtual_winding_windows = None
         self.vw_type = None  # "center" and "full_window" are the only cases implemented yet; #TODO: replace
-
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Isolation
-        self.isolation = self.Isolation()
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Geometric Parameters/Coordinates
@@ -423,598 +415,55 @@ class MagneticComponent:
             self.two_d_axi = self.TwoDaxiSymmetric(self)
             self.two_d_axi.update(isolation_deltas)
 
-    class VirtualWindingWindow:
-        """
-        A virtual winding window is the area, where either some kind of interleaved conductors or a one winding
-        (primary, secondary,...) is placed in a certain way.
-        """
-
-        def __init__(self):
-            # Rectangular frame:
-            self.bot_bound = None
-            self.top_bound = None
-            self.left_bound = None
-            self.right_bound = None
-
-            # Arrangement of the Conductors in the virtual winding window
-            # Obviously depends on the chosen conductor type
-            self.winding = None  # "interleaved" | "primary"/"secondary"
-            self.scheme = None  # "bifilar", "vertical", "horizontal", ["hexa", "square"] | "hexa", "square"
-            self.turns = [None]  # Must be an ordered list with the number of turns of the conductors in the window
-            # [N_primary, N_secondary,...]
-
-    class Winding:
-        """
-        A winding defines a conductor which is wound around a magnetic component such as transformer or inductance.
-        The winding is defined by its conductor and the way it is placed in the magnetic component. To allow different
-        arrangements of the conductors in several winding windows (hexagonal or square packing, interleaved, ...) in
-        this class only the conductor parameters are specified. Then, by calling class:Winding in
-        class:VirtualWindingWindow the arrangement of the conductors is specified.
-        """
-
-        def __init__(self):
-            self.cond_sigma = None
-            self.turns = None
-            self.conductor_type = None  # List of possible conductor types
-            self.ff = None
-            self.n_layers = None
-            self.n_strands = None
-            self.strand_radius = None
-            self.conductor_radius = None
-            self.a_cell = None
-            self.thickness = None
-            self.wrap_para = None
-
-    class Core:
-        """
-        frequency = 0: mu_rel only used if non_linear == False
-        frequency > 0: mu_rel is used
-
-        """
-
-        def __init__(self, component):
-            """
-
-            """
-            self.component = component  # Convention: parent
-
-            # Standard material data
-            self.material = None  # "95_100" := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
-
-            # Permeability
-            # TDK N95 as standard material:
-            self.permeability_type = None
-            self.mu_rel = None  # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
-            self.phi_mu_deg = None  # mu_complex = mu_rel * exp(j*phi_mu_deg)
-            # self.re_mu_rel = None  # Real part of relative Core Permeability  [B-Field and frequency-dependent]
-            # self.im_mu_rel = None # Imaginary part of relative Core Permeability
-
-            # Permitivity - [Conductivity in a magneto-quasistatic sense]
-            self.sigma = None  # Imaginary part of complex equivalent permittivity [frequency-dependent]
-
-            # Steinmetz Loss
-            self.steinmetz_loss = 0
-            self.Ipeak = None
-            self.ki = None
-            self.alpha = None
-            self.beta = None
-            self.t_rise = None
-            self.t_fall = None
-            self.f_switch = None
-
-            # Dimensions
-            self.type = "EI"  # Basic shape of magnetic conductor
-            self.core_w = None  # Axi symmetric case | core_w := core radius
-            self.core_h = None
-            self.window_w = None  # Winding window width
-            self.window_h = None  # Winding window height
-
-        def update(self,
-                   material: str = "custom",  # "95_100"
-                   loss_approach: str = None,
-                   loss_data_source: str = "custom",
-                   mu_rel: float = 3000,
-                   phi_mu_deg: float = None,
-                   sigma: float = None,
-                   non_linear: bool = False,
-                   **kwargs) -> None:
-            """
-            Updates the core structure.
-
-            - Core parameters set by keyword calling
-
-                - Allows single parameter changing, depending on core-type
-                - Strict keyword usage
-                - All geometric dimensions are in meters
-
-            :param sigma:
-            :type sigma: float
-            :param non_linear: True/False
-            :type non_linear: bool
-            :param material: specified in BH.pro. Currently available: '95_100' #ToDo: Add Values!
-            :type material: str
-            :param type: There is actually only one type: "EI"
-            :type type: str
-            :param kwargs:
-                - Case "2D, axisym., EI": 'core_w', 'window_w', 'window_h'
-                - Case "3D, EI": ...tba...
-
-            :return: None
-
-            """
-
-            print(f"Update the magnetic Core to {self.type}-type with following parameters: {kwargs}\n"
-                  f"---")
-
-            # Material Properties
-            self.material = material
-            self.non_linear = non_linear
-
-            # Conductivity
-            if self.material == "custom":  # user defines the conductivity
-                self.sigma = sigma
-            if loss_approach == "Steinmetz":  # conductivity must be set to 0 for Steinmetz approach
-                self.sigma = 0
-            else:
-                self.sigma = f"sigma_from_{self.material}"
-
-            # Permeability
-            self.mu_rel = mu_rel
-            self.phi_mu_deg = phi_mu_deg
-
-            # Check for which kind of permeability definition is used
-            if loss_approach == "loss_angle":
-                if self.phi_mu_deg is not None and self.phi_mu_deg != 0:
-                    self.permeability_type = "fixed_loss_angle"
-                else:
-                    self.permeability_type = "real_value"
-            else:
-                if self.material != "custom":
-                    self.permeability_type = "from_data"
-                # else:
-                #     raise Exception(f"Permeability must be specified with real_value, fixed_loss_angle or from_data")
-
-
-            # Set attributes of core with given keywords
-            for key, value in kwargs.items():
-                setattr(self, key, value)
-
-    class StrayPath:
-        """
-
-        """
-
-        def __init__(self):
-            # Dedicated Stray Path
-            self.start_index = None  # lower air gap that characterizes the stray path
-            self.radius = None
-            self.width = None
-            self.midpoint = None
-            # TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the
-            #  "stray air gap" is different in axi-symmetric approximation
-
-        def update(self, **kwargs):
-            # Set attributes of core with given keywords
-            for key, value in kwargs.items():
-                setattr(self, key, value)
-
-    class AirGaps:
-        """
-        Contains methods and arguments to describe the air gaps in a magnetic component
-        """
-
-        def __init__(self, component):
-            """
-
-            """
-            self.component = component
-            # self.number = 1
-            self.number = None  #: Number of air gaps [==1: air gap in center | >1: random air gaps]
-
-            # self.midpoints = np.empty((self.number, 4))
-            self.midpoints = None  #: list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
-
-        def update(self, method: str = None, n_air_gaps: Union[int, None] = None,
-                   position_tag: List[float] = None,
-                   air_gap_position: List[float] = None,
-                   air_gap_h: List[float] = None, **kwargs) -> None:
-            """
-            Updates the air gap structure.
-
-            - Strict keyword usage!
-            - All dimensions are in meters
-            - all parameters are in lists!
-            - first chose the method, second, transfer parameters:
-            - Method overview:
-                - "center": ONE air gap exactly in core's middle
-                - "percent": Easy way to split air gaps over the inner/outer leg
-                - "manually": Place air gaps manually
-
-            - "self.midpoints" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
-            -  c_air_gap: mesh accuracy factor
-            - "EI 2D axi": position_tag = 0  # '-1': left leg | '0': center leg | '1': right leg
-
-            :param n_air_gaps: number of air gaps
-            :type n_air_gaps: int
-            :param position_tag: specifies the gapped "leg"
-            :type position_tag: float
-            :param air_gap_h: List of air gap high, list length depending on total air gap count
-            :type air_gap_h: float
-            :param air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
-            :type air_gap_position: float
-            :param method: "center", "percent", "manually"
-            :type method: str
-
-            :return: None
-            :rtype: None
-
-            :Example:
-
-            >>> import femmt as fmt
-            >>> geo = fmt.MagneticComponent(component_type='inductor')
-            >>> geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.002]) # 'center': single air gap in the middle
-            >>> geo.air_gaps.update(method="percent", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[10, 80]) # 'percent': Place air gaps manually using percentages
-            >>> geo.air_gaps.update(method="manually", n_air_gaps=2, position_tag=[0, 0], air_gap_h=[0.003, 0.001], air_gap_position=[0.000, 0.003]) # manually
-
-            """
-            self.number = n_air_gaps
-            self.position_tag = position_tag
-            air_gap_position = air_gap_position
-            self.air_gap_h = air_gap_h
-
-            print(f"Update the air gaps.\n"
-                  f"---")
-
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - - - - - - - - - - - - - - - - - - -
-
-            # Update the mesh accuracy of the window
-            self.component.mesh.c_window = self.component.core.window_w / 20 * self.component.mesh.global_accuracy
-
-            # Rewrite variables
-            self.midpoints = np.full((self.number, 4), None)
-            self.component.mesh.c_air_gap = [None] * self.number
-
-            # Update air gaps with chosen method
-
-            # Center
-            if method == "center" and self.component.dimensionality == "2D":
-                if self.number > 1:
-                    print(f"{self.number} are too many air gaps for the 'center' option!")
-                    raise Warning
-                else:
-                    self.component.mesh.c_air_gap[0] = air_gap_h[0] * self.component.mesh.global_accuracy
-                    self.midpoints[0, :] = np.array([0, 0, air_gap_h[0], self.component.mesh.c_air_gap[0]])
-
-            # Deterministic
-            if (method == "manually" or method == "percent") and self.component.dimensionality == "2D":
-                for i in range(0, self.number):
-                    if method == "percent":
-                        # air_gap_position[i] = air_gap_position[i] / 100 * \
-                        #                       (self.component.core.window_h - air_gap_h[i]) \
-                        #                       - (self.component.core.window_h / 2 - air_gap_h[i] / 2)
-                        air_gap_position[i] = air_gap_position[i] / 100 * self.component.core.window_h \
-                                              - self.component.core.window_h / 2
-
-                    # Overlapping Control
-                    for j in range(0, self.midpoints.shape[0]):
-                        if self.midpoints[j, 1] is not None and self.midpoints[j, 1] + self.midpoints[j, 2] / 2 > air_gap_position[i] > self.midpoints[j, 1] - self.midpoints[
-                            j, 2] / 2:
-                            if position_tag[i] == self.midpoints[j, 0]:
-                                print(f"Overlapping Air Gap")
-                                # raise Warning
-                        else:
-                            # self.component.mesh.c_air_gap[i] = air_gap_h[i] * self.component.mesh.global_accuracy
-                            self.component.mesh.c_air_gap[i] = self.component.mesh.c_window
-                            # print(f"c_window: {self.component.mesh.c_window}")
-                            self.midpoints[i, :] = np.array([position_tag[i],
-                                                             air_gap_position[i],
-                                                             air_gap_h[i],
-                                                             self.component.mesh.c_air_gap[i]])
-
-            #  TODO: Proof whether air gaps are valid
-
-    class Isolation:
-        """
-
-        """
-
-        def __init__(self, cond_cond: List = None, core_cond: List = None) -> None:
-            """
-            Isolation
-                - Between two turns of common conductors: first n_conductor arguments of cond_cond
-                - Between two neighboured conductors: last n_conductor-1 arguments
-
-            :param cond_cond: list of floats to describe the isolations between conductors
-            :type cond_cond: List
-            :param core_cond: list of floats to describe the isolations between conductors and the core
-            :type core_cond: List
-            :return: None
-            :rtype: None
-
-            :Inductor Example:
-
-            core_cond_isolation=[windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
-            cond_cond_isolation=[winding2primary]
-
-            :Transformer Example:
-
-            core_cond_isolation=[windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
-            cond_cond_isolation=[primary2primary, secondary2secondary, primary2secondary]
-            """
-            self.cond_cond = cond_cond or []
-            self.core_cond = core_cond or []
-
-    # Update Methods
-    def update_conductors(self, n_turns: List = None, parallel: List = None, conductor_type: List = None, winding: List = None,
-                          scheme: List = None, conductor_radii: List = None, litz_para_type: List = None,
-                          ff: List = None, strands_numbers: List = None, strand_radii: List = None,
-                          thickness: List = None, wrap_para: List = None, cond_cond_isolation: List = None,
-                          core_cond_isolation: List = None, conductivity_sigma: List = None) -> None:
-        """
-        This Method allows the user to easily update/initialize the Windings in terms of their conductors and
-        arrangement.
-
-        Note: set all parameters in a list!
-
-        :param parallel: Number of parallel turns
-        :type parallel: list[int]
-        :param wrap_para:
-        :param ff: fill-factor, values between [0....1]
-        :param winding:
-            - "interleaved"
-            - ""
-        :param n_turns: Number of turns in a list [[n_primary], [n_secondary]].
-        :type n_turns: List
-        :param winding: Sets the mode how to insert windings in a virtual winding window
-            - "interleaved": interleaves primary and secondary windings in a single virtual winding window
-            - "primary": the primary winding in a single virtual winding window
-            - "secondary": the primary winding in a single virtual winding window
-        :type winding: List
-        :param scheme:
-            if winding != "interleaved" (e.g. "primary" or "secondary")
-                - "hexa": hexagonal turn scheme
-                - "square": square turn scheme using the full winding window height (most common use case)
-                - "square_full_width": square turn scheme using the full winding window width
-            if winding == "interleaved" (works only for transformer, not for inductor!)
-                - "horizontal": horizontal winding interleaving
-                - "vertical": vertical winding interleaving
-                - "bifilar": bifilar winding
-                - "blockwise": two windings in ONE virtual winding window
-        :type scheme: List
-        :param conductor_type:
-            - "stacked"  # Vertical packing of conductors
-            - "full"     # One massive Conductor in each window
-            - "foil"     # Horizontal packing of conductors
-            - "solid"    # Massive wires
-            - "litz"     # Litz wires
-        :type conductor_type: List
-        :param litz_para_type: 4 litz parameters, one degree of freedom (3 necessary), e.g. [litz_para_type_primary, litz_para_type_secondary]
-            - "implicit_litz_radius": needs conductor_radii, ff, strands_numbers
-            - "implicit_ff": needs conductor_radii, strand_radii, strands_numbers
-            - "implicit_strands_number": needs conductor_radii, ff, strand_radii
-        :param strand_radii: radius for a single strand-wire in a litz wire, e.g. [strand_radii_primary, strand_radii_secondary]
-        :type strand_radii: List
-        :param strands_numbers: Number of single strands in a litz wire, e.g. [strands_numbers_primary, strands_numbers_secondary]
-        :type strands_numbers: List
-        :param conductor_radii: Conductor radii of the litz or solid wire, e.g. [conductor_radii_primary, conductor_radii_secondary]
-        :type conductor_radii: List
-        :param ff: fill-factor, values between [0....1]
-        :type ff: List
-        :param thickness: foil thickness
-        :type thickness: List
-        :param wrap_para:
-        :type wrap_para: List
-        :param cond_cond_isolation: Isolation between windings and windings, e.g. [primary2primary, secondary2secondary, primary2secondary]
-        :type cond_cond_isolation: List
-        :param core_cond_isolation: Isolation between windings and the core, e.g. [windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
-        :type core_cond_isolation: List
-        :param conductivity_sigma: electrical conductivity (sigma) of conductor, e.g. [cond_sigma_primary, cond_sigma_secondary]
-        :type conductivity_sigma: List
-        :return: None
-        :rtype: None
-
-        :Example Inductor:
-
-        >>> import femmt as fmt
-        >>> geo = fmt.MagneticComponent(component_type="Inductor")
-        >>> geo.update_conductors(n_turns=[[14]], conductor_type=["solid"], conductor_radii=[0.0015],
-        >>>               winding=["primary"], scheme=["square"],
-        >>>               core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0001])
-
-        :Example Transformer with solid (primary) winding and litz (secondary) winding:
-
-        >>> import femmt as fmt
-        >>> geo = fmt.MagneticComponent(component_type="transformer")
-        >>> geo.update_conductors(n_turns=[[36], [11]], conductor_type=["solid", "litz"],
-        >>>            litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
-        >>>             ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
-        >>>             conductor_radii=[0.0011, None],
-        >>>             winding=["interleaved"], scheme=["horizontal"],
-        >>>             core_cond_isolation=[0.0005, 0.0005, 0.0005, 0.0005], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
-
-        """
-
-        # list initialize to avoid mutable lists.
-        n_turns = n_turns or []
-        parallel = parallel or []
-        conductor_type = conductor_type or []
-        winding = winding or []
-        scheme = scheme or []
-        conductor_radii = conductor_radii or []
-        litz_para_type = litz_para_type or []
-        ff = ff or []
-        strands_numbers = strands_numbers or []
-        strand_radii = strand_radii or []
-        thickness = thickness or []
-        wrap_para = wrap_para or []
-        cond_cond_isolation = cond_cond_isolation or []
-        core_cond_isolation = core_cond_isolation or []
-        conductivity_sigma = conductivity_sigma or []
-
-        print(f"Update the conductors...\n"
-              f"---")
-
-        # - - - - - - - - - - - - - - - - - - - - - CHECK Input Parameters - - - - - - - - - - - - - - - - - - - - - - -
-        if self.component_type == "inductor":
-            if len(n_turns) != 1 or len(conductor_type) != 1:
-                print(f"Wrong number of conductor parameters passed to inductor model!")
-                raise Warning
-
-        if self.component_type == ("transformer" or "integrated_transformer"):
-            if len(n_turns) != 2 or len(conductor_type) != 2:
-                raise Warning(f"Wrong number of conductor parameters passed to transformer model!")
-
-        # - - - - - - - - - - - - - - - - - Definition of Virtual Winding Windows - - - - - - - - - - - - - - - - - - -
-        # Inductor: One virtual winding window
-        if self.component_type == "inductor":
-            self.vw_type = "full_window"  # One Virtual Winding Window
-
-        # Two winding transformer
-        # One virtual winding window
-        if not self.component_type == "integrated_transformer":
-            if len(winding) == 1 and winding[0] == "interleaved":
-                self.vw_type = "full_window"  # One Virtual Winding Window
-            if len(winding) == 2:
-                self.vw_type = "center"  # Two Virtual Winding Windows #TODO: Adjust center (no longer just zero line)
-        else:
-            # Dedicated stray path: Two virtual winding windows
-            # TODO: Subdivision into further Virtual Winding Windows
-            pass
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    # Create Model
+    def set_stray_path(self, stray_path: StrayPath):
+        self.stray_path = stray_path
+
+    def set_air_gaps(self, air_gaps: AirGaps):
+        self.air_gaps = air_gaps
+
+    def set_windings(self, windings: List[Winding]):
+        self.windings = windings
 
         self.virtual_winding_windows = []
-        for windows in range(0, len(winding)):
-            # If there is a dedicated stray path, always two Virtual Winding Windows are used!
-            self.virtual_winding_windows.append(self.VirtualWindingWindow())
 
-        # Fill the Virtual Winding Windows with the given data
-        for vww in range(0, len(self.virtual_winding_windows)):
-            self.virtual_winding_windows[vww].winding = winding[vww]
-            self.virtual_winding_windows[vww].scheme = scheme[vww]
-            #self.virtual_winding_windows[vww].turns = list(map(list, zip(*n_turns)))[vww] OLD CODE
-            self.virtual_winding_windows[vww].turns = n_turns[vww]
-            # Need number of turns per VWW but given is a form of [list_of_primary_turns, list_of_secondary_turns]
+        if self.component_type == ComponentType.Inductor:
+            if len(windings.windings) != 1:
+                raise Exception("Inductor was set but the number of windings is not 1")
 
-        # - - - - - - - - - - - - - - - - - Definition of the Isolation Parameters - - - - - - - - - - - - - - - - - - -
-        # isolation parameters as lists:
-        self.isolation.core_cond = core_cond_isolation
-        self.isolation.cond_cond = cond_cond_isolation
+            self.vw_type = VirtualWindingType.FullWindow
 
+        if self.component_type == ComponentType.Transformer:
+            if len(self.windings) != 2:
+                raise Exception("Only transformers with 2 windings are allowed")
 
-        # - - - - - - - - - - - - - - - - - Definition of the Conductor Parameters - - - - - - - - - - - - - - - - - - -
-        # self.n_windings is implied by component type
-
-        for i in range(0, self.n_windings):
-            # general conductor parameters
-            self.windings[i].turns = n_turns[i]  # turns in a list which corresponds to the Virtual Winding Windows
-            if parallel is not None and len(parallel)==self.n_windings:
-                if parallel[i] is None:
-                    self.windings[i].parallel = 1
-                elif type(parallel[i]) is int:
-                    self.windings[i].parallel = parallel[i]
-                else:
-                    raise TypeError("parallel must be an int")
+            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
+                self.vw_type = VirtualWindingType.FullWindow
+            elif self.windings[0].winding_type == WindingType.Interleaved ^ self.windings[1].winding_type == WindingType.Interleaved:
+                raise Exception("When interleaved scheme is needed. Please set both winding types to interleaved")
             else:
-                self.windings[i].parallel = 1
+                self.vw_type = VirtualWindingType.Split2
 
-            self.windings[i].conductor_type = conductor_type[i]
-            if self.windings[i].conductor_type in ['stacked', 'foil', 'full']:
-                # foil/stacked parameters
-                self.windings[i].thickness = thickness[i]
-                self.windings[i].wrap_para = wrap_para[i]
+        if self.component_type == ComponentType.IntegratedTransformer:
+            if len(self.n_windings) != 2:
+                raise Exception("Only integrated transformers with 2 windings are allowed")
 
-            # round conductors
-            if self.windings[i].conductor_type == 'solid':
-                self.windings[i].conductor_radius = conductor_radii[i]
-                self.windings[i].a_cell = np.pi * self.windings[
-                    i].conductor_radius ** 2  # Cross section of the solid conductor
+            self.vw_type = VirtualWindingType.Split2
+            self.stray_path = self.StrayPath()
 
-            if self.windings[i].conductor_type == 'litz':
-                if litz_para_type[i] == 'implicit_ff':
-                    self.update_litz_configuration(num=i,
-                                                   litz_parametrization_type=litz_para_type[i],
-                                                   conductor_radius=conductor_radii[i],
-                                                   n_strands=strands_numbers[i],
-                                                   strand_radius=strand_radii[i])
-                if litz_para_type[i] == 'implicit_litz_radius':
-                    self.update_litz_configuration(num=i,
-                                                   litz_parametrization_type=litz_para_type[i],
-                                                   ff=ff[i],
-                                                   n_strands=strands_numbers[i],
-                                                   strand_radius=strand_radii[i])
-                if litz_para_type[i] == 'implicit_strands_number':
-                    self.update_litz_configuration(num=i,
-                                                   litz_parametrization_type=litz_para_type[i],
-                                                   ff=ff[i],
-                                                   conductor_radius=conductor_radii[i],
-                                                   strand_radius=strand_radii[i])
+        if self.vw_type == VirtualWindingType.FullWindow:
+            self.virtual_winding_windows = [VirtualWindingWindow(self.windings[0].winding_type, self.windings[0].winding_scheme)]
+        elif self.vw_type == VirtualWindingType.Split2:
+            vww1 = VirtualWindingWindow(self.windings[0].winding_type, self.windings[0].winding_scheme)
+            vww2 = VirtualWindingWindow(self.windings[1].winding_type, self.windings[1].winding_scheme)
+            self.virtual_winding_windows = [vww1, vww2]
+        else:
+            # Currently there is no third or default VirtualWindingType
+            pass
 
-            if self.windings[i].conductor_type in ['foil', 'stacked', 'full']:
-                self.windings[i].a_cell = 1  # TODO: Surface size needed?
-                self.windings[i].conductor_radius = 1  # revisit
-                # Surface of the litz approximated hexagonal cell
-                # self.a_cell = np.pi * self.conductor_radius**2  # * self.ff
-
-            # assign conductivity to the windings (e.g. copper or aluminium)
-            dict_material_database = wire_material_database()
-            if conductivity_sigma[i] in list(dict_material_database.keys()):
-                self.windings[i].cond_sigma = dict_material_database[conductivity_sigma[i]]["sigma"]
-            else:
-                self.windings[i].cond_sigma = conductivity_sigma[i]
-
-    def update_litz_configuration(self, num=0, litz_parametrization_type='implicit_ff', strand_radius=None, ff=None,
-                                  conductor_radius=None, n_strands=None):
-        """
-        - updates the conductor #num (simple transformer: num=0 -> primary winding,
-                                                                     num=1 -> secondary winding)
-        - used to change litz configurations
-        - also used at first initialisation of the geometry
-        - needed to always make sure that the relation between litz parameters (strand radius, fill factor, number of
-          layers/strands and conductor/litz radius) is valid and consistent
-        - 4 parameters, 1 degree of freedom (dof)
-        - all parameters are list parameters!
-
-        :param num: internal counter for primary/secondary winding. Do not change!
-        :param litz_parametrization_type:
-        :param strand_radius: radius of a single strand in [m]
-        :type strand_radius: float
-        :param ff: in 0....1
-        :type ff: float
-        :param conductor_radius: radius of conductor in [m], in a list
-        :type conductor_radius: list[float]
-        :param n_strands: number of strands for one conductor in a list
-        :type: n_strands: list[float]
-
-        :return:
-
-        """
-        # Choose one of three different parametrization types
-        if litz_parametrization_type == 'implicit_ff':
-            ff_exact = n_strands * strand_radius ** 2 / conductor_radius ** 2
-            print(f"Exact fill factor: {ff_exact}")
-            ff = np.around(ff_exact, decimals=2)  # TODO: Interpolation instead of rounding
-
-        if litz_parametrization_type == 'implicit_litz_radius':
-            conductor_radius = np.sqrt(n_strands * strand_radius ** 2 / ff)
-
-        if litz_parametrization_type == 'implicit_strands_number':
-            n_strands = conductor_radius ** 2 / strand_radius ** 2 * ff
-
-        # Save parameters in Winding objects
-        self.windings[num].conductor_radius = conductor_radius
-        self.windings[num].n_layers = NbrLayers(n_strands)
-        self.windings[num].n_strands = n_strands
-        self.windings[num].strand_radius = strand_radius
-        self.windings[num].ff = ff
-        self.windings[num].a_cell = self.windings[num].n_strands * self.windings[num].strand_radius ** 2 * np.pi \
-                                    / self.windings[num].ff
-
-        # Print updated Litz Data
-        print(f"Updated Litz Configuration: \n"
-              f" ff: {self.windings[num].ff} \n"
-              f" Number of layers/strands: {self.windings[num].n_layers}/{self.windings[num].n_strands} \n"
-              f" Strand radius: {self.windings[num].strand_radius} \n"
-              f" Conductor radius: {self.windings[num].conductor_radius}\n"
-              f"---")
+    def set_core(self, core: Core):
+        self.core = core
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Full Geometry
@@ -1050,6 +499,7 @@ class MagneticComponent:
             """
             # Outer Core
             # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
+            # TODO Case core_h is not None
             if self.component.core.core_h is None:
                 self.p_outer[0][:] = [-self.r_outer,
                                     -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
@@ -1143,6 +593,9 @@ class MagneticComponent:
             #   - air_gap_h: height/length of the air gap
             #   - c_air_gap: mesh accuracy factor
             # at this point the 4 corner points of each air gap are generated out of "air_gaps"
+
+            mesh_accuracy = self.core.window_w / 20 * self.mesh.global_accuracy
+
             for i in range(0, self.component.air_gaps.number):
 
                 # # Left leg (-1)
@@ -1183,25 +636,25 @@ class MagneticComponent:
                                                   self.component.air_gaps.midpoints[i][1] -
                                                   self.component.air_gaps.midpoints[i][2] / 2,
                                                   0,
-                                                  self.component.air_gaps.midpoints[i][3]]
+                                                  mesh_accuracy]
 
                     self.p_air_gaps[i * 4 + 1] = [self.component.core.core_w / 2,
                                                   self.component.air_gaps.midpoints[i][1] -
                                                   self.component.air_gaps.midpoints[i][2] / 2,
                                                   0,
-                                                  self.component.air_gaps.midpoints[i][3]]
+                                                  mesh_accuracy]
 
                     self.p_air_gaps[i * 4 + 2] = [-self.component.core.core_w / 2,
                                                   self.component.air_gaps.midpoints[i][1] +
                                                   self.component.air_gaps.midpoints[i][2] / 2,
                                                   0,
-                                                  self.component.air_gaps.midpoints[i][3]]
+                                                  mesh_accuracy]
 
                     self.p_air_gaps[i * 4 + 3] = [self.component.core.core_w / 2,
                                                   self.component.air_gaps.midpoints[i][1] +
                                                   self.component.air_gaps.midpoints[i][2] / 2,
                                                   0,
-                                                  self.component.air_gaps.midpoints[i][3]]
+                                                  mesh_accuracy]
 
         def draw_virtual_winding_windows(self):
             # Virtual Windows
@@ -4979,6 +4432,7 @@ class MagneticComponent:
         """
         Used for femm_thermaL_validation
         """
+        # TODO Move to femmt_functions
         return (x1 + x2) / 2, (y1 + y2) / 2
 
     def femm_thermal_validation(self, thermal_conductivity_dict, boundary_temperature, case_gap_top, case_gap_right, case_gap_bot):
