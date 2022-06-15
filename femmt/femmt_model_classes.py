@@ -72,12 +72,11 @@ class Winding:
         
         self.winding_scheme = winding_scheme
 
-        self.turns_primary = turns_primary
-        self.turns_secondary = turns_secondary
+        self.turns = [turns_primary, turns_secondary]
 
         dict_material_database = wire_material_database()
         if conductivity.value in dict_material_database:
-            self.cond_sigma = dict_material_database[conductivity]["sigma"]
+            self.cond_sigma = dict_material_database[conductivity.value]["sigma"]
         else:
             raise Exception(f"Material {conductivity.value} not found in database")
 
@@ -158,13 +157,14 @@ class Core:
     frequency > 0: mu_rel is used
     TODO Documentation
     """
+    type: str
 
     # Standard material data
     material: str  # "95_100" := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
 
     # Permeability
     # TDK N95 as standard material:
-    permeability_type: str
+    permeability_type: PermeabilityType
     mu_rel: float           # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
     phi_mu_deg: float       # mu_complex = mu_rel * exp(j*phi_mu_deg)
     # re_mu_rel: float      # Real part of relative Core Permeability  [B-Field and frequency-dependent]
@@ -180,50 +180,46 @@ class Core:
     window_h: float         # Winding window height
     core_type: str = "EI"   # Basic shape of magnetic conductor
     
-    steinmetz_loss: float = 0
+    steinmetz_loss: int = 0
+    generalized_steinmetz_loss: int = 0
 
     def __init__(self, core_w: float, window_w: float, window_h: float, material: str = "custom",  # "95_100" 
-                   loss_approach: str = None, loss_data_source: str = "custom", mu_rel: float = 3000,
+                   loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000,
                    phi_mu_deg: float = None, sigma: float = None, non_linear: bool = False, **kwargs):
-        # TODO This still needs to be reworked to the new way of handling input parameters
+        # Set parameters
         self.core_w = core_w
         self.core_h = None # TODO Set core_h to not none
         self.window_w = window_w
         self.window_h = window_h
-
-        print(f"Update the magnetic Core to {self.type}-type with following parameters: {kwargs}\n"
-                f"---")
-
-        # Material Properties
-        self.core.material = material
-        self.core.non_linear = non_linear
-
-        # Conductivity
-        if self.core.material == "custom":  # user defines the conductivity
-            self.core.sigma = sigma
-        if loss_approach == "Steinmetz":  # conductivity must be set to 0 for Steinmetz approach
-            self.core.sigma = 0
-        else:
-            self.core.sigma = f"sigma_from_{self.core.material}"
-
-        # Permeability
+        self.type = "axi_symmetric"
+        self.material = material
+        self.non_linear = non_linear
         self.mu_rel = mu_rel
         self.phi_mu_deg = phi_mu_deg
 
-        # Check for which kind of permeability definition is used
-        if loss_approach == "loss_angle":
-            if self.core.phi_mu_deg is not None and self.core.phi_mu_deg != 0:
-                self.core.permeability_type = "fixed_loss_angle"
+        # Check loss approach
+        if loss_approach == LossApproach.Steinmetz:
+            self.sigma = 0
+            if self.material != "custom":
+                self.permeability_type = PermeabilityType.FromData
+                self.sigma = f"sigma_from_{self.material}"
             else:
-                self.core.permeability_type = "real_value"
-        else:
-            if self.core.material != "custom":
-                self.core.permeability_type = "from_data"
-            # else:
-            #     raise Exception(f"Permeability must be specified with real_value, fixed_loss_angle or from_data")
+                raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
+        elif loss_approach == LossApproach.LossAngle:
+            if self.material == "custom":
+                self.sigma = sigma
+            else:
+                self.sigma = f"sigma_from_{self.material}"
 
+            if phi_mu_deg is not None and phi_mu_deg != 0:
+                self.permeability_type = PermeabilityType.FixedLossAngle
+            else:
+                self.permeability_type = PermeabilityType.RealValue
+        else:
+            raise Exception("Loss approach {loss_approach.value} is not implemented")
 
         # Set attributes of core with given keywords
+        # TODO Should we allow this? Technically this is not how an user interface should be designed
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -248,12 +244,13 @@ class AirGaps:
 
     core: Core
     midpoints: List[float]  #: list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
+    number: int
 
     def __init__(self, method: AirGapMethod, core: Core):
-        if method != AirGapMethod.Center:
-            raise Exception(f"The method {method} is currently not supported")
         self.method = method
         self.core = core
+        self.midpoints = []
+        self.number = 0
 
     def add_air_gap(self, leg_position: AirGapLegPosition, position_value: float, height: float):
         for index, midpoint in enumerate(self.midpoints):
@@ -266,12 +263,18 @@ class AirGaps:
                 raise Exception("The 'center' position for air gaps can only have 1 air gap maximum")
             else:
                 self.midpoints.append([0, 0, height])
+                self.number += 1
                 
-        if self.method == AirGapMethod.Manually:
+        elif self.method == AirGapMethod.Manually:
             self.midpoints.append([leg_position.value, position_value, height])
-        if self.method == AirGapMethod.Percent:
+            self.number += 1
+        elif self.method == AirGapMethod.Percent:
             position = position_value / 100 * self.core.window_h - self.core.window_h / 2
             self.midpoints.append([leg_position.value, position, height])
+            self.number += 1
+        else:
+            raise Exception(f"Method {AirGapMethod.Percent.value} is not supported.")
+
 
 class Isolation:
     """

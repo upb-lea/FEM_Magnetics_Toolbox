@@ -47,7 +47,7 @@ class WindingScheme(Enum):
 class WrapParaType(Enum):
     default = ""
     Fixed_Thickness = "fixed_thickness"
-    Interpolare = "interpolate"
+    Interpolate = "interpolate"
 
 class Conductivity(Enum):
     default = ""

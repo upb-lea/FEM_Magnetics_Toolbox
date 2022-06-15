@@ -19,9 +19,7 @@ from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import *
 from .femmt_functions import *
 from .electro_magnetic.Analytical_Core_Data import *
-from .femmt_air_gaps import *
-from .femmt_windings import *
-from .femmt_core import *
+from .femmt_model_classes import *
 
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
@@ -43,7 +41,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type="inductor", working_directory = os.path.dirname(__file__)):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory = os.path.dirname(__file__)):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -68,9 +66,9 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Component Geometry
-        self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" or "three-phase-transformer"
-        self.dimensionality = "2D"  # "2D" or "3D"
-        self.symmetry = "radial"  # "radial", "linear", None
+        self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" (or "three-phase-transformer")
+        self.dimensionality = "2D"  # "2D" or "3D" # TODO As Enum? Is this even needed?
+        self.symmetry = "radial"  # "radial", "linear", None # TODO As Enum? Is this even needed?
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
@@ -78,26 +76,12 @@ class MagneticComponent:
         self.plot_fields = "standard"  # can be "standard" or False
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Core
-        self.core = self.Core(self)
-        self.core.update(type="axi_symmetric", core_w=0.02, window_w=0.01, window_h=0.03)  # some initial values
-
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Air Gaps
-        self.air_gaps = self.AirGaps(self)
-
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Windings
         self.n_windings = None  # Number of conductors/windings
-        if component_type == "inductor":
+        if component_type == ComponentType.Inductor:
             self.n_windings = 1
-        elif component_type == "transformer":
+        elif component_type == ComponentType.Transformer or component_type == ComponentType.IntegratedTransformer:
             self.n_windings = 2
-        elif component_type == "integrated_transformer":
-            self.n_windings = 2
-        elif component_type == "three_phase_transformer":
-            self.n_windings = 3
-            raise NotImplemented("Three phase transformer is not implemented yet")
         else:
             raise Exception("Unknown component type")
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -125,8 +109,6 @@ class MagneticComponent:
         # Materials
         self.mu0 = np.pi * 4e-7
         self.e0 = 8.8541878128e-12
-        self.core.steinmetz_loss = 0
-        self.core.generalized_steinmetz_loss = 0
         self.Ipeak = None
         # self.ki = None
         # self.alpha = None
@@ -397,10 +379,10 @@ class MagneticComponent:
             else:
                 self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
             for i in range(0, self.n_windings):
-                if self.windings[i].conductor_type == "solid":
+                if self.windings[i].conductor_type == ConductorType.Solid:
                     self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy]) #* self.mesh.skin_mesh_factor])
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy  # * self.mesh.skin_mesh_factor
-                elif self.windings[i].conductor_type == "litz":
+                elif self.windings[i].conductor_type == ConductorType.Litz:
                     self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                 else:
@@ -417,6 +399,9 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Create Model
+    def set_isolation(self, isolation: Isolation):
+        self.isolation = isolation
+
     def set_stray_path(self, stray_path: StrayPath):
         self.stray_path = stray_path
 
@@ -440,7 +425,8 @@ class MagneticComponent:
 
             if self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
                 self.vw_type = VirtualWindingType.FullWindow
-            elif self.windings[0].winding_type == WindingType.Interleaved ^ self.windings[1].winding_type == WindingType.Interleaved:
+            elif self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type != WindingType.Interleaved or \
+                    self.windings[0].winding_type != WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
                 raise Exception("When interleaved scheme is needed. Please set both winding types to interleaved")
             else:
                 self.vw_type = VirtualWindingType.Split2
@@ -594,7 +580,7 @@ class MagneticComponent:
             #   - c_air_gap: mesh accuracy factor
             # at this point the 4 corner points of each air gap are generated out of "air_gaps"
 
-            mesh_accuracy = self.core.window_w / 20 * self.mesh.global_accuracy
+            mesh_accuracy = self.component.core.window_w / 20 * self.component.mesh.global_accuracy
 
             for i in range(0, self.component.air_gaps.number):
 
@@ -663,11 +649,11 @@ class MagneticComponent:
             separation_hor = 0  # self.component.core.window_h * 0.5
             separation_vert = self.component.core.window_w * 0.5
 
-            if not self.component.component_type == "integrated_transformer":
+            if not self.component.component_type == ComponentType.IntegratedTransformer:
                 # Some examples for virtual windows
                 # Concentrated windings
 
-                if self.component.vw_type == "full_window":
+                if self.component.vw_type == VirtualWindingType.FullWindow:
                     """
                     The winding window is completely used by one VWW.
                     In case of a transformer, an interleaved winding scheme must be used.
@@ -685,7 +671,7 @@ class MagneticComponent:
                     self.component.virtual_winding_windows[0].left_bound = left
                     self.component.virtual_winding_windows[0].right_bound = right
 
-                if self.component.vw_type == "center":
+                if self.component.vw_type == VirtualWindingType.Split2:
                     """
                     The winding window is split into two VWWs.
                     The primary winding is placed in the upper half,
@@ -714,6 +700,7 @@ class MagneticComponent:
                         self.component.virtual_winding_windows[vww].left_bound = virtual_windows[vww][2]
                         self.component.virtual_winding_windows[vww].right_bound = virtual_windows[vww][3]
 
+                # Because of the switch to Enumerations this is currently not used
                 if self.component.vw_type == "something_else":
                     # bottom left window
                     min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0]  # bottom
@@ -740,7 +727,7 @@ class MagneticComponent:
                     # TODO: More flexible virtual winging windows
 
             # With dedicated stray path:
-            if self.component.component_type == "integrated_transformer":
+            if self.component.component_type == ComponentType.IntegratedTransformer:
                 """
                 If dedicated stray path is the chosen typology the are two winding windows
                 These can either be split up into more virtual windows or (in case of bifilar windings) not
@@ -789,9 +776,9 @@ class MagneticComponent:
                 left_bound = self.component.virtual_winding_windows[n_win].left_bound
                 right_bound = self.component.virtual_winding_windows[n_win].right_bound
 
-                if self.component.virtual_winding_windows[n_win].winding == "interleaved":
+                if self.component.virtual_winding_windows[n_win].winding == WindingType.Interleaved:
 
-                    if self.component.virtual_winding_windows[n_win].scheme == "bifilar":
+                    if self.component.virtual_winding_windows[n_win].scheme == WindingScheme.Bifilar:
                         """
                         - Bifilar interleaving means a uniform winding scheme of two conductors (prim. and sec.)
                         - Can only be used for conductors of identical radius (in terms of litz radius for 
@@ -849,7 +836,7 @@ class MagneticComponent:
                             #                 y = bot_bound + 2 * self.component.windings[num].conductor_radius +
                             #                 self.component.isolation.cond_cond[num] / 2
 
-                    if self.component.virtual_winding_windows[n_win].scheme == "vertical":
+                    if self.component.virtual_winding_windows[n_win].scheme == WindingScheme.Vertical:
                         """
                         - Vertical interleaving means a winding scheme where the two conductors are alternating 
                            in vertical (y-)direction
@@ -858,7 +845,7 @@ class MagneticComponent:
                            conductor
                         """
 
-                    if self.component.virtual_winding_windows[n_win].scheme == "horizontal":
+                    if self.component.virtual_winding_windows[n_win].scheme == WindingScheme.Horizontal:
                         """
                         - Horizontal interleaving means a winding scheme where the two conductors are alternating in 
                         horizontal  (x-)direction (Tonnenwicklung)
@@ -869,7 +856,7 @@ class MagneticComponent:
                         """
 
                         # assume 2 winding transformer and dedicated stray path:
-                        if self.component.component_type == "integrated_transformer" or self.component.n_windings == 2:
+                        if self.component.component_type == ComponentType.IntegratedTransformer or self.component.n_windings == 2:
 
                             # top window
                             if n_win == 0:
@@ -1069,7 +1056,7 @@ class MagneticComponent:
                             x = left_bound + self.component.windings[num].conductor_radius
                             i = 0
 
-                            if self.component.virtual_winding_windows[n_win].scheme[num] == "square":
+                            if self.component.virtual_winding_windows[n_win].scheme[num] == WindingScheme.Square:
 
                                 # Primary winding from bottom to top
                                 if num == 0:
@@ -1132,7 +1119,7 @@ class MagneticComponent:
                                         x = left_bound + self.component.windings[
                                             num].conductor_radius  # always the same
 
-                            if self.component.virtual_winding_windows[n_win].scheme[num] == "hexa":
+                            if self.component.virtual_winding_windows[n_win].scheme[num] == WindingScheme.Hexagonal:
 
                                 # Primary winding from bottom to top
                                 if num == 0:
@@ -1246,12 +1233,12 @@ class MagneticComponent:
 
                 else:
                     # other case is non-interleaved
-                    if self.component.virtual_winding_windows[n_win].winding == "primary":
+                    if self.component.virtual_winding_windows[n_win].winding == WindingType.Primary:
                         num = 0
-                    if self.component.virtual_winding_windows[n_win].winding == "secondary":
+                    elif self.component.virtual_winding_windows[n_win].winding == WindingType.Secondary:
                         num = 1
 
-                    if self.component.windings[num].conductor_type == "full":
+                    if self.component.windings[num].conductor_type == ConductorType.Full:
                         if sum(self.component.windings[num].turns) != 1:
                             print(f"For a \"full\" conductor you must choose 1 turn for each conductor!")
                         # full window conductor
@@ -1260,7 +1247,7 @@ class MagneticComponent:
                         self.p_conductor[num].append([left_bound, top_bound, 0, self.component.mesh.c_conductor[num]])
                         self.p_conductor[num].append([right_bound, top_bound, 0, self.component.mesh.c_conductor[num]])
 
-                    if self.component.windings[num].conductor_type == "stacked":
+                    if self.component.windings[num].conductor_type == ConductorType.Stacked:
                         # Stack defined number of turns and chosen thickness
                         for i in range(0, self.component.windings[num].turns[n_win]):
                             # CHECK if top bound is reached
@@ -1286,9 +1273,9 @@ class MagneticComponent:
                                                               self.component.isolation.cond_cond[num], 0,
                                                               self.component.mesh.c_conductor[num]])
 
-                    if self.component.windings[num].conductor_type == "foil":
+                    if self.component.windings[num].conductor_type == ConductorType.Foil:
                         # Wrap defined number of turns and chosen thickness
-                        if self.component.windings[num].wrap_para == "fixed_thickness":
+                        if self.component.windings[num].wrap_para == WrapParaType.Fixed_Thickness:
                             for i in range(0, self.component.windings[num].turns[n_win]):
                                 # CHECK if right bound is reached
                                 if (left_bound + (i + 1) * self.component.windings[num].thickness +
@@ -1312,7 +1299,7 @@ class MagneticComponent:
                                          self.component.mesh.c_conductor[num]])
 
                         # Fill the allowed space in the Winding Window with a chosen number of turns
-                        if self.component.windings[num].wrap_para == "interpolate":
+                        if self.component.windings[num].wrap_para == WrapParaType.Interpolate:
                             x_interpol = np.linspace(left_bound, right_bound + self.component.isolation.cond_cond[num],
                                                      self.component.windings[num].turns + 1)
                             for i in range(0, self.component.windings[num].turns):
@@ -1329,9 +1316,9 @@ class MagneticComponent:
                                      self.component.mesh.c_conductor[num]])
 
                     # Round Conductors:
-                    if self.component.windings[num].conductor_type in ["litz", "solid"]:
+                    if self.component.windings[num].conductor_type in [ConductorType.Litz, ConductorType.Solid]:
 
-                        if self.component.virtual_winding_windows[num].scheme == "square":
+                        if self.component.virtual_winding_windows[num].scheme == WindingScheme.Square:
                             y = bot_bound + self.component.windings[num].conductor_radius
                             x = left_bound + self.component.windings[num].conductor_radius
                             i = 0
@@ -1356,7 +1343,7 @@ class MagneticComponent:
                                 x += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # from left to top
                                 y = bot_bound + self.component.windings[num].conductor_radius
 
-                        if self.component.virtual_winding_windows[num].scheme == "square_full_width":
+                        if self.component.virtual_winding_windows[num].scheme == WindingScheme.Square_Full_Width:
                             y = bot_bound + self.component.windings[num].conductor_radius
                             x = left_bound + self.component.windings[num].conductor_radius
                             i = 0
@@ -1387,7 +1374,7 @@ class MagneticComponent:
                                          num]  # one step from left to right
                                 x = left_bound + self.component.windings[num].conductor_radius  # always the same
 
-                        if self.component.virtual_winding_windows[num].scheme == "hexa":
+                        if self.component.virtual_winding_windows[num].scheme == WindingScheme.Hexagonal:
                             y = bot_bound + self.component.windings[num].conductor_radius
                             x = left_bound + self.component.windings[num].conductor_radius
                             i = 0
@@ -1446,7 +1433,7 @@ class MagneticComponent:
                 """
 
                 # CHECK: round conductors with 5 points
-                if self.component.windings[num].conductor_type in ["solid", "litz"]:
+                if self.component.windings[num].conductor_type in [ConductorType.Solid, ConductorType.Litz]:
                     if int(self.p_conductor[num].shape[0] / 5) < sum(self.component.windings[num].turns):
                         # Warning: warnings.warn("Too many turns that do not fit in the winding window.")
                         # Correct: self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
@@ -1505,7 +1492,7 @@ class MagneticComponent:
             self.p_iso_core = [] # Order: Left, Top, Right, Bot
             self.p_iso_pri_sec = []
 
-            if self.component.component_type == "integrated_transformer":
+            if self.component.component_type == ComponentType.IntegratedTransformer:
                 # TODO implement for integrated_transformers
                 warnings.warn("Isolations are not set because they are not implemented for integrated transformers.")
             else:
@@ -1630,17 +1617,17 @@ class MagneticComponent:
                 self.p_iso_core = [iso_core_left, iso_core_top, iso_core_right, iso_core_bot]
 
                 # Isolation between virtual winding windows
-                if self.component.vw_type == "full_window":
+                if self.component.vw_type == VirtualWindingType.FullWindow:
                     # Only one vww -> The winding can be interleaved 
                     # -> still an isolation between pri and sec necessary
-                    if len(self.component.virtual_winding_windows) == 1 and self.component.virtual_winding_windows[0].winding == "interleaved":
+                    if len(self.component.virtual_winding_windows) == 1 and self.component.virtual_winding_windows[0].winding == WindingType.Interleaved:
                         # vertical isolations needed between the layers
                         # bifilar and vertical do not exist yet
                         vww = self.component.virtual_winding_windows[0]
                         winding_0 = self.component.windings[0]
                         winding_1 = self.component.windings[1]
                         current_x = vww.left_bound + 2 * winding_0.conductor_radius
-                        if vww.scheme == "horizontal":
+                        if vww.scheme == WindingScheme.Horizontal:
                             self.p_iso_pri_sec = []
                             for index in range(self.top_window_iso_counter-1):
                                 self.p_iso_pri_sec.append([
@@ -1675,13 +1662,13 @@ class MagneticComponent:
                                     current_x += iso.cond_cond[2] + 2 * winding_1.conductor_radius
                                 else:
                                     current_x += iso.cond_cond[2] + 2 * winding_0.conductor_radius
-                        elif vww.scheme == "vertical":
+                        elif vww.scheme == WindingScheme.Vertical:
                             raise Exception("Vertical scheme not implemented yet!")
-                        elif vww.scheme == "bifilar":
+                        elif vww.scheme == WindingScheme.Bifilar:
                             raise Exception("Bifilar scheme not implemented yet!")
                         else:
                             raise Exception(f"The winding scheme {vww.scheme} is unknown.")
-                elif self.component.vw_type == "center":
+                elif self.component.vw_type == VirtualWindingType.Split2:
                     # Two vwws -> a horizontal isolation is needed
                     vww_bot = self.component.virtual_winding_windows[0]
                     vww_top = self.component.virtual_winding_windows[1]
@@ -2367,15 +2354,15 @@ class MagneticComponent:
                 # Check winding matrix
 
                 # Inductor
-                if self.N.shape == (1,) and self.component.component_type == "inductor":
+                if self.N.shape == (1,) and self.component.component_type == ComponentType.Inductor:
                     raise NotImplemented
 
                 # Transformer
-                if self.N.shape == (2,) and self.component.component_type == "transformer":
+                if self.N.shape == (2,) and self.component.component_type == ComponentType.Transformer:
                     raise NotImplemented
 
                 # Dedicated stray path
-                if self.N.shape == (2, 2) and self.component.component_type == "integrated_transformer":
+                if self.N.shape == (2, 2) and self.component.component_type == ComponentType.IntegratedTransformer:
 
                     # Calculate goal reluctance matrix
                     R_matrix = calculate_reluctances(N=self.N, L=self.L_goal)
@@ -2666,7 +2653,7 @@ class MagneticComponent:
                                                 self.component.two_d_axi.p_air_gaps)
 
                     # Dedicated stray path:
-                    if self.component.component_type == "integrated_transformer":
+                    if self.component.component_type == ComponentType.IntegratedTransformer:
                         # mshopt stray_path_gap = [[], []]
                         # mshopt stray_path_gap[0][:] = island_right[(self.stray_path.start_index-1)*2][:]
                         # mshopt stray_path_gap[1][:] = island_right[(self.stray_path.start_index-1)*2+1][:]
@@ -2912,7 +2899,7 @@ class MagneticComponent:
                                 self.component.two_d_axi.p_conductor[num][i][3]))
 
                     # Curves of Conductors
-                    if self.component.windings[num].conductor_type in ['litz', 'solid']:
+                    if self.component.windings[num].conductor_type in [ConductorType.Litz, ConductorType.Solid]:
                         for i in range(0, int(len(self.p_cond[num]) / 5)):
                             self.l_cond[num].append(gmsh.model.geo.addCircleArc(
                                 self.p_cond[num][5 * i + 1],
@@ -3176,11 +3163,11 @@ class MagneticComponent:
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
 
-                if self.component.windings[num].conductor_type in ['foil', 'solid', 'full', 'stacked']:
+                if self.component.windings[num].conductor_type in [ConductorType.Foil, ConductorType.Solid, ConductorType.Full, ConductorType.Stacked]:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
-                if self.component.windings[num].conductor_type == "litz":
+                if self.component.windings[num].conductor_type == ConductorType.Litz:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
@@ -3340,11 +3327,11 @@ class MagneticComponent:
             # Conductors
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
-                if self.component.windings[num].conductor_type in ['foil', 'solid', 'full', 'stacked']:
+                if self.component.windings[num].conductor_type in [ConductorType.Foil, ConductorType.Solid, ConductorType.Full, ConductorType.Stacked]:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
-                if self.component.windings[num].conductor_type == "litz":
+                if self.component.windings[num].conductor_type == ConductorType.Litz:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
@@ -3403,14 +3390,14 @@ class MagneticComponent:
             p_inter = None
             # Inter Conductors
             for n_win in range(0, len(self.component.virtual_winding_windows)):
-                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                if self.component.virtual_winding_windows[n_win].winding != WindingType.Interleaved:
                     for num in range(0, self.component.n_windings):
                         p_inter = []
                         x_inter = []
                         y_inter = []
                         j = 0
 
-                        if self.component.windings[num].conductor_type == "solid" and \
+                        if self.component.windings[num].conductor_type == ConductorType.Solid and \
                                 self.component.windings[num].turns[n_win] > 1:
                             while self.component.two_d_axi.p_conductor[num][5 * j][1] == \
                                     self.component.two_d_axi.p_conductor[num][5 * j + 5][1]:
@@ -3445,7 +3432,7 @@ class MagneticComponent:
             # Embed points for mesh refinement
             # Inter Conductors
             for n_win in range(0, len(self.component.virtual_winding_windows)):
-                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                if self.component.virtual_winding_windows[n_win].winding != WindingType.Interleaved:
                     gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
 
             # Synchronize again
@@ -3510,14 +3497,14 @@ class MagneticComponent:
             p_inter = None
             # Inter Conductors
             for n_win in range(0, len(self.component.virtual_winding_windows)):
-                if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                if self.component.virtual_winding_windows[n_win].winding != WindingType.Interleaved:
                     for num in range(0, self.component.n_windings):
                         p_inter = []
                         x_inter = []
                         y_inter = []
                         j = 0
 
-                        if self.component.windings[num].conductor_type == "solid" and \
+                        if self.component.windings[num].conductor_type == ConductorType.Solid and \
                                 self.component.windings[num].turns[n_win] > 1:
                             while self.component.two_d_axi.p_conductor[num][5 * j][1] == \
                                     self.component.two_d_axi.p_conductor[num][5 * j + 5][1]:
@@ -3544,7 +3531,7 @@ class MagneticComponent:
 
 
             # TODO: Inter conductor meshing!
-            if all(winding.conductor_type == "solid" for winding in self.component.windings):
+            if all(winding.conductor_type == ConductorType.Solid for winding in self.component.windings):
                 print(f"Making use of skin based meshing\n")
                 for num in range(0, self.component.n_windings):
                     for i in range(0, int(len(self.p_cond[num]) / 5)):
@@ -3554,7 +3541,7 @@ class MagneticComponent:
                 # Embed points for mesh refinement
                 # Inter Conductors
                 for n_win in range(0, len(self.component.virtual_winding_windows)):
-                    if self.component.virtual_winding_windows[n_win].winding != "interleaved":
+                    if self.component.virtual_winding_windows[n_win].winding != WindingType.Interleaved:
                         gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
                 # Stray path
                 # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
@@ -3621,9 +3608,9 @@ class MagneticComponent:
                 if self.frequency != 0:
                     self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
 
-                    if self.windings[num].conductor_type == "litz":
+                    if self.windings[num].conductor_type == ConductorType.Litz:
                         self.red_freq[num] = self.windings[num].strand_radius / self.delta
-                    elif self.windings[num].conductor_type == "solid":
+                    elif self.windings[num].conductor_type == ConductorType.Solid:
                         self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                     else:
                         print("Wrong???")
@@ -3663,11 +3650,11 @@ class MagneticComponent:
         text_file = open(os.path.join(self.electro_magnetic_folder_path, "Parameter.pro"), "w")
 
         # Magnetic Component Type
-        if self.component_type == 'inductor':
+        if self.component_type == ComponentType.Inductor:
             text_file.write(f"Flag_Transformer = 0;\n")
-        if self.component_type == 'transformer':
+        if self.component_type == ComponentType.Transformer:
             text_file.write(f"Flag_Transformer = 1;\n")
-        if self.component_type == 'integrated_transformer':
+        if self.component_type == ComponentType.IntegratedTransformer:
             text_file.write(f"Flag_Transformer = 1;\n")
 
         # Frequency
@@ -3704,7 +3691,7 @@ class MagneticComponent:
                 text_file.write(f"Flag_ImposedVoltage = 0;\n")
             if self.flag_excitation_type == 'voltage':
                 text_file.write(f"Flag_ImposedVoltage = 1;\n")
-            if self.windings[num].conductor_type == 'litz':
+            if self.windings[num].conductor_type == ConductorType.Litz:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 1;\n")
             else:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 0;\n")
@@ -3716,7 +3703,7 @@ class MagneticComponent:
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
-            if self.windings[num].conductor_type == "litz":
+            if self.windings[num].conductor_type == ConductorType.Litz:
                 text_file.write(f"NbrStrands{num + 1} = {self.windings[num].n_strands};\n")
                 text_file.write(f"Fill{num + 1} = {self.windings[num].ff};\n")
                 # ---
@@ -3745,7 +3732,7 @@ class MagneticComponent:
             print(f"Cell surface area: {self.windings[num].a_cell} \n"
                   f"Reduced frequency: {self.red_freq[num]}")
 
-            if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == "litz":
+            if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == ConductorType.Litz:
                 # TODO: Allow higher reduced frequencies
                 print(f"Litz Coefficients only implemented for X<=1.25")
                 raise Warning
@@ -3773,11 +3760,11 @@ class MagneticComponent:
         else:
             text_file.write(f"Flag_NL = 0;\n")
             text_file.write(f"mur = {self.core.mu_rel};\n")  # mur is predefined to a fixed value
-            if self.core.permeability_type == "from_data":
+            if self.core.permeability_type == PermeabilityType.FromData:
                 text_file.write(f"Flag_Permeability_From_Data = 1;\n")  # mur is predefined to a fixed value
             else:
                 text_file.write(f"Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
-            if self.core.permeability_type == "fixed_loss_angle":
+            if self.core.permeability_type == PermeabilityType.FixedLossAngle:
                 text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")  # loss angle for complex representation of hysteresis loss
                 text_file.write(f"mur_real = {self.core.mu_rel * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")  # Real part of complex permeability
                 text_file.write(f"mur_imag = {self.core.mu_rel * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")  # Imaginary part of complex permeability
@@ -3902,7 +3889,7 @@ class MagneticComponent:
 
 
                 # Case litz: Load homogenized results
-                if self.windings[winding].conductor_type == "litz":
+                if self.windings[winding].conductor_type == ConductorType.Litz:
                     winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, self.windings[winding].turns[0]):
                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
@@ -4020,7 +4007,7 @@ class MagneticComponent:
         gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
         view = 0
 
-        if any(self.windings[i].conductor_type != 'litz' for i in range(0, self.n_windings)):
+        if any(self.windings[i].conductor_type != ConductorType.Litz for i in range(0, self.n_windings)):
             # Ohmic losses (weighted effective value of current density)
             gmsh.open(os.path.join(self.e_m_fields_folder_path, "j2F.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
@@ -4035,7 +4022,7 @@ class MagneticComponent:
             print(gmsh.option.getNumber(f"View[{view}].Max"))
             view += 1
 
-        if any(self.windings[i].conductor_type == 'litz' for i in range(0, self.n_windings)):
+        if any(self.windings[i].conductor_type == ConductorType.Litz for i in range(0, self.n_windings)):
             # Ohmic losses (weighted effective value of current density)
             gmsh.open(os.path.join(self.e_m_fields_folder_path, "jH.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
@@ -4170,25 +4157,25 @@ class MagneticComponent:
 
 
         print(f"{self.core.permeability_type=}, {self.core.sigma=}")
-        if self.core.permeability_type == "fixed_loss_angle":
+        if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
-        elif self.core.permeability_type == "real_value":
+        elif self.core.permeability_type == PermeabilityType.RealValue:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, 0, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         else:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
-        if self.windings[0].conductor_type == "litz":
+        if self.windings[0].conductor_type == ConductorType.Litz:
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma/1e6, 0, 0, 1, 5, 0, 0, self.windings[0].n_strands,
                                 2 * 1000 * self.windings[0].strand_radius)  # type := 5. last argument
             print(f"Number of strands: {self.windings[0].n_strands}")
             print(f"Diameter of strands in mm: {2 * 1000 * self.windings[0].strand_radius}")
-        if self.windings[0].conductor_type == "solid":
+        if self.windings[0].conductor_type == ConductorType.Solid:
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma/1e6, 0, 0, 1, 0, 0, 0, 0, 0)
 
         # == Circuit ==
         # coil as seen from the terminals.
         femm.mi_addcircprop('Primary', current[0] * sign[0], 1)
-        if self.component_type == ('transformer' or 'integrated_transformer'):
+        if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
             femm.mi_addcircprop('Secondary', current[1] * sign[1], 1)
 
         # == Geometry ==
@@ -4294,7 +4281,7 @@ class MagneticComponent:
         # femm.mi_clearselected()
 
         for num in range(0, self.n_windings):
-            if self.windings[num].conductor_type in ["litz", "solid"]:
+            if self.windings[num].conductor_type in [ConductorType.Litz, ConductorType.Solid]:
                 for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
                     # 0: center | 1: left | 2: top | 3: right | 4.bottom
                     femm.mi_drawarc(self.two_d_axi.p_conductor[num][5 * i + 1][0],
@@ -4708,7 +4695,7 @@ class MagneticComponent:
 
         """
         for num in range(0, self.n_windings):
-            if self.windings[num].conductor_type == 'litz':
+            if self.windings[num].conductor_type == ConductorType.Litz:
                 # ---
                 # Litz Approximation Coefficients were created with 4 layers
                 # That's why here a hard-coded 4 is implemented
