@@ -1,39 +1,15 @@
 from dataclasses import dataclass
 from typing import List
-from femmt_enumerations import *
-from femmt_functions import NbrLayers, wire_material_database
+from .femmt_enumerations import *
+from .femmt_functions import NbrLayers, wire_material_database
 import numpy as np
-
-class VirtualWindingWindow:
-    """
-    A virtual winding window is the area, where either some kind of interleaved conductors or a one winding
-    (primary, secondary,...) is placed in a certain way.
-
-    TODO More documentation
-    """
-
-    # Rectangular frame:
-    bot_bound: float
-    top_bound: float
-    left_bound: float
-    right_bound: float
-
-    # Arrangement of the Conductors in the virtual winding window
-    # Obviously depends on the chosen conductor type
-    winding: List[WindingType]  # "interleaved" | "primary"/"secondary"
-    scheme: List[WindingScheme]  # "bifilar", "vertical", "horizontal", ["hexa", "square"] | "hexa", "square"
-
-    def __init__(self, winding: WindingType, scheme: WindingScheme):
-        self.winding = winding
-        self.scheme = scheme
 
 class Winding:
     """
     A winding defines a conductor which is wound around a magnetic component such as transformer or inductance.
     The winding is defined by its conductor and the way it is placed in the magnetic component. To allow different
     arrangements of the conductors in several winding windows (hexagonal or square packing, interleaved, ...) in
-    this class only the conductor parameters are specified. Then, by calling class:Winding in
-    class:VirtualWindingWindow the arrangement of the conductors is specified.
+    this class only the conductor parameters are specified. 
 
     TODO More documentation
     """
@@ -42,14 +18,14 @@ class Winding:
     conductor_type: ConductorType = None
     ff: float = None
     strand_radius: float = None
-    n_strands: int = None
+    n_strands: int = 0
     n_layers: int
     conductor_radius: float = None
     a_cell: float
     thickness: float = None
-    wrap_para: WrapParaType = WrapParaType.default
+    wrap_para: WrapParaType = None
     cond_sigma: float
-    parallel: int = None # TODO What is this parameter?
+    parallel: int = 1 # TODO What is this parameter?
     winding_type: WindingType
     winding_scheme: WindingScheme
 
@@ -153,9 +129,12 @@ class Winding:
 
 class Core:
     """
+    This creates the core base for the model.
+
     frequency = 0: mu_rel only used if non_linear == False
     frequency > 0: mu_rel is used
-    TODO Documentation
+    
+    TODO More Documentation
     """
     type: str
 
@@ -223,27 +202,15 @@ class Core:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-@dataclass
-class StrayPath:
-    """
-    TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the
-    "stray air gap" is different in axi-symmetric approximation
-    """
-
-    start_index: int        # lower air gap that characterizes the stray path
-    radius: float
-    width: float
-    midpoint: List[float]   # TODO correct Datatype?
-
 class AirGaps:
     """
     Contains methods and arguments to describe the air gaps in a magnetic component
 
-    TODO Add documentation
+    An air gap can be added with the add_air_gap function. It is possible to set different positions and heights.
     """
 
     core: Core
-    midpoints: List[float]  #: list: [position_tag, air_gap_position, air_gap_h, c_air_gap]
+    midpoints: List[List[float]]  #: list: [position_tag, air_gap_position, air_gap_h]
     number: int
 
     def __init__(self, method: AirGapMethod, core: Core):
@@ -259,7 +226,7 @@ class AirGaps:
                 raise Exception(f"Air gaps {index} and {len(self.midpoints)} are overlapping")
 
         if self.method == AirGapMethod.Center:
-            if len(self.number) >= 1:
+            if self.number >= 1:
                 raise Exception("The 'center' position for air gaps can only have 1 air gap maximum")
             else:
                 self.midpoints.append([0, 0, height])
@@ -273,38 +240,59 @@ class AirGaps:
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
         else:
-            raise Exception(f"Method {AirGapMethod.Percent.value} is not supported.")
+            raise Exception(f"Method {self.method} is not supported.")
 
 
 class Isolation:
     """
-    Isolation
-        - Between two turns of common conductors: first n_conductor arguments of cond_cond
-        - Between two neighboured conductors: last n_conductor-1 arguments
-
-    :param cond_cond: list of floats to describe the isolations between conductors
-    :type cond_cond: List
-    :param core_cond: list of floats to describe the isolations between conductors and the core
-    :type core_cond: List
-    :return: None
-    :rtype: None
-
-    :Inductor Example:
-
-    core_cond_isolation=[windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
-    cond_cond_isolation=[winding2primary]
-
-    :Transformer Example:
-
-    core_cond_isolation=[windings2top_core, windings2bot_core, windings2left_core, windings2right_core],
-    cond_cond_isolation=[primary2primary, secondary2secondary, primary2secondary]
+    This class defines isolations for the model.
+    An isolation between the winding window and the core can always be set.
+    When having a inductor only the primary2primary isolation is necessary.
+    When having a (integrated) transformer secondary2secondary and primary2secondary isolations can be set as well.
     """
 
     cond_cond: List[float] = []
     core_cond: List[float] = []
 
-    def add_winding_isolations(self, primary2primary, secondary2secondary, primary2secondary):
+    def add_winding_isolations(self, primary2primary, secondary2secondary = None, primary2secondary = None):
         self.cond_cond = [primary2primary, secondary2secondary, primary2secondary]
 
     def add_core_isolations(self, top_core, bot_core, left_core, right_core):
         self.core_cond = [top_core, bot_core, left_core, right_core]
+
+@dataclass
+class StrayPath:
+    """
+    This class is needed when an integrated transformer shall be created.
+
+    TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the
+    "stray air gap" is different in axi-symmetric approximation
+    """
+
+    start_index: int        # lower air gap that characterizes the stray path
+    radius: float
+    width: float
+    midpoint: List[List[float]]
+
+class VirtualWindingWindow:
+    """
+    A virtual winding window is the area, where either some kind of interleaved conductors or a one winding
+    (primary, secondary,...) is placed in a certain way.
+
+    An instance of this class will be automatically created when the Winding is added to the MagneticComponent
+    """
+
+    # Rectangular frame:
+    bot_bound: float
+    top_bound: float
+    left_bound: float
+    right_bound: float
+
+    # Arrangement of the Conductors in the virtual winding window
+    # Obviously depends on the chosen conductor type
+    winding: List[WindingType]
+    scheme: List[WindingScheme]
+
+    def __init__(self, winding: WindingType, scheme: WindingScheme):
+        self.winding = winding
+        self.scheme = scheme

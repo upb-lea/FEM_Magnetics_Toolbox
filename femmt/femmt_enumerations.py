@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List
 
 class ComponentType(Enum):
     Inductor = "inductor"
@@ -45,12 +44,10 @@ class WindingScheme(Enum):
     Blockwise = "blockwise"
 
 class WrapParaType(Enum):
-    default = ""
     Fixed_Thickness = "fixed_thickness"
     Interpolate = "interpolate"
 
 class Conductivity(Enum):
-    default = ""
     Copper = "copper"
     Aluminium = "aluminium"
 

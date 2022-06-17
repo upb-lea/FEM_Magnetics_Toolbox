@@ -1,4 +1,4 @@
-import femmt
+from femmt_enumerations import AirGapLegPosition, AirGapMethod
 import femmt as fmt
 import numpy as np
 import os
@@ -65,16 +65,16 @@ def example_thermal_simulation():
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                           case_gap_right, case_gap_bot, True, color_scheme=femmt.colors_ba_jonas, colors_geometry=femmt.colors_geometry_ba_jonas)
+                           case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas)
 
     # Because the isolations inside of the winding window are not implemented in femm simulation.
     # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
     geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
-component = "inductor"
+# component = "inductor"
 # component = "transformer-interleaved"
-# component = "integrated_transformer"
 # component = "transformer"
+component = "integrated_transformer"
 
 # Create Object
 if component == "inductor":
@@ -82,32 +82,39 @@ if component == "inductor":
     working_directory = os.path.join(os.path.dirname(__file__), "working_directory")
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type="inductor", working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory)
 
     # 2. set core parameters
-    core = fmt.core_database()["PQ 40/40"]
-    #geo.core.update(window_h=0.04, window_w=0.00745,
-    #                mu_rel=3100, phi_mu_deg=12,
-    #                sigma=0.6)
-    geo.core.update(core_w=core["core_w"], window_w=core["window_w"], window_h=core["window_h"],
+    core_db = fmt.core_database()["PQ 40/40"]
+
+    core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=0.6)
+    geo.set_core(core)
 
     # 3. set air gap parameters
-    geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+    geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters: use solid wires
-    geo.update_conductors(n_turns=[[8]], conductor_type=["solid"], conductor_radii=[0.0015],
-                          winding=["primary"], scheme=["square"],
-                          core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0001],
-                          conductivity_sigma=["copper"])
+    winding = fmt.Winding(8, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+    winding.set_solid_conductor(0.0015)
+    geo.set_windings([winding])
 
-    # 5. start simulation with given frequency, currents and phases
+    # 5. set isolations
+    isolation = fmt.Isolation()
+    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
+    isolation.add_winding_isolations(0.0001)
+    geo.set_isolation(isolation)
+
+    # 5. create the model
     geo.create_model(freq=100000, visualize_before=True, save_png=False)
 
-
+    # 6. start simulation
     geo.single_simulation(freq=100000, current=[3], show_results=True)
 
+    # 7. prepare and start thermal simulation
     example_thermal_simulation()
 
     # Excitation Sweep Example
@@ -122,33 +129,33 @@ if component == "inductor":
 
 if component == "transformer-interleaved":
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type="transformer")
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer)
 
     # 2. set core parameters
-    geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015,
+    core = fmt.Core(window_h=0.0295, window_w=0.012, core_w=0.015,
                     non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10)
 
+    geo.set_core(core)
+
     # 3. set air gap parameters
-    geo.air_gaps.update(method="percent", n_air_gaps=1, air_gap_h=[0.0005],
-                        air_gap_position=[50], position_tag=[0])
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
+    geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters: use solid wires
-    geo.update_conductors(n_turns=[[21], [7]], conductor_type=["solid", "solid"],
-                        litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
-                        ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
-                        conductor_radii=[0.0011, 0.0011],
-                        winding=["interleaved"], scheme=["horizontal"],
-                        core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
-                        conductivity_sigma=["copper", "copper"])
+    winding1 = fmt.Winding(21, 0, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
+    winding1.set_solid_conductor(0.0011)
 
-    # 4. set conductor parameters: use litz wires
-    # geo.update_conductors(n_turns=[[21], [7]], conductor_type=["litz", "litz"],
-    #                     litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
-    #                     ff=[0.6, 0.6], strands_numbers=[600, 600], strand_radii=[35.5e-6, 35.5e-6],
-    #                     conductor_radii=[0.0011, 0.0011],
-    #                     winding=["interleaved"], scheme=["horizontal"],
-    #                     core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
-    #                     conductivity_sigma=["copper", "copper"])
+    winding2 = fmt.Winding(0, 7, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
+    winding2.set_solid_conductor(0.0011)
+
+    geo.set_windings([winding1, winding2])
+
+    # 5. set isolations
+    isolation = fmt.Isolation()
+    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
+    isolation.add_winding_isolations(0.0002, 0.0002, 0.0005)
+    geo.set_isolation(isolation)
 
     # 5. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
@@ -170,59 +177,74 @@ if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type="transformer")
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer)
 
     # 2. set core parameters
-    geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015,
+    core = fmt.Core(window_h=0.0295, window_w=0.012, core_w=0.015,
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=0.6)
+    geo.set_core(core)
 
     # 3. set air gap parameters
-    geo.air_gaps.update(method="percent", n_air_gaps=1, air_gap_h=[0.0005],
-                        air_gap_position=[50], position_tag=[0])
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
+    geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters
-    geo.update_conductors(n_turns=[[10, 0], [0, 10]], conductor_type=["solid", "litz"],
-                        litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
-                        ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
-                        conductor_radii=[0.0011, None],
-                        winding=["primary", "secondary"], scheme=["square", "square"],
-                        core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
-                        conductivity_sigma=["copper", "copper"])
+    winding1 = fmt.Winding(10, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+    winding1.set_solid_conductor(0.0011)
 
-    # 5. start simulation with given frequency, currents and phases
+    winding2 = fmt.Winding(0, 10, fmt.Conductivity.Copper, fmt.WindingType.Secondary, fmt.WindingScheme.Square)
+    winding2.set_litz_conductor(None, 600, 35.5e-6, 0.6)
+
+    geo.set_windings([winding1, winding2])
+
+    # 5. set isolation
+    isolation = fmt.Isolation()
+    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
+    isolation.add_winding_isolations(0.0002, 0.0002, 0.0005)
+    geo.set_isolation(isolation)
+
+    # 6. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
 
 if component == "integrated_transformer":
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type="integrated_transformer")
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer)
 
     # 2. set core parameters
-    geo.core.update(window_h=0.03, window_w=0.011,
+    core = fmt.Core(window_h=0.03, window_w=0.011, core_w=0.02,
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=0.6)
+    geo.set_core(core)
 
     # 2.1 set stray path parameters
-    geo.stray_path.update(start_index=0,
-                          radius=geo.core.core_w / 2 + geo.core.window_w - 0.001)
+    stray_path = fmt.StrayPath(start_index=0, radius=geo.core.core_w / 2 + geo.core.window_w - 0.001, width=None, midpoint=None)
+    geo.set_stray_path(stray_path)
 
     # 3. set air gap parameters
-    geo.air_gaps.update(method="percent",
-                        n_air_gaps=2,
-                        position_tag=[0, 0],
-                        air_gap_h=[0.001, 0.001],
-                        air_gap_position=[30, 40])
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 30, 0.001)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 40, 0.001)
+    geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters
-    geo.update_conductors(n_turns=[[1, 3], [2, 6]], conductor_type=["litz", "litz"],
-                          litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
-                          ff=[0.5, 0.5], strands_numbers=[100, 100], strand_radii=[70e-6, 70e-6],
-                          winding=["interleaved", "interleaved"], scheme=["horizontal", "horizontal"],
-                          core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005],
-                          conductivity_sigma=["copper", "copper"])
+    winding1 = fmt.Winding(1, 3, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
+    winding1.set_litz_conductor(None, 100, 70e-6, 0.5)
 
-    # 5. start simulation with given frequency, currents and phases
+    winding2 = fmt.Winding(2, 6, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
+    winding2.set_litz_conductor(None, 100, 70e-6, 0.5)
+    
+    geo.set_windings([winding1, winding2])
+
+    # 5. set isolations
+    isolation = fmt.Isolation()
+    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
+    isolation.add_winding_isolations(0.0002, 0.0002, 0.0005)
+    geo.set_isolation(isolation)
+
+    # 6. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 180])
 

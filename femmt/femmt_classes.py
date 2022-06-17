@@ -1,6 +1,5 @@
 # Usual Python libraries
 import csv
-from femmt_model_classes import *
 import fileinput
 import numpy as np
 import os
@@ -20,6 +19,7 @@ from .thermal.thermal_functions import *
 from .femmt_functions import *
 from .electro_magnetic.Analytical_Core_Data import *
 from .femmt_model_classes import *
+from .femmt_enumerations import *
 
 # Optional usage of FEMM tool by David Meeker
 # 2D Mesh and FEM interfaces (only for windows machines)
@@ -199,24 +199,22 @@ class MagneticComponent:
 
         air_gap_volume = 0
         inner_leg_width = self.two_d_axi.r_inner - winding_width
-        for i in range(self.air_gaps.number):
-            position_tag = self.air_gaps.position_tag[i]
-            height = self.air_gaps.air_gap_h[i]
+        for leg_position, position_value, height in self.air_gaps.midpoints:
             width = 0
 
-            if position_tag == -1:
+            if leg_position == AirGapLegPosition.LeftLeg.value:
                 # left leg
                 # TODO this is wrong since the airgap is not centered on the y axis 
                 width = core_width - self.two_d_axi.r_inner
-            elif position_tag == 0:
+            elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
-            elif position_tag == 1:
+            elif leg_position == AirGapLegPosition.RightLeg.value:
                 # right leg
                 # TODO this is wrong since the airgap is not centered on the y axis
                 width = core_width - self.two_d_axi.r_inner
             else:
-                raise Exception(f"Unvalid position tag {i} used for an air gap.")
+                raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
 
             air_gap_volume += np.pi * width**2 * height
 
@@ -400,6 +398,12 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Create Model
     def set_isolation(self, isolation: Isolation):
+        if isolation.cond_cond is None or not isolation.cond_cond:
+            raise Exception("Isolations between the conductors must be set")
+
+        if isolation.core_cond is None or not isolation.core_cond:
+            raise Exception("Isolations between the core and the conductors must be set")
+
         self.isolation = isolation
 
     def set_stray_path(self, stray_path: StrayPath):
@@ -414,7 +418,7 @@ class MagneticComponent:
         self.virtual_winding_windows = []
 
         if self.component_type == ComponentType.Inductor:
-            if len(windings.windings) != 1:
+            if len(windings) != 1:
                 raise Exception("Inductor was set but the number of windings is not 1")
 
             self.vw_type = VirtualWindingType.FullWindow
@@ -431,12 +435,21 @@ class MagneticComponent:
             else:
                 self.vw_type = VirtualWindingType.Split2
 
+            # This special handling is needed because of the way conductors are drawn. See in draw_conductors()
+            for winding in self.windings:
+                if winding.winding_type == WindingType.Interleaved:
+                    if winding.turns_primary > 0 and winding.turns_secondary == 0:
+                        self.turns = [winding.turns_primary]
+                    elif winding.turns_primary == 0 and winding.turns_secondary > 0:
+                        self.turns = [winding.turns_secondary]
+                    else:
+                        raise Exception("When creating an interleaved transformer without stray path (not integrated). Either primary or secondary turns need to be 0.")
+
         if self.component_type == ComponentType.IntegratedTransformer:
-            if len(self.n_windings) != 2:
+            if len(self.windings) != 2:
                 raise Exception("Only integrated transformers with 2 windings are allowed")
 
             self.vw_type = VirtualWindingType.Split2
-            self.stray_path = self.StrayPath()
 
         if self.vw_type == VirtualWindingType.FullWindow:
             self.virtual_winding_windows = [VirtualWindingWindow(self.windings[0].winding_type, self.windings[0].winding_scheme)]
@@ -4828,6 +4841,17 @@ class MagneticComponent:
         :type colors_geometry: Dict
 
         """
+        if self.core is None:
+            raise Exception("A core class needs to be added to the magnetic component")
+        if self.air_gaps is None:
+            raise Exception("An air gaps class needs to be added to the magnetic component")
+        if self.windings is None or not self.windings:
+            raise Exception("Winding classes need to be added to the magnetic component")
+        if self.isolation is None:
+            raise Exception("An isolation class need to be added to the magnetic component")
+        if self.virtual_winding_windows is None:
+            raise Exception("Virtual winding windows are not set properly. Please check the winding creation")
+
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
             self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, save_png=save_png)
