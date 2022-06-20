@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import List
+
+from matplotlib.pyplot import fill
 from .femmt_enumerations import *
 from .femmt_functions import NbrLayers, wire_material_database
 import numpy as np
@@ -114,8 +116,10 @@ class Winding:
         elif fill_factor is None:
             ff_exact = number_strands * strand_radius ** 2 / conductor_radius ** 2
             self.ff = np.around(ff_exact, decimals=2)
+        elif strand_radius is None:
+            self.strand_radius = np.sqrt(conductor_radius**2*fill_factor/number_strands)
         else:
-            raise Exception("Wrong inputs for litz conductor")
+            raise Exception("1 of the 4 parameters need to be None.")
 
         self.n_layers = NbrLayers(number_strands)
         self.a_cell = number_strands * strand_radius ** 2 * np.pi / fill_factor
@@ -236,7 +240,16 @@ class AirGaps:
             self.midpoints.append([leg_position.value, position_value, height])
             self.number += 1
         elif self.method == AirGapMethod.Percent:
+            if position_value > 100 or position_value < 0:
+                raise Exception("AirGap position values for the percent method need to be between 0 and 100.")
             position = position_value / 100 * self.core.window_h - self.core.window_h / 2
+
+            # When the position is above the winding window it needs to be adjusted
+            if position + height / 2 > self.core.window_h / 2:
+                position -= (position + height / 2) - self.core.window_h / 2
+            elif position - height / 2 < -self.core.window_h / 2:
+                position += -self.core.window_h / 2 - (position - height / 2) 
+
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
         else:
