@@ -93,14 +93,59 @@ class FunctionPro:
 
     def add_dicts(self, k, q_vol):
         """
-        Order is important: k, rho, c, qVol
+        Order is important: k, qVol
         """
-        self.k.update(k)
-        self.q_vol.update(q_vol)
+        if k is not None:
+            self.k.update(k)
+        if q_vol is not None:
+            self.q_vol.update(q_vol)
 
     def create_file(self, file_path):
         with open(file_path, 'w') as fd:
             fd.write("Function {\n")
             fd.write(FunctionPro.dict_as_fuction_str("k", self.k))
             fd.write(FunctionPro.dict_as_fuction_str("qVol", self.q_vol))
+            fd.write("}")
+
+class PostOperationPro:
+    """
+    For creating a post_operation.pro
+    """
+    statements: List[str]    
+
+    def __init__(self):
+        self.statements = []
+
+    def add_on_point_statement(self, field, x, y, format, file_name, point_name, append = False):
+        format_str = ""
+        if format is not None:
+            format_str = f"Format {format}, "
+
+        append_str = "> " if append else ""
+
+        self.statements.append(f"Print [ {field}, OnPoint {{{x}, {y}, 0}}, {format_str}Name \"{point_name}\", File {append_str}\"{file_name}\" ];")
+
+    def add_on_elements_of_statement(self, field, region, file_name, format = None, depth = None, name = None, append = False):
+        format_str = ""
+        depth_str = ""
+        name_str = ""
+
+        if format is not None:
+            format_str = f"Format {format}, "
+
+        if depth is not None:
+            depth_str = f"Depth {depth}, "
+
+        if name is not None:
+            name_str = f"Name \"{name}\", "
+
+        append_str = "> " if append else ""
+
+        self.statements.append(f"Print [ {field}, OnElementsOf {region}, {format_str}{depth_str}{name_str}File {append_str}\"{file_name}\"];")
+
+    def create_file(self, file_path):
+        with open(file_path, 'w') as fd:
+            fd.write("PostOperation map UsingPost The {\n")
+            for statement in self.statements:
+                fd.write(f"\t{statement}\n")
             fd.write("}")
