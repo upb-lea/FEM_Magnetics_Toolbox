@@ -4125,6 +4125,7 @@ class MagneticComponent:
         for num in range(0, self.n_windings):
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
+                print(num)
                 self.current[num] = amplitude_list[num]
                 if len(phase_deg_list) != 0:
                     self.phase_tmp = phase_deg_list / 180

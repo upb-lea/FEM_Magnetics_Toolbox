@@ -67,10 +67,10 @@ def example_thermal_simulation():
     # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
     # geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
-component = "inductor"
+#component = "inductor"
 # component = "transformer-interleaved"
 # component = "integrated_transformer"
-# component = "transformer"
+component = "transformer"
 
 # Create Object
 if component == "inductor":
