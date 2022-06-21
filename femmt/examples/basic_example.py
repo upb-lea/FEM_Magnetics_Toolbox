@@ -71,14 +71,16 @@ def example_thermal_simulation():
     # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
     geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
-# component = "inductor"
+component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
-component = "integrated_transformer"
+#component = "integrated_transformer"
 
 # Create Object
 if component == "inductor":
     # Working directory can be set arbitrarily
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), "working_directory")):
+        os.mkdir(os.path.join(os.path.dirname(__file__), "working_directory"))
     working_directory = os.path.join(os.path.dirname(__file__), "working_directory")
 
     # 1. chose simulation type
@@ -115,7 +117,7 @@ if component == "inductor":
     geo.single_simulation(freq=100000, current=[3], show_results=True)
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation()
+    #example_thermal_simulation()
 
     # Excitation Sweep Example
     # Perform a sweep using more than one frequency
