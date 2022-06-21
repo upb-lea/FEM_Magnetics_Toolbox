@@ -1,4 +1,4 @@
-from femmt_enumerations import AirGapLegPosition, AirGapMethod
+#from femmt_enumerations import AirGapLegPosition, AirGapMethod
 import femmt as fmt
 import numpy as np
 import os

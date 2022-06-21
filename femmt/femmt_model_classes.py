@@ -255,7 +255,6 @@ class AirGaps:
         else:
             raise Exception(f"Method {self.method} is not supported.")
 
-
 class Isolation:
     """
     This class defines isolations for the model.
