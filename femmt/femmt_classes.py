@@ -345,6 +345,7 @@ class MagneticComponent:
                 onelab_path_wrong = True
                 path_wrong = True
                 print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
+        self.onelab_folder_path = onelab_path
 
         # Write the path to the config.json
         onelab_path_dict = {"onelab": onelab_path}
