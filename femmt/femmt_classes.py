@@ -41,7 +41,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory = os.path.dirname(__file__)):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory = os.path.join(os.path.dirname(__file__), "working_directory")):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -54,6 +54,9 @@ class MagneticComponent:
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
+
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
 
         self.update_paths(working_directory)
 

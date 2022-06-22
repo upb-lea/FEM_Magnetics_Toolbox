@@ -79,8 +79,6 @@ component = "inductor"
 # Create Object
 if component == "inductor":
     # Working directory can be set arbitrarily
-    if not os.path.exists(os.path.join(os.path.dirname(__file__), "working_directory")):
-        os.mkdir(os.path.join(os.path.dirname(__file__), "working_directory"))
     working_directory = os.path.join(os.path.dirname(__file__), "working_directory")
 
     # 1. chose simulation type
