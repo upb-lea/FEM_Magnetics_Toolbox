@@ -78,10 +78,10 @@ component = "inductor"
 # Create Object
 if component == "inductor":
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(os.path.dirname(__file__), "working_directory")
+    working_directory = os.path.join(__file__, "..")
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None)
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
@@ -127,8 +127,10 @@ if component == "inductor":
     # geo.femm_reference(freq=100000, current=[1], sigma_cu=58, sign=[1], non_visualize=0)
 
 if component == "transformer-interleaved":
+    working_directory = os.path.join(__file__, "..")
+
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_w=0.015,
@@ -174,9 +176,10 @@ if component == "transformer-interleaved":
 
 if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
+    working_directory = os.path.join(__file__, "..")
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_w=0.015,
@@ -209,8 +212,10 @@ if component == "transformer":
     geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170])
 
 if component == "integrated_transformer":
+    working_directory = os.path.join(__file__, "..")
+
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.03, window_w=0.011, core_w=0.02,
