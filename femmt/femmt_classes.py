@@ -12,6 +12,7 @@ import json
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import warnings
+import inspect
 
 from typing import List, Union, Optional, Dict
 from .thermal.thermal_simulation import *
@@ -41,7 +42,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory = os.path.join(os.path.dirname(__file__), "working_directory")):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory = None):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -54,6 +55,11 @@ class MagneticComponent:
         print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
+
+        # Get caller filepath when no working_directpry was set
+        if working_directory is None:
+            caller_filename = inspect.stack()[1].filename 
+            working_directory = os.path.join(os.path.dirname(caller_filename), "femmt")
 
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
@@ -311,13 +317,10 @@ class MagneticComponent:
 
         :return: -
         """
-        # find out path of femmt (installed module or directly opened in git)?
-        config_file_path = os.path.join(self.working_directory, 'config.json')
-
         # check if config.json is available and not empty
-        if os.path.isfile(config_file_path) and os.stat(config_file_path).st_size != 0:
+        if os.path.isfile(self.config_path) and os.stat(self.config_path).st_size != 0:
             onelab_path = ""
-            with open(config_file_path, "r") as fd:
+            with open(self.config_path, "r") as fd:
                 loaded_dict = json.loads(fd.read())
                 onelab_path = loaded_dict['onelab']
 
@@ -352,7 +355,7 @@ class MagneticComponent:
 
         # Write the path to the config.json
         onelab_path_dict = {"onelab": onelab_path}
-        with open(os.path.join(config_file_path), 'w', encoding='utf-8') as fd:
+        with open(os.path.join(self.config_path), 'w', encoding='utf-8') as fd:
             json.dump(onelab_path_dict, fd, indent=2, ensure_ascii=False)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
