@@ -108,10 +108,10 @@ if component == "inductor":
     geo.set_isolation(isolation)
 
     # 5. create the model
-    geo.create_model(freq=100000, visualize_before=True, save_png=False)
+    # geo.create_model(freq=100000, visualize_before=True, save_png=False)
 
     # 6. start simulation
-    geo.single_simulation(freq=100000, current=[3], show_results=True)
+    # geo.single_simulation(freq=100000, current=[3], show_results=True)
 
     # 7. prepare and start thermal simulation
     #example_thermal_simulation()
@@ -124,7 +124,7 @@ if component == "inductor":
     # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
 
     # Reference simulation using FEMM
-    geo.femm_reference(freq=100000, current=[1], sign=[1], non_visualize=0)
+    geo.femm_reference(freq=100000, current=[3], sign=[1], non_visualize=0)
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(__file__, "..")
