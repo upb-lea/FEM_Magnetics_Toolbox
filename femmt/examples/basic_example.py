@@ -124,7 +124,7 @@ if component == "inductor":
     # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
 
     # Reference simulation using FEMM
-    # geo.femm_reference(freq=100000, current=[1], sigma_cu=58, sign=[1], non_visualize=0)
+    geo.femm_reference(freq=100000, current=[1], sign=[1], non_visualize=0)
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(__file__, "..")
@@ -173,7 +173,6 @@ if component == "transformer-interleaved":
 
     example_thermal_simulation()
     
-
 if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
     working_directory = os.path.join(__file__, "..")
