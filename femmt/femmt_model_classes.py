@@ -31,7 +31,7 @@ class Winding:
     winding_type: WindingType
     winding_scheme: WindingScheme
 
-    def __init__(self, turns_primary: int, turns_secondary: int, conductivity: Conductivity, winding_type: WindingType, winding_scheme: WindingScheme):
+    def __init__(self, turns_primary: int, turns_secondary: int, conductivity: Conductivity, winding_type: WindingType, winding_scheme: WindingScheme ):
         if turns_primary < 1 and turns_secondary < 1:
             raise Exception("Either number of primary or number of secondary turns need to be at least 1.")
 

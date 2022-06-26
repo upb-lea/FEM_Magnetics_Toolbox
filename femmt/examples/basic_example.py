@@ -1,4 +1,4 @@
-from femmt_enumerations import AirGapLegPosition, AirGapMethod
+from femmt.femmt_enumerations import AirGapLegPosition, AirGapMethod
 import femmt as fmt
 import numpy as np
 import os
@@ -73,16 +73,16 @@ def example_thermal_simulation():
 
 # component = "inductor"
 # component = "transformer-interleaved"
-# component = "transformer"
-component = "integrated_transformer"
+component = "transformer"
+# component = "integrated_transformer"
 
 # Create Object
 if component == "inductor":
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(os.path.dirname(__file__), "working_directory")
+    #working_directory = os.path.join(os.path.dirname(__file__), "working_directory")
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor) #working_directory=working_directory)
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
@@ -93,8 +93,8 @@ if component == "inductor":
     geo.set_core(core)
 
     # 3. set air gap parameters
-    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
     geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters: use solid wires
