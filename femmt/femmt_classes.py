@@ -4189,7 +4189,7 @@ class MagneticComponent:
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         elif self.core.permeability_type == PermeabilityType.RealValue:
-            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, 0, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         else:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
@@ -4445,6 +4445,8 @@ class MagneticComponent:
         log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
         log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
                                           circuit_properties_primary[2].imag / circuit_properties_primary[0]]
+        log["Primary Mean Power"] = [0.5*circuit_properties_primary[1].real*circuit_properties_primary[0],
+                                     0.5*circuit_properties_primary[1].imag*circuit_properties_primary[0]]
 
         # Primary Winding Losses (with group n=2) by field intergation
         femm.mo_groupselectblock(2)
