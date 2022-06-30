@@ -194,11 +194,11 @@ Function {
 
   If(!Flag_NL)
     If(Flag_Fixed_Loss_Angle)
-        mu[#{Iron}]   = Complex[mu0*mur_real, mu0*mur_imag] ;
+        mu[#{Iron}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
         nu[#{Iron}]   = 1/mu[$1, $2] ;
     ElseIf(Flag_Permeability_From_Data)
         //mu[#{Iron}]   = Complex[mu0*(mur^2-f_N95_mu_imag[$1, $2]^2)^(0.5), mu0*f_N95_mu_imag[$1, $2]] ;  // TODO
-        mu[#{Iron}]   = Complex[mu0*f_N95_mu_real[$1], mu0*f_N95_mu_imag[$1]] ;
+        mu[#{Iron}]   = Complex[mu0*f_N95_mu_real[$1], -mu0*f_N95_mu_imag[$1]] ;
         nu[#{Iron}]   = 1/mu[$1, $2] ;
     Else
         mu[#{Iron}]   = mu0*mur ;
@@ -254,7 +254,7 @@ Function {
     skin_rhoi_1[] = InterpolationLinear[$1]{ skin_rhoi_list_1() };
     prox_nur_1[]  = InterpolationLinear[$1]{ prox_nur_list_1() } ;
     prox_nui_1[]  = InterpolationLinear[$1]{ prox_nui_list_1() } ;
-    nu[#{StrandedWinding1}] = nu0*Complex[prox_nur_1[Rr1], -prox_nui_1[Rr1]*Fill1*Rr1^2/2];
+    nu[#{StrandedWinding1}] = nu0*Complex[prox_nur_1[Rr1], prox_nui_1[Rr1]*Fill1*Rr1^2/2];
     nuOm[#{StrandedWinding1}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
     kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;
     sigma[#{StrandedWinding1}] = SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;
@@ -607,11 +607,11 @@ PostProcessing {
 
       { Name p_hyst ; Value { Integral {
         // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
-        [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
+        [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
 
       { Name p_hyst_density ; Value { Integral {
-        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
+        [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }
 
 
@@ -663,11 +663,11 @@ PostProcessing {
       // Voltage (Voltage_i = dFlux_Linkage_i / dt)
 
       { Name Voltage_1 ; Value {
-        //Integral { [ CoefGeo / AreaCell1 * CompZ[-Dt[{a}]] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
-        Integral { [ CoefGeo / AreaCell1 * CompZ[-Conj[ Dt[{a}] ] ] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+        Integral { [ CoefGeo / AreaCell1 * CompZ[Dt[{a}]] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+        //Integral { [ CoefGeo / AreaCell1 * CompZ[-Conj[ Dt[{a}] ] ] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
       If(Flag_Transformer)
         { Name Voltage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * CompZ[-Dt[{a}]] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+          Integral { [ CoefGeo / AreaCell2 * CompZ[Dt[{a}]] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
       EndIf
 
 

@@ -122,13 +122,13 @@ class Winding:
             raise Exception("1 of the 4 parameters need to be None.")
 
         self.n_layers = NbrLayers(number_strands)
-        self.a_cell = number_strands * strand_radius ** 2 * np.pi / fill_factor
+        self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
         print(f"Updated Litz Configuration: \n"
-              f" ff: {fill_factor} \n"
-              f" Number of layers/strands: {self.n_layers}/{number_strands} \n"
-              f" Strand radius: {strand_radius} \n"
-              f" Conductor radius: {conductor_radius}\n"
+              f" ff: {self.ff} \n"
+              f" Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
+              f" Strand radius: {self.strand_radius} \n"
+              f" Conductor radius: {self.conductor_radius}\n"
               f"---")
 
 class Core:

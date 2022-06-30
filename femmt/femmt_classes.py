@@ -4140,6 +4140,15 @@ class MagneticComponent:
         Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
         Helpful to validate changes (especially in the Prolog Code).
 
+
+        Blockprop <--> Group Convention:
+                                            Ferrite := 0
+                                            Air := 1
+                                            Winding 1 := 2
+                                            Winding 2 := 3
+                                            ...
+                                            Winding n := n+1
+
         :param sign:
         :param non_visualize:
         :param freq:
@@ -4180,7 +4189,7 @@ class MagneticComponent:
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         elif self.core.permeability_type == PermeabilityType.RealValue:
-            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, 0, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         else:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
@@ -4316,10 +4325,10 @@ class MagneticComponent:
                                           self.two_d_axi.p_conductor[num][5 * i][1])
                     femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
                     if num == 0:
-                        femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 0, 1)
+                        femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 2, 1)
                     if num == 1:
-                        # femm.mi_setblockprop('Copper', 0, 1e-4, 'Secondary', 0, 0, 1)
-                        femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 0, 1)
+                        # femm.mi_setblockprop('Copper', 0, 1e-4, 'Secondary', 0, 3, 1)
+                        femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 3, 1)
                     femm.mi_clearselected()
 
         # Define an "open" boundary condition using the built-in function:
@@ -4348,16 +4357,16 @@ class MagneticComponent:
         if self.air_gaps.number == 0:
             femm.mi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
             femm.mi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
-            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
+            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
             femm.mi_clearselected()
         else:
             femm.mi_addblocklabel(0.001, 0)
             femm.mi_selectlabel(0.001, 0)
-            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
+            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
             femm.mi_clearselected()
         femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
         femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
-        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
+        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
         femm.mi_clearselected()
 
         # Now, the finished input geometry can be displayed.
@@ -4425,9 +4434,24 @@ class MagneticComponent:
         # log["Circuit Properties"] = femm.mo_getcircuitproperties('Primary')
 
         # Write Hysteresis Losses
-        femm.mo_groupselectblock('Ferrite')
+        femm.mo_groupselectblock(0)
         log["Hysteresis Losses"] = femm.mo_blockintegral(3)
+        femm.mo_clearblock()
 
+        # Primary Winding Ciruit Properties
+        circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
+        log["Primary Current"] = circuit_properties_primary[0]
+        log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
+        log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
+        log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
+                                          circuit_properties_primary[2].imag / circuit_properties_primary[0]]
+        log["Primary Mean Power"] = [0.5*circuit_properties_primary[1].real*circuit_properties_primary[0],
+                                     0.5*circuit_properties_primary[1].imag*circuit_properties_primary[0]]
+
+        # Primary Winding Losses (with group n=2) by field intergation
+        femm.mo_groupselectblock(2)
+        log["Primary Winding Losses"] = femm.mo_blockintegral(6).real
+        femm.mo_clearblock()
 
 
         json.dump(log, file, indent=2, ensure_ascii=False)
