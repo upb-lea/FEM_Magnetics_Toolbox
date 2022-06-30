@@ -78,7 +78,7 @@ component = "inductor"
 # Create Object
 if component == "inductor":
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(__file__, "..")
+    working_directory = os.path.join(os.path.dirname(__file__),'..')
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory)
@@ -92,8 +92,9 @@ if component == "inductor":
     geo.set_core(core)
 
     # 3. set air gap parameters
-    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 20, 0.0005)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 80, 0.0005)
     geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters: use solid wires
@@ -128,7 +129,7 @@ if component == "inductor":
     geo.femm_reference(freq=100000, current=[2], sign=[1], non_visualize=0)
 
 if component == "transformer-interleaved":
-    working_directory = os.path.join(__file__, "..")
+    working_directory = os.path.join(os.path.dirname(__file__),'..')
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
@@ -176,7 +177,7 @@ if component == "transformer-interleaved":
     
 if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(__file__, "..")
+    working_directory = os.path.join(os.path.dirname(__file__),'..')
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
@@ -216,7 +217,7 @@ if component == "transformer":
     geo.femm_reference(freq=250000, current=[4, 4], sign=[-1, 1], non_visualize=0)
 
 if component == "integrated_transformer":
-    working_directory = os.path.join(__file__, "..")
+    working_directory = os.path.join(os.path.dirname(__file__),'..')
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
