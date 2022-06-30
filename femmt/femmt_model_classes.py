@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union, Optional
 
 from matplotlib.pyplot import fill
 from .femmt_enumerations import *
@@ -223,7 +223,17 @@ class AirGaps:
         self.midpoints = []
         self.number = 0
 
-    def add_air_gap(self, leg_position: AirGapLegPosition, position_value: float, height: float):
+    def add_air_gap(self, leg_position: AirGapLegPosition, position_value: Optional[float],  height: float):
+        """
+        Brings a single air gap to the core.
+
+        :param leg_posistion: CenterLeg, OuterLeg
+        :type leg_position: AirGapLegPosition
+        :param position_value: if AirGapMethod == Percent: 0...100, elif AirGapMethod == Manually: position hight in [m]
+        :type position_value: float
+        :param height: Air gap height in [m]
+        :type height: float
+        """
         for index, midpoint in enumerate(self.midpoints):
             if midpoint[0] == leg_position and midpoint[1] + midpoint[2] < position_value - height \
                     and midpoint[1] - midpoint[2] > position_value + height:
