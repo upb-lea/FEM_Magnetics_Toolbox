@@ -641,6 +641,7 @@ class MainWindow(QMainWindow):
         self.md_air_gap_1_position_label.setVisible(status)
         self.md_air_gap_1_position_lineEdit.setVisible(status)
 
+
     def md_air_gap_2_enable(self, status: bool) -> None:
         """
         Enables / Disables the input fields for air gap No. 2
@@ -1122,7 +1123,6 @@ class MainWindow(QMainWindow):
             # Air Gaps
             # -----------------------------------------------
 
-
             air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
             air_gap_heigth_array = []
             air_gap_position_array = []
@@ -1131,37 +1131,47 @@ class MainWindow(QMainWindow):
             if air_gap_count >= 1:
                 md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
                 md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_1_height)
                 air_gap_position_array.append(md_air_gap_1_position)
                 air_gap_position_tag_array.append(0)
+
             if air_gap_count >= 2:
                 md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
                 md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_2_height)
                 air_gap_position_array.append(md_air_gap_2_position)
                 air_gap_position_tag_array.append(0)
+
             if air_gap_count >= 3:
                 md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
                 md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_3_height)
                 air_gap_position_array.append(md_air_gap_3_position)
                 air_gap_position_tag_array.append(0)
-            if air_gap_count >= 4:
+
+            if air_gap_count >=4:
                 md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
                 md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_4_height)
                 air_gap_position_array.append(md_air_gap_4_position)
                 air_gap_position_tag_array.append(0)
-            if air_gap_count >= 5:
+
+            if air_gap_count >=5:
                 md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
                 md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_5_height)
                 air_gap_position_array.append(md_air_gap_5_position)
                 air_gap_position_tag_array.append(0)
 
+
             if air_gap_count == 0:
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+                #air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
                 geo.set_air_gaps(air_gaps)
                 """
                 geo.air_gaps.update(method="percent",
@@ -1171,8 +1181,13 @@ class MainWindow(QMainWindow):
                                     air_gap_position=[])"""
 
             elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
-                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+                for i in range(1, air_gap_count+1):
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_position_array[i-1], air_gap_heigth_array[i-1])
+                """
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, md_air_gap_1_position, md_air_gap_1_height)"""
                 geo.set_air_gaps(air_gaps)
                 """
                 geo.air_gaps.update(method="percent",
@@ -1180,9 +1195,15 @@ class MainWindow(QMainWindow):
                                     air_gap_h=air_gap_heigth_array,
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
+
             elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["manually"] and air_gap_count >= 1:
-                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
+                for i in range(1, air_gap_count+1):
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_position_array[i-1], air_gap_heigth_array[i-1])
+                """
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, md_air_gap_1_position, md_air_gap_1_height)"""
                 geo.set_air_gaps(air_gaps)
                 """
                 geo.air_gaps.update(method="manually",
@@ -1313,37 +1334,47 @@ class MainWindow(QMainWindow):
             if air_gap_count >= 1:
                 md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
                 md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_1_height)
                 air_gap_position_array.append(md_air_gap_1_position)
                 air_gap_position_tag_array.append(0)
+
             if air_gap_count >= 2:
                 md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
                 md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_2_height)
                 air_gap_position_array.append(md_air_gap_2_position)
                 air_gap_position_tag_array.append(0)
+
             if air_gap_count >= 3:
                 md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
                 md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_3_height)
                 air_gap_position_array.append(md_air_gap_3_position)
                 air_gap_position_tag_array.append(0)
-            if air_gap_count >= 4:
+
+            if air_gap_count >=4:
                 md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
                 md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_4_height)
                 air_gap_position_array.append(md_air_gap_4_position)
                 air_gap_position_tag_array.append(0)
-            if air_gap_count >= 5:
+
+            if air_gap_count >=5:
                 md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
                 md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
+
                 air_gap_heigth_array.append(md_air_gap_5_height)
                 air_gap_position_array.append(md_air_gap_5_position)
                 air_gap_position_tag_array.append(0)
 
+
             if air_gap_count == 0:
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+                #air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
                 geo.set_air_gaps(air_gaps)
                 """
                 geo.air_gaps.update(method="percent",
@@ -1353,8 +1384,13 @@ class MainWindow(QMainWindow):
                                     air_gap_position=[])"""
 
             elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
-                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+                for i in range(1, air_gap_count+1):
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_position_array[i-1], air_gap_heigth_array[i-1])
+                """
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, md_air_gap_1_position, md_air_gap_1_height)"""
                 geo.set_air_gaps(air_gaps)
                 """
                 geo.air_gaps.update(method="percent",
@@ -1362,9 +1398,15 @@ class MainWindow(QMainWindow):
                                     air_gap_h=air_gap_heigth_array,
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
+
             elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["manually"] and air_gap_count >= 1:
-                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
+
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
+                for i in range(1, air_gap_count+1):
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_position_array[i-1], air_gap_heigth_array[i-1])
+                """
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, md_air_gap_1_position, md_air_gap_1_height)"""
                 geo.set_air_gaps(air_gaps)
                 """
                 geo.air_gaps.update(method="manually",

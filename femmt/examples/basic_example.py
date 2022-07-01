@@ -71,9 +71,9 @@ def example_thermal_simulation():
     # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
     geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
-# component = "inductor"
+component = "inductor"
 # component = "transformer-interleaved"
-component = "transformer"
+# component = "transformer"
 # component = "integrated_transformer"
 
 # Create Object
@@ -93,8 +93,8 @@ if component == "inductor":
     geo.set_core(core)
 
     # 3. set air gap parameters
-    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 0.0005)
     geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters: use solid wires
