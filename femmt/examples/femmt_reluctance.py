@@ -1,7 +1,5 @@
 # 2D-axis symmetric core reluctance calculations
 import femmt as fmt
-import numpy as np
-import matplotlib.pyplot as plt
 import schemdraw
 import schemdraw.elements as elm
 from femmt.femmt_functions import *
@@ -49,18 +47,64 @@ def plot_r_basis():
     plt.show()
 
 
+def plot_error():
+    fem_ind = np.array([116.0773e-6, 32.1e-6, 18.71e-6, 6.08575e-6, 4.324969e-6,  3.81392e-6, 2.345389e-6])
+    cal_ind = np.array([116.518e-6, 32.12472e-6, 18.72275e-6, 6.25557e-6, 4.2895602e-6, 3.611239e-6, 0.71733329e-6])
+    air_gap_l = np.array([0.0001, 0.0005, 0.001, 0.005, 0.00833, 0.01, 0.02])
+    h_by_l = ((0.0295 - air_gap_l) / 2) / air_gap_l
+    error = ((fem_ind - cal_ind) / fem_ind) * 100
+    fig, ax = plt.subplots()  # Create a figure containing a single axes.
+    plt.title("inductance vs h/l")
+    plt.xlabel("h/l")
+    plt.ylabel("Error in %")
+    # ax.plot(h_by_l, fem_ind, h_by_l, cal_ind)
+    ax.plot(h_by_l, error)
+    # ax.invert_xaxis()
+    ax.grid()
+    plt.show()
+
+
+def basic_example_func(f_method, f_n, f_h, f_pos, f_n_turns, f_core_cond_iso, f_current):
+    # 2. set core parameters
+    core = fmt.core_database()["PQ 40/40"]
+    # geo.core.update(window_h=0.04, window_w=0.00745,
+    #                mu_rel=3100, phi_mu_deg=12,
+    #                sigma=0.6)
+    geo.core.update(core_w=core["core_w"], window_w=core["window_w"], window_h=core["window_h"],
+                    # geo.core.update(core_w=0.020, window_w=0.013, window_h=0.030,
+                    mu_rel=3100, phi_mu_deg=12,
+                    sigma=0.6)
+
+    # 3. set air gap parameters
+    geo.air_gaps.update(method=f_method, n_air_gaps=f_n, air_gap_h=f_h, air_gap_position=f_pos,
+                        position_tag=[0])
+
+    geo.update_conductors(n_turns=[f_n_turns], conductor_type=["solid"], conductor_radii=[0.0015],
+                          winding=["primary"], scheme=["square"],
+                          core_cond_isolation=[0.001, 0.001, f_core_cond_iso, 0.001], cond_cond_isolation=[0.0001],
+                          conductivity_sigma=["copper"])
+
+    geo.create_model(freq=100000, visualize_before=False, do_meshing=True, save_png=False)
+
+    geo.single_simulation(freq=100000, current=f_current, show_results=False)
+
+
 class MagneticCircuit:
 
     """This is a class for calculating the reluctance and inductance and visualising magnetic circuit"""
 
-    def __init__(self, core_h, core_w, window_h, window_w, r_outer,
+    # position_tag = 0 for 2D axis symmetric cores
+    def __init__(self, core_w, window_h, window_w,
                  no_of_turns, current, method, n_air_gaps, air_gap_h, air_gap_position):
 
-        self.core_h = core_h
+        self.core_h = window_h + core_w / 2
         self.core_w = core_w
         self.window_h = window_h
         self.window_w = window_w
-        self.r_outer = r_outer
+        self.r_outer = None
+        self.r_inner = None
+        self.core_h_middle = None  # height of upper and lower part of the window in the core
+        self.outer_w = None  # Outer leg width
 
         self.no_of_turns = no_of_turns
         self.current = current
@@ -69,8 +113,6 @@ class MagneticCircuit:
         self.air_gap_h = air_gap_h
         self.air_gap_position = air_gap_position
 
-        self.middle_h = None   # height of upper and lower part of the window in the core
-        self.outer_w = None    # Outer leg width
         self.L = None          # Total inductance
         self.section = None
         self.orientation = None
@@ -84,46 +126,35 @@ class MagneticCircuit:
         self.min_percent = None
         self.position = None
 
-    # position_tag = 0 for 2D axis symmetric cores
     def core_reluctance(self):
-        self.middle_h = (self.core_h - self.window_h)/2
-        r_inner = self.core_w/2 + self.window_w
-        self.outer_w = self.r_outer - r_inner
+        self.core_h_middle = (self.core_h - self.window_h)/2
+        self.r_inner = self.core_w/2 + self.window_w
+        self.r_outer = np.sqrt((self.core_w / 2) ** 2 + self.r_inner ** 2)
+        self.outer_w = self.r_outer - self.r_inner
 
-        self.section = [0, 1, 2, 3, 4, 5, 4, 3, 2]
-        self.orientation = []
+        self.section = [0, 1, 2, 3, 4]
         self.length = np.zeros(len(self.section))
         self.area = np.zeros(len(self.section))
         self.reluctance = np.zeros(len(self.section))
 
-        for i in range(len(self.section)):
-            if self.section[i] == 0:
-                self.reluctance[i] = self.no_of_turns * self.current
+        self.length[0] = self.window_h - sum(self.air_gap_h)
+        self.area[0] = np.pi * ((self.core_w/2) ** 2)
 
-            if self.section[i] == 1:
-                self.length[i] = self.window_h - sum(self.air_gap_h)
-                self.area[i] = np.pi * ((self.core_w/2) ** 2)
-                self.reluctance[i] = self.length[i] / (self.mu_0 * self.mu_rel * self.area[i])
+        self.length[1] = (np.pi / 8) * (self.core_w / 2 + self.core_h_middle)
+        self.area[1] = ((self.core_w / 2 + self.core_h_middle) / 2) * 2 * np.pi * (self.core_w / 2)
 
-            elif self.section[i] == 2:
-                self.length[i] = (np.pi / 8) * (self.core_w / 2 + self.middle_h)
-                self.area[i] = ((self.core_w / 2 + self.middle_h) / 2) * 2 * np.pi * (self.core_w / 2)
-                self.reluctance[i] = self.length[i] / (self.mu_0 * self.mu_rel * self.area[i])
+        self.length[2] = self.window_w
+        self.area[2] = np.nan
+        self.reluctance[2] = ((self.mu_0 * self.mu_rel * 2 * np.pi * self.core_h_middle) ** -1) * np.log((2 * self.r_inner) / self.core_w)
 
-            elif self.section[i] == 3:
-                self.length[i] = self.window_w
-                self.area[i] = np.nan
-                self.reluctance[i] = ((self.mu_0 * self.mu_rel * 2 * np.pi * self.middle_h) ** -1) * np.log((2 * r_inner)/self.core_w)
+        self.length[3] = (np.pi / 8) * (self.outer_w + self.core_h_middle)
+        self.area[3] = ((self.outer_w + self.core_h_middle) / 2) * 2 * np.pi * self.r_inner
 
-            elif self.section[i] == 4:
-                self.length[i] = (np.pi / 8) * (self.outer_w + self.middle_h)
-                self.area[i] = ((self.outer_w + self.middle_h) / 2) * 2 * np.pi * r_inner
-                self.reluctance[i] = self.length[i] / (self.mu_0 * self.mu_rel * self.area[i])
+        self.length[4] = self.window_h
+        self.area[4] = np.pi * (self.r_outer ** 2 - self.r_inner ** 2)
 
-            elif self.section[i] == 5:
-                self.length[i] = self.window_h
-                self.area[i] = np.pi * (self.r_outer ** 2 - r_inner ** 2)
-                self.reluctance[i] = self.length[i] / (self.mu_0 * self.mu_rel * self.area[i])
+        self.reluctance[~np.isnan(self.area)] = self.length[~np.isnan(self.area)] / (self.mu_0 * self.mu_rel * self.area[~np.isnan(self.area)])
+        self.reluctance[1:3] = 2 * self.reluctance[1:3]
 
     def air_gap_reluctance(self):
         flag_0 = 0
@@ -134,12 +165,17 @@ class MagneticCircuit:
             temp1 = r_basis(self.air_gap_h[0] / 2, self.core_w / 2, (self.window_h - self.air_gap_h[0]) / 2)
             temp2 = sigma(self.air_gap_h[0], self.core_w / 2, 2 * temp1)
             temp3 = fmt.femmt_functions.r_round_round(self.air_gap_h[0], temp2, self.core_w / 2)
+            # temp4 = self.air_gap_h[0] / (self.mu_0 * np.pi * (self.core_w / 2) ** 2)
             self.reluctance = np.append(self.reluctance, temp3)
+            # print(f"New approach reluctance: {temp3}")
+            # print(f"Classical reluctance: {temp4}")
 
         elif self.method == 'percent':
             self.max_percent = ((self.window_h - self.air_gap_h[self.n_air_gaps - 1] / 2) / self.window_h) * 100
             self.min_percent = ((self.air_gap_h[0] / 2) / self.window_h) * 100
             self.position = np.array(self.air_gap_position) / 100 * self.window_h  # Convert percent to absolute value
+            print(f"Max percent: {self.max_percent}")
+            print(f"Min percent: {self.min_percent}")
 
             if self.air_gap_position[0] <= self.min_percent:
                 flag_0 = 1
@@ -149,7 +185,7 @@ class MagneticCircuit:
                 else:
                     h = (self.position[1] - self.position[0]) / 2
 
-                temp1 = r_basis(self.air_gap_h[0], self.core_w / 2, h)
+                temp1 = r_basis(self.air_gap_h[0], self.core_w, h)
                 temp2 = sigma(self.air_gap_h[0], self.core_w / 2, temp1)
                 temp3 = fmt.femmt_functions.r_round_inf(self.air_gap_h[0], temp2, self.core_w / 2)
                 self.reluctance = np.append(self.reluctance, temp3)
@@ -163,7 +199,7 @@ class MagneticCircuit:
                 else:
                     h = (self.position[self.n_air_gaps - 1] - self.position[self.n_air_gaps - 2]) / 2
 
-                temp1 = r_basis(self.air_gap_h[0], self.core_w / 2, h)
+                temp1 = r_basis(self.air_gap_h[0], self.core_w, h)
                 temp2 = sigma(self.air_gap_h[0], self.core_w / 2, temp1)
                 temp3 = fmt.femmt_functions.r_round_inf(self.air_gap_h[0], temp2, self.core_w / 2)
                 self.reluctance = np.append(self.reluctance, temp3)
@@ -175,16 +211,18 @@ class MagneticCircuit:
                     if flag_2 == 0:
                         if flag_0 == 0 and flag_1 == 0:
                             self.position = np.append(self.position, self.window_h + (self.window_h - self.position[self.n_air_gaps - 1]))
-                            self.position = np.insert(self.position, 0, self.position[0])
+                            self.position = np.insert(self.position, 0, -self.position[0])
                         elif flag_0 == 1 and flag_1 == 0:
                             self.position = np.append(self.position, self.window_h + (self.window_h - self.position[self.n_air_gaps - 1]))
                         elif flag_0 == 0 and flag_1 == 1:
-                            self.position = np.insert(self.position, 0, self.position[0])
+                            self.position = np.insert(self.position, 0, -self.position[0])
                         flag_2 = 1
 
                     if flag_0 == 0 and flag_1 == 0:
                         h1 = (self.position[i + 1] - self.position[i]) / 2
                         h2 = (self.position[i + 2] - self.position[i + 1]) / 2
+                        # h1 = self.position[i + 1] - (self.air_gap_h[i] / 2)
+                        # h2 = self.window_h - (self.position[i + 1] + (self.air_gap_h[i] / 2))
                         print('No corner air gap detected')
                     elif flag_0 == 1 and flag_1 == 0:
                         h1 = (self.position[i] - self.position[i - 1]) / 2
@@ -199,43 +237,73 @@ class MagneticCircuit:
                         h2 = (self.position[i + 1] - self.position[i]) / 2
                         print('Both air gap detected')
 
-                    r_basis_1 = r_basis(self.air_gap_h[0] / 2, self.core_w / 2, h1)
-                    r_basis_2 = r_basis(self.air_gap_h[0] / 2, self.core_w / 2, h2)
+                    r_basis_1 = r_basis(self.air_gap_h[0] / 2, self.core_w, h1)
+                    r_basis_2 = r_basis(self.air_gap_h[0] / 2, self.core_w, h2)
                     temp2 = sigma(self.air_gap_h[0], self.core_w / 2, r_basis_1 + r_basis_2)
                     temp3 = fmt.femmt_functions.r_round_round(self.air_gap_h[0], temp2, self.core_w / 2)
                     self.reluctance = np.append(self.reluctance, temp3)
 
-            self.section, self.orientation = set_orientation(self.section, len(self.section))
-            self.L = (self.no_of_turns * self.no_of_turns) / sum(self.reluctance)
-
-            print('Section:', self.section)
-            print(self.max_percent)
-            print(self.min_percent)
-            print('Orientation:', self.orientation)
-            print('List of length:', self.length)
-            print('List of cross-section area:', self.area)
-            print('List of reluctance:', self.reluctance)
-            print('Inductance:', self.L)
-
     def draw_schematic(self):
-        d = schemdraw.Drawing()
-        for i in range(len(self.section)):
-            if self.section[i] == 0:
-                d += getattr(elm.SourceV().dot().label(str(round(self.reluctance[i], 2)) + 'AT'), self.orientation[i])
-            elif self.section[i] == 'l':
-                d += getattr(elm.Line().dot(), self.orientation[i])
-            elif self.section[i] == 6 or self.section[i] == 7 or self.section[i] == 8:
-                d += getattr(elm.ResistorIEC().dot().label(str(round(self.reluctance[i], 2)) + 'AT/Wb'), self.orientation[i])
-            else:
-                d += getattr(elm.Resistor().dot().label(str(round(self.reluctance[i], 2)) + 'AT/Wb'), self.orientation[i])
+        self.section, self.orientation = set_orientation(self.section, len(self.section))
+        self.L = (self.no_of_turns * self.no_of_turns) / sum(self.reluctance)
 
-        d.draw()
-        d.save('my_circuit.svg')
+        # print('Section:', self.section)
+        # print('Orientation:', self.orientation)
+        # print('List of length:', self.length)
+        # print('List of cross-section area:', self.area)
+        # print('List of reluctance:', self.reluctance)
+        # print('Inductance:', self.L)
+
+        # schemdraw.theme('monokai')
+        # d = schemdraw.Drawing()
+        # for i in range(len(self.section)):
+        #     if self.section[i] == 9:
+        #         d += getattr(elm.SourceV().dot().label(str(round(self.reluctance[i], 2)) + ' AT'), self.orientation[i])
+        #     elif self.section[i] == 'l':
+        #         d += getattr(elm.Line().dot(), self.orientation[i])
+        #     elif self.section[i] == 6 or self.section[i] == 7 or self.section[i] == 8:
+        #         d += getattr(elm.ResistorIEC().dot().label(str(round(self.reluctance[i], 2)) + ' AT/Wb'), self.orientation[i])
+        #     else:
+        #         d += getattr(elm.Resistor().dot().label(str(round(self.reluctance[i], 2)) + ' AT/Wb'), self.orientation[i])
+        #
+        # d.draw()
+        # d.save('my_circuit.svg')
 
 
-mc1 = MagneticCircuit(0.0398, 0.0149, 0.0295, 0.01105, 0.01994, 8, 3, 'percent', 2, [0.0005, 0.0005], [1, 70])
-mc1.core_reluctance()
-mc1.air_gap_reluctance()
-mc1.draw_schematic()
-# plot_r_basis()
+# mc1 = MagneticCircuit(0.0398, 0.0149, 0.0295, 0.01105, 8, 3, 'center', 1, [0.0005], [50])
+# mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 3, 'center', 1, [0.02], [50])
+# mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 3, 'percent', 2, [0.0005, 0.0005], [20, 50])
+# mc1.core_reluctance()
+# mc1.air_gap_reluctance()
+# mc1.draw_schematic()
+# plot_error()
+air_gap_h = np.linspace(0.0001, 0.002, 10)
+fem_ind = np.zeros(len(air_gap_h))
+cal_ind = np.zeros(len(air_gap_h))
 
+# 1. chose simulation type
+geo = fmt.MagneticComponent(component_type="inductor")
+
+for i in range(len(air_gap_h)):
+    mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 0.1, 'center', 1, [air_gap_h[i]], [50])
+    mc1.core_reluctance()
+    mc1.air_gap_reluctance()
+    mc1.draw_schematic()
+    cal_ind[i] = mc1.L
+    basic_example_func("center", 1, [air_gap_h[i]], [50], [8], 0.007, [0.1])
+    fem_ind[i] = geo.read_log()["single_sweeps"][0]["winding1"]["self_inductivity"][0]
+print(air_gap_h)
+print(fem_ind)
+print(cal_ind)
+h_by_l = ((0.0295 - air_gap_h) / 2) / air_gap_h
+error = ((fem_ind - cal_ind) / fem_ind) * 100
+fig, ax = plt.subplots()  # Create a figure containing a single axes.
+plt.title("inductance vs h/l")
+plt.xlabel("h/l")
+plt.ylabel("Error in %")
+# plt.ylim(-5, 5)
+# ax.plot(h_by_l, fem_ind, h_by_l, cal_ind)
+ax.plot(h_by_l, error, 'o')
+# ax.invert_xaxis()
+ax.grid()
+plt.show()
