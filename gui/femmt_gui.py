@@ -96,6 +96,10 @@ class MainWindow(QMainWindow):
         # visualization
         self.md_gmsh_visualisation_QPushButton.clicked.connect(self.md_gmsh_pre_visualisation)
 
+        # Results
+        self.Inductance_value_pushButton.clicked.connect(self.inductancecalc)
+
+
         "Signals in Excitation Tab"
         self.md_dc_checkBox.stateChanged.connect(self.md_dc_enable)
         self.md_fk1_checkBox.stateChanged.connect(self.md_change_frequencies_1)
@@ -265,6 +269,9 @@ class MainWindow(QMainWindow):
         self.md_fk6_checkBox.setToolTip("Enable/Disable 6 * base frequency")
         self.md_fk7_checkBox.setToolTip("Enable/Disable 7 * base frequency")
         self.md_fk8_checkBox.setToolTip("Enable/Disable 8 * base frequency")
+
+        "Signals in Thermal simulation Tab"
+        self.md_therm_simulation_QPushButton.clicked.connect(self.therm_simulation)
 
 
     def md_initialize_controls(self) -> None:
@@ -531,7 +538,7 @@ class MainWindow(QMainWindow):
             self.md_winding2_change_litz_implicit(self.md_winding2_implicit_litz_comboBox.currentText())
             self.md_winding2_implicit_litz_comboBox.setEnabled(True)
 
-    def  md_winding2_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
+    def md_winding2_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
         """
         Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
         :param implicit_type_from_combo_box: input type to implicit
@@ -1699,15 +1706,25 @@ class MainWindow(QMainWindow):
         # -----------------------------------------------
         # Simulation
         # -----------------------------------------------
-        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, save_png=False)
+        #geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
 
         winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
 
 
         if len(winding1_frequency_list) == 1:
+            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                geo.single_simulation(freq=winding1_frequency_list[0],
+                                      current=[winding1_amplitude_list[0]],
+                                      show_results=True)
+            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                geo.single_simulation(freq=winding1_frequency_list[0], current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
+                                      phi_deg=[- 1.66257715 / np.pi * 180, 170])
+
+
             #geo.single_simulation(freq=winding1_frequency_list[0], current=winding1_amplitude_list)
-            geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019],
-                                  phi_deg=[- 1.66257715 / np.pi * 180, 170])
+            #geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019],
+                                 # phi_deg=[- 1.66257715 / np.pi * 180, 170])
 
         else:
             amplitude_list = []
@@ -1752,9 +1769,89 @@ class MainWindow(QMainWindow):
         # self.md_simulation_output_textBrowser.setText(simulation_results)
 
 
+    def inductancecalc(self):
+        self.core_w = comma_str_to_point_float(self.md_core_width_lineEdit.text())
+        self.window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text())
+        self.window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text())
+        """
+        n_turns=int(self.md_winding1_turns_lineEdit.text())
+        method=self.md_air_gap_placement_method_comboBox.currentText()
+        n_air_gaps=int(self.md_air_gap_count_comboBox.currentText())
+        air_gap_h=4
+        air_gap_position = 2
+        """
+        inductance = self.core_w+self.window_w+self.window_h
+        self.Inductanceval_label.setText(f"{str(round(inductance,4))} H")
 
+    def therm_simulation(self):
+        # Thermal simulation:
+        # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
+        # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
+        # which will be applied on the boundary of the simulation (dirichlet boundary condition).
 
+        # The case parameter sets the thermal conductivity for a case which will be set around the core.
+        # This could model some case in which the transformer is placed in together with a set potting material.
+        thermal_conductivity_dict = {
+            "air": 0.0263,
+            "case": {  # (epoxy resign) | transformer oil
+                "top": 0.122,
+                "top_right": 0.122,
+                "right": 0.122,
+                "bot_right": 0.122,
+                "bot": 0.122
+            },
+            "core": 5,  # ferrite
+            "winding": 400,  # copper
+            "air_gaps": 180,  # aluminiumnitride
+            "isolation": 0.42  # polyethylen
+        }
 
+        # Here the case size can be determined
+        case_gap_top = 0.002
+        case_gap_right = 0.0025
+        case_gap_bot = 0.002
+
+        # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
+        # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
+        boundary_temperatures = {
+            "value_boundary_top": 20,
+            "value_boundary_top_right": 20,
+            "value_boundary_right_top": 20,
+            "value_boundary_right": 20,
+            "value_boundary_right_bottom": 20,
+            "value_boundary_bottom_right": 20,
+            "value_boundary_bottom": 20
+        }
+
+        # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
+        # Currently only one temperature can be applied which will be set on every boundary site.
+        femm_boundary_temperature = 20
+
+        # Here the boundary sides can be turned on (1) or off (0)
+        # By turning off the flag a neumann boundary will be applied at this point with heat flux = 0
+        boundary_flags = {
+            "flag_boundary_top": 0,
+            "flag_boundary_top_right": 0,
+            "flag_boundary_right_top": 1,
+            "flag_boundary_right": 1,
+            "flag_boundary_right_bottom": 1,
+            "flag_boundary_bottom_right": 1,
+            "flag_boundary_bottom": 1
+        }
+
+        # In order for the thermal simulation to work an electro_magnetic simulation has to run before.
+        # The em-simulation will create a file containing the losses.
+        # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
+        # order for the thermal simulation to work (geo.single_simulation is not needed).
+        # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
+        geo = self.md_setup_geometry()
+        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                               case_gap_right, case_gap_bot, show_results=True, visualize_before=True, color_scheme=fmt.colors_ba_jonas,
+                               colors_geometry=fmt.colors_geometry_ba_jonas)
+
+        # Because the isolations inside of the winding window are not implemented in femm simulation.
+        # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
+        geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right,case_gap_bot)
 
 def clear_layout(layout):
     while layout.count():

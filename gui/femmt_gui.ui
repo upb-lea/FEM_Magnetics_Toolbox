@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1338</width>
-    <height>1200</height>
+    <height>1227</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,6 +27,12 @@
        <layout class="QGridLayout" name="gridLayout_13">
         <item row="0" column="0">
          <widget class="QTabWidget" name="md_QTabWidget">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>1677720</height>
+           </size>
+          </property>
           <property name="currentIndex">
            <number>0</number>
           </property>
@@ -348,20 +354,10 @@
                    <string>Winding 2: Conductor Definition</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_4">
-                   <item row="0" column="1">
-                    <widget class="QComboBox" name="md_winding2_material_comboBox"/>
-                   </item>
-                   <item row="6" column="0">
-                    <widget class="QLabel" name="label_15">
+                   <item row="6" column="3">
+                    <widget class="QLineEdit" name="md_winding2_strand_radius_lineEdit">
                      <property name="text">
-                      <string>Number Strands</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="2">
-                    <widget class="QLabel" name="label_18">
-                     <property name="text">
-                      <string>Wire Type</string>
+                      <string>35.5e-6</string>
                      </property>
                     </widget>
                    </item>
@@ -372,27 +368,27 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="6" column="3">
-                    <widget class="QLineEdit" name="md_winding2_strand_radius_lineEdit">
+                   <item row="5" column="3">
+                    <widget class="QLineEdit" name="md_winding2_fill_factor_lineEdit">
                      <property name="text">
-                      <string>35.5e-6</string>
+                      <string>0.6</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="5" column="1">
-                    <widget class="QComboBox" name="md_winding2_implicit_litz_comboBox"/>
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="md_winding2_material_comboBox"/>
                    </item>
-                   <item row="4" column="0">
-                    <widget class="QLabel" name="label_16">
+                   <item row="6" column="0">
+                    <widget class="QLabel" name="label_15">
                      <property name="text">
-                      <string>Wire Radius [m]</string>
+                      <string>Number Strands</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="0" colspan="2">
-                    <widget class="QLabel" name="label_76">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_13">
                      <property name="text">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Manual wire parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      <string>Winding Material</string>
                      </property>
                     </widget>
                    </item>
@@ -403,41 +399,17 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="3">
-                    <widget class="QComboBox" name="md_winding2_type_comboBox"/>
-                   </item>
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_13">
+                   <item row="3" column="0" colspan="2">
+                    <widget class="QLabel" name="label_76">
                      <property name="text">
-                      <string>Winding Material</string>
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Manual wire parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="5" column="3">
-                    <widget class="QLineEdit" name="md_winding2_fill_factor_lineEdit">
+                   <item row="4" column="0">
+                    <widget class="QLabel" name="label_16">
                      <property name="text">
-                      <string>0.6</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="6" column="1">
-                    <widget class="QLineEdit" name="md_winding2_strands_lineEdit">
-                     <property name="text">
-                      <string>600</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="5" column="2">
-                    <widget class="QLabel" name="label_17">
-                     <property name="text">
-                      <string>Fill Factor</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_75">
-                     <property name="text">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Litz from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                      <string>Wire Radius [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -450,6 +422,40 @@
                    </item>
                    <item row="2" column="0">
                     <widget class="QComboBox" name="md_winding2_litz_material_comboBox"/>
+                   </item>
+                   <item row="0" column="2">
+                    <widget class="QLabel" name="label_18">
+                     <property name="text">
+                      <string>Wire Type</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_75">
+                     <property name="text">
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Litz from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="1">
+                    <widget class="QLineEdit" name="md_winding2_strands_lineEdit">
+                     <property name="text">
+                      <string>600</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="1">
+                    <widget class="QComboBox" name="md_winding2_implicit_litz_comboBox"/>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QComboBox" name="md_winding2_type_comboBox"/>
+                   </item>
+                   <item row="5" column="2">
+                    <widget class="QLabel" name="label_17">
+                     <property name="text">
+                      <string>Fill Factor</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
@@ -761,8 +767,15 @@
                    <string>Core Isolation (Bobbin)</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_23">
-                   <item row="1" column="4">
-                    <widget class="QLineEdit" name="md_isolation_core2cond_outer_lineEdit">
+                   <item row="1" column="1">
+                    <widget class="QLineEdit" name="md_isolation_core2cond_bot_lineEdit">
+                     <property name="text">
+                      <string>0.001</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLineEdit" name="md_isolation_core2cond_top_lineEdit">
                      <property name="text">
                       <string>0.001</string>
                      </property>
@@ -775,33 +788,18 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="4">
-                    <widget class="QLineEdit" name="md_isolation_core2cond_inner_lineEdit">
-                     <property name="text">
-                      <string>0.001</string>
+                   <item row="1" column="2">
+                    <spacer name="horizontalSpacer_21">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
                      </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QLineEdit" name="md_isolation_core2cond_bot_lineEdit">
-                     <property name="text">
-                      <string>0.001</string>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
                      </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="3">
-                    <widget class="QLabel" name="label_54">
-                     <property name="text">
-                      <string>Core2Cond inner [m]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QLineEdit" name="md_isolation_core2cond_top_lineEdit">
-                     <property name="text">
-                      <string>0.001</string>
-                     </property>
-                    </widget>
+                    </spacer>
                    </item>
                    <item row="1" column="3">
                     <widget class="QLabel" name="label_70">
@@ -830,20 +828,61 @@
                      </property>
                     </spacer>
                    </item>
-                   <item row="1" column="2">
-                    <spacer name="horizontalSpacer_21">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
+                   <item row="1" column="4">
+                    <widget class="QLineEdit" name="md_isolation_core2cond_outer_lineEdit">
+                     <property name="text">
+                      <string>0.001</string>
                      </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>40</width>
-                       <height>20</height>
-                      </size>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QLabel" name="label_54">
+                     <property name="text">
+                      <string>Core2Cond inner [m]</string>
                      </property>
-                    </spacer>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QLineEdit" name="md_isolation_core2cond_inner_lineEdit">
+                     <property name="text">
+                      <string>0.001</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_7">
+                  <property name="title">
+                   <string>Results</string>
+                  </property>
+                  <widget class="QPushButton" name="Inductance_value_pushButton">
+                   <property name="geometry">
+                    <rect>
+                     <x>40</x>
+                     <y>40</y>
+                     <width>131</width>
+                     <height>31</height>
+                    </rect>
+                   </property>
+                   <property name="text">
+                    <string>Inductance value</string>
+                   </property>
+                  </widget>
+                  <widget class="QLabel" name="Inductanceval_label">
+                   <property name="geometry">
+                    <rect>
+                     <x>210</x>
+                     <y>40</y>
+                     <width>131</width>
+                     <height>28</height>
+                    </rect>
+                   </property>
+                   <property name="text">
+                    <string>Value in Henry(H)</string>
+                   </property>
+                  </widget>
                  </widget>
                 </item>
                 <item>
@@ -851,10 +890,13 @@
                   <property name="orientation">
                    <enum>Qt::Vertical</enum>
                   </property>
+                  <property name="sizeType">
+                   <enum>QSizePolicy::Fixed</enum>
+                  </property>
                   <property name="sizeHint" stdset="0">
                    <size>
                     <width>20</width>
-                    <height>40</height>
+                    <height>200</height>
                    </size>
                   </property>
                  </spacer>
@@ -1583,7 +1625,7 @@
                 <item>
                  <widget class="QGroupBox" name="groupBox_18">
                   <property name="title">
-                   <string>Simulation Status</string>
+                   <string>Simulation status</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_21">
                    <item row="0" column="0">
@@ -1593,28 +1635,28 @@
                      </property>
                     </widget>
                    </item>
+                   <item row="2" column="0">
+                    <spacer name="verticalSpacer_2">
+                     <property name="orientation">
+                      <enum>Qt::Vertical</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>20</width>
+                       <height>40</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
                    <item row="1" column="0">
                     <widget class="QLabel" name="md_simulation_QLabel">
                      <property name="text">
-                      <string>TextLabel</string>
+                      <string/>
                      </property>
                     </widget>
                    </item>
                   </layout>
                  </widget>
-                </item>
-                <item>
-                 <spacer name="verticalSpacer_2">
-                  <property name="orientation">
-                   <enum>Qt::Vertical</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>20</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                 </spacer>
                 </item>
                </layout>
               </item>
@@ -1631,26 +1673,6 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="2" column="1">
-                  <widget class="QLabel" name="md_loss_winding1_label">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="5" column="1">
-                  <spacer name="verticalSpacer_5">
-                   <property name="orientation">
-                    <enum>Qt::Vertical</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>20</width>
-                     <height>40</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
                  <item row="3" column="1">
                   <widget class="QLabel" name="md_loss_winding2_label">
                    <property name="text">
@@ -1660,6 +1682,13 @@
                  </item>
                  <item row="1" column="1">
                   <widget class="QLabel" name="md_loss_core_eddy_current_label">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLabel" name="md_loss_winding1_label">
                    <property name="text">
                     <string/>
                    </property>
@@ -1694,6 +1723,37 @@
              </layout>
             </item>
            </layout>
+          </widget>
+          <widget class="QWidget" name="tab_2">
+           <attribute name="title">
+            <string>Thermal Simulation</string>
+           </attribute>
+           <widget class="QGroupBox" name="groupBox_8">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>10</y>
+              <width>414</width>
+              <height>107</height>
+             </rect>
+            </property>
+            <property name="title">
+             <string>Simulation status</string>
+            </property>
+            <widget class="QPushButton" name="md_therm_simulation_QPushButton">
+             <property name="geometry">
+              <rect>
+               <x>14</x>
+               <y>37</y>
+               <width>386</width>
+               <height>29</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Simulation</string>
+             </property>
+            </widget>
+           </widget>
           </widget>
          </widget>
         </item>
