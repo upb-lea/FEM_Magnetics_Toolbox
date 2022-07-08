@@ -112,7 +112,7 @@ if component == "inductor":
     geo.create_model(freq=100000, visualize_before=True, save_png=False)
 
     # 6. start simulation
-    geo.single_simulation(freq=100000, current=[3], show_results=True)
+    #geo.single_simulation(freq=100000, current=[3], show_results=True)
 
     # 7. prepare and start thermal simulation
     example_thermal_simulation()

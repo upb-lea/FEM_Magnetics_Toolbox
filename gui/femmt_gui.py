@@ -1783,6 +1783,7 @@ class MainWindow(QMainWindow):
         inductance = self.core_w+self.window_w+self.window_h
         self.Inductanceval_label.setText(f"{str(round(inductance,4))} H")
 
+
     def therm_simulation(self):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
@@ -1846,11 +1847,11 @@ class MainWindow(QMainWindow):
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo = self.md_setup_geometry()
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                               case_gap_right, case_gap_bot, show_results=True, visualize_before=True, color_scheme=fmt.colors_ba_jonas,
+                               case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas,
                                colors_geometry=fmt.colors_geometry_ba_jonas)
 
         # Because the isolations inside of the winding window are not implemented in femm simulation.
-        # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
+        # The validation on5ly works when the isolations for the FEMMT thermal simulation are turned off.
         geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right,case_gap_bot)
 
 def clear_layout(layout):
