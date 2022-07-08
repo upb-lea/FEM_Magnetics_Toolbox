@@ -1,4 +1,6 @@
 # 2D-axis symmetric core reluctance calculations
+import numpy as np
+
 import femmt as fmt
 import schemdraw
 import schemdraw.elements as elm
@@ -73,7 +75,7 @@ def basic_example_func(f_method, f_n, f_h, f_pos, f_n_turns, f_core_cond_iso, f_
     geo.core.update(core_w=core["core_w"], window_w=core["window_w"], window_h=core["window_h"],
                     # geo.core.update(core_w=0.020, window_w=0.013, window_h=0.030,
                     mu_rel=3100, phi_mu_deg=12,
-                    sigma=0.6)
+                    sigma=0.6)  # core["core_w"]
 
     # 3. set air gap parameters
     geo.air_gaps.update(method=f_method, n_air_gaps=f_n, air_gap_h=f_h, air_gap_position=f_pos,
@@ -162,10 +164,10 @@ class MagneticCircuit:
         flag_2 = 0
         if self.method == 'center':
             self.section.append(6)  # round-round
-            temp1 = r_basis(self.air_gap_h[0] / 2, self.core_w / 2, (self.window_h - self.air_gap_h[0]) / 2)
+            temp1 = r_basis(self.air_gap_h[0] / 2, self.core_w, (self.window_h - self.air_gap_h[0]) / 2)
             temp2 = sigma(self.air_gap_h[0], self.core_w / 2, 2 * temp1)
             temp3 = fmt.femmt_functions.r_round_round(self.air_gap_h[0], temp2, self.core_w / 2)
-            # temp4 = self.air_gap_h[0] / (self.mu_0 * np.pi * (self.core_w / 2) ** 2)
+            temp4 = self.air_gap_h[0] / (self.mu_0 * np.pi * (self.core_w / 2) ** 2)    # classical reluctance formula
             self.reluctance = np.append(self.reluctance, temp3)
             # print(f"New approach reluctance: {temp3}")
             # print(f"Classical reluctance: {temp4}")
@@ -243,9 +245,10 @@ class MagneticCircuit:
                     temp3 = fmt.femmt_functions.r_round_round(self.air_gap_h[0], temp2, self.core_w / 2)
                     self.reluctance = np.append(self.reluctance, temp3)
 
-    def draw_schematic(self):
         self.section, self.orientation = set_orientation(self.section, len(self.section))
         self.L = (self.no_of_turns * self.no_of_turns) / sum(self.reluctance)
+
+    # def draw_schematic(self):
 
         # print('Section:', self.section)
         # print('Orientation:', self.orientation)
@@ -270,6 +273,43 @@ class MagneticCircuit:
         # d.save('my_circuit.svg')
 
 
+air_gap_h = np.linspace(0.0001, 0.001, 5)
+wndg_pos = np.linspace(0.001, 0.007, 7)
+fem_ind = np.zeros((len(air_gap_h), len(wndg_pos)))
+cal_ind = np.zeros((len(air_gap_h), len(wndg_pos)))
+
+# 1. chose simulation type
+geo = fmt.MagneticComponent(component_type="inductor")
+for j in range(len(air_gap_h)):
+    for i in range(len(wndg_pos)):
+        mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 10, 'center', 1, [air_gap_h[j]], [50])  # 0.0149
+        mc1.core_reluctance()
+        mc1.air_gap_reluctance()
+        # mc1.draw_schematic()
+        cal_ind[j, i] = mc1.L
+        basic_example_func("center", 1, [air_gap_h[j]], [50], [8], wndg_pos[i], [10])
+        fem_ind[j, i] = geo.read_log()["single_sweeps"][0]["winding1"]["self_inductivity"][0]
+
+print(air_gap_h)
+print(wndg_pos)
+print(fem_ind)
+print(cal_ind)
+h_by_l = ((0.0295 - air_gap_h) / 2) / air_gap_h
+error = ((fem_ind - cal_ind) / fem_ind) * 100
+fig, ax = plt.subplots()  # Create a figure containing a single axes.
+plt.title("Inductance vs Winding position")
+plt.xlabel("Winding position (in m)")
+plt.ylabel("Error (in %)")
+
+# plt.ylim(-5, 5)
+# ax.plot(h_by_l, fem_ind, h_by_l, cal_ind)
+for j in range(len(air_gap_h)):
+    ax.plot(wndg_pos, error[j, :], label=str(air_gap_h[j]))
+ax.legend(loc='best')
+# ax.invert_xaxis()
+ax.grid()
+plt.show()
+
 # mc1 = MagneticCircuit(0.0398, 0.0149, 0.0295, 0.01105, 8, 3, 'center', 1, [0.0005], [50])
 # mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 3, 'center', 1, [0.02], [50])
 # mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 3, 'percent', 2, [0.0005, 0.0005], [20, 50])
@@ -277,33 +317,3 @@ class MagneticCircuit:
 # mc1.air_gap_reluctance()
 # mc1.draw_schematic()
 # plot_error()
-air_gap_h = np.linspace(0.0001, 0.002, 10)
-fem_ind = np.zeros(len(air_gap_h))
-cal_ind = np.zeros(len(air_gap_h))
-
-# 1. chose simulation type
-geo = fmt.MagneticComponent(component_type="inductor")
-
-for i in range(len(air_gap_h)):
-    mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 0.1, 'center', 1, [air_gap_h[i]], [50])
-    mc1.core_reluctance()
-    mc1.air_gap_reluctance()
-    mc1.draw_schematic()
-    cal_ind[i] = mc1.L
-    basic_example_func("center", 1, [air_gap_h[i]], [50], [8], 0.007, [0.1])
-    fem_ind[i] = geo.read_log()["single_sweeps"][0]["winding1"]["self_inductivity"][0]
-print(air_gap_h)
-print(fem_ind)
-print(cal_ind)
-h_by_l = ((0.0295 - air_gap_h) / 2) / air_gap_h
-error = ((fem_ind - cal_ind) / fem_ind) * 100
-fig, ax = plt.subplots()  # Create a figure containing a single axes.
-plt.title("inductance vs h/l")
-plt.xlabel("h/l")
-plt.ylabel("Error in %")
-# plt.ylim(-5, 5)
-# ax.plot(h_by_l, fem_ind, h_by_l, cal_ind)
-ax.plot(h_by_l, error, 'o')
-# ax.invert_xaxis()
-ax.grid()
-plt.show()
