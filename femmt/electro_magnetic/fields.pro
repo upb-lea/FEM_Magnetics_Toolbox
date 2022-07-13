@@ -29,8 +29,8 @@ PostOperation Map_local UsingPost MagDyn_a {
 
   //Print[ mur,  OnElementsOf Domain,  File StrCat[DirResFields, "mur", ExtGmsh],  LastTimeStepOnly ] ;
   //Print[ mur_norm,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_norm", ExtGmsh],  LastTimeStepOnly ] ;
-  //Print[ nur_re,  OnElementsOf Domain,  File StrCat[DirResFields, "nur_re", ExtGmsh],  LastTimeStepOnly ] ;
-  //Print[ nur_im,  OnElementsOf Domain,  File StrCat[DirResFields, "nur_im", ExtGmsh],  LastTimeStepOnly ] ;
+  Print[ nur_re,  OnElementsOf Domain,  File StrCat[DirResFields, "nur_re", ExtGmsh],  LastTimeStepOnly ] ;
+  Print[ nur_im,  OnElementsOf Domain,  File StrCat[DirResFields, "nur_im", ExtGmsh],  LastTimeStepOnly ] ;
   Print[ mur_re,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_re", ExtGmsh],  LastTimeStepOnly ] ;
   Print[ mur_im,  OnElementsOf Domain,  File StrCat[DirResFields, "mur_im", ExtGmsh],  LastTimeStepOnly ] ;
   Print[ p_hyst,  OnElementsOf Domain,  File StrCat[DirResFields, "p_hyst", ExtGmsh],  LastTimeStepOnly ] ;
