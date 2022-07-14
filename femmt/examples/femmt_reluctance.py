@@ -7,63 +7,63 @@ import schemdraw.elements as elm
 from femmt.femmt_functions import *
 
 
-def set_orientation(section: list, n: int) -> tuple:    # Function to dynamically define circuit component orientation: 'up', 'right', 'down', 'left'
-    temp1 = ['up', 'right', 'down', 'left']
-    temp2 = []
-    if n % 2 != 0:
-        section.append('l')
-        n += 1
-    if n % 2 == 0:
-        if n % 4 == 0:
-            for i in range(4):
-                for j in range(n // 4):
-                    temp2.append(temp1[i])
-        else:
-            for i in range(4):
-                for j in range((n-2) // 4):
-                    temp2.append(temp1[i])
-
-            temp2.insert((n-2) // 4, 'right')
-            temp2.append('left')
-    return section, temp2
-
-
-def plot_r_basis():
-    width = 1
-    length = 1
-    height = np.linspace(10, 0.1, 1000)
-    h_l = height / length
-
-    r_m = 1 / (mu0 * (width / 2 / length + 2 / np.pi * (
-                1 + np.log(np.pi * height / 4 / length))))
-
-    combined = np.vstack((h_l, r_m)).T
-    print(combined)
-    fig, ax = plt.subplots()  # Create a figure containing a single axes.
-    plt.title("R_basic vs h/l")
-    plt.xlabel("h/l")
-    plt.ylabel("R_basic")
-    ax.plot(h_l, r_m)
-    ax.invert_xaxis()
-    ax.grid()
-    plt.show()
+# def set_orientation(section: list, n: int) -> tuple:    # Function to dynamically define circuit component orientation: 'up', 'right', 'down', 'left'
+#     temp1 = ['up', 'right', 'down', 'left']
+#     temp2 = []
+#     if n % 2 != 0:
+#         section.append('l')
+#         n += 1
+#     if n % 2 == 0:
+#         if n % 4 == 0:
+#             for i in range(4):
+#                 for j in range(n // 4):
+#                     temp2.append(temp1[i])
+#         else:
+#             for i in range(4):
+#                 for j in range((n-2) // 4):
+#                     temp2.append(temp1[i])
+#
+#             temp2.insert((n-2) // 4, 'right')
+#             temp2.append('left')
+#     return section, temp2
 
 
-def plot_error():
-    fem_ind = np.array([116.0773e-6, 32.1e-6, 18.71e-6, 6.08575e-6, 4.324969e-6,  3.81392e-6, 2.345389e-6])
-    cal_ind = np.array([116.518e-6, 32.12472e-6, 18.72275e-6, 6.25557e-6, 4.2895602e-6, 3.611239e-6, 0.71733329e-6])
-    air_gap_l = np.array([0.0001, 0.0005, 0.001, 0.005, 0.00833, 0.01, 0.02])
-    h_by_l = ((0.0295 - air_gap_l) / 2) / air_gap_l
-    error = ((fem_ind - cal_ind) / fem_ind) * 100
-    fig, ax = plt.subplots()  # Create a figure containing a single axes.
-    plt.title("inductance vs h/l")
-    plt.xlabel("h/l")
-    plt.ylabel("Error in %")
-    # ax.plot(h_by_l, fem_ind, h_by_l, cal_ind)
-    ax.plot(h_by_l, error)
-    # ax.invert_xaxis()
-    ax.grid()
-    plt.show()
+# def plot_r_basis():
+#     width = 1
+#     length = 1
+#     height = np.linspace(10, 0.1, 1000)
+#     h_l = height / length
+#
+#     r_m = 1 / (mu0 * (width / 2 / length + 2 / np.pi * (
+#                 1 + np.log(np.pi * height / 4 / length))))
+#
+#     combined = np.vstack((h_l, r_m)).T
+#     print(combined)
+#     fig, ax = plt.subplots()  # Create a figure containing a single axes.
+#     plt.title("R_basic vs h/l")
+#     plt.xlabel("h/l")
+#     plt.ylabel("R_basic")
+#     ax.plot(h_l, r_m)
+#     ax.invert_xaxis()
+#     ax.grid()
+#     plt.show()
+
+
+# def plot_error():
+#     fem_ind = np.array([116.0773e-6, 32.1e-6, 18.71e-6, 6.08575e-6, 4.324969e-6,  3.81392e-6, 2.345389e-6])
+#     cal_ind = np.array([116.518e-6, 32.12472e-6, 18.72275e-6, 6.25557e-6, 4.2895602e-6, 3.611239e-6, 0.71733329e-6])
+#     air_gap_l = np.array([0.0001, 0.0005, 0.001, 0.005, 0.00833, 0.01, 0.02])
+#     h_by_l = ((0.0295 - air_gap_l) / 2) / air_gap_l
+#     error = ((fem_ind - cal_ind) / fem_ind) * 100
+#     fig, ax = plt.subplots()  # Create a figure containing a single axes.
+#     plt.title("inductance vs h/l")
+#     plt.xlabel("h/l")
+#     plt.ylabel("Error in %")
+#     # ax.plot(h_by_l, fem_ind, h_by_l, cal_ind)
+#     ax.plot(h_by_l, error)
+#     # ax.invert_xaxis()
+#     ax.grid()
+#     plt.show()
 
 
 def basic_example_func(f_method, f_n, f_h, f_pos, f_n_turns, f_core_cond_iso, f_current):
@@ -86,9 +86,16 @@ def basic_example_func(f_method, f_n, f_h, f_pos, f_n_turns, f_core_cond_iso, f_
                           core_cond_isolation=[0.001, 0.001, f_core_cond_iso, 0.001], cond_cond_isolation=[0.0001],
                           conductivity_sigma=["copper"])
 
+    # geo.update_conductors(n_turns=[f_n_turns], conductor_type=["litz"], conductor_radii=[0.0015],
+    #                       litz_para_type=['implicit_ff'],
+    #                       ff=[None], strands_numbers=[100], strand_radii=[70e-6],
+    #                       winding=["primary"], scheme=["square"],
+    #                       core_cond_isolation=[0.001, 0.001, f_core_cond_iso, 0.001], cond_cond_isolation=[0.0001],
+    #                       conductivity_sigma=["copper"])
+
     geo.create_model(freq=100000, visualize_before=False, do_meshing=True, save_png=False)
 
-    geo.single_simulation(freq=100000, current=f_current, show_results=False)
+    geo.single_simulation(freq=100000, current=f_current, phi_deg=[0], show_results=False)
 
 
 class MagneticCircuit:
@@ -273,7 +280,7 @@ class MagneticCircuit:
         # d.save('my_circuit.svg')
 
 
-air_gap_h = np.linspace(0.0001, 0.001, 5)
+air_gap_h = np.linspace(0.0000001, 0.001, 1)
 wndg_pos = np.linspace(0.001, 0.007, 7)
 fem_ind = np.zeros((len(air_gap_h), len(wndg_pos)))
 cal_ind = np.zeros((len(air_gap_h), len(wndg_pos)))
@@ -282,13 +289,16 @@ cal_ind = np.zeros((len(air_gap_h), len(wndg_pos)))
 geo = fmt.MagneticComponent(component_type="inductor")
 for j in range(len(air_gap_h)):
     for i in range(len(wndg_pos)):
-        mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 10, 'center', 1, [air_gap_h[j]], [50])  # 0.0149
+        mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 1, 10, 'percent', 1, [air_gap_h[j]], [50])  # 0.0149
         mc1.core_reluctance()
         mc1.air_gap_reluctance()
         # mc1.draw_schematic()
         cal_ind[j, i] = mc1.L
-        basic_example_func("center", 1, [air_gap_h[j]], [50], [8], wndg_pos[i], [10])
+        mc1.max_percent = ((mc1.window_h - (air_gap_h[j] / 2)) / mc1.window_h) * 100
+        mc1.min_percent = ((air_gap_h[j] / 2) / mc1.window_h) * 100
+        basic_example_func("percent", 1, [air_gap_h[j]], [50], [1], wndg_pos[i], [10])
         fem_ind[j, i] = geo.read_log()["single_sweeps"][0]["winding1"]["self_inductivity"][0]
+        # fem_ind[j, i] = geo.read_log()["single_sweeps"][0]["winding1"]["Q"]
 
 print(air_gap_h)
 print(wndg_pos)
@@ -297,9 +307,9 @@ print(cal_ind)
 h_by_l = ((0.0295 - air_gap_h) / 2) / air_gap_h
 error = ((fem_ind - cal_ind) / fem_ind) * 100
 fig, ax = plt.subplots()  # Create a figure containing a single axes.
-plt.title("Inductance vs Winding position")
+plt.title("inductance vs Winding position (1 conductor only) (without airgap)")
 plt.xlabel("Winding position (in m)")
-plt.ylabel("Error (in %)")
+plt.ylabel("error (in %)")
 
 # plt.ylim(-5, 5)
 # ax.plot(h_by_l, fem_ind, h_by_l, cal_ind)
