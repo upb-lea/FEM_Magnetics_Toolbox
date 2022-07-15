@@ -4,16 +4,17 @@ import fileinput
 import numpy as np
 import os
 import sys
-from matplotlib import pyplot as plt
-from scipy.optimize import brentq
 import gmsh
-from onelab import onelab
 import json
-from scipy.integrate import quad
-from scipy.interpolate import interp1d
 import warnings
 import inspect
 
+from onelab import onelab
+from matplotlib import pyplot as plt
+from scipy.optimize import brentq
+from scipy.integrate import quad
+from scipy.interpolate import interp1d
+from datetime import datetime
 from typing import List, Union, Optional, Dict
 from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import *
@@ -86,6 +87,7 @@ class MagneticComponent:
         self.windings = None
         self.isolation = None
         self.virtual_winding_windows = None
+        self.stray_path = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
@@ -186,7 +188,7 @@ class MagneticComponent:
         self.thermal_results_folder_path = os.path.join(self.results_folder_path, "thermal")
 
         # Setup file paths
-        self.e_m_results_log_path = os.path.join(self.results_folder_path, "result_log_electro_magnetic.json")
+        self.e_m_results_log_path = os.path.join(self.results_folder_path, "log_electro_magnetic.json")
         self.femm_results_log_path = os.path.join(self.femm_folder_path, "result_log_femm.json")
         self.config_path = os.path.join(self.femmt_folder_path, "config.json")
         self.e_m_mesh_file = os.path.join(self.mesh_folder_path, "electro_magnetic.msh")
@@ -1255,6 +1257,8 @@ class MagneticComponent:
                         num = 0
                     elif self.component.virtual_winding_windows[n_win].winding == WindingType.Secondary:
                         num = 1
+                    else:
+                        raise Exception(f"Unusable winding type with this settings: {self.component.virtual_winding_windows[n_win].winding}" )
 
                     if self.component.windings[num].conductor_type == ConductorType.Full:
                         if sum(self.component.windings[num].turns) != 1:
@@ -3851,11 +3855,14 @@ class MagneticComponent:
     def write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
-        them in a dictionary. From this data type a JSON log file is created.
+        them in a dictionary. Additionaly the input settings which are used in order to create the simulation are also printed.
+        From this data type a JSON log file is created.
         :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
         :param currents: Current values of the sweep iterations. Not needed for single simulation
         :return:
         """
+        # ---- Print simulation results ----
+
         fundamental_index = 0  # index of the fundamental frequency
 
         # create the dictionary used to log the result data
@@ -3991,6 +3998,9 @@ class MagneticComponent:
 
         # Total losses of inductive component according to single or sweep simulation
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
+
+        # ---- Print current configuration ----
+        log_dict["simulation_settings"] = encode_settings(self)
 
         # ====== save data as JSON ======
         with open(self.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
@@ -5258,3 +5268,71 @@ class MagneticComponent:
         # self.mesh.generate_mesh()
         self.excitation(frequency=f_switch, amplitude_list=Ipeak, phase_deg_list=[0, 180])  # frequency and current
         self.file_com
+
+def encode_settings(o: MagneticComponent):
+    content = {
+        "date": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
+        "component_type": o.component_type.name,
+        "working_directory": o.working_directory,
+        "core": o.core.to_dict(),
+        "air_gaps": o.air_gaps.to_dict(),
+        "windings": [winding.to_dict() for winding in o.windings],
+        "isolation": o.isolation.to_dict(),
+        "virtual_winding_windows": [vww.to_dict() for vww in o.virtual_winding_windows],
+    }
+
+    if o.stray_path is not None:
+        content["stray_path"] = o.stray_path.__dict__()
+
+    return content
+
+def decode_settings_from_log(log_file_path: str):
+    if not os.path.isfile(log_file_path):
+        raise Exception(f"File {log_file_path} does not exists or is not a file!")
+
+    settings = None
+    with open(log_file_path, "r") as fd:
+        content = json.load(fd)
+        settings = content["settings"]
+
+    if settings is not None:
+        # TODO Create MagneticComponent out of the settings dict
+        geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=settings["working_directory"])
+
+        core = Core(**settings["core"])
+        geo.set_core(core)
+
+        air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
+        for air_gap in settings["air_gaps"]["air_gaps"]:
+            air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"], air_gap["height"])
+        geo.set_air_gaps(air_gaps)
+
+        windings = []
+        for settings_winding in settings["windings"]:
+            settings_cond = settings_winding["conductor_settings"]
+            winding = Winding(settings_winding["turns_primary"], settings_winding["turns_secondary"], 
+                                Conductivity[settings_winding["conductivity"]], WindingType[settings_winding["winding_type"]], 
+                                WindingScheme[settings_winding["winding_scheme"]])
+            conductor_type = ConductorType[settings_cond["conductor_type"]]
+            if conductor_type == ConductorType.Foil:
+                winding.set_foil_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
+            elif conductor_type == ConductorType.Full: 
+                winding.set_full_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
+            elif conductor_type == ConductorType.Stacked:
+                winding.set_stacked_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
+            elif conductor_type == ConductorType.Litz:
+                winding.set_litz_conductor(settings_cond["conductor_radius"], settings_cond["n_strands"], settings_cond["strand_radius"],
+                                            settings_cond["ff"])
+            elif conductor_type == ConductorType.Solid:
+                winding.set_solid_conductor(settings_cond["conductor_radius"])
+            else:
+                raise Exception(f"Unknown conductor type {conductor_type}")
+
+        geo.set_windings(windings)
+
+        isolation = Isolation()
+        isolation.add_core_isolations(settings["isolation"]["core_isolations"])
+        isolation.add_winding_isolations(settings["isolation"]["winding_isolations"])
+        geo.set_isolation(isolation)
+
+        return geo
