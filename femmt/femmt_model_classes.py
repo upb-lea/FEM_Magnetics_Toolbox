@@ -50,7 +50,16 @@ class Winding:
         
         self.winding_scheme = winding_scheme
 
-        self.turns = [turns_primary, turns_secondary]
+        if winding_type == WindingType.Interleaved:
+            if turns_primary == 0:
+                self.turns = [turns_secondary]
+            elif turns_secondary == 0:
+                self.turns = [turns_primary]
+            else:
+                # This case cannot happen since it was already checked before
+                pass
+        else:
+            self.turns = [turns_primary, turns_secondary]
 
         dict_material_database = wire_material_database()
         if conductivity.value in dict_material_database:

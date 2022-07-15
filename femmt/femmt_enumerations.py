@@ -59,3 +59,8 @@ class PermeabilityType(Enum):
     FixedLossAngle = "fixed_loss_angle"
     RealValue = "real_value"
     FromData = "from_data"
+
+class ExcitationMeshingType(Enum):
+    MeshOnce = "mesh_once"
+    MeshOnlyHighestFrequency = "mesh_only_highest_frequency"
+    MeshEachFrequency = "mesh_each_frequency"

@@ -442,16 +442,6 @@ class MagneticComponent:
             else:
                 self.vw_type = VirtualWindingType.Split2
 
-            # This special handling is needed because of the way conductors are drawn. See in draw_conductors()
-            for winding in self.windings:
-                if winding.winding_type == WindingType.Interleaved:
-                    if winding.turns_primary > 0 and winding.turns_secondary == 0:
-                        self.turns = [winding.turns_primary]
-                    elif winding.turns_primary == 0 and winding.turns_secondary > 0:
-                        self.turns = [winding.turns_secondary]
-                    else:
-                        raise Exception("When creating an interleaved transformer without stray path (not integrated). Either primary or secondary turns need to be 0.")
-
         if self.component_type == ComponentType.IntegratedTransformer:
             if len(self.windings) != 2:
                 raise Exception("Only integrated transformers with 2 windings are allowed")
@@ -4875,6 +4865,7 @@ class MagneticComponent:
         if self.core is None:
             raise Exception("A core class needs to be added to the magnetic component")
         if self.air_gaps is None:
+            # TODO Make air gaps optional
             raise Exception("An air gaps class needs to be added to the magnetic component")
         if self.windings is None or not self.windings:
             raise Exception("Winding classes need to be added to the magnetic component")
@@ -5101,7 +5092,8 @@ class MagneticComponent:
             self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last: bool = False, return_results: bool = False, meshing: bool = True,
+                         show_last: bool = False, return_results: bool = False, 
+                         excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False, save_png: bool = False,
                          color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default) -> Dict:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
@@ -5113,6 +5105,14 @@ class MagneticComponent:
         >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
         >>> amplitue_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
         >>> phase_list_list = [[0], [10], [20], [30], [40], [50]]
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+
+        :Example Code for Transformer with 2 windings:
+
+        >>> import femmt as fmt
+        >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
+        >>> amplitue_list_list = [[10, 2], [2, 1], [1, 0.5], [0.5, 0.25], [0.2, 0.1], [0.1, 0.05]]
+        >>> phase_list_list = [[0, 170], [10, 180], [20, 190], [30, 200], [40, 210], [50, 220]]
         >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
 
         :param frequency_list: Frequency in a list
@@ -5145,13 +5145,35 @@ class MagneticComponent:
         else:
             self.plot_fields = False
 
-        if meshing:
-            self.high_level_geo_gen(frequency=frequency_list[0])  # TODO: Must be changed for solid sim.
-            if self.valid:
-                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry)
-                self.mesh.generate_electro_magnetic_mesh()
+        # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
+        if excitation_meshing_type is None:
+            for winding in self.windings:
+                if winding.conductor_type == ConductorType.Solid:
+                    excitation_meshing_type = ExcitationMeshingType.MeshEachFrequency
+                    break
 
-        if self.valid:
+        if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
+            for i in range(0, len(frequency_list)):
+                self.high_level_geo_gen(frequency=frequency_list[i], skin_mesh_factor=skin_mesh_factor)
+                if self.valid:
+                    self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                    self.mesh.generate_electro_magnetic_mesh()
+                
+                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
+                                    phase_deg_list=phi_deg_list_list[i])  # frequency and current
+                self.file_communication()
+                self.pre_simulate()
+                self.simulate()
+        else:
+            if excitation_meshing_type == ExcitationMeshingType.MeshOnlyHighestFrequency:
+                self.high_level_geo_gen(frequency=max(frequency_list), skin_mesh_factor=skin_mesh_factor)
+            elif excitation_meshing_type == ExcitationMeshingType.MeshOnce:
+                self.high_level_geo_gen(frequency=frequency_list[0], skin_mesh_factor=skin_mesh_factor)
+            else:
+                raise Exception(f"Unknown excitation meshing type {excitation_meshing_type}")
+            if self.valid:
+                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                self.mesh.generate_electro_magnetic_mesh()
 
             for i in range(0, len(frequency_list)):
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
@@ -5161,6 +5183,7 @@ class MagneticComponent:
                 self.simulate()
                 # self.visualize()
 
+        if self.valid:
             self.write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
             if show_last:
