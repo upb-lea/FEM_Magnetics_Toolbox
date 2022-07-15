@@ -3895,7 +3895,15 @@ class MagneticComponent:
                                 "V": []}
 
                 # Number turns
-                winding_dict["number_turns"] = self.windings[winding].turns[0]
+                # TODO Since both windings can have a primary and a secondary turn, currently
+                # only the turns corresponding to the winding number are printed:
+                #   Winding1 -> primary turns
+                #   Winding2 -> secondary turns
+                # But technically Winding1 can have secondary turns and Winding2 can have primary turns
+                if self.windings[winding].winding_type == WindingType.Interleaved:
+                    winding_dict["number_turns"] = self.windings[winding].turns[0]
+                else:
+                    winding_dict["number_turns"] = self.windings[winding].turns[winding]
 
                 # Currents
                 if sweep_number > 1:
@@ -3909,13 +3917,13 @@ class MagneticComponent:
                 # Case litz: Load homogenized results
                 if self.windings[winding].conductor_type == ConductorType.Litz:
                     winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
-                    for turn in range(0, self.windings[winding].turns[0]):
+                    for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
                 # Case litz: Load homogenized results
                 else:
                     winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
-                    for turn in range(0, self.windings[winding].turns[0]):
+                    for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
                 # Flux
@@ -3959,11 +3967,17 @@ class MagneticComponent:
 
         # Single Windings
         for winding in range(0, self.n_windings):
-            log_dict["total_losses"][f"winding{winding + 1}"] = {}
-            log_dict["total_losses"][f"winding{winding + 1}"]["total"] = sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"])))
-            # Single Turns
-            log_dict["total_losses"][f"winding{winding + 1}"]["turns"] = []
-            for turn in range(0, self.windings[winding].turns[0]):
+            # Same as above
+            turns = 0
+            if self.windings[winding].winding_type == WindingType.Interleaved:
+                turns = self.windings[winding].turns[0]
+            else:
+                turns = self.windings[winding].turns[winding]
+            log_dict["total_losses"][f"winding{winding + 1}"] = {
+                "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
+                "turns": []
+            }
+            for turn in range(0, turns):
                 log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
 
         # Winding (all windings)
