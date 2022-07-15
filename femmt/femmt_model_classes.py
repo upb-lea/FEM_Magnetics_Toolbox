@@ -166,7 +166,7 @@ class Core:
     sigma: float            # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
     # Dimensions
-    core_w: float           # Axi symmetric case | core_w := core radius
+    core_w: float           # Axi symmetric case | core_w := 2x core radius
     core_h: float
     window_w: float         # Winding window width
     window_h: float         # Winding window height
@@ -180,7 +180,7 @@ class Core:
                    phi_mu_deg: float = None, sigma: float = None, non_linear: bool = False, **kwargs):
         # Set parameters
         self.core_w = core_w
-        self.core_h = None # TODO Set core_h to not none
+        self.core_h = None  # TODO Set core_h to not none
         self.window_w = window_w
         self.window_h = window_h
         self.type = "axi_symmetric"

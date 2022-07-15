@@ -256,7 +256,7 @@ Function {
     prox_nui_1[]  = InterpolationLinear[$1]{ prox_nui_list_1() } ;
     nu[#{StrandedWinding1}] = nu0*Complex[prox_nur_1[Rr1], prox_nui_1[Rr1]*Fill1*Rr1^2/2];
     nuOm[#{StrandedWinding1}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
-    kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;
+    kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;  // TODO: Add qI (skin_rhoi_1[]); effects the reactive power (usually has minor effect)
     sigma[#{StrandedWinding1}] = SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;
   EndIf
 
@@ -489,10 +489,10 @@ PostProcessing {
       //{ Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
       { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name mur_re ; Value { Term { [ Re[ mu[{d a}, Freq] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name mur_im ; Value { Term { [ Im[ mu[{d a}, Freq] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name mur_im ; Value { Term { [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
+      { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_im / (mur_re^2 + mur_im^2)
 
 
       // ------------------------------------------------------------------------------------------------
@@ -565,7 +565,7 @@ PostProcessing {
              In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2Hprox ; Value { Integral {
-            [ 0.5*CoefGeo*(-1)*Re[{d a}*Conj[nuOm[]*{d a}]] ] ;// 0.5 added by Till
+            [ 0.5*CoefGeo*Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] ] ;// 0.5 added by Till
             In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2Hskin ; Value { Integral {
