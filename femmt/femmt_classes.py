@@ -80,6 +80,14 @@ class MagneticComponent:
         self.symmetry = "radial"  # "radial", "linear", None # TODO As Enum? Is this even needed?
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Components
+        self.core = None
+        self.air_gaps = None
+        self.windings = None
+        self.isolation = None
+        self.virtual_winding_windows = None
+
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
         self.region = None  # Apply an outer Region or directly apply a constraint on the Core Boundary
         self.plot_fields = "standard"  # can be "standard" or False
@@ -1717,7 +1725,7 @@ class MagneticComponent:
             self.p_outer = np.zeros((4, 4))
             self.p_region_bound = np.zeros((4, 4))
             self.p_window = np.zeros((4 * self.component.n_windows, 4))
-            self.p_air_gaps = np.zeros((4 * self.component.air_gaps.number, 4))
+            self.p_air_gaps = np.zeros((4 * self.component.air_gaps.number, 4)) 
 
             # Fitting the outer radius to ensure surface area
             self.r_inner = self.component.core.window_w + self.component.core.core_w / 2
@@ -4865,8 +4873,8 @@ class MagneticComponent:
         if self.core is None:
             raise Exception("A core class needs to be added to the magnetic component")
         if self.air_gaps is None:
-            # TODO Make air gaps optional
-            raise Exception("An air gaps class needs to be added to the magnetic component")
+            self.air_gaps = AirGaps(None, None)
+            print("No air gaps are added")
         if self.windings is None or not self.windings:
             raise Exception("Winding classes need to be added to the magnetic component")
         if self.isolation is None:
