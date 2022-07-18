@@ -5269,6 +5269,9 @@ class MagneticComponent:
         self.excitation(frequency=f_switch, amplitude_list=Ipeak, phase_deg_list=[0, 180])  # frequency and current
         self.file_com
 
+
+#  ===== Additional functions =====
+
 def encode_settings(o: MagneticComponent):
     content = {
         "date": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
@@ -5286,19 +5289,20 @@ def encode_settings(o: MagneticComponent):
 
     return content
 
-def decode_settings_from_log(log_file_path: str):
+def decode_settings_from_log(log_file_path: str, working_directory: str = None):
     if not os.path.isfile(log_file_path):
         raise Exception(f"File {log_file_path} does not exists or is not a file!")
 
     settings = None
     with open(log_file_path, "r") as fd:
         content = json.load(fd)
-        settings = content["settings"]
+        settings = content["simulation_settings"]
 
     if settings is not None:
-        # TODO Create MagneticComponent out of the settings dict
-        geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=settings["working_directory"])
+        cwd = working_directory if working_directory is not None else settings["working_directory"]
+        geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
 
+        settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
         core = Core(**settings["core"])
         geo.set_core(core)
 
@@ -5328,11 +5332,15 @@ def decode_settings_from_log(log_file_path: str):
             else:
                 raise Exception(f"Unknown conductor type {conductor_type}")
 
+            windings.append(winding)
+
         geo.set_windings(windings)
 
         isolation = Isolation()
-        isolation.add_core_isolations(settings["isolation"]["core_isolations"])
-        isolation.add_winding_isolations(settings["isolation"]["winding_isolations"])
+        isolation.add_core_isolations(*settings["isolation"]["core_isolations"])
+        isolation.add_winding_isolations(*settings["isolation"]["winding_isolations"])
         geo.set_isolation(isolation)
 
         return geo
+
+    raise Exception(f"Couldn't extract settings from file {log_file_path}")

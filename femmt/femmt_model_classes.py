@@ -305,7 +305,7 @@ class AirGaps:
         :type height: float
         """
         self.air_gap_settings.append({
-            "leg_position": leg_position.value, 
+            "leg_position": leg_position.name, 
             "position_value": position_value,
             "height": height})
 
