@@ -1837,7 +1837,7 @@ class MagneticComponent:
             self.p_hyst_nom_1st = None
             self.p_hyst_nom = None
 
-            self.component.create_folders([self.component.reluctance_model_folder_path])
+            self.component.create_folders(self.component.reluctance_model_folder_path)
 
         def calculate_air_gap_lengths_idealized(self, reluctances: List, types: str) -> List:
             """
@@ -4197,7 +4197,7 @@ class MagneticComponent:
                             'This command is only executable on Windows computers.')
 
 
-        self.create_folders([self.femm_folder_path])
+        self.create_folders(self.femm_folder_path)
 
         sign = sign or [1]
 
@@ -4512,7 +4512,7 @@ class MagneticComponent:
         # Get paths
         femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")
 
-        self.create_folders([self.femm_folder_path])
+        self.create_folders(self.femm_folder_path)
 
         # Extract losses
         losses = read_results_log(self.e_m_results_log_path)
