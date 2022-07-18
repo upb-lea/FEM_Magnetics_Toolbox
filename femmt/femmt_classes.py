@@ -4665,8 +4665,8 @@ class MagneticComponent:
         # == Labels/Designations ==
         # Label for air and air gap
         if self.air_gaps.number == 0:
-            femm.hi_addblocklabel(0.001, 0)
-            femm.hi_selectlabel(0.001, 0)
+            femm.hi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
+            femm.hi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
             femm.hi_setblockprop('Air', 1, 0, 0)
             femm.hi_clearselected()
         else:

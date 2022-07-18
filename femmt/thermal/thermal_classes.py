@@ -39,7 +39,7 @@ class GroupPro:
             if air_gaps_enabled:
                 fd.write("\tCold = Region[{air, air_gaps, isolation, case_top, case_top_right, case_right, case_bot_right, case_bot}];\n")
             else:
-                fd.write("\tCold = Region[{air, case}];\n")
+                fd.write("\tCold = Region[{air, case_top, case_top_right, case_right, case_bot_right, case_bot}];\n")
             fd.write("\tWarm = Region[{core, windings_total}];\n")
             fd.write("\tTotal = Region[{Warm, Cold}];\n")
             fd.write("}")
