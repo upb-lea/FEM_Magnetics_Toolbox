@@ -164,13 +164,10 @@ class MagneticComponent:
         self.onelab_setup()
         self.onelab_client = onelab.client(__file__)
 
-    def create_folders(self, folders):
-        if type(folders) is list:
-            for folder in folders:
-                if not os.path.exists(folder):
-                    os.mkdir(folder)
-        else:
-            raise Exception(f"{folders} needs to be a list of strings")
+    def create_folders(self, *args):
+        for folder in list(args):
+            if not os.path.exists(folder):
+                os.mkdir(folder)
 
     def update_paths(self, working_directory):
         # Setup folder paths 
@@ -199,9 +196,9 @@ class MagneticComponent:
         self.thermal_mesh_file = os.path.join(self.mesh_folder_path, "thermal.msh")
 
         # Create necessary folders
-        self.create_folders([self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
+        self.create_folders(self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
             self.results_folder_path, self.e_m_values_folder_path, self.e_m_fields_folder_path, 
-            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path])
+            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
@@ -258,7 +255,7 @@ class MagneticComponent:
                            colors_geometry: Dict = colors_geometry_femmt_default) -> None:
         """
         
-        Starts the thermal simulation using thermal.py
+        Starts the thermal simulation using thermal_simulation.py
 
         :param color_scheme: colorfile (definition for red, green, blue, ...)
         :type color_scheme: Dict
@@ -268,13 +265,29 @@ class MagneticComponent:
         :return: -
         """
         # Create necessary folders
-        self.create_folders([self.thermal_results_folder_path])
+        self.create_folders(self.thermal_results_folder_path)
 
         self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before)
 
         if not os.path.exists(self.e_m_results_log_path):
             # Simulation results file not created
             raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
+
+        # Check if the results log path simulation settings fit the current simulation settings
+        current_settings = encode_settings(self)
+        del current_settings["working_directory"]
+        del current_settings["date"]
+
+        log_settings = None
+        with open(self.e_m_results_log_path, "r") as fd:
+            content = json.load(fd)
+            log_settings = content["simulation_settings"]
+        del log_settings["working_directory"]
+        del log_settings["date"]
+        
+        if current_settings != log_settings:
+            raise Exception(f"The settings from the log file {self.e_m_results_log_path} do not match the current simulation settings. \
+                                Please re-run the magnetic simulation.")
 
         tags = {
             "core_tag": self.mesh.ps_core,
