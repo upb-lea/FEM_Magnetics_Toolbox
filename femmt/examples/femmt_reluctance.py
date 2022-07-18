@@ -1,10 +1,11 @@
 # 2D-axis symmetric core reluctance calculations
-import numpy as np
+
 
 import femmt as fmt
+from femmt.femmt_functions import *
+import numpy as np
 import schemdraw
 import schemdraw.elements as elm
-from femmt.femmt_functions import *
 
 
 # def set_orientation(section: list, n: int) -> tuple:    # Function to dynamically define circuit component orientation: 'up', 'right', 'down', 'left'
@@ -69,13 +70,10 @@ from femmt.femmt_functions import *
 def basic_example_func(f_method, f_n, f_h, f_pos, f_n_turns, f_core_cond_iso, f_current):
     # 2. set core parameters
     core = fmt.core_database()["PQ 40/40"]
-    # geo.core.update(window_h=0.04, window_w=0.00745,
-    #                mu_rel=3100, phi_mu_deg=12,
-    #                sigma=0.6)
+
     geo.core.update(core_w=core["core_w"], window_w=core["window_w"], window_h=core["window_h"],
-                    # geo.core.update(core_w=0.020, window_w=0.013, window_h=0.030,
                     mu_rel=3100, phi_mu_deg=12,
-                    sigma=0.6)  # core["core_w"]
+                    sigma=0.6)
 
     # 3. set air gap parameters
     geo.air_gaps.update(method=f_method, n_air_gaps=f_n, air_gap_h=f_h, air_gap_position=f_pos,
@@ -252,7 +250,7 @@ class MagneticCircuit:
                     temp3 = fmt.femmt_functions.r_round_round(self.air_gap_h[0], temp2, self.core_w / 2)
                     self.reluctance = np.append(self.reluctance, temp3)
 
-        self.section, self.orientation = set_orientation(self.section, len(self.section))
+        # self.section, self.orientation = set_orientation(self.section, len(self.section))
         self.L = (self.no_of_turns * self.no_of_turns) / sum(self.reluctance)
 
     # def draw_schematic(self):
@@ -280,43 +278,45 @@ class MagneticCircuit:
         # d.save('my_circuit.svg')
 
 
-air_gap_h = np.linspace(0.0000001, 0.001, 1)
-wndg_pos = np.linspace(0.001, 0.007, 7)
-fem_ind = np.zeros((len(air_gap_h), len(wndg_pos)))
-cal_ind = np.zeros((len(air_gap_h), len(wndg_pos)))
+# Sweep of air-gap and winding position and compare it with FEM simulation
+sweep_air_gap_h = np.linspace(20, 80, 4)
+sweep_wndg_pos = np.linspace(0.001, 0.007, 7)
+# sweep_current = np.linspace(0.1, 10, 5)
+fem_ind = np.zeros((len(sweep_air_gap_h), len(sweep_wndg_pos)))
+cal_ind = np.zeros((len(sweep_air_gap_h), len(sweep_wndg_pos)))
 
 # 1. chose simulation type
 geo = fmt.MagneticComponent(component_type="inductor")
-for j in range(len(air_gap_h)):
-    for i in range(len(wndg_pos)):
-        mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 1, 10, 'percent', 1, [air_gap_h[j]], [50])  # 0.0149
+
+for j in range(len(sweep_air_gap_h)):
+    for i in range(len(sweep_wndg_pos)):
+        mc1 = MagneticCircuit(0.0149, 0.0295, 0.01105, 8, 10, 'percent', 1, [0.001], [sweep_air_gap_h[j]])  # 0.0149
         mc1.core_reluctance()
         mc1.air_gap_reluctance()
-        # mc1.draw_schematic()
         cal_ind[j, i] = mc1.L
-        mc1.max_percent = ((mc1.window_h - (air_gap_h[j] / 2)) / mc1.window_h) * 100
-        mc1.min_percent = ((air_gap_h[j] / 2) / mc1.window_h) * 100
-        basic_example_func("percent", 1, [air_gap_h[j]], [50], [1], wndg_pos[i], [10])
+        # mc1.max_percent = ((mc1.window_h - (sweep_air_gap_h[j] / 2)) / mc1.window_h) * 100
+        # mc1.min_percent = ((sweep_air_gap_h[j] / 2) / mc1.window_h) * 100
+
+        basic_example_func("percent", 1, [0.001], [sweep_air_gap_h[j]], [8], sweep_wndg_pos[i], [10])
         fem_ind[j, i] = geo.read_log()["single_sweeps"][0]["winding1"]["self_inductivity"][0]
         # fem_ind[j, i] = geo.read_log()["single_sweeps"][0]["winding1"]["Q"]
 
-print(air_gap_h)
-print(wndg_pos)
-print(fem_ind)
-print(cal_ind)
-h_by_l = ((0.0295 - air_gap_h) / 2) / air_gap_h
+print(f"Air-gap length: {sweep_air_gap_h}")
+print(f"Winding position: {sweep_wndg_pos}")
+print(f"FEM inductance: {fem_ind}")
+print(f"Calculated inductance: {cal_ind}")
+
+h_by_l = ((0.0295 - sweep_air_gap_h) / 2) / sweep_air_gap_h
 error = ((fem_ind - cal_ind) / fem_ind) * 100
+
+# Plotting tools
 fig, ax = plt.subplots()  # Create a figure containing a single axes.
-plt.title("inductance vs Winding position (1 conductor only) (without airgap)")
+plt.title("inductance vs winding pos (8 conductor only) (variable airgap pos) (1mm)")
 plt.xlabel("Winding position (in m)")
 plt.ylabel("error (in %)")
-
-# plt.ylim(-5, 5)
-# ax.plot(h_by_l, fem_ind, h_by_l, cal_ind)
-for j in range(len(air_gap_h)):
-    ax.plot(wndg_pos, error[j, :], label=str(air_gap_h[j]))
+for j in range(len(sweep_air_gap_h)):
+    ax.plot(sweep_wndg_pos, error[j, :], label=str(sweep_air_gap_h[j]))
 ax.legend(loc='best')
-# ax.invert_xaxis()
 ax.grid()
 plt.show()
 
