@@ -388,7 +388,7 @@ class MainWindow(QMainWindow):
     def md_gmsh_pre_visualisation(self):
         geo = self.md_setup_geometry()
         #geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
-        geo.create_model(freq=100000, visualize_before=False, save_png=True)
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, save_png=True)
         image_pre_visualisation = PIL.Image.open(geo.hybrid_color_visualize_file)
 
         px = image_pre_visualisation.load()
@@ -1718,8 +1718,11 @@ class MainWindow(QMainWindow):
                                       current=[winding1_amplitude_list[0]],
                                       show_results=True)
             elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                geo.single_simulation(freq=winding1_frequency_list[0], current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
-                                      phi_deg=[- 1.66257715 / np.pi * 180, 170])
+                geo.single_simulation(freq=winding1_frequency_list[0],
+                                      current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
+                                      phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+
+                                      #phi_deg=[- 1.66257715 / np.pi * 180, 170])
 
 
             #geo.single_simulation(freq=winding1_frequency_list[0], current=winding1_amplitude_list)
@@ -1727,18 +1730,33 @@ class MainWindow(QMainWindow):
                                  # phi_deg=[- 1.66257715 / np.pi * 180, 170])
 
         else:
-            amplitude_list = []
 
-            print(f"{winding1_amplitude_list = }")
-            for amplitude_value in winding1_amplitude_list:
-                amplitude_list.append([amplitude_value])
-            phase_rad_list = []
-            for phase_value in winding1_phi_rad_list:
-                phase_rad_list.append([phase_value])
+            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                amplitude_list = []
+                print(f"{winding1_amplitude_list = }")
+                for amplitude_value in winding1_amplitude_list:
+                    amplitude_list.append([amplitude_value])
+
+                phase_rad_list = []
+                for phase_value in winding1_phi_rad_list:
+                    phase_rad_list.append([phase_value])
+                geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list, phi_deg_list_list=phase_rad_list)
+
+            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                amplitude1_list = []
+                for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
+                    amplitude1_list.append([amplitude1_value, amplitude2_value])
+
+                phase1_rad_list = []
+                for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
+                    phase1_rad_list.append([phase1_value, phase2_value])
+
+                geo.excitation_sweep(frequency_list= winding1_frequency_list,
+                                     current_list_list=amplitude1_list,
+                                     phi_deg_list_list=phase1_rad_list)
 
 
-
-            geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
+            #geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
 
         # -----------------------------------------------
         # Read back results
@@ -1846,13 +1864,15 @@ class MainWindow(QMainWindow):
         # order for the thermal simulation to work (geo.single_simulation is not needed).
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo = self.md_setup_geometry()
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False,
+                         save_png=False)
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas,
                                colors_geometry=fmt.colors_geometry_ba_jonas)
 
         # Because the isolations inside of the winding window are not implemented in femm simulation.
-        # The validation on5ly works when the isolations for the FEMMT thermal simulation are turned off.
-        geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right,case_gap_bot)
+        # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
+        #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 def clear_layout(layout):
     while layout.count():

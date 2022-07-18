@@ -5107,6 +5107,7 @@ class MagneticComponent:
         :rtype: Dict
 
         """
+
         # frequencies = frequencies or []
         # currents = currents or []
         # phi = phi or []

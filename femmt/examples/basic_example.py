@@ -99,7 +99,8 @@ if component == "inductor":
 
     # 4. set conductor parameters: use solid wires
     winding = fmt.Winding(8, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
-    winding.set_solid_conductor(0.0015)
+    winding.set_litz_conductor(None, 600, 35.5e-6, 0.6)
+    #winding.set_solid_conductor(0.0015)
     geo.set_windings([winding])
 
     # 5. set isolations
@@ -111,18 +112,18 @@ if component == "inductor":
     # 5. create the model
     geo.create_model(freq=100000, visualize_before=True, save_png=False)
 
-    # 6. start simulation
+    # 6.a. start simulation
     #geo.single_simulation(freq=100000, current=[3], show_results=True)
+
+    # 6.b. Excitation Sweep Example
+    # Perform a sweep using more than one frequency
+    fs = [0, 10000, 30000, 60000, 100000, 150000]
+    amplitude_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+    phase_list = [[0], [10], [20], [30], [40], [50]]
+    geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
 
     # 7. prepare and start thermal simulation
     example_thermal_simulation()
-
-    # Excitation Sweep Example
-    # Perform a sweep using more than one frequency
-    # fs = [0, 10000, 30000, 60000, 100000, 150000]
-    # amplitude_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
-    # phase_list = [[0], [10], [20], [30], [40], [50]]
-    # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
 
     # Reference simulation using FEMM
     # geo.femm_reference(freq=100000, current=[1], sigma_cu=58, sign=[1], non_visualize=0)

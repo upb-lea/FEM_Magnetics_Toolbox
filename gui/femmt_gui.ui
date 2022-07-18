@@ -70,16 +70,6 @@
                    <string>Core Definition</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_2">
-                   <item row="3" column="0">
-                    <widget class="QComboBox" name="md_core_geometry_comboBox"/>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_74">
-                     <property name="text">
-                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Core from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="7" column="4">
                     <widget class="QLineEdit" name="md_window_width_lineEdit">
                      <property name="text">
@@ -94,17 +84,10 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="5" column="4">
-                    <widget class="QLineEdit" name="md_window_height_lineEdit">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_2">
                      <property name="text">
-                      <string>0.0295</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="7" column="3">
-                    <widget class="QLabel" name="label_7">
-                     <property name="text">
-                      <string>Window Width [m]</string>
+                      <string>Material</string>
                      </property>
                     </widget>
                    </item>
@@ -115,27 +98,17 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="7" column="0">
-                    <widget class="QLabel" name="label_4">
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_74">
                      <property name="text">
-                      <string>Core inner diameter [m]</string>
+                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Core from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="1">
-                    <widget class="QComboBox" name="md_core_material_comboBox"/>
-                   </item>
-                   <item row="5" column="3">
-                    <widget class="QLabel" name="label_6">
+                   <item row="5" column="4">
+                    <widget class="QLineEdit" name="md_window_height_lineEdit">
                      <property name="text">
-                      <string>Window Height [m]</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_2">
-                     <property name="text">
-                      <string>Material</string>
+                      <string>0.0295</string>
                      </property>
                     </widget>
                    </item>
@@ -152,8 +125,32 @@
                      </property>
                     </spacer>
                    </item>
-                   <item row="5" column="2">
-                    <spacer name="horizontalSpacer_12">
+                   <item row="3" column="0">
+                    <widget class="QComboBox" name="md_core_geometry_comboBox"/>
+                   </item>
+                   <item row="7" column="3">
+                    <widget class="QLabel" name="label_7">
+                     <property name="text">
+                      <string>Window Width [m]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="3">
+                    <widget class="QLabel" name="label_6">
+                     <property name="text">
+                      <string>Window Height [m]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="7" column="0">
+                    <widget class="QLabel" name="label_4">
+                     <property name="text">
+                      <string>Core inner diameter [m]</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="3">
+                    <spacer name="horizontalSpacer_13">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
                      </property>
@@ -165,8 +162,11 @@
                      </property>
                     </spacer>
                    </item>
-                   <item row="3" column="3">
-                    <spacer name="horizontalSpacer_13">
+                   <item row="0" column="1">
+                    <widget class="QComboBox" name="md_core_material_comboBox"/>
+                   </item>
+                   <item row="5" column="2">
+                    <spacer name="horizontalSpacer_12">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
                      </property>
@@ -970,13 +970,21 @@
                     </widget>
                    </item>
                    <item row="1" column="11">
-                    <widget class="QLineEdit" name="md_winding1_pk5_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_pk5_lineEdit">
+                     <property name="text">
+                      <string>40</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="15">
                     <widget class="QLineEdit" name="md_winding1_ik7_lineEdit"/>
                    </item>
                    <item row="0" column="5">
-                    <widget class="QLineEdit" name="md_winding1_ik2_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_ik2_lineEdit">
+                     <property name="text">
+                      <string>2</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="8">
                     <widget class="QLabel" name="label_28">
@@ -1024,10 +1032,18 @@
                     <widget class="QLineEdit" name="md_winding1_idc_lineEdit"/>
                    </item>
                    <item row="1" column="13">
-                    <widget class="QLineEdit" name="md_winding1_pk6_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_pk6_lineEdit">
+                     <property name="text">
+                      <string>50</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="9">
-                    <widget class="QLineEdit" name="md_winding1_pk4_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_pk4_lineEdit">
+                     <property name="text">
+                      <string>30</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="3">
                     <widget class="QLineEdit" name="md_winding1_pk1_lineEdit">
@@ -1037,7 +1053,11 @@
                     </widget>
                    </item>
                    <item row="0" column="7">
-                    <widget class="QLineEdit" name="md_winding1_ik3_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_ik3_lineEdit">
+                     <property name="text">
+                      <string>1</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="14">
                     <widget class="QLabel" name="label_31">
@@ -1064,7 +1084,11 @@
                     <widget class="QLineEdit" name="md_winding1_pk7_lineEdit"/>
                    </item>
                    <item row="0" column="11">
-                    <widget class="QLineEdit" name="md_winding1_ik5_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_ik5_lineEdit">
+                     <property name="text">
+                      <string>0.2</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="2">
                     <widget class="QLabel" name="label_20">
@@ -1112,13 +1136,21 @@
                     </widget>
                    </item>
                    <item row="0" column="9">
-                    <widget class="QLineEdit" name="md_winding1_ik4_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_ik4_lineEdit">
+                     <property name="text">
+                      <string>0.5</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="17">
                     <widget class="QLineEdit" name="md_winding1_ik8_lineEdit"/>
                    </item>
                    <item row="1" column="7">
-                    <widget class="QLineEdit" name="md_winding1_pk3_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_pk3_lineEdit">
+                     <property name="text">
+                      <string>20</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="8">
                     <widget class="QLabel" name="label_24">
@@ -1128,10 +1160,18 @@
                     </widget>
                    </item>
                    <item row="0" column="13">
-                    <widget class="QLineEdit" name="md_winding1_ik6_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_ik6_lineEdit">
+                     <property name="text">
+                      <string>0.1</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="5">
-                    <widget class="QLineEdit" name="md_winding1_pk2_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding1_pk2_lineEdit">
+                     <property name="text">
+                      <string>10</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_64">
@@ -1167,7 +1207,11 @@
                     <widget class="QLineEdit" name="md_winding2_pk7_lineEdit"/>
                    </item>
                    <item row="0" column="5">
-                    <widget class="QLineEdit" name="md_winding2_ik2_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_ik2_lineEdit">
+                     <property name="text">
+                      <string>2</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="3">
                     <widget class="QLineEdit" name="md_winding2_pk1_lineEdit">
@@ -1187,7 +1231,11 @@
                     <widget class="QLineEdit" name="md_winding2_ik7_lineEdit"/>
                    </item>
                    <item row="0" column="13">
-                    <widget class="QLineEdit" name="md_winding2_ik6_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_ik6_lineEdit">
+                     <property name="text">
+                      <string>0.1</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="17">
                     <widget class="QLineEdit" name="md_winding2_ik8_lineEdit"/>
@@ -1245,7 +1293,11 @@
                     </widget>
                    </item>
                    <item row="1" column="11">
-                    <widget class="QLineEdit" name="md_winding2_pk5_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_pk5_lineEdit">
+                     <property name="text">
+                      <string>40</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_66">
@@ -1255,7 +1307,11 @@
                     </widget>
                    </item>
                    <item row="1" column="5">
-                    <widget class="QLineEdit" name="md_winding2_pk2_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_pk2_lineEdit">
+                     <property name="text">
+                      <string>10</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="10">
                     <widget class="QLabel" name="label_45">
@@ -1272,7 +1328,11 @@
                     </widget>
                    </item>
                    <item row="1" column="13">
-                    <widget class="QLineEdit" name="md_winding2_pk6_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_pk6_lineEdit">
+                     <property name="text">
+                      <string>50</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="16">
                     <widget class="QLabel" name="label_48">
@@ -1282,13 +1342,25 @@
                     </widget>
                    </item>
                    <item row="1" column="9">
-                    <widget class="QLineEdit" name="md_winding2_pk4_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_pk4_lineEdit">
+                     <property name="text">
+                      <string>30</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="7">
-                    <widget class="QLineEdit" name="md_winding2_pk3_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_pk3_lineEdit">
+                     <property name="text">
+                      <string>20</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="7">
-                    <widget class="QLineEdit" name="md_winding2_ik3_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_ik3_lineEdit">
+                     <property name="text">
+                      <string>1</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="10">
                     <widget class="QLabel" name="label_37">
@@ -1312,7 +1384,11 @@
                     </widget>
                    </item>
                    <item row="0" column="11">
-                    <widget class="QLineEdit" name="md_winding2_ik5_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_ik5_lineEdit">
+                     <property name="text">
+                      <string>0.2</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="1" column="14">
                     <widget class="QLabel" name="label_47">
@@ -1322,7 +1398,11 @@
                     </widget>
                    </item>
                    <item row="0" column="9">
-                    <widget class="QLineEdit" name="md_winding2_ik4_lineEdit"/>
+                    <widget class="QLineEdit" name="md_winding2_ik4_lineEdit">
+                     <property name="text">
+                      <string>0.5</string>
+                     </property>
+                    </widget>
                    </item>
                    <item row="0" column="1">
                     <widget class="QLineEdit" name="md_winding2_idc_lineEdit"/>
@@ -1763,6 +1843,1143 @@
        <attribute name="title">
         <string>Automated Design</string>
        </attribute>
+       <widget class="QTabWidget" name="md_QTabWidget_2">
+        <property name="geometry">
+         <rect>
+          <x>11</x>
+          <y>11</y>
+          <width>1290</width>
+          <height>1096</height>
+         </rect>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>1677720</height>
+         </size>
+        </property>
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="md_QWidget_3">
+         <attribute name="title">
+          <string>Definition</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_25">
+          <item row="0" column="0">
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_7">
+              <item>
+               <widget class="QGroupBox" name="groupBox_10">
+                <property name="title">
+                 <string>Simulation Definition</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_26">
+                 <item row="0" column="1">
+                  <widget class="QComboBox" name="aut_simulation_type_comboBox"/>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="aut_simulation_type_label">
+                   <property name="text">
+                    <string>Simulation Type</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_20">
+                <property name="title">
+                 <string>Core Definition</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_27">
+                 <item row="9" column="3">
+                  <spacer name="horizontalSpacer_74">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="aut_core_material_label">
+                   <property name="text">
+                    <string>Material</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="0" colspan="3">
+                  <widget class="QLabel" name="label_78">
+                   <property name="text">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;2D axisymmetric core parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="8" column="1">
+                  <spacer name="horizontalSpacer_71">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="7" column="4">
+                  <widget class="QLineEdit" name="aut_min_window_width_lineEdit">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="9" column="1">
+                  <spacer name="horizontalSpacer_72">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="5" column="4">
+                  <widget class="QLabel" name="label_14">
+                   <property name="text">
+                    <string>Window Width [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="2">
+                  <widget class="QLabel" name="label_55">
+                   <property name="text">
+                    <string>Window Height [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="8" column="4">
+                  <widget class="QLineEdit" name="aut_max_window_width_lineEdit"/>
+                 </item>
+                 <item row="8" column="2">
+                  <widget class="QLineEdit" name="aut_max_window_height_lineEdit"/>
+                 </item>
+                 <item row="7" column="3">
+                  <spacer name="horizontalSpacer_23">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="label_53">
+                   <property name="text">
+                    <string>Core inner diameter [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="8" column="0">
+                  <widget class="QLineEdit" name="aut_max_core_width_lineEdit"/>
+                 </item>
+                 <item row="8" column="3">
+                  <spacer name="horizontalSpacer_73">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="7" column="1">
+                  <spacer name="horizontalSpacer_24">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="9" column="4">
+                  <widget class="QLineEdit" name="aut_step_window_width_lineEdit"/>
+                 </item>
+                 <item row="7" column="0">
+                  <widget class="QLineEdit" name="aut_min_core_width_lineEdit">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="7" column="2">
+                  <widget class="QLineEdit" name="aut_min_window_height_lineEdit">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="9" column="0">
+                  <widget class="QLineEdit" name="aut_step_core_width_lineEdit"/>
+                 </item>
+                 <item row="9" column="2">
+                  <widget class="QLineEdit" name="aut_step_window_height_lineEdit"/>
+                 </item>
+                 <item row="0" column="3" colspan="2">
+                  <spacer name="horizontalSpacer_26">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="1" colspan="2">
+                  <widget class="QComboBox" name="aut_core_material_comboBox"/>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_21">
+                <property name="title">
+                 <string>Winding 1: Conductor Definition</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_28">
+                 <item row="6" column="3">
+                  <widget class="QLabel" name="label_81">
+                   <property name="text">
+                    <string>Strand Radius [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="2">
+                  <spacer name="horizontalSpacer_27">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="6" column="2">
+                  <spacer name="horizontalSpacer_29">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QComboBox" name="aut_winding1_material_comboBox"/>
+                 </item>
+                 <item row="6" column="1">
+                  <widget class="QLineEdit" name="aut_winding1_strands_lineEdit">
+                   <property name="text">
+                    <string>600</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="4">
+                  <widget class="QLineEdit" name="aut_winding1_fill_factor_lineEdit">
+                   <property name="text">
+                    <string>0.6</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="4">
+                  <widget class="QComboBox" name="aut_winding1_type_comboBox"/>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="label_67">
+                   <property name="text">
+                    <string>Implicit</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="label_65">
+                   <property name="text">
+                    <string>Wire Radius [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QLineEdit" name="aut_winding1_radius_lineEdit">
+                   <property name="text">
+                    <string>0.0015</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="1">
+                  <widget class="QComboBox" name="aut_winding1_implicit_litz_comboBox"/>
+                 </item>
+                 <item row="3" column="0" colspan="2">
+                  <widget class="QLabel" name="label_72">
+                   <property name="text">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Manual wire parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QLabel" name="label_69">
+                   <property name="text">
+                    <string>Wire Type</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_68">
+                   <property name="text">
+                    <string>Winding Material</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="0">
+                  <widget class="QLabel" name="label_82">
+                   <property name="text">
+                    <string>Number Strands</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QComboBox" name="aut_winding1_litz_material_comboBox"/>
+                 </item>
+                 <item row="5" column="3">
+                  <widget class="QLabel" name="label_80">
+                   <property name="text">
+                    <string>Fill Factor</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_79">
+                   <property name="text">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Litz from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="4">
+                  <widget class="QLineEdit" name="aut_winding1_strand_radius_lineEdit">
+                   <property name="text">
+                    <string>35.5e-6</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="2">
+                  <spacer name="horizontalSpacer_28">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="md_winding2_groupBox_2">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="title">
+                 <string>Winding 2: Conductor Definition</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_29">
+                 <item row="6" column="3">
+                  <widget class="QLineEdit" name="aut_winding2_strand_radius_lineEdit">
+                   <property name="text">
+                    <string>35.5e-6</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QLineEdit" name="aut_winding2_radius_lineEdit">
+                   <property name="text">
+                    <string>0.0015</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="3">
+                  <widget class="QLineEdit" name="aut_winding2_fill_factor_lineEdit">
+                   <property name="text">
+                    <string>0.6</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QComboBox" name="aut_winding2_material_comboBox"/>
+                 </item>
+                 <item row="6" column="0">
+                  <widget class="QLabel" name="label_83">
+                   <property name="text">
+                    <string>Number Strands</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_84">
+                   <property name="text">
+                    <string>Winding Material</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="label_85">
+                   <property name="text">
+                    <string>Implicit</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0" colspan="2">
+                  <widget class="QLabel" name="label_86">
+                   <property name="text">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Manual wire parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="label_87">
+                   <property name="text">
+                    <string>Wire Radius [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="2">
+                  <widget class="QLabel" name="label_88">
+                   <property name="text">
+                    <string>Strand Radius [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QComboBox" name="aut_winding2_litz_material_comboBox"/>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QLabel" name="label_89">
+                   <property name="text">
+                    <string>Wire Type</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_90">
+                   <property name="text">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Litz from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="1">
+                  <widget class="QLineEdit" name="aut_winding2_strands_lineEdit">
+                   <property name="text">
+                    <string>600</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="1">
+                  <widget class="QComboBox" name="aut_winding2_implicit_litz_comboBox"/>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QComboBox" name="aut_winding2_type_comboBox"/>
+                 </item>
+                 <item row="5" column="2">
+                  <widget class="QLabel" name="label_91">
+                   <property name="text">
+                    <string>Fill Factor</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <spacer name="verticalSpacer_5">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_35">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_8">
+              <item>
+               <widget class="QGroupBox" name="groupBox_22">
+                <property name="title">
+                 <string>Winding Scheme</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_30">
+                 <item row="0" column="4">
+                  <spacer name="horizontalSpacer_75">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="3" column="3">
+                  <widget class="QLineEdit" name="aut_max_winding2_turns_lineEdit"/>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QLineEdit" name="aut_min_winding2_turns_lineEdit">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="aut_winding2_scheme_label">
+                   <property name="text">
+                    <string>Winding Scheme Winding 2</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLineEdit" name="aut_min_winding1_turns_lineEdit"/>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QLineEdit" name="aut_max_winding1_turns_lineEdit"/>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="aut_winding1_scheme_label">
+                   <property name="text">
+                    <string>Winding Scheme Winding 1</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1" colspan="3">
+                  <widget class="QComboBox" name="aut_winding2_scheme_comboBox"/>
+                 </item>
+                 <item row="0" column="5">
+                  <widget class="QLineEdit" name="aut_step_winding1_turns_lineEdit"/>
+                 </item>
+                 <item row="0" column="2">
+                  <spacer name="horizontalSpacer_25">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="3" column="2">
+                  <spacer name="horizontalSpacer_76">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="aut_winding2_turns_label">
+                   <property name="text">
+                    <string>Number Turns Winding 2</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="4">
+                  <spacer name="horizontalSpacer_77">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="1" column="1" colspan="3">
+                  <widget class="QComboBox" name="aut_winding1_scheme_comboBox"/>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="aut_winding1_turns_label">
+                   <property name="text">
+                    <string>Number Turns Winding 1</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="5">
+                  <widget class="QLineEdit" name="aut_step_winding2_turns_lineEdit">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_23">
+                <property name="title">
+                 <string>Air Gap Definition</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_31">
+                 <item row="3" column="4">
+                  <widget class="QLineEdit" name="aut_air_gap_2_position_lineEdit"/>
+                 </item>
+                 <item row="5" column="3">
+                  <widget class="QLabel" name="aut_air_gap_4_position_label">
+                   <property name="text">
+                    <string>Position</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="3">
+                  <widget class="QLabel" name="aut_air_gap_3_position_label">
+                   <property name="text">
+                    <string>Position</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="0">
+                  <widget class="QLabel" name="aut_air_gap_5_length_label">
+                   <property name="text">
+                    <string>5. Length [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="1">
+                  <widget class="QLineEdit" name="aut_air_gap_5_length_lineEdit"/>
+                 </item>
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="aut_air_gap_3_length_label">
+                   <property name="text">
+                    <string>3. Length [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QLineEdit" name="aut_air_gap_2_length_lineEdit"/>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="QLabel" name="aut_air_gap_4_length_label">
+                   <property name="text">
+                    <string>4. Length [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="3">
+                  <widget class="QLabel" name="aut_air_gap_5_position_label">
+                   <property name="text">
+                    <string>Position</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QComboBox" name="aut_air_gap_placement_method_comboBox"/>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="aut_air_gap_1_length_label">
+                   <property name="text">
+                    <string>1. Length [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="aut_air_gap_2_length_label">
+                   <property name="text">
+                    <string>2. Lenght [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="4">
+                  <widget class="QLineEdit" name="aut_air_gap_4_position_lineEdit"/>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLineEdit" name="aut_max_air_gap_count_lineEdit"/>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLineEdit" name="aut_air_gap_1_length_lineEdit">
+                   <property name="text">
+                    <string>0.001</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="6" column="4">
+                  <widget class="QLineEdit" name="aut_air_gap_5_position_lineEdit"/>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_93">
+                   <property name="text">
+                    <string>Method</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="1">
+                  <widget class="QLineEdit" name="aut_air_gap_4_length_lineEdit"/>
+                 </item>
+                 <item row="2" column="2">
+                  <spacer name="horizontalSpacer_30">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QLabel" name="aut_air_gap_1_position_label">
+                   <property name="text">
+                    <string>Position</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_92">
+                   <property name="text">
+                    <string>No. of Air Gaps</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="4">
+                  <widget class="QLineEdit" name="aut_air_gap_3_position_lineEdit"/>
+                 </item>
+                 <item row="2" column="4">
+                  <widget class="QLineEdit" name="aut_air_gap_1_position_lineEdit">
+                   <property name="text">
+                    <string>10</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="3">
+                  <widget class="QLabel" name="aut_air_gap_2_position_label">
+                   <property name="text">
+                    <string>Position</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QLineEdit" name="aut_min_air_gap_count_lineEdit"/>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QLineEdit" name="aut_air_gap_3_length_lineEdit"/>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_24">
+                <property name="title">
+                 <string>Winding Isolation</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_32">
+                 <item row="0" column="1">
+                  <widget class="QLineEdit" name="aut_isolation_p2p_lineEdit">
+                   <property name="text">
+                    <string>0.0005</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <spacer name="horizontalSpacer_32">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QLabel" name="aut_isolation_s2s_label">
+                   <property name="text">
+                    <string>S2S [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="aut_isolation_p2s_label">
+                   <property name="text">
+                    <string>P2S [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="aut_isolation_p2p_label">
+                   <property name="text">
+                    <string>P2P [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <spacer name="horizontalSpacer_31">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QLineEdit" name="aut_isolation_p2s_lineEdit">
+                   <property name="text">
+                    <string>0.0005</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="4">
+                  <widget class="QLineEdit" name="aut_isolation_s2s_lineEdit">
+                   <property name="text">
+                    <string>0.0005</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_25">
+                <property name="title">
+                 <string>Core Isolation (Bobbin)</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_33">
+                 <item row="1" column="1">
+                  <widget class="QLineEdit" name="aut_isolation_core2cond_bot_lineEdit">
+                   <property name="text">
+                    <string>0.001</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLineEdit" name="aut_isolation_core2cond_top_lineEdit">
+                   <property name="text">
+                    <string>0.001</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_94">
+                   <property name="text">
+                    <string>Core2Cond top [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <spacer name="horizontalSpacer_33">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QLabel" name="label_95">
+                   <property name="text">
+                    <string>Core2Cond outer [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_96">
+                   <property name="text">
+                    <string>Core2Cond bottom [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <spacer name="horizontalSpacer_34">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="1" column="4">
+                  <widget class="QLineEdit" name="aut_isolation_core2cond_outer_lineEdit">
+                   <property name="text">
+                    <string>0.001</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QLabel" name="label_97">
+                   <property name="text">
+                    <string>Core2Cond inner [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="4">
+                  <widget class="QLineEdit" name="aut_isolation_core2cond_inner_lineEdit">
+                   <property name="text">
+                    <string>0.001</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_26">
+                <property name="title">
+                 <string>Goal</string>
+                </property>
+                <widget class="QLabel" name="Inductanceval_label_2">
+                 <property name="geometry">
+                  <rect>
+                   <x>210</x>
+                   <y>40</y>
+                   <width>131</width>
+                   <height>28</height>
+                  </rect>
+                 </property>
+                 <property name="text">
+                  <string>Value in Henry(H)</string>
+                 </property>
+                </widget>
+                <widget class="QLineEdit" name="aut_goal_inductance_val_lineEdit">
+                 <property name="geometry">
+                  <rect>
+                   <x>32</x>
+                   <y>40</y>
+                   <width>141</width>
+                   <height>28</height>
+                  </rect>
+                 </property>
+                </widget>
+                <widget class="QLabel" name="Toleranceval_label">
+                 <property name="geometry">
+                  <rect>
+                   <x>210</x>
+                   <y>80</y>
+                   <width>131</width>
+                   <height>28</height>
+                  </rect>
+                 </property>
+                 <property name="text">
+                  <string>Tolerance (%)</string>
+                 </property>
+                </widget>
+                <widget class="QComboBox" name="aut_tolerance_val_comboBox">
+                 <property name="geometry">
+                  <rect>
+                   <x>32</x>
+                   <y>80</y>
+                   <width>141</width>
+                   <height>28</height>
+                  </rect>
+                 </property>
+                </widget>
+               </widget>
+              </item>
+              <item>
+               <spacer name="verticalSpacer_6">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>170</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item row="0" column="1">
+           <spacer name="horizontalSpacer_36">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="excitation_QWidget_2">
+         <attribute name="title">
+          <string>Reluctance Model</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_35">
+          <item row="0" column="1">
+           <widget class="QGroupBox" name="groupBox_27">
+            <property name="title">
+             <string>Possible models</string>
+            </property>
+            <widget class="QPushButton" name="aut_rel_mod_calc_pushButton">
+             <property name="geometry">
+              <rect>
+               <x>220</x>
+               <y>50</y>
+               <width>201</width>
+               <height>29</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Calculate</string>
+             </property>
+            </widget>
+            <widget class="QPushButton" name="aut_rel_mod_download_pushButton">
+             <property name="geometry">
+              <rect>
+               <x>220</x>
+               <y>90</y>
+               <width>201</width>
+               <height>29</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Download</string>
+             </property>
+            </widget>
+            <widget class="QLabel" name="label_8">
+             <property name="geometry">
+              <rect>
+               <x>20</x>
+               <y>50</y>
+               <width>191</width>
+               <height>20</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Possible reluctance models</string>
+             </property>
+            </widget>
+            <widget class="QLabel" name="label_57">
+             <property name="geometry">
+              <rect>
+               <x>20</x>
+               <y>90</y>
+               <width>101</width>
+               <height>20</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>Downlaod as</string>
+             </property>
+            </widget>
+            <widget class="QComboBox" name="comboBox">
+             <property name="geometry">
+              <rect>
+               <x>120</x>
+               <y>90</y>
+               <width>82</width>
+               <height>28</height>
+              </rect>
+             </property>
+            </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_3">
+         <attribute name="title">
+          <string>FEM Simulations</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_43"/>
+        </widget>
+        <widget class="QWidget" name="tab_4">
+         <attribute name="title">
+          <string>Results</string>
+         </attribute>
+        </widget>
+       </widget>
       </widget>
      </widget>
     </item>
