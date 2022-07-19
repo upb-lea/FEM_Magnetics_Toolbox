@@ -3550,13 +3550,12 @@ class MagneticComponent:
             :return:
             """
 
-            """ Currently not working
-            # First all new points are collected:
-            p_inter = []
+            p_inter = None
             # Inter Conductors
             for n_win in range(0, len(self.component.virtual_winding_windows)):
                 if self.component.virtual_winding_windows[n_win].winding != WindingType.Interleaved:
                     for num in range(0, self.component.n_windings):
+                        p_inter = []
                         x_inter = []
                         y_inter = []
                         j = 0
@@ -3585,7 +3584,6 @@ class MagneticComponent:
                                                                                0,
                                                                                self.c_center_conductor[num]))
 
-            # Embed all points
             # TODO: Inter conductor meshing!
             if all(winding.conductor_type == ConductorType.Solid for winding in self.component.windings):
                 print(f"Making use of skin based meshing\n")
@@ -3593,7 +3591,6 @@ class MagneticComponent:
                     for i in range(0, int(len(self.p_cond[num]) / 5)):
                         gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
 
-            
                 # Embed points for mesh refinement
                 # Inter Conductors
                 for n_win in range(0, len(self.component.virtual_winding_windows)):
@@ -3601,9 +3598,6 @@ class MagneticComponent:
                         gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
                 # Stray path
                 # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
-            
-            gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
-            """
 
             # Winding window rasterization:
             # In order adjust the mesh density in empty parts of the winding window a grid of possible points
@@ -3613,7 +3607,7 @@ class MagneticComponent:
 
             for index, vww in enumerate(self.component.virtual_winding_windows):
 
-                min_distance = 2 * self.component.windings[index].conductor_radius # The factor is arbitrary and can be changed
+                min_distance = self.component.windings[index].conductor_radius + self.component.isolation.cond_cond[0]
                 left_bound = vww.left_bound
                 right_bound = vww.right_bound
                 top_bound = vww.top_bound
