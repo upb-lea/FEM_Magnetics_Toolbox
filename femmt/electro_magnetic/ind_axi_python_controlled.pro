@@ -18,7 +18,7 @@ stop_criterion          = 1e-8;
 Flag_Circuit            = Flag_ImposedVoltage;
 // ----------------------
 // half inductor with axisymmetry
-// 1 means full zylinder
+// 1 means full cylinder
 SymFactor               = 1. ;
 CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
 
@@ -456,7 +456,7 @@ PostProcessing {
       // Electrical Field
 
       { Name e ; Value { Term { [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ; In Domain ; Jacobian Vol ; } } }
-      { Name MagEz ; Value { Term { [ Norm [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name MagEz ; Value { Term { [  -1*(Dt[{a}]+{ur}/CoefGeo)  ] ; In Domain ; Jacobian Vol ; } } }
 
 
 
