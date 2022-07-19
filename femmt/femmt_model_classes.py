@@ -198,7 +198,7 @@ class Core:
     # re_mu_rel: float      # Real part of relative Core Permeability  [B-Field and frequency-dependent]
     # im_mu_rel: float      # Imaginary part of relative Core Permeability
 
-    # Permitivity - [Conductivity in a magneto-quasistatic sense]
+    # Permitivity - [Effective conductivity in a magneto-quasistatic sense: sigma_eff := sigma + omega*Im{epsilon}, see Skutt 1996]
     sigma: float            # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
     # Dimensions
@@ -239,20 +239,21 @@ class Core:
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
         elif loss_approach == LossApproach.LossAngle:
+            print(f"{self.material=}")
             if self.material == "custom":
                 self.sigma = sigma
+                if phi_mu_deg is not None and phi_mu_deg != 0:
+                    self.permeability_type = PermeabilityType.FixedLossAngle
+                else:
+                    self.permeability_type = PermeabilityType.RealValue
             else:
                 self.sigma = f"sigma_from_{self.material}"
-
-            if phi_mu_deg is not None and phi_mu_deg != 0:
-                self.permeability_type = PermeabilityType.FixedLossAngle
-            else:
-                self.permeability_type = PermeabilityType.RealValue
+                self.permeability_type = PermeabilityType.FromData  # TODO: which material -> connection to material database
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
 
         # Set attributes of core with given keywords
-        # TODO Should we allow this? Technically this is not how an user interface should be designed
+        # TODO Should we allow this? Technically this is not how a user interface should be designed
         for key, value in kwargs.items():
             setattr(self, key, value)
 

@@ -1511,6 +1511,13 @@ class MagneticComponent:
             iso = self.component.isolation
             mesh = self.component.mesh
 
+            # Since there are many cases in which alternating conductors would lead to slightly different
+            # mesh densities a simplification is made: Just use the lowest mesh density to be safe all the time.
+            mesh_density_to_winding = min(mesh.c_conductor)
+
+            mesh_density_to_core = mesh.c_window
+             
+
             # Using the delta the lines and points from the isolation and the core/windings are not overlapping
             # which makes creating the mesh more simpler
             # Isolation between winding and core
@@ -1549,25 +1556,25 @@ class MagneticComponent:
                         left_x,
                         top_y - top_iso_height - iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         left_x + left_iso_width,
                         top_y - top_iso_height - iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         left_x + left_iso_width,
                         bot_y + bot_iso_height + iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         left_x,
                         bot_y + bot_iso_height + iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ]
                 ]
                 iso_core_top = [
@@ -1575,25 +1582,25 @@ class MagneticComponent:
                         left_x,
                         top_y,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         right_x,
                         top_y,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         right_x,
                         top_y - top_iso_height,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         left_x,
                         top_y - top_iso_height,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ]
                 ]
                 iso_core_right = [
@@ -1601,25 +1608,25 @@ class MagneticComponent:
                         right_x - right_iso_width,
                         top_y - top_iso_height - iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         right_x,
                         top_y - top_iso_height - iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         right_x,
                         bot_y + bot_iso_height + iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         right_x - right_iso_width,
                         bot_y + bot_iso_height + iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ]
                 ]
                 iso_core_bot = [
@@ -1627,25 +1634,25 @@ class MagneticComponent:
                         left_x,
                         bot_y + bot_iso_height,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         right_x,
                         bot_y + bot_iso_height,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         right_x,
                         bot_y,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         left_x,
                         bot_y,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ]
                 ]
 
@@ -1662,6 +1669,16 @@ class MagneticComponent:
                         winding_0 = self.component.windings[0]
                         winding_1 = self.component.windings[1]
                         current_x = vww.left_bound + 2 * winding_0.conductor_radius
+
+                        mesh_density_left_side = 0
+                        mesh_density_right_side = 0
+                        if winding_0.turns[0] > winding_1.turns[0]:
+                            mesh_density_left_side = mesh.c_conductor[0]
+                            mesh_density_right_side = mesh.c_conductor[1]
+                        else:
+                            mesh_density_left_side = mesh.c_conductor[1]
+                            mesh_density_right_side = mesh.c_conductor[0]
+
                         if vww.scheme == WindingScheme.Horizontal:
                             self.p_iso_pri_sec = []
                             for index in range(self.top_window_iso_counter-1):
@@ -1670,25 +1687,25 @@ class MagneticComponent:
                                         current_x + iso_winding_delta_left,
                                         top_y - top_iso_height - iso_iso_delta,
                                         0,
-                                        mesh.c_window
+                                        mesh_density_left_side
                                     ],
                                     [
                                         current_x + iso.cond_cond[2] - iso_winding_delta_right,
                                         top_y - top_iso_height - iso_iso_delta,
                                         0,
-                                        mesh.c_window
+                                        mesh_density_right_side
                                     ],
                                     [
                                         current_x + iso.cond_cond[2] - iso_winding_delta_right,
                                         bot_y + bot_iso_height + iso_iso_delta,
                                         0,
-                                        mesh.c_window
+                                        mesh_density_right_side
                                     ],
                                     [
                                         current_x + iso_winding_delta_left,
                                         bot_y + bot_iso_height + iso_iso_delta,
                                         0,
-                                        mesh.c_window
+                                        mesh_density_left_side
                                     ]
                                 ])
                                 # The sec winding can start first when it has a higher number of turns
@@ -1712,25 +1729,25 @@ class MagneticComponent:
                             vww_top.left_bound,
                             vww_top.bot_bound - iso_winding_delta_top,
                             0,
-                            mesh.c_window
+                            mesh_density_to_winding
                         ],
                         [
                             vww_top.right_bound,
                             vww_top.bot_bound - iso_winding_delta_top,
                             0,
-                            mesh.c_window
+                            mesh_density_to_winding
                         ],
                         [
                             vww_top.right_bound,
                             vww_bot.top_bound + iso_winding_delta_bot,
                             0,
-                            mesh.c_window
+                            mesh_density_to_winding
                         ],
                         [
                             vww_top.left_bound,
                             vww_bot.top_bound + iso_winding_delta_bot,
                             0,
-                            mesh.c_window
+                            mesh_density_to_winding
                         ]
                     ])
                 else:
