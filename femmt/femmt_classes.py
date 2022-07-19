@@ -3149,10 +3149,6 @@ class MagneticComponent:
             gmsh.model.geo.synchronize()
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # - Forward Meshing -
-            self.forward_meshing()
-
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if visualize_before or save_png:
                 color_scheme = colors_femmt_default
                 colors_geometry = colors_geometry_femmt_default
@@ -3193,6 +3189,12 @@ class MagneticComponent:
                         gmsh.fltk.initialize()
 
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # - Forward Meshing -
+            # This is added here therefore the additional points are not seen in the pictures and views
+            self.forward_meshing()
+
             # No mesh is generated here because generating a mesh, saving it as *.msh loading it and appending more geometry data
             # and the meshing again can cause bugs in the mesh
             # Therefore only the model geometry is saved and the mesh will be generated later
@@ -3543,15 +3545,18 @@ class MagneticComponent:
 
         def forward_meshing(self):
             """
+            In this function multiple techniques in order to raise the mesh density at certain points are applied.
 
             :return:
             """
-            p_inter = None
+
+            """ Currently not working
+            # First all new points are collected:
+            p_inter = []
             # Inter Conductors
             for n_win in range(0, len(self.component.virtual_winding_windows)):
                 if self.component.virtual_winding_windows[n_win].winding != WindingType.Interleaved:
                     for num in range(0, self.component.n_windings):
-                        p_inter = []
                         x_inter = []
                         y_inter = []
                         j = 0
@@ -3580,8 +3585,7 @@ class MagneticComponent:
                                                                                0,
                                                                                self.c_center_conductor[num]))
 
-
-
+            # Embed all points
             # TODO: Inter conductor meshing!
             if all(winding.conductor_type == ConductorType.Solid for winding in self.component.windings):
                 print(f"Making use of skin based meshing\n")
@@ -3589,7 +3593,7 @@ class MagneticComponent:
                     for i in range(0, int(len(self.p_cond[num]) / 5)):
                         gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
 
-
+            
                 # Embed points for mesh refinement
                 # Inter Conductors
                 for n_win in range(0, len(self.component.virtual_winding_windows)):
@@ -3597,6 +3601,71 @@ class MagneticComponent:
                         gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
                 # Stray path
                 # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
+            
+            gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
+            """
+
+            # Winding window rasterization:
+            # In order adjust the mesh density in empty parts of the winding window a grid of possible points
+            # is put on the winding window. Every point that is too close to the conductors is removed.
+            # Every remaining point is added to the mesh with a higher mesh density
+            tags_raster = []
+
+            for index, vww in enumerate(self.component.virtual_winding_windows):
+
+                min_distance = 2 * self.component.windings[index].conductor_radius # The factor is arbitrary and can be changed
+                left_bound = vww.left_bound
+                right_bound = vww.right_bound
+                top_bound = vww.top_bound
+                bot_bound = vww.bot_bound
+
+                width = right_bound - left_bound
+                height = top_bound - bot_bound
+
+                number_cols = 15 # Can be changed. More points equal higher raster density 
+                number_rows = int(number_cols*height/width) # Assumption: number_cols/number_rows = width/height
+
+                cell_width = width/(number_cols+1)
+                cell_height =  height/(number_rows+1)
+
+                # Get all possible points
+                possible_points = []
+                x = left_bound + cell_width/2
+                y = bot_bound + cell_height/2
+                for i in range(number_cols+1):
+                    for j in range(number_rows+1):
+                        possible_points.append([x + i * cell_width, y + j * cell_height])
+
+                fixed_points = []
+                conductors = self.component.two_d_axi.p_conductor
+                for winding in range(self.component.n_windings):
+                    for i in range(len(conductors[winding])//5):
+                        point = conductors[winding][i*5]
+                        fixed_points.append([point[0], point[1]])
+
+                # Extract all free_points
+                for fixed_point in fixed_points:
+                    left = fixed_point[0] - min_distance
+                    right = fixed_point[0] + min_distance
+                    top = fixed_point[1] + min_distance
+                    bot = fixed_point[1] - min_distance
+
+                    for i in range(len(possible_points)):
+                        if possible_points[i] is not None:
+                            x = possible_points[i][0]
+                            y = possible_points[i][1]
+                            if x > left and x < right and y > bot and y < top:
+                                possible_points[i] = None
+                
+                for p in possible_points:
+                    if p is not None:
+                        tags_raster.append(gmsh.model.geo.addPoint(p[0], p[1], 0, self.c_window))
+
+            # Call synchronize so the points will be added to the model            
+            gmsh.model.geo.synchronize()
+
+            # Embed rasterization points
+            gmsh.model.mesh.embed(0, tags_raster, 2, self.plane_surface_air[0])
 
             # Synchronize again
             gmsh.model.geo.synchronize()
