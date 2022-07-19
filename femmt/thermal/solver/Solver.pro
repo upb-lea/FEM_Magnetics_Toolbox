@@ -52,14 +52,6 @@ FunctionSpace {
 
 }
 
-Function{
-  DefineFunction[Flux,qVol,h,hr,TConv];
-}
-
-Group{
-  DefineGroup[SurConv_The,SurRad_The];
-}
-
 Formulation {
 
   { Name The_T ; Type FemEquation;
@@ -74,12 +66,11 @@ Formulation {
       Galerkin { [ -qVol[] , {T} ];
                  In Warm; Integration I1; Jacobian JVol;  }
 
-      Integral { [ -qVol[] , {influx} ];
+      Galerkin { [ -qVol[] , {influx} ];
                  In Warm; Integration I1; Jacobian JVol;  }
 				 
-      Integral { [ Dof{influx} , {influx} ];
+      Galerkin { [ Dof{influx} , {influx} ];
                  In Warm; Integration I1; Jacobian JVol;  }
     }
   }
-
 }

@@ -15,6 +15,60 @@ import gmsh
 import warnings
 from typing import Union, List, Tuple, Dict
 
+colors_femmt_default = {"blue": (28, 113, 216),
+                        'red': (192, 28, 40),
+                        "green": (46, 194, 126),
+                        "orange": (230, 97, 0),
+                        "purple": (129, 61, 156),
+                        "brown": (134, 94, 60),
+                        "grey": (119, 118, 123),
+                        "yellow": (245, 194, 17),
+                        "black": (0, 0, 0),
+                        "white": (255, 255, 255)
+                        }
+
+colors_geometry_femmt_default = {
+                    "core": "grey",
+                    "air_gap": "yellow",
+                    "winding": ["orange", "brown", "yellow"],
+                    "isolation": "blue",
+                    "potting_inner": "yellow",
+                    "potting_outer": "yellow",
+                }
+
+
+
+colors_ba_jonas = {"blue": (28, 113, 216),
+                        'red': (213, 6, 6),
+                        "green":  (6, 213, 6),
+                        "orange": (230, 97, 0),
+                        "purple": (129, 61, 156),
+                        "brown": (134, 94, 60),
+                        "grey": (193, 193, 193),
+                        "yellow": (255, 171, 6),
+                        "black": (58, 58, 58),
+                        "white": (255, 255, 255),
+                        "grey_dark": (109, 109, 109),
+                        "grey_dark_dark": (50, 50, 50)
+                        }
+
+colors_geometry_ba_jonas = {
+                    "core": "black",
+                    "air_gap": "yellow",
+                    "winding": ["green", "red", "yellow"],
+                    "isolation": "grey_dark",
+                    "potting_inner": "grey",
+                    "potting_outer": "grey_dark_dark",
+                }
+
+colors_geometry_draw_only_lines = {
+                    "core": "grey_dark",
+                    "air_gap": "grey_dark",
+                    "winding": ["green", "green", "green"],
+                    "isolation": "grey_dark",
+                    "potting_inner": "grey_dark",
+                    "potting_outer": "grey_dark",
+                }
 
 def core_database() -> Dict:
     """
@@ -143,8 +197,6 @@ def core_database() -> Dict:
         "window_w": (67.1-31.7)/2 * 1e-3,
     }
     return core_dict
-
-
 
 
 def litz_database() -> Dict:
@@ -551,7 +603,6 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
     #plt.show()
 
 
-
 def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: str = 'rad', f0: Union[float,None] = None) -> None:
     """
     generate fft curves from input curves and compare them to each other
@@ -774,7 +825,6 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
     return [frequency_list, amplitude_pair_list, phase_pair_list_rad_or_deg]
 
 
-
 # Reluctance Model [with calculation]
 mu0 = 4e-7*np.pi
 
@@ -933,11 +983,13 @@ def calculate_reluctances(N, L):
 
     return np.matmul(np.matmul(N, L_invert), np.transpose(N))
 
+
 def create_physical_group(dim, entities, name):
     tag = gmsh.model.addPhysicalGroup(dim, entities)
     gmsh.model.setPhysicalName(dim, tag, name)
 
     return tag
+
 
 def visualize_simulation_results(simulation_result_file_path: str, store_figure_file_path: str, show_plot = True) -> None:
     with open(simulation_result_file_path, "r") as fd:

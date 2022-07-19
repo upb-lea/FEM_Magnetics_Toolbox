@@ -143,18 +143,18 @@ Formulation {
 
       // sigma d/dt A
       // technical current direction can be applied with neg. sigma (right hand rule)
-      Galerkin { DtDof [ -sigma[] * Dof{a} , {a} ] ;
+      Galerkin { DtDof [ sigma[] * Dof{a} , {a} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
-      Galerkin { DtDof [ -sigma[] * Dof{a} , {ur} ] ;
+      Galerkin { DtDof [ sigma[] * Dof{a} , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
 
       // sigma Nabla PHI
-      Galerkin { [ -sigma[] * Dof{ur}/CoefGeo , {a} ] ;
+      Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {a} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
-      Galerkin { [ -sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
+      Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
 
-      // Je (imprinted current density)
+      // -Je (imprinted current density)
       Galerkin { [ -1/AreaCell[] *  Dof{ir}, {a} ] ;
         In DomainS ; Jacobian Vol ; Integration II ; }
       Galerkin { DtDof [ -1/AreaCell[] * Dof{a}, {ir} ] ;
