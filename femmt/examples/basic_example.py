@@ -74,11 +74,12 @@ component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
 # component = "integrated_transformer"
+# component = "load_from_file"
 
 # Create Object
 if component == "inductor":
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(os.path.dirname(__file__),'..')
+    working_directory = os.path.join(os.path.dirname(__file__), '..')
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory)
@@ -129,7 +130,7 @@ if component == "inductor":
     geo.femm_reference(freq=100000, current=[1], sign=[1], non_visualize=0)
 
 if component == "transformer-interleaved":
-    working_directory = os.path.join(os.path.dirname(__file__),'..')
+    working_directory = os.path.join(os.path.dirname(__file__), '..')
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
@@ -177,7 +178,7 @@ if component == "transformer-interleaved":
     
 if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(os.path.dirname(__file__),'..')
+    working_directory = os.path.join(os.path.dirname(__file__), '..')
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
@@ -217,7 +218,7 @@ if component == "transformer":
     geo.femm_reference(freq=250000, current=[4, 4], sign=[-1, 1], non_visualize=0)
 
 if component == "integrated_transformer":
-    working_directory = os.path.join(os.path.dirname(__file__),'..')
+    working_directory = os.path.join(os.path.dirname(__file__), '..')
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
@@ -260,3 +261,12 @@ if component == "integrated_transformer":
     # other simulation options:
     # -------------------------
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+
+if component == "load_from_file":
+    file = os.path.join(os.path.dirname(__file__), "example_log.json")
+
+    geo = fmt.decode_settings_from_log(file, os.path.dirname(__file__))
+
+    geo.create_model(freq=100000, visualize_before=False, save_png=False)
+
+    geo.single_simulation(freq=100000, current=[1], show_results=True)
