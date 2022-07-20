@@ -469,6 +469,10 @@ class MagneticComponent:
             if len(self.windings) != 2:
                 raise Exception("Only integrated transformers with 2 windings are allowed")
 
+            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
+                self.windings[0].turns = [self.windings[0].turns_primary, self.windings[0].turns_secondary]
+                self.windings[1].turns = [self.windings[1].turns_primary, self.windings[1].turns_secondary]
+
             self.vw_type = VirtualWindingType.Split2
 
         if self.vw_type == VirtualWindingType.FullWindow:
