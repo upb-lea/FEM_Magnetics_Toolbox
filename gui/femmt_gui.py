@@ -1,5 +1,5 @@
 import sys
-
+import pandas as pd
 import gmsh
 import matplotlib.pyplot as plt
 import numpy as np
@@ -73,8 +73,12 @@ class MainWindow(QMainWindow):
             "percent": "Percent",
             "manually": "Manual Placement",
             "hexa": "Hexadimensional",
-            "square": "Square"
+            "square": "Square",
+            "+-5": "+/- 5%",
+            "excel": "MS Excel"
         }
+
+        "******* Manual Design *********"
 
         "Signals in Definition Tab"
         # simulation
@@ -273,6 +277,211 @@ class MainWindow(QMainWindow):
         "Signals in Thermal simulation Tab"
         self.md_therm_simulation_QPushButton.clicked.connect(self.therm_simulation)
 
+        "******* Automated Design *********"
+
+        "Adding options"
+        self.aut_initialize_controls()
+
+        "Signals in Definition Tab"
+        self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
+
+    def aut_initialize_controls(self) -> None:
+        """
+        Initialize the comboboxes with pre-defined values.
+
+        :return: None
+        :rtype: None
+        """
+        aut_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
+        aut_core_material_options = ['N95']
+        aut_winding_material_options = [key for key in fmt.wire_material_database()]
+        aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
+        aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
+                                    self.translation_dict['implicit_strands_number']]
+        aut_air_gap_method_options = [self.translation_dict["percent"]]
+        aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
+        aut_winding_litz_material_options = [key for key in fmt.litz_database()]
+        aut_winding_litz_material_options.insert(0, 'Manual')
+        aut_tolerance_val_options = [self.translation_dict['+-5']]
+
+        for option in aut_simulation_type_options:
+            self.aut_simulation_type_comboBox.addItem(option)
+        for option in aut_core_material_options:
+            self.aut_core_material_comboBox.addItem(option)
+        for option in aut_winding_material_options:
+            self.aut_winding1_material_comboBox.addItem(option)
+            self.aut_winding2_material_comboBox.addItem(option)
+        for option in aut_winding_type_options:
+            self.aut_winding1_type_comboBox.addItem(option)
+            self.aut_winding2_type_comboBox.addItem(option)
+        for option in aut_implicit_litz_options:
+            self.aut_winding1_implicit_litz_comboBox.addItem(option)
+            self.aut_winding2_implicit_litz_comboBox.addItem(option)
+        for option in aut_air_gap_method_options:
+            self.aut_air_gap_placement_method_comboBox.addItem(option)
+        for option in aut_winding_scheme_options:
+            self.aut_winding1_scheme_comboBox.addItem(option)
+            self.aut_winding2_scheme_comboBox.addItem(option)
+        for option in aut_winding_litz_material_options:
+            self.aut_winding1_litz_material_comboBox.addItem(option)
+            self.aut_winding2_litz_material_comboBox.addItem(option)
+        for option in aut_tolerance_val_options:
+            self.aut_tolerance_val_comboBox.addItem(option)
+
+        self.aut_min_core_width_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_core_width_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_core_width_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_window_height_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_window_height_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_window_height_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_window_width_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_window_width_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_window_width_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_winding1_turns_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_winding1_turns_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_winding1_turns_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_winding2_turns_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_winding2_turns_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_winding2_turns_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_air_gap_count_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_air_gap_count_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_goal_inductance_val_lineEdit.setPlaceholderText("Goal inductance")
+
+        "Signals in FEM Simulations Tab"
+
+        aut_download_options = [self.translation_dict['excel']]
+
+        for option in aut_download_options:
+            self.aut_download_comboBox.addItem(option)
+
+        self.aut_pos_mod_sim_pushButton.clicked.connect(self.aut_reluctance_model_matrix)
+
+        self.aut_pos_mod_download_pushButton.clicked.connect(self.aut_download_pos_model_data)
+
+    def aut_reluctance_model_matrix(self):
+        self.aut_rel_model_calc_timeline.setText("Simulating possible models..")
+        matrix = [[0.0149, 0.0295, 0.01105, 0.0001],
+                  [0.0149, 0.0295, 0.01105, 0.0002],
+                  [0.0149, 0.0295, 0.01105, 0.0003],
+                  [0.0149, 0.0295, 0.01105, 0.0004]]
+        num_r = 4
+        flag = 0
+        m = []
+        for i in range(num_r):
+            m.append([float(x) for x in matrix[i]])
+        for i in m:
+            self.aut_action_run_simulation(i)
+            flag += 1
+        if flag == 4:
+            self.aut_rel_model_calc_timeline.setText("Simulation ended.Ready to download!")
+
+
+    def aut_action_run_simulation(self, sim_value):
+
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
+        core = fmt.Core(core_w=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
+                        mu_rel=3100, phi_mu_deg=12,
+                        sigma=0.6)
+        geo.set_core(core)
+
+        # 3. set air gap parameters
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, sim_value[3])
+        geo.set_air_gaps(air_gaps)
+
+        # 4. set conductor parameters: use solid wires
+        winding = fmt.Winding(8, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+        winding.set_litz_conductor(None, 600, 35.5e-6, 0.6)
+        # winding.set_solid_conductor(0.0015)
+        geo.set_windings([winding])
+
+        # 5. set isolations
+        isolation = fmt.Isolation()
+        isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
+        isolation.add_winding_isolations(0.0001)
+        geo.set_isolation(isolation)
+
+        # 5. create the model
+        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+
+        # 6.a. start simulation
+        geo.single_simulation(freq=100000, current=[3], show_results=True)
+
+    def aut_download_pos_model_data(self):
+
+        list1 = [0.0149, 0.0149, 0.0149]
+        list2 = [0.0295, 0.0295, 0.0295]
+        list3 = [0.01105, 0.01105, 0.01105]
+        list4 = [0.0001, 0.0002, 0.0003]
+        col1 = "core_w"
+        col2 = "window_w"
+        col3 = "window_h"
+        col4 = "core_h"
+        data = pd.DataFrame({col1: list1, col2: list2, col3: list3, col4: list4})
+        data.to_excel('sample_data.xlsx', sheet_name='sheet1', index=False)
+        self.aut_pos_model_download_status.setText("Downloaded!")
+
+
+
+    def aut_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
+        """
+        Action performed when signal of aut_simulation_type_comboBox text has changed.
+        Action will be enabling / disabling user inputs for not-used windings.
+
+        :param simulation_type_from_combo_box:
+        :type simulation_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if simulation_type_from_combo_box == self.translation_dict['inductor']:
+            self.aut_winding2_enable(False)
+
+        elif simulation_type_from_combo_box == self.translation_dict['transformer']:
+            # set winding definitions of winding 2 to editable
+            self.aut_winding2_enable(True)
+
+        elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
+            # set winding definitions of winding 2 to editable
+            self.aut_winding2_enable(True)
+
+    def aut_winding2_enable(self, status: bool) -> None:
+        """
+        Enable/disable all fields being in contact with winding 2.
+
+        :param status: True / False
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        # set winding definitions of winding 2 (enable and visible)
+        self.aut_winding2_material_comboBox.setEnabled(status)
+        self.aut_winding2_type_comboBox.setEnabled(status)
+        self.aut_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_min_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_max_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_step_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_winding2_strands_lineEdit.setEnabled(status)
+        self.aut_winding2_radius_lineEdit.setEnabled(False)
+        self.aut_winding2_fill_factor_lineEdit.setEnabled(status)
+        self.aut_winding2_strand_radius_lineEdit.setEnabled(status)
+        self.aut_winding2_litz_material_comboBox.setEnabled(status)
+        self.aut_winding2_groupBox.setVisible(status)
+
+        # Set turns of winding 2 (enable and visible)
+        self.aut_winding2_turns_lineEdit.setVisible(status)
+        self.aut_winding2_scheme_comboBox.setVisible(status)
+        self.aut_winding2_turns_label.setVisible(status)
+        self.aut_winding2_scheme_label.setVisible(status)
+
+        # set isolation of winding 2 (enable and visible)
+        self.aut_isolation_s2s_lineEdit.setEnabled(status)
+        self.aut_isolation_p2s_lineEdit.setEnabled(status)
+        self.aut_isolation_s2s_lineEdit.setVisible(status)
+        self.aut_isolation_p2s_lineEdit.setVisible(status)
+        self.aut_isolation_s2s_label.setVisible(status)
+        self.aut_isolation_p2s_label.setVisible(status)
+
+
 
     def md_initialize_controls(self) -> None:
         """
@@ -346,6 +555,8 @@ class MainWindow(QMainWindow):
         elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
             # set winding definitions of winding 2 to editable
             self.md_winding2_enable(True)
+
+
 
     def md_winding2_enable(self, status: bool) -> None:
         """
