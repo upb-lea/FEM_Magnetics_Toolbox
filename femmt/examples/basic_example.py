@@ -101,9 +101,9 @@ if component == "inductor":
 
     # 4. set conductor parameters: use solid wires
     winding = fmt.Winding(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
-    winding.set_solid_conductor(0.0013)
-    # winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
-    geo.set_windadings([winding])
+    #winding.set_solid_conductor(0.0013)
+    winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
+    geo.set_windings([winding])
 
     # 5. set isolations
     isolation = fmt.Isolation()
