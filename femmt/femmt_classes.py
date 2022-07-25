@@ -3608,57 +3608,55 @@ class MagneticComponent:
             # In order adjust the mesh density in empty parts of the winding window a grid of possible points
             # is put on the winding window. Every point that is too close to the conductors is removed.
             # Every remaining point is added to the mesh with a higher mesh density
+
             tags_raster = []
+            min_distance = max([winding.conductor_radius for winding in self.component.windings]) + self.component.isolation.cond_cond[0]
+            left_bound = self.component.core.core_w / 2
+            right_bound = self.component.two_d_axi.r_inner
+            top_bound = self.component.core.window_h / 2
+            bot_bound = -self.component.core.window_h / 2
 
-            for index, vww in enumerate(self.component.virtual_winding_windows):
+            width = right_bound - left_bound
+            height = top_bound - bot_bound
 
-                min_distance = self.component.windings[index].conductor_radius + self.component.isolation.cond_cond[0]
-                left_bound = vww.left_bound
-                right_bound = vww.right_bound
-                top_bound = vww.top_bound
-                bot_bound = vww.bot_bound
+            number_cols = 15 # Can be changed. More points equal higher raster density 
+            number_rows = int(number_cols*height/width) # Assumption: number_cols/number_rows = width/height
 
-                width = right_bound - left_bound
-                height = top_bound - bot_bound
+            cell_width = width/(number_cols+1)
+            cell_height =  height/(number_rows+1)
 
-                number_cols = 15 # Can be changed. More points equal higher raster density 
-                number_rows = int(number_cols*height/width) # Assumption: number_cols/number_rows = width/height
+            # Get all possible points
+            possible_points = []
+            x = left_bound + cell_width/2
+            y = bot_bound + cell_height/2
+            for i in range(number_cols+1):
+                for j in range(number_rows+1):
+                    possible_points.append([x + i * cell_width, y + j * cell_height])
 
-                cell_width = width/(number_cols+1)
-                cell_height =  height/(number_rows+1)
+            fixed_points = []
+            conductors = self.component.two_d_axi.p_conductor
+            for winding in range(self.component.n_windings):
+                for i in range(len(conductors[winding])//5):
+                    point = conductors[winding][i*5]
+                    fixed_points.append([point[0], point[1]])
 
-                # Get all possible points
-                possible_points = []
-                x = left_bound + cell_width/2
-                y = bot_bound + cell_height/2
-                for i in range(number_cols+1):
-                    for j in range(number_rows+1):
-                        possible_points.append([x + i * cell_width, y + j * cell_height])
+            # Extract all free_points
+            for fixed_point in fixed_points:
+                left = fixed_point[0] - min_distance
+                right = fixed_point[0] + min_distance
+                top = fixed_point[1] + min_distance
+                bot = fixed_point[1] - min_distance
 
-                fixed_points = []
-                conductors = self.component.two_d_axi.p_conductor
-                for winding in range(self.component.n_windings):
-                    for i in range(len(conductors[winding])//5):
-                        point = conductors[winding][i*5]
-                        fixed_points.append([point[0], point[1]])
-
-                # Extract all free_points
-                for fixed_point in fixed_points:
-                    left = fixed_point[0] - min_distance
-                    right = fixed_point[0] + min_distance
-                    top = fixed_point[1] + min_distance
-                    bot = fixed_point[1] - min_distance
-
-                    for i in range(len(possible_points)):
-                        if possible_points[i] is not None:
-                            x = possible_points[i][0]
-                            y = possible_points[i][1]
-                            if x > left and x < right and y > bot and y < top:
-                                possible_points[i] = None
-                
-                for p in possible_points:
-                    if p is not None:
-                        tags_raster.append(gmsh.model.geo.addPoint(p[0], p[1], 0, self.c_window))
+                for i in range(len(possible_points)):
+                    if possible_points[i] is not None:
+                        x = possible_points[i][0]
+                        y = possible_points[i][1]
+                        if x > left and x < right and y > bot and y < top:
+                            possible_points[i] = None
+            
+            for p in possible_points:
+                if p is not None:
+                    tags_raster.append(gmsh.model.geo.addPoint(p[0], p[1], 0, self.c_window))
 
             # Call synchronize so the points will be added to the model            
             gmsh.model.geo.synchronize()
