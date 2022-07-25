@@ -414,7 +414,7 @@ class MagneticComponent:
                     self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                 else:
-                    self.mesh.c_conductor[i] = 0.0001  # TODO: dynamic inplementation
+                    self.mesh.c_conductor[i] = 0.0001  # TODO: dynamic implementation
 
         # -- Core-type --
         self.n_windows = 2
@@ -3953,10 +3953,11 @@ class MagneticComponent:
     def write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
-        them in a dictionary. Additionaly the input settings which are used in order to create the simulation are also printed.
+        them in a dictionary. Additionally, the input settings which are used in order to create the simulation are also printed.
         From this data type a JSON log file is created.
         :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
         :param currents: Current values of the sweep iterations. Not needed for single simulation
+        :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
         :return:
         """
         # ---- Print simulation results ----
@@ -3968,12 +3969,14 @@ class MagneticComponent:
         #   - 'total_losses' contains the sums of all sweeps
         #       - in case complex core parameters are used:
         #           - hysteresis losses are taken only from fundamental frequency
-        #               - fundamental frequency is smallest frequency != 0
-        log_dict = {"single_sweeps": [], "total_losses": {}}
+        #               - fundamental frequency is the smallest frequency != 0
+        #   - 'simulation_settings' contains the simulation configuration (for more info see encode_settings())
+
+        log_dict = {"single_sweeps": [], "total_losses": {}, "simulation_settings": {}}
 
         for sweep_run in range(0, sweep_number):
             # create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
-            # Single values, recieved during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
+            # Single values, received during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
             sweep_dict = {}
 
             # Frequencies
@@ -4017,7 +4020,6 @@ class MagneticComponent:
                 else:
                     # single_simulation -> get current from instance variable
                     winding_dict["I"] = self.current[winding]
-
 
                 # Case litz: Load homogenized results
                 if self.windings[winding].conductor_type == ConductorType.Litz:
@@ -5255,6 +5257,8 @@ class MagneticComponent:
         :type show_last: bool
         :param return_results: returns results in a dictionary
         :type return_results: bool
+        :param visualize_before: show genarated mesh before the simulation is run
+        :type visualize_before: bool
         :param meshing:
         :type meshing: bool
         :param color_scheme: colorfile (definition for red, green, blue, ...)
