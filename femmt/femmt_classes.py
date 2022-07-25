@@ -2708,6 +2708,7 @@ class MagneticComponent:
                                                 self.component.two_d_axi.p_window[6],
                                                 self.component.two_d_axi.p_air_gaps)
 
+                    
                     # Dedicated stray path:
                     if self.component.component_type == ComponentType.IntegratedTransformer:
                         # mshopt stray_path_gap = [[], []]
@@ -5382,7 +5383,7 @@ def encode_settings(o: MagneticComponent):
     }
 
     if o.stray_path is not None:
-        content["stray_path"] = o.stray_path.__dict__()
+        content["stray_path"] = o.stray_path.__dict__
 
     return content
 
