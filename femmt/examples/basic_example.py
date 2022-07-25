@@ -252,3 +252,5 @@ if component == "integrated_transformer":
     # other simulation options:
     # -------------------------
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+
+

@@ -74,7 +74,7 @@ class MainWindow(QMainWindow):
             "manually": "Manual Placement",
             "hexa": "Hexadimensional",
             "square": "Square",
-            "+-5": "+/- 5%",
+            "+-10": "+/- 10%",
             "excel": "MS Excel"
         }
 
@@ -293,7 +293,6 @@ class MainWindow(QMainWindow):
         :rtype: None
         """
         aut_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
-        aut_core_material_options = ['N95']
         aut_winding_material_options = [key for key in fmt.wire_material_database()]
         aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
@@ -302,12 +301,10 @@ class MainWindow(QMainWindow):
         aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
         aut_winding_litz_material_options = [key for key in fmt.litz_database()]
         aut_winding_litz_material_options.insert(0, 'Manual')
-        aut_tolerance_val_options = [self.translation_dict['+-5']]
+        aut_tolerance_val_options = [self.translation_dict['+-10']]
 
         for option in aut_simulation_type_options:
             self.aut_simulation_type_comboBox.addItem(option)
-        for option in aut_core_material_options:
-            self.aut_core_material_comboBox.addItem(option)
         for option in aut_winding_material_options:
             self.aut_winding1_material_comboBox.addItem(option)
             self.aut_winding2_material_comboBox.addItem(option)
@@ -405,7 +402,7 @@ class MainWindow(QMainWindow):
         geo.create_model(freq=100000, visualize_before=False, save_png=False)
 
         # 6.a. start simulation
-        geo.single_simulation(freq=100000, current=[3], show_results=True)
+        geo.single_simulation(freq=100000, current=[3], show_results=False)
 
     def aut_download_pos_model_data(self):
 
