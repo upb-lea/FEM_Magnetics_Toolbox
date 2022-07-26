@@ -284,6 +284,39 @@ class MainWindow(QMainWindow):
 
         "Signals in Definition Tab"
         self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
+        self.summarize_pushButton.clicked.connect(self.summarize_data)
+
+
+    def summarize_data(self):
+        if self.N95_checkBox.isChecked() == True:
+            self.mat_choice_1.setText("N95")
+        elif self.N95_checkBox.isChecked() == False:
+            self.mat_choice_1.setText("")
+        if self.N97_checkBox.isChecked() == True:
+            self.mat_choice_2.setText("N97")
+        elif self.N97_checkBox.isChecked() == False:
+            self.mat_choice_2.setText("")
+        if self.N87_checkBox.isChecked() == True:
+            self.mat_choice_3.setText("N87")
+        elif self.N87_checkBox.isChecked() == False:
+            self.mat_choice_3.setText("")
+
+        if self.checkBox_Litz1.isChecked() == True:
+            self.litz_choice_1.setText("1.5*105*0.1")
+        elif self.checkBox_Litz1.isChecked() == False:
+            self.litz_choice_1.setText("")
+        if self.checkBox_Litz2.isChecked() == True:
+            self.litz_choice_2.setText("1.4*200*0.071")
+        elif self.checkBox_Litz2.isChecked() == False:
+            self.litz_choice_2.setText("")
+        if self.checkBox_Litz3.isChecked() == True:
+            self.litz_choice_3.setText("2.0*405*0.071")
+        elif self.checkBox_Litz3.isChecked() == False:
+            self.litz_choice_3.setText("")
+        if self.checkBox_Litz4.isChecked() == True:
+            self.litz_choice_4.setText("2.0*800*0.05")
+        elif self.checkBox_Litz4.isChecked() == False:
+            self.litz_choice_4.setText("")
 
     def aut_initialize_controls(self) -> None:
         """
@@ -299,8 +332,6 @@ class MainWindow(QMainWindow):
                                     self.translation_dict['implicit_strands_number']]
         aut_air_gap_method_options = [self.translation_dict["percent"]]
         aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
-        aut_winding_litz_material_options = [key for key in fmt.litz_database()]
-        aut_winding_litz_material_options.insert(0, 'Manual')
         aut_tolerance_val_options = [self.translation_dict['+-10']]
 
         for option in aut_simulation_type_options:
@@ -319,9 +350,6 @@ class MainWindow(QMainWindow):
         for option in aut_winding_scheme_options:
             self.aut_winding1_scheme_comboBox.addItem(option)
             self.aut_winding2_scheme_comboBox.addItem(option)
-        for option in aut_winding_litz_material_options:
-            self.aut_winding1_litz_material_comboBox.addItem(option)
-            self.aut_winding2_litz_material_comboBox.addItem(option)
         for option in aut_tolerance_val_options:
             self.aut_tolerance_val_comboBox.addItem(option)
 

@@ -1,13 +1,29 @@
-from femmt.femmt_enumerations import AirGapLegPosition, AirGapMethod
-import femmt as fmt
-import numpy as np
-import os
 
-core_db1 = fmt.core_database()["PQ 20/16"]
-core_db2 = fmt.core_database()["PQ 20/20"]
-core_db3 = fmt.core_database()["PQ 26/20"]
-core_db4 = fmt.core_database()["PQ 26/25"]
 
-core_width_list = [core_db1["core_w"], core_db2["core_w"], core_db3["core_w"], core_db4["core_w"]]
-core_window_w_list = [core_db1["window_w"], core_db2["window_w"], core_db3["window_w"], core_db4["window_w"]]
-core_window_h_list = [core_db1["window_h"], core_db2["window_h"], core_db3["window_h"], core_db4["window_h"]]
+arr_num_checks = [self.N95_checkBox.isChecked(), self.N97_checkBox.isChecked(), self.N87_checkBox.isChecked()]
+# arr_choice_block = [self.mat_choice_1.setText(""), self.mat_choice_2.setText(), self.mat_choice_3.setText()]
+
+for i in arr_num_checks:
+    if arr_num_checks[i]:
+        self.mat_choice_1.setText("N95")
+
+    if arr_num_checks[1]:
+        self.mat_choice_1.setText("N97")
+    if arr_num_checks[2]:
+        self.mat_choice_1.setText("N87")
+
+    elif arr_num_checks[1]:
+        self.mat_choice_1.setText("N97")
+        if arr_num_checks[2]:
+            self.mat_choice_2.setText("N87")
+    elif arr_num_checks[2]:
+        self.mat_choice_1.setText("N87")
+
+    elif not arr_num_checks[0]:
+        self.mat_choice_1.setText("")
+    elif not arr_num_checks[1]:
+        self.mat_choice_2.setText("")
+    elif not arr_num_checks[2]:
+        self.mat_choice_3.setText("")
+
+
