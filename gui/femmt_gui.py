@@ -3,7 +3,8 @@ import pandas as pd
 import gmsh
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QComboBox
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
@@ -286,7 +287,6 @@ class MainWindow(QMainWindow):
         self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
         self.summarize_pushButton.clicked.connect(self.summarize_data)
 
-
     def summarize_data(self):
         if self.N95_checkBox.isChecked() == True:
             self.mat_choice_1.setText("N95")
@@ -318,6 +318,7 @@ class MainWindow(QMainWindow):
         elif self.checkBox_Litz4.isChecked() == False:
             self.litz_choice_4.setText("")
 
+
     def aut_initialize_controls(self) -> None:
         """
         Initialize the comboboxes with pre-defined values.
@@ -333,6 +334,11 @@ class MainWindow(QMainWindow):
         aut_air_gap_method_options = [self.translation_dict["percent"]]
         aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
         aut_tolerance_val_options = [self.translation_dict['+-10']]
+        aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
+        aut_core_geometry_options.insert(0, 'Manual')
+
+        for option in aut_core_geometry_options:
+            self.aut_core_geometry_comboBox.addItem(option)
 
         for option in aut_simulation_type_options:
             self.aut_simulation_type_comboBox.addItem(option)
@@ -505,7 +511,6 @@ class MainWindow(QMainWindow):
         self.aut_isolation_p2s_lineEdit.setVisible(status)
         self.aut_isolation_s2s_label.setVisible(status)
         self.aut_isolation_p2s_label.setVisible(status)
-
 
 
     def md_initialize_controls(self) -> None:
