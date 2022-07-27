@@ -199,8 +199,6 @@ def core_database() -> Dict:
     return core_dict
 
 
-
-
 def litz_database() -> Dict:
     """
     Returns litz parameters for defined litz wires.
@@ -605,7 +603,6 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
     #plt.show()
 
 
-
 def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: str = 'rad', f0: Union[float,None] = None) -> None:
     """
     generate fft curves from input curves and compare them to each other
@@ -828,7 +825,6 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
     return [frequency_list, amplitude_pair_list, phase_pair_list_rad_or_deg]
 
 
-
 # Reluctance Model [with calculation]
 mu0 = 4e-7*np.pi
 
@@ -987,11 +983,13 @@ def calculate_reluctances(N, L):
 
     return np.matmul(np.matmul(N, L_invert), np.transpose(N))
 
+
 def create_physical_group(dim, entities, name):
     tag = gmsh.model.addPhysicalGroup(dim, entities)
     gmsh.model.setPhysicalName(dim, tag, name)
 
     return tag
+
 
 def visualize_simulation_results(simulation_result_file_path: str, store_figure_file_path: str, show_plot = True) -> None:
     with open(simulation_result_file_path, "r") as fd:

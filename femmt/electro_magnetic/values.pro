@@ -18,8 +18,8 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
   Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
   //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
-  //Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
-  //Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];
+  Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
+  Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];
   //Print[ j2Hskin[StrandedWinding2],   OnGlobal , Format Table];
   //Print[ j2Hprox[StrandedWinding2],   OnGlobal , Format Table];
 

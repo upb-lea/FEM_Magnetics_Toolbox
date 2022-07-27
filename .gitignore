@@ -21,6 +21,9 @@ femmt/results
 femmt/unversioned
 femmt/.idea/
 femmt/examples/working_directory
+femmt/examples/femmt
+femmt/examples/femm
+femmt/examples/mesh
 .idea/
 femmt/__pycache__/
 gpgit/
@@ -29,6 +32,7 @@ dist/
 femmt.egg-info/
 .eggs/
 onelab/
+*/working_directory/
 
 # FEMMT: generated files
 femmt/electro_magnetic/Parameter.pro
@@ -47,3 +51,4 @@ femmt/thermal/solver/PostOperation.pro
 
 # Example files
 femmt/examples/paper_thermal_validation.py
+!femmt/examples/example_log.json

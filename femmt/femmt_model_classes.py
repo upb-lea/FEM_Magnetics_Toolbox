@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union, Optional
 
 from matplotlib.pyplot import fill
 from .femmt_enumerations import *
@@ -31,11 +31,19 @@ class Winding:
     winding_type: WindingType
     winding_scheme: WindingScheme
 
-    def __init__(self, turns_primary: int, turns_secondary: int, conductivity: Conductivity, winding_type: WindingType, winding_scheme: WindingScheme ):
+    # Not used in femmt_classes. Only needed for to_dict()
+    turns_primary: int = 0 
+    turns_secondary: int = 0
+    conductivity: Conductivity = None
+
+    def __init__(self, turns_primary: int, turns_secondary: int, conductivity: Conductivity, winding_type: WindingType, winding_scheme: WindingScheme):
         if turns_primary < 1 and turns_secondary < 1:
             raise Exception("Either number of primary or number of secondary turns need to be at least 1.")
 
         self.winding_type = winding_type
+        self.turns_primary = turns_primary
+        self.turns_secondary = turns_secondary
+        self.conductivity = conductivity
 
         if winding_scheme in [WindingScheme.Hexagonal, WindingScheme.Square, WindingScheme.Square_Full_Width]:
             # winding type needs to be primary or secondary
@@ -50,7 +58,16 @@ class Winding:
         
         self.winding_scheme = winding_scheme
 
-        self.turns = [turns_primary, turns_secondary]
+        if winding_type == WindingType.Interleaved:
+            if turns_primary == 0:
+                self.turns = [turns_secondary]
+            elif turns_secondary == 0:
+                self.turns = [turns_primary]
+            else:
+                # This case cannot happen since it was already checked before
+                pass
+        else:
+            self.turns = [turns_primary, turns_secondary]
 
         dict_material_database = wire_material_database()
         if conductivity.value in dict_material_database:
@@ -122,14 +139,42 @@ class Winding:
             raise Exception("1 of the 4 parameters need to be None.")
 
         self.n_layers = NbrLayers(number_strands)
-        self.a_cell = number_strands * strand_radius ** 2 * np.pi / fill_factor
+        self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
         print(f"Updated Litz Configuration: \n"
-              f" ff: {fill_factor} \n"
-              f" Number of layers/strands: {self.n_layers}/{number_strands} \n"
-              f" Strand radius: {strand_radius} \n"
-              f" Conductor radius: {conductor_radius}\n"
+              f" ff: {self.ff} \n"
+              f" Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
+              f" Strand radius: {self.strand_radius} \n"
+              f" Conductor radius: {self.conductor_radius}\n"
               f"---")
+
+    def to_dict(self):
+        conductor_settings = {
+            "conductor_type": self.conductor_type.name
+        }
+        if self.conductor_type in [ConductorType.Foil, ConductorType.Full, ConductorType.Stacked]:
+            conductor_settings["thickness"] = self.thickness
+            conductor_settings["wrap_para"] = self.wrap_para
+        elif self.conductor_type == ConductorType.Litz:
+            conductor_settings["conductor_radius"] = self.conductor_radius
+            conductor_settings["n_strands"] = self.n_strands
+            conductor_settings["strand_radius"] = self.strand_radius
+            conductor_settings["ff"] = self.ff
+        elif self.conductor_type == ConductorType.Solid:
+            conductor_settings["conductor_radius"] = self.conductor_radius
+        else:
+            raise Exception(f"Unknown conductor type {self.conductor_type}")
+
+        contents = {
+            "turns_primary": self.turns_primary,
+            "turns_secondary": self.turns_secondary,
+            "conductivity": self.conductivity.name,
+            "winding_type": self.winding_type.name,
+            "winding_scheme": self.winding_scheme.name,
+            "conductor_settings": conductor_settings
+        }
+
+        return contents
 
 class Core:
     """
@@ -157,7 +202,7 @@ class Core:
     sigma: float            # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
     # Dimensions
-    core_w: float           # Axi symmetric case | core_w := core radius
+    core_w: float           # Axi symmetric case | core_w := 2x core radius
     core_h: float
     window_w: float         # Winding window width
     window_h: float         # Winding window height
@@ -166,12 +211,15 @@ class Core:
     steinmetz_loss: int = 0
     generalized_steinmetz_loss: int = 0
 
+    # Needed for to_dict
+    loss_approach: LossApproach = None
+
     def __init__(self, core_w: float, window_w: float, window_h: float, material: str = "custom",  # "95_100" 
                    loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000,
                    phi_mu_deg: float = None, sigma: float = None, non_linear: bool = False, **kwargs):
         # Set parameters
         self.core_w = core_w
-        self.core_h = None # TODO Set core_h to not none
+        self.core_h = None  # TODO Set core_h to not none
         self.window_w = window_w
         self.window_h = window_h
         self.type = "axi_symmetric"
@@ -179,6 +227,8 @@ class Core:
         self.non_linear = non_linear
         self.mu_rel = mu_rel
         self.phi_mu_deg = phi_mu_deg
+
+        self.loss_approach = loss_approach
 
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
@@ -206,6 +256,23 @@ class Core:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+        # Needed because of to_dict
+        self.kwargs = kwargs
+
+    def to_dict(self):
+        return {
+            "core_w": self.core_w,
+            "window_w": self.window_w, 
+            "window_h": self.window_h, 
+            "material": self.material, 
+            "loss_approach": self.loss_approach.name,
+            "mu_rel": self.mu_rel,
+            "phi_mu_deg": self.phi_mu_deg, 
+            "sigma": self.sigma, 
+            "non_linear": self.non_linear, 
+            "kwargs": self.kwargs
+        }
+
 class AirGaps:
     """
     Contains methods and arguments to describe the air gaps in a magnetic component
@@ -217,13 +284,31 @@ class AirGaps:
     midpoints: List[List[float]]  #: list: [position_tag, air_gap_position, air_gap_h]
     number: int
 
+    # Needed for to_dict
+    air_gap_settings = []
+
     def __init__(self, method: AirGapMethod, core: Core):
         self.method = method
         self.core = core
         self.midpoints = []
         self.number = 0
 
-    def add_air_gap(self, leg_position: AirGapLegPosition, position_value: float, height: float):
+    def add_air_gap(self, leg_position: AirGapLegPosition, position_value: Optional[float], height: float):
+        """
+        Brings a single air gap to the core.
+
+        :param leg_posistion: CenterLeg, OuterLeg
+        :type leg_position: AirGapLegPosition
+        :param position_value: if AirGapMethod == Percent: 0...100, elif AirGapMethod == Manually: position hight in [m]
+        :type position_value: float
+        :param height: Air gap height in [m]
+        :type height: float
+        """
+        self.air_gap_settings.append({
+            "leg_position": leg_position.name, 
+            "position_value": position_value,
+            "height": height})
+
         for index, midpoint in enumerate(self.midpoints):
             if midpoint[0] == leg_position and midpoint[1] + midpoint[2] < position_value - height \
                     and midpoint[1] - midpoint[2] > position_value + height:
@@ -255,6 +340,16 @@ class AirGaps:
         else:
             raise Exception(f"Method {self.method} is not supported.")
 
+    def to_dict(self):
+        content = {
+            "method": self.method.name,
+            "air_gap_number": len(self.air_gap_settings)
+        }
+
+        if self.number > 0:
+            content["air_gaps"] = self.air_gap_settings
+
+        return content
 
 class Isolation:
     """
@@ -272,6 +367,12 @@ class Isolation:
 
     def add_core_isolations(self, top_core, bot_core, left_core, right_core):
         self.core_cond = [top_core, bot_core, left_core, right_core]
+
+    def to_dict(self):
+        return {
+            "winding_isolations": self.cond_cond,
+            "core_isolations": self.core_cond
+        }
 
 @dataclass
 class StrayPath:
@@ -303,9 +404,15 @@ class VirtualWindingWindow:
 
     # Arrangement of the Conductors in the virtual winding window
     # Obviously depends on the chosen conductor type
-    winding: List[WindingType]
-    scheme: List[WindingScheme]
+    winding: WindingType
+    scheme: WindingScheme
 
     def __init__(self, winding: WindingType, scheme: WindingScheme):
         self.winding = winding
         self.scheme = scheme
+
+    def to_dict(self):
+        return {
+            "winding_type":  self.winding.name,
+            "winding_scheme": self.scheme.name
+        }
