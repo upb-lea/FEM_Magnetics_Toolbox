@@ -112,7 +112,7 @@ if component == "inductor":
     geo.set_isolation(isolation)
 
     # 5. create the model
-    geo.create_model(freq=100000, visualize_before=False, save_png=False)
+    geo.create_model(freq=100000, visualize_before=True, save_png=False)
 
     # 6. start simulation
     geo.single_simulation(freq=100000, current=[4.5], show_results=True)
@@ -231,7 +231,7 @@ if component == "integrated_transformer":
     geo.set_core(core)
 
     # 2.1 set stray path parameters
-    stray_path = fmt.StrayPath(start_index=0, radius=geo.core.core_w / 2 + geo.core.window_w - 0.001, width=None, midpoint=None)
+    stray_path = fmt.StrayPath(start_index=0, length=geo.core.core_w / 2 + geo.core.window_w - 0.001)
     geo.set_stray_path(stray_path)
 
     # 3. set air gap parameters

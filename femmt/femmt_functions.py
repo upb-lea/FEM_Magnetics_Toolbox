@@ -28,12 +28,12 @@ colors_femmt_default = {"blue": (28, 113, 216),
                         }
 
 colors_geometry_femmt_default = {
-                    "core": "grey",
+                    "core": "black",
                     "air_gap": "yellow",
                     "winding": ["orange", "brown", "yellow"],
                     "isolation": "blue",
-                    "potting_inner": "yellow",
-                    "potting_outer": "yellow",
+                    "potting_inner": "grey",
+                    "potting_outer": "grey",
                 }
 
 
