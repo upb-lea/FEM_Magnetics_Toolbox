@@ -3671,37 +3671,96 @@ class MagneticComponent:
                     point = conductors[winding][i*5]
                     fixed_points.append([point[0], point[1]])
 
+            # Because the points need to be embed into the right surface. The points now will be split between different isolations and the air in the winding window.
+            # TODO Currently primary secondary isolation is not considered
+            left_iso = []
+            right_iso = []
+            top_iso = []
+            bot_iso = []
+            primary_secondary_iso = []
+            air = []
+
+            for i in range(len(self.component.two_d_axi.p_iso_pri_sec)):
+                primary_secondary_iso.append([])
+
+            # Isolations are currently not implemented for integrated transformers
+            if self.component.component_type is not ComponentType.IntegratedTransformer:
+                iso_core_left = self.component.two_d_axi.p_iso_core[0]
+                iso_core_top = self.component.two_d_axi.p_iso_core[1]
+                iso_core_right = self.component.two_d_axi.p_iso_core[2]
+                iso_core_bot = self.component.two_d_axi.p_iso_core[3]
+
             # Extract all free_points
-            for fixed_point in fixed_points:
-                for i in range(len(possible_points)):
-                    if possible_points[i] is not None:
-                        x = possible_points[i][0]
-                        y = possible_points[i][1]
-                        dist = np.sqrt((fixed_point[0]-x)**2 + (fixed_point[1]-y)**2)
-                        if dist < min_distance:
-                            possible_points[i] = None
-                            continue
-            
-                        # Check for stray_paths
-                        if self.component.component_type == ComponentType.IntegratedTransformer:
-                            start_index = self.component.stray_path.start_index
-                            stray_path_top_bound = self.component.air_gaps.midpoints[start_index+1][1] - self.component.air_gaps.midpoints[start_index+1][2] / 2
-                            stray_path_bot_bound = self.component.air_gaps.midpoints[start_index][1] + self.component.air_gaps.midpoints[start_index][2] / 2
-                            stray_path_right_bound = self.component.stray_path.length
-                            stray_path_left_bound = left_bound
+            for i in range(len(possible_points)):
+                x = possible_points[i][0]
+                y = possible_points[i][1]
 
-                            if x > stray_path_left_bound and x < stray_path_right_bound and y > stray_path_bot_bound and y < stray_path_top_bound:
-                                possible_points[i] = None
+                # Check collision with fixed points
+                valid = True
+                for fixed_point in fixed_points:
+                    dist = np.sqrt((fixed_point[0]-x)**2 + (fixed_point[1]-y)**2)
+                    if dist < min_distance:
+                        valid = False
+                        break
 
-            for p in possible_points:
-                if p is not None:
-                    tags_raster.append(gmsh.model.geo.addPoint(p[0], p[1], 0, self.c_window))
+                if not valid:
+                    continue
 
+                # Check if point is in stray_path
+                if self.component.component_type == ComponentType.IntegratedTransformer:
+                    start_index = self.component.stray_path.start_index
+                    stray_path_top_bound = self.component.air_gaps.midpoints[start_index+1][1] - self.component.air_gaps.midpoints[start_index+1][2] / 2
+                    stray_path_bot_bound = self.component.air_gaps.midpoints[start_index][1] + self.component.air_gaps.midpoints[start_index][2] / 2
+                    stray_path_right_bound = self.component.stray_path.length
+                    stray_path_left_bound = left_bound
+
+                    if x > stray_path_left_bound and x < stray_path_right_bound and y > stray_path_bot_bound and y < stray_path_top_bound:
+                        continue
+
+                # Point seems to be valid. Now find out in which surface the point belongs
+                point = gmsh.model.geo.addPoint(x, y, 0, 2*self.c_window)
+
+                if self.component.component_type is not ComponentType.IntegratedTransformer:
+                    if point_is_in_rect(x, y, iso_core_left):
+                        # Left iso
+                        left_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_top):
+                        # Top iso
+                        top_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_right):
+                        # Right iso
+                        right_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_bot):
+                        # Bot iso
+                        bot_iso.append(point)
+                    else:
+                        # Check if point is in pri_to_sec isolation
+                        added = False
+                        for i in range(len(primary_secondary_iso)):
+                            if point_is_in_rect(x, y, self.component.two_d_axi.p_iso_pri_sec[i]):
+                                primary_secondary_iso[i].append(point)
+                                added = True
+                                break
+
+                        if not added:
+                            # Air
+                            air.append(point)
+                else:
+                    air.append(point)
             # Call synchronize so the points will be added to the model            
             gmsh.model.geo.synchronize()
 
-            # Embed rasterization points
-            gmsh.model.mesh.embed(0, tags_raster, 2, self.plane_surface_air[0])
+            # Embed points into surfaces
+            if self.component.component_type is not ComponentType.IntegratedTransformer:
+                gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
+                gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
+                gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
+                gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
+
+                for i in range(len(primary_secondary_iso)):
+                    gmsh.model.mesh.embed(0, primary_secondary_iso[i], 2, self.plane_surface_iso_pri_sec[i])
+            
+            gmsh.model.mesh.embed(0, air, 2, self.plane_surface_air[0])
 
             # Synchronize again
             gmsh.model.geo.synchronize()

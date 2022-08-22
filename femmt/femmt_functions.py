@@ -1020,6 +1020,16 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     return loaded_results_dict
 
+def point_is_in_rect(x, y, rect):
+    # x, y of the point
+    # List of 4 points given as tuples with (x, y) in the order top-right, top-left, bottom-right, bottom-left
+
+    # Return true if point is in rect
+    if y < rect[0][1] and y > rect[3][1] and x > rect[0][0] and x < rect[1][0]:
+        return True
+    
+    return False
 
 if __name__ == '__main__':
+    # TODO Relative path
     visualize_simulation_results('/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/results/result_log_electro_magnetic.json')
