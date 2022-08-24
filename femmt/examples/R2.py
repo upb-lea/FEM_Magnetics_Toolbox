@@ -1,4 +1,9 @@
-a = [1, 2, 3, 4, 5]
-b = [9, 8, 7, 6, 5]
-intersection = set(a).intersection(b)
-print(list(intersection))
+from PyQt4.QtGui import *
+ model = QStandardItemModel()
+ item = QStandardItem("Item")
+ item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+ item.setData(QVariant(Qt.Checked), Qt.CheckStateRole)
+ model.appendRow(item)
+ view = QListView()
+ view.setModel(model)
+ view.show()

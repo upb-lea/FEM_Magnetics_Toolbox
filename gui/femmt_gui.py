@@ -4,7 +4,7 @@ import gmsh
 import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QComboBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
@@ -12,6 +12,9 @@ import json
 from typing import List, Union, Optional
 import os
 import PIL
+import materialdatabase as mdb
+import matplotlib.pyplot as plt
+database = mdb.MaterialDatabase()
 
 # import sys
 # import matplotlib
@@ -48,7 +51,9 @@ def comma_str_to_point_float(input_str: str) -> float:
 
 
 class MainWindow(QMainWindow):
+
     def __init__(self, parent=None):
+
         super(MainWindow, self).__init__(parent)
         self.md_simulation_type_comboBox = None
         uic.loadUi('femmt_gui.ui', self)
@@ -287,6 +292,90 @@ class MainWindow(QMainWindow):
         self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
         self.summarize_pushButton.clicked.connect(self.summarize_data)
 
+        self.aut_litz_data_listWidget.addItem("1.5*105*0.1")
+        self.aut_litz_data_listWidget.addItem("1.4*200*0.071")
+        self.aut_litz_data_listWidget.addItem("2.0*405*0.071")
+        self.aut_litz_data_listWidget.addItem("2.0*800*0.05")
+
+        self.aut_litz_data_listWidget.itemDoubleClicked.connect(self.onClicked)
+        self.aut_litz_basket_clear_all_pushbutton.clicked.connect(self.onClearallClicked)
+        self.aut_litz_basket_clear_pushbutton.clicked.connect(self.onClearClicked)
+
+        self.aut_winding1_implicit_litz_comboBox.currentTextChanged.connect(self.aut_winding1_change_litz_implicit)
+        self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
+
+        "******* Database Section *********"
+
+        "Signals in visualisation tab"
+        self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
+
+    def datupdateraph(self):
+        # -----Enter the freq and Temp----------- 
+        mu_real = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[0]
+        mu_imag = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[1]
+        b = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[2]
+        print(mu_imag)
+        print(b)
+        """
+        plt.plot(b, mu_real)
+        plt.ylabel("Real part of permeability")
+        plt.xlabel('B in T')
+        plt.title("Real part of permeability")
+        plt.show()
+        """
+
+        plt.plot(b, mu_imag)
+        plt.ylabel("Imaginary part of permeability")
+        plt.xlabel('B in T')
+        plt.title("Imaginary part of permeability")
+        plt.savefig('plot.png', dpi=300, bbox_inches='tight')
+        plt.show()
+
+        # Loading image
+        self.pixmap = QPixmap('plot.png')
+
+        # adding image to label
+        self.dat_update_graph_qlabel.setPixmap(self.pixmap)
+        w = self.dat_update_graph_qlabel.width()
+        h = self.dat_update_graph_qlabel.height()
+        self.dat_update_graph_qlabel.setPixmap(self.pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+
+    def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
+        """
+        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        :param implicit_type_from_combo_box: input type to implicit
+        :type implicit_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_litz_radius']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(False)
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_strands_number']:
+            self.aut_winding1_strands_lineEdit.setEnabled(False)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_ff']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+
+    def onClearallClicked(self):
+        self.aut_litz_basket_listWidget.clear()
+
+    def onClearClicked(self):
+        List_item = self.aut_litz_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_litz_basket_listWidget.takeItem(self.aut_litz_basket_listWidget.row(item))
+
+    def onClicked(self):
+        self.aut_litz_basket_listWidget.addItem(self.aut_litz_data_listWidget.currentItem().text())
+
     def summarize_data(self):
         if self.N95_checkBox.isChecked() == True:
             self.mat_choice_1.setText("N95")
@@ -318,7 +407,6 @@ class MainWindow(QMainWindow):
         elif self.checkBox_Litz4.isChecked() == False:
             self.litz_choice_4.setText("")
 
-
     def aut_initialize_controls(self) -> None:
         """
         Initialize the comboboxes with pre-defined values.
@@ -336,6 +424,7 @@ class MainWindow(QMainWindow):
         aut_tolerance_val_options = [self.translation_dict['+-10']]
         aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
         aut_core_geometry_options.insert(0, 'Manual')
+
 
         for option in aut_core_geometry_options:
             self.aut_core_geometry_comboBox.addItem(option)
@@ -395,7 +484,7 @@ class MainWindow(QMainWindow):
                   [0.0149, 0.0295, 0.01105, 0.0002],
                   [0.0149, 0.0295, 0.01105, 0.0003],
                   [0.0149, 0.0295, 0.01105, 0.0004]]
-        num_r = 4
+        num_r = len(matrix)
         flag = 0
         m = []
         for i in range(num_r):
@@ -405,7 +494,6 @@ class MainWindow(QMainWindow):
             flag += 1
         if flag == 4:
             self.aut_rel_model_calc_timeline.setText("Simulation ended.Ready to download!")
-
 
     def aut_action_run_simulation(self, sim_value):
 
@@ -436,7 +524,7 @@ class MainWindow(QMainWindow):
         geo.create_model(freq=100000, visualize_before=False, save_png=False)
 
         # 6.a. start simulation
-        geo.single_simulation(freq=100000, current=[3], show_results=False)
+        geo.single_simulation(freq=100000, current=[3], show_results=True)
 
     def aut_download_pos_model_data(self):
 
