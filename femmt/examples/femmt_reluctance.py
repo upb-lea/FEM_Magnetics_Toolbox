@@ -1,56 +1,73 @@
-# 2D-axis symmetric Reluctance model class
-
 import femmt as fmt
 import numpy as np
 from itertools import product
 
 
 class MagneticCircuit:
-    """This is a class for calculating the reluctance and inductance and visualising magnetic circuit"""
+    """This is a class for calculating the reluctance and inductance for 2D axis symmetric cores
+        and visualising magnetic circuit"""
 
     def __init__(self, core_w: list, window_h: list, window_w: list,
-                 no_of_turns: list, n_air_gaps: list, air_gap_h: list, air_gap_position: list, mu_rel: float):
+                 no_of_turns: list, n_air_gaps: list, air_gap_h: list, air_gap_position: list, mu_rel: list,
+                 mult_air_gap_type: list):
 
-        # self.data_matrix = np.array(list(product(core_w, no_of_turns, n_air_gaps, air_gap_h)))
+        """type self.data_matrix: array
+        :param self.data_matrix: Stores all input data in the form of matrix with all combinations
+
+        example: data_matrix = [core_w, window_h, window_w, mu_rel, no_of_turns, n_air_gaps, air_gap_h,
+        air_gap_position, mult_air_gap_type, inductance]"""
+
         clone_n_air_gaps = n_air_gaps
-        count = 0
+        self.row_num = 0
 
         if 1 in clone_n_air_gaps:
-            self.data_matrix = np.zeros(
-                (len(core_w) * len(no_of_turns) * len(air_gap_h) * (len(air_gap_position) + len(n_air_gaps) - 1), 8))
+            self.data_matrix = np.zeros((len(core_w) * len(no_of_turns) * len(air_gap_h) * len(mu_rel) * (
+                        len(air_gap_position) + (len(n_air_gaps) - 1) * len(mult_air_gap_type)), 10))
         else:
-            self.data_matrix = np.zeros(
-                (len(core_w) * len(no_of_turns) * len(air_gap_h) * len(n_air_gaps), 8))
+            self.data_matrix = np.zeros((len(core_w) * len(no_of_turns) * len(air_gap_h) * len(n_air_gaps) * len(
+                mu_rel) * len(mult_air_gap_type), 10))
 
         if 1 in clone_n_air_gaps:
             clone_n_air_gaps.remove(1)
             for index_1 in range(len(core_w)):
-                for index_2 in range(len(no_of_turns)):
-                    for index_3 in range(len(air_gap_h)):
-                        for index_4 in range(len(air_gap_position)):
-                            self.data_matrix[count, 0] = core_w[index_1]
-                            self.data_matrix[count, 1] = window_h[index_1]
-                            self.data_matrix[count, 2] = window_w[index_1]
-                            self.data_matrix[count, 3] = no_of_turns[index_2]
-                            self.data_matrix[count, 4] = 1
-                            self.data_matrix[count, 5] = air_gap_h[index_3]
-                            self.data_matrix[count, 6] = air_gap_position[index_4]
-                            count = count + 1
+                for index_2 in range(len(mu_rel)):
+                    for index_3 in range(len(no_of_turns)):
+                        for index_4 in range(len(air_gap_h)):
+                            for index_5 in range(len(air_gap_position)):
+                                self.data_matrix[self.row_num, 0] = core_w[index_1]
+                                self.data_matrix[self.row_num, 1] = window_h[index_1]
+                                self.data_matrix[self.row_num, 2] = window_w[index_1]
+                                self.data_matrix[self.row_num, 3] = mu_rel[index_2]
+                                self.data_matrix[self.row_num, 4] = no_of_turns[index_3]
+                                self.data_matrix[self.row_num, 5] = 1
+                                self.data_matrix[self.row_num, 6] = air_gap_h[index_4]
+                                self.data_matrix[self.row_num, 7] = air_gap_position[index_5]
+                                self.data_matrix[self.row_num, 8] = 0
+                                self.row_num = self.row_num + 1
+
+        self.single_air_gap_len = self.row_num
 
         if len(clone_n_air_gaps) != 0:
             for index_1 in range(len(core_w)):
-                for index_2 in range(len(no_of_turns)):
-                    for index_3 in range(len(clone_n_air_gaps)):
-                        for index_4 in range(len(air_gap_h)):
-                            self.data_matrix[count, 0] = core_w[index_1]
-                            self.data_matrix[count, 1] = window_h[index_1]
-                            self.data_matrix[count, 2] = window_w[index_1]
-                            self.data_matrix[count, 3] = no_of_turns[index_2]
-                            self.data_matrix[count, 4] = n_air_gaps[index_3]
-                            self.data_matrix[count, 5] = air_gap_h[index_4]
-                            self.data_matrix[count, 6] = 0
-                            count = count + 1
+                for index_2 in range(len(mu_rel)):
+                    for index_3 in range(len(no_of_turns)):
+                        for index_4 in range(len(clone_n_air_gaps)):
+                            for index_5 in range(len(air_gap_h)):
+                                for index_6 in range(len(mult_air_gap_type)):
+                                    self.data_matrix[self.row_num, 0] = core_w[index_1]
+                                    self.data_matrix[self.row_num, 1] = window_h[index_1]
+                                    self.data_matrix[self.row_num, 2] = window_w[index_1]
+                                    self.data_matrix[self.row_num, 3] = mu_rel[index_2]
+                                    self.data_matrix[self.row_num, 4] = no_of_turns[index_3]
+                                    self.data_matrix[self.row_num, 5] = n_air_gaps[index_4]
+                                    self.data_matrix[self.row_num, 6] = air_gap_h[index_5]
+                                    self.data_matrix[self.row_num, 7] = 0
+                                    self.data_matrix[self.row_num, 8] = mult_air_gap_type[index_6]
+                                    self.row_num = self.row_num + 1
 
+        self.data_matrix_len = self.row_num
+
+        # Core geometry parameters
         self.core_w = self.data_matrix[:, 0]  # Diameter of center leg
         self.window_h = self.data_matrix[:, 1]
         self.window_w = self.data_matrix[:, 2]
@@ -59,20 +76,22 @@ class MagneticCircuit:
         self.r_inner = None
         self.core_h_middle = None  # height of upper and lower part of the window in the core
         self.outer_w = None  # Outer leg width
+        self.mu_0 = 4 * np.pi * 1e-7
+        self.mu_rel = self.data_matrix[:, 3]  # 3000
 
-        self.no_of_turns = self.data_matrix[:, 3]
-        self.n_air_gaps = self.data_matrix[:, 4]
-        self.air_gap_h = self.data_matrix[:, 5]
-        self.percent_position_air_gap = self.data_matrix[:, 6]
+        # Air-gap parameters
+        self.no_of_turns = self.data_matrix[:, 4]
+        self.n_air_gaps = self.data_matrix[:, 5]
+        self.air_gap_h = self.data_matrix[:, 6]
+        self.percent_position_air_gap = self.data_matrix[:, 7]
+        self.mult_air_gap_type = self.data_matrix[:, 8]
         self.abs_position_air_gap = None
 
-        self.cal_inductance = None  # Total inductance
+        self.cal_inductance = None
         self.section = None
         self.length = None
         self.area = None
         self.reluctance = None
-        self.mu_rel = mu_rel  # 3000
-        self.mu_0 = 4 * np.pi * 1e-7
 
         self.max_percent_position = None
         self.min_percent_position = None
@@ -83,8 +102,7 @@ class MagneticCircuit:
         self.r_outer = np.sqrt((self.data_matrix[:, 0] / 2) ** 2 + self.r_inner ** 2)
         self.outer_w = self.r_outer - self.r_inner
 
-        self.section = [0, 1, 2, 3, 4]  # Section [0]: Center leg; [1]: Central corner; [2]: Winding window;
-        # [3]: Outer corners; [4]: Outer leg
+        self.section = [0, 1, 2, 3, 4]  # Section [0]: Center leg; [1]: Central corner; [2]: Winding window; [3]: Outer corners; [4]: Outer leg
         self.length = np.zeros((len(self.data_matrix), len(self.section)))
         self.area = np.zeros((len(self.data_matrix), len(self.section)))
         self.reluctance = np.zeros((len(self.data_matrix), len(self.section) + 1))
@@ -96,7 +114,7 @@ class MagneticCircuit:
         # self.area[:, 1] = ((self.core_w / 2 + self.core_h_middle) / 2) * 2 * np.pi * (self.core_w / 2)
         self.area[:, 1] = np.pi * self.core_w / 2 * ((self.core_w / 2 + self.core_h_middle) / 2) * (
                 2 + ((self.core_w / 2 + self.core_h_middle) / 2) / (
-                    np.sqrt((self.core_w / 2) ** 2 + self.core_h_middle ** 2)))
+            np.sqrt((self.core_w / 2) ** 2 + self.core_h_middle ** 2)))
 
         self.length[:, 2] = self.window_w
         self.area[:, 2] = np.nan
@@ -110,48 +128,111 @@ class MagneticCircuit:
         self.length[:, 4] = self.window_h
         self.area[:, 4] = np.pi * (self.r_outer ** 2 - self.r_inner ** 2)
 
-        self.reluctance[:, 0:2] = self.length[:, 0:2] / (self.mu_0 * self.mu_rel * self.area[:, 0:2])
-        self.reluctance[:, 3:5] = self.length[:, 3:5] / (self.mu_0 * self.mu_rel * self.area[:, 3:5])
+        self.reluctance[:, 0] = self.length[:, 0] / (self.mu_0 * self.mu_rel * self.area[:, 0])
+        self.reluctance[:, 1] = self.length[:, 1] / (self.mu_0 * self.mu_rel * self.area[:, 1])
+        self.reluctance[:, 3] = self.length[:, 3] / (self.mu_0 * self.mu_rel * self.area[:, 3])
+        self.reluctance[:, 4] = self.length[:, 4] / (self.mu_0 * self.mu_rel * self.area[:, 4])
         self.reluctance[:, 1:4] = 2 * self.reluctance[:, 1:4]
 
     def air_gap_reluctance(self):
-        # self.section.append(6)  # acknowledge addition of airgap
-        self.max_percent_position = ((self.window_h - (self.air_gap_h / 2)) / self.window_h) * 100
-        self.min_percent_position = ((self.air_gap_h / 2) / self.window_h) * 100
-        self.abs_position_air_gap = (self.percent_position_air_gap * self.window_h) / 100  # Convert percent position to absolute value position
-        h = np.zeros((len(self.data_matrix), 2))
+        # Single air-gap reluctance calculations
+        self.max_percent_position = ((self.window_h[0:self.single_air_gap_len] - (
+                    self.air_gap_h[0:self.single_air_gap_len] / 2)) / self.window_h[0:self.single_air_gap_len]) * 100
+        self.min_percent_position = ((self.air_gap_h[0:self.single_air_gap_len] / 2) / self.window_h[
+                                                                                       0:self.single_air_gap_len]) * 100
+        self.abs_position_air_gap = (self.percent_position_air_gap[0:self.single_air_gap_len] * self.window_h[
+                                                                                                0:self.single_air_gap_len]) / 100  # Convert percent position to absolute value position
+        h = np.zeros((len(self.abs_position_air_gap), 2))
 
-        h[:, 0] = np.where((self.percent_position_air_gap <= self.min_percent_position) | (
-                self.percent_position_air_gap >= self.max_percent_position),
-                           self.window_h - self.air_gap_h,
-                           self.abs_position_air_gap - (self.air_gap_h / 2))
-        h[:, 1] = self.window_h - (self.abs_position_air_gap - (self.air_gap_h / 2))
+        h[:, 0] = np.where((self.percent_position_air_gap[0:self.single_air_gap_len] <= self.min_percent_position) | (
+                    self.percent_position_air_gap[0:self.single_air_gap_len] >= self.max_percent_position),
+                           self.window_h[0:self.single_air_gap_len] - self.air_gap_h[0:self.single_air_gap_len],
+                           self.abs_position_air_gap - (self.air_gap_h[0:self.single_air_gap_len] / 2))
+        h[:, 1] = np.where((self.percent_position_air_gap[0:self.single_air_gap_len] <= self.min_percent_position) | (
+                    self.percent_position_air_gap[0:self.single_air_gap_len] >= self.max_percent_position),
+                           0,
+                           self.window_h[0:self.single_air_gap_len] - self.abs_position_air_gap - (
+                                       self.air_gap_h[0:self.single_air_gap_len] / 2))
 
-        self.reluctance[:, 5] = np.where(h[:, 1] == 0, fmt.r_round_inf(self.air_gap_h, fmt.sigma(self.air_gap_h,
-                                                                                                 self.core_w / 2,
-                                                                                                 fmt.r_basis(
-                                                                                                     self.air_gap_h,
-                                                                                                     self.core_w,
-                                                                                                     h[:, 0])),
-                                                                       self.core_w / 2),
-                                         fmt.femmt_functions.r_round_round(self.air_gap_h, fmt.sigma(self.air_gap_h,
-                                                                                                     self.core_w / 2,
-                                                                                                     (fmt.r_basis(
-                                                                                                         self.air_gap_h / 2,
-                                                                                                         self.core_w,
-                                                                                                         h[:, 0])) +
-                                                                                                     (fmt.r_basis(
-                                                                                                         self.air_gap_h / 2,
-                                                                                                         self.core_w,
-                                                                                                         h[:, 1]))),
-                                                                           self.core_w / 2))
+        self.reluctance[0:self.single_air_gap_len, 5] = np.where(h[:, 1] == 0,
+                                                                 single_round_inf(self.air_gap_h[0:self.single_air_gap_len], self.core_w[0:self.single_air_gap_len], h[:, 0]),
+                                                                 single_round_round(self.air_gap_h[0:self.single_air_gap_len], self.core_w[0:self.single_air_gap_len], h[:, 0], h[:, 1]))
 
-        self.data_matrix[:, 7] = (self.no_of_turns ** 2) / np.sum(self.reluctance, axis=1)
+        # Distributed air-gaps reluctance calculations
+        h_multiple = np.where(self.mult_air_gap_type[self.single_air_gap_len:self.data_matrix_len] == 1,
+                              (self.window_h[self.single_air_gap_len:self.data_matrix_len] - (
+                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * self.air_gap_h[
+                                                                                                      self.single_air_gap_len:self.data_matrix_len])) / (
+                                      (self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] - 1) * 2),
+                              (self.window_h[self.single_air_gap_len:self.data_matrix_len] - (
+                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * self.air_gap_h[
+                                                                                                      self.single_air_gap_len:self.data_matrix_len])) / (
+                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] + 1))
+
+        self.reluctance[self.single_air_gap_len:self.data_matrix_len, 5] = np.where(
+            self.mult_air_gap_type[self.single_air_gap_len:self.data_matrix_len] == 1,
+            distributed_type_1(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+                               self.core_w[self.single_air_gap_len:self.data_matrix_len],
+                               self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len], h_multiple),
+            distributed_type_2(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+                               self.core_w[self.single_air_gap_len:self.data_matrix_len],
+                               self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len], h_multiple))
+
+        self.data_matrix[:, 9] = (self.no_of_turns ** 2) / np.sum(self.reluctance, axis=1)
         print(self.data_matrix)
 
 
+def single_round_inf(air_gap_h, core_w, h):
+    temp1 = fmt.r_basis(air_gap_h, core_w, h)
+    temp2 = fmt.sigma(air_gap_h, core_w / 2, temp1)
+    temp3 = fmt.r_round_inf(air_gap_h, temp2, core_w / 2)
+
+    return temp3
+
+
+def single_round_round(air_gap_h, core_w, h0, h1):
+    r_basis_1 = fmt.r_basis(air_gap_h / 2, core_w, h0)
+    r_basis_2 = fmt.r_basis(air_gap_h / 2, core_w, h1)
+    temp2 = fmt.sigma(air_gap_h, core_w / 2, r_basis_1 + r_basis_2)
+    temp3 = fmt.r_round_round(air_gap_h, temp2, core_w / 2)
+
+    return temp3
+
+
+def distributed_type_1(air_gap_h, core_w, n_air_gaps, h_multiple):
+    temp1 = fmt.r_basis(air_gap_h, core_w, h_multiple)
+    temp2 = fmt.sigma(air_gap_h, core_w / 2, temp1)
+    temp3 = fmt.r_round_inf(air_gap_h, temp2, core_w / 2)
+    reluctance = (2 * temp3)
+
+    r_basis_1 = fmt.r_basis(air_gap_h / 2, core_w, h_multiple)
+    r_basis_2 = fmt.r_basis(air_gap_h / 2, core_w, h_multiple)
+    temp2 = fmt.sigma(air_gap_h, core_w / 2, r_basis_1 + r_basis_2)
+    temp3 = fmt.r_round_round(air_gap_h, temp2, core_w / 2)
+    reluctance = reluctance + ((n_air_gaps - 2) * temp3)
+
+    return reluctance
+
+
+def distributed_type_2(air_gap_h, core_w, n_air_gaps, h_multiple):
+    r_basis_1 = fmt.r_basis(air_gap_h / 2, core_w, h_multiple)
+    r_basis_2 = fmt.r_basis(air_gap_h / 2, core_w, h_multiple / 2)
+    temp2 = fmt.sigma(air_gap_h, core_w / 2, r_basis_1 + r_basis_2)
+    temp3 = fmt.r_round_round(air_gap_h, temp2, core_w / 2)
+    reluctance = (2 * temp3)
+
+    r_basis_1 = fmt.r_basis(air_gap_h / 2, core_w, h_multiple / 2)
+    r_basis_2 = fmt.r_basis(air_gap_h / 2, core_w, h_multiple / 2)
+    temp2 = fmt.sigma(air_gap_h, core_w / 2, r_basis_1 + r_basis_2)
+    temp3 = fmt.r_round_round(air_gap_h, temp2, core_w / 2)
+    reluctance = reluctance + ((n_air_gaps - 2) * temp3)
+
+    return reluctance
+
+
 if __name__ == '__main__':
-    mc1 = MagneticCircuit([0.0149], [0.0295], [0.01105], [8], [1, 2], [0.0001, 0.0005], [0, 100], 3000)  # 0.0149
+    mc1 = MagneticCircuit([0.0149], [0.0295], [0.01105], [8], [1], [0.0001, 0.0005], [10, 50], [3000, 2500],
+                          [1, 2])  # 0.0149
     mc1.core_reluctance()
     mc1.air_gap_reluctance()
 
@@ -520,17 +601,114 @@ if __name__ == '__main__':
 
 # self.data_matrix = np.zeros(
 #             (len(core_w) * len(no_of_turns) * len(n_air_gaps) * len(air_gap_h) * len(air_gap_position), 8))
-#         count = 0
+#         row_num = 0
 #         for index_1 in range(len(core_w)):
 #             for index_2 in range(len(no_of_turns)):
 #                 for index_3 in range(len(n_air_gaps)):
 #                     for index_4 in range(len(air_gap_h)):
 #                         for index_5 in range(len(air_gap_position)):
-#                             self.data_matrix[count, 0] = core_w[index_1]
-#                             self.data_matrix[count, 1] = window_h[index_1]
-#                             self.data_matrix[count, 2] = window_w[index_1]
-#                             self.data_matrix[count, 3] = no_of_turns[index_2]
-#                             self.data_matrix[count, 4] = n_air_gaps[index_3]
-#                             self.data_matrix[count, 5] = air_gap_h[index_4]
-#                             self.data_matrix[count, 6] = air_gap_position[index_5]
-#                             count = count + 1
+#                             self.data_matrix[row_num, 0] = core_w[index_1]
+#                             self.data_matrix[row_num, 1] = window_h[index_1]
+#                             self.data_matrix[row_num, 2] = window_w[index_1]
+#                             self.data_matrix[row_num, 3] = no_of_turns[index_2]
+#                             self.data_matrix[row_num, 4] = n_air_gaps[index_3]
+#                             self.data_matrix[row_num, 5] = air_gap_h[index_4]
+#                             self.data_matrix[row_num, 6] = air_gap_position[index_5]
+#                             row_num = row_num + 1
+
+# def air_gap_reluctance(self):
+#      # self.section.append(6)  # acknowledge addition of air-gap
+#      self.max_percent_position = ((self.window_h - (self.air_gap_h / 2)) / self.window_h) * 100
+#      self.min_percent_position = ((self.air_gap_h / 2) / self.window_h) * 100
+#      self.abs_position_air_gap = (self.percent_position_air_gap * self.window_h) / 100  # Convert percent position to absolute value position
+#      h = np.zeros((len(self.data_matrix), 2))
+#
+#      h[:, 0] = np.where((self.percent_position_air_gap <= self.min_percent_position) | (
+#              self.percent_position_air_gap >= self.max_percent_position),
+#                         self.window_h - self.air_gap_h,
+#                         self.abs_position_air_gap - (self.air_gap_h / 2))
+#      h[:, 1] = self.window_h - (self.abs_position_air_gap - (self.air_gap_h / 2))
+#
+#      self.reluctance[:, 5] = np.where(h[:, 1] == 0, fmt.r_round_inf(self.air_gap_h, fmt.sigma(self.air_gap_h,
+#                                                                                               self.core_w / 2,
+#                                                                                               fmt.r_basis(
+#                                                                                                   self.air_gap_h,
+#                                                                                                   self.core_w,
+#                                                                                                   h[:, 0])),
+#                                                                     self.core_w / 2),
+#                                       fmt.femmt_functions.r_round_round(self.air_gap_h, fmt.sigma(self.air_gap_h,
+#                                                                                                   self.core_w / 2,
+#                                                                                                   (fmt.r_basis(
+#                                                                                                       self.air_gap_h / 2,
+#                                                                                                       self.core_w,
+#                                                                                                       h[:, 0])) +
+#                                                                                                   (fmt.r_basis(
+#                                                                                                       self.air_gap_h / 2,
+#                                                                                                       self.core_w,
+#                                                                                                       h[:, 1]))),
+#                                                                         self.core_w / 2))
+#
+#      self.data_matrix[:, 7] = (self.no_of_turns ** 2) / np.sum(self.reluctance, axis=1)
+#      print(self.data_matrix)
+# for i in range(self.single_air_gap_len, self.row_num):
+#     if self.mult_air_gap_type[i] == 1:
+#         h_multiple = (self.window_h[i] - (self.n_air_gaps[i] * self.air_gap_h[i])) / ((self.n_air_gaps[i] - 1) * 2)
+#
+#         temp1 = fmt.r_basis([self.air_gap_h[i]], [self.core_w[i]], [h_multiple])
+#         temp2 = fmt.sigma([self.air_gap_h[i]], [self.core_w[i] / 2], [temp1])
+#         temp3 = fmt.r_round_inf([self.air_gap_h[i]], [temp2], [self.core_w[i] / 2])
+#         self.reluctance[i, 5] = self.reluctance[i, 5] + (2 * temp3)
+#
+#         r_basis_1 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w[i]], [h_multiple])
+#         r_basis_2 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w[i]], [h_multiple])
+#         temp2 = fmt.sigma([self.air_gap_h[i]], [self.core_w[i] / 2], [r_basis_1 + r_basis_2])
+#         temp3 = fmt.femmt_functions.r_round_round([self.air_gap_h[i]], [temp2], [self.core_w[i] / 2])
+#         self.reluctance[i, 5] = self.reluctance[i, 5] + ((self.n_air_gaps[i] - 2) * temp3)
+#     else:
+#         h_multiple = (self.window_h[i] - (self.n_air_gaps[i] * self.air_gap_h[i])) / (self.n_air_gaps[i] + 1)
+#
+#         r_basis_1 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w[i]], [h_multiple])
+#         r_basis_2 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w[i]], [h_multiple / 2])
+#         temp2 = fmt.sigma([self.air_gap_h[i]], [self.core_w[i] / 2], [r_basis_1 + r_basis_2])
+#         temp3 = fmt.femmt_functions.r_round_round([self.air_gap_h[i]], [temp2], [self.core_w[i] / 2])
+#         self.reluctance[i, 5] = self.reluctance[i, 5] + (2 * temp3)
+#
+#         r_basis_1 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w[i]], [h_multiple / 2])
+#         r_basis_2 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w[i]], [h_multiple / 2])
+#         temp2 = fmt.sigma([self.air_gap_h[i]], [self.core_w[i] / 2], [r_basis_1 + r_basis_2])
+#         temp3 = fmt.femmt_functions.r_round_round([self.air_gap_h[i]], [temp2], [self.core_w[i] / 2])
+#         self.reluctance[i, 5] = self.reluctance[i, 5] + ((self.n_air_gaps[i] - 2) * temp3)
+
+
+# self.reluctance[self.single_air_gap_len:self.data_matrix_len, 5] = np.where(self.mult_air_gap_type[self.single_air_gap_len:self.data_matrix_len] == 1,
+        #     (2 * fmt.r_round_inf(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #                          fmt.sigma(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #                                    self.core_w[self.single_air_gap_len:self.data_matrix_len] / 2,
+        #                                    fmt.r_basis(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #                                                self.core_w[self.single_air_gap_len:self.data_matrix_len], h_multiple)),
+        #                          self.core_w[self.single_air_gap_len:self.data_matrix_len] / 2)) + (
+        #                 (self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] - 2) * fmt.r_round_round(
+        #             self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #             fmt.sigma(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #                       self.core_w[self.single_air_gap_len:self.data_matrix_len] / 2,
+        #                       2 * fmt.r_basis([self.air_gap_h[self.single_air_gap_len:self.data_matrix_len] / 2],
+        #                                       [self.core_w[self.single_air_gap_len:self.data_matrix_len]], [h_multiple])),
+        #             self.core_w[self.single_air_gap_len:self.data_matrix_len] / 2)),
+        #     (2 * fmt.r_round_round(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #                                            fmt.sigma(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #                                                      self.core_w[self.single_air_gap_len:self.data_matrix_len] / 2,
+        #                                                      fmt.r_basis(
+        #                                                          self.air_gap_h[self.single_air_gap_len:self.data_matrix_len] / 2,
+        #                                                          self.core_w[self.single_air_gap_len:self.data_matrix_len],
+        #                                                          h_multiple) + fmt.r_basis(
+        #                                                          self.air_gap_h[self.single_air_gap_len:self.data_matrix_len] / 2,
+        #                                                          self.core_w[self.single_air_gap_len:self.data_matrix_len],
+        #                                                          h_multiple / 2)),
+        #                                            self.core_w[self.single_air_gap_len:self.data_matrix_len] / 2)) + (
+        #                 (self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] - 2) * fmt.femmt_functions.r_round_round(
+        #             self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #             fmt.sigma(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len],
+        #                       self.core_w[self.single_air_gap_len:self.data_matrix_len] / 2,
+        #                       2 * fmt.r_basis(self.air_gap_h[self.single_air_gap_len:self.data_matrix_len] / 2,
+        #                                       self.core_w[self.single_air_gap_len:self.data_matrix_len], h_multiple / 2)),
+        #             self.core_w[self.single_air_gap_len:self.data_matrix_len] / 2)))
