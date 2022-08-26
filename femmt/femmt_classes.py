@@ -23,12 +23,6 @@ from .electro_magnetic.Analytical_Core_Data import *
 from .femmt_model_classes import *
 from .femmt_enumerations import *
 
-# Optional usage of FEMM tool by David Meeker
-# 2D Mesh and FEM interfaces (only for windows machines)
-if os.name == 'nt':
-    install_femm_if_missing()
-    import femm
-
 #  ===== Main Class  =====
 class MagneticComponent:
     """
@@ -69,6 +63,8 @@ class MagneticComponent:
 
         self.correct_outer_leg = False
 
+        self.femmt_is_imported = False
+        
         # Initialization of all instance variables
 
         # Breaking variable
@@ -4375,7 +4371,12 @@ class MagneticComponent:
         :return:
 
         """
-        if os.name != 'nt':
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            if self.femmt_is_imported == False:
+                import femm
+                self.femmt_is_imported == True
+        else:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
 
@@ -4692,6 +4693,14 @@ class MagneticComponent:
 
         :return:
         """
+        # Optional usage of FEMM tool by David Meeker
+        # 2D Mesh and FEM interfaces (only for windows machines)
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            if self.femmt_is_imported == False:
+                import femm
+                self.femmt_is_imported == True
+
         # Get paths
         femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")
 

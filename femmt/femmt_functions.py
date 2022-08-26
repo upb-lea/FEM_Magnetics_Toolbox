@@ -272,7 +272,7 @@ def pm_core_w_calculator(inner_core_diameter: float, hole_diameter: float) -> fl
     return np.around(2 * np.sqrt(area_total / np.pi), decimals=4)
 
 
-def install_femm_if_missing() -> None:
+def install_pyfemm_if_missing() -> None:
     """
     Windows users only.
     Installs femm-software pip package in case of running on windows machine
