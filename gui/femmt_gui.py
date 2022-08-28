@@ -15,6 +15,9 @@ import PIL
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
 database = mdb.MaterialDatabase()
+import pickle
+
+import mplcursors
 
 # import sys
 # import matplotlib
@@ -56,6 +59,7 @@ class MainWindow(QMainWindow):
 
         super(MainWindow, self).__init__(parent)
         self.md_simulation_type_comboBox = None
+        self.aut_simulation_type_comboBox = None
         uic.loadUi('femmt_gui.ui', self)
         _translate = QtCore.QCoreApplication.translate
         #self.setWindowIcon(QIcon('Images\\logo.png'))
@@ -289,20 +293,100 @@ class MainWindow(QMainWindow):
         self.aut_initialize_controls()
 
         "Signals in Definition Tab"
+        if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+            self.aut_winding2_enable(False)
         self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
-        self.summarize_pushButton.clicked.connect(self.summarize_data)
+        self.aut_core_material_data_listWidget.addItem("N87")
+        self.aut_core_material_data_listWidget.addItem("N95")
+        self.aut_core_material_data_listWidget.addItem("N97")
 
         self.aut_litz_data_listWidget.addItem("1.5*105*0.1")
         self.aut_litz_data_listWidget.addItem("1.4*200*0.071")
         self.aut_litz_data_listWidget.addItem("2.0*405*0.071")
         self.aut_litz_data_listWidget.addItem("2.0*800*0.05")
 
-        self.aut_litz_data_listWidget.itemDoubleClicked.connect(self.onClicked)
-        self.aut_litz_basket_clear_all_pushbutton.clicked.connect(self.onClearallClicked)
-        self.aut_litz_basket_clear_pushbutton.clicked.connect(self.onClearClicked)
+        self.aut_litz2_data_listWidget.addItem("1.5*105*0.1")
+        self.aut_litz2_data_listWidget.addItem("1.4*200*0.071")
+        self.aut_litz2_data_listWidget.addItem("2.0*405*0.071")
+        self.aut_litz2_data_listWidget.addItem("2.0*800*0.05")
+
+        self.aut_core_material_add_pushButton.clicked.connect(self.oncmatMultipleClicked)
+        self.aut_select_all_core_mat_pushButton.clicked.connect(self.cmatselectall)
+        self.aut_core_material_data_listWidget.itemDoubleClicked.connect(self.oncmatClicked)
+        self.aut_core_mat_basket_clear_all_pushbutton.clicked.connect(self.oncmatClearallClicked)
+        self.aut_core_mat_basket_clear_pushbutton.clicked.connect(self.oncmatClearClicked)
+
+        self.aut_add_litz_pushButton.clicked.connect(self.onl1MultipleClicked)
+        self.aut_select_all_litz_pushButton.clicked.connect(self.litz1selectall)
+        self.aut_litz_data_listWidget.itemDoubleClicked.connect(self.onl1Clicked)
+        self.aut_litz_basket_clear_all_pushbutton.clicked.connect(self.onl1ClearallClicked)
+        self.aut_litz_basket_clear_pushbutton.clicked.connect(self.onl1ClearClicked)
+
+        self.aut_add_litz2_pushButton.clicked.connect(self.onl2MultipleClicked)
+        self.aut_select_all_litz2_pushButton.clicked.connect(self.litz2selectall)
+        self.aut_litz2_data_listWidget.itemDoubleClicked.connect(self.onl2Clicked)
+        self.aut_litz2_basket_clear_all_pushbutton.clicked.connect(self.onl2ClearallClicked)
+        self.aut_litz2_basket_clear_pushbutton.clicked.connect(self.onl2ClearClicked)
 
         self.aut_winding1_implicit_litz_comboBox.currentTextChanged.connect(self.aut_winding1_change_litz_implicit)
         self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
+
+        "Set Validators in Definition Tab"
+        self.aut_min_core_width_lineEdit.setValidator(float_validator)
+        self.aut_max_core_width_lineEdit.setValidator(float_validator)
+        self.aut_step_core_width_lineEdit.setValidator(float_validator)
+
+        self.aut_min_window_height_lineEdit.setValidator(float_validator)
+        self.aut_max_window_height_lineEdit.setValidator(float_validator)
+        self.aut_step_window_height_lineEdit.setValidator(float_validator)
+
+        self.aut_min_window_width_lineEdit.setValidator(float_validator)
+        self.aut_max_window_width_lineEdit.setValidator(float_validator)
+        self.aut_step_window_width_lineEdit.setValidator(float_validator)
+
+        self.aut_winding1_radius_lineEdit.setValidator(float_validator)
+        self.aut_winding1_strands_lineEdit.setValidator(float_validator)
+        self.aut_winding1_fill_factor_lineEdit.setValidator(float_validator)
+        self.aut_winding1_strand_radius_lineEdit.setValidator(float_validator)
+
+        self.aut_winding2_radius_lineEdit.setValidator(float_validator)
+        self.aut_winding2_strands_lineEdit.setValidator(float_validator)
+        self.aut_winding2_fill_factor_lineEdit.setValidator(float_validator)
+        self.aut_winding2_strand_radius_lineEdit.setValidator(float_validator)
+
+        self.aut_min_winding1_turns_lineEdit.setValidator(float_validator)
+        self.aut_max_winding1_turns_lineEdit.setValidator(float_validator)
+        self.aut_step_winding1_turns_lineEdit.setValidator(float_validator)
+
+        self.aut_min_winding2_turns_lineEdit.setValidator(float_validator)
+        self.aut_max_winding2_turns_lineEdit.setValidator(float_validator)
+        self.aut_step_winding2_turns_lineEdit.setValidator(float_validator)
+
+        self.aut_min_air_gap_count_lineEdit.setValidator(float_validator)
+        self.aut_max_air_gap_count_lineEdit.setValidator(float_validator)
+
+        self.aut_air_gap_1_length_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_2_length_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_3_length_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_4_length_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_5_length_lineEdit.setValidator(float_validator)
+
+        self.aut_air_gap_1_position_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_2_position_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_3_position_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_4_position_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_5_position_lineEdit.setValidator(float_validator)
+
+        self.aut_isolation_p2p_lineEdit.setValidator(float_validator)
+        self.aut_isolation_p2s_lineEdit.setValidator(float_validator)
+        self.aut_isolation_s2s_lineEdit.setValidator(float_validator)
+
+        self.aut_isolation_core2cond_top_lineEdit.setValidator(float_validator)
+        self.aut_isolation_core2cond_bot_lineEdit.setValidator(float_validator)
+        self.aut_isolation_core2cond_inner_lineEdit.setValidator(float_validator)
+        self.aut_isolation_core2cond_outer_lineEdit.setValidator(float_validator)
+
+        self.aut_goal_inductance_val_lineEdit.setValidator(float_validator)
 
         "******* Database Section *********"
 
@@ -310,7 +394,7 @@ class MainWindow(QMainWindow):
         self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
 
     def datupdateraph(self):
-        # -----Enter the freq and Temp----------- 
+        # -----Enter the freq and Temp-----------
         mu_real = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[0]
         mu_imag = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[1]
         b = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[2]
@@ -324,12 +408,15 @@ class MainWindow(QMainWindow):
         plt.show()
         """
 
-        plt.plot(b, mu_imag)
+
+
+        lines = plt.plot(b, mu_imag)
         plt.ylabel("Imaginary part of permeability")
         plt.xlabel('B in T')
         plt.title("Imaginary part of permeability")
-        plt.savefig('plot.png', dpi=300, bbox_inches='tight')
+        mplcursors.cursor(lines)
         plt.show()
+        plt.savefig('plot.png', dpi=300, bbox_inches='tight')
 
         # Loading image
         self.pixmap = QPixmap('plot.png')
@@ -365,47 +452,99 @@ class MainWindow(QMainWindow):
             self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
             self.aut_winding1_radius_lineEdit.setEnabled(True)
 
-    def onClearallClicked(self):
+    def oncmatClearallClicked(self):
+        self.aut_core_material_basket_listWidget.clear()
+
+    def oncmatClearClicked(self):
+        List_item = self.aut_core_material_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_core_material_basket_listWidget.takeItem(self.aut_core_material_basket_listWidget.row(item))
+
+    def oncmatMultipleClicked(self):
+        itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_material_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_core_material_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_core_material_basket_listWidget.addItem(i)
+        else:
+            pass
+
+
+    def cmatselectall(self):
+        self.aut_core_material_data_listWidget.selectAll()
+
+    def oncmatClicked(self):
+        itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_material_basket_listWidget.count())]
+        checkitem = self.aut_core_material_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_core_material_basket_listWidget.addItem(self.aut_core_material_data_listWidget.currentItem().text())
+        else:
+            pass
+
+    def onl1ClearallClicked(self):
         self.aut_litz_basket_listWidget.clear()
 
-    def onClearClicked(self):
+    def onl1ClearClicked(self):
         List_item = self.aut_litz_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_litz_basket_listWidget.takeItem(self.aut_litz_basket_listWidget.row(item))
 
-    def onClicked(self):
-        self.aut_litz_basket_listWidget.addItem(self.aut_litz_data_listWidget.currentItem().text())
+    def onl1MultipleClicked(self):
+        itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_litz_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_litz_basket_listWidget.addItem(i)
+        else:
+            pass
 
-    def summarize_data(self):
-        if self.N95_checkBox.isChecked() == True:
-            self.mat_choice_1.setText("N95")
-        elif self.N95_checkBox.isChecked() == False:
-            self.mat_choice_1.setText("")
-        if self.N97_checkBox.isChecked() == True:
-            self.mat_choice_2.setText("N97")
-        elif self.N97_checkBox.isChecked() == False:
-            self.mat_choice_2.setText("")
-        if self.N87_checkBox.isChecked() == True:
-            self.mat_choice_3.setText("N87")
-        elif self.N87_checkBox.isChecked() == False:
-            self.mat_choice_3.setText("")
+    def onl1Clicked(self):
+        itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz_basket_listWidget.count())]
+        checkitem = self.aut_litz_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_litz_basket_listWidget.addItem(self.aut_litz_data_listWidget.currentItem().text())
+        else:
+            pass
 
-        if self.checkBox_Litz1.isChecked() == True:
-            self.litz_choice_1.setText("1.5*105*0.1")
-        elif self.checkBox_Litz1.isChecked() == False:
-            self.litz_choice_1.setText("")
-        if self.checkBox_Litz2.isChecked() == True:
-            self.litz_choice_2.setText("1.4*200*0.071")
-        elif self.checkBox_Litz2.isChecked() == False:
-            self.litz_choice_2.setText("")
-        if self.checkBox_Litz3.isChecked() == True:
-            self.litz_choice_3.setText("2.0*405*0.071")
-        elif self.checkBox_Litz3.isChecked() == False:
-            self.litz_choice_3.setText("")
-        if self.checkBox_Litz4.isChecked() == True:
-            self.litz_choice_4.setText("2.0*800*0.05")
-        elif self.checkBox_Litz4.isChecked() == False:
-            self.litz_choice_4.setText("")
+    def litz1selectall(self):
+        self.aut_litz_data_listWidget.selectAll()
+
+
+    def onl2ClearallClicked(self):
+        self.aut_litz2_basket_listWidget.clear()
+
+    def onl2ClearClicked(self):
+        List_item = self.aut_litz2_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_litz2_basket_listWidget.takeItem(self.aut_litz2_basket_listWidget.row(item))
+
+    def onl2MultipleClicked(self):
+        itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz2_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_litz2_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_litz2_basket_listWidget.addItem(i)
+        else:
+            pass
+
+
+    def onl2Clicked(self):
+        itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz2_basket_listWidget.count())]
+        checkitem = self.aut_litz2_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_litz2_basket_listWidget.addItem(self.aut_litz2_data_listWidget.currentItem().text())
+        else:
+            pass
+
+
+    def litz2selectall(self):
+        self.aut_litz2_data_listWidget.selectAll()
 
     def aut_initialize_controls(self) -> None:
         """
@@ -575,7 +714,6 @@ class MainWindow(QMainWindow):
         # set winding definitions of winding 2 (enable and visible)
         self.aut_winding2_material_comboBox.setEnabled(status)
         self.aut_winding2_type_comboBox.setEnabled(status)
-        self.aut_winding2_turns_lineEdit.setEnabled(status)
         self.aut_min_winding2_turns_lineEdit.setEnabled(status)
         self.aut_max_winding2_turns_lineEdit.setEnabled(status)
         self.aut_step_winding2_turns_lineEdit.setEnabled(status)
@@ -583,11 +721,12 @@ class MainWindow(QMainWindow):
         self.aut_winding2_radius_lineEdit.setEnabled(False)
         self.aut_winding2_fill_factor_lineEdit.setEnabled(status)
         self.aut_winding2_strand_radius_lineEdit.setEnabled(status)
-        self.aut_winding2_litz_material_comboBox.setEnabled(status)
         self.aut_winding2_groupBox.setVisible(status)
 
         # Set turns of winding 2 (enable and visible)
-        self.aut_winding2_turns_lineEdit.setVisible(status)
+        self.aut_min_winding2_turns_lineEdit.setVisible(status)
+        self.aut_max_winding2_turns_lineEdit.setVisible(status)
+        self.aut_step_winding2_turns_lineEdit.setVisible(status)
         self.aut_winding2_scheme_comboBox.setVisible(status)
         self.aut_winding2_turns_label.setVisible(status)
         self.aut_winding2_scheme_label.setVisible(status)
@@ -599,6 +738,13 @@ class MainWindow(QMainWindow):
         self.aut_isolation_p2s_lineEdit.setVisible(status)
         self.aut_isolation_s2s_label.setVisible(status)
         self.aut_isolation_p2s_label.setVisible(status)
+
+        self.aut_litz2_basket_listWidget.setEnabled(status)
+        self.aut_litz2_basket_listWidget.setVisible(status)
+        self.aut_litz2_basket_clear_all_pushbutton.setVisible(status)
+        self.aut_litz2_basket_clear_pushbutton.setVisible(status)
+        self.aut_litzbasket2_label.setVisible(status)
+
 
 
     def md_initialize_controls(self) -> None:
