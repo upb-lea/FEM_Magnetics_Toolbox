@@ -2881,7 +2881,7 @@ class MagneticComponent:
                 l_core_air_air_gap = []
 
                 if self.component.air_gaps.number > 1:
-                    for index, point in enumerate(self.component.two_d_axi.p_air_gaps[2:-2]):
+                    for point in self.component.two_d_axi.p_air_gaps[2:-2]:
                         self.p_island.append(gmsh.model.geo.addPoint(*point))
 
                     # Add two more points for closing of the air gap for a stray_path
@@ -3178,7 +3178,6 @@ class MagneticComponent:
                     self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
 
             gmsh.model.geo.synchronize()
-            
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if visualize_before or save_png:
                 color_scheme = colors_femmt_default
