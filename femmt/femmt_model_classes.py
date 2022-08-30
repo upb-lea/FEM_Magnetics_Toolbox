@@ -285,13 +285,14 @@ class AirGaps:
     number: int
 
     # Needed for to_dict
-    air_gap_settings = []
+    air_gap_settings: List
 
     def __init__(self, method: AirGapMethod, core: Core):
         self.method = method
         self.core = core
         self.midpoints = []
         self.number = 0
+        self.air_gap_settings = []
 
     def add_air_gap(self, leg_position: AirGapLegPosition, position_value: Optional[float], height: float):
         """
@@ -365,7 +366,7 @@ class Isolation:
     cond_cond: List[float] = []
     core_cond: List[float] = []
 
-    def add_winding_isolations(self, primary2primary, secondary2secondary, primary2secondary):
+    def add_winding_isolations(self, primary2primary, secondary2secondary = 0, primary2secondary = 0):
         if primary2primary is None:
             primary2primary = 0
         if secondary2secondary is None:
