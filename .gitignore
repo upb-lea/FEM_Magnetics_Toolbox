@@ -24,6 +24,7 @@ femmt/examples/working_directory
 femmt/examples/femmt
 femmt/examples/femm
 femmt/examples/mesh
+femmt/custom_examples
 .idea/
 femmt/__pycache__/
 gpgit/

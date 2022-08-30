@@ -8,7 +8,7 @@ import gmsh
 import json
 import warnings
 import inspect
-
+import femm
 from onelab import onelab
 from matplotlib import pyplot as plt
 from scipy.optimize import brentq
@@ -116,7 +116,7 @@ class MagneticComponent:
         self.current_density = [None] * self.n_windings  # Defined for every conductor
         self.voltage = [None] * self.n_windings  # Defined for every conductor
         self.frequency = None
-        self.phase_tmp = np.zeros(self.n_windings)  # Default is zero, Defined for every conductor
+        self.phase_deg = np.zeros(self.n_windings)  # Default is zero, Defined for every conductor
         self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
         self.delta = None
 
@@ -3800,11 +3800,11 @@ class MagneticComponent:
         - frequency or reduced frequency
 
 
-        :param frequency: Frequency in a list
+        :param frequency: Frequency
         :type frequency: float
-        :param amplitude_list: Amplitude in a list
+        :param amplitude_list: Current amplitudes according to windings
         :type amplitude_list: List
-        :param phase_deg_list: Phase in degree in a list
+        :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
         :type phase_deg_list: List
         :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
         :type ex_type: str
@@ -3815,52 +3815,67 @@ class MagneticComponent:
         :rtype: None
 
         """
-        phase_deg_list = phase_deg_list or []
-
         print(f"\n---\n"
               f"Excitation: \n"
               f"Frequency: {frequency}\n"
               f"Current(s): {amplitude_list}\n"
               f"Phase(s): {phase_deg_list}\n")
 
+
         # -- Excitation --
-        self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
 
+        # Has the user provided a list of phase angles?
+        phase_deg_list = phase_deg_list or []
         phase_deg_list = np.asarray(phase_deg_list)
-        self.red_freq = np.empty(2)
 
         for num in range(0, self.n_windings):
-            # Imposed current, current density or voltage
+
+            # Imposed current
             if self.flag_excitation_type == 'current':
-                self.current[num] = amplitude_list[num]
-                if len(phase_deg_list) != 0:
-                    self.phase_tmp = phase_deg_list / 180
-            if self.flag_excitation_type == 'current_density':
-                raise NotImplementedError
-            if self.flag_excitation_type == 'voltage':
-                raise NotImplementedError
-                # self.voltage = 2
-
-            # -- Frequency --
-            self.frequency = frequency  # in Hz
-            if self.flag_imposed_reduced_frequency == 1:
-                self.red_freq[num] = 4
-            else:
-                if self.frequency != 0:
-                    self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
-
-                    if self.windings[num].conductor_type == ConductorType.Litz:
-                        self.red_freq[num] = self.windings[num].strand_radius / self.delta
-                    elif self.windings[num].conductor_type == ConductorType.Solid:
-                        self.red_freq[num] = self.windings[num].conductor_radius / self.delta
+                if len(phase_deg_list) == 0:
+                    if self.component_type == "inductor":
+                        # Define complex current phasor as real value
+                        self.current[num] = complex(amplitude_list[num], 0)
                     else:
-                        print("Wrong???")
-                        print(self.windings[num].conductor_type)
-                        self.red_freq[num] = 1  # TODO: doesn't make sense like this
+                        raise ValueError
                 else:
-                    self.delta = 1e20  # random huge value
-                    self.red_freq[num] = 0
+                    self.phase_deg = phase_deg_list
+                    # Define complex current phasor as excitation
+                    self.current[num] = complex(amplitude_list[num]*np.cos(np.deg2rad(phase_deg_list[num])),
+                                                amplitude_list[num]*np.sin(np.deg2rad(phase_deg_list[num])))
+
+        # Imposed current density
+        if self.flag_excitation_type == 'current_density':
+            raise NotImplementedError
+
+        # Imposed voltage
+        if self.flag_excitation_type == 'voltage':
+            raise NotImplementedError
+
+
+        # -- Frequency --
+
+        self.frequency = frequency  # in Hz
+
+        # Define reduced frequency (used for homogenization technique)
+        self.red_freq = np.empty(2)
+
+        if self.frequency != 0:
+            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0)) #TODO: distingish between material conductivities
+            for num in range(0, self.n_windings):
+                if self.windings[num].conductor_type == ConductorType.Litz:
+                    self.red_freq[num] = self.windings[num].strand_radius / self.delta
+                elif self.windings[num].conductor_type == ConductorType.Solid:
+                    self.red_freq[num] = self.windings[num].conductor_radius / self.delta
+                else:
+                    print("Reduced Frequency does not have a physical value here")
+                    print(self.windings[num].conductor_type)
+                    self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
+        else:
+            # DC case
+            self.delta = 1e20  # random huge value
+            self.red_freq[num] = 0
 
     def file_communication(self):
         """
@@ -3937,7 +3952,6 @@ class MagneticComponent:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 1;\n")
             else:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 0;\n")
-            text_file.write("Flag_imposedRr = %s;\n" % self.flag_imposed_reduced_frequency)
 
             # -- Geometry --
             # Number of conductors
@@ -3959,8 +3973,8 @@ class MagneticComponent:
             # -- Excitation --
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
-                text_file.write(f"Val_EE_{num + 1} = {self.current[num]};\n")
-                text_file.write(f"Phase_{num + 1} = Pi*{self.phase_tmp[num]};\n")
+                text_file.write(f"Val_EE_{num + 1} = {abs(self.current[num])};\n")
+                text_file.write(f"Phase_{num + 1} = {np.deg2rad(self.phase_deg[num])};\n")
                 text_file.write(f"Parallel_{num + 1} = {self.windings[num].parallel};\n")
 
             if self.flag_excitation_type == 'current_density':
@@ -4120,7 +4134,7 @@ class MagneticComponent:
                 # Single values related to one winding are added as 'winding_losses' etc.
                 winding_dict = {"turn_losses": [],
                                 "flux": [],
-                                "self_inductivity": [],
+                                "self_inductance": [],
                                 "mag_field_energy": [],
                                 "V": []}
 
@@ -4138,10 +4152,14 @@ class MagneticComponent:
                 # Currents
                 if sweep_number > 1:
                     # sweep_simulation -> get currents from passed currents
-                    winding_dict["I"] = currents[sweep_run][winding]
+                    complex_current_phasor = currents[sweep_run][winding]
                 else:
                     # single_simulation -> get current from instance variable
-                    winding_dict["I"] = self.current[winding]
+                    complex_current_phasor = self.current[winding]
+
+                # Store complex value as list in json (because json isnt natively capable of complex values)
+                winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
+
 
                 # Case litz: Load homogenized results
                 if self.windings[winding].conductor_type == ConductorType.Litz:
@@ -4160,8 +4178,8 @@ class MagneticComponent:
                 winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Inductance
-                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Magnetic Field Energy
                 winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
@@ -4170,12 +4188,14 @@ class MagneticComponent:
                 # Voltage
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
 
                 # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
-                winding_dict["P"] = winding_dict["V"][0] * winding_dict["I"] / 2
-                winding_dict["Q"] = winding_dict["V"][1] * winding_dict["I"] / 2
+                winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
+                winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
                 winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
+
 
                 sweep_dict[f"winding{winding+1}"] = winding_dict
 
@@ -4701,6 +4721,22 @@ class MagneticComponent:
         femm.mo_groupselectblock(2)
         log["Primary Winding Losses"] = femm.mo_blockintegral(6).real
         femm.mo_clearblock()
+
+        if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
+            # secondary Winding Ciruit Properties
+            circuit_properties_secondary = femm.mo_getcircuitproperties('Secondary')
+            log["Secondary Current"] = circuit_properties_secondary[0]
+            log["Secondary Voltage"] = [circuit_properties_secondary[1].real, circuit_properties_secondary[1].imag]
+            log["Secondary Flux"] = [circuit_properties_secondary[2].real, circuit_properties_secondary[2].imag]
+            log["Secondary Self Inductance"] = [circuit_properties_secondary[2].real / circuit_properties_secondary[0],
+                                              circuit_properties_secondary[2].imag / circuit_properties_secondary[0]]
+            log["Secondary Mean Power"] = [0.5 * circuit_properties_secondary[1].real * circuit_properties_secondary[0],
+                                         0.5 * circuit_properties_secondary[1].imag * circuit_properties_secondary[0]]
+
+            # secondary Winding Losses (with group n=2) by field intergation
+            femm.mo_groupselectblock(3)
+            log["Secondary Winding Losses"] = femm.mo_blockintegral(6).real
+            femm.mo_clearblock()
 
 
         json.dump(log, file, indent=2, ensure_ascii=False)

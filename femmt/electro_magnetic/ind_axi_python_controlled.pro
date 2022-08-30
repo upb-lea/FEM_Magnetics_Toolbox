@@ -667,7 +667,8 @@ PostProcessing {
         //Integral { [ CoefGeo / AreaCell1 * CompZ[-Conj[ Dt[{a}] ] ] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
       If(Flag_Transformer)
         { Name Voltage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * (CompZ[Dt[{a}]] + kkk[]*Norm[{ir}] / AreaCell2) ]; In DomainCond2; Jacobian Vol; Integration II; } } }  // for solid case kkk is zero
+          Integral { [ CoefGeo / AreaCell2 * (CompZ[Dt[{a}]] - kkk[]*Norm[{ir}] / AreaCell2) ]; In DomainCond2; Jacobian Vol; Integration II; } } }  // for solid case kkk is zero
+          // TODO: kkk and -kkk must be replace with a general implementation concerning the counting system
       EndIf
 
 
