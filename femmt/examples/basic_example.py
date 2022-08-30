@@ -1,5 +1,4 @@
 import femmt as fmt
-import numpy as np
 import os
 
 def example_thermal_simulation():

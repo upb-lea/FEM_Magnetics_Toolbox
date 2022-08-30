@@ -365,10 +365,26 @@ class Isolation:
     cond_cond: List[float] = []
     core_cond: List[float] = []
 
-    def add_winding_isolations(self, primary2primary, secondary2secondary = 0, primary2secondary = 0):
+    def add_winding_isolations(self, primary2primary, secondary2secondary, primary2secondary):
+        if primary2primary is None:
+            primary2primary = 0
+        if secondary2secondary is None:
+            secondary2secondary = 0
+        if primary2secondary is None:
+            primary2secondary = 0
+
         self.cond_cond = [primary2primary, secondary2secondary, primary2secondary]
 
     def add_core_isolations(self, top_core, bot_core, left_core, right_core):
+        if top_core is None:
+            top_core = 0
+        if bot_core is None:
+            bot_core = 0
+        if left_core is None:
+            left_core = 0
+        if right_core is None:
+            right_core = 0
+
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
     def to_dict(self):
