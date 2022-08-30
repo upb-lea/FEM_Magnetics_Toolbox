@@ -236,8 +236,8 @@ Function {
   //nuOm[#{Winding1, Winding2}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
 
 
-  // Skin Coefficient - will be multiplied with current "ir", which is zero except in windings
-  kkk[#{Iron, Air, Winding1, Winding2}] =  1 ; // choose arbitrary value
+  // Resistive/Skin Coefficient - will be multiplied with current "ir", which is zero except in windings
+  kkk[#{Iron, Air, Winding1, Winding2}] =  0 ; // choose arbitrary value
 
   If(Flag_HomogenisedModel1)
     // Homogenization coefficients
@@ -463,10 +463,10 @@ PostProcessing {
       // ------------------------------------------------------------------------------------------------
       // Magnetic Field
 
-      { Name h ; Value { Term { [ nu[{d a}]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Magh ; Value { Term { [ Norm[ nu[{d a}]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Mag_h_real ; Value { Term { [ Norm[ Re [ nu[{d a}]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Mag_h_imag ; Value { Term { [ Norm[ Im [ nu[{d a}]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name h ; Value { Term { [ nu[{d a}, Freq]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Magh ; Value { Term { [ Norm[ nu[{d a}, Freq]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Mag_h_real ; Value { Term { [ Norm[ Re [ nu[{d a}, Freq]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Mag_h_imag ; Value { Term { [ Norm[ Im [ nu[{d a}, Freq]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
 
 
 
@@ -663,11 +663,11 @@ PostProcessing {
       // Voltage (Voltage_i = dFlux_Linkage_i / dt)
 
       { Name Voltage_1 ; Value {
-        Integral { [ CoefGeo / AreaCell1 * CompZ[Dt[{a}]] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+        Integral { [ CoefGeo / AreaCell1 * (CompZ[Dt[{a}]]) + kkk[]*Norm[{ir}] / AreaCell1 ]; In DomainCond1; Jacobian Vol; Integration II; } } }  // for solid case kkk is zero
         //Integral { [ CoefGeo / AreaCell1 * CompZ[-Conj[ Dt[{a}] ] ] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
       If(Flag_Transformer)
         { Name Voltage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * CompZ[Dt[{a}]] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+          Integral { [ CoefGeo / AreaCell2 * (CompZ[Dt[{a}]] + kkk[]*Norm[{ir}] / AreaCell2) ]; In DomainCond2; Jacobian Vol; Integration II; } } }  // for solid case kkk is zero
       EndIf
 
 
