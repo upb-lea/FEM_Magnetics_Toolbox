@@ -230,6 +230,13 @@ class Core:
 
         self.loss_approach = loss_approach
 
+        self.r_inner = self.component.core.window_w + self.component.core.core_w / 2
+        if self.component.correct_outer_leg:
+            A_out = 200 * 10 ** -6
+            self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
+        else:
+            self.r_outer = np.sqrt((self.component.core.core_w / 2) ** 2 + self.r_inner ** 2)
+
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
             self.sigma = 0
@@ -420,17 +427,8 @@ class VirtualWindingWindow:
     left_bound: float
     right_bound: float
 
-    # Arrangement of the Conductors in the virtual winding window
-    # Obviously depends on the chosen conductor type
-    winding: WindingType
-    scheme: WindingScheme
-
-    def __init__(self, winding: WindingType, scheme: WindingScheme):
-        self.winding = winding
-        self.scheme = scheme
-
-    def to_dict(self):
-        return {
-            "winding_type":  self.winding.name,
-            "winding_scheme": self.scheme.name
-        }
+    def __init__(self, bot_bound: float, top_bound: float, left_bound: float, right_bound: float):
+        self.bot_bound = bot_bound
+        self.top_bound = top_bound
+        self.left_bound = left_bound
+        self.right_bound = right_bound
