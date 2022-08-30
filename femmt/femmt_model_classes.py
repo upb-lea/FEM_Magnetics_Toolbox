@@ -285,13 +285,14 @@ class AirGaps:
     number: int
 
     # Needed for to_dict
-    air_gap_settings = []
+    air_gap_settings: List
 
     def __init__(self, method: AirGapMethod, core: Core):
         self.method = method
         self.core = core
         self.midpoints = []
         self.number = 0
+        self.air_gap_settings = []
 
     def add_air_gap(self, leg_position: AirGapLegPosition, position_value: Optional[float], height: float):
         """
@@ -313,6 +314,9 @@ class AirGaps:
             if midpoint[0] == leg_position and midpoint[1] + midpoint[2] < position_value - height \
                     and midpoint[1] - midpoint[2] > position_value + height:
                 raise Exception(f"Air gaps {index} and {len(self.midpoints)} are overlapping")
+
+        if leg_position == AirGapLegPosition.LeftLeg or leg_position == AirGapLegPosition.RightLeg:
+            raise Exception("Currently the lefpositions LeftLeg and RightLeg are not supported")
 
         if self.method == AirGapMethod.Center:
             if self.number >= 1:
@@ -362,10 +366,26 @@ class Isolation:
     cond_cond: List[float] = []
     core_cond: List[float] = []
 
-    def add_winding_isolations(self, primary2primary, secondary2secondary = None, primary2secondary = None):
+    def add_winding_isolations(self, primary2primary, secondary2secondary = 0, primary2secondary = 0):
+        if primary2primary is None:
+            primary2primary = 0
+        if secondary2secondary is None:
+            secondary2secondary = 0
+        if primary2secondary is None:
+            primary2secondary = 0
+
         self.cond_cond = [primary2primary, secondary2secondary, primary2secondary]
 
     def add_core_isolations(self, top_core, bot_core, left_core, right_core):
+        if top_core is None:
+            top_core = 0
+        if bot_core is None:
+            bot_core = 0
+        if left_core is None:
+            left_core = 0
+        if right_core is None:
+            right_core = 0
+
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
     def to_dict(self):
@@ -383,10 +403,8 @@ class StrayPath:
     "stray air gap" is different in axi-symmetric approximation
     """
 
-    start_index: int        # lower air gap that characterizes the stray path
-    radius: float
-    width: float
-    midpoint: List[List[float]]
+    start_index: int        # Air gaps are sorted from lowest to highest. This index refers to the air_gap index bottom up
+    length: float           # Resembles the length of the whole tablet starting from the y-axis
 
 class VirtualWindingWindow:
     """

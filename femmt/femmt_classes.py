@@ -23,12 +23,6 @@ from .electro_magnetic.Analytical_Core_Data import *
 from .femmt_model_classes import *
 from .femmt_enumerations import *
 
-# Optional usage of FEMM tool by David Meeker
-# 2D Mesh and FEM interfaces (only for windows machines)
-if os.name == 'nt':
-    install_femm_if_missing()
-    import femm
-
 #  ===== Main Class  =====
 class MagneticComponent:
     """
@@ -69,6 +63,8 @@ class MagneticComponent:
 
         self.correct_outer_leg = False
 
+        self.femmt_is_imported = False
+        
         # Initialization of all instance variables
 
         # Breaking variable
@@ -440,6 +436,9 @@ class MagneticComponent:
         self.stray_path = stray_path
 
     def set_air_gaps(self, air_gaps: AirGaps):
+        # Sorting air gaps from lower to upper
+        air_gaps.midpoints.sort(key=lambda x: x[1])
+
         self.air_gaps = air_gaps
 
     def set_windings(self, windings: List[Winding]):
@@ -653,31 +652,63 @@ class MagneticComponent:
 
                 # Center leg (0)
                 if self.component.air_gaps.midpoints[i][0] == 0:
-                    # The center points are passed by air_gaps.update() and at this point transformed each into 4
-                    # corner points
-                    self.p_air_gaps[i * 4 + 0] = [-self.component.core.core_w / 2,
-                                                  self.component.air_gaps.midpoints[i][1] -
-                                                  self.component.air_gaps.midpoints[i][2] / 2,
+                    # The center points are transformed each into 4 corner points
+
+                    air_gap_y_position = self.component.air_gaps.midpoints[i][1]
+                    air_gap_height = self.component.air_gaps.midpoints[i][2]
+                    air_gap_length_top = self.component.core.core_w / 2
+                    air_gap_length_bot = self.component.core.core_w / 2
+
+                    # Check for stray_paths in integrated transformers
+                    if self.component.component_type == ComponentType.IntegratedTransformer:
+                        if self.component.stray_path.start_index == i:
+                            # Stray path is above current air_gap
+                            air_gap_length_top = self.component.stray_path.length
+                        elif self.component.stray_path.start_index + 1 == i:
+                            # Stray path is below current air_gap
+                            air_gap_length_bot = self.component.stray_path.length
+
+                    # Bottom left
+                    self.p_air_gaps[i * 4 + 0] = [0,
+                                                  air_gap_y_position -
+                                                  air_gap_height / 2,
                                                   0,
                                                   mesh_accuracy]
 
-                    self.p_air_gaps[i * 4 + 1] = [self.component.core.core_w / 2,
-                                                  self.component.air_gaps.midpoints[i][1] -
-                                                  self.component.air_gaps.midpoints[i][2] / 2,
+                    # Bottom right
+                    self.p_air_gaps[i * 4 + 1] = [air_gap_length_bot,
+                                                  air_gap_y_position -
+                                                  air_gap_height / 2,
                                                   0,
                                                   mesh_accuracy]
 
-                    self.p_air_gaps[i * 4 + 2] = [-self.component.core.core_w / 2,
-                                                  self.component.air_gaps.midpoints[i][1] +
-                                                  self.component.air_gaps.midpoints[i][2] / 2,
+                    # Top left
+                    self.p_air_gaps[i * 4 + 2] = [0,
+                                                  air_gap_y_position +
+                                                  air_gap_height / 2,
                                                   0,
                                                   mesh_accuracy]
 
-                    self.p_air_gaps[i * 4 + 3] = [self.component.core.core_w / 2,
-                                                  self.component.air_gaps.midpoints[i][1] +
-                                                  self.component.air_gaps.midpoints[i][2] / 2,
+                    # Top right
+                    self.p_air_gaps[i * 4 + 3] = [air_gap_length_top,
+                                                  air_gap_y_position +
+                                                  air_gap_height / 2,
                                                   0,
                                                   mesh_accuracy]
+
+            # In order to close the air gap when a stray_path is added, additional points need to be added
+            if self.component.component_type == ComponentType.IntegratedTransformer:
+                top_point = [self.component.core.core_w / 2,
+                                self.component.air_gaps.midpoints[self.component.stray_path.start_index+1][1] -
+                                air_gap_height / 2,
+                                0,
+                                mesh_accuracy]
+                bot_point = [self.component.core.core_w / 2,
+                                self.component.air_gaps.midpoints[self.component.stray_path.start_index][1] +
+                                air_gap_height / 2,
+                                0,
+                                mesh_accuracy]
+                self.p_close_air_gaps = [top_point, bot_point]
 
         def draw_virtual_winding_windows(self):
             # Virtual Windows
@@ -773,14 +804,13 @@ class MagneticComponent:
                 # TODO: Separation in more Virtual Winding Windows
 
                 # bot window
-                island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
                 min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1]  # bottom
-                max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - self.component.isolation.core_cond[0]  # sep_hor
+                max11 = self.p_air_gaps[self.component.stray_path.start_index*4+2][1] - self.component.isolation.core_cond[0]  # sep_hor
                 left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
                 right11 = self.r_inner - self.component.isolation.core_cond[3]
 
                 # top window
-                min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + self.component.isolation.core_cond[1]
+                min21 = self.p_air_gaps[(self.component.stray_path.start_index+1)*4][1] + self.component.isolation.core_cond[1]
                 max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[0]  # top
                 left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
                 right21 = self.r_inner - self.component.isolation.core_cond[3]
@@ -2697,29 +2727,6 @@ class MagneticComponent:
             # Core generation
             # --------------------------------------- Points --------------------------------------------
             if self.component.dimensionality == "2D":
-
-                # Find points of air gaps (used later)
-                if self.component.air_gaps.number > 0:
-                    # Top and bottom point
-                    center_right = min_max_inner_points(self.component.two_d_axi.p_window[4],
-                                                        self.component.two_d_axi.p_window[6],
-                                                        self.component.two_d_axi.p_air_gaps)
-                    island_right = inner_points(self.component.two_d_axi.p_window[4],
-                                                self.component.two_d_axi.p_window[6],
-                                                self.component.two_d_axi.p_air_gaps)
-
-                    
-                    # Dedicated stray path:
-                    if self.component.component_type == ComponentType.IntegratedTransformer:
-                        # mshopt stray_path_gap = [[], []]
-                        # mshopt stray_path_gap[0][:] = island_right[(self.stray_path.start_index-1)*2][:]
-                        # mshopt stray_path_gap[1][:] = island_right[(self.stray_path.start_index-1)*2+1][:]
-                        island_right[(self.component.stray_path.start_index - 1) * 2][0] = \
-                            self.component.stray_path.radius
-                        island_right[(self.component.stray_path.start_index - 1) * 2 + 1][0] = \
-                            self.component.stray_path.radius
-
-
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Geometry definitions: points -> lines -> curve loops -> surfaces
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2731,8 +2738,8 @@ class MagneticComponent:
                 # First point (left point of lowest air gap)
                 if self.component.air_gaps.number > 0:
                     self.p_core.append(gmsh.model.geo.addPoint(0,
-                                                               center_right[0][1],
-                                                               center_right[0][2],
+                                                               self.component.two_d_axi.p_air_gaps[0][1],
+                                                               0,
                                                                self.c_core))
                 if self.component.air_gaps.number == 0:
                     self.p_core.append(None)  # dummy filled for no air gap special case
@@ -2767,13 +2774,13 @@ class MagneticComponent:
                 # Two points of highest air gap
                 if self.component.air_gaps.number > 0:
                     self.p_core.append(gmsh.model.geo.addPoint(0,
-                                                               center_right[1][1],
-                                                               center_right[1][2],
+                                                               self.component.two_d_axi.p_air_gaps[-2][1],
+                                                               self.component.two_d_axi.p_air_gaps[-2][2],
                                                                self.c_core))
 
-                    self.p_core.append(gmsh.model.geo.addPoint(center_right[1][0],
-                                                               center_right[1][1],
-                                                               center_right[1][2],
+                    self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_air_gaps[-1][0],
+                                                               self.component.two_d_axi.p_air_gaps[-1][1],
+                                                               self.component.two_d_axi.p_air_gaps[-1][2],
                                                                self.c_window))
 
                 if self.component.air_gaps.number == 0:
@@ -2804,9 +2811,9 @@ class MagneticComponent:
 
                 # Last point of lowest air gap
                 if self.component.air_gaps.number > 0:
-                    self.p_core.append(gmsh.model.geo.addPoint(center_right[0][0],
-                                                               center_right[0][1],
-                                                               center_right[0][2],
+                    self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_air_gaps[1][0],
+                                                               self.component.two_d_axi.p_air_gaps[1][1],
+                                                               self.component.two_d_axi.p_air_gaps[1][2],
                                                                self.c_window))
 
                 if self.component.air_gaps.number == 0:
@@ -2868,31 +2875,43 @@ class MagneticComponent:
                 # - Core parts between Air Gaps
                 # Points of Core Islands (index refers to sketch)
 
-                if self.component.air_gaps.number != 0:
-                    island_right_tmp = island_right
-                    while island_right_tmp.shape[0] > 0:
-                        # take two points with lowest y-coordinates
-                        min_island_right_tmp = np.argmin(island_right_tmp[:, 1])
-                        self.p_island.append(gmsh.model.geo.addPoint(0,
-                                                                     island_right_tmp[min_island_right_tmp, 1],
-                                                                     island_right_tmp[min_island_right_tmp, 2],
-                                                                     self.c_core))
-                        self.p_island.append(gmsh.model.geo.addPoint(island_right_tmp[min_island_right_tmp, 0],
-                                                                     island_right_tmp[min_island_right_tmp, 1],
-                                                                     island_right_tmp[min_island_right_tmp, 2],
-                                                                     self.c_window))
 
-                        island_right_tmp = np.delete(island_right_tmp, min_island_right_tmp, 0)
+                stray_path_air_gap_top_point = None
+                stray_path_air_gap_bot_point = None
+                l_core_air_air_gap = []
+
+                if self.component.air_gaps.number > 1:
+                    for point in self.component.two_d_axi.p_air_gaps[2:-2]:
+                        self.p_island.append(gmsh.model.geo.addPoint(*point))
+
+                    # Add two more points for closing of the air gap for a stray_path
+                    if self.component.component_type == ComponentType.IntegratedTransformer:
+                        stray_path_air_gap_top_point = gmsh.model.geo.addPoint(*self.component.two_d_axi.p_close_air_gaps[0])
+                        stray_path_air_gap_bot_point = gmsh.model.geo.addPoint(*self.component.two_d_axi.p_close_air_gaps[1])
 
                     # Curves of Core Islands (index refers to sketch)
                     for i in range(0, int(len(self.p_island) / 4)):
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], self.p_island[4 * i + 1]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], self.p_island[4 * i + 2]))
-                        self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
+                        if self.component.component_type == ComponentType.IntegratedTransformer and self.component.stray_path.start_index == i:
+                            l_core_air_air_gap.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], stray_path_air_gap_bot_point))
+                            self.l_core_air.append(gmsh.model.geo.addLine(stray_path_air_gap_bot_point, self.p_island[4 * i + 1]))
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], stray_path_air_gap_top_point))
+                            l_core_air_air_gap.append(gmsh.model.geo.addLine(stray_path_air_gap_top_point, self.p_island[4 * i + 2]))
+                            self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
+
+                            self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
+                                [l_core_air_air_gap[-2], self.l_core_air[-3], self.l_core_air[-2], l_core_air_air_gap[-1], self.l_core_air[-1], self.l_bound_core[-1]]))
+                        else:
+                            # Default
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], self.p_island[4 * i + 1]))
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], self.p_island[4 * i + 2]))
+                            self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
+                            
+                            self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
+                                [self.l_core_air[-3], self.l_core_air[-2], self.l_core_air[-1], self.l_bound_core[-1]]))
+                        
                         # Iterative plane creation
-                        self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
-                            [self.l_core_air[-3], self.l_core_air[-2], self.l_core_air[-1], self.l_bound_core[-1]]))
                         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([-self.curve_loop_island[-1]]))
 
                 # Curves: Boundary - Air
@@ -2907,37 +2926,40 @@ class MagneticComponent:
                                 gmsh.model.geo.addLine(self.p_island[4 * (i - 1) + 2], self.p_island[4 * i + 0]))
                         if i == int(len(self.p_island) / 4) - 1:  # Last Line
                             self.l_bound_air.append(gmsh.model.geo.addLine(self.p_island[-2], self.p_core[5]))
-
                 
-                # Curves: Close air gap
+                # Curves: Close air gaps
                 if self.component.air_gaps.number > 0:
                     for i in range(0, self.component.air_gaps.number):
-                        bottom_point = 0
-                        top_point = 0
-                        if i == 0:
-                            bottom_point = self.p_core[11]
-                        else:
-                            bottom_point = self.p_island[(i-1)*4+3]
-                        if i == self.component.air_gaps.number-1:
-                            top_point = self.p_core[6]
-                        else:
-                            top_point = self.p_island[i*4+1]
+                        bottom_point = self.p_core[11] if i == 0 else self.p_island[(i-1)*4+3]
+                        top_point = self.p_core[6] if i == self.component.air_gaps.number-1 else self.p_island[i*4+1]
+
+                        if self.component.component_type == ComponentType.IntegratedTransformer:
+                            if self.component.stray_path.start_index == i:
+                                # Stray path is above current air_gap
+                                top_point = stray_path_air_gap_bot_point
+                            elif self.component.stray_path.start_index + 1 == i: 
+                                # Stray path is below current air_gap
+                                bottom_point = stray_path_air_gap_top_point
 
                         self.l_air_gaps_air.append(gmsh.model.geo.addLine(bottom_point, top_point))
 
                 for i in range(0, self.component.air_gaps.number):
                     left = self.l_bound_air[i]
-                    top = None
-                    bottom = None
                     right  = self.l_air_gaps_air[i]
-                    if i == 0:
-                        bottom = self.l_core_air[6]
-                    else:
-                        bottom = self.l_core_air[6+3*i]
+
                     if i == self.component.air_gaps.number-1:
                         top = self.l_core_air[0]
+                    elif self.component.component_type == ComponentType.IntegratedTransformer and self.component.stray_path.start_index == i:
+                        top = l_core_air_air_gap[0]
                     else:
                         top = self.l_core_air[7+3*i]
+                        
+                    if i == 0:
+                        bottom = self.l_core_air[6] 
+                    elif self.component.component_type == ComponentType.IntegratedTransformer and self.component.stray_path.start_index + 1 == i:
+                        bottom = l_core_air_air_gap[1]
+                    else:
+                        bottom = self.l_core_air[6+3*i]
 
                     curve_loop = gmsh.model.geo.addCurveLoop([left, top, bottom, right], -1, True)
                     self.curve_loop_air_gaps.append(curve_loop)
@@ -3060,16 +3082,21 @@ class MagneticComponent:
                 self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp))
                 """
 
-                # With splitted air gaps
+                # With closed air gaps
                 l_air_tmp = []
                 if self.component.air_gaps.number == 0:
                     l_air_tmp = self.l_core_air
                 elif self.component.air_gaps.number > 0:
                     l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
+
                     for i in range(self.component.air_gaps.number - 1):
-                        l_air_tmp.append(self.l_core_air[8+3*i])
-                else:
-                    raise Exception("Air gaps number is negative. Can only be positive")
+                        if self.component.component_type == ComponentType.IntegratedTransformer:
+                            l_air_tmp.append(self.l_core_air[7+3*i])
+                            l_air_tmp.append(self.l_core_air[8+3*i])
+                            l_air_tmp.append(self.l_core_air[9+3*i])
+                        else:
+                            l_air_tmp.append(self.l_core_air[8+3*i])
+                            
                 #for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
@@ -3078,7 +3105,6 @@ class MagneticComponent:
                 #for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
-
 
                 self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
 
@@ -3152,7 +3178,6 @@ class MagneticComponent:
                     self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
 
             gmsh.model.geo.synchronize()
-
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if visualize_before or save_png:
                 color_scheme = colors_femmt_default
@@ -3166,8 +3191,9 @@ class MagneticComponent:
                 # air gap color
                 if self.plane_surface_air_gaps:
                     # only colorize air-gap in case of air gaps
-                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_scheme[colors_geometry["air_gap"]][0], 
-                        color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2], recursive=True)
+                    for air_gap in self.plane_surface_air_gaps:
+                        gmsh.model.setColor([(2, air_gap)], color_scheme[colors_geometry["air_gap"]][0], 
+                            color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2], recursive=True)
 
                 # air/potting-material inside core window
                 gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0], 
@@ -3196,12 +3222,44 @@ class MagneticComponent:
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # - Forward Meshing -
+            # TODO The following algorithms try to modify the mesh in order to reduce the runtime. But maybe the synchronize() calls
+            # have a high runtime. Check if thats true and when it does try to reduce the number of synchronize() calls by adding all points first and
+            # embed them later together:
             # This is added here therefore the additional points are not seen in the pictures and views
             self.forward_meshing()
 
-            # No mesh is generated here because generating a mesh, saving it as *.msh loading it and appending more geometry data
-            # and the meshing again can cause bugs in the mesh
+            # In order to set a higher mesh density for the core islands additional points are added
+            if self.component.air_gaps.number > 1:
+                p_inner_island = []
+                delta_hor = (self.component.two_d_axi.p_air_gaps[3][0] - self.component.two_d_axi.p_air_gaps[2][0]) / 15
+                delta_ver = (self.component.two_d_axi.p_air_gaps[4][1] - self.component.two_d_axi.p_air_gaps[2][1]) / 20
+                for index, point in enumerate(self.component.two_d_axi.p_air_gaps[2:-2]):
+                    offset = index % 4
+                    if offset == 0:
+                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] + delta_hor, point[1] + delta_ver, 0, self.c_core))
+                    elif offset == 1:
+                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] - delta_hor, point[1] + delta_ver, 0, self.c_window))
+                    elif offset == 2:
+                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] + delta_hor, point[1] - delta_ver, 0, self.c_core))
+                    elif offset == 3:
+                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] - delta_hor, point[1] - delta_ver, 0, self.c_window))
+
+                l_inner_island = []
+                for i in range(int(len(p_inner_island) / 4)):
+                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i], p_inner_island[4*i+1]))
+                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+1], p_inner_island[4*i+3]))
+                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+3], p_inner_island[4*i+2]))
+                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+2], p_inner_island[4*i]))
+
+                gmsh.model.geo.synchronize()
+
+                for i in range(int(len(p_inner_island) / 4)):
+                    gmsh.model.mesh.embed(0, p_inner_island[i:i+4], 2, self.plane_surface_core[i+1])
+                    gmsh.model.mesh.embed(1, l_inner_island[i:i+4], 2, self.plane_surface_core[i+1])
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # No mesh is generated here, because generating a mesh, saving it as *.msh, loading it, appending more geometry data
+            # and then mesh again can cause bugs in the mesh
             # Therefore only the model geometry is saved and the mesh will be generated later
             # -> Save file as geo: File extension must be *.geo_unrolled
             gmsh.write(self.component.model_geo_file)
@@ -3609,8 +3667,7 @@ class MagneticComponent:
             # is put on the winding window. Every point that is too close to the conductors is removed.
             # Every remaining point is added to the mesh with a higher mesh density
 
-            tags_raster = []
-            min_distance = max([winding.conductor_radius for winding in self.component.windings]) + self.component.isolation.cond_cond[0]
+            min_distance = max([winding.conductor_radius for winding in self.component.windings]) + max(self.component.isolation.cond_cond)
             left_bound = self.component.core.core_w / 2
             right_bound = self.component.two_d_axi.r_inner
             top_bound = self.component.core.window_h / 2
@@ -3619,7 +3676,7 @@ class MagneticComponent:
             width = right_bound - left_bound
             height = top_bound - bot_bound
 
-            number_cols = 15 # Can be changed. More points equal higher raster density 
+            number_cols = 16 # Can be changed. More points equal higher raster density 
             number_rows = int(number_cols*height/width) # Assumption: number_cols/number_rows = width/height
 
             cell_width = width/(number_cols+1)
@@ -3640,29 +3697,96 @@ class MagneticComponent:
                     point = conductors[winding][i*5]
                     fixed_points.append([point[0], point[1]])
 
+            # Because the points need to be embed into the right surface. The points now will be split between different isolations and the air in the winding window.
+            # TODO Currently primary secondary isolation is not considered
+            left_iso = []
+            right_iso = []
+            top_iso = []
+            bot_iso = []
+            primary_secondary_iso = []
+            air = []
+
+            for i in range(len(self.component.two_d_axi.p_iso_pri_sec)):
+                primary_secondary_iso.append([])
+
+            # Isolations are currently not implemented for integrated transformers
+            if self.component.component_type is not ComponentType.IntegratedTransformer:
+                iso_core_left = self.component.two_d_axi.p_iso_core[0]
+                iso_core_top = self.component.two_d_axi.p_iso_core[1]
+                iso_core_right = self.component.two_d_axi.p_iso_core[2]
+                iso_core_bot = self.component.two_d_axi.p_iso_core[3]
+
             # Extract all free_points
-            for fixed_point in fixed_points:
-                left = fixed_point[0] - min_distance
-                right = fixed_point[0] + min_distance
-                top = fixed_point[1] + min_distance
-                bot = fixed_point[1] - min_distance
+            for i in range(len(possible_points)):
+                x = possible_points[i][0]
+                y = possible_points[i][1]
 
-                for i in range(len(possible_points)):
-                    if possible_points[i] is not None:
-                        x = possible_points[i][0]
-                        y = possible_points[i][1]
-                        if x > left and x < right and y > bot and y < top:
-                            possible_points[i] = None
-            
-            for p in possible_points:
-                if p is not None:
-                    tags_raster.append(gmsh.model.geo.addPoint(p[0], p[1], 0, self.c_window))
+                # Check collision with fixed points
+                valid = True
+                for fixed_point in fixed_points:
+                    dist = np.sqrt((fixed_point[0]-x)**2 + (fixed_point[1]-y)**2)
+                    if dist < min_distance:
+                        valid = False
+                        break
 
+                if not valid:
+                    continue
+
+                # Check if point is in stray_path
+                if self.component.component_type == ComponentType.IntegratedTransformer:
+                    start_index = self.component.stray_path.start_index
+                    stray_path_top_bound = self.component.air_gaps.midpoints[start_index+1][1] - self.component.air_gaps.midpoints[start_index+1][2] / 2
+                    stray_path_bot_bound = self.component.air_gaps.midpoints[start_index][1] + self.component.air_gaps.midpoints[start_index][2] / 2
+                    stray_path_right_bound = self.component.stray_path.length
+                    stray_path_left_bound = left_bound
+
+                    if x > stray_path_left_bound and x < stray_path_right_bound and y > stray_path_bot_bound and y < stray_path_top_bound:
+                        continue
+
+                # Point seems to be valid. Now find out in which surface the point belongs
+                point = gmsh.model.geo.addPoint(x, y, 0, 2*self.c_window)
+
+                if self.component.component_type is not ComponentType.IntegratedTransformer:
+                    if point_is_in_rect(x, y, iso_core_left):
+                        # Left iso
+                        left_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_top):
+                        # Top iso
+                        top_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_right):
+                        # Right iso
+                        right_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_bot):
+                        # Bot iso
+                        bot_iso.append(point)
+                    else:
+                        # Check if point is in pri_to_sec isolation
+                        added = False
+                        for i in range(len(primary_secondary_iso)):
+                            if point_is_in_rect(x, y, self.component.two_d_axi.p_iso_pri_sec[i]):
+                                primary_secondary_iso[i].append(point)
+                                added = True
+                                break
+
+                        if not added:
+                            # Air
+                            air.append(point)
+                else:
+                    air.append(point)
             # Call synchronize so the points will be added to the model            
             gmsh.model.geo.synchronize()
 
-            # Embed rasterization points
-            gmsh.model.mesh.embed(0, tags_raster, 2, self.plane_surface_air[0])
+            # Embed points into surfaces
+            if self.component.component_type is not ComponentType.IntegratedTransformer:
+                gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
+                gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
+                gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
+                gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
+
+                for i in range(len(primary_secondary_iso)):
+                    gmsh.model.mesh.embed(0, primary_secondary_iso[i], 2, self.plane_surface_iso_pri_sec[i])
+            
+            gmsh.model.mesh.embed(0, air, 2, self.plane_surface_air[0])
 
             # Synchronize again
             gmsh.model.geo.synchronize()
@@ -4277,7 +4401,12 @@ class MagneticComponent:
         :return:
 
         """
-        if os.name != 'nt':
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            if self.femmt_is_imported == False:
+                import femm
+                self.femmt_is_imported == True
+        else:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
 
@@ -4594,6 +4723,14 @@ class MagneticComponent:
 
         :return:
         """
+        # Optional usage of FEMM tool by David Meeker
+        # 2D Mesh and FEM interfaces (only for windows machines)
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            if self.femmt_is_imported == False:
+                import femm
+                self.femmt_is_imported == True
+
         # Get paths
         femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")
 

@@ -124,6 +124,9 @@ In it you can find
 * losses per winding and for each individual winding,
 * self- and mutual inductances.
 
+For more information about the possible winding types, please
+have a look `here <WindingOverview.md>`__.
+
 4. GUI
 ------
 
