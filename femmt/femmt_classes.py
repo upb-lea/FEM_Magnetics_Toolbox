@@ -2881,7 +2881,7 @@ class MagneticComponent:
                 l_core_air_air_gap = []
 
                 if self.component.air_gaps.number > 1:
-                    for point in self.component.two_d_axi.p_air_gaps[2:-2]:
+                    for index, point in enumerate(self.component.two_d_axi.p_air_gaps[2:-2]):
                         self.p_island.append(gmsh.model.geo.addPoint(*point))
 
                     # Add two more points for closing of the air gap for a stray_path
@@ -3178,7 +3178,7 @@ class MagneticComponent:
                     self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
 
             gmsh.model.geo.synchronize()
-
+            
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if visualize_before or save_png:
                 color_scheme = colors_femmt_default
@@ -3223,12 +3223,44 @@ class MagneticComponent:
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # - Forward Meshing -
+            # TODO The following algorithms try to modify the mesh in order to reduce the runtime. But maybe the synchronize() calls
+            # have a high runtime. Check if thats true and when it does try to reduce the number of synchronize() calls by adding all points first and
+            # embed them later together:
             # This is added here therefore the additional points are not seen in the pictures and views
             self.forward_meshing()
 
-            # No mesh is generated here because generating a mesh, saving it as *.msh loading it and appending more geometry data
-            # and the meshing again can cause bugs in the mesh
+            # In order to set a higher mesh density for the core islands additional points are added
+            if self.component.air_gaps.number > 1:
+                p_inner_island = []
+                delta_hor = (self.component.two_d_axi.p_air_gaps[3][0] - self.component.two_d_axi.p_air_gaps[2][0]) / 15
+                delta_ver = (self.component.two_d_axi.p_air_gaps[4][1] - self.component.two_d_axi.p_air_gaps[2][1]) / 20
+                for index, point in enumerate(self.component.two_d_axi.p_air_gaps[2:-2]):
+                    offset = index % 4
+                    if offset == 0:
+                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] + delta_hor, point[1] + delta_ver, 0, self.c_core))
+                    elif offset == 1:
+                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] - delta_hor, point[1] + delta_ver, 0, self.c_window))
+                    elif offset == 2:
+                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] + delta_hor, point[1] - delta_ver, 0, self.c_core))
+                    elif offset == 3:
+                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] - delta_hor, point[1] - delta_ver, 0, self.c_window))
+
+                l_inner_island = []
+                for i in range(int(len(p_inner_island) / 4)):
+                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i], p_inner_island[4*i+1]))
+                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+1], p_inner_island[4*i+3]))
+                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+3], p_inner_island[4*i+2]))
+                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+2], p_inner_island[4*i]))
+
+                gmsh.model.geo.synchronize()
+
+                for i in range(int(len(p_inner_island) / 4)):
+                    gmsh.model.mesh.embed(0, p_inner_island[i:i+4], 2, self.plane_surface_core[i+1])
+                    gmsh.model.mesh.embed(1, l_inner_island[i:i+4], 2, self.plane_surface_core[i+1])
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # No mesh is generated here, because generating a mesh, saving it as *.msh, loading it, appending more geometry data
+            # and then mesh again can cause bugs in the mesh
             # Therefore only the model geometry is saved and the mesh will be generated later
             # -> Save file as geo: File extension must be *.geo_unrolled
             gmsh.write(self.component.model_geo_file)
@@ -3636,7 +3668,6 @@ class MagneticComponent:
             # is put on the winding window. Every point that is too close to the conductors is removed.
             # Every remaining point is added to the mesh with a higher mesh density
 
-            tags_raster = []
             min_distance = max([winding.conductor_radius for winding in self.component.windings]) + max(self.component.isolation.cond_cond)
             left_bound = self.component.core.core_w / 2
             right_bound = self.component.two_d_axi.r_inner
