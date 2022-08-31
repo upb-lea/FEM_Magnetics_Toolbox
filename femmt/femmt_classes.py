@@ -8,7 +8,7 @@ import gmsh
 import json
 import warnings
 import inspect
-import femm
+
 from onelab import onelab
 from matplotlib import pyplot as plt
 from scipy.optimize import brentq
@@ -3827,16 +3827,18 @@ class MagneticComponent:
 
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
-        phase_deg_list = np.asarray(phase_deg_list)
+        # phase_deg_list = np.asarray(phase_deg_list)
 
         for num in range(0, self.n_windings):
 
             # Imposed current
             if self.flag_excitation_type == 'current':
                 if len(phase_deg_list) == 0:
-                    if self.component_type == "inductor":
+                    if self.component_type == ComponentType.Inductor:
                         # Define complex current phasor as real value
                         self.current[num] = complex(amplitude_list[num], 0)
+                        phase_deg_list.append(0)  # set to zero
+
                     else:
                         raise ValueError
                 else:
