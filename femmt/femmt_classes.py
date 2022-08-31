@@ -3088,7 +3088,7 @@ class MagneticComponent:
                     l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
 
                     for i in range(self.component.air_gaps.number - 1):
-                        if self.component.component_type == ComponentType.IntegratedTransformer:
+                        if self.component.component_type == ComponentType.IntegratedTransformer and i == self.component.stray_path.start_index:
                             l_air_tmp.append(self.l_core_air[7+3*i])
                             l_air_tmp.append(self.l_core_air[8+3*i])
                             l_air_tmp.append(self.l_core_air[9+3*i])
@@ -4086,7 +4086,7 @@ class MagneticComponent:
         mygetdp = os.path.join(self.onelab_folder_path, "getdp")
         self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.e_m_mesh_file + " -solve Analysis -v2")
 
-    def write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
+    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
         them in a dictionary. Additionally, the input settings which are used in order to create the simulation are also printed.
@@ -5212,7 +5212,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        self.write_log()
+        self.calculate_and_write_log()
         if show_results:
             self.visualize()
         # results =
@@ -5495,7 +5495,7 @@ class MagneticComponent:
                 # self.visualize()
 
         if self.valid:
-            self.write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
+            self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
             if show_last:
                 self.visualize()
