@@ -164,7 +164,7 @@ Please use the issues report button within github to report bugs.
 
 Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change. For contributing, please refer
-to this `section <Contributing.md>`__.
+to this `section <Contributing.rst>`__.
 
 8. Changelog
 ------------
