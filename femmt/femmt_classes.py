@@ -62,8 +62,6 @@ class MagneticComponent:
         self.update_paths(working_directory)
 
         self.correct_outer_leg = False
-
-        self.femmt_is_imported = False
         
         # Initialization of all instance variables
 
@@ -4425,9 +4423,7 @@ class MagneticComponent:
         """
         if os.name == 'nt':
             install_pyfemm_if_missing()
-            if self.femmt_is_imported == False:
-                import femm
-                self.femmt_is_imported == True
+            import femm
         else:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
@@ -4691,6 +4687,13 @@ class MagneticComponent:
 
         :return:
         """
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            import femm
+        else:
+            raise Exception('You are using a computer that is not running windows. '
+                            'This command is only executable on Windows computers.')
+
         file = open(self.femm_results_log_path, 'w+', encoding='utf-8')
 
         log = {}
@@ -4765,9 +4768,10 @@ class MagneticComponent:
         # 2D Mesh and FEM interfaces (only for windows machines)
         if os.name == 'nt':
             install_pyfemm_if_missing()
-            if self.femmt_is_imported == False:
-                import femm
-                self.femmt_is_imported == True
+            import femm
+        else:
+            raise Exception('You are using a computer that is not running windows. '
+                'This command is only executable on Windows computers.')
 
         # Get paths
         femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")

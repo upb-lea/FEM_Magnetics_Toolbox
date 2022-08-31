@@ -126,9 +126,6 @@ if component == "inductor":
     # phase_list = [[0], [10], [20], [30], [40], [50]]
     # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
 
-    # Reference simulation using FEMM
-    # geo.femm_reference(freq=100000, current=[1], sign=[1], non_visualize=0)
-
 if component == "transformer-interleaved":
     working_directory = os.path.join(os.path.dirname(__file__), '..')
 
