@@ -125,6 +125,7 @@ class FEMMTLogParser:
     @staticmethod
     def get_log_files_from_working_directories(working_directories: List[str]):
         """ Returns a dict containing the log files for each given working directory together with the name of the directory as key.
+        For every working directory the local path to the log file is working_directory/results/log_electro_magnetic.json
 
         :param working_directories: Working directories.
         :return: Dictionary with the name of the directory as key and the log.json as value.
