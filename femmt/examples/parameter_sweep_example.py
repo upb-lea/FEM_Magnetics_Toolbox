@@ -1,4 +1,3 @@
-from femmt_log_parser import FEMMTLogParser
 import matplotlib.pyplot as plt
 import femmt as fmt
 import os
@@ -18,9 +17,11 @@ if sweep == "air_gap_height":
     for i, height in enumerate(air_gap_heights):
         # In order to save the results for every simulation the working directory is changed
         directory = os.path.join(os.path.dirname(__file__), 'sweep_examples', f"air_gap_{i}")
-        os.mkdir(directory)
+        if not directory:
+            os.mkdir(directory)
 
         working_directories.append(directory)
+        print(working_directories)
 
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory)
 
@@ -51,16 +52,17 @@ if sweep == "air_gap_height":
 
     # After the simulations the sweep can be analyzed
     # This could be done using the FEMMTLogParser:
-    logs = FEMMTLogParser.get_log_files_from_working_directories(working_directories)
-    log_parser = FEMMTLogParser(logs)
+    logs = fmt.FEMMTLogParser.get_log_files_from_working_directories(working_directories)
+    log_parser = fmt.FEMMTLogParser(logs)
 
     # In this case the self inductivity of winding1 will be analyzed
     inductivities = []
     for name, data in log_parser.data.items():
-        inductivities.append(data.sweeps[0].windings[0].self_inductivity)
+        inductivities.append(data.sweeps[0].windings[0].self_inductance)
 
     plt.plot(air_gap_heights, inductivities, "ro")
     plt.title("Air gap height sweep")
     plt.xlabel("air gap height")
     plt.ylabel("Self inductivity")
+    plt.grid()
     plt.show()

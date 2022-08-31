@@ -12,7 +12,7 @@ class SweepTypes(Enum):
 class WindingData():
     flux: complex
     turns: int
-    self_inductivity: complex
+    self_inductance: complex
     magnetic_field_energy: complex
     voltage: complex
     current: complex
@@ -181,7 +181,7 @@ class FEMMTLogParser:
                 winding_data = {
                     "flux": FEMMTLogParser.parse_complex(current_winding["flux"]),
                     "turns": current_winding["number_turns"],
-                    "self_inductivity": FEMMTLogParser.parse_complex(current_winding["self_inductivity"]),
+                    "self_inductance": FEMMTLogParser.parse_complex(current_winding["self_inductance"]),
                     "magnetic_field_energy": FEMMTLogParser.parse_complex(current_winding["mag_field_energy"]),
                     "voltage": FEMMTLogParser.parse_complex(current_winding["V"]),
                     "current": FEMMTLogParser.parse_complex(current_winding["I"]),
