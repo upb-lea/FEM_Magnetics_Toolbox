@@ -355,21 +355,12 @@ class MagneticComponent:
         onelab_path_wrong = True
         path_wrong = True
         while onelab_path_wrong:
-            while path_wrong:
-                onelab_path = input("Enter the parent folder of onelab in ways of 'C:.../onelab-Windows64': ")
-                if '\\' in onelab_path:
-                    path_wrong = True
-                    print("Use '/' instead of '\\'!")
-                else:
-                    path_wrong = False
+            onelab_path = os.path.normpath(input("Enter the path of onelabs parent folder (path to folder which contains getdp, onelab executables): "))
 
-            onelab_path = onelab_path[:-1] if onelab_path[-1] == '/' else onelab_path
-            onelab_path = onelab_path.replace("/", os.sep)
             if os.path.exists(onelab_path):
                 onelab_path_wrong = False
+                break
             else:
-                onelab_path_wrong = True
-                path_wrong = True
                 print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
         self.onelab_folder_path = onelab_path
 
