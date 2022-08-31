@@ -63,6 +63,6 @@ if sweep == "air_gap_height":
     plt.plot(air_gap_heights, inductivities, "ro")
     plt.title("Air gap height sweep")
     plt.xlabel("air gap height")
-    plt.ylabel("Self inductivity")
+    plt.ylabel("self inductance")
     plt.grid()
     plt.show()

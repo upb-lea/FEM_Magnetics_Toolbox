@@ -671,7 +671,7 @@ class MagneticComponent:
                                                   air_gap_y_position -
                                                   air_gap_height / 2,
                                                   0,
-                                                  mesh_accuracy]
+                                                  self.component.mesh.c_core]
 
                     # Bottom right
                     self.p_air_gaps[i * 4 + 1] = [air_gap_length_bot,
@@ -685,7 +685,7 @@ class MagneticComponent:
                                                   air_gap_y_position +
                                                   air_gap_height / 2,
                                                   0,
-                                                  mesh_accuracy]
+                                                  self.component.mesh.c_core]
 
                     # Top right
                     self.p_air_gaps[i * 4 + 3] = [air_gap_length_top,
@@ -3225,35 +3225,6 @@ class MagneticComponent:
             # embed them later together:
             # This is added here therefore the additional points are not seen in the pictures and views
             self.forward_meshing()
-
-            # In order to set a higher mesh density for the core islands additional points are added
-            if self.component.air_gaps.number > 1:
-                p_inner_island = []
-                delta_hor = (self.component.two_d_axi.p_air_gaps[3][0] - self.component.two_d_axi.p_air_gaps[2][0]) / 15
-                delta_ver = (self.component.two_d_axi.p_air_gaps[4][1] - self.component.two_d_axi.p_air_gaps[2][1]) / 20
-                for index, point in enumerate(self.component.two_d_axi.p_air_gaps[2:-2]):
-                    offset = index % 4
-                    if offset == 0:
-                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] + delta_hor, point[1] + delta_ver, 0, self.c_core))
-                    elif offset == 1:
-                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] - delta_hor, point[1] + delta_ver, 0, self.c_window))
-                    elif offset == 2:
-                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] + delta_hor, point[1] - delta_ver, 0, self.c_core))
-                    elif offset == 3:
-                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] - delta_hor, point[1] - delta_ver, 0, self.c_window))
-
-                l_inner_island = []
-                for i in range(int(len(p_inner_island) / 4)):
-                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i], p_inner_island[4*i+1]))
-                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+1], p_inner_island[4*i+3]))
-                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+3], p_inner_island[4*i+2]))
-                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+2], p_inner_island[4*i]))
-
-                gmsh.model.geo.synchronize()
-
-                for i in range(int(len(p_inner_island) / 4)):
-                    gmsh.model.mesh.embed(0, p_inner_island[i:i+4], 2, self.plane_surface_core[i+1])
-                    gmsh.model.mesh.embed(1, l_inner_island[i:i+4], 2, self.plane_surface_core[i+1])
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # No mesh is generated here, because generating a mesh, saving it as *.msh, loading it, appending more geometry data
