@@ -68,6 +68,9 @@ class MagneticComponent:
         # Breaking variable
         self.valid = True
 
+        # To make sure femm is only imported once
+        self.femm_is_imported = False
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Component Geometry
         self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" (or "three-phase-transformer")
@@ -4394,7 +4397,9 @@ class MagneticComponent:
         """
         if os.name == 'nt':
             install_pyfemm_if_missing()
-            import femm
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
         else:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
@@ -4660,7 +4665,9 @@ class MagneticComponent:
         """
         if os.name == 'nt':
             install_pyfemm_if_missing()
-            import femm
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
         else:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
@@ -4739,7 +4746,9 @@ class MagneticComponent:
         # 2D Mesh and FEM interfaces (only for windows machines)
         if os.name == 'nt':
             install_pyfemm_if_missing()
-            import femm
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
         else:
             raise Exception('You are using a computer that is not running windows. '
                 'This command is only executable on Windows computers.')
