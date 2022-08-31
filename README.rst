@@ -10,7 +10,9 @@ The toolbox contains two parts, a reluctance module and a FEM module.
 * The FEM module is for detailed calculations
 
 The toolbox is accessible via python code or a graphical user interface
-(GUI), which current development status is experimental. |image0|
+(GUI), which current development status is experimental. 
+
+|image0|
 
 Functionality examples 
 
@@ -18,6 +20,7 @@ Functionality examples
 * work with pre-defined litz wires 
 * use python to perform parametersweeps, e.g. perform several automated simulations of different air gap sizes 
 * read the results automated with python from the FEM simulation tool
+* run a thermal simulation to see the temperatures, once the magnetoquasistatic simulation has finished
 
 **Note: Alpha Version!** 
 
@@ -41,14 +44,7 @@ Can be found
 -  Unpack the software and remember the file path. This will be needed
    later when installing FEMMT.
 
-2.2 FEMM installation [for Windows User only]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  Go to https://www.femm.info/wiki/Download
--  Install FEMM as described
--  FEMM can be used as an alternative FEM solver for 2D simulations
-
-2.3 Install FEMMT
+2.2 Install FEMMT
 ~~~~~~~~~~~~~~~~~
 
 Chose to install the development version of FEMMT or the release
@@ -68,6 +64,8 @@ FEMMT development version (for developers only)
 
 This is the latest development version with the latest features. Note:
 You may need to install `git <https://git-scm.com/downloads>`__.
+Also have a look at the . `developers notes </developers_notes.md>`__.
+
 
 ::
 
@@ -75,7 +73,7 @@ You may need to install `git <https://git-scm.com/downloads>`__.
    git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
    pip install -e .
 
-2.4 Minimal example and first run
+2.3 Minimal example and first run
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Run the example from here:
@@ -127,6 +125,13 @@ In it you can find
 For more information about the possible winding types, please
 have a look `here <WindingOverview.md>`__.
 
+3.2 Counting arrow system
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Defined as depicted here:
+
+|image3|
+
 4. GUI
 ------
 
@@ -137,6 +142,8 @@ at first, but will be simplified in the future:
 * install the development version of femmt as described above 
 * run python ``downloads/path-to_femmt/femmt/gui/femmt_gui.py``
 
+Please note, the GUI is experimental.
+
 |image2|
 
 5. Roadmap
@@ -146,7 +153,6 @@ Planned features in 2022:
 
 * Software stability and general improvements, 
 * add more Functionality to the GUI, 
-* implement basics for thermal simulation in python code.
 
 6. Bug Reports
 --------------
@@ -182,3 +188,4 @@ programming language python is used.
 .. |image0| image:: https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/femmt.png?raw=true
 .. |image1| image:: https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/FEMMT_Screenshot.png?raw=true
 .. |image2| image:: https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/femmt_gui_definition.png?raw=true
+.. |image3| image:: https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/counting_arrow_system.png?raw=true
