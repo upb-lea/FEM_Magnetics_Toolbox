@@ -53,3 +53,4 @@ femmt/thermal/solver/PostOperation.pro
 # Example files
 femmt/examples/paper_thermal_validation.py
 !femmt/examples/example_log.json
+femmt/examples/example_results
