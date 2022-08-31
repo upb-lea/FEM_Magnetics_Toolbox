@@ -231,10 +231,13 @@ def distributed_type_2(air_gap_h, core_w, n_air_gaps, h_multiple):
 
 
 if __name__ == '__main__':
-    mc1 = MagneticCircuit([0.0149], [0.0295], [0.01105], [8], [1], [0.0001, 0.0005], [10, 50], [3000, 2500],
-                          [1, 2])  # 0.0149
+    mc1 = MagneticCircuit([0.0149], [0.0295], [0.01105], [8], [1], [0.0005], [50], [3000],
+                          [1])  # 0.0149
     mc1.core_reluctance()
     mc1.air_gap_reluctance()
+    print(f"Inductance is: {mc1.data_matrix[:, 9]}")
+
+    qwerty = 1
 
 # def basic_example_func(f_height, f_position, f_n_turns, f_core_cond_iso, f_current):
 #     # 2. set core parameters
