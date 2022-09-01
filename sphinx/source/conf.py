@@ -59,6 +59,7 @@ html_theme = 'sphinx_rtd_theme'
 # documentation.
 #
 smv_released_pattern = r'^tags/.*$'
+smv_branch_whitelist = None
 
 html_theme_options = {
     'logo_only': False,
