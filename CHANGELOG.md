@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added output json file for thermal simulation
 - Add Parser to read and visualize the result.json-files
 - Add first version of reluctance model including an example file
+- Added dynamic mesh density algorithm for the winding window
+- Simulation settings are now stored in the log file. A simulation can be started using given log-file.
+- Added a new interface for femmt
 
 ### Fixed
 - fix #13: improve reading the onelab filepath 
