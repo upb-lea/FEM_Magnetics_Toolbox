@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add color dictionaries for individual geometry visualization
 - Added output json file for thermal simulation
+- Add Parser to read and visualize the result.json-files
+- Add first version of reluctance model including an example file
+
+### Fixed
+- fix #13: improve reading the onelab filepath 
+- fix #16: Wrong Mesh is simulated when changing the number of turns
+- fix #17: Error with integrated_transformer mesh
+- fix #19: Scale update in result plots
+- fix #22: Fix bug for air-gap positions 0 and 100 percent
 
 ## [0.2.1] - 2022-04-28
 ### Updated
