@@ -17,12 +17,50 @@ class MagneticCircuit:
         example: data_matrix = [core_w, window_h, window_w, mu_rel, no_of_turns, n_air_gaps, air_gap_h,
         air_gap_position, mult_air_gap_type, inductance]"""
 
-        clone_n_air_gaps = n_air_gaps
         self.row_num = 0
+        self.single_air_gap_len = None
+        self.data_matrix_len = None
+        self.data_matrix = None
+
+        # Creates the data matrix with all the input parameter combinations
+        self.create_data_matrix(core_w, window_h, window_w, no_of_turns, n_air_gaps, air_gap_h, air_gap_position, mu_rel, mult_air_gap_type)
+
+        # Core geometry parameters
+        self.core_w = self.data_matrix[:, 0]  # Diameter of center leg
+        self.window_h = self.data_matrix[:, 1]
+        self.window_w = self.data_matrix[:, 2]
+        self.core_h = self.window_h + self.core_w / 2
+        self.r_outer = None
+        self.r_inner = None
+        self.core_h_middle = None  # height of upper and lower part of the window in the core
+        self.outer_w = None  # Outer leg width
+        self.mu_0 = 4 * np.pi * 1e-7
+        self.mu_rel = self.data_matrix[:, 3]  # 3000
+
+        # Air-gap parameters
+        self.no_of_turns = self.data_matrix[:, 4]
+        self.n_air_gaps = self.data_matrix[:, 5]
+        self.air_gap_h = self.data_matrix[:, 6]
+        self.percent_position_air_gap = self.data_matrix[:, 7]
+        self.mult_air_gap_type = self.data_matrix[:, 8]
+        self.abs_position_air_gap = None
+
+        self.cal_inductance = None
+        self.section = None
+        self.length = None
+        self.area = None
+        self.reluctance = None
+
+        self.max_percent_position = None
+        self.min_percent_position = None
+
+    def create_data_matrix(self, core_w: list, window_h: list, window_w: list, no_of_turns: list, n_air_gaps: list, air_gap_h: list, air_gap_position: list, mu_rel: list, mult_air_gap_type: list):
+
+        clone_n_air_gaps = n_air_gaps
 
         if 1 in clone_n_air_gaps:
             self.data_matrix = np.zeros((len(core_w) * len(no_of_turns) * len(air_gap_h) * len(mu_rel) * (
-                        len(air_gap_position) + (len(n_air_gaps) - 1) * len(mult_air_gap_type)), 10))
+                    len(air_gap_position) + (len(n_air_gaps) - 1) * len(mult_air_gap_type)), 10))
         else:
             self.data_matrix = np.zeros((len(core_w) * len(no_of_turns) * len(air_gap_h) * len(n_air_gaps) * len(
                 mu_rel) * len(mult_air_gap_type), 10))
@@ -66,35 +104,6 @@ class MagneticCircuit:
                                     self.row_num = self.row_num + 1
 
         self.data_matrix_len = self.row_num
-
-        # Core geometry parameters
-        self.core_w = self.data_matrix[:, 0]  # Diameter of center leg
-        self.window_h = self.data_matrix[:, 1]
-        self.window_w = self.data_matrix[:, 2]
-        self.core_h = self.window_h + self.core_w / 2
-        self.r_outer = None
-        self.r_inner = None
-        self.core_h_middle = None  # height of upper and lower part of the window in the core
-        self.outer_w = None  # Outer leg width
-        self.mu_0 = 4 * np.pi * 1e-7
-        self.mu_rel = self.data_matrix[:, 3]  # 3000
-
-        # Air-gap parameters
-        self.no_of_turns = self.data_matrix[:, 4]
-        self.n_air_gaps = self.data_matrix[:, 5]
-        self.air_gap_h = self.data_matrix[:, 6]
-        self.percent_position_air_gap = self.data_matrix[:, 7]
-        self.mult_air_gap_type = self.data_matrix[:, 8]
-        self.abs_position_air_gap = None
-
-        self.cal_inductance = None
-        self.section = None
-        self.length = None
-        self.area = None
-        self.reluctance = None
-
-        self.max_percent_position = None
-        self.min_percent_position = None
 
     def core_reluctance(self):
         self.core_h_middle = (self.core_h - self.window_h) / 2
@@ -179,7 +188,7 @@ class MagneticCircuit:
                                self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len], h_multiple))
 
         self.data_matrix[:, 9] = (self.no_of_turns ** 2) / np.sum(self.reluctance, axis=1)
-        print(self.data_matrix)
+        # print(self.data_matrix)
 
 
 def single_round_inf(air_gap_h, core_w, h):
