@@ -5428,11 +5428,14 @@ class MagneticComponent:
             self.plot_fields = False
 
         # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
+        # In case of litz wire, only the highest frequency is meshed.
         if excitation_meshing_type is None:
             for winding in self.windings:
                 if winding.conductor_type == ConductorType.Solid:
                     excitation_meshing_type = ExcitationMeshingType.MeshEachFrequency
                     break
+                if winding.conductor_type == ConductorType.Litz:
+                    excitation_meshing_type = ExcitationMeshingType.MeshOnlyHighestFrequency
 
         if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
             for i in range(0, len(frequency_list)):
