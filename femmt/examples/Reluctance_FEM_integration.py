@@ -1,7 +1,6 @@
 import femmt as fmt
 import numpy as np
 import os
-from femmt.femmt_reluctance import MagneticCircuit
 
 # Component type
 component = "inductor"
@@ -35,7 +34,7 @@ conductor_radius = 0.0013
 winding_factor = 0.91
 
 # Reluctance model simulation
-mc1 = MagneticCircuit(core_width_list, core_window_h_list, core_window_w_list, no_of_turns, n_air_gaps, air_gap_length, air_gap_position, mu_rel, mult_air_gap_type)
+mc1 = fmt.MagneticCircuit(core_width_list, core_window_h_list, core_window_w_list, no_of_turns, n_air_gaps, air_gap_length, air_gap_position, mu_rel, mult_air_gap_type)
 mc1.core_reluctance()
 mc1.air_gap_reluctance()
 mc1.data_matrix = np.hstack((mc1.data_matrix, np.reshape(mc1.core_h_middle, (mc1.data_matrix_len, 1))))  # position: 10
