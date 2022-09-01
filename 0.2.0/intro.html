@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1 Introduction &mdash; FEM Magnetics Toolbox 0.2.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Documentation" href="femmt.html" />
+    <link rel="prev" title="Welcome to FEM Magnetics Toolbox’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> FEM Magnetics Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><span class="sectnum">1</span> Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#fem-magnetics-toolbox-femmt"><span class="sectnum">1.1</span> FEM Magnetics Toolbox (FEMMT)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#installation"><span class="sectnum">2</span> Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#clone-the-repo"><span class="sectnum">2.1</span> Clone the Repo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#onelab-installation"><span class="sectnum">2.2</span> ONELAB installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#femm-installation-for-windows-user-only"><span class="sectnum">2.3</span> FEMM installation [for Windows User only]</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#basics-of-usage"><span class="sectnum">3</span> Basics of Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-use-the-fem-magnetics-toolbox"><span class="sectnum">3.1</span> How to use the FEM Magnetics Toolbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installed-as-a-pip-package"><span class="sectnum">3.2</span> Installed as a pip-package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#others"><span class="sectnum">4</span> Others</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#roadmap"><span class="sectnum">4.1</span> Roadmap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#organisation"><span class="sectnum">4.2</span> Organisation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#bug-reports"><span class="sectnum">4.2.1</span> Bug Reports</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contributing"><span class="sectnum">4.2.2</span> Contributing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authors-and-contributors"><span class="sectnum">4.2.3</span> Authors and contributors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#changelog"><span class="sectnum">4.2.4</span> Changelog</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#license"><span class="sectnum">4.2.5</span> License</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#history-and-project-status"><span class="sectnum">4.2.6</span> History and project status</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="femmt.html">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="femmt.html#the-magneticcomponent-class">The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="femmt.html#femmt-methods">FEMMT methods</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="sectnum">1</span> Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/intro.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction">
+<h1><span class="sectnum">1</span> Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
+<section id="fem-magnetics-toolbox-femmt">
+<h2><span class="sectnum">1.1</span> FEM Magnetics Toolbox (FEMMT)<a class="headerlink" href="#fem-magnetics-toolbox-femmt" title="Permalink to this headline"></a></h2>
+<p>Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics</p>
+<p>Functionality examples:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Work with pre-defined standard core structures [not implemented yet]</p></li>
+<li><p>Use python to perform parametersweeps, e.g. perform several automated simultations of different air gap sizes</p></li>
+<li><p>Read the results automated with python from the FEM simulation tool</p></li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Development status: Alpha</p>
+</div>
+</section>
+</section>
+<section id="installation">
+<h1><span class="sectnum">2</span> Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
+<section id="clone-the-repo">
+<h2><span class="sectnum">2.1</span> Clone the Repo<a class="headerlink" href="#clone-the-repo" title="Permalink to this headline"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Folder</span><span class="o">/</span><span class="n">of</span><span class="o">/</span><span class="n">Interest</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">upb</span><span class="o">-</span><span class="n">lea</span><span class="o">/</span><span class="n">FEM_Magnetics_Toolbox</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+</section>
+<section id="onelab-installation">
+<h2><span class="sectnum">2.2</span> ONELAB installation<a class="headerlink" href="#onelab-installation" title="Permalink to this headline"></a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p>Go to <a class="reference external" href="https://onelab.info/">https://onelab.info/</a></p></li>
+<li><p>Install the Desktop Version for your OS (Windows, Linux or macOS)</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="femm-installation-for-windows-user-only">
+<h2><span class="sectnum">2.3</span> FEMM installation [for Windows User only]<a class="headerlink" href="#femm-installation-for-windows-user-only" title="Permalink to this headline"></a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p>Go to <a class="reference external" href="https://www.femm.info/wiki/Download">https://www.femm.info/wiki/Download</a></p></li>
+<li><p>Install FEMM as described</p></li>
+<li><p>FEMM can be used as an alternative FEM solver for 2D simulations</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+<section id="basics-of-usage">
+<h1><span class="sectnum">3</span> Basics of Usage<a class="headerlink" href="#basics-of-usage" title="Permalink to this headline"></a></h1>
+<a class="reference internal image-reference" href="_images/Transformer_Screenshot.png"><img alt="Why FEM Magnetics Toolbox?" class="align-center" src="_images/Transformer_Screenshot.png" style="width: 500px; height: 200px;" /></a>
+<section id="how-to-use-the-fem-magnetics-toolbox">
+<h2><span class="sectnum">3.1</span> How to use the FEM Magnetics Toolbox<a class="headerlink" href="#how-to-use-the-fem-magnetics-toolbox" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>Import the class with</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">FEMMT</span> <span class="kn">import</span> <span class="n">MagneticComponent</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Create instance with for example</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span> <span class="o">=</span> <span class="n">MagneticComponent</span><span class="p">(</span><span class="n">component_type</span><span class="o">=</span><span class="s2">&quot;transformer&quot;</span><span class="p">)</span> <span class="c1">#or</span>
+<span class="n">geo</span> <span class="o">=</span> <span class="n">MagneticComponent</span><span class="p">(</span><span class="n">component_type</span><span class="o">=</span><span class="s2">&quot;inductor&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Define/Update the Core geometry with</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">update_core</span><span class="p">(</span><span class="n">core_type</span><span class="o">=</span><span class="s2">&quot;EI&quot;</span><span class="p">,</span> <span class="n">window_h</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>Add/Update the various air gaps with</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">update_air_gaps</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;percent&quot;</span><span class="p">,</span> <span class="n">n_air_gaps</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">position_tag</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">air_gap_h</span><span class="o">=</span><span class="p">[</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">],</span> <span class="n">air_gap_position</span><span class="o">=</span><span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">80</span><span class="p">])</span> <span class="c1">#or</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">update_air_gaps</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">n_air_gaps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">air_gap_h</span><span class="o">=</span><span class="p">[</span><span class="mf">0.002</span><span class="p">])</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="5">
+<li><p>Define/Update conductor(s) for a transformer with</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">update_conductors</span><span class="p">(</span><span class="n">n_turns</span><span class="o">=</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">],</span> <span class="n">conductor_type</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;solid&quot;</span><span class="p">,</span> <span class="s2">&quot;solid&quot;</span><span class="p">],</span> <span class="n">conductor_radix</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0015</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">])</span>
+<span class="c1">#or for an inductor with</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">update_conductors</span><span class="p">(</span><span class="n">n_turns</span><span class="o">=</span><span class="p">[[</span><span class="mi">14</span><span class="p">]],</span> <span class="n">conductor_type</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;solid&quot;</span><span class="p">],</span> <span class="n">conductor_radix</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0015</span><span class="p">],</span> <span class="n">winding</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;primary&quot;</span><span class="p">],</span> <span class="n">scheme</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;square&quot;</span><span class="p">],</span> <span class="n">core_cond_isolation</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0005</span><span class="p">],</span> <span class="n">cond_cond_isolation</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0001</span><span class="p">])</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="6">
+<li><p>Start a single simulation with</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">single_simulation</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">current</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">phi</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">skin_mesh_factor</span><span class="o">=</span><span class="n">accuracy</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="installed-as-a-pip-package">
+<h2><span class="sectnum">3.2</span> Installed as a pip-package<a class="headerlink" href="#installed-as-a-pip-package" title="Permalink to this headline"></a></h2>
+<p>Minimal example for a single simulation with displayed result in ONELAB:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># minimal example for installation from pip-package</span>
+<span class="kn">import</span> <span class="nn">femmt</span> <span class="k">as</span> <span class="nn">fmt</span>
+
+<span class="c1"># Create Object</span>
+<span class="c1"># geo = fmt.MagneticComponent(component_type=&quot;inductor&quot;)</span>
+<span class="n">geo</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">MagneticComponent</span><span class="p">(</span><span class="n">component_type</span><span class="o">=</span><span class="s2">&quot;transformer&quot;</span><span class="p">)</span>
+
+<span class="c1"># Update Geometry</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">update_core</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;EI&quot;</span><span class="p">,</span> <span class="n">window_h</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+
+<span class="n">geo</span><span class="o">.</span><span class="n">air_gaps</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">n_air_gaps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">air_gap_h</span><span class="o">=</span><span class="p">[</span><span class="mf">0.001</span><span class="p">])</span>
+
+<span class="c1"># geo.update_conductors(n_turns=[[14]], conductor_type=[&quot;solid&quot;], conductor_radii=[0.0015],</span>
+<span class="c1">#                      winding=[&quot;primary&quot;], scheme=[&quot;square&quot;],</span>
+<span class="c1">#                      core_cond_isolation=[0.0005], cond_cond_isolation=[0.0001])</span>
+
+<span class="n">geo</span><span class="o">.</span><span class="n">update_conductors</span><span class="p">(</span><span class="n">n_turns</span><span class="o">=</span><span class="p">[[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">]],</span> <span class="n">conductor_type</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;solid&quot;</span><span class="p">,</span> <span class="s2">&quot;solid&quot;</span><span class="p">],</span>
+                      <span class="n">conductor_radii</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0015</span><span class="p">,</span> <span class="mf">0.0015</span><span class="p">],</span> <span class="n">winding</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;interleaved&quot;</span><span class="p">,</span> <span class="s2">&quot;interleaved&quot;</span><span class="p">],</span>
+                      <span class="n">scheme</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;horizontal&quot;</span><span class="p">,</span> <span class="s2">&quot;horizontal&quot;</span><span class="p">],</span>
+                      <span class="n">cond_cond_isolation</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">],</span> <span class="n">core_cond_isolation</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0005</span><span class="p">])</span>
+
+<span class="c1"># Perform a single simulation</span>
+<span class="c1"># geo.single_simulation(freq=1000000, current=[10])</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">single_simulation</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span> <span class="n">current</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="others">
+<h1><span class="sectnum">4</span> Others<a class="headerlink" href="#others" title="Permalink to this headline"></a></h1>
+<section id="roadmap">
+<h2><span class="sectnum">4.1</span> Roadmap<a class="headerlink" href="#roadmap" title="Permalink to this headline"></a></h2>
+<p>Planned features in 2021</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Work with pre-defined standard core structures</p></li>
+<li><p>Work with pre-defined standard core materials</p></li>
+<li><p>Automated 2D FEM simulation controlled with python</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="organisation">
+<h2><span class="sectnum">4.2</span> Organisation<a class="headerlink" href="#organisation" title="Permalink to this headline"></a></h2>
+<section id="bug-reports">
+<h3><span class="sectnum">4.2.1</span> Bug Reports<a class="headerlink" href="#bug-reports" title="Permalink to this headline"></a></h3>
+<p>Please use the issues report button within github to report bugs.</p>
+</section>
+<section id="contributing">
+<h3><span class="sectnum">4.2.2</span> Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline"></a></h3>
+<p>Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+For contributing, please refer to this [section](Contributing.md).</p>
+<p>For drawings (e.g. in readme-files), we recommend to use the program <a class="reference external" href="https://inkscape.org/">Inkscape</a>.
+It is open source software and runs on Linux, Mac and Windows. If you want to draw electric circuits, we recommend this library on <a class="reference external" href="https://github.com/upb-lea/Inkscape_electric_Symbols">github</a>.</p>
+</section>
+<section id="authors-and-contributors">
+<h3><span class="sectnum">4.2.3</span> Authors and contributors<a class="headerlink" href="#authors-and-contributors" title="Permalink to this headline"></a></h3>
+<div class="topic">
+<p class="topic-title">Current developers</p>
+<ul class="simple">
+<li><p>Till Piepenbrock</p></li>
+<li><p>Jan Wiegard</p></li>
+<li><p>Dennis Kirchner</p></li>
+</ul>
+</div>
+<div class="topic">
+<p class="topic-title">Developers in the past</p>
+<p>None</p>
+</div>
+</section>
+<section id="changelog">
+<h3><span class="sectnum">4.2.4</span> Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline"></a></h3>
+<p>Find the changelog <a class="reference external" href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/CHANGELOG.md">here</a>.</p>
+</section>
+<section id="license">
+<h3><span class="sectnum">4.2.5</span> License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h3>
+<p>Licensed under <a class="reference external" href="https://choosealicense.com/licenses/gpl-3.0/">GPLv3</a>.</p>
+</section>
+<section id="history-and-project-status">
+<h3><span class="sectnum">4.2.6</span> History and project status<a class="headerlink" href="#history-and-project-status" title="Permalink to this headline"></a></h3>
+<p>This project was initially written in matlab using femm simulation tool. It became clear that the project was no longer a small project. The project should be completely rewritten, because many new complex levels have been added. To place the project in the open source world, the programming language python is used.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to FEM Magnetics Toolbox’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="femmt.html" class="btn btn-neutral float-right" title="Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, LEA, Paderborn University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> Other Versions</span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>Tags</dt>
+      <dd><a href="intro.html">0.2.0</a></dd>
+      <dd><a href="../0.2.1/intro.html">0.2.1</a></dd>
+      <dd><a href="../0.3.0/intro.html">0.3.0</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
