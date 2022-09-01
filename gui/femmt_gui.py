@@ -15,7 +15,8 @@ import PIL
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
 database = mdb.MaterialDatabase()
-import pickle
+from matplotlib.widgets import Cursor
+
 
 import mplcursors
 
@@ -395,26 +396,10 @@ class MainWindow(QMainWindow):
 
     def datupdateraph(self):
         # -----Enter the freq and Temp-----------
-        mu_real = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[0]
-        mu_imag = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[1]
-        b = database.get_data_at_working_point(T=60, f=160000, material_name="N95")[2]
-        print(mu_imag)
-        print(b)
-        """
-        plt.plot(b, mu_real)
-        plt.ylabel("Real part of permeability")
-        plt.xlabel('B in T')
-        plt.title("Real part of permeability")
-        plt.show()
-        """
-
-
-
-        lines = plt.plot(b, mu_imag)
-        plt.ylabel("Imaginary part of permeability")
-        plt.xlabel('B in T')
-        plt.title("Imaginary part of permeability")
-        mplcursors.cursor(lines)
+        temperature1 = int(self.dat_mat1_temp_lineEdit.text())
+        mat1_name = self.dat_core_material1_comboBox.currentText()
+        mat2_name = self.dat_core_material2_comboBox.currentText()
+        mdb.compare_core_loss_flux_density_data(material_list=[mat1_name, mat2_name], temperature=temperature1)
         plt.show()
         plt.savefig('plot.png', dpi=300, bbox_inches='tight')
 
@@ -426,6 +411,25 @@ class MainWindow(QMainWindow):
         w = self.dat_update_graph_qlabel.width()
         h = self.dat_update_graph_qlabel.height()
         self.dat_update_graph_qlabel.setPixmap(self.pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        plt.close()
+
+        # Graph 2------------------------------------------------------------------------------------------------
+        flux2 = float(self.dat_mat2_flux_lineEdit.text())
+        mdb.compare_core_loss_temperature(material_list=[mat1_name, mat2_name], flux = flux2)
+        plt.show()
+        plt.savefig('plot2.png', dpi=300, bbox_inches='tight')
+
+        # Loading image
+        self.pixmap = QPixmap('plot2.png')
+
+        # adding image to label
+        self.dat_update_graph_qlabel_2.setPixmap(self.pixmap)
+        w = self.dat_update_graph_qlabel_2.width()
+        h = self.dat_update_graph_qlabel_2.height()
+        self.dat_update_graph_qlabel_2.setPixmap(self.pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+
+
 
 
     def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
@@ -563,11 +567,14 @@ class MainWindow(QMainWindow):
         aut_tolerance_val_options = [self.translation_dict['+-10']]
         aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
         aut_core_geometry_options.insert(0, 'Manual')
+        dat_core_material_options = ['N95', 'N97', 'N87']
 
-
+        for option in dat_core_material_options:
+            self.dat_core_material1_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material2_comboBox.addItem(option)
         for option in aut_core_geometry_options:
             self.aut_core_geometry_comboBox.addItem(option)
-
         for option in aut_simulation_type_options:
             self.aut_simulation_type_comboBox.addItem(option)
         for option in aut_winding_material_options:
