@@ -1,7 +1,11 @@
 from enum import Enum
 from typing import List
+
+from femmt_enumerations import InterleavedWindingScheme, WindingScheme, WindingType
 #from femmt_model_classes import *
 
+class Coil:
+    pass
 
 class VirtualWindingWindow:
     """
@@ -17,11 +21,29 @@ class VirtualWindingWindow:
     left_bound: float
     right_bound: float
 
+    winding_type: WindingType
+    winding_scheme: WindingScheme
+
+    windings: List[Coil]
+    turns: List[int]
+
     def __init__(self, bot_bound: float, top_bound: float, left_bound: float, right_bound: float):
         self.bot_bound = bot_bound
         self.top_bound = top_bound
         self.left_bound = left_bound
         self.right_bound = right_bound
+
+    def set_winding(self, coil: Coil, turns: int, winding_scheme: WindingScheme):
+        self.winding_type = WindingType.Single
+        self.winding_scheme = winding_scheme
+        self.windings = [coil]
+        self.turns = [turns]
+
+    def set_interleaved_winding(self, coil1: Coil, turns1: int, coil2: Coil,turns2: int, winding_scheme: InterleavedWindingScheme):
+        self.winding_type = WindingType.Interleaved
+        self.winding_scheme = winding_scheme
+        self.windings = [coil1, coil2]
+        self.turns = [turns1, turns2]
 
     def __repr__(self):
         return f"bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
@@ -101,7 +123,6 @@ class WindingWindow():
 if __name__ == "__main__":
     winding_window = WindingWindow(None, None, 0.5, 0.5)
     top_left, top_right, bot_left, bot_right = winding_window.virtual_winding_windows
-
 
     winding_window.combine_vww(top_left, top_right)
 

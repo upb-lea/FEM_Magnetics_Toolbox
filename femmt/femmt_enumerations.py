@@ -28,16 +28,14 @@ class ConductorType(Enum):
 
 class WindingType(Enum):
     Interleaved = "interleaved"
-    Primary = "primary"
-    Secondary = "secondary"
+    Single = "single"
 
 class WindingScheme(Enum):
-    # If winding is primary or secondary
     Hexagonal = "hexa"
     Square = "square"
     Square_Full_Width = "square_full_width"
-    
-    # If winding is interleaved
+
+class InterleavedWindingScheme(Enum):
     Horizontal = "horizontal"
     Vertical = "vertical"
     Bifilar = "bifilar"
