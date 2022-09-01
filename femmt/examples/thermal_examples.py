@@ -2,15 +2,32 @@ import femmt as fmt
 
 def lab_model():
     # This simulation is used for the lab model
-    geo = fmt.MagneticComponent(component_type="inductor")
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
 
-    geo.core.update(core_h=0.04, core_w=0.0149, window_h=0.0278, window_w=0.01105, mu_rel=3100, phi_mu_deg=12, sigma=0.6)
-    geo.air_gaps.update(method="center", n_air_gaps=1, air_gap_h=[0.0005], position_tag=[0])
+    # 2. set core parameters
+    core_db = fmt.core_database()["PQ 40/40"]
+
+    core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+                    mu_rel=3100, phi_mu_deg=12, sigma=0.6)
+    geo.set_core(core)
+
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
+    geo.set_air_gaps(air_gaps)
+
+
+    winding = fmt.Winding(8, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+    #winding.set_solid_conductor(0.0013)
+    winding.set_litz_conductor(conductor_radius=0.0015, number_strands=150, strand_radius=100e-6, fill_factor=None)
+    geo.set_windings([winding])
 
     geo.update_conductors(n_turns=[[8]], conductor_type=["solid"], conductor_radii=[0.0015],
                         winding=["primary"], scheme=["square"],
                         core_cond_isolation=[0.001, 0.001, 0.001, 0.001], cond_cond_isolation=[0.0001],
                         conductivity_sigma=["copper"])
+
+
+
 
     geo.create_model(freq=100000, visualize_before=True, save_png=False)
     #geo.single_simulation(freq=100000, current=[3], show_results=False)
