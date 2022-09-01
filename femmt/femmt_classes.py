@@ -58,7 +58,7 @@ class MagneticComponent:
 
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
-
+ 
         self.update_paths(working_directory)
 
         self.correct_outer_leg = False
@@ -5419,6 +5419,7 @@ class MagneticComponent:
         :rtype: Dict
 
         """
+
         # frequencies = frequencies or []
         # currents = currents or []
         # phi = phi or []

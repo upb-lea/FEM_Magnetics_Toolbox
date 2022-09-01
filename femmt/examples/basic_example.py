@@ -69,11 +69,7 @@ def example_thermal_simulation():
     # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
     geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
-example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
-if not os.path.exists(example_results_folder):
-    os.mkdir(example_results_folder)
-
-component = "inductor"
+ component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
 # component = "integrated_transformer"
@@ -87,7 +83,7 @@ if component == "inductor":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor) #working_directory=working_directory)
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
@@ -119,18 +115,21 @@ if component == "inductor":
     # 5. create the model
     geo.create_model(freq=100000, visualize_before=True, save_png=False)
 
-    # 6. start simulation
-    geo.single_simulation(freq=100000, current=[4.5], show_results=True)
+    # 6.a. start simulation
+    #geo.single_simulation(freq=100000, current=[3], show_results=True)
+
+    # 6.b. Excitation Sweep Example
+    # Perform a sweep using more than one frequency
+    fs = [0, 10000, 30000, 60000, 100000, 150000]
+    amplitude_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+    phase_list = [[0], [10], [20], [30], [40], [50]]
+    geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
 
     # 7. prepare and start thermal simulation
     #example_thermal_simulation()
 
-    # Excitation Sweep Example
-    # Perform a sweep using more than one frequency
-    # fs = [0, 10000, 30000, 60000, 100000, 150000]
-    # amplitude_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
-    # phase_list = [[0], [10], [20], [30], [40], [50]]
-    # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
+    # Reference simulation using FEMM
+    # geo.femm_reference(freq=100000, current=[1], sign=[1], non_visualize=0)
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(example_results_folder, "transformer-interleaved")
