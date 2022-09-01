@@ -24,8 +24,8 @@ core_window_h_list = [core_db1["window_h"], core_db2["window_h"], core_db3["wind
 # Air-gap and core parameters list creation
 no_of_turns = list(np.linspace(5, 19, 15))
 n_air_gaps = list(np.linspace(1, 5, 5))
-air_gap_length = list(np.linspace(0.000001, 0.0005, 200))  # 200
-air_gap_position = list(np.linspace(0, 100, 101))  # 101
+air_gap_length = list(np.linspace(0.000001, 0.0005, 20))  # 200
+air_gap_position = list(np.linspace(0, 100, 11))  # 101
 mu_rel = [2700, 3000, 3100, 3200]
 mult_air_gap_type = [1, 2]  # 'Type1 = with corner air-gaps; 'Type2' = without air-gaps; 'Type0' = single air-gap
 
@@ -49,7 +49,7 @@ data_matrix_1 = mc1.data_matrix[np.where((mc1.data_matrix[:, 4] * np.pi * conduc
 FEM_data_matrix = data_matrix_1[np.where((data_matrix_1[:, 9] > 0.9 * goal_inductance) *
                                            (data_matrix_1[:, 9] < 1.1 * goal_inductance))]
 
-max_current = 3 # With an assumption of sinusoidal current waveform
+max_current = 1 # With an assumption of sinusoidal current waveform
 freq = 100 * 1e3 # magnetic flux frequency
 mu_imag = 100
 Cu_sigma = 5.96 * 1e7
