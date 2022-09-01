@@ -62,13 +62,14 @@ class MagneticComponent:
         self.update_paths(working_directory)
 
         self.correct_outer_leg = False
-
-        self.femmt_is_imported = False
         
         # Initialization of all instance variables
 
         # Breaking variable
         self.valid = True
+
+        # To make sure femm is only imported once
+        self.femm_is_imported = False
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Component Geometry
@@ -116,7 +117,7 @@ class MagneticComponent:
         self.current_density = [None] * self.n_windings  # Defined for every conductor
         self.voltage = [None] * self.n_windings  # Defined for every conductor
         self.frequency = None
-        self.phase_tmp = np.zeros(self.n_windings)  # Default is zero, Defined for every conductor
+        self.phase_deg = np.zeros(self.n_windings)  # Default is zero, Defined for every conductor
         self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
         self.delta = None
 
@@ -354,21 +355,12 @@ class MagneticComponent:
         onelab_path_wrong = True
         path_wrong = True
         while onelab_path_wrong:
-            while path_wrong:
-                onelab_path = input("Enter the parent folder of onelab in ways of 'C:.../onelab-Windows64': ")
-                if '\\' in onelab_path:
-                    path_wrong = True
-                    print("Use '/' instead of '\\'!")
-                else:
-                    path_wrong = False
+            onelab_path = os.path.normpath(input("Enter the path of onelabs parent folder (path to folder which contains getdp, onelab executables): "))
 
-            onelab_path = onelab_path[:-1] if onelab_path[-1] == '/' else onelab_path
-            onelab_path = onelab_path.replace("/", os.sep)
             if os.path.exists(onelab_path):
                 onelab_path_wrong = False
+                break
             else:
-                onelab_path_wrong = True
-                path_wrong = True
                 print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
         self.onelab_folder_path = onelab_path
 
@@ -673,7 +665,7 @@ class MagneticComponent:
                                                   air_gap_y_position -
                                                   air_gap_height / 2,
                                                   0,
-                                                  mesh_accuracy]
+                                                  self.component.mesh.c_core]
 
                     # Bottom right
                     self.p_air_gaps[i * 4 + 1] = [air_gap_length_bot,
@@ -687,7 +679,7 @@ class MagneticComponent:
                                                   air_gap_y_position +
                                                   air_gap_height / 2,
                                                   0,
-                                                  mesh_accuracy]
+                                                  self.component.mesh.c_core]
 
                     # Top right
                     self.p_air_gaps[i * 4 + 3] = [air_gap_length_top,
@@ -3090,7 +3082,7 @@ class MagneticComponent:
                     l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
 
                     for i in range(self.component.air_gaps.number - 1):
-                        if self.component.component_type == ComponentType.IntegratedTransformer:
+                        if self.component.component_type == ComponentType.IntegratedTransformer and i == self.component.stray_path.start_index:
                             l_air_tmp.append(self.l_core_air[7+3*i])
                             l_air_tmp.append(self.l_core_air[8+3*i])
                             l_air_tmp.append(self.l_core_air[9+3*i])
@@ -3227,35 +3219,6 @@ class MagneticComponent:
             # embed them later together:
             # This is added here therefore the additional points are not seen in the pictures and views
             self.forward_meshing()
-
-            # In order to set a higher mesh density for the core islands additional points are added
-            if self.component.air_gaps.number > 1:
-                p_inner_island = []
-                delta_hor = (self.component.two_d_axi.p_air_gaps[3][0] - self.component.two_d_axi.p_air_gaps[2][0]) / 15
-                delta_ver = (self.component.two_d_axi.p_air_gaps[4][1] - self.component.two_d_axi.p_air_gaps[2][1]) / 20
-                for index, point in enumerate(self.component.two_d_axi.p_air_gaps[2:-2]):
-                    offset = index % 4
-                    if offset == 0:
-                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] + delta_hor, point[1] + delta_ver, 0, self.c_core))
-                    elif offset == 1:
-                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] - delta_hor, point[1] + delta_ver, 0, self.c_window))
-                    elif offset == 2:
-                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] + delta_hor, point[1] - delta_ver, 0, self.c_core))
-                    elif offset == 3:
-                        p_inner_island.append(gmsh.model.geo.addPoint(point[0] - delta_hor, point[1] - delta_ver, 0, self.c_window))
-
-                l_inner_island = []
-                for i in range(int(len(p_inner_island) / 4)):
-                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i], p_inner_island[4*i+1]))
-                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+1], p_inner_island[4*i+3]))
-                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+3], p_inner_island[4*i+2]))
-                    l_inner_island.append(gmsh.model.geo.addLine(p_inner_island[4*i+2], p_inner_island[4*i]))
-
-                gmsh.model.geo.synchronize()
-
-                for i in range(int(len(p_inner_island) / 4)):
-                    gmsh.model.mesh.embed(0, p_inner_island[i:i+4], 2, self.plane_surface_core[i+1])
-                    gmsh.model.mesh.embed(1, l_inner_island[i:i+4], 2, self.plane_surface_core[i+1])
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # No mesh is generated here, because generating a mesh, saving it as *.msh, loading it, appending more geometry data
@@ -3800,11 +3763,11 @@ class MagneticComponent:
         - frequency or reduced frequency
 
 
-        :param frequency: Frequency in a list
+        :param frequency: Frequency
         :type frequency: float
-        :param amplitude_list: Amplitude in a list
+        :param amplitude_list: Current amplitudes according to windings
         :type amplitude_list: List
-        :param phase_deg_list: Phase in degree in a list
+        :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
         :type phase_deg_list: List
         :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
         :type ex_type: str
@@ -3815,52 +3778,69 @@ class MagneticComponent:
         :rtype: None
 
         """
-        phase_deg_list = phase_deg_list or []
-
         print(f"\n---\n"
               f"Excitation: \n"
               f"Frequency: {frequency}\n"
               f"Current(s): {amplitude_list}\n"
               f"Phase(s): {phase_deg_list}\n")
 
+
         # -- Excitation --
-        self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
 
-        phase_deg_list = np.asarray(phase_deg_list)
-        self.red_freq = np.empty(2)
+        # Has the user provided a list of phase angles?
+        phase_deg_list = phase_deg_list or []
+        # phase_deg_list = np.asarray(phase_deg_list)
 
         for num in range(0, self.n_windings):
-            # Imposed current, current density or voltage
+
+            # Imposed current
             if self.flag_excitation_type == 'current':
-                self.current[num] = amplitude_list[num]
-                if len(phase_deg_list) != 0:
-                    self.phase_tmp = phase_deg_list / 180
-            if self.flag_excitation_type == 'current_density':
-                raise NotImplementedError
-            if self.flag_excitation_type == 'voltage':
-                raise NotImplementedError
-                # self.voltage = 2
+                if len(phase_deg_list) == 0:
+                    if self.component_type == ComponentType.Inductor:
+                        # Define complex current phasor as real value
+                        self.current[num] = complex(amplitude_list[num], 0)
+                        phase_deg_list.append(0)  # set to zero
 
-            # -- Frequency --
-            self.frequency = frequency  # in Hz
-            if self.flag_imposed_reduced_frequency == 1:
-                self.red_freq[num] = 4
-            else:
-                if self.frequency != 0:
-                    self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
-
-                    if self.windings[num].conductor_type == ConductorType.Litz:
-                        self.red_freq[num] = self.windings[num].strand_radius / self.delta
-                    elif self.windings[num].conductor_type == ConductorType.Solid:
-                        self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                     else:
-                        print("Wrong???")
-                        print(self.windings[num].conductor_type)
-                        self.red_freq[num] = 1  # TODO: doesn't make sense like this
+                        raise ValueError
                 else:
-                    self.delta = 1e20  # random huge value
-                    self.red_freq[num] = 0
+                    self.phase_deg = phase_deg_list
+                    # Define complex current phasor as excitation
+                    self.current[num] = complex(amplitude_list[num]*np.cos(np.deg2rad(phase_deg_list[num])),
+                                                amplitude_list[num]*np.sin(np.deg2rad(phase_deg_list[num])))
+
+        # Imposed current density
+        if self.flag_excitation_type == 'current_density':
+            raise NotImplementedError
+
+        # Imposed voltage
+        if self.flag_excitation_type == 'voltage':
+            raise NotImplementedError
+
+
+        # -- Frequency --
+
+        self.frequency = frequency  # in Hz
+
+        # Define reduced frequency (used for homogenization technique)
+        self.red_freq = np.empty(2)
+
+        if self.frequency != 0:
+            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0)) #TODO: distingish between material conductivities
+            for num in range(0, self.n_windings):
+                if self.windings[num].conductor_type == ConductorType.Litz:
+                    self.red_freq[num] = self.windings[num].strand_radius / self.delta
+                elif self.windings[num].conductor_type == ConductorType.Solid:
+                    self.red_freq[num] = self.windings[num].conductor_radius / self.delta
+                else:
+                    print("Reduced Frequency does not have a physical value here")
+                    print(self.windings[num].conductor_type)
+                    self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
+        else:
+            # DC case
+            self.delta = 1e20  # random huge value
+            self.red_freq[num] = 0
 
     def file_communication(self):
         """
@@ -3937,7 +3917,6 @@ class MagneticComponent:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 1;\n")
             else:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 0;\n")
-            text_file.write("Flag_imposedRr = %s;\n" % self.flag_imposed_reduced_frequency)
 
             # -- Geometry --
             # Number of conductors
@@ -3959,8 +3938,8 @@ class MagneticComponent:
             # -- Excitation --
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
-                text_file.write(f"Val_EE_{num + 1} = {self.current[num]};\n")
-                text_file.write(f"Phase_{num + 1} = Pi*{self.phase_tmp[num]};\n")
+                text_file.write(f"Val_EE_{num + 1} = {abs(self.current[num])};\n")
+                text_file.write(f"Phase_{num + 1} = {np.deg2rad(self.phase_deg[num])};\n")
                 text_file.write(f"Parallel_{num + 1} = {self.windings[num].parallel};\n")
 
             if self.flag_excitation_type == 'current_density':
@@ -4072,7 +4051,7 @@ class MagneticComponent:
         mygetdp = os.path.join(self.onelab_folder_path, "getdp")
         self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.e_m_mesh_file + " -solve Analysis -v2")
 
-    def write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
+    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
         them in a dictionary. Additionally, the input settings which are used in order to create the simulation are also printed.
@@ -4120,7 +4099,7 @@ class MagneticComponent:
                 # Single values related to one winding are added as 'winding_losses' etc.
                 winding_dict = {"turn_losses": [],
                                 "flux": [],
-                                "self_inductivity": [],
+                                "self_inductance": [],
                                 "mag_field_energy": [],
                                 "V": []}
 
@@ -4138,10 +4117,14 @@ class MagneticComponent:
                 # Currents
                 if sweep_number > 1:
                     # sweep_simulation -> get currents from passed currents
-                    winding_dict["I"] = currents[sweep_run][winding]
+                    complex_current_phasor = currents[sweep_run][winding]
                 else:
                     # single_simulation -> get current from instance variable
-                    winding_dict["I"] = self.current[winding]
+                    complex_current_phasor = self.current[winding]
+
+                # Store complex value as list in json (because json isnt natively capable of complex values)
+                winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
+
 
                 # Case litz: Load homogenized results
                 if self.windings[winding].conductor_type == ConductorType.Litz:
@@ -4160,8 +4143,8 @@ class MagneticComponent:
                 winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Inductance
-                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Magnetic Field Energy
                 winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
@@ -4170,12 +4153,14 @@ class MagneticComponent:
                 # Voltage
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
 
                 # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
-                winding_dict["P"] = winding_dict["V"][0] * winding_dict["I"] / 2
-                winding_dict["Q"] = winding_dict["V"][1] * winding_dict["I"] / 2
+                winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
+                winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
                 winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
+
 
                 sweep_dict[f"winding{winding+1}"] = winding_dict
 
@@ -4403,9 +4388,9 @@ class MagneticComponent:
         """
         if os.name == 'nt':
             install_pyfemm_if_missing()
-            if self.femmt_is_imported == False:
-                import femm
-                self.femmt_is_imported == True
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
         else:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
@@ -4669,6 +4654,15 @@ class MagneticComponent:
 
         :return:
         """
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
+            raise Exception('You are using a computer that is not running windows. '
+                            'This command is only executable on Windows computers.')
+
         file = open(self.femm_results_log_path, 'w+', encoding='utf-8')
 
         log = {}
@@ -4702,6 +4696,22 @@ class MagneticComponent:
         log["Primary Winding Losses"] = femm.mo_blockintegral(6).real
         femm.mo_clearblock()
 
+        if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
+            # secondary Winding Ciruit Properties
+            circuit_properties_secondary = femm.mo_getcircuitproperties('Secondary')
+            log["Secondary Current"] = circuit_properties_secondary[0]
+            log["Secondary Voltage"] = [circuit_properties_secondary[1].real, circuit_properties_secondary[1].imag]
+            log["Secondary Flux"] = [circuit_properties_secondary[2].real, circuit_properties_secondary[2].imag]
+            log["Secondary Self Inductance"] = [circuit_properties_secondary[2].real / circuit_properties_secondary[0],
+                                              circuit_properties_secondary[2].imag / circuit_properties_secondary[0]]
+            log["Secondary Mean Power"] = [0.5 * circuit_properties_secondary[1].real * circuit_properties_secondary[0],
+                                         0.5 * circuit_properties_secondary[1].imag * circuit_properties_secondary[0]]
+
+            # secondary Winding Losses (with group n=2) by field intergation
+            femm.mo_groupselectblock(3)
+            log["Secondary Winding Losses"] = femm.mo_blockintegral(6).real
+            femm.mo_clearblock()
+
 
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
@@ -4727,9 +4737,12 @@ class MagneticComponent:
         # 2D Mesh and FEM interfaces (only for windows machines)
         if os.name == 'nt':
             install_pyfemm_if_missing()
-            if self.femmt_is_imported == False:
-                import femm
-                self.femmt_is_imported == True
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
+            raise Exception('You are using a computer that is not running windows. '
+                'This command is only executable on Windows computers.')
 
         # Get paths
         femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")
@@ -5170,7 +5183,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        self.write_log()
+        self.calculate_and_write_log()
         if show_results:
             self.visualize()
         # results =
@@ -5453,7 +5466,7 @@ class MagneticComponent:
                 # self.visualize()
 
         if self.valid:
-            self.write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
+            self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
             if show_last:
                 self.visualize()

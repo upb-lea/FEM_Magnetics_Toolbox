@@ -12,13 +12,13 @@ class SweepTypes(Enum):
 class WindingData():
     flux: complex
     turns: int
-    self_inductivity: complex
+    self_inductance: complex
     magnetic_field_energy: complex
     voltage: complex
     current: complex
-    resistance: float
-    reactance: float
-    impedance: float
+    active_power: float
+    reactive_power: float
+    apparent_power: float
 
 @dataclass
 class SweepData():
@@ -125,6 +125,7 @@ class FEMMTLogParser:
     @staticmethod
     def get_log_files_from_working_directories(working_directories: List[str]):
         """ Returns a dict containing the log files for each given working directory together with the name of the directory as key.
+        For every working directory the local path to the log file is working_directory/results/log_electro_magnetic.json
 
         :param working_directories: Working directories.
         :return: Dictionary with the name of the directory as key and the log.json as value.
@@ -181,13 +182,13 @@ class FEMMTLogParser:
                 winding_data = {
                     "flux": FEMMTLogParser.parse_complex(current_winding["flux"]),
                     "turns": current_winding["number_turns"],
-                    "self_inductivity": FEMMTLogParser.parse_complex(current_winding["self_inductivity"]),
+                    "self_inductance": FEMMTLogParser.parse_complex(current_winding["self_inductance"]),
                     "magnetic_field_energy": FEMMTLogParser.parse_complex(current_winding["mag_field_energy"]),
                     "voltage": FEMMTLogParser.parse_complex(current_winding["V"]),
                     "current": FEMMTLogParser.parse_complex(current_winding["I"]),
-                    "resistance": current_winding["P"],
-                    "reactance": current_winding["Q"],
-                    "impedance": current_winding["S"],
+                    "active_power": current_winding["P"],
+                    "reactive_power": current_winding["Q"],
+                    "apparent_power": current_winding["S"],
                 }
                 winding_data_class = WindingData(**winding_data)
 
