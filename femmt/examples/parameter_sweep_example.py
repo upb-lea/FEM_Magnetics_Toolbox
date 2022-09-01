@@ -37,7 +37,7 @@ if sweep == "air_gap_height":
         air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, height)
         geo.set_air_gaps(air_gaps)
 
-        winding = fmt.Winding(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+        winding = fmt.Conductor(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
         winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
         geo.set_windings([winding])
 

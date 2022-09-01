@@ -105,7 +105,7 @@ if component == "inductor":
     geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters: use solid wires
-    winding = fmt.Winding(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+    winding = fmt.Conductor(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
     #winding.set_solid_conductor(0.0013)
     winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
     geo.set_windings([winding])
@@ -152,10 +152,10 @@ if component == "transformer-interleaved":
     geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters: use solid wires
-    winding1 = fmt.Winding(21, 0, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
+    winding1 = fmt.Conductor(21, 0, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
     winding1.set_solid_conductor(0.0011)
 
-    winding2 = fmt.Winding(0, 7, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
+    winding2 = fmt.Conductor(0, 7, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
     winding2.set_solid_conductor(0.0011)
 
     geo.set_windings([winding1, winding2])
@@ -202,10 +202,10 @@ if component == "transformer":
     geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters
-    winding1 = fmt.Winding(10, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+    winding1 = fmt.Conductor(10, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
     winding1.set_solid_conductor(0.0011)
 
-    winding2 = fmt.Winding(0, 10, fmt.Conductivity.Copper, fmt.WindingType.Secondary, fmt.WindingScheme.Square)
+    winding2 = fmt.Conductor(0, 10, fmt.Conductivity.Copper, fmt.WindingType.Secondary, fmt.WindingScheme.Square)
     # winding2.set_litz_conductor(None, 600, 35.5e-6, 0.6)
     winding2.set_solid_conductor(0.0011)
 
@@ -249,10 +249,10 @@ if component == "integrated_transformer":
     geo.set_air_gaps(air_gaps)
 
     # 4. set conductor parameters
-    winding1 = fmt.Winding(1, 3, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
+    winding1 = fmt.Conductor(1, 3, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
     winding1.set_litz_conductor(None, 100, 70e-6, 0.5)
 
-    winding2 = fmt.Winding(2, 6, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
+    winding2 = fmt.Conductor(2, 6, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
     winding2.set_litz_conductor(None, 100, 70e-6, 0.5)
     
     geo.set_windings([winding1, winding2])

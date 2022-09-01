@@ -6,7 +6,7 @@ from .femmt_enumerations import *
 from .femmt_functions import NbrLayers, wire_material_database
 import numpy as np
 
-class Winding:
+class Conductor:
     """
     A winding defines a conductor which is wound around a magnetic component such as transformer or inductance.
     The winding is defined by its conductor and the way it is placed in the magnetic component. To allow different
@@ -16,58 +16,32 @@ class Winding:
     TODO More documentation
     """
 
-    turns: List[int] #0: primary, 1: secondary
-    conductor_type: ConductorType = None
+    conductor_shape: ConductorShape
+    conductor_arrangement: ConductorArrangement
+    wrap_para: WrapParaType = None
+    conductor_radius: float = None
+    winding_number: int
+    thickness: float = None
     ff: float = None
     strand_radius: float = None
     n_strands: int = 0
     n_layers: int
-    conductor_radius: float = None
     a_cell: float
-    thickness: float = None
-    wrap_para: WrapParaType = None
     cond_sigma: float
     parallel: int = 1 # TODO What is this parameter?
-    winding_type: WindingType
-    winding_scheme: WindingScheme
+
+    conductor_is_set: bool
 
     # Not used in femmt_classes. Only needed for to_dict()
-    turns_primary: int = 0 
-    turns_secondary: int = 0
     conductivity: Conductivity = None
 
-    def __init__(self, turns_primary: int, turns_secondary: int, conductivity: Conductivity, winding_type: WindingType, winding_scheme: WindingScheme):
-        if turns_primary < 1 and turns_secondary < 1:
-            raise Exception("Either number of primary or number of secondary turns need to be at least 1.")
+    def __init__(self, winding_number: int, conductivity: float):
+        if winding_number < 0:
+            raise Exception("Winding index cannot be negative.")
 
-        self.winding_type = winding_type
-        self.turns_primary = turns_primary
-        self.turns_secondary = turns_secondary
+        self.winding_number = winding_number
         self.conductivity = conductivity
-
-        if winding_scheme in [WindingScheme.Hexagonal, WindingScheme.Square, WindingScheme.Square_Full_Width]:
-            # winding type needs to be primary or secondary
-            if self.winding_type != WindingType.Primary and self.winding_type != WindingType.Secondary:
-                raise Exception(f"For {winding_scheme} winding type needs to be primary or secondary")
-        elif winding_scheme in [WindingScheme.Horizontal, WindingScheme.Vertical, WindingScheme.Bifilar, WindingScheme.Blockwise]:
-            # winding type needs to be interleaved
-            if self.winding_type != WindingType.Interleaved:
-                raise Exception(f"For {winding_scheme} winding type needs to be interleaved")
-        else:
-            raise Exception(f"{winding_scheme} does not fit into any possible winding schemes")
-        
-        self.winding_scheme = winding_scheme
-
-        if winding_type == WindingType.Interleaved:
-            if turns_primary == 0:
-                self.turns = [turns_secondary]
-            elif turns_secondary == 0:
-                self.turns = [turns_primary]
-            else:
-                # This case cannot happen since it was already checked before
-                pass
-        else:
-            self.turns = [turns_primary, turns_secondary]
+        self.conductor_is_set = False
 
         dict_material_database = wire_material_database()
         if conductivity.value in dict_material_database:
@@ -75,52 +49,36 @@ class Winding:
         else:
             raise Exception(f"Material {conductivity.value} not found in database")
 
-    def set_stacked_conductor(self, thickness: float, wrap_para: WrapParaType):
-        if self.conductor_type is not None:
+    def set_rectangular_conductor(self, thickness: float):
+        if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 
-        self.conductor_type = ConductorType.Stacked
+        self.conductor_is_set = True
+        self.conductor_shape = ConductorShape.Rectangular
         self.thickness = thickness
-        self.wrap_para = wrap_para
         self.a_cell = 1 # TODO Surface size needed?
         self.conductor_radius = 1 # Revisit
 
-    def set_full_conductor(self, thickness: float, wrap_para: WrapParaType):
-        if self.conductor_type is not None:
+    def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: ConductorArrangement):
+        if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 
-        self.conductor_type = ConductorType.Full
-        self.thickness = thickness
-        self.wrap_para = wrap_para
-        self.a_cell = 1 # TODO Surface size needed?
-        self.conductor_radius = 1 # Revisit
-
-    def set_foil_conductor(self, thickness: float, wrap_para: WrapParaType):
-        if self.conductor_type is not None:
-            raise Exception("Only one conductor can be set for each winding!")
-
-        self.conductor_type = ConductorType.Foil
-        self.thickness = thickness
-        self.wrap_para = wrap_para
-        self.a_cell = 1 # TODO Surface size needed?
-        self.conductor_radius = 1 # Revisit
-
-    def set_solid_conductor(self, conductor_radius: float):
-        if self.conductor_type is not None:
-            raise Exception("Only one conductor can be set for each winding!")
-
-        self.conductor_type = ConductorType.Solid
+        self.conductor_is_set = True
+        self.conductor_shape = ConductorShape.Round
+        self.conductor_arrangement = conductor_arrangement
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
 
-    def set_litz_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float, fill_factor: float):
+    def set_litz_round_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float, fill_factor: float, conductor_arrangement: ConductorArrangement):
         """
         Only 3 of the 4 parameters are needed. The other one needs to be none
         """
         if self.conductor_type is not None:
             raise Exception("Only one conductor can be set for each winding!")
 
-        self.conductor_type = ConductorType.Litz
+        self.conductor_is_set = True
+        self.conductor_shape = ConductorShape.Round
+        self.conductor_arrangement = conductor_arrangement
         self.conductor_radius = conductor_radius
         self.n_strands = number_strands
         self.strand_radius = strand_radius
@@ -148,6 +106,7 @@ class Winding:
               f" Conductor radius: {self.conductor_radius}\n"
               f"---")
 
+    """
     def to_dict(self):
         conductor_settings = {
             "conductor_type": self.conductor_type.name
@@ -175,7 +134,7 @@ class Winding:
         }
 
         return contents
-
+    """
 class Core:
     """
     This creates the core base for the model.
@@ -230,12 +189,13 @@ class Core:
 
         self.loss_approach = loss_approach
 
-        self.r_inner = self.component.core.window_w + self.component.core.core_w / 2
-        if self.component.correct_outer_leg:
+        self.r_inner = window_w + core_w / 2
+        #if self.component.correct_outer_leg:
+        if False:
             A_out = 200 * 10 ** -6
             self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
         else:
-            self.r_outer = np.sqrt((self.component.core.core_w / 2) ** 2 + self.r_inner ** 2)
+            self.r_outer = np.sqrt((core_w / 2) ** 2 + self.r_inner ** 2)
 
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
@@ -427,8 +387,93 @@ class VirtualWindingWindow:
     left_bound: float
     right_bound: float
 
+    winding_type: WindingType
+    winding_scheme: WindingScheme # Or InterleavedWindingScheme in case of an interleaved winding
+
+    windings: List[Conductor]
+    turns: List[int]
+
     def __init__(self, bot_bound: float, top_bound: float, left_bound: float, right_bound: float):
         self.bot_bound = bot_bound
         self.top_bound = top_bound
         self.left_bound = left_bound
         self.right_bound = right_bound
+
+    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme):
+        self.winding_type = WindingType.Single
+        self.winding_scheme = winding_scheme
+        self.windings = [conductor]
+        self.turns = [turns]
+
+    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme):
+        self.winding_type = WindingType.Interleaved
+        self.winding_scheme = winding_scheme
+        self.windings = [conductor1, conductor2]
+        self.turns = [turns1, turns2]
+
+    def __repr__(self):
+        return f"bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
+
+class WindingWindow:
+    max_bot_bound: float
+    max_top_bound: float
+    max_left_bound: float
+    max_right_bound: float
+
+    virtual_winding_windows: List[VirtualWindingWindow]
+
+    def __init__(self, core, isolation, horizontal_split_factor: float, vertical_split_factor: float):
+        
+        self.max_bot_bound = -core.window_h / 2 + isolation.core_cond[0]
+        self.max_top_bound = core.window_h / 2 - isolation.core_cond[1]
+        self.max_left_bound = core.core_w / 2 + isolation.core_cond[2]
+        self.max_right_bound = core.r_inner - isolation.core_cond[3]
+
+        # Isolation between vwws
+        isolation_vww = isolation.cond_cond[2]
+
+        # Splits
+        horizontal_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * horizontal_split_factor
+        vertical_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * vertical_split_factor
+
+        # Create a grid for the virtual winding windows
+        top_left_vww = VirtualWindingWindow(bot_bound = horizontal_split + isolation_vww / 2,
+                                            top_bound = self.max_top_bound,
+                                            left_bound = self.max_left_bound,
+                                            right_bound = vertical_split - isolation_vww / 2)
+
+        top_right_vww = VirtualWindingWindow(bot_bound = horizontal_split + isolation_vww / 2,
+                                            top_bound = self.max_top_bound,
+                                            left_bound = vertical_split + isolation_vww / 2,
+                                            right_bound = self.max_right_bound)
+
+        bot_left_vww = VirtualWindingWindow(bot_bound = self.max_bot_bound,
+                                            top_bound = horizontal_split - isolation_vww / 2,
+                                            left_bound = self.max_left_bound,
+                                            right_bound = vertical_split - isolation_vww / 2)
+
+        bot_right_vww = VirtualWindingWindow(bot_bound = self.max_bot_bound,
+                                            top_bound = horizontal_split - isolation_vww / 2,
+                                            left_bound = vertical_split + isolation_vww / 2,
+                                            right_bound = self.max_right_bound)
+
+        self.virtual_winding_windows = [top_left_vww, top_right_vww, bot_left_vww, bot_right_vww]
+
+    def combine_vww(self, vww1, vww2):
+        index1 = self.virtual_winding_windows.index(vww1)
+        index2 = self.virtual_winding_windows.index(vww2)
+
+        if index2-index1 == 3:
+            raise Exception("Cannot combine top left and bottom right.")
+
+        self.virtual_winding_windows.remove(vww1)
+        self.virtual_winding_windows.remove(vww2)
+
+        new_vww = VirtualWindingWindow(bot_bound = min(vww1.bot_bound, vww2.bot_bound), 
+                                    top_bound = max(vww1.top_bound, vww2.top_bound), 
+                                    left_bound = min(vww1.left_bound, vww2.left_bound), 
+                                    right_bound = max(vww1.right_bound, vww2.right_bound))
+
+        self.virtual_winding_windows.append(new_vww)
+
+        return new_vww

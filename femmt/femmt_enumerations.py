@@ -5,10 +5,6 @@ class ComponentType(Enum):
     Transformer = "transformer"
     IntegratedTransformer = "integrated_transformer"
 
-class VirtualWindingType(Enum):
-    FullWindow = "full_window"
-    Split2 = "center"
-
 class AirGapMethod(Enum):
     Center = "center"
     Percent = "percent"
@@ -19,30 +15,34 @@ class AirGapLegPosition(Enum):
     CenterLeg = 0
     RightLeg = 1
 
-class ConductorType(Enum):
-    Stacked = "stacked"
-    Full = "full"
-    Foil = "foil"
-    Solid = "solid"
-    Litz = "litz"
-
 class WindingType(Enum):
     Interleaved = "interleaved"
     Single = "single"
 
 class WindingScheme(Enum):
-    Hexagonal = "hexa"
-    Square = "square"
-    Square_Full_Width = "square_full_width"
+    Full = "full"
+    Stacked = "stacked"
+    SquareFullWidth = "square_full_width"
+    FoilVertical = "foil_vertical"
+    FoilHorizontal = "foil_horizontal"
 
 class InterleavedWindingScheme(Enum):
-    Horizontal = "horizontal"
-    Vertical = "vertical"
     Bifilar = "bifilar"
-    Blockwise = "blockwise"
+    VerticalAlternating = "vertical_alternating"
+    HorizontalAlternating = "horizontal_alternating"
+    VerticalStacked = "vertical_stacked"
+
+class ConductorArrangement(Enum):
+    Square = "square"
+    SquareFullWidth = "square_full_width"
+    Hexagonal = "hexagonal"
+
+class ConductorShape(Enum):
+    Round = "round"
+    Rectangular = "rect"
 
 class WrapParaType(Enum):
-    Fixed_Thickness = "fixed_thickness"
+    FixedThickness = "fixed_thickness"
     Interpolate = "interpolate"
 
 class Conductivity(Enum):

@@ -433,48 +433,8 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_windings(self, windings: List[Winding]):
-        self.windings = windings
-
-        self.virtual_winding_windows = []
-
-        if self.component_type == ComponentType.Inductor:
-            if len(windings) != 1:
-                raise Exception("Inductor was set but the number of windings is not 1")
-
-            self.vw_type = VirtualWindingType.FullWindow
-
-        if self.component_type == ComponentType.Transformer:
-            if len(self.windings) != 2:
-                raise Exception("Only transformers with 2 windings are allowed")
-
-            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
-                self.vw_type = VirtualWindingType.FullWindow
-            elif self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type != WindingType.Interleaved or \
-                    self.windings[0].winding_type != WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
-                raise Exception("When interleaved scheme is needed. Please set both winding types to interleaved")
-            else:
-                self.vw_type = VirtualWindingType.Split2
-
-        if self.component_type == ComponentType.IntegratedTransformer:
-            if len(self.windings) != 2:
-                raise Exception("Only integrated transformers with 2 windings are allowed")
-
-            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
-                self.windings[0].turns = [self.windings[0].turns_primary, self.windings[0].turns_secondary]
-                self.windings[1].turns = [self.windings[1].turns_primary, self.windings[1].turns_secondary]
-
-            self.vw_type = VirtualWindingType.Split2
-
-        if self.vw_type == VirtualWindingType.FullWindow:
-            self.virtual_winding_windows = [VirtualWindingWindow(self.windings[0].winding_type, self.windings[0].winding_scheme)]
-        elif self.vw_type == VirtualWindingType.Split2:
-            vww1 = VirtualWindingWindow(self.windings[0].winding_type, self.windings[0].winding_scheme)
-            vww2 = VirtualWindingWindow(self.windings[1].winding_type, self.windings[1].winding_scheme)
-            self.virtual_winding_windows = [vww1, vww2]
-        else:
-            # Currently there is no third or default VirtualWindingType
-            pass
+    def set_virtual_winding_windows(self, vwws: List[VirtualWindingWindow]):
+        self.virtual_winding_windows = vwws
 
     def set_core(self, core: Core):
         self.core = core
@@ -702,6 +662,7 @@ class MagneticComponent:
                                 mesh_accuracy]
                 self.p_close_air_gaps = [top_point, bot_point]
 
+        """
         def draw_virtual_winding_windows(self):
             # Virtual Windows
             # TODO: make this part of the class VWW...
@@ -714,10 +675,10 @@ class MagneticComponent:
                 # Concentrated windings
 
                 if self.component.vw_type == VirtualWindingType.FullWindow:
-                    """
+                    
                     The winding window is completely used by one VWW.
                     In case of a transformer, an interleaved winding scheme must be used.
-                    """
+                    
                     # top window
                     minimum = -self.component.core.window_h / 2 + self.component.isolation.core_cond[0]  # bottom
                     maximum = self.component.core.window_h / 2 - self.component.isolation.core_cond[1]  # top
@@ -732,11 +693,11 @@ class MagneticComponent:
                     self.component.virtual_winding_windows[0].right_bound = right
 
                 if self.component.vw_type == VirtualWindingType.Split2:
-                    """
+                    
                     The winding window is split into two VWWs.
                     The primary winding is placed in the upper half,
                     the secondary winding is placed in the lower half of the winding window
-                    """
+                    
                     separation_hor = 0
 
                     # top window
@@ -788,11 +749,11 @@ class MagneticComponent:
 
             # With dedicated stray path:
             if self.component.component_type == ComponentType.IntegratedTransformer:
-                """
+                
                 If dedicated stray path is the chosen typology the are two winding windows
                 These can either be split up into more virtual windows or (in case of bifilar windings) not
         
-                """
+                
                 # TODO: Separation in more Virtual Winding Windows
 
                 # bot window
@@ -814,620 +775,714 @@ class MagneticComponent:
                     self.component.virtual_winding_windows[vww].top_bound = virtual_windows[vww][1]
                     self.component.virtual_winding_windows[vww].left_bound = virtual_windows[vww][2]
                     self.component.virtual_winding_windows[vww].right_bound = virtual_windows[vww][3]
+        """
 
         def draw_conductors(self, virtual_winding_window, draw_top_down = True):
-            # Conductors
-                # Boarders of the VWW:
-                # start with the lower one
-                bot_bound = virtual_winding_window.bot_bound
-                top_bound = virtual_winding_window.top_bound
-                left_bound = virtual_winding_window.left_bound
-                right_bound = virtual_winding_window.right_bound
+            # Draw every conductor type based on the virtual_winding_window bounds
 
-                if virtual_winding_window.winding_type == WindingType.Interleaved:
+            # Get bounds from virtual winding window
+            bot_bound = virtual_winding_window.bot_bound
+            top_bound = virtual_winding_window.top_bound
+            left_bound = virtual_winding_window.left_bound
+            right_bound = virtual_winding_window.right_bound
 
+            # Check the possible WindingTypes and draw accordingly
+            if virtual_winding_window.winding_type == WindingType.Interleaved:
+                # Two windings in the virtual winding window
+                winding0 = virtual_winding_window.windings[0]
+                winding1 = virtual_winding_window.windings[1]
+
+                turns0 = virtual_winding_window.turns[0]
+                turns1 = virtual_winding_window.turns[1]
+
+                winding_numbers = [winding0.winding_number, winding1.winding_number]
+
+                # Now check for every winding scheme which is possible for interleaved winding type
+                if virtual_winding_window.winding_scheme == InterleavedWindingScheme.Bifilar:
+                    """
+                    - Bifilar interleaving means a uniform winding scheme of two conductors (prim. and sec.)
+                    - Can only be used for conductors of identical radius (in terms of litz radius for 
+                        stranded wires)
+                    - Excess windings are placed below the bifilar ones
+    
+                    """
+                    if winding0.conductor_radius != winding1.conductor_radius:
+                        print("For bifilar winding scheme both conductors must be of the same radius!")
+                    else:
+                        print("Bifilar winding scheme is applied")
+
+                    raise Exception("Bifilar winding scheme is not implemented yet.")
+
+                if virtual_winding_window.winding_scheme == InterleavedWindingScheme.Vertical:
+                    """
+                    - Vertical interleaving means a winding scheme where the two conductors are alternating 
+                        in vertical (y-)direction
+                    - This is practically uncommon
+                    - If the turns ratio is != 1, the scheme always begins with the "higher-turns-number's" 
+                        conductor
+                    """
+
+                    raise Exception("Vertical winding scheme is not implemented yet.")
+
+                if virtual_winding_window.winding_scheme == InterleavedWindingScheme.Horizontal:
+                    """
+                    - Horizontal interleaving means a winding scheme where the two conductors are alternating in 
+                    horizontal  (x-)direction (Tonnenwicklung)
+                    - This is practically most common
+                    - If the turns ratio is != 1, the scheme always begins with the "higher-turns-number's" 
+                        conductor
+                        
+                    """
+
+                    # assume 2 winding transformer and dedicated stray path:
+                    if draw_top_down:
+                        # This will draw from top bound down
+
+                        # Initialize the list, that counts the already placed conductors
+                        N_completed = [0, 0]
+
+                        # Initialize the starting conductor
+                        if turns0 >= turns1:
+                            # Primary starts first
+                            col_cond = 0
+                        else:
+                            # Secondary starts fist
+                            col_cond = 1
+
+                        # Get winding number of current winding
+                        winding_number = winding_numbers[col_cond]
+
+                        # Initialize the x and y coordinate
+                        x = left_bound + self.component.windings[col_cond].conductor_radius
+                        y = top_bound - self.component.windings[col_cond].conductor_radius
+                        self.top_window_iso_counter = 0
+                        # Continue placing as long as not all conductors have been placed
+                        while (turns0 - N_completed[0] != 0) or \
+                                (turns1 - N_completed[1] != 0):
+                            if virtual_winding_window.turns[col_cond] - N_completed[col_cond] != 0:
+                                # is this winding not already finished?
+                                if x < right_bound - virtual_winding_window.windings[col_cond].conductor_radius:
+                                    while y > bot_bound + virtual_winding_window.windings[col_cond].conductor_radius and \
+                                            N_completed[col_cond] < virtual_winding_window.turns[col_cond]:
+                                        self.p_conductor[winding_number].append([
+                                            x, 
+                                            y, 
+                                            0, 
+                                            self.component.mesh.c_center_conductor[winding_number]])
+
+                                        self.p_conductor[winding_number].append([
+                                            x - virtual_winding_window.windings[col_cond].conductor_radius,
+                                            y,
+                                            0,
+                                            self.component.mesh.c_conductor[winding_number]])
+
+                                        self.p_conductor[winding_number].append([
+                                            x,
+                                            y + virtual_winding_window.windings[col_cond].conductor_radius,
+                                            0,
+                                            self.component.mesh.c_conductor[winding_number]])
+
+                                        self.p_conductor[winding_number].append([
+                                            x + virtual_winding_window.windings[col_cond].conductor_radius,
+                                            y,
+                                            0,
+                                            self.component.mesh.c_conductor[winding_number]])
+
+                                        self.p_conductor[winding_number].append([x,
+                                                                            y - virtual_winding_window.windings[col_cond].conductor_radius,
+                                                                            0,
+                                                                            self.component.mesh.c_conductor[winding_number]])
+
+                                        N_completed[col_cond] += 1
+
+                                        y -= virtual_winding_window.windings[col_cond].conductor_radius * 2 + self.component.isolation.cond_cond[col_cond]  # one from bot to top
+
+                                    x += virtual_winding_window.windings[col_cond].conductor_radius + \
+                                            virtual_winding_window.windings[(col_cond + 1) % 2].conductor_radius + \
+                                            self.component.isolation.cond_cond[2]  # from left to right
+
+                                    # Reset y
+                                    col_cond = (col_cond + 1) % 2
+                                    winding_number = winding_numbers[col_cond]
+                                    y = top_bound - virtual_winding_window.windings[col_cond].conductor_radius
+                                    self.top_window_iso_counter += 1
+                                else:
+                                    break
+
+                            else:
+                                # is this winding already finished? - continue with the other one
+                                col_cond = (col_cond + 1) % 2
+
+                                # Correct the reset of y and correct x displacement
+                                x += virtual_winding_window.windings[col_cond].conductor_radius - \
+                                        virtual_winding_window.windings[(col_cond + 1) % 2].conductor_radius \
+                                        - self.component.isolation.cond_cond[2] + self.component.isolation.cond_cond[
+                                            col_cond]
+
+                                y = top_bound - virtual_winding_window.windings[col_cond].conductor_radius
+                                self.top_window_iso_counter -= 1
+                    else:
+                        # This will draw from bottom bound up.
+
+                        # Initialize the list, that counts the already placed conductors
+                        N_completed = [0, 0]
+
+                        # Initialize the starting conductor
+                        if turns0 >= turns1:
+                            col_cond = 0
+                        else:
+                            col_cond = 1
+
+                        # Get winding number of current winding
+                        winding_number = winding_numbers[col_cond]
+
+                        # Initialize the x and y coordinate
+                        x = left_bound + virtual_winding_window.windings[col_cond].conductor_radius
+                        y = bot_bound + virtual_winding_window.windings[col_cond].conductor_radius
+
+                        # Continue placing as long as not all conductors have been placed
+                        while (turns0 - N_completed[0] != 0) or \
+                                (turns1 - N_completed[1] != 0):
+                            if virtual_winding_window.turns[col_cond] - N_completed[col_cond] != 0:
+                                # is this winding not already finished?
+                                if x < right_bound - virtual_winding_window.windings[col_cond].conductor_radius:
+                                    while y < top_bound - virtual_winding_window.windings[col_cond].conductor_radius and \
+                                            N_completed[col_cond] < virtual_winding_window.turns[col_cond]:
+                                        self.p_conductor[winding_number].append([
+                                            x, 
+                                            y, 
+                                            0, 
+                                            self.component.mesh.c_center_conductor[winding_number]])
+
+                                        self.p_conductor[winding_number].append([
+                                            x - virtual_winding_window.windings[col_cond].conductor_radius,
+                                            y,
+                                            0,
+                                            self.component.mesh.c_conductor[winding_number]])
+
+                                        self.p_conductor[winding_number].append([
+                                            x,
+                                            y + virtual_winding_window.windings[col_cond].conductor_radius,
+                                            0,
+                                            self.component.mesh.c_conductor[winding_number]])
+
+                                        self.p_conductor[winding_number].append([
+                                            x + virtual_winding_window.windings[col_cond].conductor_radius,
+                                            y,
+                                            0,
+                                            self.component.mesh.c_conductor[winding_number]])
+
+                                        self.p_conductor[winding_number].append([
+                                            x,
+                                            y - virtual_winding_window.windings[col_cond].conductor_radius,
+                                            0,
+                                            self.component.mesh.c_conductor[winding_number]])
+
+                                        N_completed[col_cond] += 1
+
+                                        y += virtual_winding_window.windings[col_cond].conductor_radius * 2 + \
+                                                self.component.isolation.cond_cond[col_cond]  # one from bot to top
+
+                                    x += virtual_winding_window.windings[col_cond].conductor_radius + \
+                                            virtual_winding_window.windings[(col_cond + 1) % 2].conductor_radius + \
+                                            self.component.isolation.cond_cond[2]  # from left to right
+
+                                    # Reset y
+                                    col_cond = (col_cond + 1) % 2
+                                    y = bot_bound + virtual_winding_window.windings[col_cond].conductor_radius
+
+                                else:
+                                    break
+
+                            else:
+                                # is this winding already finished? - continue with the other one
+                                col_cond = (col_cond + 1) % 2
+                                winding_number = winding_numbers[col_cond]
+
+                                # Correct the reset of y and correct x displacement
+                                x += virtual_winding_window.windings[col_cond].conductor_radius - \
+                                        virtual_winding_window.windings[(col_cond + 1) % 2].conductor_radius \
+                                        - self.component.isolation.cond_cond[2] + \
+                                        self.component.isolation.cond_cond[
+                                            col_cond]
+
+                                y = bot_bound + virtual_winding_window.windings[col_cond].conductor_radius
+                
+                if virtual_winding_window.winding_scheme == InterleavedWindingScheme.VerticalStacked:
                     winding0 = virtual_winding_window.windings[0]
                     winding1 = virtual_winding_window.windings[1]
 
-                    turns0 = virtual_winding_window.turns[0]
-                    turns1 = virtual_winding_window.turns[1]
-
-                    if virtual_winding_window.winding_scheme == WindingScheme.Bifilar:
-                        """
-                        - Bifilar interleaving means a uniform winding scheme of two conductors (prim. and sec.)
-                        - Can only be used for conductors of identical radius (in terms of litz radius for 
-                          stranded wires)
-                        - Excess windings are placed below the bifilar ones
-        
-                        """
-                        if winding0.conductor_radius != winding1.conductor_radius:
-                            print("For bifilar winding scheme both conductors must be of the same radius!")
-                        else:
-                            print("Bifilar winding scheme is applied")
-
-                        raise Exception("Bifilar winding scheme is not implemented yet.")
-
-                    if virtual_winding_window.scheme == WindingScheme.Vertical:
-                        """
-                        - Vertical interleaving means a winding scheme where the two conductors are alternating 
-                           in vertical (y-)direction
-                        - This is practically uncommon
-                        - If the turns ratio is != 1, the scheme always begins with the "higher-turns-number's" 
-                           conductor
-                        """
-
-                        raise Exception("Vertical winding scheme is not implemented yet.")
-
-                    if virtual_winding_window.scheme == WindingScheme.Horizontal:
-                        """
-                        - Horizontal interleaving means a winding scheme where the two conductors are alternating in 
-                        horizontal  (x-)direction (Tonnenwicklung)
-                        - This is practically most common
-                        - If the turns ratio is != 1, the scheme always begins with the "higher-turns-number's" 
-                          conductor
-                          
-                        """
-
-                        # assume 2 winding transformer and dedicated stray path:
-                        if self.component.component_type == ComponentType.IntegratedTransformer or self.component.n_windings == 2:
-
-                            if draw_top_down:
-                                # This will draw from top bound down
-
-                                # Initialize the list, that counts the already placed conductors
-                                N_completed = [0, 0]
-
-                                # Initialize the starting conductor
-                                if turns0 >= turns1:
-                                    # Primary starts first
-                                    col_cond = 0
-                                else:
-                                    # Secondary starts fist
-                                    col_cond = 1
-
-                                # Initialize the x and y coordinate
-                                x = left_bound + self.component.windings[col_cond].conductor_radius
-                                y = top_bound - self.component.windings[col_cond].conductor_radius
-                                self.top_window_iso_counter = 0
-                                # Continue placing as long as not all conductors have been placed
-                                while (turns0 - N_completed[0] != 0) or \
-                                        (turns1 - N_completed[1] != 0):
-                                    if virtual_winding_window.turns[col_cond] - N_completed[col_cond] != 0:
-                                        # is this winding not already finished?
-                                        if x < right_bound - virtual_winding_window.windings[col_cond].conductor_radius:
-                                            while y > bot_bound + virtual_winding_window.windings[col_cond].conductor_radius and \
-                                                    N_completed[col_cond] < virtual_winding_window.turns[col_cond]:
-                                                self.p_conductor[col_cond].append([x, y, 0, self.component.mesh.c_center_conductor[col_cond]])
-
-                                                self.p_conductor[col_cond].append(
-                                                    [x - self.component.windings[col_cond].conductor_radius,
-                                                     y,
-                                                     0,
-                                                     self.component.mesh.c_conductor[col_cond]])
-
-                                                self.p_conductor[col_cond].append([x,
-                                                                                   y + virtual_winding_window.windings[col_cond].conductor_radius,
-                                                                                   0,
-                                                                                   self.component.mesh.c_conductor[col_cond]])
-
-                                                self.p_conductor[col_cond].append(
-                                                    [x + virtual_winding_window.windings[col_cond].conductor_radius,
-                                                     y,
-                                                     0,
-                                                     self.component.mesh.c_conductor[col_cond]])
-
-                                                self.p_conductor[col_cond].append([x,
-                                                                                   y - virtual_winding_window.windings[col_cond].conductor_radius,
-                                                                                   0,
-                                                                                   self.component.mesh.c_conductor[col_cond]])
-
-                                                N_completed[col_cond] += 1
-
-                                                y -= virtual_winding_window.windings[col_cond].conductor_radius * 2 + self.component.isolation.cond_cond[col_cond]  # one from bot to top
-
-                                            x += virtual_winding_window.windings[col_cond].conductor_radius + \
-                                                 virtual_winding_window.windings[(col_cond + 1) % 2].conductor_radius + \
-                                                 self.component.isolation.cond_cond[2]  # from left to right
-
-                                            # Reset y
-                                            col_cond = (col_cond + 1) % 2
-                                            y = top_bound - virtual_winding_window.windings[col_cond].conductor_radius
-                                            self.top_window_iso_counter += 1
-                                        else:
-                                            break
-
-                                    else:
-                                        # is this winding already finished? - continue with the other one
-                                        col_cond = (col_cond + 1) % 2
-
-                                        # Correct the reset of y and correct x displacement
-                                        x += virtual_winding_window.windings[col_cond].conductor_radius - \
-                                             virtual_winding_window.windings[(col_cond + 1) % 2].conductor_radius \
-                                             - self.component.isolation.cond_cond[2] + self.component.isolation.cond_cond[
-                                                 col_cond]
-
-                                        y = top_bound - virtual_winding_window.windings[col_cond].conductor_radius
-                                        self.top_window_iso_counter -= 1
-                            else:
-                                # This will draw from bottom bound up.
-
-                                # Initialize the list, that counts the already placed conductors
-                                N_completed = [0, 0]
-
-                                # Initialize the starting conductor
-                                if turns0 >= turns1:
-                                    col_cond = 0
-                                else:
-                                    col_cond = 1
-
-                                # Initialize the x and y coordinate
-                                x = left_bound + virtual_winding_window.windings[col_cond].conductor_radius
-                                y = bot_bound + virtual_winding_window.windings[col_cond].conductor_radius
-
-                                # Continue placing as long as not all conductors have been placed
-                                while (turns0 - N_completed[0] != 0) or \
-                                        (turns1 - N_completed[1] != 0):
-                                    if virtual_winding_window.turns[col_cond] - N_completed[col_cond] != 0:
-                                        # is this winding not already finished?
-                                        if x < right_bound - virtual_winding_window.windings[col_cond].conductor_radius:
-                                            while y < top_bound - virtual_winding_window.windings[col_cond].conductor_radius and \
-                                                    N_completed[col_cond] < virtual_winding_window.turns[col_cond]:
-                                                self.p_conductor[col_cond].append(
-                                                    [x, y, 0, self.component.mesh.c_center_conductor[col_cond]])
-
-                                                self.p_conductor[col_cond].append(
-                                                    [x - virtual_winding_window.windings[col_cond].conductor_radius,
-                                                     y,
-                                                     0,
-                                                     self.component.mesh.c_conductor[col_cond]])
-
-                                                self.p_conductor[col_cond].append([x,
-                                                                                   y + virtual_winding_window.windings[
-                                                                                       col_cond].conductor_radius,
-                                                                                   0,
-                                                                                   self.component.mesh.c_conductor[
-                                                                                       col_cond]])
-
-                                                self.p_conductor[col_cond].append(
-                                                    [x + virtual_winding_window.windings[col_cond].conductor_radius,
-                                                     y,
-                                                     0,
-                                                     self.component.mesh.c_conductor[col_cond]])
-
-                                                self.p_conductor[col_cond].append([x,
-                                                                                   y - virtual_winding_window.windings[
-                                                                                       col_cond].conductor_radius,
-                                                                                   0,
-                                                                                   self.component.mesh.c_conductor[
-                                                                                       col_cond]])
-
-                                                N_completed[col_cond] += 1
-
-                                                y += virtual_winding_window.windings[col_cond].conductor_radius * 2 + \
-                                                     self.component.isolation.cond_cond[col_cond]  # one from bot to top
-
-                                            x += virtual_winding_window.windings[col_cond].conductor_radius + \
-                                                 virtual_winding_window.windings[(col_cond + 1) % 2].conductor_radius + \
-                                                 self.component.isolation.cond_cond[2]  # from left to right
-
-                                            # Reset y
-                                            col_cond = (col_cond + 1) % 2
-                                            y = bot_bound + virtual_winding_window.windings[col_cond].conductor_radius
-
-                                        else:
-                                            break
-
-                                    else:
-                                        # is this winding already finished? - continue with the other one
-                                        col_cond = (col_cond + 1) % 2
-
-                                        # Correct the reset of y and correct x displacement
-                                        x += virtual_winding_window.windings[col_cond].conductor_radius - \
-                                             virtual_winding_window.windings[(col_cond + 1) % 2].conductor_radius \
-                                             - self.component.isolation.cond_cond[2] + \
-                                             self.component.isolation.cond_cond[
-                                                 col_cond]
-
-                                        y = bot_bound + virtual_winding_window.windings[col_cond].conductor_radius
-
-                    """Blockwise concentrated"""
-                    if isinstance(self.component.virtual_winding_windows[n_win].scheme, list):
-                        """
-                        - interleaving with a list means a concentrated winding scheme of ("hexagonal", "square" or 
-                          mixed) in virtual winding window
-                        - only valid for two winding case (=transformer) 
-                        - vertical stacking
-                        - block winding
-
-                        how many turns fit in arrow?
-                        from top to bot
-                        while (not placed all cond.):
-                            1. start with the primary winding from bot / left
-                            2. continue with the secondary from top / right
-                            3.CHECK solution conditions
-                       
-                        """
-                        # CHECK for two winding transformer
-                        if len(self.component.virtual_winding_windows[n_win].scheme) != 2:
-                            print(f"Interleaving with a list is only valid for the two winding case.\n"
-                                  f"Therefore the scheme must be a list of length 2 but is of length "
-                                  f"{len(self.component.virtual_winding_windows[n_win].scheme)}")
-                            raise Warning
-
-                        for num in range(0, len(self.component.virtual_winding_windows[n_win].scheme)):
-
-                            y = None
-
-                            # Cases
-                            if num == 0:
-                                y = bot_bound + self.component.windings[num].conductor_radius
-                            if num == 1:
-                                y = top_bound - self.component.windings[num].conductor_radius
-
-                            # Initialization
-                            x = left_bound + self.component.windings[num].conductor_radius
-                            i = 0
-
-                            if self.component.virtual_winding_windows[n_win].scheme[num] == WindingScheme.Square:
-
-                                # Primary winding from bottom to top
-                                if num == 0:
-                                    while y < top_bound - self.component.windings[num].conductor_radius and \
-                                            i < self.component.windings[num].turns[n_win]:
-                                        while x < right_bound - self.component.windings[num].conductor_radius and \
-                                                i < self.component.windings[num].turns[n_win]:
-                                            self.p_conductor[num].append(
-                                                [x, y, 0, self.component.mesh.c_center_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x - self.component.windings[num].conductor_radius, y, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x, y + self.component.windings[num].conductor_radius, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x + self.component.windings[num].conductor_radius, y, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x, y - self.component.windings[num].conductor_radius, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            i += 1
-                                            x += self.component.windings[num].conductor_radius * 2 + \
-                                                 self.component.isolation.cond_cond[
-                                                     num]  # from left to right
-                                        y += self.component.windings[num].conductor_radius * 2 + \
-                                             self.component.isolation.cond_cond[
-                                                 num]  # one step from bot to top
-                                        x = left_bound + self.component.windings[
-                                            num].conductor_radius  # always the same
-
-                                # Secondary winding from top to bottom
-                                if num == 1:
-                                    while y > bot_bound + self.component.windings[num].conductor_radius and i < \
-                                            self.component.windings[num].turns[n_win]:
-                                        while x < right_bound - self.component.windings[num].conductor_radius and i < \
-                                                self.component.windings[num].turns[n_win]:
-                                            self.p_conductor[num].append(
-                                                [x, y, 0, self.component.mesh.c_center_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x - self.component.windings[num].conductor_radius, y, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x, y + self.component.windings[num].conductor_radius, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x + self.component.windings[num].conductor_radius, y, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x, y - self.component.windings[num].conductor_radius, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            i += 1
-
-                                            x += self.component.windings[num].conductor_radius * 2 + \
-                                                 self.component.isolation.cond_cond[
-                                                     num]  # from left to right
-                                        y += -(self.component.windings[num].conductor_radius * 2) - \
-                                             self.component.isolation.cond_cond[
-                                                 num]  # one step from bot to top
-                                        x = left_bound + self.component.windings[
-                                            num].conductor_radius  # always the same
-
-                            if self.component.virtual_winding_windows[n_win].scheme[num] == WindingScheme.Hexagonal:
-
-                                # Primary winding from bottom to top
-                                if num == 0:
-
-                                    base_line = True
-
-                                    while y < top_bound - self.component.windings[num].conductor_radius and \
-                                            i < self.component.windings[num].turns[n_win]:
-                                        while x < right_bound - self.component.windings[num].conductor_radius and \
-                                                i < self.component.windings[num].turns[n_win]:
-
-                                            self.p_conductor[num].append(
-                                                [x, y, 0, self.component.mesh.c_center_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x - self.component.windings[num].conductor_radius, y, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x, y + self.component.windings[num].conductor_radius, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x + self.component.windings[num].conductor_radius, y, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x, y - self.component.windings[num].conductor_radius, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            i += 1
-
-                                            x += 2 * np.cos(np.pi / 6) * (
-                                                    self.component.windings[num].conductor_radius +
-                                                    self.component.isolation.cond_cond[num] / 2)
-
-                                            # depending on what line, hexa scheme starts shifted
-                                            # reset y to "new" bottom
-                                            base_line = (not base_line)
-                                            if base_line:
-                                                y -= (self.component.windings[num].conductor_radius +
-                                                      self.component.isolation.cond_cond[num])
-                                            else:
-                                                y += (self.component.windings[num].conductor_radius +
-                                                      self.component.isolation.cond_cond[num])
-
-                                        # Undo last base_line reset
-                                        if base_line:
-                                            y += (self.component.windings[num].conductor_radius +
-                                                  self.component.isolation.cond_cond[num])
-                                        else:
-                                            y -= (self.component.windings[num].conductor_radius +
-                                                  self.component.isolation.cond_cond[num])
-
-                                        base_line = True
-                                        x = left_bound + self.component.windings[num].conductor_radius
-                                        y += self.component.windings[num].conductor_radius + \
-                                             self.component.isolation.cond_cond[num]
-
-                                # Secondary winding from top to bottom
-                                if num == 1:
-
-                                    base_line = True
-
-                                    while y > bot_bound + self.component.windings[num].conductor_radius and \
-                                            i < self.component.windings[num].turns[n_win]:
-                                        while x < right_bound - self.component.windings[num].conductor_radius and \
-                                                i < self.component.windings[num].turns[n_win]:
-                                            print(f"i: {i} "
-                                                  f"x: {x} "
-                                                  f"y: {y} ")
-
-                                            self.p_conductor[num].append(
-                                                [x, y, 0, self.component.mesh.c_center_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x - self.component.windings[num].conductor_radius, y, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x, y + self.component.windings[num].conductor_radius, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x + self.component.windings[num].conductor_radius, y, 0,
-                                                 self.component.mesh.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x, y - self.component.windings[num].conductor_radius, 0,
-                                                 self.component.mesh.c_conductor[num]])
-
-                                            i += 1
-                                            x += 2 * np.cos(np.pi / 6) * (
-                                                    self.component.windings[num].conductor_radius +
-                                                    self.component.isolation.cond_cond[num] / 2)
-
-                                            # depending on what line, hexa scheme starts shifted
-                                            # reset y to "new" bottom
-                                            base_line = (not base_line)
-                                            if base_line:
-                                                y += (self.component.windings[num].conductor_radius +
-                                                      self.component.isolation.cond_cond[num])
-                                            else:
-                                                y -= (self.component.windings[num].conductor_radius +
-                                                      self.component.isolation.cond_cond[num])
-
-                                        # Undo last base_line reset
-                                        if base_line:
-                                            y -= (self.component.windings[num].conductor_radius +
-                                                  self.component.isolation.cond_cond[num])
-                                        else:
-                                            y += (self.component.windings[num].conductor_radius +
-                                                  self.component.isolation.cond_cond[num])
-
-                                        base_line = True
-                                        x = left_bound + self.component.windings[num].conductor_radius
-                                        # from top to bottom
-                                        y -= (self.component.windings[num].conductor_radius +
-                                              self.component.isolation.cond_cond[num])
-
-                else:
-                    # other case is non-interleaved
-                    if self.component.virtual_winding_windows[n_win].winding == WindingType.Primary:
-                        num = 0
-                    elif self.component.virtual_winding_windows[n_win].winding == WindingType.Secondary:
-                        num = 1
-                    else:
-                        raise Exception(f"Unusable winding type with this settings: {self.component.virtual_winding_windows[n_win].winding}" )
-
-                    if self.component.windings[num].conductor_type == ConductorType.Full:
-                        if sum(self.component.windings[num].turns) != 1:
-                            print(f"For a \"full\" conductor you must choose 1 turn for each conductor!")
-                        # full window conductor
-                        self.p_conductor[num].append([left_bound, bot_bound, 0, self.component.mesh.c_conductor[num]])
-                        self.p_conductor[num].append([right_bound, bot_bound, 0, self.component.mesh.c_conductor[num]])
-                        self.p_conductor[num].append([left_bound, top_bound, 0, self.component.mesh.c_conductor[num]])
-                        self.p_conductor[num].append([right_bound, top_bound, 0, self.component.mesh.c_conductor[num]])
-
-                    if self.component.windings[num].conductor_type == ConductorType.Stacked:
-                        # Stack defined number of turns and chosen thickness
-                        for i in range(0, self.component.windings[num].turns[n_win]):
-                            # CHECK if top bound is reached
-                            if (bot_bound + (i + 1) * self.component.windings[num].thickness +
-                                i * self.component.isolation.cond_cond[num]) <= top_bound:
-                                # stacking from the ground
-                                self.p_conductor[num].append(
-                                    [left_bound, bot_bound + i * self.component.windings[num].thickness + i *
-                                     self.component.isolation.cond_cond[num], 0, self.component.mesh.c_conductor[num]])
-                                self.p_conductor[num].append([right_bound,
-                                                              bot_bound + i * self.component.windings[
-                                                                  num].thickness + i *
-                                                              self.component.isolation.cond_cond[num], 0,
-                                                              self.component.mesh.c_conductor[num]])
-                                self.p_conductor[num].append([left_bound,
-                                                              bot_bound + (i + 1) * self.component.windings[
-                                                                  num].thickness + i *
-                                                              self.component.isolation.cond_cond[num], 0,
-                                                              self.component.mesh.c_conductor[num]])
-                                self.p_conductor[num].append([right_bound,
-                                                              bot_bound + (i + 1) * self.component.windings[
-                                                                  num].thickness + i *
-                                                              self.component.isolation.cond_cond[num], 0,
-                                                              self.component.mesh.c_conductor[num]])
-
-                    if self.component.windings[num].conductor_type == ConductorType.Foil:
-                        # Wrap defined number of turns and chosen thickness
-                        if self.component.windings[num].wrap_para == WrapParaType.Fixed_Thickness:
-                            for i in range(0, self.component.windings[num].turns[n_win]):
-                                # CHECK if right bound is reached
-                                if (left_bound + (i + 1) * self.component.windings[num].thickness +
-                                    i * self.component.isolation.cond_cond[num]) <= right_bound:
-                                    # Foils
-                                    self.p_conductor[num].append(
-                                        [left_bound + i * self.component.windings[num].thickness + i *
-                                         self.component.isolation.cond_cond[num],
-                                         bot_bound, 0, self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [left_bound + (i + 1) * self.component.windings[num].thickness + i *
-                                         self.component.isolation.cond_cond[num], bot_bound, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [left_bound + i * self.component.windings[num].thickness + i *
-                                         self.component.isolation.cond_cond[num],
-                                         top_bound, 0, self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [left_bound + (i + 1) * self.component.windings[num].thickness + i *
-                                         self.component.isolation.cond_cond[num], top_bound, 0,
-                                         self.component.mesh.c_conductor[num]])
-
-                        # Fill the allowed space in the Winding Window with a chosen number of turns
-                        if self.component.windings[num].wrap_para == WrapParaType.Interpolate:
-                            x_interpol = np.linspace(left_bound, right_bound + self.component.isolation.cond_cond[num],
-                                                     self.component.windings[num].turns + 1)
-                            for i in range(0, self.component.windings[num].turns):
-                                # Foils
-                                self.p_conductor[num].append(
-                                    [x_interpol[i], bot_bound, 0, self.component.mesh.c_conductor[num]])
-                                self.p_conductor[num].append(
-                                    [x_interpol[i + 1] - self.component.isolation.cond_cond[num], bot_bound, 0,
-                                     self.component.mesh.c_conductor[num]])
-                                self.p_conductor[num].append(
-                                    [x_interpol[i], top_bound, 0, self.component.mesh.c_conductor[num]])
-                                self.p_conductor[num].append(
-                                    [x_interpol[i + 1] - self.component.isolation.cond_cond[num], top_bound, 0,
-                                     self.component.mesh.c_conductor[num]])
-
-                    # Round Conductors:
-                    if self.component.windings[num].conductor_type in [ConductorType.Litz, ConductorType.Solid]:
-
-                        if self.component.virtual_winding_windows[num].scheme == WindingScheme.Square:
-                            y = bot_bound + self.component.windings[num].conductor_radius
-                            x = left_bound + self.component.windings[num].conductor_radius
-                            i = 0
-                            # Case n_conductors higher that "allowed" is missing
-                            while x < right_bound - self.component.windings[num].conductor_radius and i < self.component.windings[num].turns[n_win]:
-                                while y < top_bound - self.component.windings[num].conductor_radius and i < self.component.windings[num].turns[n_win]:
-                                    self.p_conductor[num].append([x, y, 0, self.component.mesh.c_center_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x - self.component.windings[num].conductor_radius, y, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x, y + self.component.windings[num].conductor_radius, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x + self.component.windings[num].conductor_radius, y, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x, y - self.component.windings[num].conductor_radius, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    i += 1
-                                    y += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # one step from left to right
-                                x += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # from left to top
-                                y = bot_bound + self.component.windings[num].conductor_radius
-
-                        if self.component.virtual_winding_windows[num].scheme == WindingScheme.Square_Full_Width:
-                            y = bot_bound + self.component.windings[num].conductor_radius
-                            x = left_bound + self.component.windings[num].conductor_radius
-                            i = 0
-                            # Case n_conductors higher that "allowed" is missing
-                            while y < top_bound - self.component.windings[num].conductor_radius \
-                                    and i < self.component.windings[num].turns[n_win]:
-                                while x < right_bound - self.component.windings[num].conductor_radius \
-                                        and i < self.component.windings[num].turns[n_win]:
-                                    self.p_conductor[num].append([x, y, 0, self.component.mesh.c_center_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x - self.component.windings[num].conductor_radius, y, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x, y + self.component.windings[num].conductor_radius, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x + self.component.windings[num].conductor_radius, y, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x, y - self.component.windings[num].conductor_radius, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    i += 1
-                                    x += self.component.windings[num].conductor_radius * 2 + \
-                                         self.component.isolation.cond_cond[
-                                             num]  # from left to top
-                                y += self.component.windings[num].conductor_radius * 2 + \
-                                     self.component.isolation.cond_cond[
-                                         num]  # one step from left to right
-                                x = left_bound + self.component.windings[num].conductor_radius  # always the same
-
-                        if self.component.virtual_winding_windows[num].scheme == WindingScheme.Hexagonal:
-                            y = bot_bound + self.component.windings[num].conductor_radius
-                            x = left_bound + self.component.windings[num].conductor_radius
-                            i = 0
+                    winding_number0, winding_number1 = winding_numbers
+
+                    # First winding from bottom to top
+                    if winding0.conductor_arrangement == ConductorArrangement.Square:
+                        while y < top_bound - winding0.conductor_radius and \
+                                i < virtual_winding_window.turns[0]:
+                            while x < right_bound - winding0.conductor_radius and \
+                                    i < virtual_winding_window.turns[0]:
+                                self.p_conductor[winding_number0].append([
+                                    x, 
+                                    y, 
+                                    0, 
+                                    self.component.mesh.c_center_conductor[winding_number0]])
+                                self.p_conductor[winding_number0].append([
+                                    x - winding0.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number0]])
+                                self.p_conductor[winding_number0].append([
+                                    x,
+                                    y + winding0.conductor_radius,
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number0]])
+                                self.p_conductor[winding_number0].append([
+                                    x + winding0.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number0]])
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y - winding0.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                i += 1
+                                x += winding0.conductor_radius * 2 + \
+                                        self.component.isolation.cond_cond[
+                                            num]  # from left to right
+                            y += winding0.conductor_radius * 2 + \
+                                    self.component.isolation.cond_cond[
+                                        num]  # one step from bot to top
+                            x = left_bound + winding0.conductor_radius  # always the same
+                    elif winding0.conductor_arrangement == ConductorArrangement.Hexagonal:
                             base_line = True
-                            # Case n_conductors higher that "allowed" is missing
-                            while x < right_bound - self.component.windings[num].conductor_radius \
-                                    and i < self.component.windings[num].turns[n_win]:
-                                while y < top_bound - self.component.windings[num].conductor_radius and \
-                                        i < self.component.windings[num].turns[n_win]:
-                                    self.p_conductor[num].append([x, y, 0, self.component.mesh.c_center_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x - self.component.windings[num].conductor_radius, y, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x, y + self.component.windings[num].conductor_radius, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x + self.component.windings[num].conductor_radius, y, 0,
-                                         self.component.mesh.c_conductor[num]])
-                                    self.p_conductor[num].append(
-                                        [x, y - self.component.windings[num].conductor_radius, 0,
-                                         self.component.mesh.c_conductor[num]])
+
+                            while y < top_bound - winding0.conductor_radius and \
+                                    i < virtual_winding_window.turns[0]:
+                                while x < right_bound - winding0.conductor_radius and \
+                                        i < virtual_winding_window.turns[0]:
+                                    self.p_conductor[winding_number0].append([
+                                        x, 
+                                        y, 
+                                        0, 
+                                        self.component.mesh.c_center_conductor[winding_number0]])
+                                    self.p_conductor[winding_number0].append([
+                                        x - winding0.conductor_radius, 
+                                        y, 
+                                        0,
+                                        self.component.mesh.c_conductor[winding_number0]])
+                                    self.p_conductor[winding_number0].append([
+                                        x, 
+                                        y + winding0.conductor_radius, 
+                                        0,
+                                        self.component.mesh.c_conductor[winding_number0]])
+                                    self.p_conductor[winding_number0].append([
+                                        x + winding0.conductor_radius, 
+                                        y, 
+                                        0,
+                                        self.component.mesh.c_conductor[winding_number0]])
+                                    self.p_conductor[winding_number0].append([
+                                        x, 
+                                        y - winding0.conductor_radius, 
+                                        0,
+                                        self.component.mesh.c_conductor[winding_number0]])
                                     i += 1
-                                    y += self.component.windings[num].conductor_radius * 2 + \
-                                         self.component.isolation.cond_cond[
-                                             num]  # from bottom to top
+
+                                    x += 2 * np.cos(np.pi / 6) * (
+                                            winding0.conductor_radius +
+                                            self.component.isolation.cond_cond[num] / 2)
+
+                                    # depending on what line, hexa scheme starts shifted
+                                    # reset y to "new" bottom
+                                    base_line = (not base_line)
+                                    if base_line:
+                                        y -= (winding0.conductor_radius +
+                                                self.component.isolation.cond_cond[num])
+                                    else:
+                                        y += (winding0.conductor_radius +
+                                                self.component.isolation.cond_cond[num])
+
+                                # Undo last base_line reset
+                                if base_line:
+                                    y += (winding0.conductor_radius +
+                                            self.component.isolation.cond_cond[num])
+                                else:
+                                    y -= (winding0.conductor_radius +
+                                            self.component.isolation.cond_cond[num])
+
+                                base_line = True
+                                x = left_bound + winding0.conductor_radius
+                                y += winding0.conductor_radius + \
+                                        self.component.isolation.cond_cond[num]
+                    else:
+                        raise Exception(f"Unknown conductor_arrangement {winding0.conductor_arrangement}")
+
+                    # Second winding from top to bottom
+                    if winding1.conductor_arrangement == ConductorArrangement.Square:
+                        while y > bot_bound + winding1.conductor_radius and i < \
+                                virtual_winding_window.turns[1]:
+                            while x < right_bound - winding1.conductor_radius and i < \
+                                    virtual_winding_window.turns[1]:
+                                self.p_conductor[winding_number1].append([
+                                    x, 
+                                    y, 
+                                    0, 
+                                    self.component.mesh.c_center_conductor[winding_number1]])
+                                self.p_conductor[winding_number1].append([
+                                    x - winding1.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number1]])
+                                self.p_conductor[winding_number1].append([
+                                    x, 
+                                    y + winding1.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number1]])
+                                self.p_conductor[winding_number1].append([
+                                    x + winding1.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number1]])
+                                self.p_conductor[winding_number1].append([
+                                    x, 
+                                    y - winding1.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number1]])
+                                i += 1
+
+                                x += winding1.conductor_radius * 2 + \
+                                        self.component.isolation.cond_cond[
+                                            num]  # from left to right
+                            y += -(winding1.conductor_radius * 2) - \
+                                    self.component.isolation.cond_cond[
+                                        num]  # one step from bot to top
+                            x = left_bound + winding1.conductor_radius  # always the same
+                    elif winding1.conductor_arrangement == ConductorArrangement.Hexagonal:
+                        base_line = True
+
+                        while y > bot_bound + winding1.conductor_radius and \
+                                i < virtual_winding_window.turns[1]:
+                            while x < right_bound - winding1.conductor_radius and \
+                                    i < virtual_winding_window.turns[1]:
+                                print(f"i: {i} "
+                                        f"x: {x} "
+                                        f"y: {y} ")
+
+                                self.p_conductor[winding_number1].append([
+                                    x, 
+                                    y, 
+                                    0, 
+                                    self.component.mesh.c_center_conductor[winding_number1]])
+                                self.p_conductor[winding_number1].append([
+                                    x - winding1.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number1]])
+                                self.p_conductor[winding_number1].append([
+                                    x, 
+                                    y + winding1.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number1]])
+                                self.p_conductor[winding_number1].append([
+                                    x + winding1.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number1]])
+                                self.p_conductor[winding_number1].append([
+                                    x, 
+                                    y - winding1.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[winding_number1]])
+
+                                i += 1
                                 x += 2 * np.cos(np.pi / 6) * (
-                                        self.component.windings[num].conductor_radius +
+                                        winding1.conductor_radius +
                                         self.component.isolation.cond_cond[num] / 2)
-                                # * np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
+
                                 # depending on what line, hexa scheme starts shifted
                                 # reset y to "new" bottom
                                 base_line = (not base_line)
                                 if base_line:
-                                    y = bot_bound + self.component.windings[num].conductor_radius
+                                    y += (winding1.conductor_radius +
+                                            self.component.isolation.cond_cond[num])
                                 else:
-                                    y = bot_bound + 2 * self.component.windings[num].conductor_radius + \
+                                    y -= (winding1.conductor_radius +
+                                            self.component.isolation.cond_cond[num])
+
+                            # Undo last base_line reset
+                            if base_line:
+                                y -= (winding1.conductor_radius +
+                                        self.component.isolation.cond_cond[num])
+                            else:
+                                y += (winding1.conductor_radius +
+                                        self.component.isolation.cond_cond[num])
+
+                            base_line = True
+                            x = left_bound + winding1.conductor_radius
+                            # from top to bottom
+                            y -= (winding1.conductor_radius +
+                                    self.component.isolation.cond_cond[num])
+                    else:
+                        raise Exception(f"Unknown conductor_arrangement {winding1.conductor_arrangement}")
+            elif virtual_winding_window.winding_type == WindingType.Single:
+                # One winding in the virtual winding window
+                winding = virtual_winding_window.winding[0]
+                turns = virtual_winding_window.turns[0]
+                conductor_shape = winding.conductor_shape
+                conductor_arrangement = winding.conductor_arrangement
+                winding_scheme = virtual_winding_window.winding_scheme
+
+                num = winding.winding_number
+
+                # Check if the coil is round or rectangular
+                if conductor_shape == ConductorShape.Rectangular:    
+                    # Now check for each possible winding scheme 
+                    if winding_scheme == WindingScheme.Full:
+                        # Full window conductor
+                        self.p_conductor[num].append([
+                            left_bound, 
+                            bot_bound, 
+                            0, 
+                            self.component.mesh.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            right_bound, 
+                            bot_bound, 
+                            0, 
+                            self.component.mesh.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            left_bound, 
+                            top_bound, 
+                            0, 
+                            self.component.mesh.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            right_bound, 
+                            top_bound, 
+                            0, 
+                            self.component.mesh.c_conductor[num]])
+                    elif winding_scheme == WindingScheme.FoilVertical:
+                        # Foil conductors where each conductor is very high and the conductors are expanding in the x-direction
+                        if winding.wrap_para == WrapParaType.Fixed_Thickness:
+                            # Wrap defined number of turns and chosen thickness
+                            for i in range(0, turns):
+                                # CHECK if right bound is reached
+                                if (left_bound + (i + 1) * winding.thickness +
+                                    i * self.component.isolation.cond_cond[num]) <= right_bound:
+                                    # Foils
+                                    self.p_conductor[num].append([
+                                        left_bound + i * winding.thickness + i * self.component.isolation.cond_cond[num],
+                                        bot_bound, 
+                                        0, 
+                                        self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append([
+                                        left_bound + (i + 1) * winding.thickness + i * self.component.isolation.cond_cond[num], 
+                                        bot_bound, 
+                                        0,
+                                        self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append([
+                                        left_bound + i * winding.thickness + i * self.component.isolation.cond_cond[num],
+                                        top_bound, 
+                                        0, 
+                                        self.component.mesh.c_conductor[num]])
+                                    self.p_conductor[num].append([
+                                        left_bound + (i + 1) * winding.thickness + i * self.component.isolation.cond_cond[num], 
+                                        top_bound, 
+                                        0,
+                                        self.component.mesh.c_conductor[num]])
+                        elif winding.wrap_para == WrapParaType.Interpolate:
+                            # Fill the allowed space in the Winding Window with a chosen number of turns
+                            x_interpol = np.linspace(left_bound, right_bound + self.component.isolation.cond_cond[num],
+                                                        winding.turns + 1)
+                            for i in range(0, winding.turns):
+                                # Foils
+                                self.p_conductor[num].append([
+                                    x_interpol[i], 
+                                    bot_bound, 
+                                    0, 
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x_interpol[i + 1] - self.component.isolation.cond_cond[num], 
+                                    bot_bound, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x_interpol[i],
+                                    top_bound, 
+                                    0, 
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x_interpol[i + 1] - self.component.isolation.cond_cond[num], 
+                                    top_bound, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                        else:
+                            raise Exception(f"Unknown wrap para type {winding.wrap_para}")
+                    elif winding_scheme == WindingScheme.FoilHorizontal:
+                        # Foil conductors where each conductor is very long and the conductors are expanding the y-direction
+                        # Stack defined number of turns and chosen thickness
+                        for i in range(0, turns):
+                            # CHECK if top bound is reached
+                            if (bot_bound + (i + 1) * winding.thickness +
+                                i * self.component.isolation.cond_cond[num]) <= top_bound:
+                                # stacking from the ground
+                                self.p_conductor[num].append([
+                                    left_bound, 
+                                    bot_bound + i * winding.thickness + i * self.component.isolation.cond_cond[num], 
+                                    0, 
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    right_bound,
+                                    bot_bound + i * winding.thickness + i * self.component.isolation.cond_cond[num],
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    left_bound,
+                                    bot_bound + (i + 1) * winding.thickness + i * self.component.isolation.cond_cond[num], 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    right_bound,
+                                    bot_bound + (i + 1) * winding.thickness + i * self.component.isolation.cond_cond[num],
+                                    0,
+                                    self.component.mesh.c_conductor[num]])      
+                    else:
+                        raise Exception(f"Winding scheme {winding_scheme} is not implemented.")
+                elif conductor_shape == ConductorShape.Round:
+                    # Since round conductors have no winding scheme check for each conductor_arrangement
+                    if conductor_arrangement == ConductorArrangement.Square:
+                        y = bot_bound + winding.conductor_radius
+                        x = left_bound + winding.conductor_radius
+                        i = 0
+                        # Case n_conductors higher that "allowed" is missing
+                        while x < right_bound - winding.conductor_radius and i < turns:
+                            while y < top_bound - winding.conductor_radius and i < turns:
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y, 
+                                    0, 
+                                    self.component.mesh.c_center_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x - winding.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y + winding.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append(
+                                    [x + winding.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y - winding.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                i += 1
+                                y += winding.conductor_radius * 2 + self.component.isolation.cond_cond[num]  # one step from left to right
+                            x += winding.conductor_radius * 2 + self.component.isolation.cond_cond[num]  # from left to top
+                            y = bot_bound + winding.conductor_radius
+                    elif conductor_arrangement == ConductorArrangement.Hexagonal:
+                        y = bot_bound + winding.conductor_radius
+                        x = left_bound + winding.conductor_radius
+                        i = 0
+                        base_line = True
+                        # Case n_conductors higher that "allowed" is missing
+                        while x < right_bound - winding.conductor_radius \
+                                and i < turns:
+                            while y < top_bound - winding.conductor_radius and \
+                                    i < turns:
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y, 
+                                    0, 
+                                    self.component.mesh.c_center_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x - winding.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y + winding.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x + winding.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y - winding.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                i += 1
+                                y += winding.conductor_radius * 2 + \
                                         self.component.isolation.cond_cond[
-                                            num] / 2
+                                            num]  # from bottom to top
+                            x += 2 * np.cos(np.pi / 6) * (
+                                    winding.conductor_radius +
+                                    self.component.isolation.cond_cond[num] / 2)
+                            # * np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
+                            # depending on what line, hexa scheme starts shifted
+                            # reset y to "new" bottom
+                            base_line = (not base_line)
+                            if base_line:
+                                y = bot_bound + winding.conductor_radius
+                            else:
+                                y = bot_bound + 2 * winding.conductor_radius + \
+                                    self.component.isolation.cond_cond[
+                                        num] / 2
+                    elif conductor_arrangement == ConductorArrangement.SquareFullWidth:
+                        y = bot_bound + winding.conductor_radius
+                        x = left_bound + winding.conductor_radius
+                        i = 0
+                        # Case n_conductors higher that "allowed" is missing
+                        while y < top_bound - winding.conductor_radius \
+                                and i < turns:
+                            while x < right_bound - winding.conductor_radius \
+                                    and i < turns:
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y, 
+                                    0, 
+                                    self.component.mesh.c_center_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x - winding.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x,
+                                    y + winding.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x + winding.conductor_radius, 
+                                    y, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                self.p_conductor[num].append([
+                                    x, 
+                                    y - winding.conductor_radius, 
+                                    0,
+                                    self.component.mesh.c_conductor[num]])
+                                i += 1
+                                x += winding.conductor_radius * 2 + \
+                                        self.component.isolation.cond_cond[
+                                            num]  # from left to top
+                            y += winding.conductor_radius * 2 + \
+                                    self.component.isolation.cond_cond[
+                                        num]  # one step from left to right
+                            x = left_bound + winding.conductor_radius  # always the same
+                    else:
+                        raise Exception(f"Conductor arrangement {conductor_arrangement} is not implemented.")
+                else:
+                    raise Exception(f"Conductor shape {winding.conductor_shape} is not implemented.")
+            else:
+                raise Exception(f"Unknown winding type {virtual_winding_window.winding_type}")
 
             # Checking the Conductors
             for num in range(0, self.component.n_windings):
@@ -1758,7 +1813,8 @@ class MagneticComponent:
 
             self.draw_virtual_winding_windows()
 
-            self.draw_conductors()
+            for vww in self.component.virtual_winding_windows:
+                self.draw_conductors(vww)
 
             if isolation_deltas is None:
                 isolation_deltas = {
@@ -5100,8 +5156,6 @@ class MagneticComponent:
         if self.air_gaps is None:
             self.air_gaps = AirGaps(None, None)
             print("No air gaps are added")
-        if self.windings is None or not self.windings:
-            raise Exception("Winding classes need to be added to the magnetic component")
         if self.isolation is None:
             raise Exception("An isolation class need to be added to the magnetic component")
         if self.virtual_winding_windows is None:
@@ -5517,7 +5571,7 @@ def decode_settings_from_log(log_file_path: str, working_directory: str = None):
         windings = []
         for settings_winding in settings["windings"]:
             settings_cond = settings_winding["conductor_settings"]
-            winding = Winding(settings_winding["turns_primary"], settings_winding["turns_secondary"], 
+            winding = Conductor(settings_winding["turns_primary"], settings_winding["turns_secondary"], 
                                 Conductivity[settings_winding["conductivity"]], WindingType[settings_winding["winding_type"]], 
                                 WindingScheme[settings_winding["winding_scheme"]])
             conductor_type = ConductorType[settings_cond["conductor_type"]]

@@ -1,0 +1,51 @@
+WindingType: Interleaved
+	ConductorShape: Round
+		WindingScheme: Bifilar
+			- nicht implementiert
+		WindingScheme: VerticalAlternating
+			- nicht implementiert
+			- die Primär- und Sekundärseite wechselt sich durch Reihen ab
+		WindingScheme: HorizontalAlternating
+			- für integrated transformer oder n_windings = 2
+			- kann von oben nach unten oder von unten nach oben gewickelt sein
+			- die Primär- und Sekundärseite wechselt sich durch Spalten ab
+		WindingScheme: VerticalStacked
+			- genau 2 windings in einem VirtualWindingWindow
+			- die Primärseite wird von unten nach oben und die Sekundärseite von oben nach unten gezeichnet
+				-> Jede Wicklungsseite auf einem "haufen" -> Stacked
+			ConductorArrangement: Square
+			ConductorArrangement: Hexagonal
+WindingType: Single
+	ConductorShape: Round
+		WindingScheme: None
+			ConductorArrangement: Square
+			ConductorArrangement: Square full width
+			ConductorArrangement: Hexagonal
+	ConductorShape: Rect
+		WindingScheme: Full
+			- füllt das ganze VirtualWindingWindow aus
+		WindingScheme: FoilHorizontal (Stacked)
+			- Leiter sind sehr lang und werden in y-Richtung gesetzt
+		WindingScheme: Square full width
+			- not implemented
+			- kürzere Foils die erst in x-Richtung und dann in y-Richtung gewickelt werden??
+		WindingScheme: FoilVertical
+			WrapParaType: Fixed Thickness
+			WrapParaType: Interpolate
+			- Leiter sind sehr hoch und werden in x-Richtung gesetzt
+			
+			
+ConductorArrangement:
+	Square
+		- nebeneinander angeordnet (in einem Grid)
+	Hexagonal
+		- die Leiter unterschiedlicher Spalten sind in der Höhe versetzt, sodass Sie in einander greifen
+	Square full width
+		- die Leiter werden erst in x-Richtung dann in y-Richtung gewickelt
+
+WrapParaType:
+	Fixed Thickness
+		- 
+	Interpolate
+		-
+		

@@ -16,7 +16,7 @@ def lab_model():
     geo.set_air_gaps(air_gaps)
 
 
-    winding = fmt.Winding(8, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+    winding = fmt.Conductor(8, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
     #winding.set_solid_conductor(0.0013)
     winding.set_litz_conductor(conductor_radius=0.0015, number_strands=150, strand_radius=100e-6, fill_factor=None)
     geo.set_windings([winding])

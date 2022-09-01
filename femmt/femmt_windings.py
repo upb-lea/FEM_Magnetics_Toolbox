@@ -1,11 +1,17 @@
 from enum import Enum
 from typing import List
 
-from femmt_enumerations import InterleavedWindingScheme, WindingScheme, WindingType
-#from femmt_model_classes import *
+from femmt_enumerations import *
 
-class Coil:
-    pass
+class Conductor:
+    
+    conductor_shape: ConductorShape
+    conductor_arrangement: ConductorArrangement
+    wrap_para_type: WrapParaType
+
+    conductor_radius: float
+
+    winding_index: int
 
 class VirtualWindingWindow:
     """
@@ -22,9 +28,9 @@ class VirtualWindingWindow:
     right_bound: float
 
     winding_type: WindingType
-    winding_scheme: WindingScheme
+    winding_scheme: WindingScheme # Or InterleavedWindingScheme in case of an interleaved winding
 
-    windings: List[Coil]
+    windings: List[Conductor]
     turns: List[int]
 
     def __init__(self, bot_bound: float, top_bound: float, left_bound: float, right_bound: float):
@@ -33,16 +39,16 @@ class VirtualWindingWindow:
         self.left_bound = left_bound
         self.right_bound = right_bound
 
-    def set_winding(self, coil: Coil, turns: int, winding_scheme: WindingScheme):
+    def set_winding(self, conductor: Conductor, turns: int, winding_index: int, winding_scheme: WindingScheme):
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
-        self.windings = [coil]
+        self.windings = [conductor]
         self.turns = [turns]
 
-    def set_interleaved_winding(self, coil1: Coil, turns1: int, coil2: Coil,turns2: int, winding_scheme: InterleavedWindingScheme):
+    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, winding_index: int, conductor2: Conductor, turns2: int, winding_index2: int, winding_scheme: InterleavedWindingScheme):
         self.winding_type = WindingType.Interleaved
         self.winding_scheme = winding_scheme
-        self.windings = [coil1, coil2]
+        self.windings = [conductor1, conductor2]
         self.turns = [turns1, turns2]
 
     def __repr__(self):
@@ -58,20 +64,13 @@ class WindingWindow():
 
     def __init__(self, core, isolation, horizontal_split_factor: float, vertical_split_factor: float):
         
-        #self.max_bot_bound = -core.window_h / 2 + isolation.core_cond[0]
-        #self.max_top_bound = core.window_h / 2 - isolation.core_cond[1]
-        #self.max_left_bound = core.core_w / 2 + isolation.core_cond[2]
-        #self.max_right_bound = core.r_inner - isolation.core_cond[3]
-
-        
-        self.max_bot_bound = 0
-        self.max_top_bound = 10
-        self.max_left_bound = 0
-        self.max_right_bound = 10
+        self.max_bot_bound = -core.window_h / 2 + isolation.core_cond[0]
+        self.max_top_bound = core.window_h / 2 - isolation.core_cond[1]
+        self.max_left_bound = core.core_w / 2 + isolation.core_cond[2]
+        self.max_right_bound = core.r_inner - isolation.core_cond[3]
 
         # Isolation between vwws
-        # isolation_vww = isolation.cond_cond[2]
-        isolation_vww = 1
+        isolation_vww = isolation.cond_cond[2]
 
         # Splits
         horizontal_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * horizontal_split_factor
@@ -124,7 +123,7 @@ if __name__ == "__main__":
     winding_window = WindingWindow(None, None, 0.5, 0.5)
     top_left, top_right, bot_left, bot_right = winding_window.virtual_winding_windows
 
-    winding_window.combine_vww(top_left, top_right)
+    combined_vww = winding_window.combine_vww(top_left, top_right)
 
     for window in winding_window.virtual_winding_windows:
         print(window)
