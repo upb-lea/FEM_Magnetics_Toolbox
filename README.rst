@@ -10,7 +10,9 @@ The toolbox contains two parts, a reluctance module and a FEM module.
 * The FEM module is for detailed calculations
 
 The toolbox is accessible via python code or a graphical user interface
-(GUI), which current development status is experimental. |image0|
+(GUI), which current development status is experimental. 
+
+|image0|
 
 Functionality examples 
 
@@ -18,22 +20,23 @@ Functionality examples
 * work with pre-defined litz wires 
 * use python to perform parametersweeps, e.g. perform several automated simulations of different air gap sizes 
 * read the results automated with python from the FEM simulation tool
+* run a thermal simulation to see the temperatures, once the magnetoquasistatic simulation has finished
 
 **Note: Alpha Version!** 
 
 * GUI is experimental, 
 * reluctance module is currently working for a single optimization example and not fully implemented yet.
 
-1. Detailed Documentation
+Detailed Documentation
 -------------------------
 
 Can be found
 `here <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__.
 
-2. Installation
+Installation
 ---------------
 
-2.1 ONELAB installation
+ONELAB installation
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 -  Go to https://onelab.info/
@@ -41,14 +44,7 @@ Can be found
 -  Unpack the software and remember the file path. This will be needed
    later when installing FEMMT.
 
-2.2 FEMM installation [for Windows User only]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
--  Go to https://www.femm.info/wiki/Download
--  Install FEMM as described
--  FEMM can be used as an alternative FEM solver for 2D simulations
-
-2.3 Install FEMMT
+Install FEMMT
 ~~~~~~~~~~~~~~~~~
 
 Chose to install the development version of FEMMT or the release
@@ -68,6 +64,8 @@ FEMMT development version (for developers only)
 
 This is the latest development version with the latest features. Note:
 You may need to install `git <https://git-scm.com/downloads>`__.
+Also have a look at the . `developers notes </developers_notes.md>`__.
+
 
 ::
 
@@ -75,21 +73,21 @@ You may need to install `git <https://git-scm.com/downloads>`__.
    git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
    pip install -e .
 
-2.4 Minimal example and first run
+Minimal example and first run
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Run the example from here:
 `basic_example.py </femmt/examples/basic_example.py>`__. FEMMT will ask
 you for the installation path of ONELAB during first use.
 
-3. Examples
+Examples
 -----------
 
 This toolbox is able to build a complete FEM simulation from simple
 Python code. The following figure shows the Python code on the left and
 the corresponding FEM simulation on the right. |image1|
 
-3.1 Basics
+Basics
 ~~~~~~~~~~
 
 Code examples can be found in this `example
@@ -124,8 +122,18 @@ In it you can find
 * losses per winding and for each individual winding,
 * self- and mutual inductances.
 
-4. GUI
-------
+For more information about the possible winding types, please
+have a look `here <winding_overview.md>`__.
+
+Counting arrow system
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Defined as depicted here:
+
+|image3|
+
+GUI (Experimental)
+-------------------
 
 There is a first preview for a GUI. Installing this is a bit cumbersome
 at first, but will be simplified in the future: 
@@ -134,40 +142,41 @@ at first, but will be simplified in the future:
 * install the development version of femmt as described above 
 * run python ``downloads/path-to_femmt/femmt/gui/femmt_gui.py``
 
+Please note, the GUI is experimental.
+
 |image2|
 
-5. Roadmap
+Roadmap
 ----------
 
 Planned features in 2022: 
 
 * Software stability and general improvements, 
 * add more Functionality to the GUI, 
-* implement basics for thermal simulation in python code.
 
-6. Bug Reports
+Bug Reports
 --------------
 
 Please use the issues report button within github to report bugs.
 
-7. Contributing
+Contributing
 ---------------
 
 Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change. For contributing, please refer
-to this `section <Contributing.md>`__.
+to this `section <Contributing.rst>`__.
 
-8. Changelog
+Changelog
 ------------
 
 Find the changelog `here <CHANGELOG.md>`__
 
-9. License
+License
 ----------
 
 `GPLv3 <https://choosealicense.com/licenses/gpl-3.0/>`__
 
-10. History and project status
+History and project status
 ------------------------------
 
 This project was initially written in matlab using FEMM simulation tool.
@@ -179,3 +188,4 @@ programming language python is used.
 .. |image0| image:: https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/femmt.png?raw=true
 .. |image1| image:: https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/FEMMT_Screenshot.png?raw=true
 .. |image2| image:: https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/femmt_gui_definition.png?raw=true
+.. |image3| image:: https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/documentation/counting_arrow_system.png?raw=true

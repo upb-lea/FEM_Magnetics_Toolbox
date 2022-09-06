@@ -61,6 +61,6 @@ class PermeabilityType(Enum):
     FromData = "from_data"
 
 class ExcitationMeshingType(Enum):
-    MeshOnce = "mesh_once"
+    MeshOnlyLowestFrequency = "mesh_only_lowest_frequency"
     MeshOnlyHighestFrequency = "mesh_only_highest_frequency"
     MeshEachFrequency = "mesh_each_frequency"
