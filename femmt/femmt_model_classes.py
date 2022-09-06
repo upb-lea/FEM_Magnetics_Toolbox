@@ -1,10 +1,15 @@
+import os
 from dataclasses import dataclass
 from typing import List, Union, Optional
 
 from matplotlib.pyplot import fill
+
+import femmt
 from .femmt_enumerations import *
 from .femmt_functions import NbrLayers, wire_material_database
 import numpy as np
+import materialdatabase as mdb
+
 
 class Winding:
     """
@@ -16,7 +21,7 @@ class Winding:
     TODO More documentation
     """
 
-    turns: List[int] #0: primary, 1: secondary
+    turns: List[int]  # 0: primary, 1: secondary
     conductor_type: ConductorType = None
     ff: float = None
     strand_radius: float = None
@@ -27,16 +32,17 @@ class Winding:
     thickness: float = None
     wrap_para: WrapParaType = None
     cond_sigma: float
-    parallel: int = 1 # TODO What is this parameter?
+    parallel: int = 1  # TODO What is this parameter?
     winding_type: WindingType
     winding_scheme: WindingScheme
 
     # Not used in femmt_classes. Only needed for to_dict()
-    turns_primary: int = 0 
+    turns_primary: int = 0
     turns_secondary: int = 0
     conductivity: Conductivity = None
 
-    def __init__(self, turns_primary: int, turns_secondary: int, conductivity: Conductivity, winding_type: WindingType, winding_scheme: WindingScheme):
+    def __init__(self, turns_primary: int, turns_secondary: int, conductivity: Conductivity, winding_type: WindingType,
+                 winding_scheme: WindingScheme):
         if turns_primary < 1 and turns_secondary < 1:
             raise Exception("Either number of primary or number of secondary turns need to be at least 1.")
 
@@ -49,13 +55,14 @@ class Winding:
             # winding type needs to be primary or secondary
             if self.winding_type != WindingType.Primary and self.winding_type != WindingType.Secondary:
                 raise Exception(f"For {winding_scheme} winding type needs to be primary or secondary")
-        elif winding_scheme in [WindingScheme.Horizontal, WindingScheme.Vertical, WindingScheme.Bifilar, WindingScheme.Blockwise]:
+        elif winding_scheme in [WindingScheme.Horizontal, WindingScheme.Vertical, WindingScheme.Bifilar,
+                                WindingScheme.Blockwise]:
             # winding type needs to be interleaved
             if self.winding_type != WindingType.Interleaved:
                 raise Exception(f"For {winding_scheme} winding type needs to be interleaved")
         else:
             raise Exception(f"{winding_scheme} does not fit into any possible winding schemes")
-        
+
         self.winding_scheme = winding_scheme
 
         if winding_type == WindingType.Interleaved:
@@ -82,8 +89,8 @@ class Winding:
         self.conductor_type = ConductorType.Stacked
         self.thickness = thickness
         self.wrap_para = wrap_para
-        self.a_cell = 1 # TODO Surface size needed?
-        self.conductor_radius = 1 # Revisit
+        self.a_cell = 1  # TODO Surface size needed?
+        self.conductor_radius = 1  # Revisit
 
     def set_full_conductor(self, thickness: float, wrap_para: WrapParaType):
         if self.conductor_type is not None:
@@ -92,8 +99,8 @@ class Winding:
         self.conductor_type = ConductorType.Full
         self.thickness = thickness
         self.wrap_para = wrap_para
-        self.a_cell = 1 # TODO Surface size needed?
-        self.conductor_radius = 1 # Revisit
+        self.a_cell = 1  # TODO Surface size needed?
+        self.conductor_radius = 1  # Revisit
 
     def set_foil_conductor(self, thickness: float, wrap_para: WrapParaType):
         if self.conductor_type is not None:
@@ -102,8 +109,8 @@ class Winding:
         self.conductor_type = ConductorType.Foil
         self.thickness = thickness
         self.wrap_para = wrap_para
-        self.a_cell = 1 # TODO Surface size needed?
-        self.conductor_radius = 1 # Revisit
+        self.a_cell = 1  # TODO Surface size needed?
+        self.conductor_radius = 1  # Revisit
 
     def set_solid_conductor(self, conductor_radius: float):
         if self.conductor_type is not None:
@@ -113,7 +120,8 @@ class Winding:
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
 
-    def set_litz_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float, fill_factor: float):
+    def set_litz_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float,
+                           fill_factor: float):
         """
         Only 3 of the 4 parameters are needed. The other one needs to be none
         """
@@ -134,7 +142,7 @@ class Winding:
             ff_exact = number_strands * strand_radius ** 2 / conductor_radius ** 2
             self.ff = np.around(ff_exact, decimals=2)
         elif strand_radius is None:
-            self.strand_radius = np.sqrt(conductor_radius**2*fill_factor/number_strands)
+            self.strand_radius = np.sqrt(conductor_radius ** 2 * fill_factor / number_strands)
         else:
             raise Exception("1 of the 4 parameters need to be None.")
 
@@ -176,6 +184,7 @@ class Winding:
 
         return contents
 
+
 class Core:
     """
     This creates the core base for the model.
@@ -193,30 +202,32 @@ class Core:
     # Permeability
     # TDK N95 as standard material:
     permeability_type: PermeabilityType
-    mu_rel: float           # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
-    phi_mu_deg: float       # mu_complex = mu_rel * exp(j*phi_mu_deg)
+    mu_rel: float  # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
+    phi_mu_deg: float  # mu_complex = mu_rel * exp(j*phi_mu_deg)
     # re_mu_rel: float      # Real part of relative Core Permeability  [B-Field and frequency-dependent]
     # im_mu_rel: float      # Imaginary part of relative Core Permeability
 
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
-    sigma: float            # Imaginary part of complex equivalent permittivity [frequency-dependent]
+    sigma: float  # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
     # Dimensions
-    core_w: float           # Axi symmetric case | core_w := 2x core radius
+    core_w: float  # Axi symmetric case | core_w := 2x core radius
     core_h: float
-    window_w: float         # Winding window width
-    window_h: float         # Winding window height
-    core_type: str = "EI"   # Basic shape of magnetic conductor
-    
+    window_w: float  # Winding window width
+    window_h: float  # Winding window height
+    core_type: str = "EI"  # Basic shape of magnetic conductor
+
     steinmetz_loss: int = 0
     generalized_steinmetz_loss: int = 0
 
     # Needed for to_dict
     loss_approach: LossApproach = None
 
-    def __init__(self, core_w: float, window_w: float, window_h: float, material: str = "custom",  # "95_100" 
-                   loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000,
-                   phi_mu_deg: float = None, sigma: float = None, non_linear: bool = False, **kwargs):
+    def __init__(self, core_w: float, window_w: float, window_h: float, material: str = "N95",
+                 temperature: float = None,
+                 loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = None,
+                 steinmetz_parameter: list = None, generalized_steinmetz_parameter: list = None,
+                 phi_mu_deg: float = None, sigma: float = 1.5, non_linear: bool = False, **kwargs):
         # Set parameters
         self.core_w = core_w
         self.core_h = None  # TODO Set core_h to not none
@@ -224,30 +235,76 @@ class Core:
         self.window_h = window_h
         self.type = "axi_symmetric"
         self.material = material
+        self.temperature = temperature
         self.non_linear = non_linear
         self.mu_rel = mu_rel
         self.phi_mu_deg = phi_mu_deg
-
+        self.sigma = sigma
         self.loss_approach = loss_approach
-
+        # Initialize database
+        Database = mdb.MaterialDatabase()  # TODO check initialization of database
+        # script_dir = os.path.dirname(__file__)
+        # file_path = os.path.join(script_dir, 'electro_magnetic')
+        # open(file_path)
+        working_directory = os.path.join(os.path.dirname(__file__), "electro_magnetic")
+        femmt.MagneticComponent.update_paths(working_directory=working_directory)
+        Database.get_permeability_data(T=30, f=110000, material_name=self.material,
+                                       datasource="measurements", pro=True)  # TODO freq and datasource
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
             self.sigma = 0
             if self.material != "custom":
                 self.permeability_type = PermeabilityType.FromData
-                self.sigma = f"sigma_from_{self.material}"
+                # open(os.path.join(self.electro_magnetic_folder_path))
+                # Database.get_permeability_data(T=self.temperature, f=100000, material_name=self.material, datasource="measurements", pro=True)#TODO freq and datasource
+                self.mu_rel = Database.get_initial_permeability(material_name=self.material)
+                self.ki = Database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")['ki']
+                self.alpha = \
+                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")['alpha']
+                self.beta = \
+                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")['beta']
+                # print(f"{self.ki=}")
+                # print(self.alpha)
+                # print(self.beta)
+                # print(self.mu_rel)
+                # self.sigma = f"sigma_from_{self.material}"
+            if self.material == "custom":  # ----steinmetz_parameter consist of list of ki, alpha , beta from the user
+                self.ki = steinmetz_parameter[0]
+                self.alpha = steinmetz_parameter[1]
+                self.beta = steinmetz_parameter[2]
+                print(self.ki)
+                print(self.alpha)
+                print(self.beta)
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
-        elif loss_approach == LossApproach.LossAngle:
+        if loss_approach == LossApproach.Generalized_Steinmetz:
+            raise NotImplemented
+            # self.sigma = 0
+            # if self.material != "custom":
+            #     self.permeability_type = PermeabilityType.FromData
+            #     self.mu_rel = Database.get_initial_permeability(material_name=self.material)
+            #     self.t_rise = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
+            #         't_rise']
+            #     self.t_fall = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
+            #         't_fall']
+            # elif self.material == "custom":  # ----generalized_steinmetz_parameter consist of list of ki, alpha , beta from the user
+            #     self.t_rise = generalized_steinmetz_parameter[0]
+            #     self.t_fall = generalized_steinmetz_parameter[1]
+
+        if loss_approach == LossApproach.LossAngle:
             if self.material == "custom":
-                self.sigma = sigma
-            else:
-                self.sigma = f"sigma_from_{self.material}"
+                self.sigma = sigma  # ------sigma from user
+            if self.material != "custom":
+                self.mu_rel = Database.get_initial_permeability(material_name=self.material)
+                self.sigma = 1 / Database.get_resistivity(material_name=self.material)  # get resistivity for material from database
 
             if phi_mu_deg is not None and phi_mu_deg != 0:
                 self.permeability_type = PermeabilityType.FixedLossAngle
             else:
-                self.permeability_type = PermeabilityType.RealValue
+                self.permeability_type = PermeabilityType.FromData
+                # Database.get_permeability_data(T=self.temperature, f=100000, material_name=self.material, datasource="measurements", pro=True)  # TODO freq and datasource
+
+                # self.permeability_type = PermeabilityType.RealValue
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
 
@@ -262,16 +319,17 @@ class Core:
     def to_dict(self):
         return {
             "core_w": self.core_w,
-            "window_w": self.window_w, 
-            "window_h": self.window_h, 
-            "material": self.material, 
+            "window_w": self.window_w,
+            "window_h": self.window_h,
+            "material": self.material,
             "loss_approach": self.loss_approach.name,
             "mu_rel": self.mu_rel,
-            "phi_mu_deg": self.phi_mu_deg, 
-            "sigma": self.sigma, 
-            "non_linear": self.non_linear, 
+            "phi_mu_deg": self.phi_mu_deg,
+            "sigma": self.sigma,
+            "non_linear": self.non_linear,
             "kwargs": self.kwargs
         }
+
 
 class AirGaps:
     """
@@ -305,7 +363,7 @@ class AirGaps:
         :type height: float
         """
         self.air_gap_settings.append({
-            "leg_position": leg_position.name, 
+            "leg_position": leg_position.name,
             "position_value": position_value,
             "height": height})
 
@@ -320,7 +378,7 @@ class AirGaps:
             else:
                 self.midpoints.append([0, 0, height])
                 self.number += 1
-                
+
         elif self.method == AirGapMethod.Manually:
             self.midpoints.append([leg_position.value, position_value, height])
             self.number += 1
@@ -333,7 +391,7 @@ class AirGaps:
             if position + height / 2 > self.core.window_h / 2:
                 position -= (position + height / 2) - self.core.window_h / 2
             elif position - height / 2 < -self.core.window_h / 2:
-                position += -self.core.window_h / 2 - (position - height / 2) 
+                position += -self.core.window_h / 2 - (position - height / 2)
 
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
@@ -351,6 +409,7 @@ class AirGaps:
 
         return content
 
+
 class Isolation:
     """
     This class defines isolations for the model.
@@ -362,7 +421,7 @@ class Isolation:
     cond_cond: List[float] = []
     core_cond: List[float] = []
 
-    def add_winding_isolations(self, primary2primary, secondary2secondary = None, primary2secondary = None):
+    def add_winding_isolations(self, primary2primary, secondary2secondary=None, primary2secondary=None):
         self.cond_cond = [primary2primary, secondary2secondary, primary2secondary]
 
     def add_core_isolations(self, top_core, bot_core, left_core, right_core):
@@ -374,6 +433,7 @@ class Isolation:
             "core_isolations": self.core_cond
         }
 
+
 @dataclass
 class StrayPath:
     """
@@ -383,10 +443,11 @@ class StrayPath:
     "stray air gap" is different in axi-symmetric approximation
     """
 
-    start_index: int        # lower air gap that characterizes the stray path
+    start_index: int  # lower air gap that characterizes the stray path
     radius: float
     width: float
     midpoint: List[List[float]]
+
 
 class VirtualWindingWindow:
     """
@@ -413,6 +474,6 @@ class VirtualWindingWindow:
 
     def to_dict(self):
         return {
-            "winding_type":  self.winding.name,
+            "winding_type": self.winding.name,
             "winding_scheme": self.scheme.name
         }

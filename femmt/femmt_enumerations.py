@@ -52,6 +52,7 @@ class Conductivity(Enum):
     Aluminium = "aluminium"
 
 class LossApproach(Enum):
+    Generalized_Steinmetz = "generalized_steinmetz"
     Steinmetz = "steinmetz"
     LossAngle = "loss_angle"
 

@@ -29,6 +29,7 @@ if os.name == 'nt':
     install_femm_if_missing()
     import femm
 
+
 #  ===== Main Class  =====
 class MagneticComponent:
     """
@@ -43,7 +44,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory = None):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory=None):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -59,7 +60,7 @@ class MagneticComponent:
 
         # Get caller filepath when no working_directpry was set
         if working_directory is None:
-            caller_filename = inspect.stack()[1].filename 
+            caller_filename = inspect.stack()[1].filename
             working_directory = os.path.join(os.path.dirname(caller_filename), "femmt")
 
         if not os.path.exists(working_directory):
@@ -196,9 +197,9 @@ class MagneticComponent:
         self.thermal_mesh_file = os.path.join(self.mesh_folder_path, "thermal.msh")
 
         # Create necessary folders
-        self.create_folders(self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
-            self.results_folder_path, self.e_m_values_folder_path, self.e_m_fields_folder_path, 
-            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path)
+        self.create_folders(self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path,
+                            self.results_folder_path, self.e_m_values_folder_path, self.e_m_fields_folder_path,
+                            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
@@ -232,26 +233,28 @@ class MagneticComponent:
             else:
                 raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
 
-            air_gap_volume += np.pi * width**2 * height
+            air_gap_volume += np.pi * width ** 2 * height
 
-        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
+        return np.pi * (core_width ** 2 * core_height - (
+                    inner_leg_width + winding_width) ** 2 * winding_height + inner_leg_width ** 2 * winding_height) - air_gap_volume
 
     def get_wire_distances(self):
         wire_distance = []
         for winding in self.two_d_axi.p_conductor:
             # 5 points are for 1 wire
             num_points = len(winding)
-            num_windings = num_points//5
+            num_windings = num_points // 5
             winding_list = []
             for i in range(num_windings):
-                winding_list.append(winding[i*5][0])
+                winding_list.append(winding[i * 5][0])
             wire_distance.append(winding_list)
 
         return wire_distance
 
     # Start thermal simulation
     def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top,
-                           case_gap_right, case_gap_bot, show_results=True, visualize_before=False, color_scheme: Dict = colors_femmt_default,
+                           case_gap_right, case_gap_bot, show_results=True, visualize_before=False,
+                           color_scheme: Dict = colors_femmt_default,
                            colors_geometry: Dict = colors_geometry_femmt_default) -> None:
         """
         
@@ -267,11 +270,13 @@ class MagneticComponent:
         # Create necessary folders
         self.create_folders(self.thermal_results_folder_path)
 
-        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before)
+        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry,
+                                        visualize_before)
 
         if not os.path.exists(self.e_m_results_log_path):
             # Simulation results file not created
-            raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
+            raise Exception(
+                "Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
 
         # Check if the results log path simulation settings fit the current simulation settings
         current_settings = encode_settings(self)
@@ -284,7 +289,7 @@ class MagneticComponent:
             log_settings = content["simulation_settings"]
         del log_settings["working_directory"]
         del log_settings["date"]
-        
+
         if current_settings != log_settings:
             raise Exception(f"The settings from the log file {self.e_m_results_log_path} do not match the current simulation settings. \
                                 Please re-run the magnetic simulation.")
@@ -383,7 +388,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
-    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=None, isolation_deltas = None):
+    def high_level_geo_gen(self, dimensionality="2D", frequency=None, skin_mesh_factor=None, isolation_deltas=None):
         """
         - high level geometry generation
         - based on chosen core and conductor types and simulation mode
@@ -408,8 +413,10 @@ class MagneticComponent:
                 self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
             for i in range(0, self.n_windings):
                 if self.windings[i].conductor_type == ConductorType.Solid:
-                    self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy]) #* self.mesh.skin_mesh_factor])
-                    self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy  # * self.mesh.skin_mesh_factor
+                    self.mesh.c_conductor[i] = min([self.delta * self.mesh.skin_mesh_factor, self.windings[
+                        i].conductor_radius / 4 * self.mesh.global_accuracy])  # * self.mesh.skin_mesh_factor])
+                    self.mesh.c_center_conductor[i] = self.windings[
+                                                          i].conductor_radius / 4 * self.mesh.global_accuracy  # * self.mesh.skin_mesh_factor
                 elif self.windings[i].conductor_type == ConductorType.Litz:
                     self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
@@ -457,10 +464,13 @@ class MagneticComponent:
             if len(self.windings) != 2:
                 raise Exception("Only transformers with 2 windings are allowed")
 
-            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
+            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[
+                1].winding_type == WindingType.Interleaved:
                 self.vw_type = VirtualWindingType.FullWindow
-            elif self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type != WindingType.Interleaved or \
-                    self.windings[0].winding_type != WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
+            elif self.windings[0].winding_type == WindingType.Interleaved and self.windings[
+                1].winding_type != WindingType.Interleaved or \
+                    self.windings[0].winding_type != WindingType.Interleaved and self.windings[
+                1].winding_type == WindingType.Interleaved:
                 raise Exception("When interleaved scheme is needed. Please set both winding types to interleaved")
             else:
                 self.vw_type = VirtualWindingType.Split2
@@ -469,14 +479,16 @@ class MagneticComponent:
             if len(self.windings) != 2:
                 raise Exception("Only integrated transformers with 2 windings are allowed")
 
-            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
+            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[
+                1].winding_type == WindingType.Interleaved:
                 self.windings[0].turns = [self.windings[0].turns_primary, self.windings[0].turns_secondary]
                 self.windings[1].turns = [self.windings[1].turns_primary, self.windings[1].turns_secondary]
 
             self.vw_type = VirtualWindingType.Split2
 
         if self.vw_type == VirtualWindingType.FullWindow:
-            self.virtual_winding_windows = [VirtualWindingWindow(self.windings[0].winding_type, self.windings[0].winding_scheme)]
+            self.virtual_winding_windows = [
+                VirtualWindingWindow(self.windings[0].winding_type, self.windings[0].winding_scheme)]
         elif self.vw_type == VirtualWindingType.Split2:
             vww1 = VirtualWindingWindow(self.windings[0].winding_type, self.windings[0].winding_scheme)
             vww2 = VirtualWindingWindow(self.windings[1].winding_type, self.windings[1].winding_scheme)
@@ -525,44 +537,44 @@ class MagneticComponent:
             # TODO Case core_h is not None
             if self.component.core.core_h is None:
                 self.p_outer[0][:] = [-self.r_outer,
-                                    -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
-                                    0,
-                                    self.component.mesh.c_core]
+                                      -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
+                                      0,
+                                      self.component.mesh.c_core]
 
                 self.p_outer[1][:] = [self.r_outer,
-                                    -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
-                                    0,
-                                    self.component.mesh.c_core]
+                                      -(self.component.core.window_h / 2 + self.component.core.core_w / 4),
+                                      0,
+                                      self.component.mesh.c_core]
 
                 self.p_outer[2][:] = [-self.r_outer,
-                                    (self.component.core.window_h / 2 + self.component.core.core_w / 4),
-                                    0,
-                                    self.component.mesh.c_core]
+                                      (self.component.core.window_h / 2 + self.component.core.core_w / 4),
+                                      0,
+                                      self.component.mesh.c_core]
 
                 self.p_outer[3][:] = [self.r_outer,
-                                    (self.component.core.window_h / 2 + self.component.core.core_w / 4),
-                                    0,
-                                    self.component.mesh.c_core]
+                                      (self.component.core.window_h / 2 + self.component.core.core_w / 4),
+                                      0,
+                                      self.component.mesh.c_core]
             else:
                 self.p_outer[0][:] = [-self.r_outer,
-                                    -self.component.core.core_h/2,
-                                    0,
-                                    self.component.mesh.c_core]
+                                      -self.component.core.core_h / 2,
+                                      0,
+                                      self.component.mesh.c_core]
 
                 self.p_outer[1][:] = [self.r_outer,
-                                    -self.component.core.core_h/2,
-                                    0,
-                                    self.component.mesh.c_core]
+                                      -self.component.core.core_h / 2,
+                                      0,
+                                      self.component.mesh.c_core]
 
                 self.p_outer[2][:] = [-self.r_outer,
-                                    self.component.core.core_h/2,
-                                    0,
-                                    self.component.mesh.c_core]
+                                      self.component.core.core_h / 2,
+                                      0,
+                                      self.component.mesh.c_core]
 
                 self.p_outer[3][:] = [self.r_outer,
-                                    self.component.core.core_h/2,
-                                    0,
-                                    self.component.mesh.c_core]
+                                      self.component.core.core_h / 2,
+                                      0,
+                                      self.component.mesh.c_core]
 
         def draw_window(self):
             # Window
@@ -775,12 +787,14 @@ class MagneticComponent:
                 # bot window
                 island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
                 min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1]  # bottom
-                max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - self.component.isolation.core_cond[0]  # sep_hor
+                max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - \
+                        self.component.isolation.core_cond[0]  # sep_hor
                 left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
                 right11 = self.r_inner - self.component.isolation.core_cond[3]
 
                 # top window
-                min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + self.component.isolation.core_cond[1]
+                min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + \
+                        self.component.isolation.core_cond[1]
                 max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[0]  # top
                 left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
                 right21 = self.r_inner - self.component.isolation.core_cond[3]
@@ -921,8 +935,10 @@ class MagneticComponent:
                                         # is this winding not already finished?
                                         if x < right_bound - self.component.windings[col_cond].conductor_radius:
                                             while y > bot_bound + self.component.windings[col_cond].conductor_radius and \
-                                                    N_completed[col_cond] < self.component.windings[col_cond].turns[n_win]:
-                                                self.p_conductor[col_cond].append([x, y, 0, self.component.mesh.c_center_conductor[col_cond]])
+                                                    N_completed[col_cond] < self.component.windings[col_cond].turns[
+                                                n_win]:
+                                                self.p_conductor[col_cond].append(
+                                                    [x, y, 0, self.component.mesh.c_center_conductor[col_cond]])
 
                                                 self.p_conductor[col_cond].append(
                                                     [x - self.component.windings[col_cond].conductor_radius,
@@ -931,9 +947,11 @@ class MagneticComponent:
                                                      self.component.mesh.c_conductor[col_cond]])
 
                                                 self.p_conductor[col_cond].append([x,
-                                                                                   y + self.component.windings[col_cond].conductor_radius,
+                                                                                   y + self.component.windings[
+                                                                                       col_cond].conductor_radius,
                                                                                    0,
-                                                                                   self.component.mesh.c_conductor[col_cond]])
+                                                                                   self.component.mesh.c_conductor[
+                                                                                       col_cond]])
 
                                                 self.p_conductor[col_cond].append(
                                                     [x + self.component.windings[col_cond].conductor_radius,
@@ -942,13 +960,16 @@ class MagneticComponent:
                                                      self.component.mesh.c_conductor[col_cond]])
 
                                                 self.p_conductor[col_cond].append([x,
-                                                                                   y - self.component.windings[col_cond].conductor_radius,
+                                                                                   y - self.component.windings[
+                                                                                       col_cond].conductor_radius,
                                                                                    0,
-                                                                                   self.component.mesh.c_conductor[col_cond]])
+                                                                                   self.component.mesh.c_conductor[
+                                                                                       col_cond]])
 
                                                 N_completed[col_cond] += 1
 
-                                                y -= self.component.windings[col_cond].conductor_radius * 2 + self.component.isolation.cond_cond[col_cond]  # one from bot to top
+                                                y -= self.component.windings[col_cond].conductor_radius * 2 + \
+                                                     self.component.isolation.cond_cond[col_cond]  # one from bot to top
 
                                             x += self.component.windings[col_cond].conductor_radius + \
                                                  self.component.windings[(col_cond + 1) % 2].conductor_radius + \
@@ -968,7 +989,8 @@ class MagneticComponent:
                                         # Correct the reset of y and correct x displacement
                                         x += self.component.windings[col_cond].conductor_radius - \
                                              self.component.windings[(col_cond + 1) % 2].conductor_radius \
-                                             - self.component.isolation.cond_cond[2] + self.component.isolation.cond_cond[
+                                             - self.component.isolation.cond_cond[2] + \
+                                             self.component.isolation.cond_cond[
                                                  col_cond]
 
                                         y = top_bound - self.component.windings[col_cond].conductor_radius
@@ -1275,7 +1297,8 @@ class MagneticComponent:
                     elif self.component.virtual_winding_windows[n_win].winding == WindingType.Secondary:
                         num = 1
                     else:
-                        raise Exception(f"Unusable winding type with this settings: {self.component.virtual_winding_windows[n_win].winding}" )
+                        raise Exception(
+                            f"Unusable winding type with this settings: {self.component.virtual_winding_windows[n_win].winding}")
 
                     if self.component.windings[num].conductor_type == ConductorType.Full:
                         if sum(self.component.windings[num].turns) != 1:
@@ -1362,8 +1385,10 @@ class MagneticComponent:
                             x = left_bound + self.component.windings[num].conductor_radius
                             i = 0
                             # Case n_conductors higher that "allowed" is missing
-                            while x < right_bound - self.component.windings[num].conductor_radius and i < self.component.windings[num].turns[n_win]:
-                                while y < top_bound - self.component.windings[num].conductor_radius and i < self.component.windings[num].turns[n_win]:
+                            while x < right_bound - self.component.windings[num].conductor_radius and i < \
+                                    self.component.windings[num].turns[n_win]:
+                                while y < top_bound - self.component.windings[num].conductor_radius and i < \
+                                        self.component.windings[num].turns[n_win]:
                                     self.p_conductor[num].append([x, y, 0, self.component.mesh.c_center_conductor[num]])
                                     self.p_conductor[num].append(
                                         [x - self.component.windings[num].conductor_radius, y, 0,
@@ -1378,8 +1403,10 @@ class MagneticComponent:
                                         [x, y - self.component.windings[num].conductor_radius, 0,
                                          self.component.mesh.c_conductor[num]])
                                     i += 1
-                                    y += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # one step from left to right
-                                x += self.component.windings[num].conductor_radius * 2 + self.component.isolation.cond_cond[num]  # from left to top
+                                    y += self.component.windings[num].conductor_radius * 2 + \
+                                         self.component.isolation.cond_cond[num]  # one step from left to right
+                                x += self.component.windings[num].conductor_radius * 2 + \
+                                     self.component.isolation.cond_cond[num]  # from left to top
                                 y = bot_bound + self.component.windings[num].conductor_radius
 
                         if self.component.virtual_winding_windows[num].scheme == WindingScheme.Square_Full_Width:
@@ -1520,7 +1547,6 @@ class MagneticComponent:
             mesh_density_to_winding = min(mesh.c_conductor)
 
             mesh_density_to_core = mesh.c_window
-             
 
             # Using the delta the lines and points from the isolation and the core/windings are not overlapping
             # which makes creating the mesh more simpler
@@ -1535,7 +1561,7 @@ class MagneticComponent:
             iso_winding_delta_right = isolation_deltas["winding_right"]
             iso_winding_delta_bot = isolation_deltas["winding_bot"]
 
-            self.p_iso_core = [] # Order: Left, Top, Right, Bot
+            self.p_iso_core = []  # Order: Left, Top, Right, Bot
             self.p_iso_pri_sec = []
 
             if self.component.component_type == ComponentType.IntegratedTransformer:
@@ -1666,7 +1692,8 @@ class MagneticComponent:
                 if self.component.vw_type == VirtualWindingType.FullWindow:
                     # Only one vww -> The winding can be interleaved 
                     # -> still an isolation between pri and sec necessary
-                    if len(self.component.virtual_winding_windows) == 1 and self.component.virtual_winding_windows[0].winding == WindingType.Interleaved:
+                    if len(self.component.virtual_winding_windows) == 1 and self.component.virtual_winding_windows[
+                        0].winding == WindingType.Interleaved:
                         # vertical isolations needed between the layers
                         # bifilar and vertical do not exist yet
                         vww = self.component.virtual_winding_windows[0]
@@ -1685,7 +1712,7 @@ class MagneticComponent:
 
                         if vww.scheme == WindingScheme.Horizontal:
                             self.p_iso_pri_sec = []
-                            for index in range(self.top_window_iso_counter-1):
+                            for index in range(self.top_window_iso_counter - 1):
                                 self.p_iso_pri_sec.append([
                                     [
                                         current_x + iso_winding_delta_left,
@@ -1757,13 +1784,13 @@ class MagneticComponent:
                 else:
                     warnings.warn(f"Isolations are not implemented for components with type {self.component.vw_type}")
 
-        def update(self, isolation_deltas = None):
+        def update(self, isolation_deltas=None):
 
             # Preallocate the arrays, in which the geometries' point coordinates will be stored
             self.p_outer = np.zeros((4, 4))
             self.p_region_bound = np.zeros((4, 4))
             self.p_window = np.zeros((4 * self.component.n_windows, 4))
-            self.p_air_gaps = np.zeros((4 * self.component.air_gaps.number, 4)) 
+            self.p_air_gaps = np.zeros((4 * self.component.air_gaps.number, 4))
 
             # Fitting the outer radius to ensure surface area
             self.r_inner = self.component.core.window_w + self.component.core.core_w / 2
@@ -1791,7 +1818,7 @@ class MagneticComponent:
                     "core_top": 0.00001,
                     "core_bot": 0.00001,
                     "core_right": 0.00001,
-                    "iso_iso" : 0.00001,
+                    "iso_iso": 0.00001,
                     "winding_left": 0.00001,
                     "winding_top": 0.00001,
                     "winding_right": 0.00001,
@@ -2027,14 +2054,16 @@ class MagneticComponent:
                                 plt.ylabel(r"$R / \mathrm{(\mu H)^{-1}}$")
                                 plt.legend()
                                 plt.grid()
-                                plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Inkscape/Reluctance_Model/sct_resistance.pdf",
-                                            bbox_inches="tight")
+                                plt.savefig(
+                                    f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Inkscape/Reluctance_Model/sct_resistance.pdf",
+                                    bbox_inches="tight")
 
                                 plt.show()
 
                             air_gap_lengths[air_gap_name] = brentq(r_sct, 1e-6, self.max_length[n_reluctance])
                             if air_gap_name == "R_stray":
-                                air_gap_lengths[air_gap_name + "_real"] = brentq(r_sct_real, 1e-9, self.max_length[n_reluctance])
+                                air_gap_lengths[air_gap_name + "_real"] = brentq(r_sct_real, 1e-9,
+                                                                                 self.max_length[n_reluctance])
 
             # print(f"{air_gap_lengths=}")
             return air_gap_lengths, b_peaks
@@ -2064,7 +2093,8 @@ class MagneticComponent:
             Phi_top_nom_1st_peak, Phi_bot_nom_1st_peak, Phi_stray_nom_1st_peak = \
                 self.max_phi_from_time_phi(Phi_top_nom_1st, Phi_bot_nom_1st, Phi_stray_nom_1st)
 
-            p_top_1st, p_bot_1st, p_stray_1st = self.hysteresis_loss(Phi_top_nom_1st_peak, Phi_bot_nom_1st_peak, Phi_stray_nom_1st_peak)
+            p_top_1st, p_bot_1st, p_stray_1st = self.hysteresis_loss(Phi_top_nom_1st_peak, Phi_bot_nom_1st_peak,
+                                                                     Phi_stray_nom_1st_peak)
             # print(p_top_1st, p_bot_1st, p_stray_1st)
             self.p_hyst_nom_1st = sum([p_top_1st, p_bot_1st, p_stray_1st])
 
@@ -2107,13 +2137,17 @@ class MagneticComponent:
                 plt.figure(figsize=(6, 3))
                 plt.plot(t, 1000 * np.array(Phi_top), color="tab:blue", label=r"$\mathcal{\phi}_{\mathrm{top, fd}}$")
                 plt.plot(t, 1000 * np.array(Phi_bot), color="tab:orange", label=r"$\mathcal{\phi}_{\mathrm{bot, fd}}$")
-                plt.plot(t, 1000 * np.array(Phi_stray), color="tab:green", label=r"$\mathcal{\phi}_{\mathrm{stray, fd}}$")
+                plt.plot(t, 1000 * np.array(Phi_stray), color="tab:green",
+                         label=r"$\mathcal{\phi}_{\mathrm{stray, fd}}$")
 
                 time = np.array(self.nom_current[0][0]) / 200000 / 2 / np.pi
 
-                plt.plot(time, 1000 * np.array(Phi_top_init), ":", color="tab:blue", label=r"$\mathcal{\phi}_{\mathrm{top, td}}$")
-                plt.plot(time, 1000 * np.array(Phi_bot_init), ":", color="tab:orange", label=r"$\mathcal{\phi}_{\mathrm{bot, td}}$")
-                plt.plot(time, 1000 * np.array(Phi_stray_init), ":", color="tab:green", label=r"$\mathcal{\phi}_{\mathrm{stray, td}}$")
+                plt.plot(time, 1000 * np.array(Phi_top_init), ":", color="tab:blue",
+                         label=r"$\mathcal{\phi}_{\mathrm{top, td}}$")
+                plt.plot(time, 1000 * np.array(Phi_bot_init), ":", color="tab:orange",
+                         label=r"$\mathcal{\phi}_{\mathrm{bot, td}}$")
+                plt.plot(time, 1000 * np.array(Phi_stray_init), ":", color="tab:green",
+                         label=r"$\mathcal{\phi}_{\mathrm{stray, td}}$")
 
                 plt.ylabel("Magnetic fluxes / mWb")
                 plt.xlabel(r"$t$ / s")
@@ -2121,8 +2155,9 @@ class MagneticComponent:
                 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
                 plt.grid()
                 # ToDo: general path
-                plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/core_loss.pdf",
-                            bbox_inches="tight")
+                plt.savefig(
+                    f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/core_loss.pdf",
+                    bbox_inches="tight")
 
                 plt.show()
 
@@ -2330,9 +2365,10 @@ class MagneticComponent:
 
             axis[0].grid()
             axis[1].grid()
-            #ToDo: general path
-            plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/{I1[0]}.pdf",
-                        bbox_inches="tight")
+            # ToDo: general path
+            plt.savefig(
+                f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/{I1[0]}.pdf",
+                bbox_inches="tight")
 
             # plt.show()
 
@@ -2363,11 +2399,14 @@ class MagneticComponent:
                 # Calculate stray path width corresponding to ...
                 # ... externally set magnetic flux density or ...
                 if self.stray_path_parametrization == "given_flux":
-                    self.component.stray_path.width = Phi_stray_max_peak / self.b_stray / (np.pi * self.component.core.core_w)
+                    self.component.stray_path.width = Phi_stray_max_peak / self.b_stray / (
+                                np.pi * self.component.core.core_w)
                 # ... to mean flux density of top and bottom flux density
                 if self.stray_path_parametrization == "mean":
-                    b_stray_mean = (np.abs(Phi_top_max_peak) + np.abs(Phi_bot_max_peak)) / 2 / np.pi / (self.component.core.core_w / 2) ** 2
-                    self.component.stray_path.width = Phi_stray_max_peak / b_stray_mean / (np.pi * self.component.core.core_w)
+                    b_stray_mean = (np.abs(Phi_top_max_peak) + np.abs(Phi_bot_max_peak)) / 2 / np.pi / (
+                                self.component.core.core_w / 2) ** 2
+                    self.component.stray_path.width = Phi_stray_max_peak / b_stray_mean / (
+                                np.pi * self.component.core.core_w)
                 if self.stray_path_parametrization == "max_flux":
                     phi_abs = np.array([np.abs(Phi_top_max_peak), np.abs(Phi_bot_max_peak)])
                     b_stray_max = phi_abs.max(0) / np.pi / (self.component.core.core_w / 2) ** 2
@@ -2496,7 +2535,6 @@ class MagneticComponent:
             self.nom_current = nom_current
             self.nom_current_1st = nom_current_1st
             self.nom_phase_1st = nom_phase_1st
-
 
             # Others
             self.stray_path_parametrization = stray_path_parametrization
@@ -2658,7 +2696,8 @@ class MagneticComponent:
             self.plane_surface_iso_core = []
             self.plane_surface_iso_pri_sec = []
 
-        def generate_hybrid_mesh(self, color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default,
+        def generate_hybrid_mesh(self, color_scheme: Dict = colors_femmt_default,
+                                 colors_geometry: Dict = colors_geometry_femmt_default,
                                  visualize_before: bool = False,
                                  save_png: bool = True, refine=0, alternative_error=0):
             """
@@ -2692,7 +2731,6 @@ class MagneticComponent:
             # gmsh.option.setNumber("General.Terminal", 1)
             gmsh.model.add(os.path.join(self.component.e_m_mesh_file, "geometry"))
 
-
             # ------------------------------------------ Geometry -------------------------------------------
             # Core generation
             # --------------------------------------- Points --------------------------------------------
@@ -2717,7 +2755,6 @@ class MagneticComponent:
                             self.component.stray_path.radius
                         island_right[(self.component.stray_path.start_index - 1) * 2 + 1][0] = \
                             self.component.stray_path.radius
-
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Geometry definitions: points -> lines -> curve loops -> surfaces
@@ -2749,12 +2786,14 @@ class MagneticComponent:
                                                            self.component.two_d_axi.p_outer[1][3]))
 
                 self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_outer[1][0],
-                                                           self.component.two_d_axi.p_outer[1][1] + correction_of_outer_points,
+                                                           self.component.two_d_axi.p_outer[1][
+                                                               1] + correction_of_outer_points,
                                                            self.component.two_d_axi.p_outer[1][2],
                                                            self.component.two_d_axi.p_outer[1][3]))
 
                 self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_outer[3][0],
-                                                           self.component.two_d_axi.p_outer[3][1] - correction_of_outer_points,
+                                                           self.component.two_d_axi.p_outer[3][
+                                                               1] - correction_of_outer_points,
                                                            self.component.two_d_axi.p_outer[3][2],
                                                            self.component.two_d_axi.p_outer[3][3]))
 
@@ -2861,7 +2900,8 @@ class MagneticComponent:
                 if self.component.air_gaps.number == 0:
                     curve_loop_bound_core = gmsh.model.geo.addCurveLoop(self.l_bound_core)
                     curve_loop_core_air = gmsh.model.geo.addCurveLoop(self.l_core_air)
-                    self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([-curve_loop_bound_core, curve_loop_core_air]))
+                    self.plane_surface_core.append(
+                        gmsh.model.geo.addPlaneSurface([-curve_loop_bound_core, curve_loop_core_air]))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # - Core parts between Air Gaps
@@ -2885,10 +2925,14 @@ class MagneticComponent:
 
                     # Curves of Core Islands (index refers to sketch)
                     for i in range(0, int(len(self.p_island) / 4)):
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], self.p_island[4 * i + 1]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], self.p_island[4 * i + 2]))
-                        self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
+                        self.l_core_air.append(
+                            gmsh.model.geo.addLine(self.p_island[4 * i + 0], self.p_island[4 * i + 1]))
+                        self.l_core_air.append(
+                            gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
+                        self.l_core_air.append(
+                            gmsh.model.geo.addLine(self.p_island[4 * i + 3], self.p_island[4 * i + 2]))
+                        self.l_bound_core.append(
+                            gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
                         # Iterative plane creation
                         self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
                             [self.l_core_air[-3], self.l_core_air[-2], self.l_core_air[-1], self.l_bound_core[-1]]))
@@ -2907,7 +2951,6 @@ class MagneticComponent:
                         if i == int(len(self.p_island) / 4) - 1:  # Last Line
                             self.l_bound_air.append(gmsh.model.geo.addLine(self.p_island[-2], self.p_core[5]))
 
-                
                 # Curves: Close air gap
                 if self.component.air_gaps.number > 0:
                     for i in range(0, self.component.air_gaps.number):
@@ -2916,11 +2959,11 @@ class MagneticComponent:
                         if i == 0:
                             bottom_point = self.p_core[11]
                         else:
-                            bottom_point = self.p_island[(i-1)*4+3]
-                        if i == self.component.air_gaps.number-1:
+                            bottom_point = self.p_island[(i - 1) * 4 + 3]
+                        if i == self.component.air_gaps.number - 1:
                             top_point = self.p_core[6]
                         else:
-                            top_point = self.p_island[i*4+1]
+                            top_point = self.p_island[i * 4 + 1]
 
                         self.l_air_gaps_air.append(gmsh.model.geo.addLine(bottom_point, top_point))
 
@@ -2928,20 +2971,20 @@ class MagneticComponent:
                     left = self.l_bound_air[i]
                     top = None
                     bottom = None
-                    right  = self.l_air_gaps_air[i]
+                    right = self.l_air_gaps_air[i]
                     if i == 0:
                         bottom = self.l_core_air[6]
                     else:
-                        bottom = self.l_core_air[6+3*i]
-                    if i == self.component.air_gaps.number-1:
+                        bottom = self.l_core_air[6 + 3 * i]
+                    if i == self.component.air_gaps.number - 1:
                         top = self.l_core_air[0]
                     else:
-                        top = self.l_core_air[7+3*i]
+                        top = self.l_core_air[7 + 3 * i]
 
                     curve_loop = gmsh.model.geo.addCurveLoop([left, top, bottom, right], -1, True)
                     self.curve_loop_air_gaps.append(curve_loop)
                     self.plane_surface_air_gaps.append(gmsh.model.geo.addPlaneSurface([curve_loop]))
-                
+
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Conductors
                 # Points of Conductors
@@ -3000,11 +3043,10 @@ class MagneticComponent:
                             self.plane_surface_cond[num].append(
                                 gmsh.model.geo.addPlaneSurface([self.curve_loop_cond[num][i]]))
 
-
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Isolations
                 # Core to Pri
-                if self.component.two_d_axi.p_iso_core: # Check if list is not empty
+                if self.component.two_d_axi.p_iso_core:  # Check if list is not empty
                     # Points
                     for iso in self.component.two_d_axi.p_iso_core:
                         p_iso = []
@@ -3012,7 +3054,8 @@ class MagneticComponent:
                             p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
                         self.p_iso_core.append(p_iso)
                     # Lines
-                    self.l_iso_core = [[gmsh.model.geo.addLine(iso[i], iso[(i+1)%4]) for i in range(4)] for iso in self.p_iso_core]
+                    self.l_iso_core = [[gmsh.model.geo.addLine(iso[i], iso[(i + 1) % 4]) for i in range(4)] for iso in
+                                       self.p_iso_core]
 
                     # Curve loop and surface
                     self.curve_loop_iso_core = []
@@ -3023,7 +3066,7 @@ class MagneticComponent:
                         self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
 
                 # Pri to Sec
-                if self.component.two_d_axi.p_iso_pri_sec: # Check if list is not empty
+                if self.component.two_d_axi.p_iso_pri_sec:  # Check if list is not empty
                     # Points
                     for iso in self.component.two_d_axi.p_iso_pri_sec:
                         p_iso = []
@@ -3033,8 +3076,9 @@ class MagneticComponent:
 
                     # Lines
                     # iso_pri_sec contains a list of multiple isolations
-                    self.l_iso_pri_sec = [[gmsh.model.geo.addLine(iso[i], iso[(i+1)%4]) for i in range(4)] for iso in self.p_iso_pri_sec]
-                        
+                    self.l_iso_pri_sec = [[gmsh.model.geo.addLine(iso[i], iso[(i + 1) % 4]) for i in range(4)] for iso
+                                          in self.p_iso_pri_sec]
+
                     # Curve loops and surfaces
                     self.curve_loop_iso_pri_sec = []
                     self.plane_surface_iso_pri_sec = []
@@ -3066,18 +3110,17 @@ class MagneticComponent:
                 elif self.component.air_gaps.number > 0:
                     l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
                     for i in range(self.component.air_gaps.number - 1):
-                        l_air_tmp.append(self.l_core_air[8+3*i])
+                        l_air_tmp.append(self.l_core_air[8 + 3 * i])
                 else:
                     raise Exception("Air gaps number is negative. Can only be positive")
-                #for i in range(0, self.component.air_gaps.number):
+                # for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
 
-                #self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
-                #for i in range(0, self.component.air_gaps.number):
+                # self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
+                # for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
-
 
                 self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
 
@@ -3087,7 +3130,8 @@ class MagneticComponent:
                 # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
                 # The other curve loops represent holes in the surface -> For each conductor as well as each isolation
                 self.plane_surface_air.append(
-                    gmsh.model.geo.addPlaneSurface(self.curve_loop_air + flatten_curve_loop_cond + self.curve_loop_iso_core + self.curve_loop_iso_pri_sec))
+                    gmsh.model.geo.addPlaneSurface(
+                        self.curve_loop_air + flatten_curve_loop_cond + self.curve_loop_iso_core + self.curve_loop_iso_pri_sec))
 
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Boundary
@@ -3159,29 +3203,36 @@ class MagneticComponent:
 
                 # core color
                 for i in range(0, len(self.plane_surface_core)):
-                    gmsh.model.setColor([(2, self.plane_surface_core[i])], color_scheme[colors_geometry["core"]][0], 
-                    color_scheme[colors_geometry["core"]][1], color_scheme[colors_geometry["core"]][2], recursive=True)
+                    gmsh.model.setColor([(2, self.plane_surface_core[i])], color_scheme[colors_geometry["core"]][0],
+                                        color_scheme[colors_geometry["core"]][1],
+                                        color_scheme[colors_geometry["core"]][2], recursive=True)
 
                 # air gap color
                 if self.plane_surface_air_gaps:
                     # only colorize air-gap in case of air gaps
-                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_scheme[colors_geometry["air_gap"]][0], 
-                        color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2], recursive=True)
+                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])],
+                                        color_scheme[colors_geometry["air_gap"]][0],
+                                        color_scheme[colors_geometry["air_gap"]][1],
+                                        color_scheme[colors_geometry["air_gap"]][2], recursive=True)
 
                 # air/potting-material inside core window
-                gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0], 
-                color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2], recursive=True)
+                gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0],
+                                    color_scheme[colors_geometry["potting_inner"]][1],
+                                    color_scheme[colors_geometry["potting_inner"]][2], recursive=True)
 
                 # winding colors
                 for winding_number in range(0, self.component.n_windings):
                     for turn_number in range(0, len(self.plane_surface_cond[winding_number])):
-                        gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], 
-                        color_scheme[colors_geometry["winding"][winding_number]][0], color_scheme[colors_geometry["winding"][winding_number]][1], 
-                        color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
+                        gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])],
+                                            color_scheme[colors_geometry["winding"][winding_number]][0],
+                                            color_scheme[colors_geometry["winding"][winding_number]][1],
+                                            color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
                 # isolation color (inner isolation / bobbin)
-                gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], 
-                    color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2], recursive=True)
+                gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec],
+                                    color_scheme[colors_geometry["isolation"]][0],
+                                    color_scheme[colors_geometry["isolation"]][1],
+                                    color_scheme[colors_geometry["isolation"]][2], recursive=True)
 
                 if visualize_before:
                     gmsh.fltk.run()
@@ -3205,7 +3256,7 @@ class MagneticComponent:
             # -> Save file as geo: File extension must be *.geo_unrolled
             gmsh.write(self.component.model_geo_file)
 
-        def generate_electro_magnetic_mesh(self, refine = 0):
+        def generate_electro_magnetic_mesh(self, refine=0):
             print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
             gmsh.open(self.component.model_geo_file)
@@ -3221,14 +3272,17 @@ class MagneticComponent:
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
 
-                if self.component.windings[num].conductor_type in [ConductorType.Foil, ConductorType.Solid, ConductorType.Full, ConductorType.Stacked]:
+                if self.component.windings[num].conductor_type in [ConductorType.Foil, ConductorType.Solid,
+                                                                   ConductorType.Full, ConductorType.Stacked]:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]],
+                                                            tag=4000 + 1000 * num + i))
                 if self.component.windings[num].conductor_type == ConductorType.Litz:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]],
+                                                            tag=6000 + 1000 * num + i))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Air, air_gaps and iso (since isolation is handled as air, as well as the air gaps)
@@ -3292,7 +3346,8 @@ class MagneticComponent:
 
             gmsh.write(self.component.e_m_mesh_file)
 
-        def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before):
+        def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry,
+                                  visualize_before):
             print("Thermal Mesh Generation in Gmsh (write physical entities)")
 
             gmsh.open(self.component.model_geo_file)
@@ -3314,63 +3369,83 @@ class MagneticComponent:
             else:
                 core_point_tags = [5, 4, 3, 2]
 
-            tl_point = core_point_tags[0] # Top left - default 5
-            tr_point = core_point_tags[1] # Top right - default 4
-            br_point = core_point_tags[2] # Bottom right - default 3
-            bl_point = core_point_tags[3] # Bottom left - default 2
+            tl_point = core_point_tags[0]  # Top left - default 5
+            tr_point = core_point_tags[1]  # Top right - default 4
+            br_point = core_point_tags[2]  # Bottom right - default 3
+            bl_point = core_point_tags[3]  # Bottom left - default 2
 
-            top_line = core_line_tags[0] # default 4
-            right_line = core_line_tags[1] # default 3 
-            bottom_line = core_line_tags[2] # default 2
+            top_line = core_line_tags[0]  # default 4
+            right_line = core_line_tags[1]  # default 3
+            bottom_line = core_line_tags[2]  # default 2
 
             # Get positions from points
-            tl_point_pos  = gmsh.model.getValue(0, tl_point, [])
-            tr_point_pos  = gmsh.model.getValue(0, tr_point, [])
-            br_point_pos  = gmsh.model.getValue(0, br_point, [])
-            bl_point_pos  = gmsh.model.getValue(0, bl_point, [])
+            tl_point_pos = gmsh.model.getValue(0, tl_point, [])
+            tr_point_pos = gmsh.model.getValue(0, tr_point, [])
+            br_point_pos = gmsh.model.getValue(0, br_point, [])
+            bl_point_pos = gmsh.model.getValue(0, bl_point, [])
 
-            mesh = self.c_core*4 # It typically does not need to be the same size as c_core, but it shouldn't be too big either
+            mesh = self.c_core * 4  # It typically does not need to be the same size as c_core, but it shouldn't be too big either
 
             # Create 5 new areas: top, top right, right, bottom right, bottom
             # top
-            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh)
-            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top,
+                                                          tl_point_pos[2], mesh)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top,
+                                                           tr_point_pos[2], mesh)
             top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
             top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
             top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
-            top_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_left_line, top_case_top_line, top_case_right_line, top_line])
+            top_case_curve_loop = gmsh.model.geo.addCurveLoop(
+                [top_case_left_line, top_case_top_line, top_case_right_line, top_line])
             top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
 
             # top right
-            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
-            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh)
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right,
+                                                                     tr_point_pos[1] + case_gap_top, tr_point_pos[2],
+                                                                     mesh)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1],
+                                                                 tr_point_pos[2], mesh)
             top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
-            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
+            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point,
+                                                               top_right_case_top_right_point)
             top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
-            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
+            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop(
+                [top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
             top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
 
             # right
-            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh)
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1],
+                                                              br_point_pos[2], mesh)
             right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
             right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
-            right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
+            right_case_curve_loop = gmsh.model.geo.addCurveLoop(
+                [top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
             right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
 
             # bottom right
-            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
-            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right,
+                                                                           br_point_pos[1] - case_gap_bot,
+                                                                           br_point_pos[2], mesh)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot,
+                                                                     br_point_pos[2], mesh)
             bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
-            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
-            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
-            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line, bottom_right_case_right_line])
+            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point,
+                                                                   bottom_right_case_bottom_right_point)
+            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point,
+                                                                  right_case_bottom_point)
+            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop(
+                [right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line,
+                 bottom_right_case_right_line])
             bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
 
             # bottom
-            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh)
-            bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot,
+                                                                    bl_point_pos[2], mesh)
+            bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point,
+                                                             bottom_case_bottom_left_point)
             bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
-            bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
+            bottom_case_curve_loop = gmsh.model.geo.addCurveLoop(
+                [bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
             bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
 
             gmsh.model.geo.synchronize()
@@ -3385,14 +3460,17 @@ class MagneticComponent:
             # Conductors
             self.ps_cond = [[], []]
             for num in range(0, self.component.n_windings):
-                if self.component.windings[num].conductor_type in [ConductorType.Foil, ConductorType.Solid, ConductorType.Full, ConductorType.Stacked]:
+                if self.component.windings[num].conductor_type in [ConductorType.Foil, ConductorType.Solid,
+                                                                   ConductorType.Full, ConductorType.Stacked]:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=4000 + 1000 * num + i))
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]],
+                                                            tag=4000 + 1000 * num + i))
                 if self.component.windings[num].conductor_type == ConductorType.Litz:
                     for i in range(0, sum(self.component.windings[num].turns)):
                         self.ps_cond[num].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]], tag=6000 + 1000 * num + i))
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[num][i]],
+                                                            tag=6000 + 1000 * num + i))
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Air
@@ -3405,22 +3483,25 @@ class MagneticComponent:
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Isolations
             # TODO Currently isolations can only have the same material
-            self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_pri_sec + self.plane_surface_iso_core)
+            self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2,
+                                                                self.plane_surface_iso_pri_sec + self.plane_surface_iso_core)
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Boundary
             self.thermal_boundary_region_tags = {
-                "BOUNDARY_TOP"            : top_case_top_line,
-                "BOUNDARY_TOP_RIGHT"      : top_right_case_top_line,
-                "BOUNDARY_RIGHT_TOP"      : top_right_case_right_line,
-                "BOUNDARY_RIGHT"          : right_case_right_line,
-                "BOUNDARY_RIGHT_BOTTOM"   : bottom_right_case_right_line,
-                "BOUNDARY_BOTTOM_RIGHT"   : bottom_right_case_bottom_line,
-                "BOUNDARY_BOTTOM"         : bottom_case_bottom_line
+                "BOUNDARY_TOP": top_case_top_line,
+                "BOUNDARY_TOP_RIGHT": top_right_case_top_line,
+                "BOUNDARY_RIGHT_TOP": top_right_case_right_line,
+                "BOUNDARY_RIGHT": right_case_right_line,
+                "BOUNDARY_RIGHT_BOTTOM": bottom_right_case_right_line,
+                "BOUNDARY_BOTTOM_RIGHT": bottom_right_case_bottom_line,
+                "BOUNDARY_BOTTOM": bottom_case_bottom_line
             }
 
             for key in self.thermal_boundary_region_tags:
-                self.thermal_boundary_region_tags[key] = create_physical_group(1, [self.thermal_boundary_region_tags[key]], key)
+                self.thermal_boundary_region_tags[key] = create_physical_group(1,
+                                                                               [self.thermal_boundary_region_tags[key]],
+                                                                               key)
 
             # Add surface physical groups
             # INFO: The physical groups are not created in the createRectWithPhysicalGroup because it causes a bug with the index counter when
@@ -3428,11 +3509,13 @@ class MagneticComponent:
             top_surface_physical_group = create_physical_group(2, [top_case_surface], "TopCase")
             top_right_surface_physical_group = create_physical_group(2, [top_right_case_surface], "TopRightCase")
             right_surface_physical_group = create_physical_group(2, [right_case_surface], "RightCase")
-            bottom_right_surface_physical_group = create_physical_group(2, [bottom_right_case_surface], "BottomRightCase")
+            bottom_right_surface_physical_group = create_physical_group(2, [bottom_right_case_surface],
+                                                                        "BottomRightCase")
             bottom_surface_physical_group = create_physical_group(2, [bottom_case_surface], "BottomCase")
 
-            self.thermal_boundary_ps_groups = [top_surface_physical_group, top_right_surface_physical_group, 
-                right_surface_physical_group, bottom_right_surface_physical_group, bottom_surface_physical_group]
+            self.thermal_boundary_ps_groups = [top_surface_physical_group, top_right_surface_physical_group,
+                                               right_surface_physical_group, bottom_right_surface_physical_group,
+                                               bottom_surface_physical_group]
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Set names [optional]
@@ -3471,7 +3554,8 @@ class MagneticComponent:
                                     if 5 * j * i + 5 * j >= len(self.component.two_d_axi.p_conductor[num][:]):
                                         break
                                     y_inter.append(0.5 * (self.component.two_d_axi.p_conductor[num][5 * j * i][1] +
-                                                          self.component.two_d_axi.p_conductor[num][5 * j * i + 5 * j][1]))
+                                                          self.component.two_d_axi.p_conductor[num][5 * j * i + 5 * j][
+                                                              1]))
                                 for x in x_inter:
                                     for y in y_inter:
                                         p_inter.append(gmsh.model.geo.addPoint(x,
@@ -3504,35 +3588,42 @@ class MagneticComponent:
             color_isolation = color_scheme[colors_geometry["isolation"]]
 
             # Set case color to core color
-            for sf in [top_case_surface, top_right_case_surface, right_case_surface, bottom_right_case_surface, bottom_case_surface]:
+            for sf in [top_case_surface, top_right_case_surface, right_case_surface, bottom_right_case_surface,
+                       bottom_case_surface]:
                 gmsh.model.setColor([(2, sf)], color_case[0], color_case[1], color_case[2], recursive=True)
 
             # core color
             for i in range(0, len(self.plane_surface_core)):
-                gmsh.model.setColor([(2, self.plane_surface_core[i])], color_core[0], color_core[1], color_core[2], recursive=True)
+                gmsh.model.setColor([(2, self.plane_surface_core[i])], color_core[0], color_core[1], color_core[2],
+                                    recursive=True)
 
             # air gap color
             if self.plane_surface_air_gaps:
                 # only colorize air-gap in case of air gaps
-                gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_air_gap[0], color_air_gap[1],
+                gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])],
+                                    color_air_gap[0], color_air_gap[1],
                                     color_air_gap[2], recursive=True)
 
             # air/potting-material inside core window
-            gmsh.model.setColor([(2, self.plane_surface_air[0])], color_background[0], color_background[1], color_background[2], recursive=True)
+            gmsh.model.setColor([(2, self.plane_surface_air[0])], color_background[0], color_background[1],
+                                color_background[2], recursive=True)
 
             # winding colors
             for winding_number in range(0, self.component.n_windings):
                 for turn_number in range(0, len(self.plane_surface_cond[winding_number])):
-                    gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], color_scheme[colors_geometry["winding"][winding_number]][0], 
-                        color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
+                    gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])],
+                                        color_scheme[colors_geometry["winding"][winding_number]][0],
+                                        color_scheme[colors_geometry["winding"][winding_number]][1],
+                                        color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
             # isolation color (inner isolation / bobbin)
-            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], color_isolation[0], color_isolation[1], 
-                color_isolation[2], recursive=True)
+            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec],
+                                color_isolation[0], color_isolation[1],
+                                color_isolation[2], recursive=True)
 
             if visualize_before:
                 gmsh.fltk.run()
-            
+
             # Output .msh file
             gmsh.model.mesh.generate(2)
 
@@ -3580,7 +3671,8 @@ class MagneticComponent:
                                     if 5 * j * i + 5 * j >= len(self.component.two_d_axi.p_conductor[num][:]):
                                         break
                                     y_inter.append(0.5 * (self.component.two_d_axi.p_conductor[num][5 * j * i][1] +
-                                                          self.component.two_d_axi.p_conductor[num][5 * j * i + 5 * j][1]))
+                                                          self.component.two_d_axi.p_conductor[num][5 * j * i + 5 * j][
+                                                              1]))
                                 for x in x_inter:
                                     for y in y_inter:
                                         p_inter.append(gmsh.model.geo.addPoint(x,
@@ -3620,25 +3712,25 @@ class MagneticComponent:
                 width = right_bound - left_bound
                 height = top_bound - bot_bound
 
-                number_cols = 15 # Can be changed. More points equal higher raster density 
-                number_rows = int(number_cols*height/width) # Assumption: number_cols/number_rows = width/height
+                number_cols = 15  # Can be changed. More points equal higher raster density
+                number_rows = int(number_cols * height / width)  # Assumption: number_cols/number_rows = width/height
 
-                cell_width = width/(number_cols+1)
-                cell_height =  height/(number_rows+1)
+                cell_width = width / (number_cols + 1)
+                cell_height = height / (number_rows + 1)
 
                 # Get all possible points
                 possible_points = []
-                x = left_bound + cell_width/2
-                y = bot_bound + cell_height/2
-                for i in range(number_cols+1):
-                    for j in range(number_rows+1):
+                x = left_bound + cell_width / 2
+                y = bot_bound + cell_height / 2
+                for i in range(number_cols + 1):
+                    for j in range(number_rows + 1):
                         possible_points.append([x + i * cell_width, y + j * cell_height])
 
                 fixed_points = []
                 conductors = self.component.two_d_axi.p_conductor
                 for winding in range(self.component.n_windings):
-                    for i in range(len(conductors[winding])//5):
-                        point = conductors[winding][i*5]
+                    for i in range(len(conductors[winding]) // 5):
+                        point = conductors[winding][i * 5]
                         fixed_points.append([point[0], point[1]])
 
                 # Extract all free_points
@@ -3654,7 +3746,7 @@ class MagneticComponent:
                             y = possible_points[i][1]
                             if x > left and x < right and y > bot and y < top:
                                 possible_points[i] = None
-                
+
                 for p in possible_points:
                     if p is not None:
                         tags_raster.append(gmsh.model.geo.addPoint(p[0], p[1], 0, self.c_window))
@@ -3670,7 +3762,8 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current', imposed_red_f=0) -> None:
+    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current',
+                   imposed_red_f=0) -> None:
         """
         - excitation of the electromagnetic problem
         - current, voltage or current density
@@ -3786,10 +3879,10 @@ class MagneticComponent:
 
         if self.core.sigma != 0 and self.core.sigma is not None:
             text_file.write(f"Flag_Conducting_Core = 1;\n")
-            if isinstance(self.core.sigma, str):
-                # TODO: Make following definition general
-                # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
-                self.core.sigma = 1 / 6
+            # if isinstance(self.core.sigma, str):
+            #     # TODO: Make following definition general
+            #     # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+            #     self.core.sigma = 1 / 6
             text_file.write(f"sigma_core = {self.core.sigma};\n")
         else:
             text_file.write(f"Flag_Conducting_Core = 0;\n")
@@ -3801,7 +3894,7 @@ class MagneticComponent:
         if self.core.generalized_steinmetz_loss:
             text_file.write(f"t_rise = {self.t_rise};\n")
             text_file.write(f"t_fall = {self.t_fall};\n")
-            text_file.write(f"f_switch = {self.f_switch};\n")
+            text_file.write(f"f_switch = {self.frequency};\n")
 
         # Conductor specific definitions
         for num in range(0, self.n_windings):
@@ -3875,7 +3968,8 @@ class MagneticComponent:
         # if self.frequency == 0:
         if self.core.non_linear:
             text_file.write(f"Flag_NL = 1;\n")
-            text_file.write(f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime            text_file.write(f"Flag_NL = 0;\n")
+            text_file.write(
+                f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime            text_file.write(f"Flag_NL = 0;\n")
         else:
             text_file.write(f"Flag_NL = 0;\n")
             text_file.write(f"mur = {self.core.mu_rel};\n")  # mur is predefined to a fixed value
@@ -3884,12 +3978,17 @@ class MagneticComponent:
             else:
                 text_file.write(f"Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
             if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-                text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")  # loss angle for complex representation of hysteresis loss
-                text_file.write(f"mur_real = {self.core.mu_rel * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")  # Real part of complex permeability
-                text_file.write(f"mur_imag = {self.core.mu_rel * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")  # Imaginary part of complex permeability
-                text_file.write(f"Flag_Fixed_Loss_Angle = 1;\n")  # loss angle for complex representation of hysteresis loss
+                text_file.write(
+                    f"phi_mu_deg = {self.core.phi_mu_deg};\n")  # loss angle for complex representation of hysteresis loss
+                text_file.write(
+                    f"mur_real = {self.core.mu_rel * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")  # Real part of complex permeability
+                text_file.write(
+                    f"mur_imag = {self.core.mu_rel * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")  # Imaginary part of complex permeability
+                text_file.write(
+                    f"Flag_Fixed_Loss_Angle = 1;\n")  # loss angle for complex representation of hysteresis loss
             else:
-                text_file.write(f"Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
+                text_file.write(
+                    f"Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
 
         # if self.frequency != 0:
         #    text_file.write(f"Flag_NL = 0;\n")
@@ -3902,7 +4001,7 @@ class MagneticComponent:
 
         :return:
         """
-        text_file = open(os.path.join(self.electro_magnetic_folder_path, "postquantities.pro"), "w") 
+        text_file = open(os.path.join(self.electro_magnetic_folder_path, "postquantities.pro"), "w")
 
         # This is needed because the f string cant contain a \ in {}
         backslash = "\\"
@@ -3911,7 +4010,8 @@ class MagneticComponent:
         text_file.write(f"DirResFields = \"{self.e_m_fields_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"DirResVals = \"{self.e_m_values_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"DirResValsPrimary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Primary/\";\n")
-        text_file.write(f"DirResValsSecondary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
+        text_file.write(
+            f"DirResValsSecondary = \"{self.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
         text_file.write(f"DirResCirc = \"{self.e_m_circuit_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"OptionPos = \"{self.results_folder_path.replace(backslash, '/')}/option.pos\";\n")
 
@@ -3947,7 +4047,8 @@ class MagneticComponent:
 
         # Run simulations as sub clients (non blocking??)
         mygetdp = os.path.join(self.onelab_folder_path, "getdp")
-        self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.e_m_mesh_file + " -solve Analysis -v2")
+        self.onelab_client.runSubClient("myGetDP",
+                                        mygetdp + " " + solver + " -msh " + self.e_m_mesh_file + " -solve Analysis -v2")
 
     def write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
         """
@@ -4017,34 +4118,51 @@ class MagneticComponent:
                     # single_simulation -> get current from instance variable
                     winding_dict["I"] = self.current[winding]
 
-
                 # Case litz: Load homogenized results
                 if self.windings[winding].conductor_type == ConductorType.Litz:
-                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
+                    winding_dict["winding_losses"] = \
+                    self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, winding_dict["number_turns"]):
-                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+                        winding_dict["turn_losses"].append(
+                            self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}",
+                                             last_n=sweep_number)[sweep_run])
 
                 # Case litz: Load homogenized results
                 else:
-                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
+                    winding_dict["winding_losses"] = \
+                    self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, winding_dict["number_turns"]):
-                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+                        winding_dict["turn_losses"].append(
+                            self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}",
+                                             last_n=sweep_number)[sweep_run])
 
                 # Flux
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["flux"].append(
+                    self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
+                winding_dict["flux"].append(
+                    self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[
+                        sweep_run])
 
                 # Inductance
-                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["self_inductivity"].append(
+                    self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[
+                        sweep_run])
+                winding_dict["self_inductivity"].append(
+                    self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[
+                        sweep_run])
 
                 # Magnetic Field Energy
-                winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
-                winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["mag_field_energy"].append(
+                    self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
+                winding_dict["mag_field_energy"].append(
+                    self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Voltage
-                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["V"].append(
+                    self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                winding_dict["V"].append(
+                    self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[
+                        sweep_run])
 
                 # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
@@ -4052,18 +4170,18 @@ class MagneticComponent:
                 winding_dict["Q"] = winding_dict["V"][1] * winding_dict["I"] / 2
                 winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
 
-                sweep_dict[f"winding{winding+1}"] = winding_dict
-
+                sweep_dict[f"winding{winding + 1}"] = winding_dict
 
             # Core losses TODO: Choose between Steinmetz or complex core losses
-            sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run]
+            sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[
+                sweep_run]
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
 
             # Sum losses of all windings of one single run
-            sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(0, self.n_windings))
+            sweep_dict["all_winding_losses"] = sum(
+                sweep_dict[f"winding{d + 1}"]["winding_losses"] for d in range(0, self.n_windings))
 
             log_dict["single_sweeps"].append(sweep_dict)
-
 
         # Total losses of excitation sweep
         # Sum losses of all sweep runs. For core losses just use hyst_losses of the fundamental frequency.
@@ -4078,23 +4196,30 @@ class MagneticComponent:
             else:
                 turns = self.windings[winding].turns[winding]
             log_dict["total_losses"][f"winding{winding + 1}"] = {
-                "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
+                "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"]) for d in
+                             range(len(log_dict["single_sweeps"]))),
                 "turns": []
             }
             for turn in range(0, turns):
-                log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
+                log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(sum(
+                    log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][turn] for d in
+                    range(len(log_dict["single_sweeps"]))))
 
         # Winding (all windings)
-        log_dict["total_losses"]["all_windings"] = sum(log_dict["single_sweeps"][d]["all_winding_losses"] for d in range(len(log_dict["single_sweeps"])))
+        log_dict["total_losses"]["all_windings"] = sum(
+            log_dict["single_sweeps"][d]["all_winding_losses"] for d in range(len(log_dict["single_sweeps"])))
 
         # Core
-        log_dict["total_losses"]["eddy_core"] = sum(log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
+        log_dict["total_losses"]["eddy_core"] = sum(
+            log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
         # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frquency is at [0]
         # => just an approximation for excitation sweeps!
-        log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
+        log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index][
+            "core_hyst_losses"]
 
         # Total losses of inductive component according to single or sweep simulation
-        log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
+        log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
+                                           log_dict["total_losses"]["eddy_core"]
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = encode_settings(self)
@@ -4236,19 +4361,18 @@ class MagneticComponent:
         :return: last_n entries of the chosen result file
         :rtype: list
         """
-        if res_type=="value":
-            res_path=self.e_m_values_folder_path
-        if res_type=="circuit":
-            res_path=self.e_m_circuit_folder_path
-
+        if res_type == "value":
+            res_path = self.e_m_values_folder_path
+        if res_type == "circuit":
+            res_path = self.e_m_circuit_folder_path
 
         with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
             lines = fd.readlines()[-last_n:]
 
             if part == "real":
-                result = [float(line.split(sep=' ')[1 + 2*position + 1]) for n, line in enumerate(lines)]
+                result = [float(line.split(sep=' ')[1 + 2 * position + 1]) for n, line in enumerate(lines)]
             if part == "imaginary":
-                result = [float(line.split(sep=' ')[2 + 2*position + 1]) for n, line in enumerate(lines)]
+                result = [float(line.split(sep=' ')[2 + 2 * position + 1]) for n, line in enumerate(lines)]
 
             return result
 
@@ -4280,7 +4404,6 @@ class MagneticComponent:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
 
-
         self.create_folders(self.femm_folder_path)
 
         sign = sign or [1]
@@ -4303,22 +4426,25 @@ class MagneticComponent:
                 # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
                 self.core.sigma = 1 / 6
 
-
         print(f"{self.core.permeability_type=}, {self.core.sigma=}")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma / 1e6, 0, 0, 1, 0,
+                                self.core.phi_mu_deg, self.core.phi_mu_deg)
         elif self.core.permeability_type == PermeabilityType.RealValue:
-            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma / 1e6, 0, 0, 1, 0,
+                                self.core.phi_mu_deg, self.core.phi_mu_deg)
         else:
-            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, 0, 0)
+            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma / 1e6, 0, 0, 1, 0,
+                                0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
         if self.windings[0].conductor_type == ConductorType.Litz:
-            femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma/1e6, 0, 0, 1, 5, 0, 0, self.windings[0].n_strands,
+            femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma / 1e6, 0, 0, 1, 5, 0, 0,
+                                self.windings[0].n_strands,
                                 2 * 1000 * self.windings[0].strand_radius)  # type := 5. last argument
             print(f"Number of strands: {self.windings[0].n_strands}")
             print(f"Diameter of strands in mm: {2 * 1000 * self.windings[0].strand_radius}")
         if self.windings[0].conductor_type == ConductorType.Solid:
-            femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma/1e6, 0, 0, 1, 0, 0, 0, 0, 0)
+            femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma / 1e6, 0, 0, 1, 0, 0, 0, 0, 0)
 
         # == Circuit ==
         # coil as seen from the terminals.
@@ -4330,86 +4456,86 @@ class MagneticComponent:
         # Add core
         if self.air_gaps.number == 0:
             femm.mi_drawline(self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1],
-                            self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1])
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
             femm.mi_drawline(self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1],
-                            self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1])
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
             femm.mi_drawline(self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1],
-                            self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1])
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
             femm.mi_drawline(self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1],
-                            self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1])
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_outer[2, 1],
-                            self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1])
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
             femm.mi_drawline(self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1],
-                            self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1])
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
             femm.mi_drawline(self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1],
-                            0,
-                            self.two_d_axi.p_outer[0, 1])
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_outer[0, 1],
-                            0,
-                            self.two_d_axi.p_outer[2, 1])
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
         elif self.air_gaps.number > 0:
             femm.mi_drawline(0,
-                            self.two_d_axi.p_air_gaps[0, 1],
-                            self.two_d_axi.p_air_gaps[1, 0],
-                            self.two_d_axi.p_air_gaps[1, 1])
+                             self.two_d_axi.p_air_gaps[0, 1],
+                             self.two_d_axi.p_air_gaps[1, 0],
+                             self.two_d_axi.p_air_gaps[1, 1])
             femm.mi_drawline(self.two_d_axi.p_air_gaps[1, 0],
-                            self.two_d_axi.p_air_gaps[1, 1],
-                            self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1])
+                             self.two_d_axi.p_air_gaps[1, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
             femm.mi_drawline(self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1],
-                            self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1])
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
             femm.mi_drawline(self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1],
-                            self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1])
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
             femm.mi_drawline(self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1],
-                            self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1])
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
             femm.mi_drawline(self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1],
-                            self.two_d_axi.p_air_gaps[3, 0],
-                            self.two_d_axi.p_air_gaps[3, 1])
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_air_gaps[3, 0],
+                             self.two_d_axi.p_air_gaps[3, 1])
             femm.mi_drawline(self.two_d_axi.p_air_gaps[3, 0],
-                            self.two_d_axi.p_air_gaps[3, 1],
-                            0,
-                            self.two_d_axi.p_air_gaps[2, 1])
+                             self.two_d_axi.p_air_gaps[3, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[2, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_air_gaps[2, 1],
-                            0,
-                            self.two_d_axi.p_outer[2, 1])
+                             self.two_d_axi.p_air_gaps[2, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_outer[2, 1],
-                            self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1])
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
             femm.mi_drawline(self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1],
-                            self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1])
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
             femm.mi_drawline(self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1],
-                            0,
-                            self.two_d_axi.p_outer[0, 1])
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_outer[0, 1],
-                            0,
-                            self.two_d_axi.p_air_gaps[0, 1])
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[0, 1])
         else:
             raise Exception("Negative air gap number is not allowed")
         # Add Coil
@@ -4442,7 +4568,8 @@ class MagneticComponent:
                                    self.two_d_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
                     femm.mi_addblocklabel(self.two_d_axi.p_conductor[num][5 * i][0],
                                           self.two_d_axi.p_conductor[num][5 * i][1])
-                    femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
+                    femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0],
+                                        self.two_d_axi.p_conductor[num][5 * i][1])
                     if num == 0:
                         femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 2, 1)
                     if num == 1:
@@ -4564,18 +4691,16 @@ class MagneticComponent:
         log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
         log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
                                           circuit_properties_primary[2].imag / circuit_properties_primary[0]]
-        log["Primary Mean Power"] = [0.5*circuit_properties_primary[1].real*circuit_properties_primary[0],
-                                     0.5*circuit_properties_primary[1].imag*circuit_properties_primary[0]]
+        log["Primary Mean Power"] = [0.5 * circuit_properties_primary[1].real * circuit_properties_primary[0],
+                                     0.5 * circuit_properties_primary[1].imag * circuit_properties_primary[0]]
 
         # Primary Winding Losses (with group n=2) by field intergation
         femm.mo_groupselectblock(2)
         log["Primary Winding Losses"] = femm.mo_blockintegral(6).real
         femm.mo_clearblock()
 
-
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
-
 
     @staticmethod
     def calculate_point_average(x1, y1, x2, y2):
@@ -4585,7 +4710,8 @@ class MagneticComponent:
         # TODO Move to femmt_functions
         return (x1 + x2) / 2, (y1 + y2) / 2
 
-    def femm_thermal_validation(self, thermal_conductivity_dict, boundary_temperature, case_gap_top, case_gap_right, case_gap_bot):
+    def femm_thermal_validation(self, thermal_conductivity_dict, boundary_temperature, case_gap_top, case_gap_right,
+                                case_gap_bot):
         """
         Creates a thermal model in femm and simulates it with the given thermal conductivities
 
@@ -4628,7 +4754,8 @@ class MagneticComponent:
         c_wire = 0
 
         # Case
-        k_case = thermal_conductivity_dict["case"]["top"] # Does not matter when the regions all have the same thermal coductivity.
+        k_case = thermal_conductivity_dict["case"][
+            "top"]  # Does not matter when the regions all have the same thermal coductivity.
         q_vol_case = 0
         # c_case = 0.01
         c_case = 0
@@ -4655,7 +4782,9 @@ class MagneticComponent:
         wire_distances = self.get_wire_distances()
         for winding_index, winding in enumerate(winding_losses_list):
             for i in range(len(winding)):
-                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index], wire_distances[winding_index][i]), c_wire)
+                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire,
+                                    calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index],
+                                                                   wire_distances[winding_index][i]), c_wire)
         femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case)
 
         # Add boundary condition
@@ -4667,121 +4796,131 @@ class MagneticComponent:
         # Add core
         if self.air_gaps.number == 0:
             femm.hi_drawline(self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1],
-                            self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1])
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
             femm.hi_drawline(self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1],
-                            self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1])
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
             femm.hi_drawline(self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1],
-                            self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1])
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
             femm.hi_drawline(self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1],
-                            self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1])
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_outer[2, 1],
-                            self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1])
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
             femm.hi_drawline(self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1],
-                            self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1])
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
             femm.hi_drawline(self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1],
-                            0,
-                            self.two_d_axi.p_outer[0, 1])
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_outer[0, 1],
-                            0,
-                            self.two_d_axi.p_outer[2, 1])
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
         elif self.air_gaps.number > 0:
             femm.hi_drawline(0,
-                            self.two_d_axi.p_air_gaps[0, 1],
-                            self.two_d_axi.p_air_gaps[1, 0],
-                            self.two_d_axi.p_air_gaps[1, 1])
+                             self.two_d_axi.p_air_gaps[0, 1],
+                             self.two_d_axi.p_air_gaps[1, 0],
+                             self.two_d_axi.p_air_gaps[1, 1])
             femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0],
-                            self.two_d_axi.p_air_gaps[1, 1],
-                            self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1])
+                             self.two_d_axi.p_air_gaps[1, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
             femm.hi_drawline(self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1],
-                            self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1])
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
             femm.hi_drawline(self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1],
-                            self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1])
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
             femm.hi_drawline(self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1],
-                            self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1])
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
             femm.hi_drawline(self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1],
-                            self.two_d_axi.p_air_gaps[3, 0],
-                            self.two_d_axi.p_air_gaps[3, 1])
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_air_gaps[3, 0],
+                             self.two_d_axi.p_air_gaps[3, 1])
             femm.hi_drawline(self.two_d_axi.p_air_gaps[3, 0],
-                            self.two_d_axi.p_air_gaps[3, 1],
-                            0,
-                            self.two_d_axi.p_air_gaps[2, 1])
+                             self.two_d_axi.p_air_gaps[3, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[2, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_air_gaps[2, 1],
-                            0,
-                            self.two_d_axi.p_outer[2, 1])
+                             self.two_d_axi.p_air_gaps[2, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_outer[2, 1],
-                            self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1])
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
             femm.hi_drawline(self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1],
-                            self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1])
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
             femm.hi_drawline(self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1],
-                            0,
-                            self.two_d_axi.p_outer[0, 1])
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_outer[0, 1],
-                            0,
-                            self.two_d_axi.p_air_gaps[0, 1])
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[0, 1])
 
             # In order for the simulation to work the air_gap must be closed:
             femm.hi_drawline(0, self.two_d_axi.p_air_gaps[0, 1], 0, self.two_d_axi.p_air_gaps[2, 1])
 
             # Close air gap to seperate from air
             femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
-                                self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
+                             self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
         else:
             raise Exception("Negative air gap number is not allowed")
 
         # Add case
-        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + case_gap_top)  # Top left line
-        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top)  # Top line
-        femm.hi_drawline(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top, self.two_d_axi.p_outer[1, 0] + case_gap_right,
+        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1], 0,
+                         self.two_d_axi.p_outer[2, 1] + case_gap_top)  # Top left line
+        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right,
+                         self.two_d_axi.p_outer[3, 1] + case_gap_top)  # Top line
+        femm.hi_drawline(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top,
+                         self.two_d_axi.p_outer[1, 0] + case_gap_right,
                          self.two_d_axi.p_outer[1, 1] - case_gap_bot)  # Right line
-        femm.hi_drawline(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0, self.two_d_axi.p_outer[0, 1] - case_gap_bot)  # Bottom line
-        femm.hi_drawline(0, self.two_d_axi.p_outer[0, 1] - case_gap_bot, 0, self.two_d_axi.p_outer[0, 1])  # Bottom right line
+        femm.hi_drawline(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0,
+                         self.two_d_axi.p_outer[0, 1] - case_gap_bot)  # Bottom line
+        femm.hi_drawline(0, self.two_d_axi.p_outer[0, 1] - case_gap_bot, 0,
+                         self.two_d_axi.p_outer[0, 1])  # Bottom right line
 
         # Create boundary
         # femm.hi_selectsegment(*self.calculatePointAverage(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + caseGapTop))
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right,
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(0, self.two_d_axi.p_outer[2, 1] + case_gap_top,
+                                                                         self.two_d_axi.p_outer[3, 0] + case_gap_right,
                                                                          self.two_d_axi.p_outer[3, 1] + case_gap_top))
         femm.hi_setsegmentprop("NeumannBoundary", 0, 1, 0, 2, "<None>")
         femm.hi_clearselected()
 
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top,
-                                                                         self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot))
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0,
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[3, 0] + case_gap_right,
+                                                                         self.two_d_axi.p_outer[3, 1] + case_gap_top,
+                                                                         self.two_d_axi.p_outer[1, 0] + case_gap_right,
+                                                                         self.two_d_axi.p_outer[1, 1] - case_gap_bot))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[1, 0] + case_gap_right,
+                                                                         self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0,
                                                                          self.two_d_axi.p_outer[0, 1] - case_gap_bot))
         # femm.hi_selectsegment(*self.calculatePointAverage(0, self.two_d_axi.p_outer[0, 1] - caseGapBot, 0, self.two_d_axi.p_outer[0, 1]))
         femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
         femm.hi_clearselected()
 
         # Add case material
-        material_x, material_y = self.calculate_point_average(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + case_gap_top)
+        material_x, material_y = self.calculate_point_average(0, self.two_d_axi.p_outer[2, 1], 0,
+                                                              self.two_d_axi.p_outer[2, 1] + case_gap_top)
         femm.hi_addblocklabel(material_x + 0.001, material_y)
         femm.hi_selectlabel(material_x + 0.001, material_y)
         femm.hi_setblockprop('Case', 1, 0, 0)
@@ -4801,7 +4940,8 @@ class MagneticComponent:
                                self.two_d_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
                 femm.hi_addblocklabel(self.two_d_axi.p_conductor[num][5 * i][0],
                                       self.two_d_axi.p_conductor[num][5 * i][1])
-                femm.hi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
+                femm.hi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0],
+                                    self.two_d_axi.p_conductor[num][5 * i][1])
                 if num == 0:
                     femm.hi_setblockprop(f'Wire_{num}_{i}', 1, 0, 1)
                 if num == 1:
@@ -4864,7 +5004,8 @@ class MagneticComponent:
                 # That's why here a hard-coded 4 is implemented
                 # if os.path.isfile(self.path +
                 # f"/Strands_Coefficients/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
-                if os.path.exists(os.path.join(self.e_m_strands_coefficients_folder_path, "coeff", f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
+                if os.path.exists(os.path.join(self.e_m_strands_coefficients_folder_path, "coeff",
+                                               f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
                     print("Coefficients for stands approximation are found.")
 
                 else:
@@ -4925,7 +5066,8 @@ class MagneticComponent:
 
                 # Run simulations as sub clients
                 mygetdp = os.path.join(self.onelab_folder_path, "getdp")
-                self.onelab_client.runSubClient("myGetDP", mygetdp + " " + cell + " -input " + input_file + " -solve MagDyn_a -v2")
+                self.onelab_client.runSubClient("myGetDP",
+                                                mygetdp + " " + cell + " -input " + input_file + " -solve MagDyn_a -v2")
 
         # Formatting stuff
         # Litz Approximation Coefficients are created with 4 layers
@@ -4934,8 +5076,8 @@ class MagneticComponent:
         #         self.path + f"/Strands_Coefficients/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
         #         self.path + f"/Strands_Coefficients/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
         #         self.path + f"/Strands_Coefficients/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
-        
-        coeff_folder = os.path.join(self.e_m_strands_coefficients_folder_path, "coeff") 
+
+        coeff_folder = os.path.join(self.e_m_strands_coefficients_folder_path, "coeff")
         if not os.path.isdir(coeff_folder):
             os.mkdir(coeff_folder)
 
@@ -5009,7 +5151,8 @@ class MagneticComponent:
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
-    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None, show_results = True) -> None:
+    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
+                          show_results=True) -> None:
         """
 
         Start a _single_ electromagnetic ONELAB simulation.
@@ -5213,7 +5356,8 @@ class MagneticComponent:
         # phi = phi or []
         print(frequencies, currents, phi)
         for i in range(0, len(frequencies)):
-            self.excitation(frequency=frequencies[i], amplitude_list=currents[i], phase_deg_list=phi[i])  # frequency and current
+            self.excitation(frequency=frequencies[i], amplitude_list=currents[i],
+                            phase_deg_list=phi[i])  # frequency and current
             self.file_communication()
             self.pre_simulate()
             self.simulate()
@@ -5221,9 +5365,11 @@ class MagneticComponent:
             self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last: bool = False, return_results: bool = False, 
-                         excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False, save_png: bool = False,
-                         color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default) -> Dict:
+                         show_last: bool = False, return_results: bool = False,
+                         excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5,
+                         visualize_before: bool = False, save_png: bool = False,
+                         color_scheme: Dict = colors_femmt_default,
+                         colors_geometry: Dict = colors_geometry_femmt_default) -> Dict:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -5285,11 +5431,12 @@ class MagneticComponent:
             for i in range(0, len(frequency_list)):
                 self.high_level_geo_gen(frequency=frequency_list[i], skin_mesh_factor=skin_mesh_factor)
                 if self.valid:
-                    self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                    self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before,
+                                                   save_png=save_png)
                     self.mesh.generate_electro_magnetic_mesh()
-                
+
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
-                                    phase_deg_list=phi_deg_list_list[i])  # frequency and current
+                                phase_deg_list=phi_deg_list_list[i])  # frequency and current
                 self.file_communication()
                 self.pre_simulate()
                 self.simulate()
@@ -5301,7 +5448,8 @@ class MagneticComponent:
             else:
                 raise Exception(f"Unknown excitation meshing type {excitation_meshing_type}")
             if self.valid:
-                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before,
+                                               save_png=save_png)
                 self.mesh.generate_electro_magnetic_mesh()
 
             for i in range(0, len(frequency_list)):
@@ -5386,6 +5534,7 @@ def encode_settings(o: MagneticComponent):
 
     return content
 
+
 def decode_settings_from_log(log_file_path: str, working_directory: str = None):
     if not os.path.isfile(log_file_path):
         raise Exception(f"File {log_file_path} does not exists or is not a file!")
@@ -5405,25 +5554,28 @@ def decode_settings_from_log(log_file_path: str, working_directory: str = None):
 
         air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
         for air_gap in settings["air_gaps"]["air_gaps"]:
-            air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"], air_gap["height"])
+            air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"],
+                                 air_gap["height"])
         geo.set_air_gaps(air_gaps)
 
         windings = []
         for settings_winding in settings["windings"]:
             settings_cond = settings_winding["conductor_settings"]
-            winding = Winding(settings_winding["turns_primary"], settings_winding["turns_secondary"], 
-                                Conductivity[settings_winding["conductivity"]], WindingType[settings_winding["winding_type"]], 
-                                WindingScheme[settings_winding["winding_scheme"]])
+            winding = Winding(settings_winding["turns_primary"], settings_winding["turns_secondary"],
+                              Conductivity[settings_winding["conductivity"]],
+                              WindingType[settings_winding["winding_type"]],
+                              WindingScheme[settings_winding["winding_scheme"]])
             conductor_type = ConductorType[settings_cond["conductor_type"]]
             if conductor_type == ConductorType.Foil:
                 winding.set_foil_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
-            elif conductor_type == ConductorType.Full: 
+            elif conductor_type == ConductorType.Full:
                 winding.set_full_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
             elif conductor_type == ConductorType.Stacked:
                 winding.set_stacked_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
             elif conductor_type == ConductorType.Litz:
-                winding.set_litz_conductor(settings_cond["conductor_radius"], settings_cond["n_strands"], settings_cond["strand_radius"],
-                                            settings_cond["ff"])
+                winding.set_litz_conductor(settings_cond["conductor_radius"], settings_cond["n_strands"],
+                                           settings_cond["strand_radius"],
+                                           settings_cond["ff"])
             elif conductor_type == ConductorType.Solid:
                 winding.set_solid_conductor(settings_cond["conductor_radius"])
             else:
