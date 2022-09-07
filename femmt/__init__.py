@@ -1,7 +1,11 @@
-from .femmt_classes import *
-from .femmt_functions import *
-from .femmt_model_classes import *
-from .femmt_enumerations import *
-from .electro_magnetic import *
-from .thermal import *
-from .femmt_log_parser import *
+# Modules
+from femmt import Model
+from femmt import MagneticComponent
+from femmt import Functions
+from femmt import Model
+from femmt import Enumerations
+from femmt import LogParser
+
+# Packages
+from femmt import electro_magnetic
+from femmt import thermal

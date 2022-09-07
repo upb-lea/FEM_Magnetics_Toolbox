@@ -1,6 +1,8 @@
-import femmt as fmt
+# Python standard libraries
 import numpy as np
-from itertools import product
+
+# Local libraries
+import femmt as fmt
 
 
 class MagneticCircuit:

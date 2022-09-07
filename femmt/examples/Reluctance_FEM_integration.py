@@ -1,7 +1,7 @@
 import femmt as fmt
 import numpy as np
 import os
-from femmt.femmt_reluctance import MagneticCircuit
+from Reluctance import MagneticCircuit
 
 # Component type
 component = "inductor"

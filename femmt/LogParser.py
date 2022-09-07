@@ -1,9 +1,9 @@
-from typing import List, Dict
-from enum import Enum
-from dataclasses import dataclass
 import os
 import json
 import matplotlib.pyplot as plt
+from typing import List, Dict
+from enum import Enum
+from dataclasses import dataclass
 
 class SweepTypes(Enum):
     SingleSweep = "single_sweeps"

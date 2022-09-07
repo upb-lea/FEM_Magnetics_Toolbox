@@ -1,7 +1,6 @@
 # Usual Python libraries
 import numpy.typing as npt
 import numpy as np
-from matplotlib import pyplot as plt
 import json
 import random
 import string
@@ -14,6 +13,7 @@ import time
 import gmsh
 import warnings
 from typing import Union, List, Tuple, Dict
+from matplotlib import pyplot as plt
 
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
@@ -242,11 +242,11 @@ def wire_material_database() -> Dict:
 
     wire_material = {}
 
-    wire_material["copper"] = {
+    wire_material["Copper"] = {
         "sigma": 5.8e7,
     }
 
-    wire_material["aluminium"] = {
+    wire_material["Aluminium"] = {
         "sigma": 3.7e7,
     }
 

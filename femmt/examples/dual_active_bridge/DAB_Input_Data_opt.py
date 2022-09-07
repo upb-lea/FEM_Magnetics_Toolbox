@@ -1,6 +1,6 @@
 import numpy as np
 import itertools
-from femmt_functions import get_dicts_with_keys_and_values
+from Functions import get_dicts_with_keys_and_values
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Goal Parameters

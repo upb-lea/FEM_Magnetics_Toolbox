@@ -1,11 +1,17 @@
-import gmsh
+# Python standard libraries
 import re
 import json
-from os import path
+import numpy as np
+import os
+
+# Third parry libraries
+import gmsh
 from onelab import onelab
-from .thermal_functions import *
-from .thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
-from ..femmt_functions import *
+
+# Local libraries
+import thermal.thermal_functions as thermal_f
+import Functions as ff
+from thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
 
 def create_case(boundary_regions, boundary_physical_groups, boundary_temperatures, boundary_flags, k_case, function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro, constraint_pro: ConstraintPro):
     """
@@ -81,7 +87,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
             for index, tag in enumerate(winding):
                 name = f"winding_{winding_index}_{index}"
                 windings_total_str += f"{name}, "
-                q_vol[name] = calculate_heat_flux_round_wire(winding_losses[winding_index][index], conductor_radii[winding_index], wire_distances[winding_index][index])
+                q_vol[name] = thermal_f.calculate_heat_flux_round_wire(winding_losses[winding_index][index], conductor_radii[winding_index], wire_distances[winding_index][index])
                 print(q_vol[name])
                 k[name] = k_windings
                 regions[name] = tag
@@ -128,7 +134,7 @@ def simulate(onelab_folder_path, mesh_file, solver_file):
     c = onelab.client(__file__)
 
     # Run simulations as sub clients (non blocking??)
-    mygetdp = path.join(onelab_folder_path, "getdp")
+    mygetdp = os.path.join(onelab_folder_path, "getdp")
     c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2")
 
 def parse_simple_table(file_path):
@@ -270,24 +276,24 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     # Initial Clearing of gmsh data
     gmsh.clear()
     
-    losses = read_results_log(results_log_file_path)
+    losses = thermal_f.read_results_log(results_log_file_path)
 
     # Relative paths
-    map_pos_file = path.join(results_folder_path, "thermal.pos")
-    influx_pos_file = path.join(results_folder_path, "thermal_influx.pos")
-    material_pos_file = path.join(results_folder_path, "thermal_material.pos")
-    solver_folder_path = path.join(os.path.dirname(__file__), "solver")
-    thermal_template_file = path.join(solver_folder_path, "Thermal.pro")
-    parameters_file = path.join(solver_folder_path, "Parameters.pro")
-    function_file = path.join(solver_folder_path, "Function.pro")
-    group_file = path.join(solver_folder_path, "Group.pro")
-    constraint_file = path.join(solver_folder_path, "Constraint.pro")
-    post_operation_file = path.join(solver_folder_path, "PostOperation.pro")
-    sensor_points_file = path.join(results_folder_path, "sensor_points.txt") if print_sensor_values else None
-    core_file = path.join(results_folder_path, "core.txt")
-    isolation_file = path.join(results_folder_path, "isolation.txt")
-    winding_file = path.join(results_folder_path, "winding.txt")
-    output_file = path.join(results_folder_path, "results_thermal.json")
+    map_pos_file = os.path.join(results_folder_path, "thermal.pos")
+    influx_pos_file = os.path.join(results_folder_path, "thermal_influx.pos")
+    material_pos_file = os.path.join(results_folder_path, "thermal_material.pos")
+    solver_folder_path = os.path.join(os.path.dirname(__file__), "solver")
+    thermal_template_file = os.path.join(solver_folder_path, "Thermal.pro")
+    parameters_file = os.path.join(solver_folder_path, "Parameters.pro")
+    function_file = os.path.join(solver_folder_path, "Function.pro")
+    group_file = os.path.join(solver_folder_path, "Group.pro")
+    constraint_file = os.path.join(solver_folder_path, "Constraint.pro")
+    post_operation_file = os.path.join(solver_folder_path, "PostOperation.pro")
+    sensor_points_file = os.path.join(results_folder_path, "sensor_points.txt") if print_sensor_values else None
+    core_file = os.path.join(results_folder_path, "core.txt")
+    isolation_file = os.path.join(results_folder_path, "isolation.txt")
+    winding_file = os.path.join(results_folder_path, "winding.txt")
+    output_file = os.path.join(results_folder_path, "results_thermal.json")
 
     if not gmsh.isInitialized():
         gmsh.initialize()

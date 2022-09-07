@@ -1,6 +1,6 @@
 import numpy as np
 from femmt import MagneticComponent
-from femmt_functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
+from Functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
     sort_out_small_harmonics
 from DAB.optimization.global_grid.DAB_Input_Data import working_points, power_nom
 
