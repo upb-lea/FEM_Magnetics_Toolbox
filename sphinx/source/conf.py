@@ -23,7 +23,7 @@ copyright = '{}, {}'.format(time.strftime('%Y'),  'LEA, Paderborn University')
 author = 'LEA-UPB'
 
 # The full version, including alpha/beta/rc tags
-release = '0.2.1'
+release = '0.3.0'
 
 # -- General configuration ---------------------------------------------------
 
@@ -59,15 +59,13 @@ html_theme = 'sphinx_rtd_theme'
 # documentation.
 #
 smv_released_pattern = r'^tags/.*$'
+smv_branch_whitelist = None
 
 html_theme_options = {
     'logo_only': False,
     'display_version': True,
     'collapse_navigation': False,
 }
-
-# replace "view page source" with "edit on github" in Read The Docs theme
-#  * https://github.com/readthedocs/sphinx_rtd_theme/issues/529
 
 html_context = {
     'display_github': True,
