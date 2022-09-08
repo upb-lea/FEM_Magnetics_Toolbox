@@ -11,7 +11,6 @@ import inspect
 from matplotlib import pyplot as plt
 from scipy.optimize import brentq
 from scipy.integrate import quad
-from datetime import datetime
 from typing import List, Dict
 
 # Third parry libraries
@@ -21,9 +20,10 @@ from onelab import onelab
 import thermal.thermal_simulation
 import Functions as ff
 from Mesh import Mesh
-from Model import * 
+from Model import WindingWindow, Core, Isolation, StrayPath, AirGaps
 from Enumerations import *
 from Data import FileData, MeshData, AnalyticalCoreData
+from TwoDaxiSymmetric import TwoDaxiSymmetric
 
 class MagneticComponent:
     """
@@ -1757,7 +1757,12 @@ class MagneticComponent:
 
             # -- Geometry --
             # Number of turns per conductor
-            text_file.write(f"NbrCond{num + 1} = {sum([vww.turns[num] for vww in self.virtual_winding_windows])};\n")
+            turns = 0
+            for vww in self.virtual_winding_windows:
+                for index, winding in enumerate(vww.windings):
+                    if winding.winding_number == num:
+                        turns += vww.turns[index]
+            text_file.write(f"NbrCond{num + 1} = {turns};\n")
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
@@ -1915,7 +1920,12 @@ class MagneticComponent:
                                 "V": []}
 
                 # Number turns
-                winding_dict["number_turns"] = sum(vww.turns[winding] for vww in self.virtual_winding_windows)
+                turns = 0
+                for vww in self.virtual_winding_windows:
+                    for index, conductor in enumerate(vww.windings):
+                        if conductor.winding_number == winding:
+                            turns += vww.turns[index]
+                winding_dict["number_turns"] = turns
 
                 # Currents
                 if sweep_number > 1:
@@ -1984,8 +1994,12 @@ class MagneticComponent:
 
         # Single Windings
         for winding in range(len(self.windings)):
-            # Same as above
-            turns = sum(vww.turns[winding] for vww in self.virtual_winding_windows)
+            # Number of turns per conductor
+            turns = 0
+            for vww in self.virtual_winding_windows:
+                for index, conductor in enumerate(vww.windings):
+                    if conductor.winding_number == winding:
+                        turns += vww.turns[index]
 
             log_dict["total_losses"][f"winding{winding + 1}"] = {
                 "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),

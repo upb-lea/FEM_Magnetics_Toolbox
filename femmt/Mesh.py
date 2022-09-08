@@ -1,5 +1,6 @@
 # Python standard libraries
 import os
+from re import I
 import numpy as np
 from typing import Dict, List
 
@@ -10,7 +11,8 @@ import gmsh
 import Functions as ff
 from Enumerations import ComponentType, ConductorType, WindingType
 from Data import FileData
-from Model import Conductor, Core, StrayPath, AirGaps, Isolation, TwoDaxiSymmetric
+from Model import Conductor, Core, StrayPath, AirGaps, Isolation
+from TwoDaxiSymmetric import TwoDaxiSymmetric
 
 class Mesh:
     """
@@ -661,7 +663,7 @@ class Mesh:
                     color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
             # isolation color (inner isolation / bobbin)
-            gmsh.model.setColor([(2, iso) for iso in plane_surface_iso_core + plane_surface_iso_pri_sec], 
+            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + plane_surface_iso_pri_sec], 
                 color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2], recursive=True)
 
             if visualize_before:
@@ -702,17 +704,23 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
         self.ps_cond = [[], []]
+
+        # Since the turns are saved for each vww all turns per winding must be collected
+        flattened_turns = [0] * len(self.windings)
         for vww in self.model.virtual_winding_windows:
             for index, winding in enumerate(vww.windings):
-                winding_number = winding.winding_number
-                if winding.conductor_type == ConductorType.RoundLitz:
-                    for turn_number in range(vww.turns[index]):
-                        self.ps_cond[winding_number].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][turn_number]], tag=6000 + 1000 * winding_number + turn_number))
-                else:
-                    for turn_number in range(vww.turns[index]):
-                        self.ps_cond[winding_number].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][turn_number]], tag=4000 + 1000 * winding_number + turn_number))
+                flattened_turns[winding.winding_number] += vww.turns[index]
+
+        for winding in self.windings:
+            winding_number = winding.winding_number
+            if winding.conductor_type == ConductorType.RoundLitz:
+                for i in range(flattened_turns[winding_number]):
+                    self.ps_cond[winding_number].append(
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=6000 + 1000 * winding_number + i))
+            else:
+                for i in range(flattened_turns[winding_number]):
+                    self.ps_cond[winding_number].append(
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=4000 + 1000 * winding_number + i))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air, air_gaps and iso (since isolation is handled as air, as well as the air gaps)
@@ -864,18 +872,24 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
         self.ps_cond = [[], []]
+
+        # Since the turns are saved for each vww all turns per winding must be collected
+        flattened_turns = [0] * len(self.windings)
         for vww in self.model.virtual_winding_windows:
             for index, winding in enumerate(vww.windings):
-                winding_number = winding.winding_number
-                if winding.conductor_type == ConductorType.RoundLitz:
-                    for turn_number in range(vww.turns[index]):
-                        self.ps_cond[winding_number].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][turn_number]], tag=6000 + 1000 * winding_number + turn_number))
-                else:
-                    for turn_number in range(vww.turns[index]):
-                        self.ps_cond[winding_number].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][turn_number]], tag=4000 + 1000 * winding_number + turn_number))
-                            
+                flattened_turns[winding.winding_number] += vww.turns[index]
+
+        for winding in self.windings:
+            winding_number = winding.winding_number
+            if winding.conductor_type == ConductorType.RoundLitz:
+                for i in range(flattened_turns[winding_number]):
+                    self.ps_cond[winding_number].append(
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=6000 + 1000 * winding_number + i))
+            else:
+                for i in range(flattened_turns[winding_number]):
+                    self.ps_cond[winding_number].append(
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=4000 + 1000 * winding_number + i))
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air
         self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=1000)
