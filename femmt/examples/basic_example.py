@@ -91,9 +91,10 @@ if component == "inductor":
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
+    # core_db = mdb.MaterialDatabase()
 
     core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    material="95_100")
+                    material="N95")
                     # mu_rel=3000, phi_mu_deg=10,
                     # sigma=0.5)
     geo.set_core(core)
@@ -106,8 +107,10 @@ if component == "inductor":
 
     # 4. set conductor parameters: use solid wires
     winding = fmt.Winding(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
-    #winding.set_solid_conductor(0.0013)
-    winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
+
+    winding.set_solid_conductor(0.0013)
+    # winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
+
     geo.set_windings([winding])
 
     # 5. set isolations

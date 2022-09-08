@@ -242,14 +242,13 @@ class Core:
         self.sigma = sigma
         self.loss_approach = loss_approach
         # Initialize database
+
         Database = mdb.MaterialDatabase()  # TODO check initialization of database
-        # script_dir = os.path.dirname(__file__)
-        # file_path = os.path.join(script_dir, 'electro_magnetic')
-        # open(file_path)
-        working_directory = os.path.join(os.path.dirname(__file__), "electro_magnetic")
-        femmt.MagneticComponent.update_paths(working_directory=working_directory)
-        Database.get_permeability_data(T=30, f=110000, material_name=self.material,
-                                       datasource="measurements", pro=True)  # TODO freq and datasource
+        script_dir = os.path.dirname(__file__)
+        file_path = os.path.join(script_dir, 'electro_magnetic')
+
+        Database.get_permeability_data(T=40, f=230000, material_name=self.material, datasource="measurements",
+                                       pro=True, parent_directory=file_path)  # TODO freq and datasource
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
             self.sigma = 0
@@ -258,11 +257,15 @@ class Core:
                 # open(os.path.join(self.electro_magnetic_folder_path))
                 # Database.get_permeability_data(T=self.temperature, f=100000, material_name=self.material, datasource="measurements", pro=True)#TODO freq and datasource
                 self.mu_rel = Database.get_initial_permeability(material_name=self.material)
-                self.ki = Database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")['ki']
+                self.ki = \
+                Database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")[
+                    'ki']
                 self.alpha = \
-                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")['alpha']
+                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                datasource="measurements")['alpha']
                 self.beta = \
-                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")['beta']
+                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                datasource="measurements")['beta']
                 # print(f"{self.ki=}")
                 # print(self.alpha)
                 # print(self.beta)
@@ -296,7 +299,8 @@ class Core:
                 self.sigma = sigma  # ------sigma from user
             if self.material != "custom":
                 self.mu_rel = Database.get_initial_permeability(material_name=self.material)
-                self.sigma = 1 / Database.get_resistivity(material_name=self.material)  # get resistivity for material from database
+                self.sigma = 1 / Database.get_resistivity(
+                    material_name=self.material)  # get resistivity for material from database
 
             if phi_mu_deg is not None and phi_mu_deg != 0:
                 self.permeability_type = PermeabilityType.FixedLossAngle
