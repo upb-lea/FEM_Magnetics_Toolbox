@@ -1,10 +1,10 @@
 from enum import IntEnum
 
 class WindingWindowSplit(IntEnum):
-    NoSplit = 1
-    HorizontalSplit = 2
-    VerticalSplit = 3
-    HorizontalAndVerticalSplit = 4
+    NoSplit = 1                         # Whole window as one
+    HorizontalSplit = 2                 # Horizontal line which separates top and bot
+    VerticalSplit = 3                   # Vertical line which separates left and right
+    HorizontalAndVerticalSplit = 4      # Split into a grid with 4 separate cells
 
 class ComponentType(IntEnum):
     Inductor = 1

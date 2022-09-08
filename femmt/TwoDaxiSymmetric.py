@@ -1021,7 +1021,7 @@ class TwoDaxiSymmetric:
                                         0,
                                         self.mesh_data.c_core * self.mesh_data.padding]
 
-    def draw_isolations(self, isolation_deltas):
+    def draw_isolations(self):
         """
         IMPORTANT
         Because the distance from the core to the winding is set by
@@ -1032,6 +1032,7 @@ class TwoDaxiSymmetric:
         window_h = self.core.window_h
         iso = self.isolation
         mesh_data = self.mesh_data
+        isolation_delta = self.isolation.isolation_delta
 
         # Since there are many cases in which alternating conductors would lead to slightly different
         # mesh densities a simplification is made: Just use the lowest mesh density to be safe all the time.
@@ -1042,15 +1043,15 @@ class TwoDaxiSymmetric:
         # Using the delta the lines and points from the isolation and the core/windings are not overlapping
         # which makes creating the mesh more simpler
         # Isolation between winding and core
-        iso_core_delta_left = isolation_deltas["core_left"]
-        iso_core_delta_top = isolation_deltas["core_top"]
-        iso_core_delta_right = isolation_deltas["core_right"]
-        iso_core_delta_bot = isolation_deltas["core_bot"]
-        iso_iso_delta = isolation_deltas["iso_iso"]
-        iso_winding_delta_left = isolation_deltas["winding_left"]
-        iso_winding_delta_top = isolation_deltas["winding_top"]
-        iso_winding_delta_right = isolation_deltas["winding_right"]
-        iso_winding_delta_bot = isolation_deltas["winding_bot"]
+        iso_core_delta_left = isolation_delta["core_left"]
+        iso_core_delta_top = isolation_delta["core_top"]
+        iso_core_delta_right = isolation_delta["core_right"]
+        iso_core_delta_bot = isolation_delta["core_bot"]
+        iso_iso_delta = isolation_delta["iso_iso"]
+        iso_winding_delta_left = isolation_delta["winding_left"]
+        iso_winding_delta_top = isolation_delta["winding_top"]
+        iso_winding_delta_right = isolation_delta["winding_right"]
+        iso_winding_delta_bot = isolation_delta["winding_bot"]
 
         self.p_iso_core = [] # Order: Left, Top, Right, Bot
         self.p_iso_pri_sec = []
@@ -1279,7 +1280,7 @@ class TwoDaxiSymmetric:
                 warnings.warn(f"Isolations are not implemented for components with type {self.component.vw_type}")
             """
 
-    def draw_model(self, isolation_deltas = None):
+    def draw_model(self):
 
         self.draw_outer()
 
@@ -1289,17 +1290,4 @@ class TwoDaxiSymmetric:
 
         self.draw_conductors()
 
-        if isolation_deltas is None:
-            isolation_deltas = {
-                "core_left": 0.00001,
-                "core_top": 0.00001,
-                "core_bot": 0.00001,
-                "core_right": 0.00001,
-                "iso_iso" : 0.00001,
-                "winding_left": 0.00001,
-                "winding_top": 0.00001,
-                "winding_right": 0.00001,
-                "winding_bot": 0.00001
-            }
-
-        self.draw_isolations(isolation_deltas)
+        self.draw_isolations()
