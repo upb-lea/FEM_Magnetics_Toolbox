@@ -38,5 +38,5 @@ complete.set_winding(conductor1, 9, None)
 
 geo.set_winding_window(winding_window)
 
-geo.create_model(freq=100000, visualize_before=True, save_png=False)
+geo.create_model(freq=100000, visualize_before=False, save_png=False)
 geo.single_simulation(freq=100000, current=[4.5], show_results=True)

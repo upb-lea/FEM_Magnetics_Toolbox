@@ -20,7 +20,7 @@ from onelab import onelab
 # Local libraries
 import thermal.thermal_simulation
 import Functions as ff
-import Mesh
+from Mesh import Mesh
 from Model import * 
 from Enumerations import *
 from Data import FileData, MeshData, AnalyticalCoreData
@@ -332,9 +332,7 @@ class MagneticComponent:
         self.two_d_axi.draw_model()
 
         # Create mesh
-        self.mesh = Mesh.Mesh(self.two_d_axi, self.stray_path, self.component_type, len(self.windings), 
-                            self.air_gaps.number, self.core.correct_outer_leg, False, self.file_data.file_paths)
-
+        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None)
 
     def mesh(self, frequency=None, skin_mesh_factor=None):
         self.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
@@ -383,11 +381,11 @@ class MagneticComponent:
         self.voltage = [None] * len(windings)
         self.phase_deg = np.zeros(len(windings))
 
+        # Default values for global_accuracy and padding
+        self.mesh_data = MeshData(0.5, 1.5, self.mu0, self.core.core_w, self.core.window_w, self.windings)
+
     def set_core(self, core: Core):
         self.core = core
-
-        # Default values for global_accuracy and padding
-        self.mesh_data = MeshData(0.5, 1.5, self.mu0, core.core_w, core.window_w, self.windings)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Pre-Processing
@@ -1396,7 +1394,7 @@ class MagneticComponent:
         # get model file names with correct path
         solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
 
-        os.chdir(self.working_directory)
+        os.chdir(self.file_data.working_directory)
 
         # Run simulations as sub clients (non blocking??)
         mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
@@ -1441,7 +1439,7 @@ class MagneticComponent:
         phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
 
-        for num in range(0, self.n_windings):
+        for num in range(len(self.windings)):
 
             # Imposed current
             if self.flag_excitation_type == 'current':
@@ -1477,10 +1475,10 @@ class MagneticComponent:
 
         if self.frequency != 0:
             self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0)) #TODO: distingish between material conductivities
-            for num in range(0, self.n_windings):
-                if self.windings[num].conductor_type == ConductorType.Litz:
+            for num in range(len(self.windings)):
+                if self.windings[num].conductor_type == ConductorType.RoundLitz:
                     self.red_freq[num] = self.windings[num].strand_radius / self.delta
-                elif self.windings[num].conductor_type == ConductorType.Solid:
+                elif self.windings[num].conductor_type == ConductorType.RoundSolid:
                     self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                 else:
                     print("Reduced Frequency does not have a physical value here")
@@ -1746,24 +1744,24 @@ class MagneticComponent:
             text_file.write(f"f_switch = {self.f_switch};\n")
 
         # Conductor specific definitions
-        for num in range(0, self.n_windings):
+        for num in range(len(self.windings)):
             # -- Control Flags --
             if self.flag_excitation_type == 'current':
                 text_file.write(f"Flag_ImposedVoltage = 0;\n")
             if self.flag_excitation_type == 'voltage':
                 text_file.write(f"Flag_ImposedVoltage = 1;\n")
-            if self.windings[num].conductor_type == ConductorType.Litz:
+            if self.windings[num].conductor_type == ConductorType.RoundLitz:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 1;\n")
             else:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 0;\n")
 
             # -- Geometry --
-            # Number of conductors
-            text_file.write(f"NbrCond{num + 1} = {sum(self.windings[num].turns)};\n")
+            # Number of turns per conductor
+            text_file.write(f"NbrCond{num + 1} = {sum([vww.turns[num] for vww in self.virtual_winding_windows])};\n")
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
-            if self.windings[num].conductor_type == ConductorType.Litz:
+            if self.windings[num].conductor_type == ConductorType.RoundLitz:
                 text_file.write(f"NbrStrands{num + 1} = {self.windings[num].n_strands};\n")
                 text_file.write(f"Fill{num + 1} = {self.windings[num].ff};\n")
                 # ---
@@ -1792,7 +1790,7 @@ class MagneticComponent:
             print(f"Cell surface area: {self.windings[num].a_cell} \n"
                   f"Reduced frequency: {self.red_freq[num]}")
 
-            if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == ConductorType.Litz:
+            if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == ConductorType.RoundLitz:
                 # TODO: Allow higher reduced frequencies
                 print(f"Litz Coefficients only implemented for X<=1.25")
                 raise Warning
@@ -1905,7 +1903,7 @@ class MagneticComponent:
             # Winding names are needed to find the logging path
             winding_name = ["Primary", "Secondary", "Tertiary"]
 
-            for winding in range(0, self.n_windings):
+            for winding in range(len(self.windings)):
 
                 # Create empty winding dictionary
                 # create dictionary winding_dict with 'turn_losses' as list of the j=number_turns turn losses.
@@ -1917,15 +1915,7 @@ class MagneticComponent:
                                 "V": []}
 
                 # Number turns
-                # TODO Since both windings can have a primary and a secondary turn, currently
-                # only the turns corresponding to the winding number are printed:
-                #   Winding1 -> primary turns
-                #   Winding2 -> secondary turns
-                # But technically Winding1 can have secondary turns and Winding2 can have primary turns
-                if self.windings[winding].winding_type == WindingType.Interleaved:
-                    winding_dict["number_turns"] = self.windings[winding].turns[0]
-                else:
-                    winding_dict["number_turns"] = self.windings[winding].turns[winding]
+                winding_dict["number_turns"] = sum(vww.turns[winding] for vww in self.virtual_winding_windows)
 
                 # Currents
                 if sweep_number > 1:
@@ -1940,7 +1930,7 @@ class MagneticComponent:
 
 
                 # Case litz: Load homogenized results
-                if self.windings[winding].conductor_type == ConductorType.Litz:
+                if self.windings[winding].conductor_type == ConductorType.RoundLitz:
                     winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
@@ -1983,7 +1973,7 @@ class MagneticComponent:
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
 
             # Sum losses of all windings of one single run
-            sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(0, self.n_windings))
+            sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(len(self.windings)))
 
             log_dict["single_sweeps"].append(sweep_dict)
 
@@ -1993,13 +1983,10 @@ class MagneticComponent:
         # Also needed as excitation for steady state thermal simulations
 
         # Single Windings
-        for winding in range(0, self.n_windings):
+        for winding in range(len(self.windings)):
             # Same as above
-            turns = 0
-            if self.windings[winding].winding_type == WindingType.Interleaved:
-                turns = self.windings[winding].turns[0]
-            else:
-                turns = self.windings[winding].turns[winding]
+            turns = sum(vww.turns[winding] for vww in self.virtual_winding_windows)
+
             log_dict["total_losses"][f"winding{winding + 1}"] = {
                 "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
                 "turns": []
@@ -2067,7 +2054,7 @@ class MagneticComponent:
         gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
         view = 0
 
-        if any(self.windings[i].conductor_type != ConductorType.Litz for i in range(0, self.n_windings)):
+        if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
             # Ohmic losses (weighted effective value of current density)
             gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
@@ -2082,7 +2069,7 @@ class MagneticComponent:
             print(gmsh.option.getNumber(f"View[{view}].Max"))
             view += 1
 
-        if any(self.windings[i].conductor_type == ConductorType.Litz for i in range(0, self.n_windings)):
+        if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
             # Ohmic losses (weighted effective value of current density)
             gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "jH.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
@@ -2182,8 +2169,8 @@ class MagneticComponent:
         :return:
 
         """
-        for num in range(0, self.n_windings):
-            if self.windings[num].conductor_type == ConductorType.Litz:
+        for num in range(len(self.windings)):
+            if self.windings[num].conductor_type == ConductorType.RoundLitz:
                 # ---
                 # Litz Approximation Coefficients were created with 4 layers
                 # That's why here a hard-coded 4 is implemented
@@ -2345,12 +2332,12 @@ class MagneticComponent:
         else:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
-        if self.windings[0].conductor_type == ConductorType.Litz:
+        if self.windings[0].conductor_type == ConductorType.RoundLitz:
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma/1e6, 0, 0, 1, 5, 0, 0, self.windings[0].n_strands,
                                 2 * 1000 * self.windings[0].strand_radius)  # type := 5. last argument
             print(f"Number of strands: {self.windings[0].n_strands}")
             print(f"Diameter of strands in mm: {2 * 1000 * self.windings[0].strand_radius}")
-        if self.windings[0].conductor_type == ConductorType.Solid:
+        if self.windings[0].conductor_type == ConductorType.RoundSolid:
             femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma/1e6, 0, 0, 1, 0, 0, 0, 0, 0)
 
         # == Circuit ==
@@ -2461,8 +2448,8 @@ class MagneticComponent:
         #
         # femm.mi_clearselected()
 
-        for num in range(0, self.n_windings):
-            if self.windings[num].conductor_type in [ConductorType.Litz, ConductorType.Solid]:
+        for num in range(len(self.windings)):
+            if self.windings[num].conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
                 for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
                     # 0: center | 1: left | 2: top | 3: right | 4.bottom
                     femm.mi_drawarc(self.two_d_axi.p_conductor[num][5 * i + 1][0],
@@ -2857,7 +2844,7 @@ class MagneticComponent:
         femm.hi_clearselected()
 
         # Add Coil
-        for num in range(0, self.n_windings):
+        for num in range(len(self.windings)):
             for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
                 # 0: center | 1: left | 2: top | 3: right | 4.bottom
                 femm.hi_drawarc(self.two_d_axi.p_conductor[num][5 * i + 1][0],
@@ -2920,10 +2907,11 @@ class MagneticComponent:
 #  ===== Additional functions =====
 
 def encode_settings(o: MagneticComponent):
+    """
     content = {
         "date": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
         "component_type": o.component_type.name,
-        "working_directory": o.working_directory,
+        "working_directory": o.file_data.working_directory,
         "core": o.core.to_dict(),
         "air_gaps": o.air_gaps.to_dict(),
         "windings": [winding.to_dict() for winding in o.windings],
@@ -2933,10 +2921,11 @@ def encode_settings(o: MagneticComponent):
 
     if o.stray_path is not None:
         content["stray_path"] = o.stray_path.__dict__
-
-    return content
+    """
+    return {}
 
 def decode_settings_from_log(log_file_path: str, working_directory: str = None):
+    # TODO Does currently not work with reworked windings
     if not os.path.isfile(log_file_path):
         raise Exception(f"File {log_file_path} does not exists or is not a file!")
 
@@ -2965,16 +2954,16 @@ def decode_settings_from_log(log_file_path: str, working_directory: str = None):
                                 Conductivity[settings_winding["conductivity"]], WindingType[settings_winding["winding_type"]], 
                                 WindingScheme[settings_winding["winding_scheme"]])
             conductor_type = ConductorType[settings_cond["conductor_type"]]
-            if conductor_type == ConductorType.Foil:
+            if conductor_type == ConductorType.RectangularSolid:
                 winding.set_foil_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
-            elif conductor_type == ConductorType.Full: 
+            elif conductor_type == ConductorType.RectangularSolid: 
                 winding.set_full_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
-            elif conductor_type == ConductorType.Stacked:
+            elif conductor_type == ConductorType.RectangularSolid:
                 winding.set_stacked_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
-            elif conductor_type == ConductorType.Litz:
+            elif conductor_type == ConductorType.RoundLitz:
                 winding.set_litz_conductor(settings_cond["conductor_radius"], settings_cond["n_strands"], settings_cond["strand_radius"],
                                             settings_cond["ff"])
-            elif conductor_type == ConductorType.Solid:
+            elif conductor_type == ConductorType.RoundLitz:
                 winding.set_solid_conductor(settings_cond["conductor_radius"])
             else:
                 raise Exception(f"Unknown conductor type {conductor_type}")

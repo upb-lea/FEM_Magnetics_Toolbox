@@ -5,7 +5,6 @@ from typing import List
 from scipy.interpolate import interp1d
 
 # Local libraries
-from Model import Conductor
 from Enumerations import ConductorType
 
 class FileData:
@@ -60,15 +59,19 @@ class MeshData:
     mu0: float
     core_w: float
     window_w: float
-    windings: List[Conductor]
+    windings: List["Conductor"] # This is written as string because its a forward import
 
-    def __init__(self, global_accuracy: float, padding: float, mu0: float, core_w: float, window_w: float, windings: List[Conductor]):
+    def __init__(self, global_accuracy: float, padding: float, mu0: float, core_w: float, window_w: float, windings: List["Conductor"]):
         self.global_accuracy = global_accuracy
         self.padding = padding
         self.mu0 = mu0
         self.core_w = core_w
         self.window_w = window_w
         self.windings = windings
+
+        # Empty lists
+        self.c_conductor = [None] * len(windings)
+        self.c_center_conductor = [None] * len(windings)
 
     def update_data(self, frequency, skin_mesh_factor):
         # Mesh-Parameters must be updated depending on geometry size

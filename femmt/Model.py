@@ -6,6 +6,7 @@ from typing import List, Optional
 # Local libraries
 import Functions as ff
 from Enumerations import *
+from Data import MeshData
 
 class Conductor:
     """
@@ -17,7 +18,7 @@ class Conductor:
     TODO More documentation
     """
 
-    connductor_type: ConductorType
+    conductor_type: ConductorType
     conductor_arrangement: ConductorArrangement
     wrap_para: WrapParaType = None
     conductor_radius: float = None
@@ -32,7 +33,6 @@ class Conductor:
     parallel: int = 1 # TODO What is this parameter?
 
     conductor_is_set: bool
-
 
     # Not used in femmt_classes. Only needed for to_dict()
     conductivity: Conductivity = None
@@ -56,7 +56,7 @@ class Conductor:
             raise Exception("Only one conductor can be set for each winding!")
 
         self.conductor_is_set = True
-        self.connductor_type = ConductorType.RectangularSolid
+        self.conductor_type = ConductorType.RectangularSolid
         self.thickness = thickness
         self.a_cell = 1 # TODO Surface size needed?
         self.conductor_radius = 1 # Revisit
@@ -66,7 +66,7 @@ class Conductor:
             raise Exception("Only one conductor can be set for each winding!")
 
         self.conductor_is_set = True
-        self.connductor_type = ConductorType.RoundSolid
+        self.conductor_type = ConductorType.RoundSolid
         self.conductor_arrangement = conductor_arrangement
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
@@ -79,7 +79,7 @@ class Conductor:
             raise Exception("Only one conductor can be set for each winding!")
 
         self.conductor_is_set = True
-        self.connductor_type = ConductorType.RoundLitz
+        self.conductor_type = ConductorType.RoundLitz
         self.conductor_arrangement = conductor_arrangement
         self.conductor_radius = conductor_radius
         self.n_strands = number_strands
@@ -549,6 +549,8 @@ class TwoDaxiSymmetric:
     stray_path: StrayPath
     isolation: Isolation
     component_type: ComponentType
+    mesh_data: MeshData
+    number_of_windings: int
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
@@ -560,7 +562,7 @@ class TwoDaxiSymmetric:
     p_iso_core: List[List[float]]
     p_iso_pri_sec: List[List[float]]
 
-    def __init__(self, core: Core, mesh_data, air_gaps: AirGaps, virtual_winding_windows: List[VirtualWindingWindow], 
+    def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, virtual_winding_windows: List[VirtualWindingWindow], 
                 stray_path: StrayPath, isolation: Isolation, component_type: ComponentType, number_of_windings: int):
         self.core = core
         self.mesh_data = mesh_data
@@ -569,11 +571,12 @@ class TwoDaxiSymmetric:
         self.component_type = component_type
         self.stray_path = stray_path
         self.isolation = isolation
+        self.number_of_windings = number_of_windings
 
         # -- Arrays for geometry data -- 
         self.p_outer = np.zeros((4, 4))
         self.p_region_bound = np.zeros((4, 4))
-        self.p_window = np.zeros((4 * core.number_core_windwos, 4))
+        self.p_window = np.zeros((4 * core.number_core_windows, 4))
         self.p_air_gaps = np.zeros((4 * air_gaps.number, 4)) 
         self.p_conductor = []
         self.p_iso_core = []
@@ -793,7 +796,7 @@ class TwoDaxiSymmetric:
             right_bound = virtual_winding_window.right_bound
 
             # Check the possible WindingTypes and draw accordingly
-            if virtual_winding_window.winding_type == self.WindingType.Interleaved:
+            if virtual_winding_window.winding_type == WindingType.Interleaved:
                 # Two windings in the virtual winding window
                 windings = virtual_winding_window.windings
                 winding0 = windings[0]
@@ -1228,18 +1231,18 @@ class TwoDaxiSymmetric:
                                     self.isolation.cond_cond[num])
                     else:
                         raise Exception(f"Unknown conductor_arrangement {winding1.conductor_arrangement}")
-            elif virtual_winding_window.winding_type == self.WindingType.Single:
+            elif virtual_winding_window.winding_type == WindingType.Single:
                 # One winding in the virtual winding window
-                winding = virtual_winding_window.winding[0]
+                winding = virtual_winding_window.windings[0]
                 turns = virtual_winding_window.turns[0]
-                conductor_shape = winding.conductor_shape
+                conductor_type = winding.conductor_type
                 conductor_arrangement = winding.conductor_arrangement
                 winding_scheme = virtual_winding_window.winding_scheme
 
                 num = winding.winding_number
 
                 # Check if the coil is round or rectangular
-                if conductor_shape == ConductorType.Rectangular:    
+                if conductor_type == ConductorType.RectangularSolid:    
                     # Now check for each possible winding scheme 
                     if winding_scheme == WindingScheme.Full:
                         # Full window conductor
@@ -1350,7 +1353,7 @@ class TwoDaxiSymmetric:
                                     self.mesh_data.c_conductor[num]])      
                     else:
                         raise Exception(f"Winding scheme {winding_scheme} is not implemented.")
-                elif conductor_shape == ConductorType.Round:
+                elif conductor_type == ConductorType.RoundSolid or conductor_type == ConductorType.RoundLitz:
                     # Since round conductors have no winding scheme check for each conductor_arrangement
                     if conductor_arrangement == ConductorArrangement.Square:
                         y = bot_bound + winding.conductor_radius
@@ -1490,12 +1493,9 @@ class TwoDaxiSymmetric:
                 raise Exception(f"Unknown winding type {virtual_winding_window.winding_type}")
 
             # Checking the Conductors
-            turns_per_winding = [0] * self.number_of_windings
-            for vww in self.virtual_winding_windows:
-                for index, winding in enumerate(vww.windings):
-                    turns_per_winding[winding.winding_number] += vww.turns[index]
+            for winding in virtual_winding_window.windings:
+                num = winding.winding_number
 
-            for num in range(self.number_of_windings):
                 # Convert to numpy
                 # Check if all Conductors could be resolved
                 self.p_conductor[num] = np.asarray(self.p_conductor[num])
@@ -1512,8 +1512,8 @@ class TwoDaxiSymmetric:
                 """
 
                 # CHECK: round conductors with 5 points
-                if self.windings[num].conductor_type in [ConductorType.Solid, ConductorType.Litz]:
-                    if int(self.p_conductor[num].shape[0] / 5) < sum(turns_per_winding[num]):
+                if winding.conductor_type in [ConductorType.RoundSolid, ConductorType.RoundLitz]:
+                    if int(self.p_conductor[num].shape[0] / 5) < virtual_winding_window.turns[num]:
                         # Warning: warnings.warn("Too many turns that do not fit in the winding window.")
                         # Correct: self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
                         # TODO: break, but remove warning. valid bit should be set to False
@@ -1579,7 +1579,7 @@ class TwoDaxiSymmetric:
         self.p_iso_core = [] # Order: Left, Top, Right, Bot
         self.p_iso_pri_sec = []
 
-        if self.component.component_type == ComponentType.IntegratedTransformer:
+        if self.component_type == ComponentType.IntegratedTransformer:
             # TODO implement for integrated_transformers
             # TODO Change back to warnings?
             print("Isolations are not set because they are not implemented for integrated transformers.")
