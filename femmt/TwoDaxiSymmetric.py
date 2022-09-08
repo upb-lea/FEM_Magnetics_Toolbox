@@ -970,56 +970,57 @@ class TwoDaxiSymmetric:
                 raise Exception(f"Unknown winding type {virtual_winding_window.winding_type}")
 
         # Checking the Conductors
-        for index, winding in enumerate(virtual_winding_window.windings):
-            num = winding.winding_number
+        for vww in self.virtual_winding_windows:
+            for index, winding in enumerate(vww.windings):
+                num = winding.winding_number
 
-            # Convert to numpy
-            # Check if all Conductors could be resolved
-            self.p_conductor[num] = np.asarray(self.p_conductor[num])
+                # Convert to numpy
+                # Check if all Conductors could be resolved
+                self.p_conductor[num] = np.asarray(self.p_conductor[num])
 
-            # TODO:CHECKS for rect. conductors
-            """ CHECK: rectangle conductors with 4 points
-            if self.component.windings[num].conductor_type == "full" or 
-                    self.component.windings[num].conductor_type == "stacked" or \
-                    self.component.windings[num].conductor_type == "foil":
-                if int(self.p_conductor[num].shape[0]/4) < self.component.windings[num].turns:
-                    warnings.warn("Too many turns that do not fit in the winding window.")
-                    # self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/4)
-                    self.component.valid = None
-            """
+                # TODO:CHECKS for rect. conductors
+                """ CHECK: rectangle conductors with 4 points
+                if self.component.windings[num].conductor_type == "full" or 
+                        self.component.windings[num].conductor_type == "stacked" or \
+                        self.component.windings[num].conductor_type == "foil":
+                    if int(self.p_conductor[num].shape[0]/4) < self.component.windings[num].turns:
+                        warnings.warn("Too many turns that do not fit in the winding window.")
+                        # self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/4)
+                        self.component.valid = None
+                """
 
-            # CHECK: round conductors with 5 points
-            if winding.conductor_type in [ConductorType.RoundSolid, ConductorType.RoundLitz]:
-                if int(self.p_conductor[num].shape[0] / 5) < virtual_winding_window.turns[index]:
-                    # Warning: warnings.warn("Too many turns that do not fit in the winding window.")
-                    # Correct: self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
-                    # TODO: break, but remove warning. valid bit should be set to False
-                    #  Code must go to the next parameter-iteration step for geometric sweep
-                    self.valid = False
-                    # TODO Tell the user which winding window
-                    raise Exception(f"Too many turns that do not fit in the winding window {str(virtual_winding_window)}")
+                # CHECK: round conductors with 5 points
+                if winding.conductor_type in [ConductorType.RoundSolid, ConductorType.RoundLitz]:
+                    if int(self.p_conductor[num].shape[0] / 5) < vww.turns[index]:
+                        # Warning: warnings.warn("Too many turns that do not fit in the winding window.")
+                        # Correct: self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/5)
+                        # TODO: break, but remove warning. valid bit should be set to False
+                        #  Code must go to the next parameter-iteration step for geometric sweep
+                        self.valid = False
+                        # TODO Tell the user which winding window
+                        raise Exception(f"Too many turns that do not fit in the winding window {str(vww)}")
 
-            # Region for Boundary Condition
-            self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
-                                        -(self.core.window_h / 2 + self.core.core_w / 4)
-                                        * self.mesh_data.padding,
-                                        0,
-                                        self.mesh_data.c_core * self.mesh_data.padding]
-            self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
-                                        -(self.core.window_h / 2 + self.core.core_w / 4)
-                                        * self.mesh_data.padding,
-                                        0,
-                                        self.mesh_data.c_core * self.mesh_data.padding]
-            self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
-                                        (self.core.window_h / 2 + self.core.core_w / 4)
-                                        * self.mesh_data.padding,
-                                        0,
-                                        self.mesh_data.c_core * self.mesh_data.padding]
-            self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
-                                        (self.core.window_h / 2 + self.core.core_w / 4)
-                                        * self.mesh_data.padding,
-                                        0,
-                                        self.mesh_data.c_core * self.mesh_data.padding]
+                # Region for Boundary Condition
+                self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
+                                            -(self.core.window_h / 2 + self.core.core_w / 4)
+                                            * self.mesh_data.padding,
+                                            0,
+                                            self.mesh_data.c_core * self.mesh_data.padding]
+                self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
+                                            -(self.core.window_h / 2 + self.core.core_w / 4)
+                                            * self.mesh_data.padding,
+                                            0,
+                                            self.mesh_data.c_core * self.mesh_data.padding]
+                self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
+                                            (self.core.window_h / 2 + self.core.core_w / 4)
+                                            * self.mesh_data.padding,
+                                            0,
+                                            self.mesh_data.c_core * self.mesh_data.padding]
+                self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
+                                            (self.core.window_h / 2 + self.core.core_w / 4)
+                                            * self.mesh_data.padding,
+                                            0,
+                                            self.mesh_data.c_core * self.mesh_data.padding]
 
     def draw_isolations(self):
         """
@@ -1032,7 +1033,6 @@ class TwoDaxiSymmetric:
         window_h = self.core.window_h
         iso = self.isolation
         mesh_data = self.mesh_data
-        isolation_delta = self.isolation.isolation_delta
 
         # Since there are many cases in which alternating conductors would lead to slightly different
         # mesh densities a simplification is made: Just use the lowest mesh density to be safe all the time.
@@ -1043,15 +1043,7 @@ class TwoDaxiSymmetric:
         # Using the delta the lines and points from the isolation and the core/windings are not overlapping
         # which makes creating the mesh more simpler
         # Isolation between winding and core
-        iso_core_delta_left = isolation_delta["core_left"]
-        iso_core_delta_top = isolation_delta["core_top"]
-        iso_core_delta_right = isolation_delta["core_right"]
-        iso_core_delta_bot = isolation_delta["core_bot"]
-        iso_iso_delta = isolation_delta["iso_iso"]
-        iso_winding_delta_left = isolation_delta["winding_left"]
-        iso_winding_delta_top = isolation_delta["winding_top"]
-        iso_winding_delta_right = isolation_delta["winding_right"]
-        iso_winding_delta_bot = isolation_delta["winding_bot"]
+        isolation_delta = self.isolation.isolation_delta
 
         self.p_iso_core = [] # Order: Left, Top, Right, Bot
         self.p_iso_pri_sec = []
@@ -1062,40 +1054,40 @@ class TwoDaxiSymmetric:
             print("Isolations are not set because they are not implemented for integrated transformers.")
         else:
             # Useful points for isolation creation
-            left_x = self.core.core_w / 2 + iso_core_delta_left
-            top_y = window_h / 2 - iso_core_delta_top
-            right_x = self.r_inner - iso_core_delta_right
-            bot_y = -window_h / 2 + iso_core_delta_bot
+            left_x = self.core.core_w / 2 + isolation_delta
+            top_y = window_h / 2 - isolation_delta
+            right_x = self.r_inner - isolation_delta
+            bot_y = -window_h / 2 + isolation_delta
 
             # Useful lengths
-            left_iso_width = iso.core_cond[2] - iso_core_delta_left - iso_winding_delta_left
-            top_iso_height = iso.core_cond[0] - iso_core_delta_top - iso_winding_delta_top
-            right_iso_width = iso.core_cond[3] - iso_core_delta_right - iso_winding_delta_right
-            bot_iso_height = iso.core_cond[1] - iso_core_delta_bot - iso_winding_delta_bot
+            left_iso_width = iso.core_cond[2] - isolation_delta - isolation_delta
+            top_iso_height = iso.core_cond[0] - isolation_delta - isolation_delta
+            right_iso_width = iso.core_cond[3] - isolation_delta - isolation_delta
+            bot_iso_height = iso.core_cond[1] - isolation_delta - isolation_delta
 
             # Core to Pri isolation
             iso_core_left = [
                 [
                     left_x,
-                    top_y - top_iso_height - iso_iso_delta,
+                    top_y - top_iso_height - isolation_delta,
                     0,
                     mesh_density_to_core
                 ],
                 [
                     left_x + left_iso_width,
-                    top_y - top_iso_height - iso_iso_delta,
+                    top_y - top_iso_height - isolation_delta,
                     0,
                     mesh_density_to_winding
                 ],
                 [
                     left_x + left_iso_width,
-                    bot_y + bot_iso_height + iso_iso_delta,
+                    bot_y + bot_iso_height + isolation_delta,
                     0,
                     mesh_density_to_winding
                 ],
                 [
                     left_x,
-                    bot_y + bot_iso_height + iso_iso_delta,
+                    bot_y + bot_iso_height + isolation_delta,
                     0,
                     mesh_density_to_core
                 ]
@@ -1129,25 +1121,25 @@ class TwoDaxiSymmetric:
             iso_core_right = [
                 [
                     right_x - right_iso_width,
-                    top_y - top_iso_height - iso_iso_delta,
+                    top_y - top_iso_height - isolation_delta,
                     0,
                     mesh_density_to_winding
                 ],
                 [
                     right_x,
-                    top_y - top_iso_height - iso_iso_delta,
+                    top_y - top_iso_height - isolation_delta,
                     0,
                     mesh_density_to_core
                 ],
                 [
                     right_x,
-                    bot_y + bot_iso_height + iso_iso_delta,
+                    bot_y + bot_iso_height + isolation_delta,
                     0,
                     mesh_density_to_core
                 ],
                 [
                     right_x - right_iso_width,
-                    bot_y + bot_iso_height + iso_iso_delta,
+                    bot_y + bot_iso_height + isolation_delta,
                     0,
                     mesh_density_to_winding
                 ]

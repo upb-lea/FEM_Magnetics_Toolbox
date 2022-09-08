@@ -492,7 +492,7 @@ class WindingWindow:
         self.isolation_vww = isolation.cond_cond[2]
         self.isolation = isolation
 
-    def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0, vertical_split_factor: float = 0):
+    def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5):
         self.split_type = split_type
 
         # Set iso flags to False
@@ -505,6 +505,7 @@ class WindingWindow:
 
         # Calculate split lengths
         horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
+        print(horizontal_split)
         vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
 
         # Check for every possible split type and return the corresponding VirtualWindingWindows
@@ -517,7 +518,7 @@ class WindingWindow:
 
             self.virtual_winding_windows = [complete]
             resulting_windows = complete
-        elif split_type == WindingWindowSplit.HorizontalSplit:
+        elif split_type == WindingWindowSplit.VerticalSplit:
             right = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
                 top_bound = self.max_top_bound,
@@ -533,7 +534,7 @@ class WindingWindow:
             set_top_iso = True
             self.virtual_winding_windows = [left, right]
             resulting_windows = [left, right]
-        elif split_type == WindingWindowSplit.VerticalSplit:
+        elif split_type == WindingWindowSplit.HorizontalSplit:
             top = VirtualWindingWindow(
                 bot_bound = horizontal_split + self.isolation_vww / 2,
                 top_bound = self.max_top_bound,
