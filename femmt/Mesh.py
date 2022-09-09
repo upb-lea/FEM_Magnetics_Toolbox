@@ -496,29 +496,6 @@ class Mesh:
                 cl = gmsh.model.geo.addCurveLoop(iso)
                 curve_loop_iso_core.append(cl)
                 self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
-        
-        # Between windings (pri to sec)
-        # The empty lists are created here so no error is thrown later
-        curve_loop_iso_pri_sec = []
-        plane_surface_iso_pri_sec = []
-
-        if self.model.p_iso_pri_sec: # Check if list is not empty
-            # Points
-            for iso in self.model.p_iso_pri_sec:
-                p_iso = []
-                for i in iso:
-                    p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
-                p_iso_pri_sec.append(p_iso)
-
-            # Lines
-            # iso_pri_sec contains a list of multiple isolations
-            l_iso_pri_sec = [[gmsh.model.geo.addLine(iso[i], iso[(i+1)%4]) for i in range(4)] for iso in p_iso_pri_sec]
-                
-            # Curve loops and surfaces
-            for iso in self.l_iso_pri_sec:
-                cl = gmsh.model.geo.addCurveLoop(iso)
-                curve_loop_iso_pri_sec.append(cl)
-                plane_surface_iso_pri_sec.append(gmsh.model.geo.addPlaneSurface([cl]))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air
@@ -568,7 +545,7 @@ class Mesh:
         # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
         # The other curve loops represent holes in the surface -> For each conductor as well as each isolation
         self.plane_surface_air.append(
-            gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core + curve_loop_iso_pri_sec))
+            gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
@@ -663,7 +640,7 @@ class Mesh:
                     color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
             # isolation color (inner isolation / bobbin)
-            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + plane_surface_iso_pri_sec], 
+            gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], 
                 color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2], recursive=True)
 
             if visualize_before:
@@ -724,7 +701,7 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air, air_gaps and iso (since isolation is handled as air, as well as the air gaps)
-        air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core + self.plane_surface_iso_pri_sec
+        air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
         self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=1000)
         # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
 
@@ -901,7 +878,7 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Isolations
         # TODO Currently isolations can only have the same material
-        self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_pri_sec + self.plane_surface_iso_core)
+        self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
@@ -974,7 +951,7 @@ class Mesh:
                     color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
         # isolation color (inner isolation / bobbin)
-        gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core + self.plane_surface_iso_pri_sec], color_isolation[0], color_isolation[1], 
+        gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], color_isolation[0], color_isolation[1], 
             color_isolation[2], recursive=True)
 
         if visualize_before:
@@ -1050,7 +1027,7 @@ class Mesh:
         # is put on the winding window. Every point that is too close to the conductors is removed.
         # Every remaining point is added to the mesh with a higher mesh density
 
-        min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.isolation.cond_cond)
+        min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.isolation.inner_winding)
         left_bound = self.core.core_w / 2
         right_bound = self.model.r_inner
         top_bound = self.core.window_h / 2
@@ -1086,11 +1063,7 @@ class Mesh:
         right_iso = []
         top_iso = []
         bot_iso = []
-        primary_secondary_iso = []
         air = []
-
-        for i in range(len(self.model.p_iso_pri_sec)):
-            primary_secondary_iso.append([])
 
         # Isolations are currently not implemented for integrated transformers
         if self.component_type is not ComponentType.IntegratedTransformer:
@@ -1143,17 +1116,8 @@ class Mesh:
                     # Bot iso
                     bot_iso.append(point)
                 else:
-                    # Check if point is in pri_to_sec isolation
-                    added = False
-                    for i in range(len(primary_secondary_iso)):
-                        if ff.point_is_in_rect(x, y, self.model.p_iso_pri_sec[i]):
-                            primary_secondary_iso[i].append(point)
-                            added = True
-                            break
-
-                    if not added:
-                        # Air
-                        air.append(point)
+                    # Air
+                    air.append(point)
             else:
                 air.append(point)
         # Call synchronize so the points will be added to the model            
@@ -1165,9 +1129,6 @@ class Mesh:
             gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
             gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
             gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
-
-            for i in range(len(primary_secondary_iso)):
-                gmsh.model.mesh.embed(0, primary_secondary_iso[i], 2, self.plane_surface_iso_pri_sec[i])
         
         gmsh.model.mesh.embed(0, air, 2, self.plane_surface_air[0])
 

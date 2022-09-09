@@ -343,14 +343,8 @@ class Isolation:
     When having a inductor only the primary2primary isolation is necessary.
     When having a (integrated) transformer secondary2secondary and primary2secondary isolations can be set as well.
     """
-
-    cond_cond: List[float] = []
-    core_cond: List[float] = []
-
-    # List of rectangular isolations which will be added to the model
-    # This list if filled by the winding window class depending on the window split
-    # Every inner list contains 4 points and each of them contain x and y coordinates
-    isolations: List[List[List[float]]]
+    inner_winding: List[float]
+    vww_isolation: float
 
     isolation_delta: float
 
@@ -359,15 +353,14 @@ class Isolation:
         # If the gaps between isolations and core (or windings) are to big/small just change this value
         self.isolation_delta = 0.00001
 
-    def add_winding_isolations(self, primary2primary, secondary2secondary = 0, primary2secondary = 0):
-        if primary2primary is None:
-            primary2primary = 0
-        if secondary2secondary is None:
-            secondary2secondary = 0
-        if primary2secondary is None:
-            primary2secondary = 0
+    def add_winding_isolations(self, inner_winding_isolations, virtual_winding_window_isolation):
+        if inner_winding_isolations is []:
+            raise Exception("Inner winding isolations list cannot be empty.")
+        if virtual_winding_window_isolation is None:
+            virtual_winding_window_isolation
 
-        self.cond_cond = [primary2primary, secondary2secondary, primary2secondary]
+        self.inner_winding = inner_winding_isolations
+        self.vww_isolation = virtual_winding_window_isolation
 
     def add_core_isolations(self, top_core, bot_core, left_core, right_core):
         if top_core is None:
@@ -381,21 +374,9 @@ class Isolation:
 
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
-    def add_new_isolation(self, x, y, width, height):
-        if width < 0 or height < 0:
-            raise Exception("Width and height of added isolations need to be positive. Therefore the starting x and y coordinates are at the bottom left")
-        elif width == 0 or height == 0:
-            raise Exception("Cannot add an isolation without width or height")
-
-        self.isolations.append([
-            [x + self.isolation_delta, y + height - self.isolation_delta],          # top left
-            [x + width - self.isolation_delta, y + height - self.isolation_delta],  # top right
-            [x + width - self.isolation_delta, y + self.isolation_delta],           # bottom right
-            [x + self.isolation_delta, y + self.isolation_delta]])                  # bottom left
-
     def to_dict(self):
         return {
-            "winding_isolations": self.cond_cond,
+            "winding_isolations": self.inner_winding,
             "core_isolations": self.core_cond
         }
 
@@ -475,7 +456,7 @@ class WindingWindow:
     bot_iso: List[float]
     right_iso: List[float]
 
-    isolation_vww: float
+    vww_isolation: float
     isolation: Isolation
     split_type: WindingWindowSplit
 
@@ -489,23 +470,14 @@ class WindingWindow:
         self.max_right_bound = core.r_inner - isolation.core_cond[3]
 
         # Isolation between vwws
-        self.isolation_vww = isolation.cond_cond[2]
+        self.vww_isolation = isolation.vww_isolation
         self.isolation = isolation
 
     def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5):
         self.split_type = split_type
 
-        # Set iso flags to False
-        set_top_iso = False
-        set_right_iso = False
-        set_bot_iso = False
-        set_left_iso = False
-
-        resulting_windows = None
-
         # Calculate split lengths
         horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
-        print(horizontal_split)
         vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
 
         # Check for every possible split type and return the corresponding VirtualWindingWindows
@@ -517,93 +489,66 @@ class WindingWindow:
                 right_bound = self.max_right_bound)
 
             self.virtual_winding_windows = [complete]
-            resulting_windows = complete
+            return complete
         elif split_type == WindingWindowSplit.VerticalSplit:
             right = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
                 top_bound = self.max_top_bound,
-                left_bound = vertical_split + self.isolation_vww / 2,
+                left_bound = vertical_split + self.vww_isolation / 2,
                 right_bound = self.max_right_bound)
 
             left = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
                 top_bound = self.max_top_bound,
                 left_bound = self.max_left_bound,
-                right_bound = vertical_split - self.isolation_vww / 2)
+                right_bound = vertical_split - self.vww_isolation / 2)
 
-            set_top_iso = True
             self.virtual_winding_windows = [left, right]
-            resulting_windows = [left, right]
+            return left, right
         elif split_type == WindingWindowSplit.HorizontalSplit:
             top = VirtualWindingWindow(
-                bot_bound = horizontal_split + self.isolation_vww / 2,
+                bot_bound = horizontal_split + self.vww_isolation / 2,
                 top_bound = self.max_top_bound,
                 left_bound = self.max_left_bound,
                 right_bound = self.max_right_bound)
 
             bot = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
-                top_bound = horizontal_split - self.isolation_vww / 2,
+                top_bound = horizontal_split - self.vww_isolation / 2,
                 left_bound = self.max_left_bound,
                 right_bound = self.max_right_bound)
 
-            set_left_iso = True
-            set_right_iso = True
             self.virtual_winding_windows = [top, bot]
-            resulting_windows =  [top, bot]
+            return top, bot
         elif split_type == WindingWindowSplit.HorizontalAndVerticalSplit:
             top_left = VirtualWindingWindow(
-                bot_bound = horizontal_split + self.isolation_vww / 2,
+                bot_bound = horizontal_split + self.vww_isolation / 2,
                 top_bound = self.max_top_bound,
                 left_bound = self.max_left_bound,
-                right_bound = vertical_split - self.isolation_vww / 2)
+                right_bound = vertical_split - self.vww_isolation / 2)
 
             top_right = VirtualWindingWindow(
-                bot_bound = horizontal_split + self.isolation_vww / 2,
+                bot_bound = horizontal_split + self.vww_isolation / 2,
                 top_bound = self.max_top_bound,
-                left_bound = vertical_split + self.isolation_vww / 2,
+                left_bound = vertical_split + self.vww_isolation / 2,
                 right_bound = self.max_right_bound)
 
             bot_left = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
-                top_bound = horizontal_split - self.isolation_vww / 2,
+                top_bound = horizontal_split - self.vww_isolation / 2,
                 left_bound = self.max_left_bound,
-                right_bound = vertical_split - self.isolation_vww / 2)
+                right_bound = vertical_split - self.vww_isolation / 2)
 
             bot_right = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
-                top_bound = horizontal_split - self.isolation_vww / 2,
-                left_bound = vertical_split + self.isolation_vww / 2,
+                top_bound = horizontal_split - self.vww_isolation / 2,
+                left_bound = vertical_split + self.vww_isolation / 2,
                 right_bound = self.max_right_bound)
 
-            set_top_iso = True
-            set_right_iso = True
-            set_bot_iso = True
-            set_left_iso = True
             self.virtual_winding_windows = [top_left, top_right, bot_left, bot_right]
-            resulting_windows = [top_left, top_right, bot_left, bot_right]
+            return top_left, top_right, bot_left, bot_right
         else:
             raise Exception(f"Winding window split type {split_type} not found")
-
-        # Draw isolations
-        if set_top_iso:
-            self.top_iso = [
-                
-            ]
-        if set_right_iso:
-            self.right_iso = [
-                
-            ]
-        if set_bot_iso:
-            self.bot_iso = [
-                 
-            ]
-        if set_left_iso:
-            self.left_iso = [
-                
-            ]
-            
-        return resulting_windows
 
     def combine_vww(self, vww1, vww2):
         index1 = self.virtual_winding_windows.index(vww1)

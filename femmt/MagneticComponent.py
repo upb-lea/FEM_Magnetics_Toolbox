@@ -343,7 +343,7 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Create Model
     def set_isolation(self, isolation: Isolation):
-        if isolation.cond_cond is None or not isolation.cond_cond:
+        if isolation.inner_winding is None or not isolation.inner_winding:
             raise Exception("Isolations between the conductors must be set")
 
         if isolation.core_cond is None or not isolation.core_cond:

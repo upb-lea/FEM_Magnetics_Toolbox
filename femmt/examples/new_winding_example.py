@@ -26,7 +26,7 @@ geo.set_air_gaps(air_gaps)
 
 isolation = model.Isolation()
 isolation.add_core_isolations(0.001, 0.001, 0.001, 0.001)
-isolation.add_winding_isolations(0.0001, 0.0001, 0.0001)
+isolation.add_winding_isolations([0.0001, 0.0001], 0.0001)
 geo.set_isolation(isolation)
 
 winding_window = model.WindingWindow(core, isolation)
