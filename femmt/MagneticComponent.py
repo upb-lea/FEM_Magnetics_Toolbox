@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from scipy.optimize import brentq
 from scipy.integrate import quad
 from typing import List, Dict
+from datetime import datetime 
 
 # Third parry libraries
 from onelab import onelab
@@ -20,7 +21,7 @@ from onelab import onelab
 import thermal.thermal_simulation
 import Functions as ff
 from Mesh import Mesh
-from Model import WindingWindow, Core, Isolation, StrayPath, AirGaps
+from Model import VirtualWindingWindow, WindingWindow, Core, Isolation, StrayPath, AirGaps, Conductor
 from Enumerations import *
 from Data import FileData, MeshData, AnalyticalCoreData
 from TwoDaxiSymmetric import TwoDaxiSymmetric
@@ -49,7 +50,7 @@ class MagneticComponent:
         :type working_directory: string
         """
         print(f"\n"
-              f"Initialized a new Magnetic Component of type {component_type}\n"
+              f"Initialized a new Magnetic Component of type {component_type.name}\n"
               f"--- --- --- ---")
 
         # Get caller filepath when no working_directory was set
@@ -2020,7 +2021,7 @@ class MagneticComponent:
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
 
         # ---- Print current configuration ----
-        log_dict["simulation_settings"] = encode_settings(self)
+        log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
 
         # ====== save data as JSON ======
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
@@ -2917,79 +2918,88 @@ class MagneticComponent:
         input()  # So the window stays open
         # femm.closefemm()
 
-#  ===== Additional functions =====
+    @staticmethod
+    def encode_settings(o):
+        content = {
+            "date": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
+            "component_type": o.component_type.name,
+            "working_directory": o.file_data.working_directory,
+            "core": o.core.to_dict(),
+            "air_gaps": o.air_gaps.to_dict(),
+            "isolation": o.isolation.to_dict(),
+            "virtual_winding_windows": [vww.to_dict() for vww in o.virtual_winding_windows],
+        }
 
-def encode_settings(o: MagneticComponent):
-    """
-    content = {
-        "date": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
-        "component_type": o.component_type.name,
-        "working_directory": o.file_data.working_directory,
-        "core": o.core.to_dict(),
-        "air_gaps": o.air_gaps.to_dict(),
-        "windings": [winding.to_dict() for winding in o.windings],
-        "isolation": o.isolation.to_dict(),
-        "virtual_winding_windows": [vww.to_dict() for vww in o.virtual_winding_windows],
-    }
+        if o.stray_path is not None:
+            content["stray_path"] = o.stray_path.__dict__
+        
+        return content
 
-    if o.stray_path is not None:
-        content["stray_path"] = o.stray_path.__dict__
-    """
-    return {}
+    @staticmethod    
+    def decode_settings_from_log(log_file_path: str, working_directory: str = None):
+        if not os.path.isfile(log_file_path):
+            raise Exception(f"File {log_file_path} does not exists or is not a file!")
 
-def decode_settings_from_log(log_file_path: str, working_directory: str = None):
-    # TODO Does currently not work with reworked windings
-    if not os.path.isfile(log_file_path):
-        raise Exception(f"File {log_file_path} does not exists or is not a file!")
+        settings = None
+        with open(log_file_path, "r") as fd:
+            content = json.load(fd)
+            settings = content["simulation_settings"]
 
-    settings = None
-    with open(log_file_path, "r") as fd:
-        content = json.load(fd)
-        settings = content["simulation_settings"]
+        if settings is not None:
+            cwd = working_directory if working_directory is not None else settings["working_directory"]
+            geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
 
-    if settings is not None:
-        cwd = working_directory if working_directory is not None else settings["working_directory"]
-        geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
+            settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
+            core = Core(**settings["core"])
+            geo.set_core(core)
 
-        settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
-        core = Core(**settings["core"])
-        geo.set_core(core)
+            air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
+            for air_gap in settings["air_gaps"]["air_gaps"]:
+                air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"], air_gap["height"])
+            geo.set_air_gaps(air_gaps)
 
-        air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
-        for air_gap in settings["air_gaps"]["air_gaps"]:
-            air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"], air_gap["height"])
-        geo.set_air_gaps(air_gaps)
+            isolation = Isolation()
+            isolation.add_core_isolations(*settings["isolation"]["core_isolations"])
+            isolation.add_winding_isolations(settings["isolation"]["inner_winding_isolations"], settings["isolation"]["vww_isolation"])
+            geo.set_isolation(isolation)
 
-        windings = []
-        for settings_winding in settings["windings"]:
-            settings_cond = settings_winding["conductor_settings"]
-            winding = Conductor(settings_winding["turns_primary"], settings_winding["turns_secondary"], 
-                                Conductivity[settings_winding["conductivity"]], WindingType[settings_winding["winding_type"]], 
-                                WindingScheme[settings_winding["winding_scheme"]])
-            conductor_type = ConductorType[settings_cond["conductor_type"]]
-            if conductor_type == ConductorType.RectangularSolid:
-                winding.set_foil_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
-            elif conductor_type == ConductorType.RectangularSolid: 
-                winding.set_full_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
-            elif conductor_type == ConductorType.RectangularSolid:
-                winding.set_stacked_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
-            elif conductor_type == ConductorType.RoundLitz:
-                winding.set_litz_conductor(settings_cond["conductor_radius"], settings_cond["n_strands"], settings_cond["strand_radius"],
-                                            settings_cond["ff"])
-            elif conductor_type == ConductorType.RoundLitz:
-                winding.set_solid_conductor(settings_cond["conductor_radius"])
-            else:
-                raise Exception(f"Unknown conductor type {conductor_type}")
+            virtual_winding_windows = settings["virtual_winding_windows"]
+            new_virtual_winding_windows = []
+            for vww in virtual_winding_windows:
+                turns = vww["turns"]
+                conductors = []
+                for winding in vww["windings"]:
+                    conductor = Conductor(winding["winding_number"], Conductivity[winding["conductivity"]])
+                    conductor_type = ConductorType[winding["conductor_type"]]
+                    if conductor_type == ConductorType.RectangularSolid:
+                        conductor.set_rectangular_conductor(winding["thickness"])
+                    elif conductor_type == ConductorType.RoundLitz:
+                        conductor.set_litz_round_conductor(winding["conductor_radius"], winding["number_strands"], 
+                        winding["strand_radius"], winding["fill_factor"], ConductorArrangement[winding["conductor_arrangement"]])
+                    elif conductor_type == ConductorType.RoundSolid:
+                        conductor.set_solid_round_conductor(winding["conductor_radius"], ConductorArrangement[winding["conductor_arrangement"]])
+                    else:
+                        raise Exception(f"Unknown conductor type {conductor_type.name}")
+                    
+                    conductors.append(conductor)
 
-            windings.append(winding)
+                new_vww = VirtualWindingWindow(vww["bot_bound"], vww["top_bound"], vww["left_bound"], vww["right_bound"])
+                winding_type = WindingType[vww["winding_type"]]
+                if winding_type == WindingType.Single:
+                    winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] is not None else None
+                    wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
+                    new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
+                elif winding_type == WindingType.Interleaved:
+                    new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1], InterleavedWindingScheme[vww["winding_scheme"]], vww["winding_isolation"])
+                else:
+                    raise Exception(f"Winding type {winding_type} is not implemented")
 
-        geo.set_windings(windings)
+                new_virtual_winding_windows.append(new_vww)
 
-        isolation = Isolation()
-        isolation.add_core_isolations(*settings["isolation"]["core_isolations"])
-        isolation.add_winding_isolations(*settings["isolation"]["winding_isolations"])
-        geo.set_isolation(isolation)
+            winding_window = WindingWindow(core, isolation)
+            winding_window.virtual_winding_windows = new_virtual_winding_windows
+            geo.set_winding_window(winding_window)
 
-        return geo
+            return geo
 
-    raise Exception(f"Couldn't extract settings from file {log_file_path}")
+        raise Exception(f"Couldn't extract settings from file {log_file_path}")

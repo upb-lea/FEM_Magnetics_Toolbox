@@ -1,3 +1,4 @@
+from MagneticComponent import MagneticComponent
 import femmt as fmt
 import os
 
@@ -76,8 +77,8 @@ if not os.path.exists(example_results_folder):
 # component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
-component = "integrated_transformer"
-# component = "load_from_file"
+# component = "integrated_transformer"
+component = "load_from_file"
 
 # Create Object
 if component == "inductor":
@@ -297,7 +298,7 @@ if component == "load_from_file":
 
     file = os.path.join(os.path.dirname(__file__), "example_log.json")
 
-    geo = fmt.decode_settings_from_log(file, working_directory)
+    geo = MagneticComponent.decode_settings_from_log(file, working_directory)
 
     geo.create_model(freq=100000, visualize_before=False, save_png=False)
 

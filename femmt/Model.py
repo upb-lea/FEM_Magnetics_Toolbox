@@ -108,35 +108,24 @@ class Conductor:
               f" Conductor radius: {self.conductor_radius}\n"
               f"---")
 
-    """
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+    
+    def __ne__(self, other):
+        return self.__dict__ != other.__dict__
+
     def to_dict(self):
-        conductor_settings = {
-            "conductor_type": self.conductor_type.name
-        }
-        if self.conductor_type in [ConductorType.Foil, ConductorType.Full, ConductorType.Stacked]:
-            conductor_settings["thickness"] = self.thickness
-            conductor_settings["wrap_para"] = self.wrap_para
-        elif self.conductor_type == ConductorType.Litz:
-            conductor_settings["conductor_radius"] = self.conductor_radius
-            conductor_settings["n_strands"] = self.n_strands
-            conductor_settings["strand_radius"] = self.strand_radius
-            conductor_settings["ff"] = self.ff
-        elif self.conductor_type == ConductorType.Solid:
-            conductor_settings["conductor_radius"] = self.conductor_radius
-        else:
-            raise Exception(f"Unknown conductor type {self.conductor_type}")
-
-        contents = {
-            "turns_primary": self.turns_primary,
-            "turns_secondary": self.turns_secondary,
+        return {
+            "winding_number": self.winding_number,
             "conductivity": self.conductivity.name,
-            "winding_type": self.winding_type.name,
-            "winding_scheme": self.winding_scheme.name,
-            "conductor_settings": conductor_settings
+            "conductor_type": self.conductor_type.name,
+            "thickness": self.thickness,
+            "conductor_radius": self.conductor_radius,
+            "conductor_arrangement": self.conductor_arrangement.name,
+            "number_strands": self.n_strands,
+            "strand_radius": self.strand_radius,
+            "fill_factor": self.ff
         }
-
-        return contents
-    """
 
 class Core:
     """
@@ -243,14 +232,15 @@ class Core:
     def to_dict(self):
         return {
             "core_w": self.core_w,
-            "window_w": self.window_w, 
-            "window_h": self.window_h, 
-            "material": self.material, 
+            "window_w": self.window_w,
+            "window_h": self.window_h,
+            "material": self.material,
             "loss_approach": self.loss_approach.name,
             "mu_rel": self.mu_rel,
-            "phi_mu_deg": self.phi_mu_deg, 
-            "sigma": self.sigma, 
-            "non_linear": self.non_linear, 
+            "phi_mu_deg": self.phi_mu_deg,
+            "sigma": self.sigma,
+            "non_linear": self.non_linear,
+            "correct_outer_leg": self.correct_outer_leg,
             "kwargs": self.kwargs
         }
 
@@ -376,8 +366,9 @@ class Isolation:
 
     def to_dict(self):
         return {
-            "winding_isolations": self.inner_winding,
-            "core_isolations": self.core_cond
+            "inner_winding_isolations": self.inner_winding,
+            "core_isolations": self.core_cond,
+            "vww_isolation": self.vww_isolation
         }
 
 @dataclass
@@ -444,6 +435,19 @@ class VirtualWindingWindow:
     def __repr__(self):
         return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
 
+    def to_dict(self):
+        return {
+            "bot_bound": self.bot_bound,
+            "top_bound": self.top_bound,
+            "left_bound": self.left_bound,
+            "right_bound": self.right_bound,
+            "winding_type": self.winding_type.name,
+            "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+            "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
+            "windings": [winding.to_dict() for winding in self.windings],
+            "turns": self.turns
+        }
+
 class WindingWindow:
     max_bot_bound: float
     max_top_bound: float
@@ -463,10 +467,12 @@ class WindingWindow:
     stray_path: StrayPath
     air_gaps: AirGaps
 
+    horizontal_split_factor: float
+    vertical_split_factor: float
+
     virtual_winding_windows: List[VirtualWindingWindow]
 
     def __init__(self, core: Core, isolation: Isolation, stray_path: StrayPath = None, air_gaps: AirGaps = None):
-        
         self.max_bot_bound = -core.window_h / 2 + isolation.core_cond[0]
         self.max_top_bound = core.window_h / 2 - isolation.core_cond[1]
         self.max_left_bound = core.core_w / 2 + isolation.core_cond[2]
@@ -481,6 +487,9 @@ class WindingWindow:
 
     def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5):
         self.split_type = split_type
+
+        self.horizontal_split_factor = horizontal_split_factor
+        self.vertical_split_factor = vertical_split_factor
 
         # Calculate split lengths
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:

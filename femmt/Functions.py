@@ -1,4 +1,4 @@
-# Usual Python libraries
+# Python standard libraries
 import numpy.typing as npt
 import numpy as np
 import json
@@ -10,10 +10,15 @@ import sys
 import os
 import pandas as pd
 import time
-import gmsh
 import warnings
 from typing import Union, List, Tuple, Dict
 from matplotlib import pyplot as plt
+
+# Third parry libraries
+import gmsh
+
+# Local libraries
+from Enumerations import *
 
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
