@@ -74,11 +74,11 @@ example_results_folder = os.path.join(os.path.dirname(__file__), "example_result
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-# component = "inductor"
+component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
 # component = "integrated_transformer"
-component = "load_from_file"
+# component = "load_from_file"
 
 # Create Object
 if component == "inductor":
