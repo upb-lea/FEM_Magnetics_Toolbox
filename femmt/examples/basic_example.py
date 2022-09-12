@@ -302,4 +302,4 @@ if component == "load_from_file":
 
     geo.create_model(freq=100000, visualize_before=False, save_png=False)
 
-    geo.single_simulation(freq=100000, current=[1], show_results=True)
+    geo.single_simulation(freq=100000, current=[4.5], show_results=True)

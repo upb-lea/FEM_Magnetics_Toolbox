@@ -79,8 +79,7 @@
       "phi_mu_deg": null,
       "sigma": 0.16666666666666666,
       "non_linear": false,
-      "correct_outer_leg": false,
-      "kwargs": {}
+      "correct_outer_leg": false
     },
     "air_gaps": {
       "method": "Percent",
