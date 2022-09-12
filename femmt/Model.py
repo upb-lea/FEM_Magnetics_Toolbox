@@ -75,7 +75,7 @@ class Conductor:
         """
         Only 3 of the 4 parameters are needed. The other one needs to be none
         """
-        if self.conductor_type is not None:
+        if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 
         self.conductor_is_set = True
@@ -433,12 +433,13 @@ class VirtualWindingWindow:
         if winding_scheme is WindingScheme.FoilVertical and wrap_para_type is None:
             raise Exception("When winding scheme is FoilVertical a wrap para type must be set.")
 
-    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme):
+    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme, winding_isolation: float):
         self.winding_type = WindingType.Interleaved
         self.winding_scheme = winding_scheme
         self.windings = [conductor1, conductor2]
         self.turns = [turns1, turns2]
         self.winding_is_set = True
+        self.winding_isolation = winding_isolation
 
     def __repr__(self):
         return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
@@ -459,10 +460,12 @@ class WindingWindow:
     vww_isolation: float
     isolation: Isolation
     split_type: WindingWindowSplit
+    stray_path: StrayPath
+    air_gaps: AirGaps
 
     virtual_winding_windows: List[VirtualWindingWindow]
 
-    def __init__(self, core, isolation):
+    def __init__(self, core: Core, isolation: Isolation, stray_path: StrayPath = None, air_gaps: AirGaps = None):
         
         self.max_bot_bound = -core.window_h / 2 + isolation.core_cond[0]
         self.max_top_bound = core.window_h / 2 - isolation.core_cond[1]
@@ -473,12 +476,25 @@ class WindingWindow:
         self.vww_isolation = isolation.vww_isolation
         self.isolation = isolation
 
+        self.stray_path = stray_path
+        self.air_gaps = air_gaps
+
     def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5):
         self.split_type = split_type
 
         # Calculate split lengths
-        horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
-        vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
+        if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
+            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
+            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index+1][1]
+            max_pos = max(air_gap_2_position, air_gap_1_position)
+            min_pos = min(air_gap_2_position, air_gap_1_position) 
+            distance = max_pos - min_pos 
+            horizontal_split = min_pos + distance / 2
+            vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
+            self.vww_isolation = distance
+        else:
+            horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
+            vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
 
         # Check for every possible split type and return the corresponding VirtualWindingWindows
         if split_type == WindingWindowSplit.NoSplit:

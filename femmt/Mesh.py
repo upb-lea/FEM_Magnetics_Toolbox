@@ -1066,7 +1066,7 @@ class Mesh:
         air = []
 
         # Isolations are currently not implemented for integrated transformers
-        if self.component_type is not ComponentType.IntegratedTransformer:
+        if self.component_type != ComponentType.IntegratedTransformer:
             iso_core_left = self.model.p_iso_core[0]
             iso_core_top = self.model.p_iso_core[1]
             iso_core_right = self.model.p_iso_core[2]
@@ -1102,7 +1102,7 @@ class Mesh:
             # Point seems to be valid. Now find out in which surface the point belongs
             point = gmsh.model.geo.addPoint(x, y, 0, 2 * self.mesh_data.c_window)
 
-            if self.component_type is not ComponentType.IntegratedTransformer:
+            if self.component_type != ComponentType.IntegratedTransformer:
                 if ff.point_is_in_rect(x, y, iso_core_left):
                     # Left iso
                     left_iso.append(point)
@@ -1124,7 +1124,7 @@ class Mesh:
         gmsh.model.geo.synchronize()
 
         # Embed points into surfaces
-        if self.component_type is not ComponentType.IntegratedTransformer:
+        if self.component_type != ComponentType.IntegratedTransformer:
             gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
             gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
             gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])

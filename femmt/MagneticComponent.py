@@ -371,7 +371,6 @@ class MagneticComponent:
             for winding in vww.windings:
                 if winding not in windings:
                     windings.append(winding)
-                    break
 
         self.windings = sorted(windings, key = lambda x: x.winding_number)
 

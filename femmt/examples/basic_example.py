@@ -73,10 +73,10 @@ example_results_folder = os.path.join(os.path.dirname(__file__), "example_result
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-component = "inductor"
+# component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
-# component = "integrated_transformer"
+component = "integrated_transformer"
 # component = "load_from_file"
 
 # Create Object
@@ -144,7 +144,6 @@ if component == "transformer-interleaved":
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_w=0.015,
                     non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10)
-
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -152,25 +151,30 @@ if component == "transformer-interleaved":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set conductor parameters: use solid wires
-    winding1 = fmt.Conductor(21, 0, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
-    winding1.set_solid_conductor(0.0011)
-
-    winding2 = fmt.Conductor(0, 7, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
-    winding2.set_solid_conductor(0.0011)
-
-    geo.set_windings([winding1, winding2])
-
-    # 5. set isolations
+    # 4. set isolations
     isolation = fmt.Isolation()
     isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations(0.0002, 0.0002, 0.0005)
+    isolation.add_winding_isolations([0.0002, 0.0002], 0.0001)
     geo.set_isolation(isolation)
 
-    # 5. start simulation with given frequency, currents and phases
+    # 5. create winding window and virtual winding windows (vww)
+    winding_window = fmt.WindingWindow(core, isolation)
+    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+    # 6. create conductors and set parameters
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1.set_solid_round_conductor(0.0011, None)
+
+    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2.set_solid_round_conductor(0.0011, None)
+
+    # 7. add conductor to vww and add winding window to MagneticComponent
+    vww.set_interleaved_winding(winding1, 21, winding2, 7, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
+    geo.set_winding_window(winding_window)
+
+    # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_results=True)
-
 
     # other simulation options:
     # ------------------------
@@ -180,6 +184,7 @@ if component == "transformer-interleaved":
     # perform a reference simulation using FEMM
     # geo.femm_reference(freq=250000, current=[4, 12], sign=[1, -1], non_visualize=0)
 
+    # 9. start thermal simulation
     example_thermal_simulation()
     
 if component == "transformer":
@@ -202,23 +207,29 @@ if component == "transformer":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set conductor parameters
-    winding1 = fmt.Conductor(10, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
-    winding1.set_solid_conductor(0.0011)
-
-    winding2 = fmt.Conductor(0, 10, fmt.Conductivity.Copper, fmt.WindingType.Secondary, fmt.WindingScheme.Square)
-    # winding2.set_litz_conductor(None, 600, 35.5e-6, 0.6)
-    winding2.set_solid_conductor(0.0011)
-
-    geo.set_windings([winding1, winding2])
-
-    # 5. set isolation
+    # 4. set isolation
     isolation = fmt.Isolation()
     isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations(0.0002, 0.0002, 0.0005)
+    isolation.add_winding_isolations([0.0002, 0.0002], 0.0005)
     geo.set_isolation(isolation)
 
-    # 6. start simulation with given frequency, currents and phases
+    # 5. create winding window and virtual winding windows (vww)
+    winding_window = fmt.WindingWindow(core, isolation)
+    left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+
+    # 6. create conductors and set parameters
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+
+    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+
+    # 7. add conductor to vww and add winding window to MagneticComponent
+    left.set_winding(winding1, 10, None)
+    right.set_winding(winding2, 10, None)
+    geo.set_winding_window(winding_window)
+
+    # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 180])
 
@@ -249,22 +260,29 @@ if component == "integrated_transformer":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 40, 0.001)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set conductor parameters
-    winding1 = fmt.Conductor(1, 3, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
-    winding1.set_litz_conductor(None, 100, 70e-6, 0.5)
-
-    winding2 = fmt.Conductor(2, 6, fmt.Conductivity.Copper, fmt.WindingType.Interleaved, fmt.WindingScheme.Horizontal)
-    winding2.set_litz_conductor(None, 100, 70e-6, 0.5)
-    
-    geo.set_windings([winding1, winding2])
-
-    # 5. set isolations
+    # 4. set isolations
     isolation = fmt.Isolation()
     isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations(0.0002, 0.0002, 0.0005)
+    isolation.add_winding_isolations([0.0002, 0.0002], 0.0001)
     geo.set_isolation(isolation)
 
-    # 6. start simulation with given frequency, currents and phases
+    # 5. create winding window and virtual winding windows (vww)
+    winding_window = fmt.WindingWindow(core, isolation, stray_path, air_gaps)
+    top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+
+    # 6. set conductor parameters
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+
+    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+
+    # 7. add conductor to vww and add winding window to MagneticComponent
+    top.set_interleaved_winding(winding1, 3, winding2, 6, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
+    bot.set_interleaved_winding(winding1, 1, winding2, 2, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
+    geo.set_winding_window(winding_window)
+
+    # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 180])
 

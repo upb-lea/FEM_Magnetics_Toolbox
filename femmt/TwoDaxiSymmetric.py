@@ -386,7 +386,7 @@ class TwoDaxiSymmetric:
 
                                     x += windings[col_cond].conductor_radius + \
                                             windings[(col_cond + 1) % 2].conductor_radius + \
-                                            self.isolation.inner_winding[2]  # from left to right
+                                            virtual_winding_window.winding_isolation
 
                                     # Reset y
                                     col_cond = (col_cond + 1) % 2
@@ -403,7 +403,7 @@ class TwoDaxiSymmetric:
                                 # Correct the reset of y and correct x displacement
                                 x += windings[col_cond].conductor_radius - \
                                         windings[(col_cond + 1) % 2].conductor_radius \
-                                        - self.isolation.inner_winding[2] + self.isolation.inner_winding[
+                                        - virtual_winding_window.winding_isolation + self.isolation.inner_winding[
                                             col_cond]
 
                                 y = top_bound - windings[col_cond].conductor_radius
@@ -472,7 +472,7 @@ class TwoDaxiSymmetric:
 
                                     x += windings[col_cond].conductor_radius + \
                                             windings[(col_cond + 1) % 2].conductor_radius + \
-                                            self.isolation.inner_winding[2]  # from left to right
+                                            virtual_winding_window.winding_isolation
 
                                     # Reset y
                                     col_cond = (col_cond + 1) % 2
@@ -489,7 +489,7 @@ class TwoDaxiSymmetric:
                                 # Correct the reset of y and correct x displacement
                                 x += windings[col_cond].conductor_radius - \
                                         windings[(col_cond + 1) % 2].conductor_radius \
-                                        - self.isolation.inner_winding[2] + \
+                                        - virtual_winding_window.winding_isolation + \
                                         self.isolation.inner_winding[
                                             col_cond]
 
