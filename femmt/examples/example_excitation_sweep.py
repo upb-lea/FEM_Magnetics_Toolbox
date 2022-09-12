@@ -42,22 +42,30 @@ if component == "inductor":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 90, 0.0005)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set conductor parameters: use solid wires
-    winding = fmt.Conductor(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
-    # winding.set_solid_conductor(0.0013)
-    winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
-    geo.set_windings([winding])
-
-    # 5. set isolations
+    # 4. set isolations
     isolation = fmt.Isolation()
     isolation.add_core_isolations(0.001, 0.001, 0.004, 0.001)
     isolation.add_winding_isolations(0.0005)
     geo.set_isolation(isolation)
 
-    # 5. create the model
+    # 5. create winding window and virtual winding windows (vww)
+    winding_window = fmt.WindingWindow(core, isolation)
+    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+    # 6. create conductor and set parameters: use solid wires
+    winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
+    # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+
+    # 7. add conductor to vww and add winding window to MagneticComponent
+    vww.set_winding(winding, 9, None)
+    geo.set_winding_window(winding_window)
+
+    # 8. create the model
     geo.create_model(freq=100000, visualize_before=True, save_png=False)
 
-    # 6. start simulation
+    # 9. start simulation
     geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last=True)
 
 

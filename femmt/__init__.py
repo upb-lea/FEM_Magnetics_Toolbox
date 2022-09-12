@@ -1,11 +1,10 @@
 # Modules
-from femmt import Model
-from femmt import MagneticComponent
-from femmt import Functions
-from femmt import Model
-from femmt import Enumerations
-from femmt import LogParser
+from femmt.Model import *
+from femmt.MagneticComponent import *
+from femmt.Functions import *
+from femmt.Model import *
+from femmt.Enumerations import *
+from femmt.LogParser import *
 
 # Packages
-from femmt import electro_magnetic
-from femmt import thermal
+from femmt.thermal import *
