@@ -295,7 +295,6 @@ class MagneticComponent:
     # Setup
     def onelab_setup(self) -> None:
         """
-
         Either reads ONELAB parent folder path from config.json or asks the user to provide the ONELAB path it.
         Creates a config.json inside the site-packages folder at first run.
 
@@ -335,14 +334,13 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Geometry Parts
-    def high_level_geo_gen(self, frequency=None, skin_mesh_factor=None, isolation_deltas = None):
-        """
-        - high level geometry generation
-        - based on chosen core and conductor types and simulation mode
-        - calls "low level" methods, that create all points needed for mesh generation
-     
-        :return:
-     
+    def high_level_geo_gen(self, frequency: float = None, skin_mesh_factor: float = None) -> None:
+        """ Updates the mesh data and creates the model and mesh objects
+
+        :param frequency: Frequency used in the mesh denisty, defaults to None
+        :type frequency: float, optional
+        :param skin_mesh_factor: Used in the mesh density, defaults to None
+        :type skin_mesh_factor: float, optional
         """
         # Always reset to valid
         self.valid = True
@@ -358,7 +356,14 @@ class MagneticComponent:
         # Create mesh
         self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None)
 
-    def mesh(self, frequency=None, skin_mesh_factor=None):
+    def mesh(self, frequency: float = None, skin_mesh_factor: float = None) -> None:
+        """Generates model and mesh.
+
+        :param frequency: Frequency used in the mesh denisty, defaults to None
+        :type frequency: float, optional
+        :param skin_mesh_factor: Used in the mesh density, defaults to None
+        :type skin_mesh_factor: float, optional
+        """
         self.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
             self.mesh.generate_hybrid_mesh()
@@ -366,7 +371,12 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Create Model
-    def set_isolation(self, isolation: Isolation):
+    def set_isolation(self, isolation: Isolation) -> None:
+        """Adds the isolation to the model
+
+        :param isolation: Isolation object
+        :type isolation: Isolation
+        """
         if isolation.inner_winding is None or not isolation.inner_winding:
             raise Exception("Isolations between the conductors must be set")
 
@@ -375,16 +385,33 @@ class MagneticComponent:
 
         self.isolation = isolation
 
-    def set_stray_path(self, stray_path: StrayPath):
+    def set_stray_path(self, stray_path: StrayPath) -> None:
+        """Adds the stray path to the model
+
+        :param stray_path: StrayPath object
+        :type stray_path: StrayPath
+        """
         self.stray_path = stray_path
 
-    def set_air_gaps(self, air_gaps: AirGaps):
+    def set_air_gaps(self, air_gaps: AirGaps) -> None:
+        """Adds the air_gaps to the model
+
+        :param air_gaps: AirGaps object
+        :type air_gaps: AirGaps
+        """
         # Sorting air gaps from lower to upper
         air_gaps.midpoints.sort(key=lambda x: x[1])
 
         self.air_gaps = air_gaps
 
-    def set_winding_window(self, winding_window: WindingWindow):
+    def set_winding_window(self, winding_window: WindingWindow) -> None:
+        """Adds the virtual winding windows to the model. Creates the windings list, which contains the conductors
+        from the virtual winding windows but sorted by the winding_number (ascending).
+        Sets empty lists for excitation parameters
+
+        :param winding_window: WindingWindow object
+        :type winding_window: WindingWindow
+        """
         self.virtual_winding_windows = winding_window.virtual_winding_windows
 
         windings = []
@@ -407,7 +434,12 @@ class MagneticComponent:
         # Default values for global_accuracy and padding
         self.mesh_data = MeshData(0.5, 1.5, self.mu0, self.core.core_w, self.core.window_w, self.windings)
 
-    def set_core(self, core: Core):
+    def set_core(self, core: Core) -> None:
+        """Adds the core to the model
+
+        :param core: Core object
+        :type core: Core
+        """
         self.core = core
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
@@ -1209,7 +1241,7 @@ class MagneticComponent:
     # Standard Simulations
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False,
                      save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                     colors_geometry: Dict = ff.colors_geometry_femmt_default):
+                     colors_geometry: Dict = ff.colors_geometry_femmt_default) -> None:
         """
         Create a model from the abstract geometry description inside onelab including optional mesh generation
 
@@ -1227,7 +1259,6 @@ class MagneticComponent:
         :type color_scheme: Dict
         :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
         :type colors_geometry: Dict
-
         """
         if self.core is None:
             raise Exception("A core class needs to be added to the magnetic component")
@@ -1245,7 +1276,7 @@ class MagneticComponent:
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
-    def pre_simulation(self):
+    def pre_simulation(self) -> None:
         """
         - Complete "pre-simulation" call
 
@@ -1332,7 +1363,6 @@ class MagneticComponent:
 
         :return: Results in a dictionary
         :rtype: Dict
-
         """
         # frequencies = frequencies or []
         # currents = currents or []
@@ -1400,12 +1430,9 @@ class MagneticComponent:
             if return_results:
                 return {"FEM_results": "invalid"}
 
-    def simulate(self):
+    def simulate(self) -> None:
         """
         Initializes a onelab client. Provides the GetDP based solver with the created mesh file.
-
-        :return:
-
         """
         print(f"\n---\n"
               f"Initialize ONELAB API\n"
@@ -1435,7 +1462,6 @@ class MagneticComponent:
         - current, voltage or current density
         - frequency or reduced frequency
 
-
         :param frequency: Frequency
         :type frequency: float
         :param amplitude_list: Current amplitudes according to windings
@@ -1446,10 +1472,6 @@ class MagneticComponent:
         :type ex_type: str
         :param imposed_red_f:
         :type imposed_red_f:
-
-        :return: None
-        :rtype: None
-
         """
         print(f"\n---\n"
               f"Excitation: \n"
@@ -1515,12 +1537,9 @@ class MagneticComponent:
             self.delta = 1e20  # random huge value
             self.red_freq[num] = 0
 
-    def file_communication(self):
+    def file_communication(self) -> None:
         """
         Interaction between python and Prolog files.
-
-        :return:
-
         """
         # --------------------------------- File Communication --------------------------------
         # All shared control variables and parameters are passed to a temporary Prolog file
@@ -1536,16 +1555,13 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
-    def get_inductances(self, I0, op_frequency=0, skin_mesh_factor=1, visualize=False):
+    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1, visualize: bool = False) -> None:
         """
 
         :param visualize:
         :param skin_mesh_factor:
         :param I0:
         :param op_frequency:
-
-        :return:
-
         """
 
         # Remove "old" Inductance Logs
@@ -1686,8 +1702,9 @@ class MagneticComponent:
         else:
             print(f"Invalid Geometry Data!")
 
-    def get_steinmetz_loss(self, Ipeak=None, ki=1, alpha=1.2, beta=2.2, t_rise=3e-6, t_fall=3e-6, f_switch=100000,
-                           skin_mesh_factor=0.5):
+    def get_steinmetz_loss(self, Ipeak: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2, t_rise: float = 3e-6, t_fall: float = 3e-6,
+                            f_switch: float = 100000, skin_mesh_factor: float = 0.5) -> None:
+
         """
 
         :param skin_mesh_factor:
@@ -1698,9 +1715,6 @@ class MagneticComponent:
         :param t_rise:
         :param t_fall:
         :param f_switch:
-
-        :return:
-
         """
         Ipeak = Ipeak or [10, 10]
 
@@ -1723,14 +1737,12 @@ class MagneticComponent:
         self.excitation(frequency=f_switch, amplitude_list=Ipeak, phase_deg_list=[0, 180])  # frequency and current
         self.file_com
 
-    def write_electro_magnetic_parameter_pro(self):
+    def write_electro_magnetic_parameter_pro(self) -> None:
         """
         Write materials and other parameters to the "Parameter.pro" file.
         This file is generated by python and is read by gmsh to hand over some parameters.
 
         Source for the parameters is the MagneticComponent object.
-        :return: None
-        :rtype: None
         """
         text_file = open(os.path.join(self.file_data.electro_magnetic_folder_path, "Parameter.pro"), "w")
 
@@ -1867,10 +1879,8 @@ class MagneticComponent:
 
         text_file.close()
 
-    def write_electro_magnetic_post_pro(self):
+    def write_electro_magnetic_post_pro(self) -> None:
         """
-
-        :return:
         """
         text_file = open(os.path.join(self.file_data.electro_magnetic_folder_path, "postquantities.pro"), "w") 
 
@@ -1893,7 +1903,7 @@ class MagneticComponent:
 
         text_file.close()
 
-    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
+    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None) -> None:
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
         them in a dictionary. Additionally, the input settings which are used in order to create the simulation are also printed.
@@ -2053,7 +2063,9 @@ class MagneticComponent:
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
 
-    def read_log(self):
+    def read_log(self) -> None:
+        """
+        """
         log = {}
         with open(self.file_data.e_m_results_log_path, "r") as fd:
             content = json.loads(fd.read())
@@ -2061,14 +2073,11 @@ class MagneticComponent:
 
         return log
 
-    def visualize(self):
+    def visualize(self) -> None:
         """
         - a post simulation viewer
         - allows to open ".pos"-files in gmsh
         - For example current density, ohmic losses or the magnetic field density can be visualized
-
-        :return:
-
         """
         # ---------------------------------------- Visualization in gmsh ---------------------------------------
         print(f"\n---\n"
@@ -2151,15 +2160,14 @@ class MagneticComponent:
         gmsh.fltk.run()
         # gmsh.finalize()
 
-    def get_loss_data(self, last_n_values, loss_type='litz_loss'):
+    def get_loss_data(self, last_n_values: int, loss_type: str = 'litz_loss') -> None:
         """
         Returns the last n values from the chosen loss type logged in the result folder.
 
-        :param last_n_values:
-        :param loss_type:
-
-        :return:
-
+        :param last_n_values: _description_
+        :type last_n_values: int
+        :param loss_type: _description_, defaults to 'litz_loss'
+        :type loss_type: str, optional
         """
         loss_file = None
         # Loss file location
@@ -2173,7 +2181,7 @@ class MagneticComponent:
             data = list(reader)
         return data[-last_n_values:-1] + [data[-1]]
 
-    def load_result(self, res_name, res_type="value", last_n: int = 1, part="real", position: int = 0):
+    def load_result(self, res_name: str, res_type: str = "value", last_n: int = 1, part:str = "real", position: int = 0) -> None:
         """
         Loads the "last_n" parameters from a result file of the scalar quantity "res_name".
         Either the real or imaginary part can be chosen.
@@ -2202,7 +2210,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Litz Approximation [internal methods]
-    def pre_simulate(self):
+    def pre_simulate(self) -> None:
         """
         Used to determine the litz-approximation coefficients.
 
@@ -2226,7 +2234,7 @@ class MagneticComponent:
                     print(f"Rounded Reduced frequency X = {X}")
                     self.create_strand_coeff(num)
 
-    def create_strand_coeff(self, num):
+    def create_strand_coeff(self, num: int) -> None:
         """
 
         :return:
@@ -2309,7 +2317,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # FEMM [alternative Solver]
-    def femm_reference(self, freq, current, sign=None, non_visualize=0):
+    def femm_reference(self, freq: float, current: float, sign: bool = None, non_visualize: int = 0) -> None:
         """
         Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
         Helpful to validate changes (especially in the Prolog Code).
@@ -2594,7 +2602,7 @@ class MagneticComponent:
         # When the analysis is completed, FEMM can be shut down.
         # femm.closefemm()
 
-    def write_femm_log(self):
+    def write_femm_log(self) -> None:
         """
 
         :return:
@@ -2663,20 +2671,36 @@ class MagneticComponent:
 
 
     @staticmethod
-    def calculate_point_average(x1, y1, x2, y2):
-        """
-        Used for femm_thermaL_validation
+    def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> List[float]:
+        """Calculates the middle point between two given points.
+
+        :param x1: Point1 x
+        :type x1: float
+        :param y1: Point1 y
+        :type y1: float
+        :param x2: Point2 x
+        :type x2: float
+        :param y2: Point2 y
+        :type y2: float
+        :return: Average Point x, y
+        :rtype: float, float
         """
         # TODO Move to femmt_functions
         return (x1 + x2) / 2, (y1 + y2) / 2
 
-    def femm_thermal_validation(self, thermal_conductivity_dict, boundary_temperature, case_gap_top, case_gap_right, case_gap_bot):
-        """
-        Creates a thermal model in femm and simulates it with the given thermal conductivities
+    def femm_thermal_validation(self, thermal_conductivity_dict: Dict, boundary_temperature: Dict, case_gap_top: float, case_gap_right: float, case_gap_bot: float) -> None:
+        """Creates a thermal model in femm and simulates it with the given thermal conductivities
 
-        :thermal_conductivity_dict: Dict containing conductivities for air, winding, case, core
-
-        :return:
+        :param thermal_conductivity_dict: Dict containing conductivities for air, winding, case, core
+        :type thermal_conductivity_dict: Dict
+        :param boundary_temperature: Dict containing temperatures on boundary lines
+        :type boundary_temperature: Dict
+        :param case_gap_top: Length top case
+        :type case_gap_top: float
+        :param case_gap_right: Length right case
+        :type case_gap_right: float
+        :param case_gap_bot: Length bot case
+        :type case_gap_bot: float
         """
         # Optional usage of FEMM tool by David Meeker
         # 2D Mesh and FEM interfaces (only for windows machines)
@@ -2945,7 +2969,14 @@ class MagneticComponent:
         # femm.closefemm()
 
     @staticmethod
-    def encode_settings(o):
+    def encode_settings(o) -> Dict:
+        """Encoes the magnetic component in a dictionary.
+
+        :param o: Magnetic component containing the model.
+        :type o: MagneticComponent
+        :return: Model encodede as dictionary
+        :rtype: Dict
+        """
         content = {
             "date": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
             "component_type": o.component_type.name,
@@ -2967,6 +2998,15 @@ class MagneticComponent:
 
     @staticmethod    
     def decode_settings_from_log(log_file_path: str, working_directory: str = None):
+        """Reads the given log and returns the magnetic component from th elog.
+
+        :param log_file_path: Path to the log file
+        :type log_file_path: str
+        :param working_directory: If the working directory shall be a different than from the log file enter a new one here, defaults to None
+        :type working_directory: str, optional
+        :return: Magnetic component containing the model
+        :rtype: MagneticComponent
+        """
         if not os.path.isfile(log_file_path):
             raise Exception(f"File {log_file_path} does not exists or is not a file!")
 

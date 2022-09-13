@@ -8,15 +8,24 @@ from scipy.interpolate import interp1d
 from Enumerations import ConductorType
 
 class FileData:
-    def __init__(self, working_directory):
+    """Contains paths to every folder and file needed in femmt.
+    """
+    def __init__(self, working_directory: str):
         self.update_paths(working_directory)
 
-    def create_folders(self, *args):
+    def create_folders(self, *args) -> None:
+        """Creates folder for every given folder path (if it does not exist).
+        """
         for folder in list(args):
             if not os.path.exists(folder):
                 os.mkdir(folder)
 
-    def update_paths(self, working_directory):
+    def update_paths(self, working_directory: str) -> None:
+        """Sets the local path based on the given working directory
+
+        :param working_directory: working directory folder path
+        :type working_directory: str
+        """
         # Setup folder paths 
         self.working_directory = working_directory
         self.femmt_folder_path = os.path.dirname(__file__)
@@ -48,6 +57,10 @@ class FileData:
             self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path)
 
 class MeshData:
+    """Contains data which is needed for the mesh generation.
+    Is updated by high_level_geo_gen.
+    """
+
     global_accuracy: float  # Parameter for mesh-accuracy
     padding: float           # > 1
     skin_mesh_factor: float
@@ -73,7 +86,15 @@ class MeshData:
         self.c_conductor = [None] * len(windings)
         self.c_center_conductor = [None] * len(windings)
 
-    def update_data(self, frequency, skin_mesh_factor):
+    def update_data(self, frequency: float, skin_mesh_factor: float) -> None:
+        """Updates the mesh data according to the given frequency and skin_mesh_factor.
+
+        :param frequency: Frequency of the model (updates skin depth which affects the mesh)
+        :type frequency: float
+        :param skin_mesh_factor: Factor for skin mesh
+        :type skin_mesh_factor: float
+        """
+
         # Mesh-Parameters must be updated depending on geometry size
         self.c_core = self.core_w / 10. * self.global_accuracy
         self.c_window = self.window_w / 30 * self.global_accuracy
@@ -96,7 +117,8 @@ class MeshData:
                     self.c_conductor[i] = 0.0001  # TODO: dynamic implementation
 
 class AnalyticalCoreData:
-
+    # TODO Documentation
+    
     e_phi_100000 = 37
     e_r_100000 = 1.3969e+05
 

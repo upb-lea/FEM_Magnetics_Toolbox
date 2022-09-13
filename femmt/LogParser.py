@@ -58,7 +58,7 @@ class FEMMTLogParser:
         
             self.data[name] = self.parse_file(file_path, SweepTypes.SingleSweep)
 
-    def plot_frequency_sweep_losses(self, data_names: List[str], loss_parameter: str, plot_label: str = ""):
+    def plot_frequency_sweep_losses(self, data_names: List[str], loss_parameter: str, plot_label: str = "") -> None:
         """Example function for a possible sweep plot. Sweeps over the frequency of different simulations from one or multiple files.
 
         :param data_names: Name of the data (keys of data dict). If the list is empty every key will be taken.
@@ -86,7 +86,7 @@ class FEMMTLogParser:
         plt.ylabel(loss_parameter)
         plt.show()
 
-    def plot_frequency_sweep_winding_params(self, data_names: str, winding_number: int, winding_parameter: str, plot_label: str = ""):
+    def plot_frequency_sweep_winding_params(self, data_names: str, winding_number: int, winding_parameter: str, plot_label: str = "") -> None:
         """Example function for a possible sweep plot. Sweeps over the frequency of different simulations from one or multiple files.
 
         :param data_names: Name of the data (keys of data dict). If the list is empty every key will be taken.
@@ -123,7 +123,7 @@ class FEMMTLogParser:
         plt.show()
 
     @staticmethod
-    def get_log_files_from_working_directories(working_directories: List[str]):
+    def get_log_files_from_working_directories(working_directories: List[str]) -> List[str]:
         """ Returns a dict containing the log files for each given working directory together with the name of the directory as key.
         For every working directory the local path to the log file is working_directory/results/log_electro_magnetic.json
 
@@ -152,7 +152,7 @@ class FEMMTLogParser:
         return float(data)
 
     @staticmethod
-    def parse_file(file_path: str, sweep_type: SweepTypes):
+    def parse_file(file_path: str, sweep_type: SweepTypes) -> FileData:
         """Internal function used to parse the JSON-File to a Class structure.
 
         :param file_path: Full path to file
