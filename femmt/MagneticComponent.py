@@ -229,11 +229,11 @@ class MagneticComponent:
         :type colors_geometry: Dict, optional
         """
         # Create necessary folders
-        self.create_folders(self.file_data.file_paths.thermal_results_folder_path)
+        self.file_data.create_folders(self.file_data.thermal_results_folder_path)
 
         self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before)
 
-        if not os.path.exists(self.file_data.file_paths.e_m_results_log_path):
+        if not os.path.exists(self.file_data.e_m_results_log_path):
             # Simulation results file not created
             raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
 
@@ -243,14 +243,14 @@ class MagneticComponent:
         del current_settings["date"]
 
         log_settings = None
-        with open(self.file_data.file_paths.e_m_results_log_path, "r") as fd:
+        with open(self.file_data.e_m_results_log_path, "r") as fd:
             content = json.load(fd)
             log_settings = content["simulation_settings"]
         del log_settings["working_directory"]
         del log_settings["date"]
         
         if current_settings != log_settings:
-            raise Exception(f"The settings from the log file {self.file_data.file_paths.e_m_results_log_path} do not match the current simulation settings. \
+            raise Exception(f"The settings from the log file {self.file_data.e_m_results_log_path} do not match the current simulation settings. \
                                 Please re-run the magnetic simulation.")
 
         tags = {
@@ -270,7 +270,7 @@ class MagneticComponent:
         wire_radii = [winding.conductor_radius for winding in self.windings]
 
         thermal_parameters = {
-            "file_paths": self.file_data.file_paths,
+            "file_data": self.file_data,
             "tags_dict": tags,
             "thermal_conductivity_dict": thermal_conductivity_dict,
             "boundary_temperatures": boundary_temperatures_dict,
@@ -2600,7 +2600,7 @@ class MagneticComponent:
         :return:
         """
         if os.name == 'nt':
-            install_pyfemm_if_missing()
+            ff.install_pyfemm_if_missing()
             if not self.femm_is_imported:
                 globals()["femm"] = __import__("femm")
                 self.femm_is_imported = True
@@ -2681,7 +2681,7 @@ class MagneticComponent:
         # Optional usage of FEMM tool by David Meeker
         # 2D Mesh and FEM interfaces (only for windows machines)
         if os.name == 'nt':
-            install_pyfemm_if_missing()
+            ff.install_pyfemm_if_missing()
             if not self.femm_is_imported:
                 globals()["femm"] = __import__("femm")
                 self.femm_is_imported = True
@@ -2951,10 +2951,14 @@ class MagneticComponent:
             "component_type": o.component_type.name,
             "working_directory": o.file_data.working_directory,
             "core": o.core.to_dict(),
-            "air_gaps": o.air_gaps.to_dict(),
-            "isolation": o.isolation.to_dict(),
             "virtual_winding_windows": [vww.to_dict() for vww in o.virtual_winding_windows],
         }
+
+        if o.air_gaps is not None:
+            content["air_gaps"] = o.air_gaps.to_dict()
+        
+        if o.isolation is not None:
+            content["isolation"] = o.isolation.to_dict()
 
         if o.stray_path is not None:
             content["stray_path"] = o.stray_path.__dict__
@@ -2979,15 +2983,21 @@ class MagneticComponent:
             core = Core(**settings["core"])
             geo.set_core(core)
 
-            air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
-            for air_gap in settings["air_gaps"]["air_gaps"]:
-                air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"], air_gap["height"])
-            geo.set_air_gaps(air_gaps)
+            if "air_gaps" in settings:
+                air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
+                for air_gap in settings["air_gaps"]["air_gaps"]:
+                    air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"], air_gap["height"])
+                geo.set_air_gaps(air_gaps)
 
-            isolation = Isolation()
-            isolation.add_core_isolations(*settings["isolation"]["core_isolations"])
-            isolation.add_winding_isolations(settings["isolation"]["inner_winding_isolations"], settings["isolation"]["vww_isolation"])
-            geo.set_isolation(isolation)
+            if "isolation" in settings:
+                isolation = Isolation()
+                isolation.add_core_isolations(*settings["isolation"]["core_isolations"])
+                isolation.add_winding_isolations(settings["isolation"]["inner_winding_isolations"], settings["isolation"]["vww_isolation"])
+                geo.set_isolation(isolation)
+
+            if "stray_path" in settings:
+                stray_path = StrayPath(*settings["stray_path"])
+                geo.set_stray_path(stray_path)
 
             virtual_winding_windows = settings["virtual_winding_windows"]
             new_virtual_winding_windows = []

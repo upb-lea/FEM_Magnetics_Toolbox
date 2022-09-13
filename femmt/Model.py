@@ -19,7 +19,7 @@ class Conductor:
     """
 
     conductor_type: ConductorType
-    conductor_arrangement: ConductorArrangement
+    conductor_arrangement: ConductorArrangement = None
     wrap_para: WrapParaType = None
     conductor_radius: float = None
     winding_number: int
@@ -121,7 +121,7 @@ class Conductor:
             "conductor_type": self.conductor_type.name,
             "thickness": self.thickness,
             "conductor_radius": self.conductor_radius,
-            "conductor_arrangement": self.conductor_arrangement.name,
+            "conductor_arrangement": self.conductor_arrangement.name if self.conductor_arrangement is not None else None,
             "number_strands": self.n_strands,
             "strand_radius": self.strand_radius,
             "fill_factor": self.ff
@@ -315,6 +315,9 @@ class AirGaps:
             raise Exception(f"Method {self.method} is not supported.")
 
     def to_dict(self):
+        if self.number == 0:
+            return {}
+
         content = {
             "method": self.method.name,
             "air_gap_number": len(self.air_gap_settings)
@@ -341,6 +344,7 @@ class Isolation:
         # Default value for all isolations
         # If the gaps between isolations and core (or windings) are to big/small just change this value
         self.isolation_delta = 0.00001
+        self.vww_isolation = None
 
     def add_winding_isolations(self, inner_winding_isolations, virtual_winding_window_isolation):
         if inner_winding_isolations is []:
@@ -364,6 +368,9 @@ class Isolation:
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
     def to_dict(self):
+        if len(self.inner_winding) == 0 and self.vww_isolation is None:
+            return {}
+            
         return {
             "inner_winding_isolations": self.inner_winding,
             "core_isolations": self.core_cond,
@@ -430,6 +437,7 @@ class VirtualWindingWindow:
         self.turns = [turns1, turns2]
         self.winding_is_set = True
         self.winding_isolation = winding_isolation
+        self.wrap_para = None
 
     def __repr__(self):
         return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"

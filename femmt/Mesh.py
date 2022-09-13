@@ -774,10 +774,10 @@ class Mesh:
         core_line_tags = []
         if self.model.air_gaps.number == 0:
             core_point_tags = [4, 3, 2, 1]
-            core_line_tags = [3, 2, 1]
+            core_line_tags = [4, 3, 2]
         else:
             core_point_tags = [5, 4, 3, 2]
-            core_line_tags = [4, 3, 2]
+            core_line_tags = [5, 4, 3]
 
         tl_point = core_point_tags[0] # Top left - default 5
         tr_point = core_point_tags[1] # Top right - default 4
@@ -910,7 +910,7 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]
         gmsh.model.setPhysicalName(2, self.ps_core, "CORE")
-        for num in range(self.windings_number):
+        for num in range(len(self.windings)):
             for i in range(len(self.ps_cond[num])):
                 gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
         gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
@@ -945,7 +945,7 @@ class Mesh:
         gmsh.model.setColor([(2, self.plane_surface_air[0])], color_background[0], color_background[1], color_background[2], recursive=True)
 
         # winding colors
-        for winding_number in range(self.windings_number):
+        for winding_number in range(len(self.windings)):
             for turn_number in range(len(self.plane_surface_cond[winding_number])):
                 gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], color_scheme[colors_geometry["winding"][winding_number]][0], 
                     color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)

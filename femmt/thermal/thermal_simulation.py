@@ -10,8 +10,8 @@ from onelab import onelab
 
 # Local libraries
 import thermal.thermal_functions as thermal_f
-import Functions as ff
 from thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
+from Data import FileData
 
 def create_case(boundary_regions, boundary_physical_groups, boundary_temperatures, boundary_flags, k_case, function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro, constraint_pro: ConstraintPro):
     """
@@ -251,8 +251,7 @@ def post_operation(output_file, sensor_points_file, core_file, isolation_file, w
     with open(output_file, "w") as fd:
         json.dump(data, fd, indent=2)
 
-def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
-    tags_dict, thermal_conductivity_dict, boundary_temperatures, 
+def run_thermal(file_data: FileData, tags_dict, thermal_conductivity_dict, boundary_temperatures, 
     boundary_flags, boundary_physical_groups, core_area, conductor_radii, wire_distances,
     show_results: bool, print_sensor_values: bool):
     """
@@ -272,7 +271,12 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
 
     :param return: -
     """
-
+    # Get paths
+    onelab_folder_path = file_data.onelab_folder_path
+    results_folder_path = file_data.results_folder_path
+    model_mesh_file_path = file_data.thermal_mesh_file
+    results_log_file_path = file_data.e_m_results_log_path
+    
     # Initial Clearing of gmsh data
     gmsh.clear()
     
