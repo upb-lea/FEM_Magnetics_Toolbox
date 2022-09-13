@@ -447,6 +447,9 @@ class VirtualWindingWindow:
             "turns": self.turns
         }
 
+    # TODO Since in combine_vww it is necessary to compare vwws maybe a __eq__ and __ne__ 
+    # function should be implemented.
+
 class WindingWindow:
     max_bot_bound: float
     max_top_bound: float
@@ -580,6 +583,7 @@ class WindingWindow:
 
         if abs(index2-index1) == 3:
             raise Exception("Cannot combine top left and bottom right.")
+        # TODO add check for top right and bottom left
 
         self.virtual_winding_windows.remove(vww1)
         self.virtual_winding_windows.remove(vww2)
