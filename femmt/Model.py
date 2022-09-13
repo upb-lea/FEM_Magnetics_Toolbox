@@ -337,6 +337,7 @@ class Isolation:
     """
     inner_winding: List[float]
     vww_isolation: float
+    core_cond: List[float]
 
     isolation_delta: float
 
@@ -370,7 +371,7 @@ class Isolation:
     def to_dict(self):
         if len(self.inner_winding) == 0 and self.vww_isolation is None:
             return {}
-            
+
         return {
             "inner_winding_isolations": self.inner_winding,
             "core_isolations": self.core_cond,

@@ -338,7 +338,7 @@ def run_thermal(file_data: FileData, tags_dict, thermal_conductivity_dict, bound
     # Create files
     parameters_pro.create_file(parameters_file)
     function_pro.create_file(function_file)
-    group_pro.create_file(group_file, tags_dict["air_gaps_tag"] != None)
+    group_pro.create_file(group_file, tags_dict["air_gaps_tag"] != None, tags_dict["isolations_tag"] != None)
     constraint_pro.create_file(constraint_file)
     post_operation_pro.create_file(post_operation_file)
 
