@@ -63,35 +63,7 @@ class Mesh:
         self.thermal_mesh_file = file_paths.thermal_mesh_file
 
     def set_empty_lists(self):
-        # Points
-        """
-        self.p_core = []
-        self.p_island = []
-        self.p_cond = [[], []]
-        self.p_region = []
-        self.p_iso_core = []
-        self.p_iso_pri_sec = []
-
-        # Curves
-        self.l_bound_core = []
-        self.l_bound_air = []
-        self.l_core_air = []
-        self.l_cond = [[], []]
-        self.l_region = []
-        self.l_air_gaps_air = []
-        self.l_iso_core = []
-        self.l_iso_pri_sec = []
-
-        # Curve Loops
-        self.curve_loop_cond = [[], []]
-        self.curve_loop_island = []
-        self.curve_loop_air = []
-        self.curve_loop_air_gaps = []
-        self.curve_loop_iso_core = []
-        self.curve_loop_iso_pri_sec = []
-        # curve_loop_outer_air = []
-        # curve_loop_bound = []
-
+        # This is only needed for the surfaces since they are the only global variables
         # Plane Surfaces
         self.plane_surface_core = []
         self.plane_surface_cond = [[], []]
@@ -100,7 +72,6 @@ class Mesh:
         self.plane_surface_air_gaps = []
         self.plane_surface_iso_core = []
         self.plane_surface_iso_pri_sec = []
-        """
 
     def generate_hybrid_mesh(self, color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default,
                                 visualize_before: bool = False,
@@ -127,7 +98,6 @@ class Mesh:
         p_cond = [[], []]
         p_region = []
         p_iso_core = []
-        p_iso_pri_sec = []
 
         # Curves
         l_bound_core = []
@@ -137,8 +107,6 @@ class Mesh:
         l_region = []
         l_air_gaps_air = []
         l_iso_core = []
-        l_iso_pri_sec = []
-        l_bound_temp = []
 
         # Curve Loops
         curve_loop_cond = [[], []]
@@ -146,19 +114,8 @@ class Mesh:
         curve_loop_air = []
         curve_loop_air_gaps = []
         curve_loop_iso_core = []
-        curve_loop_iso_pri_sec = []
         # curve_loop_outer_air = []
         # curve_loop_bound = []
-
-        # Plane Surfaces
-        self.plane_surface_core = []
-        self.plane_surface_cond = [[], []]
-        self.plane_surface_air = []
-        self.plane_surface_outer_air = []
-        self.plane_surface_air_gaps = []
-        self.plane_surface_iso_core = []
-        self.plane_surface_iso_pri_sec = []
-
 
         """
         if refine == 1:
