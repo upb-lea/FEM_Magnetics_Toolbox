@@ -66,6 +66,6 @@ class PermeabilityType(IntEnum):
     FromData = 3
 
 class ExcitationMeshingType(IntEnum):
-    MeshOnce = 1
+    MeshOnlyLowestFrequency = 1
     MeshOnlyHighestFrequency = 2
     MeshEachFrequency = 3

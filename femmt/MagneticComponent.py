@@ -1343,11 +1343,14 @@ class MagneticComponent:
             self.plot_fields = False
 
         # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
+        # In case of litz wire, only the lowest frequency is meshed (frequency indepent due to litz-approximation)
         if excitation_meshing_type is None:
             for winding in self.windings:
                 if winding.conductor_type == ConductorType.Solid:
                     excitation_meshing_type = ExcitationMeshingType.MeshEachFrequency
                     break
+                if winding.conductor_type == ConductorType.Litz:
+                    excitation_meshing_type = ExcitationMeshingType.MeshOnlyLowestFrequency
 
         if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
             for i in range(0, len(frequency_list)):
@@ -1364,8 +1367,8 @@ class MagneticComponent:
         else:
             if excitation_meshing_type == ExcitationMeshingType.MeshOnlyHighestFrequency:
                 self.high_level_geo_gen(frequency=max(frequency_list), skin_mesh_factor=skin_mesh_factor)
-            elif excitation_meshing_type == ExcitationMeshingType.MeshOnce:
-                self.high_level_geo_gen(frequency=frequency_list[0], skin_mesh_factor=skin_mesh_factor)
+            elif excitation_meshing_type == ExcitationMeshingType.MeshOnlyLowestFrequency:
+                self.high_level_geo_gen(frequency=min(frequency_list), skin_mesh_factor=skin_mesh_factor)
             else:
                 raise Exception(f"Unknown excitation meshing type {excitation_meshing_type}")
             if self.valid:

@@ -27,16 +27,16 @@ Functionality examples
 * GUI is experimental, 
 * reluctance module is currently working for a single optimization example and not fully implemented yet.
 
-1. Detailed Documentation
+Detailed Documentation
 -------------------------
 
 Can be found
 `here <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__.
 
-2. Installation
+Installation
 ---------------
 
-2.1 ONELAB installation
+ONELAB installation
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 -  Go to https://onelab.info/
@@ -44,7 +44,7 @@ Can be found
 -  Unpack the software and remember the file path. This will be needed
    later when installing FEMMT.
 
-2.2 Install FEMMT
+Install FEMMT
 ~~~~~~~~~~~~~~~~~
 
 Chose to install the development version of FEMMT or the release
@@ -73,21 +73,21 @@ Also have a look at the . `developers notes </developers_notes.md>`__.
    git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
    pip install -e .
 
-2.3 Minimal example and first run
+Minimal example and first run
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Run the example from here:
 `basic_example.py </femmt/examples/basic_example.py>`__. FEMMT will ask
 you for the installation path of ONELAB during first use.
 
-3. Examples
+Examples
 -----------
 
 This toolbox is able to build a complete FEM simulation from simple
 Python code. The following figure shows the Python code on the left and
 the corresponding FEM simulation on the right. |image1|
 
-3.1 Basics
+Basics
 ~~~~~~~~~~
 
 Code examples can be found in this `example
@@ -124,15 +124,15 @@ In it you can find
 
 For a short guide on how to create a model, plase have a look `here <model_creation.md>`__.
 
-3.2 Counting arrow system
+Counting arrow system
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Defined as depicted here:
 
 |image3|
 
-4. GUI
-------
+GUI (Experimental)
+-------------------
 
 There is a first preview for a GUI. Installing this is a bit cumbersome
 at first, but will be simplified in the future: 
@@ -145,7 +145,7 @@ Please note, the GUI is experimental.
 
 |image2|
 
-5. Roadmap
+Roadmap
 ----------
 
 Planned features in 2022: 
@@ -153,29 +153,29 @@ Planned features in 2022:
 * Software stability and general improvements, 
 * add more Functionality to the GUI, 
 
-6. Bug Reports
+Bug Reports
 --------------
 
 Please use the issues report button within github to report bugs.
 
-7. Contributing
+Contributing
 ---------------
 
 Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change. For contributing, please refer
 to this `section <Contributing.rst>`__.
 
-8. Changelog
+Changelog
 ------------
 
 Find the changelog `here <CHANGELOG.md>`__
 
-9. License
+License
 ----------
 
 `GPLv3 <https://choosealicense.com/licenses/gpl-3.0/>`__
 
-10. History and project status
+History and project status
 ------------------------------
 
 This project was initially written in matlab using FEMM simulation tool.
