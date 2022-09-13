@@ -45,7 +45,7 @@ class MagneticComponent:
                                - "inductor"
                                - "transformer"
                                - "integrated_transformer" (Transformer with included stray-path)
-        :type component_type: string
+        :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
         """
@@ -144,6 +144,11 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
     def calculate_core_volume(self) -> float:
+        """Calculates the volume of the core. This is needed for the thermal simulation.
+
+        :return: Volume of the core.
+        :rtype: float
+        """
         # TODO core_h and core_w should always be set
         if self.core.core_h is not None and self.core.core_w is not None:
             core_height = self.core.core_h
@@ -177,7 +182,12 @@ class MagneticComponent:
 
         return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
 
-    def get_wire_distances(self):
+    def get_wire_distances(self) -> List[float]:
+        """Helper function which returns the distance (radius) of each conductor to the y-axis 
+
+        :return: Wire distances
+        :rtype: List[float]
+        """
         wire_distance = []
         for winding in self.two_d_axi.p_conductor:
             # 5 points are for 1 wire
@@ -191,19 +201,32 @@ class MagneticComponent:
         return wire_distance
 
     # Start thermal simulation
-    def thermal_simulation(self, thermal_conductivity, boundary_temperatures, boundary_flags, case_gap_top,
-                           case_gap_right, case_gap_bot, show_results=True, visualize_before=False, color_scheme: Dict = ff.colors_femmt_default,
+    def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
+                           case_gap_right: float, case_gap_bot: float, show_results: bool = True, visualize_before: bool = False, color_scheme: Dict = ff.colors_femmt_default,
                            colors_geometry: Dict = ff.colors_geometry_femmt_default) -> None:
         """
-        
         Starts the thermal simulation using thermal_simulation.py
 
-        :param color_scheme: colorfile (definition for red, green, blue, ...)
-        :type color_scheme: Dict
-        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
-        :type colors_geometry: Dict
-
-        :return: -
+        :param thermal_conductivity_dict: Contains the thermal conductivities for every region
+        :type thermal_conductivity_dict: Dict
+        :param boundary_temperatures_dict: Contains the tmperatures at each boundary line
+        :type boundary_temperatures_dict: Dict
+        :param boundary_flags_dict: Sets the boundary type (dirichlet or von neumann) for each boundary line
+        :type boundary_flags_dict: Dict
+        :param case_gap_top: Size of the top case
+        :type case_gap_top: float
+        :param case_gap_right: Size of the right case
+        :type case_gap_right: float
+        :param case_gap_bot: Size of the bot case
+        :type case_gap_bot: float
+        :param show_results: Shows thermal results in gmsh, defaults to True
+        :type show_results: bool, optional
+        :param visualize_before: Shows the thermal model before simulation, defaults to False
+        :type visualize_before: bool, optional
+        :param color_scheme: Color scheme for visualization, defaults to ff.colors_femmt_default
+        :type color_scheme: Dict, optional
+        :param colors_geometry: Color geometry for visualization, defaults to ff.colors_geometry_femmt_default
+        :type colors_geometry: Dict, optional
         """
         # Create necessary folders
         self.create_folders(self.file_data.file_paths.thermal_results_folder_path)
@@ -215,7 +238,7 @@ class MagneticComponent:
             raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
 
         # Check if the results log path simulation settings fit the current simulation settings
-        current_settings = encode_settings(self)
+        current_settings = MagneticComponent.encode_settings(self)
         del current_settings["working_directory"]
         del current_settings["date"]
 
@@ -249,9 +272,9 @@ class MagneticComponent:
         thermal_parameters = {
             "file_paths": self.file_data.file_paths,
             "tags_dict": tags,
-            "thermal_conductivity_dict": thermal_conductivity,
-            "boundary_temperatures": boundary_temperatures,
-            "boundary_flags": boundary_flags,
+            "thermal_conductivity_dict": thermal_conductivity_dict,
+            "boundary_temperatures": boundary_temperatures_dict,
+            "boundary_flags": boundary_flags_dict,
             "boundary_physical_groups": {
                 "top": self.mesh.thermal_boundary_ps_groups[0],
                 "top_right": self.mesh.thermal_boundary_ps_groups[1],
