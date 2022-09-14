@@ -4,9 +4,9 @@ import numpy as np
 from typing import List
 
 # Local libraries
-from Enumerations import *
-from Data import MeshData
-from Model import Core, VirtualWindingWindow, AirGaps, StrayPath, Isolation
+from femmt.Enumerations import *
+from femmt.Data import MeshData
+from femmt.Model import Core, VirtualWindingWindow, AirGaps, StrayPath, Isolation
 
 class TwoDaxiSymmetric:
     """

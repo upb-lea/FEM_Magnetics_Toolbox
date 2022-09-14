@@ -18,13 +18,13 @@ from datetime import datetime
 from onelab import onelab
 
 # Local libraries
-import thermal.thermal_simulation
-import Functions as ff
-from Mesh import Mesh
-from Model import VirtualWindingWindow, WindingWindow, Core, Isolation, StrayPath, AirGaps, Conductor
-from Enumerations import *
-from Data import FileData, MeshData, AnalyticalCoreData
-from TwoDaxiSymmetric import TwoDaxiSymmetric
+import femmt.Functions as ff
+from femmt.Mesh import Mesh
+from femmt.Model import VirtualWindingWindow, WindingWindow, Core, Isolation, StrayPath, AirGaps, Conductor
+from femmt.Enumerations import *
+from femmt.Data import FileData, MeshData, AnalyticalCoreData
+from femmt.TwoDaxiSymmetric import TwoDaxiSymmetric
+from femmt.thermal import thermal_simulation
 
 class MagneticComponent:
     """
@@ -289,7 +289,7 @@ class MagneticComponent:
             "print_sensor_values": False
         }
 
-        thermal.thermal_simulation.run_thermal(**thermal_parameters)
+        thermal_simulation.run_thermal(**thermal_parameters)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
@@ -329,7 +329,7 @@ class MagneticComponent:
 
         # Write the path to the config.json
         onelab_path_dict = {"onelab": onelab_path}
-        with open(os.path.join(self.file_data.file_paths.config_path), 'w', encoding='utf-8') as fd:
+        with open(os.path.join(self.file_data.config_path), 'w', encoding='utf-8') as fd:
             json.dump(onelab_path_dict, fd, indent=2, ensure_ascii=False)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
@@ -2716,10 +2716,10 @@ class MagneticComponent:
         # Get paths
         femm_model_file_path = os.path.join(self.file_data.femm_folder_path, "thermal-validation.FEH")
 
-        self.create_folders(self.file_data.femm_folder_path)
+        self.file_data.create_folders(self.file_data.femm_folder_path)
 
         # Extract losses
-        losses = read_results_log(self.file_data.e_m_results_log_path)
+        losses = read_log(self.file_data.e_m_results_log_path)
 
         # Extract wire_radii
         wire_radii = [winding.conductor_radius for winding in self.windings]

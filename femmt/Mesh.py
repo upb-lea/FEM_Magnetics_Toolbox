@@ -8,11 +8,11 @@ from typing import Dict, List
 import gmsh
 
 # Local libraries
-import Functions as ff
-from Enumerations import ComponentType, ConductorType, WindingType
-from Data import FileData
-from Model import Conductor, Core, StrayPath, AirGaps, Isolation
-from TwoDaxiSymmetric import TwoDaxiSymmetric
+import femmt.Functions as ff
+from femmt.Enumerations import ComponentType, ConductorType, WindingType
+from femmt.Data import FileData
+from femmt.Model import Conductor, Core, StrayPath, AirGaps, Isolation
+from femmt.TwoDaxiSymmetric import TwoDaxiSymmetric
 
 class Mesh:
     """

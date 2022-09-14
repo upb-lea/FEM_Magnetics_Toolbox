@@ -1,12 +1,11 @@
 # Python standard libraries
-from re import X
 import numpy as np
 from dataclasses import dataclass
 from typing import List, Optional
 
 # Local libraries
-import Functions as ff
-from Enumerations import *
+import femmt.Functions as ff
+from femmt.Enumerations import *
 
 class Conductor:
     """

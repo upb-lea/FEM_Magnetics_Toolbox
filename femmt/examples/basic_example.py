@@ -131,7 +131,7 @@ if component == "inductor":
     geo.single_simulation(freq=100000, current=[4.5], show_results=True)
 
     # 10. prepare and start thermal simulation
-    # example_thermal_simulation()
+    example_thermal_simulation()
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(example_results_folder, "transformer-interleaved")

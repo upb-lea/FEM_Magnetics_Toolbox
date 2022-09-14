@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 import gmsh
 
 # Local libraries
-from Enumerations import *
+from femmt.Enumerations import *
 
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
