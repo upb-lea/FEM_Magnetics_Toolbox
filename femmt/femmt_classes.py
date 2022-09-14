@@ -8,7 +8,7 @@ import gmsh
 import json
 import warnings
 import inspect
-
+import materialdatabase as mdb
 from onelab import onelab
 from matplotlib import pyplot as plt
 from scipy.optimize import brentq
@@ -16,6 +16,8 @@ from scipy.integrate import quad
 from scipy.interpolate import interp1d
 from datetime import datetime
 from typing import List, Union, Optional, Dict
+
+import femmt
 from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import *
 from .femmt_functions import *
@@ -180,7 +182,8 @@ class MagneticComponent:
         self.e_m_values_folder_path = os.path.join(self.results_folder_path, "values")
         self.e_m_fields_folder_path = os.path.join(self.results_folder_path, "fields")
         self.e_m_circuit_folder_path = os.path.join(self.results_folder_path, "circuit")
-        self.e_m_strands_coefficients_folder_path = os.path.join(self.electro_magnetic_folder_path, "Strands_Coefficients")
+        self.e_m_strands_coefficients_folder_path = os.path.join(self.electro_magnetic_folder_path,
+                                                                 "Strands_Coefficients")
         self.femm_folder_path = os.path.join(self.working_directory, "femm")
         self.reluctance_model_folder_path = os.path.join(self.working_directory, "reluctance_model")
         self.thermal_results_folder_path = os.path.join(self.results_folder_path, "thermal")
@@ -236,7 +239,7 @@ class MagneticComponent:
             air_gap_volume += np.pi * width ** 2 * height
 
         return np.pi * (core_width ** 2 * core_height - (
-                    inner_leg_width + winding_width) ** 2 * winding_height + inner_leg_width ** 2 * winding_height) - air_gap_volume
+                inner_leg_width + winding_width) ** 2 * winding_height + inner_leg_width ** 2 * winding_height) - air_gap_volume
 
     def get_wire_distances(self):
         wire_distance = []
@@ -2400,13 +2403,13 @@ class MagneticComponent:
                 # ... externally set magnetic flux density or ...
                 if self.stray_path_parametrization == "given_flux":
                     self.component.stray_path.width = Phi_stray_max_peak / self.b_stray / (
-                                np.pi * self.component.core.core_w)
+                            np.pi * self.component.core.core_w)
                 # ... to mean flux density of top and bottom flux density
                 if self.stray_path_parametrization == "mean":
                     b_stray_mean = (np.abs(Phi_top_max_peak) + np.abs(Phi_bot_max_peak)) / 2 / np.pi / (
-                                self.component.core.core_w / 2) ** 2
+                            self.component.core.core_w / 2) ** 2
                     self.component.stray_path.width = Phi_stray_max_peak / b_stray_mean / (
-                                np.pi * self.component.core.core_w)
+                            np.pi * self.component.core.core_w)
                 if self.stray_path_parametrization == "max_flux":
                     phi_abs = np.array([np.abs(Phi_top_max_peak), np.abs(Phi_bot_max_peak)])
                     b_stray_max = phi_abs.max(0) / np.pi / (self.component.core.core_w / 2) ** 2
@@ -3760,6 +3763,9 @@ class MagneticComponent:
             # Synchronize again
             gmsh.model.geo.synchronize()
 
+        def update_core_log(self, frequency):
+            pass
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
     def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current',
@@ -3796,6 +3802,8 @@ class MagneticComponent:
         # -- Excitation --
         self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
+
+        self.mesh.update_core_log(frequency)  # frequency back to core for creation of pro file
 
         phase_deg_list = np.asarray(phase_deg_list)
         self.red_freq = np.empty(2)
@@ -4121,7 +4129,7 @@ class MagneticComponent:
                 # Case litz: Load homogenized results
                 if self.windings[winding].conductor_type == ConductorType.Litz:
                     winding_dict["winding_losses"] = \
-                    self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
+                        self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(
                             self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}",
@@ -4130,7 +4138,7 @@ class MagneticComponent:
                 # Case litz: Load homogenized results
                 else:
                     winding_dict["winding_losses"] = \
-                    self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
+                        self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(
                             self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}",
@@ -5169,7 +5177,7 @@ class MagneticComponent:
 
         """
         phi_deg = phi_deg or []
-
+        self.frequency
         self.mesh.generate_electro_magnetic_mesh()
         self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
         self.file_communication()

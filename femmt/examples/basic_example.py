@@ -86,10 +86,9 @@ if component == "inductor":
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
-    # core_db = mdb.MaterialDatabase()
 
     core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    material="N95")
+                    material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
                     # mu_rel=3000, phi_mu_deg=10,
                     # sigma=0.5)
     geo.set_core(core)
@@ -116,7 +115,7 @@ if component == "inductor":
     geo.create_model(freq=100000, visualize_before=False, save_png=False)
 
     # 6. start simulation
-    geo.single_simulation(freq=100000, current=[4.5], show_results=True)
+    geo.single_simulation(freq=100000, current=[4.5], show_results=False)
 
     # 7. prepare and start thermal simulation
     #example_thermal_simulation()

@@ -223,12 +223,14 @@ class Core:
     # Needed for to_dict
     loss_approach: LossApproach = None
 
-    def __init__(self, core_w: float, window_w: float, window_h: float, material: str = "N95",
-                 temperature: float = None,
+    def __init__(self, core_w: float, window_w: float, window_h: float, material: str,
+                 temperature: float = None, datasource: str = None, frequency: float = None,
                  loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = None,
                  steinmetz_parameter: list = None, generalized_steinmetz_parameter: list = None,
                  phi_mu_deg: float = None, sigma: float = 1.5, non_linear: bool = False, **kwargs):
         # Set parameters
+        self.Database = None
+        self.file_path = None
         self.core_w = core_w
         self.core_h = None  # TODO Set core_h to not none
         self.window_w = window_w
@@ -236,30 +238,32 @@ class Core:
         self.type = "axi_symmetric"
         self.material = material
         self.temperature = temperature
+        self.datasource = datasource
+        self.frequency = frequency
         self.non_linear = non_linear
         self.mu_rel = mu_rel
         self.phi_mu_deg = phi_mu_deg
         self.sigma = sigma
         self.loss_approach = loss_approach
         # Initialize database
-
         Database = mdb.MaterialDatabase()  # TODO check initialization of database
+
+        #  -----create dynamic pro file for complex permeability data
         script_dir = os.path.dirname(__file__)
         file_path = os.path.join(script_dir, 'electro_magnetic')
-
-        Database.get_permeability_data(T=40, f=230000, material_name=self.material, datasource="measurements",
-                                       pro=True, parent_directory=file_path)  # TODO freq and datasource
+        # Database.permeability_data_to_pro_file(T=self.temperature, f=self.frequency, material_name=self.material,
+        #                                        datasource=self.datasource,
+        #                                        pro=True, parent_directory=file_path)  # TODO freq and datasource
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
             self.sigma = 0
             if self.material != "custom":
                 self.permeability_type = PermeabilityType.FromData
-                # open(os.path.join(self.electro_magnetic_folder_path))
-                # Database.get_permeability_data(T=self.temperature, f=100000, material_name=self.material, datasource="measurements", pro=True)#TODO freq and datasource
                 self.mu_rel = Database.get_initial_permeability(material_name=self.material)
                 self.ki = \
-                Database.get_steinmetz_data(material_name=self.material, type="Steinmetz", datasource="measurements")[
-                    'ki']
+                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                datasource="measurements")[
+                        'ki']
                 self.alpha = \
                     Database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
                                                 datasource="measurements")['alpha']
@@ -306,8 +310,6 @@ class Core:
                 self.permeability_type = PermeabilityType.FixedLossAngle
             else:
                 self.permeability_type = PermeabilityType.FromData
-                # Database.get_permeability_data(T=self.temperature, f=100000, material_name=self.material, datasource="measurements", pro=True)  # TODO freq and datasource
-
                 # self.permeability_type = PermeabilityType.RealValue
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
@@ -319,6 +321,12 @@ class Core:
 
         # Needed because of to_dict
         self.kwargs = kwargs
+
+    def update_core_log(self, frequency):
+        print(frequency)
+        self.Database.permeability_data_to_pro_file(T=self.temperature, f=frequency, material_name=self.material,
+                                                    datasource=self.datasource,
+                                                    pro=True, parent_directory=self.file_path)
 
     def to_dict(self):
         return {
