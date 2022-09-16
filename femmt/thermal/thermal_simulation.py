@@ -3,6 +3,7 @@ import re
 import json
 import numpy as np
 import os
+from typing import Dict
 
 # Third parry libraries
 import gmsh
@@ -130,14 +131,20 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
                 if not append:
                     append = True
 
-def simulate(onelab_folder_path, mesh_file, solver_file):
+def simulate(onelab_folder_path: str, mesh_file: str, solver_file: str, silent: bool):
     c = onelab.client(__file__)
+
+    verbose = ""
+    if silent:
+        verbose = "-verbose 1"
+    else:
+        verbose = "-verbose 5"
 
     # Run simulations as sub clients (non blocking??)
     mygetdp = os.path.join(onelab_folder_path, "getdp")
-    c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2")
+    c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2 " + verbose)
 
-def parse_simple_table(file_path):
+def parse_simple_table(file_path: str):
     with open(file_path, "r") as fd:
         lines = fd.readlines()
         print("lastline", lines[-1])
@@ -147,7 +154,7 @@ def parse_simple_table(file_path):
 
         return np_array
 
-def parse_gmsh_parsed(file_path):
+def parse_gmsh_parsed(file_path: str):
     regex_view_line = "View \"(?P<key>\w+)\" \{\n"
     regex_SP_line = "SP\(-?\d+\.\d+(e-\d+)?,-?\d+\.\d+(e-\d+)?,0\)\{(?P<value>-?\d+\.\d+)\};\n"
 
@@ -177,7 +184,7 @@ def parse_gmsh_parsed(file_path):
 
     return value_dict
 
-def post_operation(output_file, sensor_points_file, core_file, isolation_file, winding_file):
+def post_operation(output_file: str, sensor_points_file: str, core_file: str, isolation_file: str, winding_file: str):
     # Extract sensor_points
     sensor_point_values = None
     if sensor_points_file is not None:
@@ -251,9 +258,9 @@ def post_operation(output_file, sensor_points_file, core_file, isolation_file, w
     with open(output_file, "w") as fd:
         json.dump(data, fd, indent=2)
 
-def run_thermal(file_data: FileData, tags_dict, thermal_conductivity_dict, boundary_temperatures, 
-    boundary_flags, boundary_physical_groups, core_area, conductor_radii, wire_distances,
-    show_results: bool, print_sensor_values: bool):
+def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict, 
+    boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float, wire_distances: float,
+    show_results: bool, print_sensor_values: bool, silent: bool):
     """
     Runs a thermal simulation.
     
@@ -342,7 +349,7 @@ def run_thermal(file_data: FileData, tags_dict, thermal_conductivity_dict, bound
     constraint_pro.create_file(constraint_file)
     post_operation_pro.create_file(post_operation_file)
 
-    simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file)
+    simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file, silent)
 
     post_operation(output_file, sensor_points_file, core_file, isolation_file, winding_file)
 

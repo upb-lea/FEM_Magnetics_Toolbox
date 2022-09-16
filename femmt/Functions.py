@@ -20,6 +20,9 @@ import gmsh
 # Local libraries
 from femmt.Enumerations import *
 
+# Needed for femmt_print
+silent = False
+
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
                         "green": (46, 194, 126),
@@ -1055,6 +1058,14 @@ def point_is_in_rect(x, y, rect):
         return True
     
     return False
+
+def set_silent_status(s: bool):
+    global silent
+    silent = s
+
+def femmt_print(text):
+    if not silent:
+        print(text)
 
 if __name__ == '__main__':
     # TODO Relative path
