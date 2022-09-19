@@ -14,6 +14,12 @@ inductor_combinations = [
         "ConductorArrangement": fmt.ConductorArrangement.Square
     },
     {
+        "Name": "Single RoundSolid SquareFullWidth",
+        "WindingType": fmt.WindingType.Single,
+        "ConductorType": fmt.ConductorType.RoundSolid,
+        "ConductorArrangement": fmt.ConductorArrangement.SquareFullWidth
+    },
+    {
         "Name": "Single RectangularSolid Full",
         "WindingType": fmt.WindingType.Single,
         "ConductorType": fmt.ConductorType.RectangularSolid,
@@ -62,12 +68,6 @@ transformer_combinations = [
         "WindingScheme": fmt.InterleavedWindingScheme.VerticalStacked,
         "ConductorArrangement": fmt.ConductorArrangement.Hexagonal
     },
-    {
-        "Name": "Single RoundSolid SquareFullWidth",
-        "WindingType": fmt.WindingType.Single,
-        "ConductorType": fmt.ConductorType.RoundSolid,
-        "ConductorArrangement": fmt.ConductorArrangement.SquareFullWidth
-    },
 ]
 
 def run_inductor_simulations(working_directory, combinations):
@@ -104,7 +104,7 @@ def run_inductor_simulations(working_directory, combinations):
         complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
         winding_scheme = combination["WindingScheme"] if "WindingScheme" in combination else None
         wrap_para_type = combination["WrapParaType"] if "WrapParaType" in combination else None
-        complete.set_winding(conductor, 5, winding_scheme, wrap_para_type)
+        complete.set_winding(conductor, 15, winding_scheme, wrap_para_type)
 
         geo.set_winding_window(winding_window)
 
@@ -159,7 +159,7 @@ def run_transformer_simulations(working_directory, combinations):
         winding_window = fmt.WindingWindow(core, isolation)
         if combination["WindingType"] == fmt.WindingType.Interleaved:
             complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-            complete.set_interleaved_winding(conductor1, 5, conductor2, 5, combination["WindingScheme"], 0.0005)
+            complete.set_interleaved_winding(conductor1, 10, conductor2, 10, combination["WindingScheme"], 0.0005)
         else:
             top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
             winding_scheme = combination["WindingScheme"] if "WindingScheme" in combination else None
@@ -171,7 +171,7 @@ def run_transformer_simulations(working_directory, combinations):
 
         name = combination["Name"]
         try:
-            geo.create_model(freq=250000, visualize_before=False, save_png=True)
+            geo.create_model(freq=250000, visualize_before=True, save_png=True)
         except Exception as e:
             print(e)
             not_working.append(name + ": " + str(e))
@@ -187,5 +187,5 @@ if __name__ == "__main__":
     if not os.path.isdir(os.path.join(os.path.dirname(__file__), "images")):
         os.mkdir = os.path.join(os.path.dirname(__file__), "images")
 
-    run_inductor_simulations(working_directory, inductor_combinations)
-    run_transformer_simulations(working_directory, transformer_combinations)
+    # run_inductor_simulations(working_directory, [inductor_combinations[2]])
+    run_transformer_simulations(working_directory, transformer_combinations[0:3])
