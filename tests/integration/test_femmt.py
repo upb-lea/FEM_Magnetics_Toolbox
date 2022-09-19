@@ -1,19 +1,21 @@
 import pytest
-import numpy as np
 import os
 import json
-import shutil
-from femmt import MagneticComponent
+import femmt as fmt
 
-def compare_results(first_mesh, second_mesh):
+def compare_result_logs(first_log, second_log):
     first_content = None
     second_content = None
 
-    with open(first_mesh, "rb") as fd:
-        first_content = fd.read(-1)
+    with open(first_log, "r") as fd:
+        first_content = json.loads(fd.read())
+        del first_content["simulation_settings"]["date"]
+        del first_content["simulation_settings"]["working_directory"]
 
-    with open(second_mesh, "rb") as fd:
-        second_content = fd.read(-1)
+    with open(second_log, "r") as fd:
+        second_content = json.loads(fd.read())
+        del second_content["simulation_settings"]["date"]
+        del second_content["simulation_settings"]["working_directory"]
 
     return first_content == second_content
 
@@ -38,33 +40,44 @@ def temp_folder():
     # Test
     yield temp_folder_path
 
-    # Teardown
-    # Removing the temp folder does not work yet.
-    #shutil.rmtree(temp_folder_path)
-
 @pytest.fixture
 def femmt_simulation(temp_folder):
     # Create new temp folder, build model and simulate
     try:
-        geo = MagneticComponent(component_type="transformer", working_directory=temp_folder)
+        working_directory = temp_folder
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
 
-        # Update Geometry
-        geo.core.update(window_h=0.0295, window_w=0.012, core_w=0.015)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
 
-        # geo.air_gaps.update(n_air_gaps=0)
-        geo.air_gaps.update(method="percent", n_air_gaps=1, air_gap_h=[0.0005],
-                            air_gap_position=[50], position_tag=[0])
+        core_db = fmt.core_database()["PQ 40/40"]
 
-        geo.update_conductors(n_turns=[[10, 0], [0, 10]], conductor_type=["solid", "litz"],
-                            litz_para_type=['implicit_litz_radius', 'implicit_litz_radius'],
-                            ff=[None, 0.6], strands_numbers=[None, 600], strand_radii=[70e-6, 35.5e-6],
-                            conductor_radii=[0.0011, None],
-                            winding=["primary", "secondary"], scheme=["square", "square"],
-                            core_cond_isolation=[0.001, 0.001, 0.002, 0.001], cond_cond_isolation=[0.0002, 0.0002, 0.0005])
+        core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+                        material="95_100")
+        geo.set_core(core)
 
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 10, 0.0005)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 90, 0.0005)
+        geo.set_air_gaps(air_gaps)
 
-        geo.create_model(freq=250000, visualize_before=False)
-        geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019], phi_deg=[- 1.66257715/np.pi*180, 170], show_results=False)
+        isolation = fmt.Isolation()
+        isolation.add_core_isolations(0.001, 0.001, 0.004, 0.001)
+        isolation.add_winding_isolations([0.0005], 0.0001)
+        geo.set_isolation(isolation)
+
+        winding_window = fmt.WindingWindow(core, isolation)
+        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+
+        vww.set_winding(winding, 9, None)
+        geo.set_winding_window(winding_window)
+
+        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+
+        geo.single_simulation(freq=100000, current=[4.5], show_results=False)
 
         """
         Currently only the magnetics simulation is tested
@@ -105,7 +118,7 @@ def femmt_simulation(temp_folder):
     except KeyboardInterrupt:
         print("Keyboard interrupt..")
 
-    return os.path.join(temp_folder, "results", "result_log_electro_magnetic.json")
+    return os.path.join(temp_folder, "results", "log_electro_magnetic.json")
 
 def test_femmt(femmt_simulation):
     """
@@ -122,5 +135,5 @@ def test_femmt(femmt_simulation):
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "result_log_electro_magnetic.json")
-    assert compare_results(test_result_log, fixture_result_log), "Electro magnetic results file is wrong."
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic.json")
+    assert compare_result_logs(test_result_log, fixture_result_log), "Electro magnetic results file is wrong."

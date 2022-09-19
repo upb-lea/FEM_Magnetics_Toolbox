@@ -267,6 +267,8 @@ if component == "integrated_transformer":
     geo.set_isolation(isolation)
 
     # 5. create winding window and virtual winding windows (vww)
+    # For an integrated transformer it is not necessary to set horizontal and vertical split factors
+    # since this is determined by the stray_path
     winding_window = fmt.WindingWindow(core, isolation, stray_path, air_gaps)
     top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
 
