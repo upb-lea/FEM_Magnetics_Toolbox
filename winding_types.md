@@ -1,4 +1,6 @@
-In the following table a image of every winding type which is currently implemented (19.09.22):
+In the following table an image of every currently implemented winding combination is shown (19.09.22).
+Every combination is always set for one whole virtual winding window, but it is possible to have up to four virtual winding windows.
+The round wires can be solid or litz.
 
 | **Single Square** | **Single Hexagonal** | **Single Full** |
 | --- | --- | --- |
