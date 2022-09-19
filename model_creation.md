@@ -17,7 +17,7 @@ Currently this can be 'Inductor', 'Transformer' or 'IntegratedTransformer'.
 After creating a MagneticComponent a core needs to be created. The core needs spatial parameters as well as material parameters.
 The neccessary spatial parameters are shown in the image below.
 
-<img src="documentation/core_definitions.png"  width="800" alt="Core definitions">
+<img src="documentation/core_definitions.png" width="800" alt="Core definitions">
 
 ### Material database
 
@@ -63,7 +63,7 @@ Each virtual winding window can be filled with either one single winding or one 
 
 The following table gives an overview of the different winding types, winding schemes and conductor arrangements:
 
-| **WindingType** | **ConductorType** | **WindingScheme** | **ConductorArrangement** | **WrapParaType** | **status** | **description**
+| **WindingType** | **ConductorType** | **WindingScheme** | **ConductorArrangement** | **WrapParaType** | **status** | **description** |
 | --- | --- | --- | --- | --- | --- | --- |
 | Interleaved | | | | | | Always needs 2 conductors |
 | | RoundSolid, RoundLitz | 
@@ -96,6 +96,8 @@ The following table gives an overview of the different winding types, winding sc
 #### WrapParaType
 - **Fixed thickness**: TODO
 - **Interpolate**: TODO
+
+An image for the possible winding types is [here](winding_types.md).
 
 ## 6. Add conductors
 

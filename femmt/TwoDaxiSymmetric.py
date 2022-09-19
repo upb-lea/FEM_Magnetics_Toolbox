@@ -497,6 +497,11 @@ class TwoDaxiSymmetric:
                 
                 if virtual_winding_window.winding_scheme == InterleavedWindingScheme.VerticalStacked:
                     winding_number0, winding_number1 = winding_numbers
+                    y = bot_bound + winding0.conductor_radius
+
+                    # Initialization
+                    x = left_bound + winding0.conductor_radius
+                    i = 0
 
                     # First winding from bottom to top
                     if winding0.conductor_arrangement == ConductorArrangement.Square:
@@ -524,18 +529,18 @@ class TwoDaxiSymmetric:
                                     y, 
                                     0,
                                     self.mesh_data.c_conductor[winding_number0]])
-                                self.p_conductor[num].append([
+                                self.p_conductor[winding_number0].append([
                                     x, 
                                     y - winding0.conductor_radius, 
                                     0,
-                                    self.mesh_data.c_conductor[num]])
+                                    self.mesh_data.c_conductor[winding_number0]])
                                 i += 1
                                 x += winding0.conductor_radius * 2 + \
                                         self.isolation.inner_winding[
-                                            num]  # from left to right
+                                            winding_number0]  # from left to right
                             y += winding0.conductor_radius * 2 + \
                                     self.isolation.inner_winding[
-                                        num]  # one step from bot to top
+                                        winding_number0]  # one step from bot to top
                             x = left_bound + winding0.conductor_radius  # always the same
                     elif winding0.conductor_arrangement == ConductorArrangement.Hexagonal:
                             base_line = True
@@ -573,34 +578,38 @@ class TwoDaxiSymmetric:
 
                                     x += 2 * np.cos(np.pi / 6) * (
                                             winding0.conductor_radius +
-                                            self.isolation.inner_winding[num] / 2)
+                                            self.isolation.inner_winding[winding_number0] / 2)
 
                                     # depending on what line, hexa scheme starts shifted
                                     # reset y to "new" bottom
                                     base_line = (not base_line)
                                     if base_line:
                                         y -= (winding0.conductor_radius +
-                                                self.isolation.inner_winding[num])
+                                                self.isolation.inner_winding[winding_number0] / 2)
                                     else:
                                         y += (winding0.conductor_radius +
-                                                self.isolation.inner_winding[num])
+                                                self.isolation.inner_winding[winding_number0] / 2)
 
                                 # Undo last base_line reset
                                 if base_line:
                                     y += (winding0.conductor_radius +
-                                            self.isolation.inner_winding[num])
+                                            self.isolation.inner_winding[winding_number0] / 2)
                                 else:
                                     y -= (winding0.conductor_radius +
-                                            self.isolation.inner_winding[num])
+                                            self.isolation.inner_winding[winding_number0] / 2)
 
                                 base_line = True
                                 x = left_bound + winding0.conductor_radius
-                                y += winding0.conductor_radius + \
-                                        self.component.isolation.cond_cond[num]
+                                y += winding0.conductor_radius * 2 + \
+                                        self.isolation.inner_winding[winding_number0]
                     else:
                         raise Exception(f"Unknown conductor_arrangement {winding0.conductor_arrangement}")
 
                     # Second winding from top to bottom
+                    
+                    y = top_bound - winding1.conductor_radius
+                    i = 0
+
                     if winding1.conductor_arrangement == ConductorArrangement.Square:
                         while y > bot_bound + winding1.conductor_radius and i < \
                                 turns1:
@@ -635,10 +644,10 @@ class TwoDaxiSymmetric:
 
                                 x += winding1.conductor_radius * 2 + \
                                         self.isolation.inner_winding[
-                                            num]  # from left to right
+                                            winding_number1]  # from left to right
                             y += -(winding1.conductor_radius * 2) - \
                                     self.isolation.inner_winding[
-                                        num]  # one step from bot to top
+                                        winding_number1]  # one step from bot to top
                             x = left_bound + winding1.conductor_radius  # always the same
                     elif winding1.conductor_arrangement == ConductorArrangement.Hexagonal:
                         base_line = True
@@ -647,9 +656,6 @@ class TwoDaxiSymmetric:
                                 i < turns1:
                             while x < right_bound - winding1.conductor_radius and \
                                     i < turns1:
-                                print(f"i: {i} "
-                                        f"x: {x} "
-                                        f"y: {y} ")
 
                                 self.p_conductor[winding_number1].append([
                                     x, 
@@ -680,33 +686,34 @@ class TwoDaxiSymmetric:
                                 i += 1
                                 x += 2 * np.cos(np.pi / 6) * (
                                         winding1.conductor_radius +
-                                        self.isolation.inner_winding[num] / 2)
+                                        self.isolation.inner_winding[winding_number1] / 2)
 
                                 # depending on what line, hexa scheme starts shifted
                                 # reset y to "new" bottom
                                 base_line = (not base_line)
                                 if base_line:
                                     y += (winding1.conductor_radius +
-                                            self.isolation.inner_winding[num])
+                                            self.isolation.inner_winding[winding_number1])
                                 else:
                                     y -= (winding1.conductor_radius +
-                                            self.isolation.inner_winding[num])
+                                            self.isolation.inner_winding[winding_number1])
 
                             # Undo last base_line reset
                             if base_line:
                                 y -= (winding1.conductor_radius +
-                                        self.isolation.inner_winding[num])
+                                        self.isolation.inner_winding[winding_number1])
                             else:
                                 y += (winding1.conductor_radius +
-                                        self.isolation.inner_winding[num])
+                                        self.isolation.inner_winding[winding_number1])
 
                             base_line = True
                             x = left_bound + winding1.conductor_radius
                             # from top to bottom
-                            y -= (winding1.conductor_radius +
-                                    self.isolation.inner_winding[num])
+                            y += -(winding1.conductor_radius * 2) - \
+                                    self.isolation.inner_winding[
+                                        winding_number1]
                     else:
-                        raise Exception(f"Unknown conductor_arrangement {winding1.conductor_arrangement}")
+                        raise Exception(f"Unknown conductor_arrangement {winding1.conductor_arrangement.name}")
             elif virtual_winding_window.winding_type == WindingType.Single:
                 # One winding in the virtual winding window
                 winding = virtual_winding_window.windings[0]
@@ -774,29 +781,29 @@ class TwoDaxiSymmetric:
                         elif virtual_winding_window.wrap_para == WrapParaType.Interpolate:
                             # Fill the allowed space in the Winding Window with a chosen number of turns
                             x_interpol = np.linspace(left_bound, right_bound + self.isolation.inner_winding[num],
-                                                        winding.turns + 1)
+                                                        turns + 1)
                             for i in range(turns):
                                 # Foils
                                 self.p_conductor[num].append([
                                     x_interpol[i], 
                                     bot_bound, 
                                     0, 
-                                    self.component.mesh.c_conductor[num]])
+                                    self.mesh_data.c_conductor[num]])
                                 self.p_conductor[num].append([
-                                    x_interpol[i + 1] - self.component.isolation.cond_cond[num], 
+                                    x_interpol[i + 1] - self.isolation.inner_winding[num], 
                                     bot_bound, 
                                     0,
-                                    self.component.mesh.c_conductor[num]])
+                                    self.mesh_data.c_conductor[num]])
                                 self.p_conductor[num].append([
                                     x_interpol[i],
                                     top_bound, 
                                     0, 
-                                    self.component.mesh.c_conductor[num]])
+                                    self.mesh_data.c_conductor[num]])
                                 self.p_conductor[num].append([
-                                    x_interpol[i + 1] - self.component.isolation.cond_cond[num], 
+                                    x_interpol[i + 1] - self.isolation.inner_winding[num], 
                                     top_bound, 
                                     0,
-                                    self.component.mesh.c_conductor[num]])
+                                    self.mesh_data.c_conductor[num]])
                         else:
                             raise Exception(f"Unknown wrap para type {virtual_winding_window.wrap_para}")
                     elif winding_scheme == WindingScheme.FoilHorizontal:
@@ -828,7 +835,7 @@ class TwoDaxiSymmetric:
                                     0,
                                     self.mesh_data.c_conductor[num]])      
                     else:
-                        raise Exception(f"Winding scheme {winding_scheme} is not implemented.")
+                        raise Exception(f"Winding scheme {winding_scheme.name} is not implemented.")
                 elif conductor_type == ConductorType.RoundSolid or conductor_type == ConductorType.RoundLitz:
                     # Since round conductors have no winding scheme check for each conductor_arrangement
                     conductor_arrangement = winding.conductor_arrangement
@@ -966,9 +973,9 @@ class TwoDaxiSymmetric:
                     else:
                         raise Exception(f"Conductor arrangement {conductor_arrangement} is not implemented.")
                 else:
-                    raise Exception(f"Conductor shape {winding.conductor_shape} is not implemented.")
+                    raise Exception(f"Conductor type {winding.conductor_type.name} is not implemented.")
             else:
-                raise Exception(f"Unknown winding type {virtual_winding_window.winding_type}")
+                raise Exception(f"Unknown winding type {virtual_winding_window.winding_type.name}")
 
         # Checking the Conductors
         for vww in self.virtual_winding_windows:

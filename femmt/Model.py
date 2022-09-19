@@ -100,7 +100,7 @@ class Conductor:
         self.n_layers = ff.NbrLayers(number_strands)
         self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
-        print(f"Updated Litz Configuration: \n"
+        ff.femmt_print(f"Updated Litz Configuration: \n"
               f" ff: {self.ff} \n"
               f" Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
               f" Strand radius: {self.strand_radius} \n"
