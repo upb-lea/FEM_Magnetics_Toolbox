@@ -263,7 +263,7 @@ class AirGaps:
         self.number = 0
         self.air_gap_settings = []
 
-    def add_air_gap(self, leg_position: AirGapLegPosition, position_value: Optional[float], height: float):
+    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0):
         """
         Brings a single air gap to the core.
 
@@ -346,11 +346,11 @@ class Isolation:
         self.isolation_delta = 0.00001
         self.vww_isolation = None
 
-    def add_winding_isolations(self, inner_winding_isolations, virtual_winding_window_isolation):
+    def add_winding_isolations(self, inner_winding_isolations, virtual_winding_window_isolation = None):
         if inner_winding_isolations is []:
             raise Exception("Inner winding isolations list cannot be empty.")
         if virtual_winding_window_isolation is None:
-            virtual_winding_window_isolation
+            virtual_winding_window_isolation = 0
 
         self.inner_winding = inner_winding_isolations
         self.vww_isolation = virtual_winding_window_isolation

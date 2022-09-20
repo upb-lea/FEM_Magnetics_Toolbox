@@ -1380,10 +1380,10 @@ class MagneticComponent:
         # In case of litz wire, only the lowest frequency is meshed (frequency indepent due to litz-approximation)
         if excitation_meshing_type is None:
             for winding in self.windings:
-                if winding.conductor_type == ConductorType.Solid:
+                if winding.conductor_type == ConductorType.RoundSolid:
                     excitation_meshing_type = ExcitationMeshingType.MeshEachFrequency
                     break
-                if winding.conductor_type == ConductorType.Litz:
+                if winding.conductor_type == ConductorType.RoundLitz:
                     excitation_meshing_type = ExcitationMeshingType.MeshOnlyLowestFrequency
 
         if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
@@ -3036,7 +3036,7 @@ class MagneticComponent:
             if "air_gaps" in settings:
                 air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
                 for air_gap in settings["air_gaps"]["air_gaps"]:
-                    air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"], air_gap["height"])
+                    air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["height"], air_gap["position_value"],)
                 geo.set_air_gaps(air_gaps)
 
             if "isolation" in settings:

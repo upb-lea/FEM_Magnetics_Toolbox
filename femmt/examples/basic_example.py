@@ -100,8 +100,8 @@ if component == "inductor":
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 10, 0.0005)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 90, 0.0005)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 10)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
     geo.set_air_gaps(air_gaps)
 
     # 4. set isolations
@@ -148,7 +148,7 @@ if component == "transformer-interleaved":
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
 
     # 4. set isolations
@@ -204,7 +204,7 @@ if component == "transformer":
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
 
     # 4. set isolation
@@ -256,8 +256,8 @@ if component == "integrated_transformer":
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 30, 0.001)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 40, 0.001)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 30)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 40)
     geo.set_air_gaps(air_gaps)
 
     # 4. set isolations
