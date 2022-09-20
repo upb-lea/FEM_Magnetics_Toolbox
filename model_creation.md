@@ -13,11 +13,16 @@ Besides the working directory a MagneticComponent also needs a ComponentType.
 Currently this can be 'Inductor', 'Transformer' or 'IntegratedTransformer'.
 
 ## 2. Creating a core
+In general, only 2D rotationally symmetric geometries are represented in FEMMT. Other core shapes must first be converted to a 2D rotationally symmetric shape. The corresponding values for this (diameter core, dimensions of the winding window) are taken from the data sheet. Afterwards, a corresponding geometry is generated automatically. 
+
+The following graphics always show only a sectional view of the core geometry. 
+
+<img src="documentation/geometry_translated.png" width="800" alt="Core form translated">
 
 After creating a MagneticComponent a core needs to be created. The core needs spatial parameters as well as material parameters.
 The neccessary spatial parameters are shown in the image below.
 
-<img src="documentation/core_definitions.png" width="800" alt="Core definitions">
+<img src="documentation/geometry_core.png" width="800" alt="Core definitions">
 
 ### Material database
 
@@ -32,15 +37,20 @@ To set the vertical position for a air gap multiple methods are available:
 - **Percent**: A value between 0 and 100 can be given. Where 0 represents the bottom end and 100 the top end of the winding window.
 - **Manually**: The specific y coordinate nneeds to be entered manually.
 
-## 4. Set isolation distances
+<img src="documentation/geometry_air_gap.png" width="800" alt="Air gap definitions">
 
-There are multiple isolations implemented in femmt. Some of them are created as rectangles in the model, some are just adding an offset to the windings.
 
-Core isolations are the isolations which are created as rectangles in the model. 4 core isolations will be added: top, left, bottom, right.
+## 4. Set insulation distances
+
+There are multiple insulations implemented in femmt. Some of them are created as rectangles in the model, some are just adding an offset to the windings.
+
+Core insulations are the insulations which are created as rectangles in the model. 4 core insulations will be added: top, left, bottom, right.
 The distance of those values can be set with the 'add_core_isolations' function.
 
-Furthermore there are offset isolations between each turn in the same winding,
+Furthermore there are offset insulations between each turn in the same winding,
 a distance between 2 windings in one virtual winding window and a distance between each virtual winding window. The first two are set using the 'add_winding_isolations' functions, the last one when creating such a virtual winding window (vww).
+
+<img src="documentation/geometry_insulation.png" width="800" alt="Insulation definitions">
 
 ## 5. Add windings to the winding window
 
@@ -54,6 +64,8 @@ There are multiple ways to split a winding window:
 - **HorizontalSplit**: 2 virtual winding windows will be returned, one for the top and one for the bottom part. The height of the splitting line can be set using a horizontal_split_factor (value between 0 and 1)
 - **VerticalSplit**: 2 virtual winding windows will be returned, one for the left and one for the right part. The radius (x-coordinate) of the splitting line can be set using a vertical_split_factor (value between 0 and 1)
 - **HorizontalAndVerticalSplit**: 4 virtual winding windows are returned. One for each corner (in the following order): top_left, top_right, bottom_left, bottom_right. In this case the horizontal and vertical split factors can be used to set the sizes of each grid cell.
+
+<img src="documentation/geometry_winding_windows.png" width="800" alt="Winding window definitions">
 
 In addition to that 2 virtual winding windows can be combined to one (this is not possible for (top_left, bottom_right) or (top_right, bottom_left) combinations). This is done using the combine_vww() function of the WindingWindow class.
 
