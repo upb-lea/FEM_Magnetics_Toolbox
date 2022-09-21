@@ -39,14 +39,14 @@ if component == "inductor_sweep":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set isolations
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.004, 0.001)
-    isolation.add_winding_isolations([0.0005])
-    geo.set_isolation(isolation)
+    # 4. set insulations
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+    insulation.add_winding_insulations([0.0005])
+    geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
-    winding_window = fmt.WindingWindow(core, isolation)
+    winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
@@ -91,14 +91,14 @@ if component == "transformer_sweep":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set isolation
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations([0.0002, 0.0002], 0.0005)
-    geo.set_isolation(isolation)
+    # 4. set insulation
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_winding_insulations([0.0002, 0.0002], 0.0005)
+    geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
-    winding_window = fmt.WindingWindow(core, isolation)
+    winding_window = fmt.WindingWindow(core, insulation)
     left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
 
     # 6. create conductors and set parameters

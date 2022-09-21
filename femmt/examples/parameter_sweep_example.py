@@ -33,12 +33,12 @@ if sweep == "air_gap_height":
         air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, height, 50)
         geo.set_air_gaps(air_gaps)
 
-        isolation = fmt.Isolation()
-        isolation.add_core_isolations(0.001, 0.001, 0.004, 0.001)
-        isolation.add_winding_isolations([0.0005])
-        geo.set_isolation(isolation)
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+        insulation.add_winding_insulations([0.0005])
+        geo.set_insulation(insulation)
 
-        winding_window = fmt.WindingWindow(core, isolation)
+        winding_window = fmt.WindingWindow(core, insulation)
         complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         conductor = fmt.Conductor(0, fmt.Conductivity.Copper)

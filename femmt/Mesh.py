@@ -11,7 +11,7 @@ import gmsh
 import femmt.Functions as ff
 from femmt.Enumerations import ComponentType, ConductorType, WindingType
 from femmt.Data import FileData
-from femmt.Model import Conductor, Core, StrayPath, AirGaps, Isolation
+from femmt.Model import Conductor, Core, StrayPath, AirGaps, Insulation
 from femmt.TwoDaxiSymmetric import TwoDaxiSymmetric
 
 class Mesh:
@@ -21,7 +21,7 @@ class Mesh:
     model: TwoDaxiSymmetric
     core: Core
     stray_path: StrayPath
-    isolation: Isolation
+    insulation: Insulation
     component_type: ComponentType
     windings: int
     air_gaps: List[AirGaps]
@@ -52,7 +52,7 @@ class Mesh:
         self.model = model
         self.core = model.core
         self.stray_path = model.stray_path
-        self.isolation = model.isolation
+        self.insulation = model.insulation
         self.component_type = model.component_type
         self.windings = windings
         self.air_gaps = model.air_gaps
@@ -439,7 +439,7 @@ class Mesh:
 
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Isolations
+        # Insulations
         # Core to Windings
         if self.model.p_iso_core: # Check if list is not empty
             # Points
@@ -505,7 +505,7 @@ class Mesh:
         flatten_curve_loop_cond = [j for sub in curve_loop_cond for j in sub]
 
         # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
-        # The other curve loops represent holes in the surface -> For each conductor as well as each isolation
+        # The other curve loops represent holes in the surface -> For each conductor as well as each insulation
         self.plane_surface_air.append(
             gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
 
@@ -601,9 +601,9 @@ class Mesh:
                     color_scheme[colors_geometry["winding"][winding_number]][0], color_scheme[colors_geometry["winding"][winding_number]][1], 
                     color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
-            # isolation color (inner isolation / bobbin)
+            # insulation color (inner insulation / bobbin)
             gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], 
-                color_scheme[colors_geometry["isolation"]][0], color_scheme[colors_geometry["isolation"]][1], color_scheme[colors_geometry["isolation"]][2], recursive=True)
+                color_scheme[colors_geometry["insulation"]][0], color_scheme[colors_geometry["insulation"]][1], color_scheme[colors_geometry["insulation"]][2], recursive=True)
 
             if visualize_before:
                 gmsh.fltk.run()
@@ -662,7 +662,7 @@ class Mesh:
                         gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=4000 + 1000 * winding_number + i))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Air, air_gaps and iso (since isolation is handled as air, as well as the air gaps)
+        # Air, air_gaps and iso (since insulation is handled as air, as well as the air gaps)
         air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
         self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=1000)
         # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
@@ -838,9 +838,9 @@ class Mesh:
         self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=1001)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Isolations
-        # TODO Currently isolations can only have the same material
-        self.ps_isolation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
+        # insulations
+        # TODO Currently insulations can only have the same material
+        self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
@@ -877,7 +877,7 @@ class Mesh:
                 gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
         gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
         gmsh.model.setPhysicalName(2, self.ps_air_gaps, "AIR_GAPS")
-        gmsh.model.setPhysicalName(2, self.ps_isolation, "ISOLATIONS")
+        gmsh.model.setPhysicalName(2, self.ps_insulation, "insulationS")
 
         # Synchronize
         gmsh.model.geo.synchronize()
@@ -887,7 +887,7 @@ class Mesh:
         color_background = color_scheme[colors_geometry["potting_inner"]]
         color_core = color_scheme[colors_geometry["core"]]
         color_air_gap = color_scheme[colors_geometry["air_gap"]]
-        color_isolation = color_scheme[colors_geometry["isolation"]]
+        color_insulation = color_scheme[colors_geometry["insulation"]]
 
         # Set case color to core color
         for sf in [top_case_surface, top_right_case_surface, right_case_surface, bottom_right_case_surface, bottom_case_surface]:
@@ -912,9 +912,9 @@ class Mesh:
                 gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], color_scheme[colors_geometry["winding"][winding_number]][0], 
                     color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
-        # isolation color (inner isolation / bobbin)
-        gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], color_isolation[0], color_isolation[1], 
-            color_isolation[2], recursive=True)
+        # insulation color (inner insulation / bobbin)
+        gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], color_insulation[0], color_insulation[1], 
+            color_insulation[2], recursive=True)
 
         if visualize_before:
             gmsh.fltk.run()
@@ -989,7 +989,7 @@ class Mesh:
         # is put on the winding window. Every point that is too close to the conductors is removed.
         # Every remaining point is added to the mesh with a higher mesh density
 
-        min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.isolation.inner_winding)
+        min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.insulation.inner_winding)
         left_bound = self.core.core_w / 2
         right_bound = self.model.r_inner
         top_bound = self.core.window_h / 2
@@ -1019,15 +1019,15 @@ class Mesh:
                 point = conductors[winding][i*5]
                 fixed_points.append([point[0], point[1]])
 
-        # Because the points need to be embed into the right surface. The points now will be split between different isolations and the air in the winding window.
-        # TODO Currently primary secondary isolation is not considered
+        # Because the points need to be embed into the right surface. The points now will be split between different insulations and the air in the winding window.
+        # TODO Currently primary secondary insulation is not considered
         left_iso = []
         right_iso = []
         top_iso = []
         bot_iso = []
         air = []
 
-        # Isolations are currently not implemented for integrated transformers
+        # insulations are currently not implemented for integrated transformers
         if self.component_type != ComponentType.IntegratedTransformer:
             iso_core_left = self.model.p_iso_core[0]
             iso_core_top = self.model.p_iso_core[1]

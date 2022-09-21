@@ -39,7 +39,7 @@ colors_geometry_femmt_default = {
                     "core": "black",
                     "air_gap": "yellow",
                     "winding": ["orange", "brown", "yellow"],
-                    "isolation": "blue",
+                    "insulation": "blue",
                     "potting_inner": "grey",
                     "potting_outer": "grey",
                 }
@@ -64,7 +64,7 @@ colors_geometry_ba_jonas = {
                     "core": "black",
                     "air_gap": "yellow",
                     "winding": ["green", "red", "yellow"],
-                    "isolation": "grey_dark",
+                    "insulation": "grey_dark",
                     "potting_inner": "grey",
                     "potting_outer": "grey_dark_dark",
                 }
@@ -73,7 +73,7 @@ colors_geometry_draw_only_lines = {
                     "core": "grey_dark",
                     "air_gap": "grey_dark",
                     "winding": ["green", "green", "green"],
-                    "isolation": "grey_dark",
+                    "insulation": "grey_dark",
                     "potting_inner": "grey_dark",
                     "potting_outer": "grey_dark",
                 }

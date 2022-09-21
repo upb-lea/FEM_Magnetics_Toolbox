@@ -20,7 +20,7 @@ from onelab import onelab
 # Local libraries
 import femmt.Functions as ff
 from femmt.Mesh import Mesh
-from femmt.Model import VirtualWindingWindow, WindingWindow, Core, Isolation, StrayPath, AirGaps, Conductor
+from femmt.Model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
 from femmt.Enumerations import *
 from femmt.Data import FileData, MeshData, AnalyticalCoreData
 from femmt.TwoDaxiSymmetric import TwoDaxiSymmetric
@@ -82,7 +82,7 @@ class MagneticComponent:
         self.core = None                        # Contains all informations about the cores
         self.air_gaps = None                    # Contains every air gap
         self.windings = None                    # List of the different winding objects which the following structure: windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
-        self.isolation = None                   # Contains information about the needed isolations
+        self.insulation = None                   # Contains information about the needed insulations
         self.virtual_winding_windows = None     # Contains a list of every virtual_winding_window which was created
         self.stray_path = None                  # Contains information about the stray_path (only for integrated transformers)
 
@@ -262,7 +262,7 @@ class MagneticComponent:
             "winding_tags": self.mesh.ps_cond,
             "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
             "boundary_regions": self.mesh.thermal_boundary_region_tags,
-            "isolations_tag": self.mesh.ps_isolation if len(self.isolation.core_cond) == 4 else None
+            "insulations_tag": self.mesh.ps_insulation if len(self.insulation.core_cond) == 4 else None
         }
 
         # Core area -> Is needed to estimate the heat flux
@@ -354,7 +354,7 @@ class MagneticComponent:
 
         # Create model
         self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.virtual_winding_windows, self.stray_path,
-                                            self.isolation, self.component_type, len(self.windings))
+                                            self.insulation, self.component_type, len(self.windings))
         self.two_d_axi.draw_model()
 
         # Create mesh
@@ -375,19 +375,19 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Create Model
-    def set_isolation(self, isolation: Isolation) -> None:
-        """Adds the isolation to the model
+    def set_insulation(self, insulation: Insulation) -> None:
+        """Adds the insulation to the model
 
-        :param isolation: Isolation object
-        :type isolation: Isolation
+        :param insulation: insulation object
+        :type insulation: insulation
         """
-        if isolation.inner_winding is None or not isolation.inner_winding:
-            raise Exception("Isolations between the conductors must be set")
+        if insulation.inner_winding is None or not insulation.inner_winding:
+            raise Exception("insulations between the conductors must be set")
 
-        if isolation.core_cond is None or not isolation.core_cond:
-            raise Exception("Isolations between the core and the conductors must be set")
+        if insulation.core_cond is None or not insulation.core_cond:
+            raise Exception("insulations between the core and the conductors must be set")
 
-        self.isolation = isolation
+        self.insulation = insulation
 
     def set_stray_path(self, stray_path: StrayPath) -> None:
         """Adds the stray path to the model
@@ -1269,8 +1269,8 @@ class MagneticComponent:
         if self.air_gaps is None:
             self.air_gaps = AirGaps(None, None)
             ff.femmt_print("No air gaps are added")
-        if self.isolation is None:
-            raise Exception("An isolation class need to be added to the magnetic component")
+        if self.insulation is None:
+            raise Exception("An insulation class need to be added to the magnetic component")
         if self.virtual_winding_windows is None:
             raise Exception("Virtual winding windows are not set properly. Please check the winding creation")
 
@@ -2492,15 +2492,15 @@ class MagneticComponent:
             raise Exception("Negative air gap number is not allowed")
         # Add Coil
 
-        # femm.mi_drawrectangle(self.two_d_axi.p_window[4, 0]+self.isolation.core_cond,
-        # self.two_d_axi.p_window[4, 1]+self.component.isolation.core_cond,
-        # self.two_d_axi.p_window[7, 0]-self.isolation.core_cond, self.two_d_axi.p_window[7, 1]-self.isolation.core_cond)
+        # femm.mi_drawrectangle(self.two_d_axi.p_window[4, 0]+self.insulation.core_cond,
+        # self.two_d_axi.p_window[4, 1]+self.component.insulation.core_cond,
+        # self.two_d_axi.p_window[7, 0]-self.insulation.core_cond, self.two_d_axi.p_window[7, 1]-self.insulation.core_cond)
         #
-        # femm.mi_addblocklabel(self.two_d_axi.p_window[7, 0]-2*self.isolation.core_cond,
-        # self.two_d_axi.p_window[7, 1]-2*self.isolation.core_cond)
+        # femm.mi_addblocklabel(self.two_d_axi.p_window[7, 0]-2*self.insulation.core_cond,
+        # self.two_d_axi.p_window[7, 1]-2*self.insulation.core_cond)
         #
-        # femm.mi_selectlabel(self.two_d_axi.p_window[7, 0]-2*self.isolation.core_cond,
-        # self.two_d_axi.p_window[7, 1]-2*self.isolation.core_cond)
+        # femm.mi_selectlabel(self.two_d_axi.p_window[7, 0]-2*self.insulation.core_cond,
+        # self.two_d_axi.p_window[7, 1]-2*self.insulation.core_cond)
         #
         # femm.mi_setblockprop('Copper', 0, 1, 'icoil', 0, 0, 1)
         #
@@ -2998,8 +2998,8 @@ class MagneticComponent:
         if o.air_gaps is not None:
             content["air_gaps"] = o.air_gaps.to_dict()
         
-        if o.isolation is not None:
-            content["isolation"] = o.isolation.to_dict()
+        if o.insulation is not None:
+            content["insulation"] = o.insulation.to_dict()
 
         if o.stray_path is not None:
             content["stray_path"] = o.stray_path.__dict__
@@ -3039,11 +3039,11 @@ class MagneticComponent:
                     air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["height"], air_gap["position_value"],)
                 geo.set_air_gaps(air_gaps)
 
-            if "isolation" in settings:
-                isolation = Isolation()
-                isolation.add_core_isolations(*settings["isolation"]["core_isolations"])
-                isolation.add_winding_isolations(settings["isolation"]["inner_winding_isolations"], settings["isolation"]["vww_isolation"])
-                geo.set_isolation(isolation)
+            if "insulation" in settings:
+                insulation = Insulation()
+                insulation.add_core_insulations(*settings["insulation"]["core_insulations"])
+                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"], settings["insulation"]["vww_insulation"])
+                geo.set_insulation(insulation)
 
             if "stray_path" in settings:
                 stray_path = StrayPath(*settings["stray_path"])
@@ -3076,13 +3076,13 @@ class MagneticComponent:
                     wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
                     new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
                 elif winding_type == WindingType.Interleaved:
-                    new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1], InterleavedWindingScheme[vww["winding_scheme"]], vww["winding_isolation"])
+                    new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1], InterleavedWindingScheme[vww["winding_scheme"]], vww["winding_insulation"])
                 else:
                     raise Exception(f"Winding type {winding_type} is not implemented")
 
                 new_virtual_winding_windows.append(new_vww)
 
-            winding_window = WindingWindow(core, isolation)
+            winding_window = WindingWindow(core, insulation)
             winding_window.virtual_winding_windows = new_virtual_winding_windows
             geo.set_winding_window(winding_window)
 

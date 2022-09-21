@@ -61,12 +61,12 @@ def femmt_simulation(temp_folder):
         air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 90, 0.0005)
         geo.set_air_gaps(air_gaps)
 
-        isolation = fmt.Isolation()
-        isolation.add_core_isolations(0.001, 0.001, 0.004, 0.001)
-        isolation.add_winding_isolations([0.0005], 0.0001)
-        geo.set_isolation(isolation)
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+        insulation.add_winding_insulations([0.0005], 0.0001)
+        geo.set_insulation(insulation)
 
-        winding_window = fmt.WindingWindow(core, isolation)
+        winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         winding = fmt.Conductor(0, fmt.Conductivity.Copper)

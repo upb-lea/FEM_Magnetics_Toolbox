@@ -30,12 +30,12 @@ if simulation == "lab_model":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
 
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations([0.0001])
-    geo.set_isolation(isolation)
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_winding_insulations([0.0001])
+    geo.set_insulation(insulation)
 
-    winding_window = fmt.WindingWindow(core, isolation)
+    winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -60,7 +60,7 @@ if simulation == "lab_model":
             "core": 5, # ferrite
             "winding": 0.517, # copper
             "air_gaps": 1.57,
-            "isolation": 1.57
+            "insulation": 1.57
     }
 
     case_gap_top = 0.0004
@@ -113,12 +113,12 @@ if simulation == "pq4040_ansys_comparison":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005)
     geo.set_air_gaps(air_gaps)
 
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations([0.0001])
-    geo.set_isolation(isolation)
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_winding_insulations([0.0001])
+    geo.set_insulation(insulation)
 
-    winding_window = fmt.WindingWindow(core, isolation)
+    winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -142,7 +142,7 @@ if simulation == "pq4040_ansys_comparison":
             "core": 5, # ferrite
             "winding": 400, # copper
             "air_gaps": 1.57,
-            "isolation": 1.57
+            "insulation": 1.57
     }
 
     case_gap_top = 0.0004
@@ -199,12 +199,12 @@ if simulation == "pq4040axisymmetric":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005)
     geo.set_air_gaps(air_gaps)
 
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations([0.0001])
-    geo.set_isolation(isolation)
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_winding_insulations([0.0001])
+    geo.set_insulation(insulation)
 
-    winding_window = fmt.WindingWindow(core, isolation)
+    winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -228,7 +228,7 @@ if simulation == "pq4040axisymmetric":
             "core": 5, # ferrite
             "winding": 400, # copper
             "air_gaps": 1.57,
-            "isolation": 1.57
+            "insulation": 1.57
     }
 
     case_gap_top = 0.002

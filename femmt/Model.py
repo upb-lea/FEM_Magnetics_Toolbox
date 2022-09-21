@@ -327,35 +327,35 @@ class AirGaps:
 
         return content
 
-class Isolation:
+class Insulation:
     """
-    This class defines isolations for the model.
-    An isolation between the winding window and the core can always be set.
-    When having a inductor only the primary2primary isolation is necessary.
-    When having a (integrated) transformer secondary2secondary and primary2secondary isolations can be set as well.
+    This class defines insulation for the model.
+    An insulation between the winding window and the core can always be set.
+    When having a inductor only the primary2primary insulation is necessary.
+    When having a (integrated) transformer secondary2secondary and primary2secondary insulations can be set as well.
     """
     inner_winding: List[float]
-    vww_isolation: float
+    vww_insulation: float
     core_cond: List[float]
 
-    isolation_delta: float
+    insulation_delta: float
 
     def __init__(self):
-        # Default value for all isolations
-        # If the gaps between isolations and core (or windings) are to big/small just change this value
-        self.isolation_delta = 0.00001
-        self.vww_isolation = None
+        # Default value for all insulations
+        # If the gaps between insulations and core (or windings) are to big/small just change this value
+        self.insulation_delta = 0.00001
+        self.vww_insulation = None
 
-    def add_winding_isolations(self, inner_winding_isolations, virtual_winding_window_isolation = None):
-        if inner_winding_isolations is []:
-            raise Exception("Inner winding isolations list cannot be empty.")
-        if virtual_winding_window_isolation is None:
-            virtual_winding_window_isolation = 0
+    def add_winding_insulations(self, inner_winding_insulations, virtual_winding_window_insulation = None):
+        if inner_winding_insulations is []:
+            raise Exception("Inner winding insulations list cannot be empty.")
+        if virtual_winding_window_insulation is None:
+            virtual_winding_window_insulation = 0
 
-        self.inner_winding = inner_winding_isolations
-        self.vww_isolation = virtual_winding_window_isolation
+        self.inner_winding = inner_winding_insulations
+        self.vww_insulation = virtual_winding_window_insulation
 
-    def add_core_isolations(self, top_core, bot_core, left_core, right_core):
+    def add_core_insulations(self, top_core, bot_core, left_core, right_core):
         if top_core is None:
             top_core = 0
         if bot_core is None:
@@ -368,13 +368,13 @@ class Isolation:
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
     def to_dict(self):
-        if len(self.inner_winding) == 0 and self.vww_isolation is None:
+        if len(self.inner_winding) == 0 and self.vww_insulation is None:
             return {}
 
         return {
-            "inner_winding_isolations": self.inner_winding,
-            "core_isolations": self.core_cond,
-            "vww_isolation": self.vww_isolation
+            "inner_winding_insulations": self.inner_winding,
+            "core_insulations": self.core_cond,
+            "vww_insulation": self.vww_insulation
         }
 
 @dataclass
@@ -411,6 +411,7 @@ class VirtualWindingWindow:
     turns: List[int]
 
     winding_is_set: bool
+    winding_insulation: float
 
     def __init__(self, bot_bound: float, top_bound: float, left_bound: float, right_bound: float):
         self.bot_bound = bot_bound
@@ -430,13 +431,13 @@ class VirtualWindingWindow:
         if winding_scheme is WindingScheme.FoilVertical and wrap_para_type is None:
             raise Exception("When winding scheme is FoilVertical a wrap para type must be set.")
 
-    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme, winding_isolation: float):
+    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme, winding_insulation: float):
         self.winding_type = WindingType.Interleaved
         self.winding_scheme = winding_scheme
         self.windings = [conductor1, conductor2]
         self.turns = [turns1, turns2]
         self.winding_is_set = True
-        self.winding_isolation = winding_isolation
+        self.winding_insulation = winding_insulation
         self.wrap_para = None
 
     def __repr__(self):
@@ -464,15 +465,15 @@ class WindingWindow:
     max_left_bound: float
     max_right_bound: float
     
-    # 4 different isolations which can be Null if there is a vww overlapping
+    # 4 different insulations which can be Null if there is a vww overlapping
     # The lists contain 4 values x1, y1, x2, y2 where (x1, y1) is the lower left and (x2, y2) the upper right point 
     top_iso: List[float]
     left_iso: List[float]
     bot_iso: List[float]
     right_iso: List[float]
 
-    vww_isolation: float
-    isolation: Isolation
+    vww_insulations: float
+    insulations: Insulation
     split_type: WindingWindowSplit
     stray_path: StrayPath
     air_gaps: AirGaps
@@ -482,15 +483,15 @@ class WindingWindow:
 
     virtual_winding_windows: List[VirtualWindingWindow]
 
-    def __init__(self, core: Core, isolation: Isolation, stray_path: StrayPath = None, air_gaps: AirGaps = None):
-        self.max_bot_bound = -core.window_h / 2 + isolation.core_cond[0]
-        self.max_top_bound = core.window_h / 2 - isolation.core_cond[1]
-        self.max_left_bound = core.core_w / 2 + isolation.core_cond[2]
-        self.max_right_bound = core.r_inner - isolation.core_cond[3]
+    def __init__(self, core: Core, insulations: Insulation, stray_path: StrayPath = None, air_gaps: AirGaps = None):
+        self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[0]
+        self.max_top_bound = core.window_h / 2 - insulations.core_cond[1]
+        self.max_left_bound = core.core_w / 2 + insulations.core_cond[2]
+        self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
-        # Isolation between vwws
-        self.vww_isolation = isolation.vww_isolation
-        self.isolation = isolation
+        # Insulations between vwws
+        self.vww_insulations = insulations.vww_insulation
+        self.insulations = insulations
 
         self.stray_path = stray_path
         self.air_gaps = air_gaps
@@ -510,7 +511,7 @@ class WindingWindow:
             distance = max_pos - min_pos 
             horizontal_split = min_pos + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
-            self.vww_isolation = distance
+            self.vww_insulations = distance
         else:
             horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
@@ -529,27 +530,27 @@ class WindingWindow:
             right = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
                 top_bound = self.max_top_bound,
-                left_bound = vertical_split + self.vww_isolation / 2,
+                left_bound = vertical_split + self.vww_insulations / 2,
                 right_bound = self.max_right_bound)
 
             left = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
                 top_bound = self.max_top_bound,
                 left_bound = self.max_left_bound,
-                right_bound = vertical_split - self.vww_isolation / 2)
+                right_bound = vertical_split - self.vww_insulations / 2)
 
             self.virtual_winding_windows = [left, right]
             return left, right
         elif split_type == WindingWindowSplit.HorizontalSplit:
             top = VirtualWindingWindow(
-                bot_bound = horizontal_split + self.vww_isolation / 2,
+                bot_bound = horizontal_split + self.vww_insulations / 2,
                 top_bound = self.max_top_bound,
                 left_bound = self.max_left_bound,
                 right_bound = self.max_right_bound)
 
             bot = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
-                top_bound = horizontal_split - self.vww_isolation / 2,
+                top_bound = horizontal_split - self.vww_insulations / 2,
                 left_bound = self.max_left_bound,
                 right_bound = self.max_right_bound)
 
@@ -557,27 +558,27 @@ class WindingWindow:
             return top, bot
         elif split_type == WindingWindowSplit.HorizontalAndVerticalSplit:
             top_left = VirtualWindingWindow(
-                bot_bound = horizontal_split + self.vww_isolation / 2,
+                bot_bound = horizontal_split + self.vww_insulations / 2,
                 top_bound = self.max_top_bound,
                 left_bound = self.max_left_bound,
-                right_bound = vertical_split - self.vww_isolation / 2)
+                right_bound = vertical_split - self.vww_insulations / 2)
 
             top_right = VirtualWindingWindow(
-                bot_bound = horizontal_split + self.vww_isolation / 2,
+                bot_bound = horizontal_split + self.vww_insulations / 2,
                 top_bound = self.max_top_bound,
-                left_bound = vertical_split + self.vww_isolation / 2,
+                left_bound = vertical_split + self.vww_insulations / 2,
                 right_bound = self.max_right_bound)
 
             bot_left = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
-                top_bound = horizontal_split - self.vww_isolation / 2,
+                top_bound = horizontal_split - self.vww_insulations / 2,
                 left_bound = self.max_left_bound,
-                right_bound = vertical_split - self.vww_isolation / 2)
+                right_bound = vertical_split - self.vww_insulations / 2)
 
             bot_right = VirtualWindingWindow(
                 bot_bound = self.max_bot_bound,
-                top_bound = horizontal_split - self.vww_isolation / 2,
-                left_bound = vertical_split + self.vww_isolation / 2,
+                top_bound = horizontal_split - self.vww_insulations / 2,
+                left_bound = vertical_split + self.vww_insulations / 2,
                 right_bound = self.max_right_bound)
 
             self.virtual_winding_windows = [top_left, top_right, bot_left, bot_right]

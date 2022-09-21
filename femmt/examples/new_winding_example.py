@@ -24,12 +24,12 @@ air_gaps.add_air_gap(AirGapLegPosition.CenterLeg, 10, 0.0005)
 air_gaps.add_air_gap(AirGapLegPosition.CenterLeg, 90, 0.0005)
 geo.set_air_gaps(air_gaps)
 
-isolation = model.Isolation()
-isolation.add_core_isolations(0.001, 0.001, 0.001, 0.001)
-isolation.add_winding_isolations([0.0001, 0.0001], 0.0001)
-geo.set_isolation(isolation)
+insulation = model.Insulation()
+insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
+insulation.add_winding_insulations([0.0001, 0.0001], 0.0001)
+geo.set_insulation(insulation)
 
-winding_window = model.WindingWindow(core, isolation)
+winding_window = model.WindingWindow(core, insulation)
 conductor1 = model.Conductor(0, Conductivity.Copper)
 conductor1.set_solid_round_conductor(0.0005, ConductorArrangement.Square)
 

@@ -84,10 +84,10 @@ def run_inductor_simulations(working_directory, combinations):
         air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
         geo.set_air_gaps(air_gaps)
             
-        isolation = fmt.Isolation()
-        isolation.add_core_isolations(0.001, 0.001, 0.001, 0.001)
-        isolation.add_winding_isolations([0.0001, 0.0001], 0.001)
-        geo.set_isolation(isolation)
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
+        insulation.add_winding_insulations([0.0001, 0.0001], 0.001)
+        geo.set_insulation(insulation)
 
         conductor = fmt.Conductor(0, fmt.Conductivity.Copper)
 
@@ -100,7 +100,7 @@ def run_inductor_simulations(working_directory, combinations):
         else:
             conductor.set_rectangular_conductor(0.0013)
 
-        winding_window = fmt.WindingWindow(core, isolation)
+        winding_window = fmt.WindingWindow(core, insulation)
         complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
         winding_scheme = combination["WindingScheme"] if "WindingScheme" in combination else None
         wrap_para_type = combination["WrapParaType"] if "WrapParaType" in combination else None
@@ -136,10 +136,10 @@ def run_transformer_simulations(working_directory, combinations):
         air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
         geo.set_air_gaps(air_gaps)
             
-        isolation = fmt.Isolation()
-        isolation.add_core_isolations(0.001, 0.001, 0.001, 0.001)
-        isolation.add_winding_isolations([0.0001, 0.0001], 0.001)
-        geo.set_isolation(isolation)
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
+        insulation.add_winding_insulations([0.0001, 0.0001], 0.001)
+        geo.set_insulation(insulation)
 
         conductor1 = fmt.Conductor(0, fmt.Conductivity.Copper)
         conductor2 = fmt.Conductor(1, fmt.Conductivity.Copper)
@@ -156,7 +156,7 @@ def run_transformer_simulations(working_directory, combinations):
             conductor1.set_rectangular_conductor(0.0013)
             conductor2.set_rectangular_conductor(0.0013)
 
-        winding_window = fmt.WindingWindow(core, isolation)
+        winding_window = fmt.WindingWindow(core, insulation)
         if combination["WindingType"] == fmt.WindingType.Interleaved:
             complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
             complete.set_interleaved_winding(conductor1, 10, conductor2, 10, combination["WindingScheme"], 0.0005)

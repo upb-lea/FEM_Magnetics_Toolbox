@@ -21,7 +21,7 @@ def example_thermal_simulation():
             "core": 5, # ferrite
             "winding": 400, # copper
             "air_gaps": 180, # aluminiumnitride
-            "isolation": 0.42 # polyethylen
+            "insulation": 0.42 # polyethylen
     }
 
     # Here the case size can be determined
@@ -65,8 +65,8 @@ def example_thermal_simulation():
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                            case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas)
 
-    # Because the isolations inside of the winding window are not implemented in femm simulation.
-    # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
+    # Because the insulations inside of the winding window are not implemented in femm simulation.
+    # The validation only works when the insulations for the FEMMT thermal simulation are turned off.
     geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -104,14 +104,14 @@ if component == "inductor":
     #air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set isolations
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.004, 0.001)
-    isolation.add_winding_isolations([0.0005], 0.0001)
-    geo.set_isolation(isolation)
+    # 4. set insulations
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+    insulation.add_winding_insulations([0.0005], 0.0001)
+    geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
-    winding_window = fmt.WindingWindow(core, isolation)
+    winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
@@ -151,14 +151,14 @@ if component == "transformer-interleaved":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set isolations
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations([0.0002, 0.0002], 0.0001)
-    geo.set_isolation(isolation)
+    # 4. set insulations
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+    geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
-    winding_window = fmt.WindingWindow(core, isolation)
+    winding_window = fmt.WindingWindow(core, insulation)
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductors and set parameters
@@ -207,14 +207,14 @@ if component == "transformer":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set isolation
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations([0.0002, 0.0002], 0.0005)
-    geo.set_isolation(isolation)
+    # 4. set insulation
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_winding_insulations([0.0002, 0.0002], 0.0005)
+    geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
-    winding_window = fmt.WindingWindow(core, isolation)
+    winding_window = fmt.WindingWindow(core, insulation)
     left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
 
     # 6. create conductors and set parameters
@@ -260,16 +260,16 @@ if component == "integrated_transformer":
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 40)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set isolations
-    isolation = fmt.Isolation()
-    isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-    isolation.add_winding_isolations([0.0002, 0.0002], 0.0001)
-    geo.set_isolation(isolation)
+    # 4. set insulations
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+    geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
     # For an integrated transformer it is not necessary to set horizontal and vertical split factors
     # since this is determined by the stray_path
-    winding_window = fmt.WindingWindow(core, isolation, stray_path, air_gaps)
+    winding_window = fmt.WindingWindow(core, insulation, stray_path, air_gaps)
     top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
 
     # 6. set conductor parameters
