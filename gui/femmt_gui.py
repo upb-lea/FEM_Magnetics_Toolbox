@@ -1,9 +1,10 @@
 import sys
-
+import pandas as pd
 import gmsh
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
@@ -11,6 +12,11 @@ import json
 from typing import List, Union, Optional
 import os
 import PIL
+import materialdatabase as mdb
+import matplotlib.pyplot as plt
+database = mdb.MaterialDatabase()
+from matplotlib.widgets import Cursor
+import mplcursors
 
 # import sys
 # import matplotlib
@@ -47,9 +53,12 @@ def comma_str_to_point_float(input_str: str) -> float:
 
 
 class MainWindow(QMainWindow):
+
     def __init__(self, parent=None):
+
         super(MainWindow, self).__init__(parent)
         self.md_simulation_type_comboBox = None
+        self.aut_simulation_type_comboBox = None
         uic.loadUi('femmt_gui.ui', self)
         _translate = QtCore.QCoreApplication.translate
         #self.setWindowIcon(QIcon('Images\\logo.png'))
@@ -73,8 +82,12 @@ class MainWindow(QMainWindow):
             "percent": "Percent",
             "manually": "Manual Placement",
             "hexa": "Hexadimensional",
-            "square": "Square"
+            "square": "Square",
+            "+-10": "+/- 10%",
+            "excel": "MS Excel"
         }
+
+        "******* Manual Design *********"
 
         "Signals in Definition Tab"
         # simulation
@@ -273,6 +286,510 @@ class MainWindow(QMainWindow):
         "Signals in Thermal simulation Tab"
         self.md_therm_simulation_QPushButton.clicked.connect(self.therm_simulation)
 
+        "******* Automated Design *********"
+
+        "Adding options"
+        self.aut_initialize_controls()
+
+        "Signals in Definition Tab"
+        if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+            self.aut_winding2_enable(False)
+        self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
+        self.aut_core_material_data_listWidget.addItem("N87")
+        self.aut_core_material_data_listWidget.addItem("N95")
+        self.aut_core_material_data_listWidget.addItem("N97")
+
+        self.aut_litz_data_listWidget.addItem("1.5*105*0.1")
+        self.aut_litz_data_listWidget.addItem("1.4*200*0.071")
+        self.aut_litz_data_listWidget.addItem("2.0*405*0.071")
+        self.aut_litz_data_listWidget.addItem("2.0*800*0.05")
+
+        self.aut_litz2_data_listWidget.addItem("1.5*105*0.1")
+        self.aut_litz2_data_listWidget.addItem("1.4*200*0.071")
+        self.aut_litz2_data_listWidget.addItem("2.0*405*0.071")
+        self.aut_litz2_data_listWidget.addItem("2.0*800*0.05")
+
+        self.aut_airgap_type_listWidget.addItem("Edge distributed")
+        self.aut_airgap_type_listWidget.addItem("Centre distributed")
+
+
+        self.aut_core_material_add_pushButton.clicked.connect(self.oncmatMultipleClicked)
+        self.aut_select_all_core_mat_pushButton.clicked.connect(self.cmatselectall)
+        self.aut_core_material_data_listWidget.itemDoubleClicked.connect(self.oncmatClicked)
+        self.aut_core_mat_basket_clear_all_pushbutton.clicked.connect(self.oncmatClearallClicked)
+        self.aut_core_mat_basket_clear_pushbutton.clicked.connect(self.oncmatClearClicked)
+
+        self.aut_add_litz_pushButton.clicked.connect(self.onl1MultipleClicked)
+        self.aut_select_all_litz_pushButton.clicked.connect(self.litz1selectall)
+        self.aut_litz_data_listWidget.itemDoubleClicked.connect(self.onl1Clicked)
+        self.aut_litz_basket_clear_all_pushbutton.clicked.connect(self.onl1ClearallClicked)
+        self.aut_litz_basket_clear_pushbutton.clicked.connect(self.onl1ClearClicked)
+
+        self.aut_add_litz2_pushButton.clicked.connect(self.onl2MultipleClicked)
+        self.aut_select_all_litz2_pushButton.clicked.connect(self.litz2selectall)
+        self.aut_litz2_data_listWidget.itemDoubleClicked.connect(self.onl2Clicked)
+        self.aut_litz2_basket_clear_all_pushbutton.clicked.connect(self.onl2ClearallClicked)
+        self.aut_litz2_basket_clear_pushbutton.clicked.connect(self.onl2ClearClicked)
+
+        self.aut_add_air_gap_type_pushButton.clicked.connect(self.onairgaptypeMultipleClicked)
+        self.aut_select_all_airgap_type_pushButton.clicked.connect(self.airgaptypeselectall)
+        self.aut_airgap_type_listWidget.itemDoubleClicked.connect(self.onairgaptypeClicked)
+        self.aut_air_gap_type_basket_clear_all_pushbutton.clicked.connect(self.onairgaptypeClearallClicked)
+        self.aut_air_gap_type_basket_clear_pushbutton.clicked.connect(self.onairgaptypeClearClicked)
+
+        self.aut_winding1_implicit_litz_comboBox.currentTextChanged.connect(self.aut_winding1_change_litz_implicit)
+        self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
+
+        "Set Validators in Definition Tab"
+        self.aut_min_core_width_lineEdit.setValidator(float_validator)
+        self.aut_max_core_width_lineEdit.setValidator(float_validator)
+        self.aut_step_core_width_lineEdit.setValidator(float_validator)
+
+        self.aut_min_window_height_lineEdit.setValidator(float_validator)
+        self.aut_max_window_height_lineEdit.setValidator(float_validator)
+        self.aut_step_window_height_lineEdit.setValidator(float_validator)
+
+        self.aut_min_window_width_lineEdit.setValidator(float_validator)
+        self.aut_max_window_width_lineEdit.setValidator(float_validator)
+        self.aut_step_window_width_lineEdit.setValidator(float_validator)
+
+        self.aut_winding1_radius_lineEdit.setValidator(float_validator)
+        self.aut_winding1_strands_lineEdit.setValidator(float_validator)
+        self.aut_winding1_fill_factor_lineEdit.setValidator(float_validator)
+        self.aut_winding1_strand_radius_lineEdit.setValidator(float_validator)
+
+        self.aut_winding2_radius_lineEdit.setValidator(float_validator)
+        self.aut_winding2_strands_lineEdit.setValidator(float_validator)
+        self.aut_winding2_fill_factor_lineEdit.setValidator(float_validator)
+        self.aut_winding2_strand_radius_lineEdit.setValidator(float_validator)
+
+        self.aut_min_winding1_turns_lineEdit.setValidator(float_validator)
+        self.aut_max_winding1_turns_lineEdit.setValidator(float_validator)
+        self.aut_step_winding1_turns_lineEdit.setValidator(float_validator)
+
+        self.aut_min_winding2_turns_lineEdit.setValidator(float_validator)
+        self.aut_max_winding2_turns_lineEdit.setValidator(float_validator)
+        self.aut_step_winding2_turns_lineEdit.setValidator(float_validator)
+
+        self.aut_min_air_gap_count_lineEdit.setValidator(float_validator)
+        self.aut_max_air_gap_count_lineEdit.setValidator(float_validator)
+
+        self.aut_air_gap_length_min_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_length_max_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_length_step_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_position_min_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_position_step_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_position_step_lineEdit.setValidator(float_validator)
+
+
+        self.aut_isolation_p2p_lineEdit.setValidator(float_validator)
+        self.aut_isolation_p2s_lineEdit.setValidator(float_validator)
+        self.aut_isolation_s2s_lineEdit.setValidator(float_validator)
+
+        self.aut_isolation_core2cond_top_lineEdit.setValidator(float_validator)
+        self.aut_isolation_core2cond_bot_lineEdit.setValidator(float_validator)
+        self.aut_isolation_core2cond_inner_lineEdit.setValidator(float_validator)
+        self.aut_isolation_core2cond_outer_lineEdit.setValidator(float_validator)
+
+        self.aut_goal_inductance_val_lineEdit.setValidator(float_validator)
+
+        "******* Database Section *********"
+
+        "Signals in visualisation tab"
+        self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
+
+    def datupdateraph(self):
+
+        # -----Enter the freq and Temp-----------
+        temperature1 = int(self.dat_mat1_temp_lineEdit.text())
+        mat1_name = self.dat_core_material1_comboBox.currentText()
+        mat2_name = self.dat_core_material2_comboBox.currentText()
+        mdb.compare_core_loss_flux_density_data(material_list=[mat1_name, mat2_name], temperature=temperature1)
+        plt.savefig('plot.png', dpi=300, bbox_inches='tight')
+
+        # Loading image
+        self.pixmap = QPixmap('plot.png')
+
+        # adding image to label
+        self.dat_update_graph_qlabel.setPixmap(self.pixmap)
+        w = self.dat_update_graph_qlabel.width()
+        h = self.dat_update_graph_qlabel.height()
+        self.dat_update_graph_qlabel.setPixmap(self.pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        plt.close()
+
+        # Graph 2------------------------------------------------------------------------------------------------
+        flux2 = float(self.dat_mat2_flux_lineEdit.text())
+        mdb.compare_core_loss_temperature(material_list=[mat1_name, mat2_name], flux = flux2)
+        plt.show()
+        plt.savefig('plot2.png', dpi=300, bbox_inches='tight')
+
+        # Loading image
+        self.pixmap = QPixmap('plot2.png')
+
+        # adding image to label
+        self.dat_update_graph_qlabel_2.setPixmap(self.pixmap)
+        w = self.dat_update_graph_qlabel_2.width()
+        h = self.dat_update_graph_qlabel_2.height()
+        self.dat_update_graph_qlabel_2.setPixmap(self.pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+
+
+    def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
+        """
+        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        :param implicit_type_from_combo_box: input type to implicit
+        :type implicit_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_litz_radius']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(False)
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_strands_number']:
+            self.aut_winding1_strands_lineEdit.setEnabled(False)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_ff']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+
+    def onairgaptypeClearallClicked(self):
+        self.aut_airgap_type_basket_listwidget.clear()
+
+    def onairgaptypeClearClicked(self):
+        List_item = self.aut_airgap_type_basket_listwidget.selectedItems()
+        for item in List_item:
+            self.aut_airgap_type_basket_listwidget.takeItem(self.aut_airgap_type_basket_listwidget.row(item))
+
+    def onairgaptypeMultipleClicked(self):
+        itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
+                         range(self.aut_airgap_type_basket_listwidget.count())]
+        checkitems = [item.text() for item in self.aut_airgap_type_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_airgap_type_basket_listwidget.addItem(i)
+        else:
+            pass
+
+    def onairgaptypeClicked(self):
+        itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
+                         range(self.aut_airgap_type_basket_listwidget.count())]
+        checkitem = self.aut_airgap_type_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_airgap_type_basket_listwidget.addItem(self.aut_airgap_type_listWidget.currentItem().text())
+        else:
+            pass
+
+    def airgaptypeselectall(self):
+        self.aut_airgap_type_listWidget.selectAll()
+
+    def oncmatClearallClicked(self):
+        self.aut_core_material_basket_listWidget.clear()
+
+    def oncmatClearClicked(self):
+        List_item = self.aut_core_material_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_core_material_basket_listWidget.takeItem(self.aut_core_material_basket_listWidget.row(item))
+
+    def oncmatMultipleClicked(self):
+        itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_material_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_core_material_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_core_material_basket_listWidget.addItem(i)
+        else:
+            pass
+
+
+    def cmatselectall(self):
+        self.aut_core_material_data_listWidget.selectAll()
+
+    def oncmatClicked(self):
+        itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_material_basket_listWidget.count())]
+        checkitem = self.aut_core_material_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_core_material_basket_listWidget.addItem(self.aut_core_material_data_listWidget.currentItem().text())
+        else:
+            pass
+
+    def onl1ClearallClicked(self):
+        self.aut_litz_basket_listWidget.clear()
+
+    def onl1ClearClicked(self):
+        List_item = self.aut_litz_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_litz_basket_listWidget.takeItem(self.aut_litz_basket_listWidget.row(item))
+
+    def onl1MultipleClicked(self):
+        itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_litz_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_litz_basket_listWidget.addItem(i)
+        else:
+            pass
+
+    def onl1Clicked(self):
+        itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz_basket_listWidget.count())]
+        checkitem = self.aut_litz_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_litz_basket_listWidget.addItem(self.aut_litz_data_listWidget.currentItem().text())
+        else:
+            pass
+
+    def litz1selectall(self):
+        self.aut_litz_data_listWidget.selectAll()
+
+
+    def onl2ClearallClicked(self):
+        self.aut_litz2_basket_listWidget.clear()
+
+    def onl2ClearClicked(self):
+        List_item = self.aut_litz2_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_litz2_basket_listWidget.takeItem(self.aut_litz2_basket_listWidget.row(item))
+
+    def onl2MultipleClicked(self):
+        itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz2_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_litz2_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_litz2_basket_listWidget.addItem(i)
+        else:
+            pass
+
+    def onl2Clicked(self):
+        itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz2_basket_listWidget.count())]
+        checkitem = self.aut_litz2_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_litz2_basket_listWidget.addItem(self.aut_litz2_data_listWidget.currentItem().text())
+        else:
+            pass
+
+
+    def litz2selectall(self):
+        self.aut_litz2_data_listWidget.selectAll()
+
+    def aut_initialize_controls(self) -> None:
+        """
+        Initialize the comboboxes with pre-defined values.
+
+        :return: None
+        :rtype: None
+        """
+        aut_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
+        aut_winding_material_options = [key for key in fmt.wire_material_database()]
+        aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
+        aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
+                                    self.translation_dict['implicit_strands_number']]
+        aut_air_gap_method_options = [self.translation_dict["percent"]]
+        aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
+        aut_tolerance_val_options = [self.translation_dict['+-10']]
+        aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
+        aut_core_geometry_options.insert(0, 'Manual')
+        dat_core_material_options = ['N95', 'N97', 'N87']
+        for option in dat_core_material_options:
+            self.dat_core_material1_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material2_comboBox.addItem(option)
+        for option in aut_core_geometry_options:
+            self.aut_core_geometry_comboBox.addItem(option)
+        for option in aut_simulation_type_options:
+            self.aut_simulation_type_comboBox.addItem(option)
+        for option in aut_winding_material_options:
+            self.aut_winding1_material_comboBox.addItem(option)
+            self.aut_winding2_material_comboBox.addItem(option)
+        for option in aut_winding_type_options:
+            self.aut_winding1_type_comboBox.addItem(option)
+            self.aut_winding2_type_comboBox.addItem(option)
+        for option in aut_implicit_litz_options:
+            self.aut_winding1_implicit_litz_comboBox.addItem(option)
+            self.aut_winding2_implicit_litz_comboBox.addItem(option)
+        for option in aut_air_gap_method_options:
+            self.aut_air_gap_placement_method_comboBox.addItem(option)
+        for option in aut_winding_scheme_options:
+            self.aut_winding1_scheme_comboBox.addItem(option)
+            self.aut_winding2_scheme_comboBox.addItem(option)
+        for option in aut_tolerance_val_options:
+            self.aut_tolerance_val_comboBox.addItem(option)
+
+        self.aut_min_core_width_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_core_width_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_core_width_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_window_height_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_window_height_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_window_height_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_window_width_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_window_width_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_window_width_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_winding1_turns_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_winding1_turns_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_winding1_turns_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_winding2_turns_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_winding2_turns_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_winding2_turns_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_air_gap_count_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_air_gap_count_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_goal_inductance_val_lineEdit.setPlaceholderText(" Value in Henry")
+        self.aut_air_gap_length_min_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_air_gap_length_max_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_air_gap_length_step_lineEdit.setPlaceholderText("Step value")
+        self.aut_air_gap_position_min_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_air_gap_position_max_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_air_gap_position_step_lineEdit.setPlaceholderText("Step value")
+
+
+        "Signals in FEM Simulations Tab"
+
+        aut_download_options = [self.translation_dict['excel']]
+
+        for option in aut_download_options:
+            self.aut_download_comboBox.addItem(option)
+
+        self.aut_pos_mod_sim_pushButton.clicked.connect(self.aut_reluctance_model_matrix)
+
+        self.aut_pos_mod_download_pushButton.clicked.connect(self.aut_download_pos_model_data)
+
+    def aut_reluctance_model_matrix(self):
+        self.aut_rel_model_calc_timeline.setText("Simulating possible models..")
+        matrix = [[0.0149, 0.0295, 0.01105, 0.0001],
+                  [0.0149, 0.0295, 0.01105, 0.0002],
+                  [0.0149, 0.0295, 0.01105, 0.0003],
+                  [0.0149, 0.0295, 0.01105, 0.0004]]
+        num_r = len(matrix)
+        flag = 0
+        m = []
+        for i in range(num_r):
+            m.append([float(x) for x in matrix[i]])
+        for i in m:
+            self.aut_action_run_simulation(i)
+            flag += 1
+        if flag == 4:
+            self.aut_rel_model_calc_timeline.setText("Simulation ended.Ready to download!")
+
+    def aut_action_run_simulation(self, sim_value):
+
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
+        core = fmt.Core(core_w=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
+                        mu_rel=3100, phi_mu_deg=12,
+                        sigma=0.6)
+        geo.set_core(core)
+
+        # 3. set air gap parameters
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, sim_value[3])
+        geo.set_air_gaps(air_gaps)
+
+        # 4. set conductor parameters: use solid wires
+        winding = fmt.Winding(8, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+        winding.set_litz_conductor(None, 600, 35.5e-6, 0.6)
+        # winding.set_solid_conductor(0.0015)
+        geo.set_windings([winding])
+
+        # 5. set isolations
+        isolation = fmt.Isolation()
+        isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
+        isolation.add_winding_isolations(0.0001)
+        geo.set_isolation(isolation)
+
+        # 5. create the model
+        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+
+        # 6.a. start simulation
+        geo.single_simulation(freq=100000, current=[3], show_results=True)
+
+    def aut_download_pos_model_data(self):
+
+        list1 = [0.0149, 0.0149, 0.0149]
+        list2 = [0.0295, 0.0295, 0.0295]
+        list3 = [0.01105, 0.01105, 0.01105]
+        list4 = [0.0001, 0.0002, 0.0003]
+        col1 = "core_w"
+        col2 = "window_w"
+        col3 = "window_h"
+        col4 = "core_h"
+        data = pd.DataFrame({col1: list1, col2: list2, col3: list3, col4: list4})
+        data.to_excel('sample_data.xlsx', sheet_name='sheet1', index=False)
+        self.aut_pos_model_download_status.setText("Downloaded!")
+
+
+
+    def aut_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
+        """
+        Action performed when signal of aut_simulation_type_comboBox text has changed.
+        Action will be enabling / disabling user inputs for not-used windings.
+
+        :param simulation_type_from_combo_box:
+        :type simulation_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if simulation_type_from_combo_box == self.translation_dict['inductor']:
+            self.aut_winding2_enable(False)
+
+        elif simulation_type_from_combo_box == self.translation_dict['transformer']:
+            # set winding definitions of winding 2 to editable
+            self.aut_winding2_enable(True)
+
+        elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
+            # set winding definitions of winding 2 to editable
+            self.aut_winding2_enable(True)
+
+    def aut_winding2_enable(self, status: bool) -> None:
+        """
+        Enable/disable all fields being in contact with winding 2.
+
+        :param status: True / False
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        # set winding definitions of winding 2 (enable and visible)
+        self.aut_winding2_material_comboBox.setEnabled(status)
+        self.aut_winding2_type_comboBox.setEnabled(status)
+        self.aut_min_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_max_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_step_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_winding2_strands_lineEdit.setEnabled(status)
+        self.aut_winding2_radius_lineEdit.setEnabled(False)
+        self.aut_winding2_fill_factor_lineEdit.setEnabled(status)
+        self.aut_winding2_strand_radius_lineEdit.setEnabled(status)
+        self.aut_winding2_groupBox.setVisible(status)
+
+        # Set turns of winding 2 (enable and visible)
+        self.aut_min_winding2_turns_lineEdit.setVisible(status)
+        self.aut_max_winding2_turns_lineEdit.setVisible(status)
+        self.aut_step_winding2_turns_lineEdit.setVisible(status)
+        self.aut_winding2_scheme_comboBox.setVisible(status)
+        self.aut_winding2_turns_label.setVisible(status)
+        self.aut_winding2_scheme_label.setVisible(status)
+
+        # set isolation of winding 2 (enable and visible)
+        self.aut_isolation_s2s_lineEdit.setEnabled(status)
+        self.aut_isolation_p2s_lineEdit.setEnabled(status)
+        self.aut_isolation_s2s_lineEdit.setVisible(status)
+        self.aut_isolation_p2s_lineEdit.setVisible(status)
+        self.aut_isolation_s2s_label.setVisible(status)
+        self.aut_isolation_p2s_label.setVisible(status)
+
+        self.aut_litz2_basket_listWidget.setEnabled(status)
+        self.aut_litz2_basket_listWidget.setVisible(status)
+        self.aut_litz2_basket_clear_all_pushbutton.setVisible(status)
+        self.aut_litz2_basket_clear_pushbutton.setVisible(status)
+        self.aut_litzbasket2_label.setVisible(status)
+
+
 
     def md_initialize_controls(self) -> None:
         """
@@ -347,6 +864,8 @@ class MainWindow(QMainWindow):
             # set winding definitions of winding 2 to editable
             self.md_winding2_enable(True)
 
+
+
     def md_winding2_enable(self, status: bool) -> None:
         """
         Enable/disable all fields being in contact with winding 2.
@@ -388,7 +907,7 @@ class MainWindow(QMainWindow):
     def md_gmsh_pre_visualisation(self):
         geo = self.md_setup_geometry()
         #geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
-        geo.create_model(freq=100000, visualize_before=False, save_png=True)
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, save_png=True)
         image_pre_visualisation = PIL.Image.open(geo.hybrid_color_visualize_file)
 
         px = image_pre_visualisation.load()
@@ -1347,13 +1866,15 @@ class MainWindow(QMainWindow):
                 air_gap_position_tag_array.append(0)
 
             if air_gap_count >= 2:
+
+                """
                 md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
                 md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
 
                 air_gap_heigth_array.append(md_air_gap_2_height)
                 air_gap_position_array.append(md_air_gap_2_position)
-                air_gap_position_tag_array.append(0)
-
+                air_gap_position_tag_array.append(0) """
+            """
             if air_gap_count >= 3:
                 md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
                 md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
@@ -1377,9 +1898,11 @@ class MainWindow(QMainWindow):
                 air_gap_heigth_array.append(md_air_gap_5_height)
                 air_gap_position_array.append(md_air_gap_5_position)
                 air_gap_position_tag_array.append(0)
+                """
 
 
             if air_gap_count == 0:
+
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
                 #air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
                 geo.set_air_gaps(air_gaps)
@@ -1718,8 +2241,11 @@ class MainWindow(QMainWindow):
                                       current=[winding1_amplitude_list[0]],
                                       show_results=True)
             elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                geo.single_simulation(freq=winding1_frequency_list[0], current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
-                                      phi_deg=[- 1.66257715 / np.pi * 180, 170])
+                geo.single_simulation(freq=winding1_frequency_list[0],
+                                      current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
+                                      phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+
+                                      #phi_deg=[- 1.66257715 / np.pi * 180, 170])
 
 
             #geo.single_simulation(freq=winding1_frequency_list[0], current=winding1_amplitude_list)
@@ -1727,18 +2253,33 @@ class MainWindow(QMainWindow):
                                  # phi_deg=[- 1.66257715 / np.pi * 180, 170])
 
         else:
-            amplitude_list = []
 
-            print(f"{winding1_amplitude_list = }")
-            for amplitude_value in winding1_amplitude_list:
-                amplitude_list.append([amplitude_value])
-            phase_rad_list = []
-            for phase_value in winding1_phi_rad_list:
-                phase_rad_list.append([phase_value])
+            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                amplitude_list = []
+                print(f"{winding1_amplitude_list = }")
+                for amplitude_value in winding1_amplitude_list:
+                    amplitude_list.append([amplitude_value])
+
+                phase_rad_list = []
+                for phase_value in winding1_phi_rad_list:
+                    phase_rad_list.append([phase_value])
+                geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list, phi_deg_list_list=phase_rad_list)
+
+            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                amplitude1_list = []
+                for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
+                    amplitude1_list.append([amplitude1_value, amplitude2_value])
+
+                phase1_rad_list = []
+                for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
+                    phase1_rad_list.append([phase1_value, phase2_value])
+
+                geo.excitation_sweep(frequency_list= winding1_frequency_list,
+                                     current_list_list=amplitude1_list,
+                                     phi_deg_list_list=phase1_rad_list)
 
 
-
-            geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
+            #geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
 
         # -----------------------------------------------
         # Read back results
@@ -1773,15 +2314,19 @@ class MainWindow(QMainWindow):
         self.core_w = comma_str_to_point_float(self.md_core_width_lineEdit.text())
         self.window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text())
         self.window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text())
-        """
         n_turns=int(self.md_winding1_turns_lineEdit.text())
-        method=self.md_air_gap_placement_method_comboBox.currentText()
+        method=(self.md_air_gap_placement_method_comboBox.currentText())
         n_air_gaps=int(self.md_air_gap_count_comboBox.currentText())
-        air_gap_h=4
-        air_gap_position = 2
-        """
-        inductance = self.core_w+self.window_w+self.window_h
-        self.Inductanceval_label.setText(f"{str(round(inductance,4))} H")
+        air_gap_h = self.md_air_gap_1_length_lineEdit.text()
+        air_gap_position = self.md_air_gap_1_position_lineEdit.text()
+        mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
+                                      [air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
+
+        mc1.core_reluctance()
+        mc1.air_gap_reluctance()
+        inductance = mc1.data_matrix[:, 9]
+
+        self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
 
 
     def therm_simulation(self):
@@ -1846,13 +2391,15 @@ class MainWindow(QMainWindow):
         # order for the thermal simulation to work (geo.single_simulation is not needed).
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo = self.md_setup_geometry()
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False,
+                         save_png=False)
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas,
                                colors_geometry=fmt.colors_geometry_ba_jonas)
 
         # Because the isolations inside of the winding window are not implemented in femm simulation.
-        # The validation on5ly works when the isolations for the FEMMT thermal simulation are turned off.
-        geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right,case_gap_bot)
+        # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
+        #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 def clear_layout(layout):
     while layout.count():

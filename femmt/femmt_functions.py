@@ -809,6 +809,7 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
     :return: [frequency_list, amplitude_pair_list, phase_pair_list_rad_or_deg]
     :rtype: List
     """
+
     # Calculate geometric lengths
     amp_tot = np.sqrt(np.sum(np.array(amplitude_pair_list) ** 2, axis=0))
     # amp_tot = np.max(amplitude_pairs, axis=0)
