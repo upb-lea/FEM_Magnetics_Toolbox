@@ -1,11 +1,18 @@
-import gmsh
+# Python standard libraries
 import re
 import json
-from os import path
+import numpy as np
+import os
+from typing import Dict
+
+# Third parry libraries
+import gmsh
 from onelab import onelab
-from .thermal_functions import *
-from .thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
-from ..femmt_functions import *
+
+# Local libraries
+import femmt.thermal.thermal_functions as thermal_f
+from femmt.thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
+from femmt.Data import FileData
 
 def create_case(boundary_regions, boundary_physical_groups, boundary_temperatures, boundary_flags, k_case, function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro, constraint_pro: ConstraintPro):
     """
@@ -36,11 +43,11 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
         "case_bot": boundary_physical_groups["bot"] 
     })
 
-def create_isolation(isolation_tag, k_iso, function_pro: FunctionPro, group_pro: GroupPro):
-    k_iso = {"isolation": k_iso}
+def create_insulation(insulation_tag, k_iso, function_pro: FunctionPro, group_pro: GroupPro):
+    k_iso = {"insulation": k_iso}
 
     function_pro.add_dicts(k_iso, None)
-    group_pro.add_regions({"isolation": isolation_tag})
+    group_pro.add_regions({"insulation": insulation_tag})
 
 def create_background(background_tag, k_air, function_pro: FunctionPro, group_pro: GroupPro):
     k_air = {"air": k_air}
@@ -81,7 +88,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
             for index, tag in enumerate(winding):
                 name = f"winding_{winding_index}_{index}"
                 windings_total_str += f"{name}, "
-                q_vol[name] = calculate_heat_flux_round_wire(winding_losses[winding_index][index], conductor_radii[winding_index], wire_distances[winding_index][index])
+                q_vol[name] = thermal_f.calculate_heat_flux_round_wire(winding_losses[winding_index][index], conductor_radii[winding_index], wire_distances[winding_index][index])
                 print(q_vol[name])
                 k[name] = k_windings
                 regions[name] = tag
@@ -92,7 +99,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
     function_pro.add_dicts(k, q_vol)
     group_pro.add_regions(regions)
 
-def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_material_file_path, sensor_points_file, core_file, isolation_file, winding_file, windings, print_sensor_values, post_operation_pro: PostOperationPro):
+def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_material_file_path, sensor_points_file, core_file, insulation_file, winding_file, windings, print_sensor_values, post_operation_pro: PostOperationPro):
 
     # Add pos file generation
     post_operation_pro.add_on_elements_of_statement("T", "Total", thermal_file_path)
@@ -113,7 +120,7 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
 
     # Add regions
     post_operation_pro.add_on_elements_of_statement("T", "core", core_file, "SimpleTable", 0)
-    post_operation_pro.add_on_elements_of_statement("T", "isolation", isolation_file, "SimpleTable", 0)
+    post_operation_pro.add_on_elements_of_statement("T", "insulation", insulation_file, "SimpleTable", 0)
 
     append = False
     for winding_index, winding in enumerate(windings):
@@ -124,14 +131,20 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
                 if not append:
                     append = True
 
-def simulate(onelab_folder_path, mesh_file, solver_file):
+def simulate(onelab_folder_path: str, mesh_file: str, solver_file: str, silent: bool):
     c = onelab.client(__file__)
 
-    # Run simulations as sub clients (non blocking??)
-    mygetdp = path.join(onelab_folder_path, "getdp")
-    c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2")
+    verbose = ""
+    if silent:
+        verbose = "-verbose 1"
+    else:
+        verbose = "-verbose 5"
 
-def parse_simple_table(file_path):
+    # Run simulations as sub clients (non blocking??)
+    mygetdp = os.path.join(onelab_folder_path, "getdp")
+    c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2 " + verbose)
+
+def parse_simple_table(file_path: str):
     with open(file_path, "r") as fd:
         lines = fd.readlines()
         print("lastline", lines[-1])
@@ -141,7 +154,7 @@ def parse_simple_table(file_path):
 
         return np_array
 
-def parse_gmsh_parsed(file_path):
+def parse_gmsh_parsed(file_path: str):
     regex_view_line = "View \"(?P<key>\w+)\" \{\n"
     regex_SP_line = "SP\(-?\d+\.\d+(e-\d+)?,-?\d+\.\d+(e-\d+)?,0\)\{(?P<value>-?\d+\.\d+)\};\n"
 
@@ -171,24 +184,24 @@ def parse_gmsh_parsed(file_path):
 
     return value_dict
 
-def post_operation(output_file, sensor_points_file, core_file, isolation_file, winding_file):
+def post_operation(output_file: str, sensor_points_file: str, core_file: str, insulation_file: str, winding_file: str):
     # Extract sensor_points
     sensor_point_values = None
     if sensor_points_file is not None:
         sensor_point_values = parse_gmsh_parsed(sensor_points_file)
 
-    # Extract min/max/averages from core, isolations and windings (and air?)
+    # Extract min/max/averages from core, insulations and windings (and air?)
     # core
     core_values = parse_simple_table(core_file)
     core_min = core_values.min()
     core_max = core_values.max()
     core_mean = core_values.mean()
 
-    # isolations
-    isolation_values = parse_simple_table(isolation_file)
-    isolation_min = isolation_values.min()
-    isolation_max = isolation_values.max()
-    isolation_mean = isolation_values.mean()
+    # insulations
+    insulation_values = parse_simple_table(insulation_file)
+    insulation_min = insulation_values.min()
+    insulation_max = insulation_values.max()
+    insulation_mean = insulation_values.mean()
 
     # windings
     winding_values = parse_gmsh_parsed(winding_file)
@@ -231,10 +244,10 @@ def post_operation(output_file, sensor_points_file, core_file, isolation_file, w
             "max": core_max,
             "mean": core_mean
         },
-        "isolations": {
-            "min": isolation_min,
-            "max": isolation_max,
-            "mean": isolation_mean
+        "insulations": {
+            "min": insulation_min,
+            "max": insulation_max,
+            "mean": insulation_mean
         },
         "windings": windings,
     }
@@ -245,10 +258,9 @@ def post_operation(output_file, sensor_points_file, core_file, isolation_file, w
     with open(output_file, "w") as fd:
         json.dump(data, fd, indent=2)
 
-def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, results_log_file_path, 
-    tags_dict, thermal_conductivity_dict, boundary_temperatures, 
-    boundary_flags, boundary_physical_groups, core_area, conductor_radii, wire_distances,
-    show_results: bool, print_sensor_values: bool):
+def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict, 
+    boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float, wire_distances: float,
+    show_results: bool, print_sensor_values: bool, silent: bool):
     """
     Runs a thermal simulation.
     
@@ -266,28 +278,33 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
 
     :param return: -
     """
-
+    # Get paths
+    onelab_folder_path = file_data.onelab_folder_path
+    results_folder_path = file_data.results_folder_path
+    model_mesh_file_path = file_data.thermal_mesh_file
+    results_log_file_path = file_data.e_m_results_log_path
+    
     # Initial Clearing of gmsh data
     gmsh.clear()
     
-    losses = read_results_log(results_log_file_path)
+    losses = thermal_f.read_results_log(results_log_file_path)
 
     # Relative paths
-    map_pos_file = path.join(results_folder_path, "thermal.pos")
-    influx_pos_file = path.join(results_folder_path, "thermal_influx.pos")
-    material_pos_file = path.join(results_folder_path, "thermal_material.pos")
-    solver_folder_path = path.join(os.path.dirname(__file__), "solver")
-    thermal_template_file = path.join(solver_folder_path, "Thermal.pro")
-    parameters_file = path.join(solver_folder_path, "Parameters.pro")
-    function_file = path.join(solver_folder_path, "Function.pro")
-    group_file = path.join(solver_folder_path, "Group.pro")
-    constraint_file = path.join(solver_folder_path, "Constraint.pro")
-    post_operation_file = path.join(solver_folder_path, "PostOperation.pro")
-    sensor_points_file = path.join(results_folder_path, "sensor_points.txt") if print_sensor_values else None
-    core_file = path.join(results_folder_path, "core.txt")
-    isolation_file = path.join(results_folder_path, "isolation.txt")
-    winding_file = path.join(results_folder_path, "winding.txt")
-    output_file = path.join(results_folder_path, "results_thermal.json")
+    map_pos_file = os.path.join(results_folder_path, "thermal.pos")
+    influx_pos_file = os.path.join(results_folder_path, "thermal_influx.pos")
+    material_pos_file = os.path.join(results_folder_path, "thermal_material.pos")
+    solver_folder_path = os.path.join(os.path.dirname(__file__), "solver")
+    thermal_template_file = os.path.join(solver_folder_path, "Thermal.pro")
+    parameters_file = os.path.join(solver_folder_path, "Parameters.pro")
+    function_file = os.path.join(solver_folder_path, "Function.pro")
+    group_file = os.path.join(solver_folder_path, "Group.pro")
+    constraint_file = os.path.join(solver_folder_path, "Constraint.pro")
+    post_operation_file = os.path.join(solver_folder_path, "PostOperation.pro")
+    sensor_points_file = os.path.join(results_folder_path, "sensor_points.txt") if print_sensor_values else None
+    core_file = os.path.join(results_folder_path, "core.txt")
+    insulation_file = os.path.join(results_folder_path, "insulation.txt")
+    winding_file = os.path.join(results_folder_path, "winding.txt")
+    output_file = os.path.join(results_folder_path, "results_thermal.json")
 
     if not gmsh.isInitialized():
         gmsh.initialize()
@@ -319,22 +336,22 @@ def run_thermal(onelab_folder_path, results_folder_path, model_mesh_file_path, r
     create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, tags_dict["air_gaps_tag"], 
         thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
     create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, wire_distances, function_pro, group_pro)
-    create_isolation(tags_dict["isolations_tag"], thermal_conductivity_dict["isolation"], function_pro, group_pro)
+    create_insulation(tags_dict["insulations_tag"], thermal_conductivity_dict["insulation"], function_pro, group_pro)
     #create_post_operation(map_pos_file.replace("\\", "/"), influx_pos_file.replace("\\", "/"), material_pos_file.replace("\\", "/"), sensor_points_file, core_file,
-    #    isolation_file, winding_file, tags_dict["winding_tags"], post_operation_pro)
+    #    insulation_file, winding_file, tags_dict["winding_tags"], post_operation_pro)
     create_post_operation(map_pos_file, influx_pos_file, material_pos_file, sensor_points_file, core_file,
-        isolation_file, winding_file, tags_dict["winding_tags"], print_sensor_values, post_operation_pro)
+        insulation_file, winding_file, tags_dict["winding_tags"], print_sensor_values, post_operation_pro)
 
     # Create files
     parameters_pro.create_file(parameters_file)
     function_pro.create_file(function_file)
-    group_pro.create_file(group_file, tags_dict["air_gaps_tag"] != None)
+    group_pro.create_file(group_file, tags_dict["air_gaps_tag"] != None, tags_dict["insulations_tag"] != None)
     constraint_pro.create_file(constraint_file)
     post_operation_pro.create_file(post_operation_file)
 
-    simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file)
+    simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file, silent)
 
-    post_operation(output_file, sensor_points_file, core_file, isolation_file, winding_file)
+    post_operation(output_file, sensor_points_file, core_file, insulation_file, winding_file)
 
     if show_results:
         gmsh.open(map_pos_file)

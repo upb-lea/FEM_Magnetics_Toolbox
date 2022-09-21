@@ -1,3 +1,4 @@
+# Python standard libraries
 from typing import List, Tuple
 
 class ConstraintPro:
@@ -31,15 +32,19 @@ class GroupPro:
     def add_regions(self, more_regions):
         self.regions.update(more_regions)
 
-    def create_file(self, file_path, air_gaps_enabled = False):
+    def create_file(self, file_path, air_gaps_enabled = False, insulation_enabled = False):
         with open(file_path, "w") as fd:
             fd.write("Group {\n")
             for key, value in self.regions.items():
                 fd.write(f"\t{key} = Region[{value}];\n")
+            air_gaps = ""
             if air_gaps_enabled:
-                fd.write("\tCold = Region[{air, air_gaps, isolation, case_top, case_top_right, case_right, case_bot_right, case_bot}];\n")
-            else:
-                fd.write("\tCold = Region[{air, case_top, case_top_right, case_right, case_bot_right, case_bot}];\n")
+                air_gaps = ", air_gaps"
+            insulation = ""
+            if insulation_enabled:
+                insulation = ", insulation"
+
+            fd.write(f"\tCold = Region[{{air, case_top, case_top_right, case_right, case_bot_right, case_bot{air_gaps}{insulation}}}];\n")
             fd.write("\tWarm = Region[{core, windings_total}];\n")
             fd.write("\tTotal = Region[{Warm, Cold}];\n")
             fd.write("}")

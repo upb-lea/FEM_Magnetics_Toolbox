@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 from operator import itemgetter
 import numpy as np
 from femmt import MagneticComponent
-from femmt_functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
+from Functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
     sort_out_small_harmonics, store_as_npy_in_directory
 from DAB.optimization.global_grid.DAB_Input_Data import working_points, non_reluctance_parameters, L_goal, power_nom, power_max
 import itertools

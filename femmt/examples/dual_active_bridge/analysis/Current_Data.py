@@ -1,7 +1,7 @@
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
-from femmt_functions import get_dicts_with_keys_and_values, get_dict_with_unique_keys
+from Functions import get_dicts_with_keys_and_values, get_dict_with_unique_keys
 
 # Load Nikolas' Data
 path = 'C:/Users/tillp/sciebo/Exchange_DAB/current_shapes.npy'
