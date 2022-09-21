@@ -227,6 +227,8 @@ In order to run thermal a thermal simulation different values are needed:
 - boundary temperatures dict: The temperatures which will be applied at the edge of the case (dirichlet boundary condition)
 - boundary flags: By disabling a specific boundary its condition can be set to a von neumann boundary condition ignoring the temperature parameter
 
+<img src="documentation/geometry_thermal.png" width="800" alt="Thermal definitions">
+
 Have a look at this example on how to set the parameters since the dictionary keywords are important to write correctly:
 ```python
 thermal_conductivity_dict = {
