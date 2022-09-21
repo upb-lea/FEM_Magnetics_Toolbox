@@ -16,8 +16,6 @@ import materialdatabase as mdb
 import matplotlib.pyplot as plt
 database = mdb.MaterialDatabase()
 from matplotlib.widgets import Cursor
-
-
 import mplcursors
 
 # import sys
@@ -311,6 +309,10 @@ class MainWindow(QMainWindow):
         self.aut_litz2_data_listWidget.addItem("2.0*405*0.071")
         self.aut_litz2_data_listWidget.addItem("2.0*800*0.05")
 
+        self.aut_airgap_type_listWidget.addItem("Edge distributed")
+        self.aut_airgap_type_listWidget.addItem("Centre distributed")
+
+
         self.aut_core_material_add_pushButton.clicked.connect(self.oncmatMultipleClicked)
         self.aut_select_all_core_mat_pushButton.clicked.connect(self.cmatselectall)
         self.aut_core_material_data_listWidget.itemDoubleClicked.connect(self.oncmatClicked)
@@ -328,6 +330,12 @@ class MainWindow(QMainWindow):
         self.aut_litz2_data_listWidget.itemDoubleClicked.connect(self.onl2Clicked)
         self.aut_litz2_basket_clear_all_pushbutton.clicked.connect(self.onl2ClearallClicked)
         self.aut_litz2_basket_clear_pushbutton.clicked.connect(self.onl2ClearClicked)
+
+        self.aut_add_air_gap_type_pushButton.clicked.connect(self.onairgaptypeMultipleClicked)
+        self.aut_select_all_airgap_type_pushButton.clicked.connect(self.airgaptypeselectall)
+        self.aut_airgap_type_listWidget.itemDoubleClicked.connect(self.onairgaptypeClicked)
+        self.aut_air_gap_type_basket_clear_all_pushbutton.clicked.connect(self.onairgaptypeClearallClicked)
+        self.aut_air_gap_type_basket_clear_pushbutton.clicked.connect(self.onairgaptypeClearClicked)
 
         self.aut_winding1_implicit_litz_comboBox.currentTextChanged.connect(self.aut_winding1_change_litz_implicit)
         self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
@@ -366,17 +374,13 @@ class MainWindow(QMainWindow):
         self.aut_min_air_gap_count_lineEdit.setValidator(float_validator)
         self.aut_max_air_gap_count_lineEdit.setValidator(float_validator)
 
-        self.aut_air_gap_1_length_lineEdit.setValidator(float_validator)
-        self.aut_air_gap_2_length_lineEdit.setValidator(float_validator)
-        self.aut_air_gap_3_length_lineEdit.setValidator(float_validator)
-        self.aut_air_gap_4_length_lineEdit.setValidator(float_validator)
-        self.aut_air_gap_5_length_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_length_min_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_length_max_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_length_step_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_position_min_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_position_step_lineEdit.setValidator(float_validator)
+        self.aut_air_gap_position_step_lineEdit.setValidator(float_validator)
 
-        self.aut_air_gap_1_position_lineEdit.setValidator(float_validator)
-        self.aut_air_gap_2_position_lineEdit.setValidator(float_validator)
-        self.aut_air_gap_3_position_lineEdit.setValidator(float_validator)
-        self.aut_air_gap_4_position_lineEdit.setValidator(float_validator)
-        self.aut_air_gap_5_position_lineEdit.setValidator(float_validator)
 
         self.aut_isolation_p2p_lineEdit.setValidator(float_validator)
         self.aut_isolation_p2s_lineEdit.setValidator(float_validator)
@@ -395,12 +399,12 @@ class MainWindow(QMainWindow):
         self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
 
     def datupdateraph(self):
+
         # -----Enter the freq and Temp-----------
         temperature1 = int(self.dat_mat1_temp_lineEdit.text())
         mat1_name = self.dat_core_material1_comboBox.currentText()
         mat2_name = self.dat_core_material2_comboBox.currentText()
         mdb.compare_core_loss_flux_density_data(material_list=[mat1_name, mat2_name], temperature=temperature1)
-        plt.show()
         plt.savefig('plot.png', dpi=300, bbox_inches='tight')
 
         # Loading image
@@ -430,8 +434,6 @@ class MainWindow(QMainWindow):
 
 
 
-
-
     def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
         """
         Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
@@ -455,6 +457,36 @@ class MainWindow(QMainWindow):
             self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
             self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
             self.aut_winding1_radius_lineEdit.setEnabled(True)
+
+    def onairgaptypeClearallClicked(self):
+        self.aut_airgap_type_basket_listwidget.clear()
+
+    def onairgaptypeClearClicked(self):
+        List_item = self.aut_airgap_type_basket_listwidget.selectedItems()
+        for item in List_item:
+            self.aut_airgap_type_basket_listwidget.takeItem(self.aut_airgap_type_basket_listwidget.row(item))
+
+    def onairgaptypeMultipleClicked(self):
+        itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
+                         range(self.aut_airgap_type_basket_listwidget.count())]
+        checkitems = [item.text() for item in self.aut_airgap_type_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_airgap_type_basket_listwidget.addItem(i)
+        else:
+            pass
+
+    def onairgaptypeClicked(self):
+        itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
+                         range(self.aut_airgap_type_basket_listwidget.count())]
+        checkitem = self.aut_airgap_type_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_airgap_type_basket_listwidget.addItem(self.aut_airgap_type_listWidget.currentItem().text())
+        else:
+            pass
+
+    def airgaptypeselectall(self):
+        self.aut_airgap_type_listWidget.selectAll()
 
     def oncmatClearallClicked(self):
         self.aut_core_material_basket_listWidget.clear()
@@ -536,7 +568,6 @@ class MainWindow(QMainWindow):
         else:
             pass
 
-
     def onl2Clicked(self):
         itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz2_basket_listWidget.count())]
@@ -568,7 +599,6 @@ class MainWindow(QMainWindow):
         aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
         aut_core_geometry_options.insert(0, 'Manual')
         dat_core_material_options = ['N95', 'N97', 'N87']
-
         for option in dat_core_material_options:
             self.dat_core_material1_comboBox.addItem(option)
         for option in dat_core_material_options:
@@ -611,7 +641,14 @@ class MainWindow(QMainWindow):
         self.aut_step_winding2_turns_lineEdit.setPlaceholderText("Step value")
         self.aut_min_air_gap_count_lineEdit.setPlaceholderText("Minimum value")
         self.aut_max_air_gap_count_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_goal_inductance_val_lineEdit.setPlaceholderText("Goal inductance")
+        self.aut_goal_inductance_val_lineEdit.setPlaceholderText(" Value in Henry")
+        self.aut_air_gap_length_min_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_air_gap_length_max_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_air_gap_length_step_lineEdit.setPlaceholderText("Step value")
+        self.aut_air_gap_position_min_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_air_gap_position_max_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_air_gap_position_step_lineEdit.setPlaceholderText("Step value")
+
 
         "Signals in FEM Simulations Tab"
 
@@ -1829,13 +1866,15 @@ class MainWindow(QMainWindow):
                 air_gap_position_tag_array.append(0)
 
             if air_gap_count >= 2:
+
+                """
                 md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
                 md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
 
                 air_gap_heigth_array.append(md_air_gap_2_height)
                 air_gap_position_array.append(md_air_gap_2_position)
-                air_gap_position_tag_array.append(0)
-
+                air_gap_position_tag_array.append(0) """
+            """
             if air_gap_count >= 3:
                 md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
                 md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
@@ -1859,9 +1898,11 @@ class MainWindow(QMainWindow):
                 air_gap_heigth_array.append(md_air_gap_5_height)
                 air_gap_position_array.append(md_air_gap_5_position)
                 air_gap_position_tag_array.append(0)
+                """
 
 
             if air_gap_count == 0:
+
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
                 #air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, None, 0.0005)
                 geo.set_air_gaps(air_gaps)
@@ -2273,15 +2314,19 @@ class MainWindow(QMainWindow):
         self.core_w = comma_str_to_point_float(self.md_core_width_lineEdit.text())
         self.window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text())
         self.window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text())
-        """
         n_turns=int(self.md_winding1_turns_lineEdit.text())
-        method=self.md_air_gap_placement_method_comboBox.currentText()
+        method=(self.md_air_gap_placement_method_comboBox.currentText())
         n_air_gaps=int(self.md_air_gap_count_comboBox.currentText())
-        air_gap_h=4
-        air_gap_position = 2
-        """
-        inductance = self.core_w+self.window_w+self.window_h
-        self.Inductanceval_label.setText(f"{str(round(inductance,4))} H")
+        air_gap_h = self.md_air_gap_1_length_lineEdit.text()
+        air_gap_position = self.md_air_gap_1_position_lineEdit.text()
+        mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
+                                      [air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
+
+        mc1.core_reluctance()
+        mc1.air_gap_reluctance()
+        inductance = mc1.data_matrix[:, 9]
+
+        self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
 
 
     def therm_simulation(self):
