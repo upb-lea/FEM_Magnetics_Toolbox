@@ -122,8 +122,7 @@ In it you can find
 * losses per winding and for each individual winding,
 * self- and mutual inductances.
 
-For more information about the possible winding types, please
-have a look `here <winding_overview.md>`__.
+For a short guide on how to create a model, plase have a look `here <model_creation.md>`__.
 
 Counting arrow system
 ~~~~~~~~~~~~~~~~~~~~~~~~~

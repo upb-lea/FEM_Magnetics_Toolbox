@@ -101,11 +101,11 @@ qwerty = 1
 #     # winding.set_solid_conductor(0.0015)
 #     geo.set_windings([winding])
 #
-#     # 5. set isolations
-#     isolation = fmt.Isolation()
-#     isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-#     isolation.add_winding_isolations(0.0001)
-#     geo.set_isolation(isolation)
+#     # 5. set insulations
+#     insulation = fmt.insulation()
+#     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+#     insulation.add_winding_insulations(0.0001)
+#     geo.set_insulation(insulation)
 #
 #     # 5. create the model
 #     geo.create_model(freq=100000, visualize_before=False, save_png=False)

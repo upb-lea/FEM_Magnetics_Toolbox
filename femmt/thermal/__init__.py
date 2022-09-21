@@ -1,3 +1,3 @@
-from .thermal_classes import *
-from .thermal_functions import *
-from .thermal_simulation import *
+from femmt.thermal.thermal_classes import *
+from femmt.thermal.thermal_functions import *
+from femmt.thermal.thermal_simulation import *

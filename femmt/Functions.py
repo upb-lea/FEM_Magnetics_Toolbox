@@ -1,7 +1,6 @@
-# Usual Python libraries
+# Python standard libraries
 import numpy.typing as npt
 import numpy as np
-from matplotlib import pyplot as plt
 import json
 import random
 import string
@@ -11,9 +10,18 @@ import sys
 import os
 import pandas as pd
 import time
-import gmsh
 import warnings
 from typing import Union, List, Tuple, Dict
+from matplotlib import pyplot as plt
+
+# Third parry libraries
+import gmsh
+
+# Local libraries
+from femmt.Enumerations import *
+
+# Needed for femmt_print
+silent = False
 
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
@@ -31,7 +39,7 @@ colors_geometry_femmt_default = {
                     "core": "black",
                     "air_gap": "yellow",
                     "winding": ["orange", "brown", "yellow"],
-                    "isolation": "blue",
+                    "insulation": "blue",
                     "potting_inner": "grey",
                     "potting_outer": "grey",
                 }
@@ -56,7 +64,7 @@ colors_geometry_ba_jonas = {
                     "core": "black",
                     "air_gap": "yellow",
                     "winding": ["green", "red", "yellow"],
-                    "isolation": "grey_dark",
+                    "insulation": "grey_dark",
                     "potting_inner": "grey",
                     "potting_outer": "grey_dark_dark",
                 }
@@ -65,7 +73,7 @@ colors_geometry_draw_only_lines = {
                     "core": "grey_dark",
                     "air_gap": "grey_dark",
                     "winding": ["green", "green", "green"],
-                    "isolation": "grey_dark",
+                    "insulation": "grey_dark",
                     "potting_inner": "grey_dark",
                     "potting_outer": "grey_dark",
                 }
@@ -242,11 +250,11 @@ def wire_material_database() -> Dict:
 
     wire_material = {}
 
-    wire_material["copper"] = {
+    wire_material["Copper"] = {
         "sigma": 5.8e7,
     }
 
-    wire_material["aluminium"] = {
+    wire_material["Aluminium"] = {
         "sigma": 3.7e7,
     }
 
@@ -1051,6 +1059,14 @@ def point_is_in_rect(x, y, rect):
         return True
     
     return False
+
+def set_silent_status(s: bool):
+    global silent
+    silent = s
+
+def femmt_print(text):
+    if not silent:
+        print(text)
 
 if __name__ == '__main__':
     # TODO Relative path
