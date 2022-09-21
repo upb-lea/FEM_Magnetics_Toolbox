@@ -18,7 +18,7 @@ stop_criterion          = 1e-8;
 Flag_Circuit            = Flag_ImposedVoltage;
 // ----------------------
 // half inductor with axisymmetry
-// 1 means full zylinder
+// 1 means full cylinder
 SymFactor               = 1. ;
 CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
 
@@ -194,11 +194,11 @@ Function {
 
   If(!Flag_NL)
     If(Flag_Fixed_Loss_Angle)
-        mu[#{Iron}]   = Complex[mu0*mur_real, mu0*mur_imag] ;
+        mu[#{Iron}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
         nu[#{Iron}]   = 1/mu[$1, $2] ;
     ElseIf(Flag_Permeability_From_Data)
         //mu[#{Iron}]   = Complex[mu0*(mur^2-f_N95_mu_imag[$1, $2]^2)^(0.5), mu0*f_N95_mu_imag[$1, $2]] ;  // TODO
-        mu[#{Iron}]   = Complex[mu0*f_N95_mu_real[$1], mu0*f_N95_mu_imag[$1]] ;
+        mu[#{Iron}]   = Complex[mu0*f_N95_mu_real[$1], -mu0*f_N95_mu_imag[$1]] ;
         nu[#{Iron}]   = 1/mu[$1, $2] ;
     Else
         mu[#{Iron}]   = mu0*mur ;
@@ -236,8 +236,8 @@ Function {
   //nuOm[#{Winding1, Winding2}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
 
 
-  // Skin Coefficient - will be multiplied with current "ir", which is zero except in windings
-  kkk[#{Iron, Air, Winding1, Winding2}] =  1 ; // choose arbitrary value
+  // Resistive/Skin Coefficient - will be multiplied with current "ir", which is zero except in windings
+  kkk[#{Iron, Air, Winding1, Winding2}] =  0 ; // choose arbitrary value
 
   If(Flag_HomogenisedModel1)
     // Homogenization coefficients
@@ -254,9 +254,9 @@ Function {
     skin_rhoi_1[] = InterpolationLinear[$1]{ skin_rhoi_list_1() };
     prox_nur_1[]  = InterpolationLinear[$1]{ prox_nur_list_1() } ;
     prox_nui_1[]  = InterpolationLinear[$1]{ prox_nui_list_1() } ;
-    nu[#{StrandedWinding1}] = nu0*Complex[prox_nur_1[Rr1], -prox_nui_1[Rr1]*Fill1*Rr1^2/2];
+    nu[#{StrandedWinding1}] = nu0*Complex[prox_nur_1[Rr1], prox_nui_1[Rr1]*Fill1*Rr1^2/2];
     nuOm[#{StrandedWinding1}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
-    kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;
+    kkk[#{StrandedWinding1}] =  SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;  // TODO: Add qI (skin_rhoi_1[]); effects the reactive power (usually has minor effect)
     sigma[#{StrandedWinding1}] = SymFactor * skin_rhor_1[Rr1] / sigma_winding_1 / Fill1 ;
   EndIf
 
@@ -456,17 +456,17 @@ PostProcessing {
       // Electrical Field
 
       { Name e ; Value { Term { [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ; In Domain ; Jacobian Vol ; } } }
-      { Name MagEz ; Value { Term { [ Norm [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name MagEz ; Value { Term { [  -1*(Dt[{a}]+{ur}/CoefGeo)  ] ; In Domain ; Jacobian Vol ; } } }
 
 
 
       // ------------------------------------------------------------------------------------------------
       // Magnetic Field
 
-      { Name h ; Value { Term { [ nu[{d a}]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Magh ; Value { Term { [ Norm[ nu[{d a}]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Mag_h_real ; Value { Term { [ Norm[ Re [ nu[{d a}]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Mag_h_imag ; Value { Term { [ Norm[ Im [ nu[{d a}]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name h ; Value { Term { [ nu[{d a}, Freq]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Magh ; Value { Term { [ Norm[ nu[{d a}, Freq]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Mag_h_real ; Value { Term { [ Norm[ Re [ nu[{d a}, Freq]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name Mag_h_imag ; Value { Term { [ Norm[ Im [ nu[{d a}, Freq]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
 
 
 
@@ -489,10 +489,10 @@ PostProcessing {
       //{ Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
       { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name mur_re ; Value { Term { [ Re[ mu[{d a}, Freq] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name mur_im ; Value { Term { [ Im[ mu[{d a}, Freq] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name mur_im ; Value { Term { [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
+      { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_im / (mur_re^2 + mur_im^2)
 
 
       // ------------------------------------------------------------------------------------------------
@@ -565,7 +565,7 @@ PostProcessing {
              In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2Hprox ; Value { Integral {
-            [ 0.5*CoefGeo*(-1)*Re[{d a}*Conj[nuOm[]*{d a}]] ] ;// 0.5 added by Till
+            [ 0.5*CoefGeo*Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] ] ;// 0.5 added by Till
             In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2Hskin ; Value { Integral {
@@ -607,11 +607,11 @@ PostProcessing {
 
       { Name p_hyst ; Value { Integral {
         // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
-        [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
+        [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
 
       { Name p_hyst_density ; Value { Integral {
-        [ 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
+        [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
         In Iron ; Jacobian Vol ; Integration II ;} } }
 
 
@@ -663,11 +663,12 @@ PostProcessing {
       // Voltage (Voltage_i = dFlux_Linkage_i / dt)
 
       { Name Voltage_1 ; Value {
-        //Integral { [ CoefGeo / AreaCell1 * CompZ[-Dt[{a}]] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
-        Integral { [ CoefGeo / AreaCell1 * CompZ[-Conj[ Dt[{a}] ] ] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+        Integral { [ CoefGeo / AreaCell1 * (CompZ[Dt[{a}]]) + kkk[]*Norm[{ir}] / AreaCell1 ]; In DomainCond1; Jacobian Vol; Integration II; } } }  // for solid case kkk is zero
+        //Integral { [ CoefGeo / AreaCell1 * CompZ[-Conj[ Dt[{a}] ] ] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
       If(Flag_Transformer)
         { Name Voltage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * CompZ[-Dt[{a}]] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+          Integral { [ CoefGeo / AreaCell2 * (CompZ[Dt[{a}]] - kkk[]*Norm[{ir}] / AreaCell2) ]; In DomainCond2; Jacobian Vol; Integration II; } } }  // for solid case kkk is zero
+          // TODO: kkk and -kkk must be replace with a general implementation concerning the counting system
       EndIf
 
 

@@ -4,15 +4,17 @@ import fileinput
 import numpy as np
 import os
 import sys
+import gmsh
+import json
+import warnings
+import inspect
+
+from onelab import onelab
 from matplotlib import pyplot as plt
 from scipy.optimize import brentq
-import gmsh
-from onelab import onelab
-import json
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
-import warnings
-
+from datetime import datetime
 from typing import List, Union, Optional, Dict
 from .thermal.thermal_simulation import *
 from .thermal.thermal_functions import *
@@ -20,12 +22,6 @@ from .femmt_functions import *
 from .electro_magnetic.Analytical_Core_Data import *
 from .femmt_model_classes import *
 from .femmt_enumerations import *
-
-# Optional usage of FEMM tool by David Meeker
-# 2D Mesh and FEM interfaces (only for windows machines)
-if os.name == 'nt':
-    install_femm_if_missing()
-    import femm
 
 #  ===== Main Class  =====
 class MagneticComponent:
@@ -41,7 +37,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory = os.path.dirname(__file__)):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory = None):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -55,20 +51,40 @@ class MagneticComponent:
               f"Initialized a new Magnetic Component of type {component_type}\n"
               f"--- --- --- ---")
 
+        # Get caller filepath when no working_directpry was set
+        if working_directory is None:
+            caller_filename = inspect.stack()[1].filename 
+            working_directory = os.path.join(os.path.dirname(caller_filename), "femmt")
+
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
         self.update_paths(working_directory)
 
         self.correct_outer_leg = False
-
+        
         # Initialization of all instance variables
 
         # Breaking variable
         self.valid = True
+
+        # To make sure femm is only imported once
+        self.femm_is_imported = False
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Component Geometry
         self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" (or "three-phase-transformer")
         self.dimensionality = "2D"  # "2D" or "3D" # TODO As Enum? Is this even needed?
         self.symmetry = "radial"  # "radial", "linear", None # TODO As Enum? Is this even needed?
+
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Components
+        self.core = None
+        self.air_gaps = None
+        self.windings = None
+        self.isolation = None
+        self.virtual_winding_windows = None
+        self.stray_path = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
@@ -101,7 +117,7 @@ class MagneticComponent:
         self.current_density = [None] * self.n_windings  # Defined for every conductor
         self.voltage = [None] * self.n_windings  # Defined for every conductor
         self.frequency = None
-        self.phase_tmp = np.zeros(self.n_windings)  # Default is zero, Defined for every conductor
+        self.phase_deg = np.zeros(self.n_windings)  # Default is zero, Defined for every conductor
         self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
         self.delta = None
 
@@ -145,13 +161,10 @@ class MagneticComponent:
         self.onelab_setup()
         self.onelab_client = onelab.client(__file__)
 
-    def create_folders(self, folders):
-        if type(folders) is list:
-            for folder in folders:
-                if not os.path.exists(folder):
-                    os.mkdir(folder)
-        else:
-            raise Exception(f"{folders} needs to be a list of strings")
+    def create_folders(self, *args):
+        for folder in list(args):
+            if not os.path.exists(folder):
+                os.mkdir(folder)
 
     def update_paths(self, working_directory):
         # Setup folder paths 
@@ -169,7 +182,7 @@ class MagneticComponent:
         self.thermal_results_folder_path = os.path.join(self.results_folder_path, "thermal")
 
         # Setup file paths
-        self.e_m_results_log_path = os.path.join(self.results_folder_path, "result_log_electro_magnetic.json")
+        self.e_m_results_log_path = os.path.join(self.results_folder_path, "log_electro_magnetic.json")
         self.femm_results_log_path = os.path.join(self.femm_folder_path, "result_log_femm.json")
         self.config_path = os.path.join(self.femmt_folder_path, "config.json")
         self.e_m_mesh_file = os.path.join(self.mesh_folder_path, "electro_magnetic.msh")
@@ -180,9 +193,9 @@ class MagneticComponent:
         self.thermal_mesh_file = os.path.join(self.mesh_folder_path, "thermal.msh")
 
         # Create necessary folders
-        self.create_folders([self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
+        self.create_folders(self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
             self.results_folder_path, self.e_m_values_folder_path, self.e_m_fields_folder_path, 
-            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path])
+            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
@@ -239,7 +252,7 @@ class MagneticComponent:
                            colors_geometry: Dict = colors_geometry_femmt_default) -> None:
         """
         
-        Starts the thermal simulation using thermal.py
+        Starts the thermal simulation using thermal_simulation.py
 
         :param color_scheme: colorfile (definition for red, green, blue, ...)
         :type color_scheme: Dict
@@ -249,13 +262,29 @@ class MagneticComponent:
         :return: -
         """
         # Create necessary folders
-        self.create_folders([self.thermal_results_folder_path])
+        self.create_folders(self.thermal_results_folder_path)
 
         self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before)
 
         if not os.path.exists(self.e_m_results_log_path):
             # Simulation results file not created
             raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
+
+        # Check if the results log path simulation settings fit the current simulation settings
+        current_settings = encode_settings(self)
+        del current_settings["working_directory"]
+        del current_settings["date"]
+
+        log_settings = None
+        with open(self.e_m_results_log_path, "r") as fd:
+            content = json.load(fd)
+            log_settings = content["simulation_settings"]
+        del log_settings["working_directory"]
+        del log_settings["date"]
+        
+        if current_settings != log_settings:
+            raise Exception(f"The settings from the log file {self.e_m_results_log_path} do not match the current simulation settings. \
+                                Please re-run the magnetic simulation.")
 
         tags = {
             "core_tag": self.mesh.ps_core,
@@ -308,13 +337,10 @@ class MagneticComponent:
 
         :return: -
         """
-        # find out path of femmt (installed module or directly opened in git)?
-        config_file_path = os.path.join(self.working_directory, 'config.json')
-
         # check if config.json is available and not empty
-        if os.path.isfile(config_file_path) and os.stat(config_file_path).st_size != 0:
+        if os.path.isfile(self.config_path) and os.stat(self.config_path).st_size != 0:
             onelab_path = ""
-            with open(config_file_path, "r") as fd:
+            with open(self.config_path, "r") as fd:
                 loaded_dict = json.loads(fd.read())
                 onelab_path = loaded_dict['onelab']
 
@@ -329,26 +355,18 @@ class MagneticComponent:
         onelab_path_wrong = True
         path_wrong = True
         while onelab_path_wrong:
-            while path_wrong:
-                onelab_path = input("Enter the parent folder of onelab in ways of 'C:.../onelab-Windows64': ")
-                if '\\' in onelab_path:
-                    path_wrong = True
-                    print("Use '/' instead of '\\'!")
-                else:
-                    path_wrong = False
+            onelab_path = os.path.normpath(input("Enter the path of onelabs parent folder (path to folder which contains getdp, onelab executables): "))
 
-            onelab_path = onelab_path[:-1] if onelab_path[-1] == '/' else onelab_path
-            onelab_path = onelab_path.replace("/", os.sep)
             if os.path.exists(onelab_path):
                 onelab_path_wrong = False
+                break
             else:
-                onelab_path_wrong = True
-                path_wrong = True
                 print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
+        self.onelab_folder_path = onelab_path
 
         # Write the path to the config.json
         onelab_path_dict = {"onelab": onelab_path}
-        with open(os.path.join(config_file_path), 'w', encoding='utf-8') as fd:
+        with open(os.path.join(self.config_path), 'w', encoding='utf-8') as fd:
             json.dump(onelab_path_dict, fd, indent=2, ensure_ascii=False)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
@@ -384,7 +402,7 @@ class MagneticComponent:
                     self.mesh.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                     self.mesh.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh.global_accuracy
                 else:
-                    self.mesh.c_conductor[i] = 0.0001  # TODO: dynamic inplementation
+                    self.mesh.c_conductor[i] = 0.0001  # TODO: dynamic implementation
 
         # -- Core-type --
         self.n_windows = 2
@@ -410,6 +428,9 @@ class MagneticComponent:
         self.stray_path = stray_path
 
     def set_air_gaps(self, air_gaps: AirGaps):
+        # Sorting air gaps from lower to upper
+        air_gaps.midpoints.sort(key=lambda x: x[1])
+
         self.air_gaps = air_gaps
 
     def set_windings(self, windings: List[Winding]):
@@ -435,19 +456,13 @@ class MagneticComponent:
             else:
                 self.vw_type = VirtualWindingType.Split2
 
-            # This special handling is needed because of the way conductors are drawn. See in draw_conductors()
-            for winding in self.windings:
-                if winding.winding_type == WindingType.Interleaved:
-                    if winding.turns_primary > 0 and winding.turns_secondary == 0:
-                        self.turns = [winding.turns_primary]
-                    elif winding.turns_primary == 0 and winding.turns_secondary > 0:
-                        self.turns = [winding.turns_secondary]
-                    else:
-                        raise Exception("When creating an interleaved transformer without stray path (not integrated). Either primary or secondary turns need to be 0.")
-
         if self.component_type == ComponentType.IntegratedTransformer:
             if len(self.windings) != 2:
                 raise Exception("Only integrated transformers with 2 windings are allowed")
+
+            if self.windings[0].winding_type == WindingType.Interleaved and self.windings[1].winding_type == WindingType.Interleaved:
+                self.windings[0].turns = [self.windings[0].turns_primary, self.windings[0].turns_secondary]
+                self.windings[1].turns = [self.windings[1].turns_primary, self.windings[1].turns_secondary]
 
             self.vw_type = VirtualWindingType.Split2
 
@@ -629,31 +644,63 @@ class MagneticComponent:
 
                 # Center leg (0)
                 if self.component.air_gaps.midpoints[i][0] == 0:
-                    # The center points are passed by air_gaps.update() and at this point transformed each into 4
-                    # corner points
-                    self.p_air_gaps[i * 4 + 0] = [-self.component.core.core_w / 2,
-                                                  self.component.air_gaps.midpoints[i][1] -
-                                                  self.component.air_gaps.midpoints[i][2] / 2,
+                    # The center points are transformed each into 4 corner points
+
+                    air_gap_y_position = self.component.air_gaps.midpoints[i][1]
+                    air_gap_height = self.component.air_gaps.midpoints[i][2]
+                    air_gap_length_top = self.component.core.core_w / 2
+                    air_gap_length_bot = self.component.core.core_w / 2
+
+                    # Check for stray_paths in integrated transformers
+                    if self.component.component_type == ComponentType.IntegratedTransformer:
+                        if self.component.stray_path.start_index == i:
+                            # Stray path is above current air_gap
+                            air_gap_length_top = self.component.stray_path.length
+                        elif self.component.stray_path.start_index + 1 == i:
+                            # Stray path is below current air_gap
+                            air_gap_length_bot = self.component.stray_path.length
+
+                    # Bottom left
+                    self.p_air_gaps[i * 4 + 0] = [0,
+                                                  air_gap_y_position -
+                                                  air_gap_height / 2,
+                                                  0,
+                                                  self.component.mesh.c_core]
+
+                    # Bottom right
+                    self.p_air_gaps[i * 4 + 1] = [air_gap_length_bot,
+                                                  air_gap_y_position -
+                                                  air_gap_height / 2,
                                                   0,
                                                   mesh_accuracy]
 
-                    self.p_air_gaps[i * 4 + 1] = [self.component.core.core_w / 2,
-                                                  self.component.air_gaps.midpoints[i][1] -
-                                                  self.component.air_gaps.midpoints[i][2] / 2,
+                    # Top left
+                    self.p_air_gaps[i * 4 + 2] = [0,
+                                                  air_gap_y_position +
+                                                  air_gap_height / 2,
+                                                  0,
+                                                  self.component.mesh.c_core]
+
+                    # Top right
+                    self.p_air_gaps[i * 4 + 3] = [air_gap_length_top,
+                                                  air_gap_y_position +
+                                                  air_gap_height / 2,
                                                   0,
                                                   mesh_accuracy]
 
-                    self.p_air_gaps[i * 4 + 2] = [-self.component.core.core_w / 2,
-                                                  self.component.air_gaps.midpoints[i][1] +
-                                                  self.component.air_gaps.midpoints[i][2] / 2,
-                                                  0,
-                                                  mesh_accuracy]
-
-                    self.p_air_gaps[i * 4 + 3] = [self.component.core.core_w / 2,
-                                                  self.component.air_gaps.midpoints[i][1] +
-                                                  self.component.air_gaps.midpoints[i][2] / 2,
-                                                  0,
-                                                  mesh_accuracy]
+            # In order to close the air gap when a stray_path is added, additional points need to be added
+            if self.component.component_type == ComponentType.IntegratedTransformer:
+                top_point = [self.component.core.core_w / 2,
+                                self.component.air_gaps.midpoints[self.component.stray_path.start_index+1][1] -
+                                air_gap_height / 2,
+                                0,
+                                mesh_accuracy]
+                bot_point = [self.component.core.core_w / 2,
+                                self.component.air_gaps.midpoints[self.component.stray_path.start_index][1] +
+                                air_gap_height / 2,
+                                0,
+                                mesh_accuracy]
+                self.p_close_air_gaps = [top_point, bot_point]
 
         def draw_virtual_winding_windows(self):
             # Virtual Windows
@@ -749,14 +796,13 @@ class MagneticComponent:
                 # TODO: Separation in more Virtual Winding Windows
 
                 # bot window
-                island_right_tmp = inner_points(self.p_window[4], self.p_window[6], self.p_air_gaps)
                 min11 = -self.component.core.window_h / 2 + self.component.isolation.core_cond[1]  # bottom
-                max11 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2][1] - self.component.isolation.core_cond[0]  # sep_hor
+                max11 = self.p_air_gaps[self.component.stray_path.start_index*4+2][1] - self.component.isolation.core_cond[0]  # sep_hor
                 left11 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
                 right11 = self.r_inner - self.component.isolation.core_cond[3]
 
                 # top window
-                min21 = island_right_tmp[(self.component.stray_path.start_index - 1) * 2 + 1][1] + self.component.isolation.core_cond[1]
+                min21 = self.p_air_gaps[(self.component.stray_path.start_index+1)*4][1] + self.component.isolation.core_cond[1]
                 max21 = self.component.core.window_h / 2 - self.component.isolation.core_cond[0]  # top
                 left21 = self.component.core.core_w / 2 + self.component.isolation.core_cond[2]
                 right21 = self.r_inner - self.component.isolation.core_cond[3]
@@ -1250,6 +1296,8 @@ class MagneticComponent:
                         num = 0
                     elif self.component.virtual_winding_windows[n_win].winding == WindingType.Secondary:
                         num = 1
+                    else:
+                        raise Exception(f"Unusable winding type with this settings: {self.component.virtual_winding_windows[n_win].winding}" )
 
                     if self.component.windings[num].conductor_type == ConductorType.Full:
                         if sum(self.component.windings[num].turns) != 1:
@@ -1489,6 +1537,13 @@ class MagneticComponent:
             iso = self.component.isolation
             mesh = self.component.mesh
 
+            # Since there are many cases in which alternating conductors would lead to slightly different
+            # mesh densities a simplification is made: Just use the lowest mesh density to be safe all the time.
+            mesh_density_to_winding = min(mesh.c_conductor)
+
+            mesh_density_to_core = mesh.c_window
+             
+
             # Using the delta the lines and points from the isolation and the core/windings are not overlapping
             # which makes creating the mesh more simpler
             # Isolation between winding and core
@@ -1527,25 +1582,25 @@ class MagneticComponent:
                         left_x,
                         top_y - top_iso_height - iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         left_x + left_iso_width,
                         top_y - top_iso_height - iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         left_x + left_iso_width,
                         bot_y + bot_iso_height + iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         left_x,
                         bot_y + bot_iso_height + iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ]
                 ]
                 iso_core_top = [
@@ -1553,25 +1608,25 @@ class MagneticComponent:
                         left_x,
                         top_y,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         right_x,
                         top_y,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         right_x,
                         top_y - top_iso_height,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         left_x,
                         top_y - top_iso_height,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ]
                 ]
                 iso_core_right = [
@@ -1579,25 +1634,25 @@ class MagneticComponent:
                         right_x - right_iso_width,
                         top_y - top_iso_height - iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         right_x,
                         top_y - top_iso_height - iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         right_x,
                         bot_y + bot_iso_height + iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         right_x - right_iso_width,
                         bot_y + bot_iso_height + iso_iso_delta,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ]
                 ]
                 iso_core_bot = [
@@ -1605,25 +1660,25 @@ class MagneticComponent:
                         left_x,
                         bot_y + bot_iso_height,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         right_x,
                         bot_y + bot_iso_height,
                         0,
-                        mesh.c_window
+                        mesh_density_to_winding
                     ],
                     [
                         right_x,
                         bot_y,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ],
                     [
                         left_x,
                         bot_y,
                         0,
-                        mesh.c_window
+                        mesh_density_to_core
                     ]
                 ]
 
@@ -1640,6 +1695,16 @@ class MagneticComponent:
                         winding_0 = self.component.windings[0]
                         winding_1 = self.component.windings[1]
                         current_x = vww.left_bound + 2 * winding_0.conductor_radius
+
+                        mesh_density_left_side = 0
+                        mesh_density_right_side = 0
+                        if winding_0.turns[0] > winding_1.turns[0]:
+                            mesh_density_left_side = mesh.c_conductor[0]
+                            mesh_density_right_side = mesh.c_conductor[1]
+                        else:
+                            mesh_density_left_side = mesh.c_conductor[1]
+                            mesh_density_right_side = mesh.c_conductor[0]
+
                         if vww.scheme == WindingScheme.Horizontal:
                             self.p_iso_pri_sec = []
                             for index in range(self.top_window_iso_counter-1):
@@ -1648,25 +1713,25 @@ class MagneticComponent:
                                         current_x + iso_winding_delta_left,
                                         top_y - top_iso_height - iso_iso_delta,
                                         0,
-                                        mesh.c_window
+                                        mesh_density_left_side
                                     ],
                                     [
                                         current_x + iso.cond_cond[2] - iso_winding_delta_right,
                                         top_y - top_iso_height - iso_iso_delta,
                                         0,
-                                        mesh.c_window
+                                        mesh_density_right_side
                                     ],
                                     [
                                         current_x + iso.cond_cond[2] - iso_winding_delta_right,
                                         bot_y + bot_iso_height + iso_iso_delta,
                                         0,
-                                        mesh.c_window
+                                        mesh_density_right_side
                                     ],
                                     [
                                         current_x + iso_winding_delta_left,
                                         bot_y + bot_iso_height + iso_iso_delta,
                                         0,
-                                        mesh.c_window
+                                        mesh_density_left_side
                                     ]
                                 ])
                                 # The sec winding can start first when it has a higher number of turns
@@ -1690,25 +1755,25 @@ class MagneticComponent:
                             vww_top.left_bound,
                             vww_top.bot_bound - iso_winding_delta_top,
                             0,
-                            mesh.c_window
+                            mesh_density_to_winding
                         ],
                         [
                             vww_top.right_bound,
                             vww_top.bot_bound - iso_winding_delta_top,
                             0,
-                            mesh.c_window
+                            mesh_density_to_winding
                         ],
                         [
                             vww_top.right_bound,
                             vww_bot.top_bound + iso_winding_delta_bot,
                             0,
-                            mesh.c_window
+                            mesh_density_to_winding
                         ],
                         [
                             vww_top.left_bound,
                             vww_bot.top_bound + iso_winding_delta_bot,
                             0,
-                            mesh.c_window
+                            mesh_density_to_winding
                         ]
                     ])
                 else:
@@ -1720,7 +1785,7 @@ class MagneticComponent:
             self.p_outer = np.zeros((4, 4))
             self.p_region_bound = np.zeros((4, 4))
             self.p_window = np.zeros((4 * self.component.n_windows, 4))
-            self.p_air_gaps = np.zeros((4 * self.component.air_gaps.number, 4))
+            self.p_air_gaps = np.zeros((4 * self.component.air_gaps.number, 4)) 
 
             # Fitting the outer radius to ensure surface area
             self.r_inner = self.component.core.window_w + self.component.core.core_w / 2
@@ -1815,7 +1880,7 @@ class MagneticComponent:
             self.p_hyst_nom_1st = None
             self.p_hyst_nom = None
 
-            self.component.create_folders([self.component.reluctance_model_folder_path])
+            self.component.create_folders(self.component.reluctance_model_folder_path)
 
         def calculate_air_gap_lengths_idealized(self, reluctances: List, types: str) -> List:
             """
@@ -2654,28 +2719,6 @@ class MagneticComponent:
             # Core generation
             # --------------------------------------- Points --------------------------------------------
             if self.component.dimensionality == "2D":
-
-                # Find points of air gaps (used later)
-                if self.component.air_gaps.number > 0:
-                    # Top and bottom point
-                    center_right = min_max_inner_points(self.component.two_d_axi.p_window[4],
-                                                        self.component.two_d_axi.p_window[6],
-                                                        self.component.two_d_axi.p_air_gaps)
-                    island_right = inner_points(self.component.two_d_axi.p_window[4],
-                                                self.component.two_d_axi.p_window[6],
-                                                self.component.two_d_axi.p_air_gaps)
-
-                    # Dedicated stray path:
-                    if self.component.component_type == ComponentType.IntegratedTransformer:
-                        # mshopt stray_path_gap = [[], []]
-                        # mshopt stray_path_gap[0][:] = island_right[(self.stray_path.start_index-1)*2][:]
-                        # mshopt stray_path_gap[1][:] = island_right[(self.stray_path.start_index-1)*2+1][:]
-                        island_right[(self.component.stray_path.start_index - 1) * 2][0] = \
-                            self.component.stray_path.radius
-                        island_right[(self.component.stray_path.start_index - 1) * 2 + 1][0] = \
-                            self.component.stray_path.radius
-
-
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
                 # Geometry definitions: points -> lines -> curve loops -> surfaces
                 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2687,8 +2730,8 @@ class MagneticComponent:
                 # First point (left point of lowest air gap)
                 if self.component.air_gaps.number > 0:
                     self.p_core.append(gmsh.model.geo.addPoint(0,
-                                                               center_right[0][1],
-                                                               center_right[0][2],
+                                                               self.component.two_d_axi.p_air_gaps[0][1],
+                                                               0,
                                                                self.c_core))
                 if self.component.air_gaps.number == 0:
                     self.p_core.append(None)  # dummy filled for no air gap special case
@@ -2723,13 +2766,13 @@ class MagneticComponent:
                 # Two points of highest air gap
                 if self.component.air_gaps.number > 0:
                     self.p_core.append(gmsh.model.geo.addPoint(0,
-                                                               center_right[1][1],
-                                                               center_right[1][2],
+                                                               self.component.two_d_axi.p_air_gaps[-2][1],
+                                                               self.component.two_d_axi.p_air_gaps[-2][2],
                                                                self.c_core))
 
-                    self.p_core.append(gmsh.model.geo.addPoint(center_right[1][0],
-                                                               center_right[1][1],
-                                                               center_right[1][2],
+                    self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_air_gaps[-1][0],
+                                                               self.component.two_d_axi.p_air_gaps[-1][1],
+                                                               self.component.two_d_axi.p_air_gaps[-1][2],
                                                                self.c_window))
 
                 if self.component.air_gaps.number == 0:
@@ -2760,9 +2803,9 @@ class MagneticComponent:
 
                 # Last point of lowest air gap
                 if self.component.air_gaps.number > 0:
-                    self.p_core.append(gmsh.model.geo.addPoint(center_right[0][0],
-                                                               center_right[0][1],
-                                                               center_right[0][2],
+                    self.p_core.append(gmsh.model.geo.addPoint(self.component.two_d_axi.p_air_gaps[1][0],
+                                                               self.component.two_d_axi.p_air_gaps[1][1],
+                                                               self.component.two_d_axi.p_air_gaps[1][2],
                                                                self.c_window))
 
                 if self.component.air_gaps.number == 0:
@@ -2824,31 +2867,43 @@ class MagneticComponent:
                 # - Core parts between Air Gaps
                 # Points of Core Islands (index refers to sketch)
 
-                if self.component.air_gaps.number != 0:
-                    island_right_tmp = island_right
-                    while island_right_tmp.shape[0] > 0:
-                        # take two points with lowest y-coordinates
-                        min_island_right_tmp = np.argmin(island_right_tmp[:, 1])
-                        self.p_island.append(gmsh.model.geo.addPoint(0,
-                                                                     island_right_tmp[min_island_right_tmp, 1],
-                                                                     island_right_tmp[min_island_right_tmp, 2],
-                                                                     self.c_core))
-                        self.p_island.append(gmsh.model.geo.addPoint(island_right_tmp[min_island_right_tmp, 0],
-                                                                     island_right_tmp[min_island_right_tmp, 1],
-                                                                     island_right_tmp[min_island_right_tmp, 2],
-                                                                     self.c_window))
 
-                        island_right_tmp = np.delete(island_right_tmp, min_island_right_tmp, 0)
+                stray_path_air_gap_top_point = None
+                stray_path_air_gap_bot_point = None
+                l_core_air_air_gap = []
+
+                if self.component.air_gaps.number > 1:
+                    for point in self.component.two_d_axi.p_air_gaps[2:-2]:
+                        self.p_island.append(gmsh.model.geo.addPoint(*point))
+
+                    # Add two more points for closing of the air gap for a stray_path
+                    if self.component.component_type == ComponentType.IntegratedTransformer:
+                        stray_path_air_gap_top_point = gmsh.model.geo.addPoint(*self.component.two_d_axi.p_close_air_gaps[0])
+                        stray_path_air_gap_bot_point = gmsh.model.geo.addPoint(*self.component.two_d_axi.p_close_air_gaps[1])
 
                     # Curves of Core Islands (index refers to sketch)
                     for i in range(0, int(len(self.p_island) / 4)):
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], self.p_island[4 * i + 1]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
-                        self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], self.p_island[4 * i + 2]))
-                        self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
+                        if self.component.component_type == ComponentType.IntegratedTransformer and self.component.stray_path.start_index == i:
+                            l_core_air_air_gap.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], stray_path_air_gap_bot_point))
+                            self.l_core_air.append(gmsh.model.geo.addLine(stray_path_air_gap_bot_point, self.p_island[4 * i + 1]))
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], stray_path_air_gap_top_point))
+                            l_core_air_air_gap.append(gmsh.model.geo.addLine(stray_path_air_gap_top_point, self.p_island[4 * i + 2]))
+                            self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
+
+                            self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
+                                [l_core_air_air_gap[-2], self.l_core_air[-3], self.l_core_air[-2], l_core_air_air_gap[-1], self.l_core_air[-1], self.l_bound_core[-1]]))
+                        else:
+                            # Default
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 0], self.p_island[4 * i + 1]))
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 1], self.p_island[4 * i + 3]))
+                            self.l_core_air.append(gmsh.model.geo.addLine(self.p_island[4 * i + 3], self.p_island[4 * i + 2]))
+                            self.l_bound_core.append(gmsh.model.geo.addLine(self.p_island[4 * i + 2], self.p_island[4 * i + 0]))
+                            
+                            self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
+                                [self.l_core_air[-3], self.l_core_air[-2], self.l_core_air[-1], self.l_bound_core[-1]]))
+                        
                         # Iterative plane creation
-                        self.curve_loop_island.append(gmsh.model.geo.addCurveLoop(
-                            [self.l_core_air[-3], self.l_core_air[-2], self.l_core_air[-1], self.l_bound_core[-1]]))
                         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([-self.curve_loop_island[-1]]))
 
                 # Curves: Boundary - Air
@@ -2863,37 +2918,40 @@ class MagneticComponent:
                                 gmsh.model.geo.addLine(self.p_island[4 * (i - 1) + 2], self.p_island[4 * i + 0]))
                         if i == int(len(self.p_island) / 4) - 1:  # Last Line
                             self.l_bound_air.append(gmsh.model.geo.addLine(self.p_island[-2], self.p_core[5]))
-
                 
-                # Curves: Close air gap
+                # Curves: Close air gaps
                 if self.component.air_gaps.number > 0:
                     for i in range(0, self.component.air_gaps.number):
-                        bottom_point = 0
-                        top_point = 0
-                        if i == 0:
-                            bottom_point = self.p_core[11]
-                        else:
-                            bottom_point = self.p_island[(i-1)*4+3]
-                        if i == self.component.air_gaps.number-1:
-                            top_point = self.p_core[6]
-                        else:
-                            top_point = self.p_island[i*4+1]
+                        bottom_point = self.p_core[11] if i == 0 else self.p_island[(i-1)*4+3]
+                        top_point = self.p_core[6] if i == self.component.air_gaps.number-1 else self.p_island[i*4+1]
+
+                        if self.component.component_type == ComponentType.IntegratedTransformer:
+                            if self.component.stray_path.start_index == i:
+                                # Stray path is above current air_gap
+                                top_point = stray_path_air_gap_bot_point
+                            elif self.component.stray_path.start_index + 1 == i: 
+                                # Stray path is below current air_gap
+                                bottom_point = stray_path_air_gap_top_point
 
                         self.l_air_gaps_air.append(gmsh.model.geo.addLine(bottom_point, top_point))
 
                 for i in range(0, self.component.air_gaps.number):
                     left = self.l_bound_air[i]
-                    top = None
-                    bottom = None
                     right  = self.l_air_gaps_air[i]
-                    if i == 0:
-                        bottom = self.l_core_air[6]
-                    else:
-                        bottom = self.l_core_air[6+3*i]
+
                     if i == self.component.air_gaps.number-1:
                         top = self.l_core_air[0]
+                    elif self.component.component_type == ComponentType.IntegratedTransformer and self.component.stray_path.start_index == i:
+                        top = l_core_air_air_gap[0]
                     else:
                         top = self.l_core_air[7+3*i]
+                        
+                    if i == 0:
+                        bottom = self.l_core_air[6] 
+                    elif self.component.component_type == ComponentType.IntegratedTransformer and self.component.stray_path.start_index + 1 == i:
+                        bottom = l_core_air_air_gap[1]
+                    else:
+                        bottom = self.l_core_air[6+3*i]
 
                     curve_loop = gmsh.model.geo.addCurveLoop([left, top, bottom, right], -1, True)
                     self.curve_loop_air_gaps.append(curve_loop)
@@ -3016,16 +3074,21 @@ class MagneticComponent:
                 self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp))
                 """
 
-                # With splitted air gaps
+                # With closed air gaps
                 l_air_tmp = []
                 if self.component.air_gaps.number == 0:
                     l_air_tmp = self.l_core_air
                 elif self.component.air_gaps.number > 0:
                     l_air_tmp = self.l_core_air[1:6] + self.l_air_gaps_air
+
                     for i in range(self.component.air_gaps.number - 1):
-                        l_air_tmp.append(self.l_core_air[8+3*i])
-                else:
-                    raise Exception("Air gaps number is negative. Can only be positive")
+                        if self.component.component_type == ComponentType.IntegratedTransformer and i == self.component.stray_path.start_index:
+                            l_air_tmp.append(self.l_core_air[7+3*i])
+                            l_air_tmp.append(self.l_core_air[8+3*i])
+                            l_air_tmp.append(self.l_core_air[9+3*i])
+                        else:
+                            l_air_tmp.append(self.l_core_air[8+3*i])
+                            
                 #for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
@@ -3034,7 +3097,6 @@ class MagneticComponent:
                 #for i in range(0, self.component.air_gaps.number):
                 #    l_air_tmp.append(self.l_air_gaps_air[i])
                 #    l_air_tmp.append(self.l_air_gaps_air[i+1])
-
 
                 self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp, -1, True))
 
@@ -3108,11 +3170,6 @@ class MagneticComponent:
                     self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
 
             gmsh.model.geo.synchronize()
-
-            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-            # - Forward Meshing -
-            self.forward_meshing()
-
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             if visualize_before or save_png:
                 color_scheme = colors_femmt_default
@@ -3126,8 +3183,9 @@ class MagneticComponent:
                 # air gap color
                 if self.plane_surface_air_gaps:
                     # only colorize air-gap in case of air gaps
-                    gmsh.model.setColor([(2, self.plane_surface_air[0]), (2, self.plane_surface_air_gaps[0])], color_scheme[colors_geometry["air_gap"]][0], 
-                        color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2], recursive=True)
+                    for air_gap in self.plane_surface_air_gaps:
+                        gmsh.model.setColor([(2, air_gap)], color_scheme[colors_geometry["air_gap"]][0], 
+                            color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2], recursive=True)
 
                 # air/potting-material inside core window
                 gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0], 
@@ -3154,8 +3212,17 @@ class MagneticComponent:
                         gmsh.fltk.initialize()
 
                     gmsh.write(self.component.hybrid_color_visualize_file)  # save png
-            # No mesh is generated here because generating a mesh, saving it as *.msh loading it and appending more geometry data
-            # and the meshing again can cause bugs in the mesh
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # TODO The following algorithms try to modify the mesh in order to reduce the runtime. But maybe the synchronize() calls
+            # have a high runtime. Check if thats true and when it does try to reduce the number of synchronize() calls by adding all points first and
+            # embed them later together:
+            # This is added here therefore the additional points are not seen in the pictures and views
+            self.forward_meshing()
+
+            # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            # No mesh is generated here, because generating a mesh, saving it as *.msh, loading it, appending more geometry data
+            # and then mesh again can cause bugs in the mesh
             # Therefore only the model geometry is saved and the mesh will be generated later
             # -> Save file as geo: File extension must be *.geo_unrolled
             gmsh.write(self.component.model_geo_file)
@@ -3504,9 +3571,11 @@ class MagneticComponent:
 
         def forward_meshing(self):
             """
+            In this function multiple techniques in order to raise the mesh density at certain points are applied.
 
             :return:
             """
+
             p_inter = None
             # Inter Conductors
             for n_win in range(0, len(self.component.virtual_winding_windows)):
@@ -3541,15 +3610,12 @@ class MagneticComponent:
                                                                                0,
                                                                                self.c_center_conductor[num]))
 
-
-
             # TODO: Inter conductor meshing!
             if all(winding.conductor_type == ConductorType.Solid for winding in self.component.windings):
                 print(f"Making use of skin based meshing\n")
                 for num in range(0, self.component.n_windings):
                     for i in range(0, int(len(self.p_cond[num]) / 5)):
                         gmsh.model.mesh.embed(0, [self.p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
-
 
                 # Embed points for mesh refinement
                 # Inter Conductors
@@ -3558,6 +3624,132 @@ class MagneticComponent:
                         gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
                 # Stray path
                 # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
+
+            # Winding window rasterization:
+            # In order adjust the mesh density in empty parts of the winding window a grid of possible points
+            # is put on the winding window. Every point that is too close to the conductors is removed.
+            # Every remaining point is added to the mesh with a higher mesh density
+
+            min_distance = max([winding.conductor_radius for winding in self.component.windings]) + max(self.component.isolation.cond_cond)
+            left_bound = self.component.core.core_w / 2
+            right_bound = self.component.two_d_axi.r_inner
+            top_bound = self.component.core.window_h / 2
+            bot_bound = -self.component.core.window_h / 2
+
+            width = right_bound - left_bound
+            height = top_bound - bot_bound
+
+            number_cols = 16 # Can be changed. More points equal higher raster density 
+            number_rows = int(number_cols*height/width) # Assumption: number_cols/number_rows = width/height
+
+            cell_width = width/(number_cols+1)
+            cell_height =  height/(number_rows+1)
+
+            # Get all possible points
+            possible_points = []
+            x = left_bound + cell_width/2
+            y = bot_bound + cell_height/2
+            for i in range(number_cols+1):
+                for j in range(number_rows+1):
+                    possible_points.append([x + i * cell_width, y + j * cell_height])
+
+            fixed_points = []
+            conductors = self.component.two_d_axi.p_conductor
+            for winding in range(self.component.n_windings):
+                for i in range(len(conductors[winding])//5):
+                    point = conductors[winding][i*5]
+                    fixed_points.append([point[0], point[1]])
+
+            # Because the points need to be embed into the right surface. The points now will be split between different isolations and the air in the winding window.
+            # TODO Currently primary secondary isolation is not considered
+            left_iso = []
+            right_iso = []
+            top_iso = []
+            bot_iso = []
+            primary_secondary_iso = []
+            air = []
+
+            for i in range(len(self.component.two_d_axi.p_iso_pri_sec)):
+                primary_secondary_iso.append([])
+
+            # Isolations are currently not implemented for integrated transformers
+            if self.component.component_type is not ComponentType.IntegratedTransformer:
+                iso_core_left = self.component.two_d_axi.p_iso_core[0]
+                iso_core_top = self.component.two_d_axi.p_iso_core[1]
+                iso_core_right = self.component.two_d_axi.p_iso_core[2]
+                iso_core_bot = self.component.two_d_axi.p_iso_core[3]
+
+            # Extract all free_points
+            for i in range(len(possible_points)):
+                x = possible_points[i][0]
+                y = possible_points[i][1]
+
+                # Check collision with fixed points
+                valid = True
+                for fixed_point in fixed_points:
+                    dist = np.sqrt((fixed_point[0]-x)**2 + (fixed_point[1]-y)**2)
+                    if dist < min_distance:
+                        valid = False
+                        break
+
+                if not valid:
+                    continue
+
+                # Check if point is in stray_path
+                if self.component.component_type == ComponentType.IntegratedTransformer:
+                    start_index = self.component.stray_path.start_index
+                    stray_path_top_bound = self.component.air_gaps.midpoints[start_index+1][1] - self.component.air_gaps.midpoints[start_index+1][2] / 2
+                    stray_path_bot_bound = self.component.air_gaps.midpoints[start_index][1] + self.component.air_gaps.midpoints[start_index][2] / 2
+                    stray_path_right_bound = self.component.stray_path.length
+                    stray_path_left_bound = left_bound
+
+                    if x > stray_path_left_bound and x < stray_path_right_bound and y > stray_path_bot_bound and y < stray_path_top_bound:
+                        continue
+
+                # Point seems to be valid. Now find out in which surface the point belongs
+                point = gmsh.model.geo.addPoint(x, y, 0, 2*self.c_window)
+
+                if self.component.component_type is not ComponentType.IntegratedTransformer:
+                    if point_is_in_rect(x, y, iso_core_left):
+                        # Left iso
+                        left_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_top):
+                        # Top iso
+                        top_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_right):
+                        # Right iso
+                        right_iso.append(point)
+                    elif point_is_in_rect(x, y, iso_core_bot):
+                        # Bot iso
+                        bot_iso.append(point)
+                    else:
+                        # Check if point is in pri_to_sec isolation
+                        added = False
+                        for i in range(len(primary_secondary_iso)):
+                            if point_is_in_rect(x, y, self.component.two_d_axi.p_iso_pri_sec[i]):
+                                primary_secondary_iso[i].append(point)
+                                added = True
+                                break
+
+                        if not added:
+                            # Air
+                            air.append(point)
+                else:
+                    air.append(point)
+            # Call synchronize so the points will be added to the model            
+            gmsh.model.geo.synchronize()
+
+            # Embed points into surfaces
+            if self.component.component_type is not ComponentType.IntegratedTransformer:
+                gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
+                gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
+                gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
+                gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
+
+                for i in range(len(primary_secondary_iso)):
+                    gmsh.model.mesh.embed(0, primary_secondary_iso[i], 2, self.plane_surface_iso_pri_sec[i])
+            
+            gmsh.model.mesh.embed(0, air, 2, self.plane_surface_air[0])
 
             # Synchronize again
             gmsh.model.geo.synchronize()
@@ -3571,11 +3763,11 @@ class MagneticComponent:
         - frequency or reduced frequency
 
 
-        :param frequency: Frequency in a list
+        :param frequency: Frequency
         :type frequency: float
-        :param amplitude_list: Amplitude in a list
+        :param amplitude_list: Current amplitudes according to windings
         :type amplitude_list: List
-        :param phase_deg_list: Phase in degree in a list
+        :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
         :type phase_deg_list: List
         :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
         :type ex_type: str
@@ -3586,53 +3778,68 @@ class MagneticComponent:
         :rtype: None
 
         """
-        phase_deg_list = phase_deg_list or []
-
         print(f"\n---\n"
               f"Excitation: \n"
               f"Frequency: {frequency}\n"
               f"Current(s): {amplitude_list}\n"
               f"Phase(s): {phase_deg_list}\n")
 
+
         # -- Excitation --
-        self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
 
-        phase_deg_list = np.asarray(phase_deg_list)
-        self.red_freq = np.empty(2)
+        # Has the user provided a list of phase angles?
+        phase_deg_list = phase_deg_list or []
+        # phase_deg_list = np.asarray(phase_deg_list)
 
         for num in range(0, self.n_windings):
-            # Imposed current, current density or voltage
+
+            # Imposed current
             if self.flag_excitation_type == 'current':
-                print(num)
-                self.current[num] = amplitude_list[num]
-                if len(phase_deg_list) != 0:
-                    self.phase_tmp = phase_deg_list / 180
-            if self.flag_excitation_type == 'current_density':
-                raise NotImplementedError
-            if self.flag_excitation_type == 'voltage':
-                raise NotImplementedError
-                # self.voltage = 2
-
-            # -- Frequency --
-            self.frequency = frequency  # in Hz
-            if self.flag_imposed_reduced_frequency == 1:
-                self.red_freq[num] = 4
-            else:
-                if self.frequency != 0:
-                    self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
-
-                    if self.windings[num].conductor_type == ConductorType.Litz:
-                        self.red_freq[num] = self.windings[num].strand_radius / self.delta
-                    elif self.windings[num].conductor_type == ConductorType.Solid:
-                        self.red_freq[num] = self.windings[num].conductor_radius / self.delta
+                if len(phase_deg_list) == 0:
+                    if self.component_type == ComponentType.Inductor:
+                        # Define complex current phasor as real value
+                        self.current[num] = complex(amplitude_list[num], 0)
+                        phase_deg_list.append(0)  # set to zero
                     else:
-                        print("Wrong???")
-                        print(self.windings[num].conductor_type)
-                        self.red_freq[num] = 1  # TODO: doesn't make sense like this
+                        raise ValueError
                 else:
-                    self.delta = 1e20  # random huge value
-                    self.red_freq[num] = 0
+                    self.phase_deg = phase_deg_list
+                    # Define complex current phasor as excitation
+                    self.current[num] = complex(amplitude_list[num]*np.cos(np.deg2rad(phase_deg_list[num])),
+                                                amplitude_list[num]*np.sin(np.deg2rad(phase_deg_list[num])))
+
+        # Imposed current density
+        if self.flag_excitation_type == 'current_density':
+            raise NotImplementedError
+
+        # Imposed voltage
+        if self.flag_excitation_type == 'voltage':
+            raise NotImplementedError
+
+
+        # -- Frequency --
+
+        self.frequency = frequency  # in Hz
+
+        # Define reduced frequency (used for homogenization technique)
+        self.red_freq = np.empty(2)
+
+        if self.frequency != 0:
+            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0)) #TODO: distingish between material conductivities
+            for num in range(0, self.n_windings):
+                if self.windings[num].conductor_type == ConductorType.Litz:
+                    self.red_freq[num] = self.windings[num].strand_radius / self.delta
+                elif self.windings[num].conductor_type == ConductorType.Solid:
+                    self.red_freq[num] = self.windings[num].conductor_radius / self.delta
+                else:
+                    print("Reduced Frequency does not have a physical value here")
+                    print(self.windings[num].conductor_type)
+                    self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
+        else:
+            # DC case
+            self.delta = 1e20  # random huge value
+            self.red_freq[num] = 0
 
     def file_communication(self):
         """
@@ -3709,7 +3916,6 @@ class MagneticComponent:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 1;\n")
             else:
                 text_file.write(f"Flag_HomogenisedModel{num + 1} = 0;\n")
-            text_file.write("Flag_imposedRr = %s;\n" % self.flag_imposed_reduced_frequency)
 
             # -- Geometry --
             # Number of conductors
@@ -3731,8 +3937,8 @@ class MagneticComponent:
             # -- Excitation --
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
-                text_file.write(f"Val_EE_{num + 1} = {self.current[num]};\n")
-                text_file.write(f"Phase_{num + 1} = Pi*{self.phase_tmp[num]};\n")
+                text_file.write(f"Val_EE_{num + 1} = {abs(self.current[num])};\n")
+                text_file.write(f"Phase_{num + 1} = {np.deg2rad(self.phase_deg[num])};\n")
                 text_file.write(f"Parallel_{num + 1} = {self.windings[num].parallel};\n")
 
             if self.flag_excitation_type == 'current_density':
@@ -3844,14 +4050,18 @@ class MagneticComponent:
         mygetdp = os.path.join(self.onelab_folder_path, "getdp")
         self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.e_m_mesh_file + " -solve Analysis -v2")
 
-    def write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
+    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
-        them in a dictionary. From this data type a JSON log file is created.
+        them in a dictionary. Additionally, the input settings which are used in order to create the simulation are also printed.
+        From this data type a JSON log file is created.
         :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
         :param currents: Current values of the sweep iterations. Not needed for single simulation
+        :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
         :return:
         """
+        # ---- Print simulation results ----
+
         fundamental_index = 0  # index of the fundamental frequency
 
         # create the dictionary used to log the result data
@@ -3859,12 +4069,14 @@ class MagneticComponent:
         #   - 'total_losses' contains the sums of all sweeps
         #       - in case complex core parameters are used:
         #           - hysteresis losses are taken only from fundamental frequency
-        #               - fundamental frequency is smallest frequency != 0
-        log_dict = {"single_sweeps": [], "total_losses": {}}
+        #               - fundamental frequency is the smallest frequency != 0
+        #   - 'simulation_settings' contains the simulation configuration (for more info see encode_settings())
+
+        log_dict = {"single_sweeps": [], "total_losses": {}, "simulation_settings": {}}
 
         for sweep_run in range(0, sweep_number):
             # create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
-            # Single values, recieved during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
+            # Single values, received during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
             sweep_dict = {}
 
             # Frequencies
@@ -3886,32 +4098,43 @@ class MagneticComponent:
                 # Single values related to one winding are added as 'winding_losses' etc.
                 winding_dict = {"turn_losses": [],
                                 "flux": [],
-                                "self_inductivity": [],
+                                "self_inductance": [],
                                 "mag_field_energy": [],
                                 "V": []}
 
                 # Number turns
-                winding_dict["number_turns"] = self.windings[winding].turns[0]
+                # TODO Since both windings can have a primary and a secondary turn, currently
+                # only the turns corresponding to the winding number are printed:
+                #   Winding1 -> primary turns
+                #   Winding2 -> secondary turns
+                # But technically Winding1 can have secondary turns and Winding2 can have primary turns
+                if self.windings[winding].winding_type == WindingType.Interleaved:
+                    winding_dict["number_turns"] = self.windings[winding].turns[0]
+                else:
+                    winding_dict["number_turns"] = self.windings[winding].turns[winding]
 
                 # Currents
                 if sweep_number > 1:
                     # sweep_simulation -> get currents from passed currents
-                    winding_dict["I"] = currents[sweep_run][winding]
+                    complex_current_phasor = currents[sweep_run][winding]
                 else:
                     # single_simulation -> get current from instance variable
-                    winding_dict["I"] = self.current[winding]
+                    complex_current_phasor = self.current[winding]
+
+                # Store complex value as list in json (because json isnt natively capable of complex values)
+                winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
 
 
                 # Case litz: Load homogenized results
                 if self.windings[winding].conductor_type == ConductorType.Litz:
                     winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
-                    for turn in range(0, self.windings[winding].turns[0]):
+                    for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
                 # Case litz: Load homogenized results
                 else:
                     winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
-                    for turn in range(0, self.windings[winding].turns[0]):
+                    for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
                 # Flux
@@ -3919,8 +4142,8 @@ class MagneticComponent:
                 winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Inductance
-                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["self_inductivity"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Magnetic Field Energy
                 winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
@@ -3929,12 +4152,14 @@ class MagneticComponent:
                 # Voltage
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
 
                 # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
-                winding_dict["P"] = winding_dict["V"][0] * winding_dict["I"] / 2
-                winding_dict["Q"] = winding_dict["V"][1] * winding_dict["I"] / 2
+                winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
+                winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
                 winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
+
 
                 sweep_dict[f"winding{winding+1}"] = winding_dict
 
@@ -3955,11 +4180,17 @@ class MagneticComponent:
 
         # Single Windings
         for winding in range(0, self.n_windings):
-            log_dict["total_losses"][f"winding{winding + 1}"] = {}
-            log_dict["total_losses"][f"winding{winding + 1}"]["total"] = sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"])))
-            # Single Turns
-            log_dict["total_losses"][f"winding{winding + 1}"]["turns"] = []
-            for turn in range(0, self.windings[winding].turns[0]):
+            # Same as above
+            turns = 0
+            if self.windings[winding].winding_type == WindingType.Interleaved:
+                turns = self.windings[winding].turns[0]
+            else:
+                turns = self.windings[winding].turns[winding]
+            log_dict["total_losses"][f"winding{winding + 1}"] = {
+                "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
+                "turns": []
+            }
+            for turn in range(0, turns):
                 log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
 
         # Winding (all windings)
@@ -3973,6 +4204,9 @@ class MagneticComponent:
 
         # Total losses of inductive component according to single or sweep simulation
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
+
+        # ---- Print current configuration ----
+        log_dict["simulation_settings"] = encode_settings(self)
 
         # ====== save data as JSON ======
         with open(self.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
@@ -4134,6 +4368,15 @@ class MagneticComponent:
         Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
         Helpful to validate changes (especially in the Prolog Code).
 
+
+        Blockprop <--> Group Convention:
+                                            Ferrite := 0
+                                            Air := 1
+                                            Winding 1 := 2
+                                            Winding 2 := 3
+                                            ...
+                                            Winding n := n+1
+
         :param sign:
         :param non_visualize:
         :param freq:
@@ -4142,12 +4385,17 @@ class MagneticComponent:
         :return:
 
         """
-        if os.name != 'nt':
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
 
 
-        self.create_folders([self.femm_folder_path])
+        self.create_folders(self.femm_folder_path)
 
         sign = sign or [1]
 
@@ -4174,7 +4422,7 @@ class MagneticComponent:
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         elif self.core.permeability_type == PermeabilityType.RealValue:
-            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, 0, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         else:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
@@ -4310,10 +4558,10 @@ class MagneticComponent:
                                           self.two_d_axi.p_conductor[num][5 * i][1])
                     femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
                     if num == 0:
-                        femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 0, 1)
+                        femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 2, 1)
                     if num == 1:
-                        # femm.mi_setblockprop('Copper', 0, 1e-4, 'Secondary', 0, 0, 1)
-                        femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 0, 1)
+                        # femm.mi_setblockprop('Copper', 0, 1e-4, 'Secondary', 0, 3, 1)
+                        femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 3, 1)
                     femm.mi_clearselected()
 
         # Define an "open" boundary condition using the built-in function:
@@ -4342,16 +4590,16 @@ class MagneticComponent:
         if self.air_gaps.number == 0:
             femm.mi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
             femm.mi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
-            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
+            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
             femm.mi_clearselected()
         else:
             femm.mi_addblocklabel(0.001, 0)
             femm.mi_selectlabel(0.001, 0)
-            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
+            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
             femm.mi_clearselected()
         femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
         femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
-        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 0, 0)
+        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
         femm.mi_clearselected()
 
         # Now, the finished input geometry can be displayed.
@@ -4405,6 +4653,15 @@ class MagneticComponent:
 
         :return:
         """
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
+            raise Exception('You are using a computer that is not running windows. '
+                            'This command is only executable on Windows computers.')
+
         file = open(self.femm_results_log_path, 'w+', encoding='utf-8')
 
         log = {}
@@ -4419,9 +4676,40 @@ class MagneticComponent:
         # log["Circuit Properties"] = femm.mo_getcircuitproperties('Primary')
 
         # Write Hysteresis Losses
-        femm.mo_groupselectblock('Ferrite')
+        femm.mo_groupselectblock(0)
         log["Hysteresis Losses"] = femm.mo_blockintegral(3)
+        femm.mo_clearblock()
 
+        # Primary Winding Ciruit Properties
+        circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
+        log["Primary Current"] = circuit_properties_primary[0]
+        log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
+        log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
+        log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
+                                          circuit_properties_primary[2].imag / circuit_properties_primary[0]]
+        log["Primary Mean Power"] = [0.5*circuit_properties_primary[1].real*circuit_properties_primary[0],
+                                     0.5*circuit_properties_primary[1].imag*circuit_properties_primary[0]]
+
+        # Primary Winding Losses (with group n=2) by field intergation
+        femm.mo_groupselectblock(2)
+        log["Primary Winding Losses"] = femm.mo_blockintegral(6).real
+        femm.mo_clearblock()
+
+        if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
+            # secondary Winding Ciruit Properties
+            circuit_properties_secondary = femm.mo_getcircuitproperties('Secondary')
+            log["Secondary Current"] = circuit_properties_secondary[0]
+            log["Secondary Voltage"] = [circuit_properties_secondary[1].real, circuit_properties_secondary[1].imag]
+            log["Secondary Flux"] = [circuit_properties_secondary[2].real, circuit_properties_secondary[2].imag]
+            log["Secondary Self Inductance"] = [circuit_properties_secondary[2].real / circuit_properties_secondary[0],
+                                              circuit_properties_secondary[2].imag / circuit_properties_secondary[0]]
+            log["Secondary Mean Power"] = [0.5 * circuit_properties_secondary[1].real * circuit_properties_secondary[0],
+                                         0.5 * circuit_properties_secondary[1].imag * circuit_properties_secondary[0]]
+
+            # secondary Winding Losses (with group n=2) by field intergation
+            femm.mo_groupselectblock(3)
+            log["Secondary Winding Losses"] = femm.mo_blockintegral(6).real
+            femm.mo_clearblock()
 
 
         json.dump(log, file, indent=2, ensure_ascii=False)
@@ -4444,10 +4732,21 @@ class MagneticComponent:
 
         :return:
         """
+        # Optional usage of FEMM tool by David Meeker
+        # 2D Mesh and FEM interfaces (only for windows machines)
+        if os.name == 'nt':
+            install_pyfemm_if_missing()
+            if not self.femm_is_imported:
+                globals()["femm"] = __import__("femm")
+                self.femm_is_imported = True
+        else:
+            raise Exception('You are using a computer that is not running windows. '
+                'This command is only executable on Windows computers.')
+
         # Get paths
         femm_model_file_path = os.path.join(self.femm_folder_path, "thermal-validation.FEH")
 
-        self.create_folders([self.femm_folder_path])
+        self.create_folders(self.femm_folder_path)
 
         # Extract losses
         losses = read_results_log(self.e_m_results_log_path)
@@ -4845,7 +5144,8 @@ class MagneticComponent:
         if self.core is None:
             raise Exception("A core class needs to be added to the magnetic component")
         if self.air_gaps is None:
-            raise Exception("An air gaps class needs to be added to the magnetic component")
+            self.air_gaps = AirGaps(None, None)
+            print("No air gaps are added")
         if self.windings is None or not self.windings:
             raise Exception("Winding classes need to be added to the magnetic component")
         if self.isolation is None:
@@ -4882,7 +5182,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        self.write_log()
+        self.calculate_and_write_log()
         if show_results:
             self.visualize()
         # results =
@@ -5071,7 +5371,8 @@ class MagneticComponent:
             self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last: bool = False, return_results: bool = False, meshing: bool = True,
+                         show_last: bool = False, return_results: bool = False, 
+                         excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False, save_png: bool = False,
                          color_scheme: Dict = colors_femmt_default, colors_geometry: Dict = colors_geometry_femmt_default) -> Dict:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
@@ -5085,6 +5386,14 @@ class MagneticComponent:
         >>> phase_list_list = [[0], [10], [20], [30], [40], [50]]
         >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
 
+        :Example Code for Transformer with 2 windings:
+
+        >>> import femmt as fmt
+        >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
+        >>> amplitue_list_list = [[10, 2], [2, 1], [1, 0.5], [0.5, 0.25], [0.2, 0.1], [0.1, 0.05]]
+        >>> phase_list_list = [[0, 170], [10, 180], [20, 190], [30, 200], [40, 210], [50, 220]]
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+
         :param frequency_list: Frequency in a list
         :type frequency_list: List
         :param current_list_list: current amplitude, must be a list in a list, see example!
@@ -5095,6 +5404,8 @@ class MagneticComponent:
         :type show_last: bool
         :param return_results: returns results in a dictionary
         :type return_results: bool
+        :param visualize_before: show genarated mesh before the simulation is run
+        :type visualize_before: bool
         :param meshing:
         :type meshing: bool
         :param color_scheme: colorfile (definition for red, green, blue, ...)
@@ -5115,13 +5426,38 @@ class MagneticComponent:
         else:
             self.plot_fields = False
 
-        if meshing:
-            self.high_level_geo_gen(frequency=frequency_list[0])  # TODO: Must be changed for solid sim.
-            if self.valid:
-                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry)
-                self.mesh.generate_electro_magnetic_mesh()
+        # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
+        # In case of litz wire, only the lowest frequency is meshed (frequency indepent due to litz-approximation)
+        if excitation_meshing_type is None:
+            for winding in self.windings:
+                if winding.conductor_type == ConductorType.Solid:
+                    excitation_meshing_type = ExcitationMeshingType.MeshEachFrequency
+                    break
+                if winding.conductor_type == ConductorType.Litz:
+                    excitation_meshing_type = ExcitationMeshingType.MeshOnlyLowestFrequency
 
-        if self.valid:
+        if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
+            for i in range(0, len(frequency_list)):
+                self.high_level_geo_gen(frequency=frequency_list[i], skin_mesh_factor=skin_mesh_factor)
+                if self.valid:
+                    self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                    self.mesh.generate_electro_magnetic_mesh()
+                
+                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
+                                    phase_deg_list=phi_deg_list_list[i])  # frequency and current
+                self.file_communication()
+                self.pre_simulate()
+                self.simulate()
+        else:
+            if excitation_meshing_type == ExcitationMeshingType.MeshOnlyHighestFrequency:
+                self.high_level_geo_gen(frequency=max(frequency_list), skin_mesh_factor=skin_mesh_factor)
+            elif excitation_meshing_type == ExcitationMeshingType.MeshOnlyLowestFrequency:
+                self.high_level_geo_gen(frequency=min(frequency_list), skin_mesh_factor=skin_mesh_factor)
+            else:
+                raise Exception(f"Unknown excitation meshing type {excitation_meshing_type}")
+            if self.valid:
+                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                self.mesh.generate_electro_magnetic_mesh()
 
             for i in range(0, len(frequency_list)):
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
@@ -5131,7 +5467,8 @@ class MagneticComponent:
                 self.simulate()
                 # self.visualize()
 
-            self.write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
+        if self.valid:
+            self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
             if show_last:
                 self.visualize()
@@ -5183,3 +5520,79 @@ class MagneticComponent:
         # self.mesh.generate_mesh()
         self.excitation(frequency=f_switch, amplitude_list=Ipeak, phase_deg_list=[0, 180])  # frequency and current
         self.file_com
+
+
+#  ===== Additional functions =====
+
+def encode_settings(o: MagneticComponent):
+    content = {
+        "date": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
+        "component_type": o.component_type.name,
+        "working_directory": o.working_directory,
+        "core": o.core.to_dict(),
+        "air_gaps": o.air_gaps.to_dict(),
+        "windings": [winding.to_dict() for winding in o.windings],
+        "isolation": o.isolation.to_dict(),
+        "virtual_winding_windows": [vww.to_dict() for vww in o.virtual_winding_windows],
+    }
+
+    if o.stray_path is not None:
+        content["stray_path"] = o.stray_path.__dict__
+
+    return content
+
+def decode_settings_from_log(log_file_path: str, working_directory: str = None):
+    if not os.path.isfile(log_file_path):
+        raise Exception(f"File {log_file_path} does not exists or is not a file!")
+
+    settings = None
+    with open(log_file_path, "r") as fd:
+        content = json.load(fd)
+        settings = content["simulation_settings"]
+
+    if settings is not None:
+        cwd = working_directory if working_directory is not None else settings["working_directory"]
+        geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
+
+        settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
+        core = Core(**settings["core"])
+        geo.set_core(core)
+
+        air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
+        for air_gap in settings["air_gaps"]["air_gaps"]:
+            air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["position_value"], air_gap["height"])
+        geo.set_air_gaps(air_gaps)
+
+        windings = []
+        for settings_winding in settings["windings"]:
+            settings_cond = settings_winding["conductor_settings"]
+            winding = Winding(settings_winding["turns_primary"], settings_winding["turns_secondary"], 
+                                Conductivity[settings_winding["conductivity"]], WindingType[settings_winding["winding_type"]], 
+                                WindingScheme[settings_winding["winding_scheme"]])
+            conductor_type = ConductorType[settings_cond["conductor_type"]]
+            if conductor_type == ConductorType.Foil:
+                winding.set_foil_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
+            elif conductor_type == ConductorType.Full: 
+                winding.set_full_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
+            elif conductor_type == ConductorType.Stacked:
+                winding.set_stacked_conductor(settings_cond["thickness"], settings_cond["wrap_para"])
+            elif conductor_type == ConductorType.Litz:
+                winding.set_litz_conductor(settings_cond["conductor_radius"], settings_cond["n_strands"], settings_cond["strand_radius"],
+                                            settings_cond["ff"])
+            elif conductor_type == ConductorType.Solid:
+                winding.set_solid_conductor(settings_cond["conductor_radius"])
+            else:
+                raise Exception(f"Unknown conductor type {conductor_type}")
+
+            windings.append(winding)
+
+        geo.set_windings(windings)
+
+        isolation = Isolation()
+        isolation.add_core_isolations(*settings["isolation"]["core_isolations"])
+        isolation.add_winding_isolations(*settings["isolation"]["winding_isolations"])
+        geo.set_isolation(isolation)
+
+        return geo
+
+    raise Exception(f"Couldn't extract settings from file {log_file_path}")
