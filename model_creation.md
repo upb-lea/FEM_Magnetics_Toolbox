@@ -213,3 +213,76 @@ geo.single_simulation(freq=100000, current=[4.5], show_results=True)
 The results should look like this:
 
 <img src="documentation/user_guide_example_model.png" width="350" alt="Example model"> <img src="documentation/user_guide_example_simulation.png" width="350" alt="Example simulation results">
+
+## 9. [Optional] Create thermal simulation
+
+After running the electromagnetic simulation it is possible to use the simulation results and the created model and start a thermal simulation.
+The thermal simulation will add a case surrounding the previous created model. At the edge of this case the boundary condition is applied and the thermal conductivity
+as well as the dimensions of the case can be choosen freely.
+This case is split into 5 parts: top, top right, right, bot right, bot. For each region a different thermal conductivity and boundary condition can be set.
+In order to run thermal a thermal simulation different values are needed:
+
+- thermal conductivity dict: A dictionary containing thermal conductivities for each region. The regions are: air, core, winding, air_gaps, insulation, case (which is split in top, top_right, right, bot_right, bot
+- case gap values: Set the size of the surrounding case
+- boundary temperatures dict: The temperatures which will be applied at the edge of the case (dirichlet boundary condition)
+- boundary flags: By disabling a specific boundary its condition can be set to a von neumann boundary condition ignoring the temperature parameter
+
+Have a look at this example on how to set the parameters since the dictionary keywords are important to write correctly:
+```python
+thermal_conductivity_dict = {
+		"air": 0.0263,
+		"case": {
+			"top": 0.122,
+			"top_right": 0.122,
+			"right": 0.122,
+			"bot_right": 0.122,
+			"bot": 0.122
+		},
+		"core": 5,
+		"winding": 400,
+		"air_gaps": 180,
+		"insulation": 0.42
+}
+
+case_gap_top = 0.002
+case_gap_right = 0.0025
+case_gap_bot = 0.002
+
+boundary_temperatures = {
+	"value_boundary_top": 20,
+	"value_boundary_top_right": 20,
+	"value_boundary_right_top": 20,
+	"value_boundary_right": 20,
+	"value_boundary_right_bottom": 20,
+	"value_boundary_bottom_right": 20,
+	"value_boundary_bottom": 20
+}
+
+boundary_flags = {
+	"flag_boundary_top": 0,
+	"flag_boundary_top_right": 0,
+	"flag_boundary_right_top": 1,
+	"flag_boundary_right": 1,
+	"flag_boundary_right_bottom": 1,
+	"flag_boundary_bottom_right": 1,
+	"flag_boundary_bottom": 1
+}
+```
+
+In the following table a possible set of thermal conductivities can be found:
+| Material | Thermal conductivity |
+| --- | --- |
+| air (background) | 0.0263 |
+| epoxy resign (used in case) | 1.54 |
+| ferrite (core) | 5 |
+| copper (winding) | 400 |
+| aluminiumnitride (air gaps) | 180 |
+| polyethylen (insulation) | 0.42 |
+
+The thermal simulation will solve the stationary heat equation and since no convection is considered every material is assumed to be solid.
+Now the simulation can be run:
+```python
+geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
+```
+
+### 
