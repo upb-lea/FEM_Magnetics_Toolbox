@@ -6,6 +6,7 @@ from .femmt_enumerations import *
 from .femmt_functions import NbrLayers, wire_material_database
 import numpy as np
 
+
 class Winding:
     """
     A winding defines a conductor which is wound around a magnetic component such as transformer or inductance.

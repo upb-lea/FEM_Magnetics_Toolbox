@@ -58,7 +58,7 @@ class MagneticComponent:
 
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
-
+ 
         self.update_paths(working_directory)
 
         self.correct_outer_leg = False
@@ -3801,7 +3801,6 @@ class MagneticComponent:
                         # Define complex current phasor as real value
                         self.current[num] = complex(amplitude_list[num], 0)
                         phase_deg_list.append(0)  # set to zero
-
                     else:
                         raise ValueError
                 else:
@@ -5419,6 +5418,7 @@ class MagneticComponent:
         :rtype: Dict
 
         """
+
         # frequencies = frequencies or []
         # currents = currents or []
         # phi = phi or []
