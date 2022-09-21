@@ -12,6 +12,12 @@ When running the simulation many files will be created in the working directory 
 Besides the working directory a MagneticComponent also needs a ComponentType.
 Currently this can be 'Inductor', 'Transformer' or 'IntegratedTransformer'.
 
+This results to the following code:
+```python
+import femmt as fmt
+
+geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory) 
+```
 ## 2. Creating a core
 In general, only 2D rotationally symmetric geometries are represented in FEMMT. Other core shapes must first be converted to a 2D rotationally symmetric shape. The corresponding values for this (diameter core, dimensions of the winding window) are taken from the data sheet. Afterwards, a corresponding geometry is generated automatically. 
 
@@ -23,6 +29,17 @@ After creating a MagneticComponent a core needs to be created. The core needs sp
 The neccessary spatial parameters are shown in the image below.
 
 <img src="documentation/geometry_core.png" width="800" alt="Core definitions">
+
+Core spatial parameters can be entered manually but FEMMT provides a database of different practical cores.
+This database can be accessed using:
+```python
+core_db = fmt.core-database()["PQ 40/40"]
+```
+Now the core object can be created and added to the model (geo object)
+```python
+core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"], material="95_100")
+core.set_core(core)
+```
 
 ### Material database
 
@@ -39,18 +56,39 @@ To set the vertical position for a air gap multiple methods are available:
 
 <img src="documentation/geometry_air_gap.png" width="800" alt="Air gap definitions">
 
+Have a look at the following example on how to create an air gap object and add it to the model:
+```python
+air_gaps = fmt.AirGaps(method=fmt.AirGapMethod.Percent, core=core)
+air_gaps.add_air_gap(leg_position=fmt.AirGapLegPosition.CenterLeg, height=0.0005, position_value=50)
+geo.set_air_gaps(air_gaps)
+```
+Adding an air_gap object is not necessary. If no air gap is needed, don't add the air gap object to the model.
 
 ## 4. Set insulation distances
 
 There are multiple insulations implemented in femmt. Some of them are created as rectangles in the model, some are just adding an offset to the windings.
 
 Core insulations are the insulations which are created as rectangles in the model. 4 core insulations will be added: top, left, bottom, right.
-The distance of those values can be set with the 'add_core_isolations' function.
+The distance of those values can be set with the 'add_core_insulations' function.
 
 Furthermore there are offset insulations between each turn in the same winding,
-a distance between 2 windings in one virtual winding window and a distance between each virtual winding window. The first two are set using the 'add_winding_isolations' functions, the last one when creating such a virtual winding window (vww).
+a distance between 2 windings in one virtual winding window and a distance between each virtual winding window. 
+The first two are set using the 'add_winding_insulations' functions, the last one when creating such a virtual winding window (vww).
+
+The function 'add_winding_insulations' therefore needs multiple parameters:
+- The first parameter is a list called **inner_windings**, where the list index corresponds to the number of the winding (0: Primary, 1: Secondary, ...).
+- The second parameter is the distance between two virtual winding windows, this is called **virtual_winding_window_insulation**.
 
 <img src="documentation/geometry_insulation.png" width="800" alt="Insulation definitions">
+
+This is how to create an insulation object and add certain insulations:
+```python
+insulation = fmt.Insulation()
+insulation.add_core_insulation(0.001, 0.001, 0.004, 0.001)
+insulation.add_winding_insulation([0.0005], 0.0001)
+geo.set_insulation(insulation)
+```
+The spatial parameters for the insulation, as well as for every other function in FEMMT, are always in SI-Units, in this case metres. 
 
 ## 5. Add windings to the winding window
 
@@ -70,6 +108,12 @@ There are multiple ways to split a winding window:
 In addition to that 2 virtual winding windows can be combined to one (this is not possible for (top_left, bottom_right) or (top_right, bottom_left) combinations). This is done using the combine_vww() function of the WindingWindow class.
 
 Each virtual winding window can be filled with either one single winding or one interleaved winding.
+
+A winding window with only one virtual winding window can be craeted like this:
+```python
+winding_window = fmt.WindingWindow(core, insulation)
+vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+```
 
 ### Winding types and winding schemes
 
@@ -130,17 +174,28 @@ As already shown in the winding types table 3 different conducors can be set:
 - **RoundLitz**
 - **RectangularSolid**
 
+To create a conductor have a look at the following code example:
+```python
+winding1 = fmt.Conductor(winding_number=0, conductivity=fmt.Conductivity.Copper)
+winding1.set_solid_round_conductor(conductor_radius=0.0011, conductor_arrangement=fmt.ConductorArrangement.Square)
+```
 ### Add conductors to virtual winding windows
 
 Now the conductors need to be added to the virtual winding windows with the corresponding winding type and winding scheme.
 In this case the set_winding() or set_interleaved_winding() function needs to be called. In the set_interleaved_winding() function an
-isolation distance can also be set. This value represents the distance between conductors from the primary and secondary side.
+insulation distance can also be set. This value represents the distance between conductors from the primary and secondary side.
 
-## 7. Add components to model
+```python
+vww.set_winding(conductor=winding1, turns=9, winding_scheme=None)
+```
 
-In order for the model to be created every component needs to be added to the MagneticComponent.
-The components **Core**, **WindingWindow** are always needed, **AirGaps**, **Isolations**, **StrayPath** are optional.
-This is usually done by the set_core(), set_winding_window(), ... functions.
+If you have a look at the winding types and windng schemes table a winding scheme is not needed when creating a round solid conductor in single winding.
+Therefore the value is set to None.
+
+Now before simulating the winding window needs to be added to the model as well:
+```python
+geo.set_winding_window(winding_window=winding_window)
+```
 
 ## 8. Create model and start simulation
 
@@ -149,3 +204,12 @@ This is done using the create_model() function. The frequency is needed there be
 In addition to that a boolean can be given to show the model after creation (in gmsh).
 
 The last step is to run a simulation using single_simulation(), which needs the frequency, currents (and phase if transformer is set) as parameters.
+
+```python
+geo.create_model(freq=100000, visualize_before=True, save_png=False)
+geo.single_simulation(freq=100000, current=[4.5], show_results=True)
+```
+
+The results should look like this:
+
+<img src="documentation/user_guide_example_model.png" width="350" alt="Example model"> <img src="documentation/user_guide_example_simulation.png" width="350" alt="Example simulation results">
