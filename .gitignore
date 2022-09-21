@@ -25,6 +25,7 @@ femmt/examples/femmt
 femmt/examples/femm
 femmt/examples/mesh
 femmt/custom_examples
+gui/femmt
 .idea/
 femmt/__pycache__/
 gpgit/
@@ -34,7 +35,6 @@ femmt.egg-info/
 .eggs/
 onelab/
 */working_directory/
-gui/femmt
 
 # FEMMT: generated files
 femmt/electro_magnetic/Parameter.pro
