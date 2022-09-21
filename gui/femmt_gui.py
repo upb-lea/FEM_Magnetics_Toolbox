@@ -59,7 +59,8 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.md_simulation_type_comboBox = None
         self.aut_simulation_type_comboBox = None
-        uic.loadUi('femmt_gui.ui', self)
+        ui_file_path = os.path.join(os.path.dirname(__file__), "femmt_gui.ui")
+        uic.loadUi(ui_file_path, self)
         _translate = QtCore.QCoreApplication.translate
         #self.setWindowIcon(QIcon('Images\\logo.png'))
         self.setWindowTitle(_translate("MainWindow", "FEM Magnetics Toolbox"))

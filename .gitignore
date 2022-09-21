@@ -34,6 +34,7 @@ femmt.egg-info/
 .eggs/
 onelab/
 */working_directory/
+gui/femmt
 
 # FEMMT: generated files
 femmt/electro_magnetic/Parameter.pro
