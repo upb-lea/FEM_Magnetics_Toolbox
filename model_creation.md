@@ -212,7 +212,7 @@ geo.single_simulation(freq=100000, current=[4.5], show_results=True)
 
 The results should look like this:
 
-<img src="documentation/user_guide_example_model.png" width="350" alt="Example model"> <img src="documentation/user_guide_example_simulation.png" width="350" alt="Example simulation results">
+<img src="documentation/user_guide_example_model.png" width="300" alt="Example model"> <img src="documentation/user_guide_example_simulation.png" width="300" alt="Example simulation results">
 
 ## 9. [Optional] Create thermal simulation
 
@@ -282,7 +282,9 @@ In the following table a possible set of thermal conductivities can be found:
 The thermal simulation will solve the stationary heat equation and since no convection is considered every material is assumed to be solid.
 Now the simulation can be run:
 ```python
-geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True)
+geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True, True)
 ```
 
-### 
+The following image shows the simulation results:
+
+<img src="documentation/user_guide_example_thermal_simulation.png" width="350" alt="Example thermal simulation">

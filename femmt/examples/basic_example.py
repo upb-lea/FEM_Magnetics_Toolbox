@@ -11,12 +11,12 @@ def example_thermal_simulation():
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
             "air": 0.0263,
-            "case": { # (epoxy resign) | transformer oil
-                "top": 0.122,
-                "top_right": 0.122,
-                "right": 0.122,
-                "bot_right": 0.122,
-                "bot": 0.122
+            "case": { # epoxy resign
+                "top": 1.54,
+                "top_right": 1.54,
+                "right": 1.54,
+                "bot_right": 1.54,
+                "bot": 1.54
             },
             "core": 5, # ferrite
             "winding": 400, # copper
