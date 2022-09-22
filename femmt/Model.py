@@ -334,7 +334,7 @@ class Insulation:
     When having a inductor only the primary2primary insulation is necessary.
     When having a (integrated) transformer secondary2secondary and primary2secondary insulations can be set as well.
     """
-    inner_winding: List[float]
+    inner_winding_insulations: List[float]
     vww_insulation: float
     core_cond: List[float]
 
@@ -352,7 +352,7 @@ class Insulation:
         if virtual_winding_window_insulation is None:
             virtual_winding_window_insulation = 0
 
-        self.inner_winding = inner_winding_insulations
+        self.inner_winding_insulations = inner_winding_insulations
         self.vww_insulation = virtual_winding_window_insulation
 
     def add_core_insulations(self, top_core, bot_core, left_core, right_core):
@@ -368,11 +368,11 @@ class Insulation:
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
     def to_dict(self):
-        if len(self.inner_winding) == 0 and self.vww_insulation is None:
+        if len(self.inner_winding_insulations) == 0 and self.vww_insulation is None:
             return {}
 
         return {
-            "inner_winding_insulations": self.inner_winding,
+            "inner_winding_insulations": self.inner_winding_insulations,
             "core_insulations": self.core_cond,
             "vww_insulation": self.vww_insulation
         }

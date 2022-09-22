@@ -989,7 +989,7 @@ class Mesh:
         # is put on the winding window. Every point that is too close to the conductors is removed.
         # Every remaining point is added to the mesh with a higher mesh density
 
-        min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.insulation.inner_winding)
+        min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.insulation.inner_winding_insulations)
         left_bound = self.core.core_w / 2
         right_bound = self.model.r_inner
         top_bound = self.core.window_h / 2

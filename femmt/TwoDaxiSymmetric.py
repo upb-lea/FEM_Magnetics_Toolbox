@@ -382,7 +382,7 @@ class TwoDaxiSymmetric:
 
                                         N_completed[col_cond] += 1
 
-                                        y -= windings[col_cond].conductor_radius * 2 + self.insulation.inner_winding[col_cond]  # one from bot to top
+                                        y -= windings[col_cond].conductor_radius * 2 + self.insulation.inner_winding_insulations[col_cond]  # one from bot to top
 
                                     x += windings[col_cond].conductor_radius + \
                                             windings[(col_cond + 1) % 2].conductor_radius + \
@@ -403,7 +403,7 @@ class TwoDaxiSymmetric:
                                 # Correct the reset of y and correct x displacement
                                 x += windings[col_cond].conductor_radius - \
                                         windings[(col_cond + 1) % 2].conductor_radius \
-                                        - virtual_winding_window.winding_insulation + self.insulation.inner_winding[
+                                        - virtual_winding_window.winding_insulation + self.insulation.inner_winding_insulations[
                                             col_cond]
 
                                 y = top_bound - windings[col_cond].conductor_radius
@@ -468,7 +468,7 @@ class TwoDaxiSymmetric:
                                         N_completed[col_cond] += 1
 
                                         y += windings[col_cond].conductor_radius * 2 + \
-                                                self.insulation.inner_winding[col_cond]  # one from bot to top
+                                                self.insulation.inner_winding_insulations[col_cond]  # one from bot to top
 
                                     x += windings[col_cond].conductor_radius + \
                                             windings[(col_cond + 1) % 2].conductor_radius + \
@@ -490,7 +490,7 @@ class TwoDaxiSymmetric:
                                 x += windings[col_cond].conductor_radius - \
                                         windings[(col_cond + 1) % 2].conductor_radius \
                                         - virtual_winding_window.winding_insulation + \
-                                        self.insulation.inner_winding[
+                                        self.insulation.inner_winding_insulations[
                                             col_cond]
 
                                 y = bot_bound + windings[col_cond].conductor_radius
@@ -536,10 +536,10 @@ class TwoDaxiSymmetric:
                                     self.mesh_data.c_conductor[winding_number0]])
                                 i += 1
                                 x += winding0.conductor_radius * 2 + \
-                                        self.insulation.inner_winding[
+                                        self.insulation.inner_winding_insulations[
                                             winding_number0]  # from left to right
                             y += winding0.conductor_radius * 2 + \
-                                    self.insulation.inner_winding[
+                                    self.insulation.inner_winding_insulations[
                                         winding_number0]  # one step from bot to top
                             x = left_bound + winding0.conductor_radius  # always the same
                     elif winding0.conductor_arrangement == ConductorArrangement.Hexagonal:
@@ -578,30 +578,30 @@ class TwoDaxiSymmetric:
 
                                     x += 2 * np.cos(np.pi / 6) * (
                                             winding0.conductor_radius +
-                                            self.insulation.inner_winding[winding_number0] / 2)
+                                            self.insulation.inner_winding_insulations[winding_number0] / 2)
 
                                     # depending on what line, hexa scheme starts shifted
                                     # reset y to "new" bottom
                                     base_line = (not base_line)
                                     if base_line:
                                         y -= (winding0.conductor_radius +
-                                                self.insulation.inner_winding[winding_number0] / 2)
+                                                self.insulation.inner_winding_insulations[winding_number0] / 2)
                                     else:
                                         y += (winding0.conductor_radius +
-                                                self.insulation.inner_winding[winding_number0] / 2)
+                                                self.insulation.inner_winding_insulations[winding_number0] / 2)
 
                                 # Undo last base_line reset
                                 if base_line:
                                     y += (winding0.conductor_radius +
-                                            self.insulation.inner_winding[winding_number0] / 2)
+                                            self.insulation.inner_winding_insulations[winding_number0] / 2)
                                 else:
                                     y -= (winding0.conductor_radius +
-                                            self.insulation.inner_winding[winding_number0] / 2)
+                                            self.insulation.inner_winding_insulations[winding_number0] / 2)
 
                                 base_line = True
                                 x = left_bound + winding0.conductor_radius
                                 y += winding0.conductor_radius * 2 + \
-                                        self.insulation.inner_winding[winding_number0]
+                                        self.insulation.inner_winding_insulations[winding_number0]
                     else:
                         raise Exception(f"Unknown conductor_arrangement {winding0.conductor_arrangement}")
 
@@ -643,10 +643,10 @@ class TwoDaxiSymmetric:
                                 i += 1
 
                                 x += winding1.conductor_radius * 2 + \
-                                        self.insulation.inner_winding[
+                                        self.insulation.inner_winding_insulations[
                                             winding_number1]  # from left to right
                             y += -(winding1.conductor_radius * 2) - \
-                                    self.insulation.inner_winding[
+                                    self.insulation.inner_winding_insulations[
                                         winding_number1]  # one step from bot to top
                             x = left_bound + winding1.conductor_radius  # always the same
                     elif winding1.conductor_arrangement == ConductorArrangement.Hexagonal:
@@ -686,31 +686,31 @@ class TwoDaxiSymmetric:
                                 i += 1
                                 x += 2 * np.cos(np.pi / 6) * (
                                         winding1.conductor_radius +
-                                        self.insulation.inner_winding[winding_number1] / 2)
+                                        self.insulation.inner_winding_insulations[winding_number1] / 2)
 
                                 # depending on what line, hexa scheme starts shifted
                                 # reset y to "new" bottom
                                 base_line = (not base_line)
                                 if base_line:
                                     y += (winding1.conductor_radius +
-                                            self.insulation.inner_winding[winding_number1])
+                                            self.insulation.inner_winding_insulations[winding_number1])
                                 else:
                                     y -= (winding1.conductor_radius +
-                                            self.insulation.inner_winding[winding_number1])
+                                            self.insulation.inner_winding_insulations[winding_number1])
 
                             # Undo last base_line reset
                             if base_line:
                                 y -= (winding1.conductor_radius +
-                                        self.insulation.inner_winding[winding_number1])
+                                        self.insulation.inner_winding_insulations[winding_number1])
                             else:
                                 y += (winding1.conductor_radius +
-                                        self.insulation.inner_winding[winding_number1])
+                                        self.insulation.inner_winding_insulations[winding_number1])
 
                             base_line = True
                             x = left_bound + winding1.conductor_radius
                             # from top to bottom
                             y += -(winding1.conductor_radius * 2) - \
-                                    self.insulation.inner_winding[
+                                    self.insulation.inner_winding_insulations[
                                         winding_number1]
                     else:
                         raise Exception(f"Unknown conductor_arrangement {winding1.conductor_arrangement.name}")
@@ -756,31 +756,31 @@ class TwoDaxiSymmetric:
                             for i in range(turns):
                                 # CHECK if right bound is reached
                                 if (left_bound + (i + 1) * winding.thickness +
-                                    i * self.insulation.inner_winding[num]) <= right_bound:
+                                    i * self.insulation.inner_winding_insulations[num]) <= right_bound:
                                     # Foils
                                     self.p_conductor[num].append([
-                                        left_bound + i * winding.thickness + i * self.insulation.inner_winding[num],
+                                        left_bound + i * winding.thickness + i * self.insulation.inner_winding_insulations[num],
                                         bot_bound, 
                                         0, 
                                         self.mesh_data.c_conductor[num]])
                                     self.p_conductor[num].append([
-                                        left_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding[num], 
+                                        left_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num], 
                                         bot_bound, 
                                         0,
                                         self.mesh_data.c_conductor[num]])
                                     self.p_conductor[num].append([
-                                        left_bound + i * winding.thickness + i * self.insulation.inner_winding[num],
+                                        left_bound + i * winding.thickness + i * self.insulation.inner_winding_insulations[num],
                                         top_bound, 
                                         0, 
                                         self.mesh_data.c_conductor[num]])
                                     self.p_conductor[num].append([
-                                        left_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding[num], 
+                                        left_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num], 
                                         top_bound, 
                                         0,
                                         self.mesh_data.c_conductor[num]])
                         elif virtual_winding_window.wrap_para == WrapParaType.Interpolate:
                             # Fill the allowed space in the Winding Window with a chosen number of turns
-                            x_interpol = np.linspace(left_bound, right_bound + self.insulation.inner_winding[num],
+                            x_interpol = np.linspace(left_bound, right_bound + self.insulation.inner_winding_insulations[num],
                                                         turns + 1)
                             for i in range(turns):
                                 # Foils
@@ -790,7 +790,7 @@ class TwoDaxiSymmetric:
                                     0, 
                                     self.mesh_data.c_conductor[num]])
                                 self.p_conductor[num].append([
-                                    x_interpol[i + 1] - self.insulation.inner_winding[num], 
+                                    x_interpol[i + 1] - self.insulation.inner_winding_insulations[num], 
                                     bot_bound, 
                                     0,
                                     self.mesh_data.c_conductor[num]])
@@ -800,7 +800,7 @@ class TwoDaxiSymmetric:
                                     0, 
                                     self.mesh_data.c_conductor[num]])
                                 self.p_conductor[num].append([
-                                    x_interpol[i + 1] - self.insulation.inner_winding[num], 
+                                    x_interpol[i + 1] - self.insulation.inner_winding_insulations[num], 
                                     top_bound, 
                                     0,
                                     self.mesh_data.c_conductor[num]])
@@ -812,26 +812,26 @@ class TwoDaxiSymmetric:
                         for i in range(turns):
                             # CHECK if top bound is reached
                             if (bot_bound + (i + 1) * winding.thickness +
-                                i * self.insulation.inner_winding[num]) <= top_bound:
+                                i * self.insulation.inner_winding_insulations[num]) <= top_bound:
                                 # stacking from the ground
                                 self.p_conductor[num].append([
                                     left_bound, 
-                                    bot_bound + i * winding.thickness + i * self.insulation.inner_winding[num], 
+                                    bot_bound + i * winding.thickness + i * self.insulation.inner_winding_insulations[num], 
                                     0, 
                                     self.mesh_data.c_conductor[num]])
                                 self.p_conductor[num].append([
                                     right_bound,
-                                    bot_bound + i * winding.thickness + i * self.insulation.inner_winding[num],
+                                    bot_bound + i * winding.thickness + i * self.insulation.inner_winding_insulations[num],
                                     0,
                                     self.mesh_data.c_conductor[num]])
                                 self.p_conductor[num].append([
                                     left_bound,
-                                    bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding[num], 
+                                    bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num], 
                                     0,
                                     self.mesh_data.c_conductor[num]])
                                 self.p_conductor[num].append([
                                     right_bound,
-                                    bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding[num],
+                                    bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num],
                                     0,
                                     self.mesh_data.c_conductor[num]])      
                     else:
@@ -873,8 +873,8 @@ class TwoDaxiSymmetric:
                                     0,
                                     self.mesh_data.c_conductor[num]])
                                 i += 1
-                                y += winding.conductor_radius * 2 + self.insulation.inner_winding[num]  # one step from left to right
-                            x += winding.conductor_radius * 2 + self.insulation.inner_winding[num]  # from left to top
+                                y += winding.conductor_radius * 2 + self.insulation.inner_winding_insulations[num]  # one step from left to right
+                            x += winding.conductor_radius * 2 + self.insulation.inner_winding_insulations[num]  # from left to top
                             y = bot_bound + winding.conductor_radius
                     elif conductor_arrangement == ConductorArrangement.Hexagonal:
                         y = bot_bound + winding.conductor_radius
@@ -913,11 +913,11 @@ class TwoDaxiSymmetric:
                                     self.mesh_data.c_conductor[num]])
                                 i += 1
                                 y += winding.conductor_radius * 2 + \
-                                        self.insulation.inner_winding[
+                                        self.insulation.inner_winding_insulations[
                                             num]  # from bottom to top
                             x += 2 * np.cos(np.pi / 6) * (
                                     winding.conductor_radius +
-                                    self.insulation.inner_winding[num] / 2)
+                                    self.insulation.inner_winding_insulations[num] / 2)
                             # * np.sqrt(2 / 3 * np.pi / np.sqrt(3))  # one step from left to right
                             # depending on what line, hexa scheme starts shifted
                             # reset y to "new" bottom
@@ -926,7 +926,7 @@ class TwoDaxiSymmetric:
                                 y = bot_bound + winding.conductor_radius
                             else:
                                 y = bot_bound + 2 * winding.conductor_radius + \
-                                    self.insulation.inner_winding[
+                                    self.insulation.inner_winding_insulations[
                                         num] / 2
                     elif conductor_arrangement == ConductorArrangement.SquareFullWidth:
                         y = bot_bound + winding.conductor_radius
@@ -964,10 +964,10 @@ class TwoDaxiSymmetric:
                                     self.mesh_data.c_conductor[num]])
                                 i += 1
                                 x += winding.conductor_radius * 2 + \
-                                        self.insulation.inner_winding[
+                                        self.insulation.inner_winding_insulations[
                                             num]  # from left to top
                             y += winding.conductor_radius * 2 + \
-                                    self.insulation.inner_winding[
+                                    self.insulation.inner_winding_insulations[
                                         num]  # one step from left to right
                             x = left_bound + winding.conductor_radius  # always the same
                     else:

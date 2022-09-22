@@ -271,6 +271,8 @@ boundary_flags = {
 }
 ```
 
+In the boundary_flags dictionary 2 flags are set to 0 which means there will be a von neumann boundary applied. Please have a look at the picture above which shows the current selected boundaries.
+
 In the following table a possible set of thermal conductivities can be found:
 | Material | Thermal conductivity |
 | --- | --- |
