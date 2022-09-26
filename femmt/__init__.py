@@ -5,3 +5,4 @@ from femmt.Functions import *
 from femmt.Model import *
 from femmt.thermal import *
 from femmt.MagneticComponent import *
+from femmt.Reluctance import *

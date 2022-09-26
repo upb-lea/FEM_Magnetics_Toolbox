@@ -1,7 +1,7 @@
 # Python standard libraries
 import numpy as np
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Tuple, Optional, Union
 
 # Local libraries
 import femmt.Functions as ff
@@ -13,10 +13,8 @@ class Conductor:
     The winding is defined by its conductor and the way it is placed in the magnetic component. To allow different
     arrangements of the conductors in several winding windows (hexagonal or square packing, interleaved, ...) in
     this class only the conductor parameters are specified. 
-
-    TODO More documentation
     """
-
+    # TODO More documentation
     conductor_type: ConductorType
     conductor_arrangement: ConductorArrangement = None
     wrap_para: WrapParaType = None
@@ -37,6 +35,15 @@ class Conductor:
     conductivity: Conductivity = None
 
     def __init__(self, winding_number: int, conductivity: float):
+        """Creates an conductor object.
+        The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
+        The conductor with the lowest winding number (starting from 0) will be treated as primary, second lowest number as secondary and so on.
+
+        :param winding_number: Unique number for the winding
+        :type winding_number: int
+        :param conductivity: Sets the conductivity for the conductor
+        :type conductivity: float
+        """
         if winding_number < 0:
             raise Exception("Winding index cannot be negative.")
 
@@ -132,9 +139,9 @@ class Core:
 
     frequency = 0: mu_rel only used if non_linear == False
     frequency > 0: mu_rel is used
-    
-    TODO More Documentation
     """
+    # TODO More documentation
+
     type: str
 
     # Standard material data
@@ -176,6 +183,27 @@ class Core:
     def __init__(self, core_w: float, window_w: float, window_h: float, material: str = "custom",  # "95_100" 
                    loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000,
                    phi_mu_deg: float = None, sigma: float = None, non_linear: bool = False, correct_outer_leg: bool = False, **kwargs):
+        """TODO Doc
+
+        :param core_w: _description_
+        :type core_w: float
+        :param window_w: _description_
+        :type window_w: float
+        :param window_h: _description_
+        :type window_h: float
+        :param material: _description_, defaults to "custom"
+        :type material: str, optional
+        :param mu_rel: _description_, defaults to 3000
+        :type mu_rel: float, optional
+        :param phi_mu_deg: _description_, defaults to None
+        :type phi_mu_deg: float, optional
+        :param sigma: _description_, defaults to None
+        :type sigma: float, optional
+        :param non_linear: _description_, defaults to False
+        :type non_linear: bool, optional
+        :param correct_outer_leg: _description_, defaults to False
+        :type correct_outer_leg: bool, optional
+        """
         # Set parameters
         self.core_w = core_w
         self.core_h = None  # TODO Set core_h to not none
@@ -257,6 +285,14 @@ class AirGaps:
     air_gap_settings: List
 
     def __init__(self, method: AirGapMethod, core: Core):
+        """Creates an AirGaps object. An AirGapMethod needs to be set. This determines the way the air gap will be added to the model.
+        In order to calculate the air gap positions the core object needs to be given.
+
+        :param method: The method determines the waay the air gap position is set.
+        :type method: AirGapMethod
+        :param core: The core object
+        :type core: Core
+        """
         self.method = method
         self.core = core
         self.midpoints = []
@@ -333,6 +369,11 @@ class Insulation:
     An insulation between the winding window and the core can always be set.
     When having a inductor only the primary2primary insulation is necessary.
     When having a (integrated) transformer secondary2secondary and primary2secondary insulations can be set as well.
+
+    Only the isolation between winding window and core is drawn as a "physical" isolation (4 rectangles). All other isolations
+    are only describing a set distance between the object.
+
+    In general it is not necessary to add an insulation object at all when no insulation is needed.
     """
     inner_winding_insulations: List[float]
     vww_insulation: float
@@ -341,12 +382,26 @@ class Insulation:
     insulation_delta: float
 
     def __init__(self):
+        """Creates an insulation object.
+
+        Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
+        are not exactly drawn at the specified position. They are slightly smaller and the offset can be changed with the insulation_delta variable.
+        In general it is not recommended to change this value.
+        """
         # Default value for all insulations
         # If the gaps between insulations and core (or windings) are to big/small just change this value
         self.insulation_delta = 0.00001
         self.vww_insulation = None
 
-    def add_winding_insulations(self, inner_winding_insulations, virtual_winding_window_insulation = None):
+    def add_winding_insulations(self, inner_winding_insulations: List[float], virtual_winding_window_insulation: float = None):
+        """Adds insulations between turns of one winding and insulation between virtual winding windows.
+        Insulation between virtual winding windows is not always needed.
+
+        :param inner_winding_insulations: List of floats which represent the insulations between turns of the same winding. This does not correspond to the order conductors are added to the winding! Instead the winding number is important. The conductors are sorted by ascending winding number. The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
+        :type inner_winding_insulations: List[float]
+        :param virtual_winding_window_insulation: Sets the distance between two winding windows, defaults to None
+        :type virtual_winding_window_insulation: float, optional
+        """
         if inner_winding_insulations is []:
             raise Exception("Inner winding insulations list cannot be empty.")
         if virtual_winding_window_insulation is None:
@@ -355,7 +410,18 @@ class Insulation:
         self.inner_winding_insulations = inner_winding_insulations
         self.vww_insulation = virtual_winding_window_insulation
 
-    def add_core_insulations(self, top_core, bot_core, left_core, right_core):
+    def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
+        """Adds insulations between the core and the winding window. Creating those will draw real rectangles in the model.
+
+        :param top_core: Insulation between winding window and top core
+        :type top_core: float
+        :param bot_core: Insulation between winding window and bottom core
+        :type bot_core: float
+        :param left_core: Insulation between winding window and left core
+        :type left_core: float
+        :param right_core: Insulation between winding window and right core
+        :type right_core: float
+        """
         if top_core is None:
             top_core = 0
         if bot_core is None:
@@ -381,11 +447,14 @@ class Insulation:
 class StrayPath:
     """
     This class is needed when an integrated transformer shall be created.
-
-    TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the
-    "stray air gap" is different in axi-symmetric approximation
+    An start_index and a length can be given. The start_index sets the position of the tablet.
+    start_index=0 will create the tablet between the lowest and second lowest air gaps. start_index=1 will create it
+    between the seccond lowest and third lowest. Therefore it is necessary for the user to make sure that enough air gaps exist!
+    The length parameter sets the length of the tablet starting at the y-axis (not the right side of the center core). It therefore
+    determines the air gap between the tablet and the outer core leg.
     """
-
+    # TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the
+    # "stray air gap" is different in axi-symmetric approximation
     start_index: int        # Air gaps are sorted from lowest to highest. This index refers to the air_gap index bottom up
     length: float           # Resembles the length of the whole tablet starting from the y-axis
 
@@ -404,7 +473,7 @@ class VirtualWindingWindow:
     right_bound: float
 
     winding_type: WindingType
-    winding_scheme: WindingScheme # Or InterleavedWindingScheme in case of an interleaved winding
+    winding_scheme: Union[WindingScheme, InterleavedWindingScheme] # Or InterleavedWindingScheme in case of an interleaved winding
     wrap_para: WrapParaType
 
     windings: List[Conductor]
@@ -414,6 +483,18 @@ class VirtualWindingWindow:
     winding_insulation: float
 
     def __init__(self, bot_bound: float, top_bound: float, left_bound: float, right_bound: float):
+        """Creates a virtual winding window with given bounds. By default a virtual winding window is created by the WindingWindow class.
+        The parameter values are given in metres and depend on the axisymmetric coordinate system.
+
+        :param bot_bound: Bottom bound
+        :type bot_bound: float
+        :param top_bound: Top bound
+        :type top_bound: float
+        :param left_bound: Left bound
+        :type left_bound: float
+        :param right_bound: Right bound
+        :type right_bound: float
+        """
         self.bot_bound = bot_bound
         self.top_bound = top_bound
         self.left_bound = left_bound
@@ -421,6 +502,17 @@ class VirtualWindingWindow:
         self.winding_is_set = False
 
     def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, wrap_para_type: WrapParaType = None):
+        """Sets a single winding to the current virtual winding window. A single winding always contains one conductor.
+
+        :param conductor: Conductor which will be set to the vww.
+        :type conductor: Conductor
+        :param turns: Number of turns of the conductor
+        :type turns: int
+        :param winding_scheme: Winding scheme defines the way the conductor is wrapped. Can be set to None.
+        :type winding_scheme: WindingScheme
+        :param wrap_para_type: Additional wrap parameter. Not always needed, defaults to None
+        :type wrap_para_type: WrapParaType, optional
+        """
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
         self.windings = [conductor]
@@ -432,6 +524,23 @@ class VirtualWindingWindow:
             raise Exception("When winding scheme is FoilVertical a wrap para type must be set.")
 
     def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme, winding_insulation: float):
+        """Sets an interleaved winding to the current virtual winding window. An interleaved winding always contains two conductors.
+        If a conductor is primary or secondary is determined by the value of the winding number of the conductor. The order of the function parameters
+        is irrelevant.
+
+        :param conductor1: Conductor 1 which will be added to the vww. Not equal to primary winding.
+        :type conductor1: Conductor
+        :param turns1: Turns of conductor 1
+        :type turns1: int
+        :param conductor2: Conductor 2 which will be added to the vww. Not equal to secondary winding.
+        :type conductor2: Conductor
+        :param turns2: Turns of conductor 2
+        :type turns2: int
+        :param winding_scheme: Interleaved winding scheme defines the way the conductors are drawn
+        :type winding_scheme: InterleavedWindingScheme
+        :param winding_insulation: Isolation between the conductor 1 and conductor 2
+        :type winding_insulation: float
+        """
         self.winding_type = WindingType.Interleaved
         self.winding_scheme = winding_scheme
         self.windings = [conductor1, conductor2]
@@ -460,6 +569,9 @@ class VirtualWindingWindow:
     # function should be implemented.
 
 class WindingWindow:
+    """Represents the winding window which is necessary for every model in FEMMT.
+    Depending on the type different virtual winding windows are created by this class which then contain the different conductors.
+    """
     max_bot_bound: float
     max_top_bound: float
     max_left_bound: float
@@ -484,6 +596,19 @@ class WindingWindow:
     virtual_winding_windows: List[VirtualWindingWindow]
 
     def __init__(self, core: Core, insulations: Insulation, stray_path: StrayPath = None, air_gaps: AirGaps = None):
+        """Creates a winding window which then creates up to 4 virtual winding windows. In order to correctly calculate the
+        virtual winding windows the core, isolations, stray_path and air_gaps objects are needed.
+        The stray_path and air_gaps objects are only needed when having an integrated transformer.
+
+        :param core: Core object
+        :type core: Core
+        :param insulations: Insulation object
+        :type insulations: Insulation
+        :param stray_path: Stray path object. Only needed for integrated transformer, defaults to None
+        :type stray_path: StrayPath, optional
+        :param air_gaps: Air gaps path object. Only needed for integrated transformer, defaults to None
+        :type air_gaps: AirGaps, optional
+        """
         self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[0]
         self.max_top_bound = core.window_h / 2 - insulations.core_cond[1]
         self.max_left_bound = core.core_w / 2 + insulations.core_cond[2]
@@ -496,7 +621,30 @@ class WindingWindow:
         self.stray_path = stray_path
         self.air_gaps = air_gaps
 
-    def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5):
+    def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
+        """Creates up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
+        The split factors are values beteen 0 and 1 and determine a horizontal and vertical line at which the window is split.
+        Not every value is needed for every split type:
+        - NoSplit: No factor is needed
+        - HorizontalSplit: Horizontal split factor needed
+        - VerticalSplit: Vertical split factor needed
+        - HorizontalAndVerticalSplit: Both split factors needed
+        
+        Up to 4 virtual winding windows are returned:
+        - NoSplit: complete
+        - HorizontalSplit: left, right
+        - VerticalSplit: top, bottom
+        - HorizontalAndVerticalSplit: top_left, top_right, bot_left, bot_right
+
+        :param split_type: Determines the arrangement in which virtual winding windows are created
+        :type split_type: WindingWindowSplit
+        :param horizontal_split_factor: Horizontal split factor, defaults to 0.5
+        :type horizontal_split_factor: float, optional
+        :param vertical_split_factor: Vertical split factor, defaults to 0.5
+        :type vertical_split_factor: float, optional
+        :return: Tuple containing the virtual winding windows
+        :rtype: Tuple[VirtualWindingWindow]
+        """
         self.split_type = split_type
 
         self.horizontal_split_factor = horizontal_split_factor
@@ -586,7 +734,16 @@ class WindingWindow:
         else:
             raise Exception(f"Winding window split type {split_type} not found")
 
-    def combine_vww(self, vww1, vww2):
+    def combine_vww(self, vww1: VirtualWindingWindow, vww2: VirtualWindingWindow) -> VirtualWindingWindow:
+        """Combines the borders of two virtual winding windows.
+
+        :param vww1: Virtual winding window 1
+        :type vww1: VirtualWindingWindow
+        :param vww2: Virtual winding window 2
+        :type vww2: VirtualWindingWindow
+        :return: Virtual winding window with new bounds
+        :rtype: VirtualWindingWindow
+        """
         index1 = self.virtual_winding_windows.index(vww1)
         index2 = self.virtual_winding_windows.index(vww2)
 

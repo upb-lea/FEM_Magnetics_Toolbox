@@ -225,7 +225,7 @@ In order to run thermal a thermal simulation different values are needed:
 - thermal conductivity dict: A dictionary containing thermal conductivities for each region. The regions are: air, core, winding, air_gaps, insulation, case (which is split in top, top_right, right, bot_right, bot
 - case gap values: Set the size of the surrounding case
 - boundary temperatures dict: The temperatures which will be applied at the edge of the case (dirichlet boundary condition)
-- boundary flags: By disabling a specific boundary its condition can be set to a von neumann boundary condition ignoring the temperature parameter
+- boundary flags: By disabling a specific boundary its condition can be set to a neumann boundary condition ignoring the temperature parameter
 
 <img src="documentation/geometry_thermal.png" width="800" alt="Thermal definitions">
 
@@ -271,7 +271,7 @@ boundary_flags = {
 }
 ```
 
-In the boundary_flags dictionary 2 flags are set to 0 which means there will be a von neumann boundary applied. Please have a look at the picture above which shows the current selected boundaries.
+In the boundary_flags dictionary 2 flags are set to 0 which means there will be a neumann boundary applied. Please have a look at the picture above which shows the current selected boundaries.
 
 In the following table a possible set of thermal conductivities can be found:
 | Material | Thermal conductivity |

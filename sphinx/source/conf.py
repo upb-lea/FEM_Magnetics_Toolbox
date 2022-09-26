@@ -42,6 +42,9 @@ source_suffix = '.rst'
 # The master toctree document.
 master_doc = 'index'
 
+# Set preserve defaults to true. This will prevent dicts from printing their values to the doc.
+autodoc_preserve_defaults = True
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
