@@ -140,7 +140,7 @@ The following table gives an overview of the different winding types, winding sc
 | | | Full | | | implemented | whole virtual winding window contains is filled with one turn
 | | | FoilHorizontal (stacked) | | | implemented | foils are very long (x-axis) and drawn along y-axis
 | | | Square full width | | | not implemented | foils are drawn along x-axis first and then along y-axis
-| | | FoilVertical | | | implemented | foils are very high (y-axis) and drawn along x-axis
+| | | FoilVertical | | | implemented | foils are very tall (y-axis) and drawn along x-axis
 | | | | | Fixed Thickness | " |
 | | | | | Interpolate | " |
 
