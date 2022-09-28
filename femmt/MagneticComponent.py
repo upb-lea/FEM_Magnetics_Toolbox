@@ -144,10 +144,24 @@ class MagneticComponent:
         self.onelab_setup()
         self.onelab_client = onelab.client(__file__)
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
-    # Thermal simulation
+    def calculate_core_volume_with_air(self) -> float:
+        """Calculates the volume of the core including air.
+
+        :return: Volume of the core
+        :rtype: float
+        """
+        # TODO core_h and core_w should always be set
+        if self.core.core_h is not None and self.core.core_w is not None:
+            core_height = self.core.core_h
+            core_width = self.core.core_w
+        else:
+            core_height = self.core.window_h + self.core.core_w / 2
+            core_width = self.core.r_outer
+
+        return np.pi * core_width**2 * core_height
+
     def calculate_core_volume(self) -> float:
-        """Calculates the volume of the core. This is needed for the thermal simulation.
+        """Calculates the volume of the core excluding air.
 
         :return: Volume of the core.
         :rtype: float
@@ -158,26 +172,27 @@ class MagneticComponent:
             core_width = self.core.core_w
         else:
             core_height = self.core.window_h + self.core.core_w / 2
-            core_width = self.two_d_axi.r_outer
+            core_width = self.core.r_outer
+
         winding_height = self.core.window_h
         winding_width = self.core.window_w
 
         air_gap_volume = 0
-        inner_leg_width = self.two_d_axi.r_inner - winding_width
+        inner_leg_width = self.core.r_inner - winding_width
         for leg_position, position_value, height in self.air_gaps.midpoints:
             width = 0
 
             if leg_position == AirGapLegPosition.LeftLeg.value:
                 # left leg
                 # TODO this is wrong since the airgap is not centered on the y axis 
-                width = core_width - self.two_d_axi.r_inner
+                width = core_width - self.core.r_inner
             elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
             elif leg_position == AirGapLegPosition.RightLeg.value:
                 # right leg
                 # TODO this is wrong since the airgap is not centered on the y axis
-                width = core_width - self.two_d_axi.r_inner
+                width = core_width - self.core.r_inner
             else:
                 raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
 
@@ -185,11 +200,11 @@ class MagneticComponent:
 
         return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
 
-    def get_wire_distances(self) -> List[float]:
+    def get_wire_distances(self) -> List[List[float]]:
         """Helper function which returns the distance (radius) of each conductor to the y-axis 
 
         :return: Wire distances
-        :rtype: List[float]
+        :rtype: List[List[float]]
         """
         wire_distance = []
         for winding in self.two_d_axi.p_conductor:
@@ -202,6 +217,18 @@ class MagneticComponent:
             wire_distance.append(winding_list)
 
         return wire_distance
+
+    def get_wire_lengths(self) -> List[float]:
+        distances = self.get_wire_distances()
+        lengths = []
+        for winding in distances:
+            lengths.append(sum([2 * np.pi * turn for turn in winding]))
+
+        return lengths
+
+
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    # Thermal simulation
 
     # Start thermal simulation
     def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,

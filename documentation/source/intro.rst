@@ -1,8 +1,15 @@
 .. sectnum::
 
 
-.. include:: ../../README.rst
+.. include:: introduction.rst
 
+.. _user_guide_model_creation:
+
+.. include:: user_guide_model_creation.rst
+
+.. _winding_types:
+
+.. include:: winding_types.rst
 
 FEMMT class and function documentation
 =======================================

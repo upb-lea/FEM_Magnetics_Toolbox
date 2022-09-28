@@ -5,8 +5,6 @@ This guide explains how a model can be created in femmt and provides all
 the necessary information to work with femmt. Many examples for femmt
 models can be found in the example folder.
 
-.. _1-working-directory:
-
 Working directory
 --------------------
 
@@ -29,8 +27,6 @@ This results to the following code:
 
    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory) 
 
-.. _2-creating-a-core:
-
 Creating a core
 ------------------
 
@@ -43,14 +39,14 @@ Afterwards, a corresponding geometry is generated automatically.
 The following graphics always show only a sectional view of the core
 geometry.
 
-.. image:: documentation/geometry_translated.png
+.. image:: ../images/geometry_translated.png
 	:width: 800
 
 After creating a MagneticComponent a core needs to be created. The core
 needs spatial parameters as well as material parameters. The neccessary
 spatial parameters are shown in the image below.
 
-.. image:: documentation/geometry_core.png
+.. image:: ../images/geometry_core.png
 	:width: 800
 
 Core spatial parameters can be entered manually but FEMMT provides a
@@ -73,8 +69,6 @@ Material database
 
 TODO
 
-.. _3-adding-air-gaps-to-the-core:
-
 Adding air gaps to the core
 ------------------------------
 
@@ -89,7 +83,7 @@ methods are available:
 -  **Manually**: The specific y coordinate nneeds to be entered
    manually.
 
-.. image:: documentation/geometry_air_gap.png
+.. image:: ../images/geometry_air_gap.png
 	:width: 800
 
 Have a look at the following example on how to create an air gap object
@@ -103,8 +97,6 @@ and add it to the model:
 
 Adding an air_gap object is not necessary. If no air gap is needed,
 don't add the air gap object to the model.
-
-.. _4-set-insulation-distances:
 
 Set insulation distances
 ---------------------------
@@ -133,9 +125,8 @@ parameters:
 -  The second parameter is the distance between two virtual winding
    windows, this is called **virtual_winding_window_insulation**.
 
-.. raw:: html
-
-   <img src="documentation/geometry_insulation.png" width="800" alt="Insulation definitions">
+.. image:: ../images/geometry_insulation.png
+	:width: 800
 
 This is how to create an insulation object and add certain insulations:
 
@@ -148,8 +139,6 @@ This is how to create an insulation object and add certain insulations:
 
 The spatial parameters for the insulation, as well as for every other
 function in FEMMT, are always in SI-Units, in this case metres.
-
-.. _5-add-windings-to-the-winding-window:
 
 Add windings to the winding window
 -------------------------------------
@@ -181,7 +170,7 @@ the conductors. There are multiple ways to split a winding window:
    vertical split factors can be used to set the sizes of each grid
    cell.
 
-.. image:: documentation/geometry_winding_windows.png
+.. image:: ../images/geometry_winding_windows.png
 	:width: 800
 	
 In addition to that 2 virtual winding windows can be combined to one
@@ -206,152 +195,53 @@ Winding types and winding schemes
 The following table gives an overview of the different winding types,
 winding schemes and conductor arrangements:
 
-+---------+---------+---------+---------+---------+---------+---------+
-| *       | **C     | **W     | **C     | **      | **s     | *       |
-| *Windin | onducto | indingS | onducto | WrapPar | tatus** | *descri |
-| gType** | rType** | cheme** | rArrang | aType** |         | ption** |
-|         |         |         | ement** |         |         |         |
-+=========+=========+=========+=========+=========+=========+=========+
-| Inte    |         |         |         |         |         | Always  |
-| rleaved |         |         |         |         |         | needs 2 |
-|         |         |         |         |         |         | con     |
-|         |         |         |         |         |         | ductors |
-+---------+---------+---------+---------+---------+---------+---------+
-|         | Roun    |         |         |         |         |         |
-|         | dSolid, |         |         |         |         |         |
-|         | Ro      |         |         |         |         |         |
-|         | undLitz |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | Bifilar |         |         | not     | TODO    |
-|         |         |         |         |         | impl    |         |
-|         |         |         |         |         | emented |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | Verti   |         |         | not     | primary |
-|         |         | calAlte |         |         | impl    | and     |
-|         |         | rnating |         |         | emented | se      |
-|         |         |         |         |         |         | condary |
-|         |         |         |         |         |         | winding |
-|         |         |         |         |         |         | are     |
-|         |         |         |         |         |         | inte    |
-|         |         |         |         |         |         | rleaved |
-|         |         |         |         |         |         | ver     |
-|         |         |         |         |         |         | tically |
-|         |         |         |         |         |         | (rows)  |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | Horizon |         |         | impl    | primary |
-|         |         | talAlte |         |         | emented | and     |
-|         |         | rnating |         |         |         | se      |
-|         |         |         |         |         |         | condary |
-|         |         |         |         |         |         | winding |
-|         |         |         |         |         |         | are     |
-|         |         |         |         |         |         | inte    |
-|         |         |         |         |         |         | rleaved |
-|         |         |         |         |         |         | horiz   |
-|         |         |         |         |         |         | ontally |
-|         |         |         |         |         |         | (cols)  |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | V       |         |         | impl    | primary |
-|         |         | ertical |         |         | emented | winding |
-|         |         | Stacked |         |         |         | is      |
-|         |         |         |         |         |         | drawn   |
-|         |         |         |         |         |         | bottom  |
-|         |         |         |         |         |         | to top, |
-|         |         |         |         |         |         | se      |
-|         |         |         |         |         |         | oncdary |
-|         |         |         |         |         |         | w       |
-|         |         |         |         |         |         | inmding |
-|         |         |         |         |         |         | is      |
-|         |         |         |         |         |         | drawn   |
-|         |         |         |         |         |         | top to  |
-|         |         |         |         |         |         | bottom  |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         |         | Square  |         | "       |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         |         | He      |         | "       |         |
-|         |         |         | xagonal |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         | Re      |         |         |         | not     |         |
-|         | ctangul |         |         |         | impl    |         |
-|         | arSolid |         |         |         | emented |         |
-+---------+---------+---------+---------+---------+---------+---------+
-| Single  |         |         |         |         |         | Always  |
-|         |         |         |         |         |         | needs 1 |
-|         |         |         |         |         |         | co      |
-|         |         |         |         |         |         | nductor |
-+---------+---------+---------+---------+---------+---------+---------+
-|         | Roun    |         |         |         |         |         |
-|         | dSolid, |         |         |         |         |         |
-|         | Ro      |         |         |         |         |         |
-|         | undLitz |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | None    |         |         | impl    |         |
-|         |         |         |         |         | emented |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         |         | Square  |         | "       |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         |         | Square  |         | "       |         |
-|         |         |         | full    |         |         |         |
-|         |         |         | width   |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         |         | He      |         | "       |         |
-|         |         |         | xagonal |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         | Re      |         |         |         |         |         |
-|         | ctangul |         |         |         |         |         |
-|         | arSolid |         |         |         |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | Full    |         |         | impl    | whole   |
-|         |         |         |         |         | emented | virtual |
-|         |         |         |         |         |         | winding |
-|         |         |         |         |         |         | window  |
-|         |         |         |         |         |         | c       |
-|         |         |         |         |         |         | ontains |
-|         |         |         |         |         |         | is      |
-|         |         |         |         |         |         | filled  |
-|         |         |         |         |         |         | with    |
-|         |         |         |         |         |         | one     |
-|         |         |         |         |         |         | turn    |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | FoilHor |         |         | impl    | foils   |
-|         |         | izontal |         |         | emented | are     |
-|         |         | (s      |         |         |         | very    |
-|         |         | tacked) |         |         |         | long    |
-|         |         |         |         |         |         | (       |
-|         |         |         |         |         |         | x-axis) |
-|         |         |         |         |         |         | and     |
-|         |         |         |         |         |         | drawn   |
-|         |         |         |         |         |         | along   |
-|         |         |         |         |         |         | y-axis  |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | Square  |         |         | not     | foils   |
-|         |         | full    |         |         | impl    | are     |
-|         |         | width   |         |         | emented | drawn   |
-|         |         |         |         |         |         | along   |
-|         |         |         |         |         |         | x-axis  |
-|         |         |         |         |         |         | first   |
-|         |         |         |         |         |         | and     |
-|         |         |         |         |         |         | then    |
-|         |         |         |         |         |         | along   |
-|         |         |         |         |         |         | y-axis  |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         | FoilV   |         |         | impl    | foils   |
-|         |         | ertical |         |         | emented | are     |
-|         |         |         |         |         |         | very    |
-|         |         |         |         |         |         | tall    |
-|         |         |         |         |         |         | (       |
-|         |         |         |         |         |         | y-axis) |
-|         |         |         |         |         |         | and     |
-|         |         |         |         |         |         | drawn   |
-|         |         |         |         |         |         | along   |
-|         |         |         |         |         |         | x-axis  |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         |         |         | Fixed   | "       |         |
-|         |         |         |         | Th      |         |         |
-|         |         |         |         | ickness |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
-|         |         |         |         | Inte    | "       |         |
-|         |         |         |         | rpolate |         |         |
-+---------+---------+---------+---------+---------+---------+---------+
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+| **WindingType**  | **ConductorType**      | **WindingScheme**         | **ConductorArrangement**  | **WrapParaType**  | **status**       | **description**                                                                    |
++==================+========================+===========================+===========================+===================+==================+====================================================================================+
+| Interleaved      |                        |                           |                           |                   |                  | Always needs 2 conductors                                                          |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  | RoundSolid, RoundLitz  |                           |                           |                   |                  |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | Bifilar                   |                           |                   | not implemented  | TODO                                                                               |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | VerticalAlternating       |                           |                   | not implemented  | primary and secondary winding are interleaved vertically (rows)                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | HorizontalAlternating     |                           |                   | implemented      | primary and secondary winding are interleaved horizontally (cols)                  |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | VerticalStacked           |                           |                   | implemented      | primary winding is drawn bottom to top, seoncdary winmding is drawn top to bottom  |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        |                           | Square                    |                   | "                |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        |                           | Hexagonal                 |                   | "                |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  | RectangularSolid       |                           |                           |                   | not implemented  |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+| Single           |                        |                           |                           |                   |                  | Always needs 1 conductor                                                           |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  | RoundSolid, RoundLitz  |                           |                           |                   |                  |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | None                      |                           |                   | implemented      |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        |                           | Square                    |                   | "                |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        |                           | Square full width         |                   | "                |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        |                           | Hexagonal                 |                   | "                |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  | RectangularSolid       |                           |                           |                   |                  |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | Full                      |                           |                   | implemented      | whole virtual winding window contains is filled with one turn                      |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | FoilHorizontal (stacked)  |                           |                   | implemented      | foils are very long (x-axis) and drawn along y-axis                                |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | Square full width         |                           |                   | not implemented  | foils are drawn along x-axis first and then along y-axis                           |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        | FoilVertical              |                           |                   | implemented      | foils are very tall (y-axis) and drawn along x-axis                                |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        |                           |                           | Fixed Thickness   | "                |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
+|                  |                        |                           |                           | Interpolate       | "                |                                                                                    |
++------------------+------------------------+---------------------------+---------------------------+-------------------+------------------+------------------------------------------------------------------------------------+
 
 ConductorArrangement
 ^^^^^^^^^^^^^^^^^^^^
@@ -369,9 +259,8 @@ WrapParaType
 -  **Fixed thickness**: TODO
 -  **Interpolate**: TODO
 
-An image for the possible winding types is `here <winding_types.md>`__.
+Images for the possible winding types can be found :ref:`here <winding_types>`.
 
-.. _6-add-conductors:
 
 Add conductors
 -----------------
@@ -432,8 +321,6 @@ as well:
 
    geo.set_winding_window(winding_window=winding_window)
 
-.. _8-create-model-and-start-simulation:
-
 Create model and start simulation
 ------------------------------------
 
@@ -453,8 +340,6 @@ parameters.
    geo.single_simulation(freq=100000, current=[4.5], show_results=True)
 
 The results should look like this:
-
-.. _9-optional-create-thermal-simulation:
 
 [Optional] Create thermal simulation
 ---------------------------------------
@@ -480,7 +365,7 @@ simulation different values are needed:
    set to a neumann boundary condition ignoring the temperature
    parameter
    
-  .. image:: /documentation/geometry_thermal.png
+.. image:: ../images/geometry_thermal.png
 	:width: 800
 
 Have a look at this example on how to set the parameters since the
@@ -560,6 +445,7 @@ the simulation can be run:
 
 The following image shows the simulation results:
 
-.. image:: /documentation/user_guide_example_thermal_simulation.png
+.. image:: ../images/user_guide_example_thermal_simulation.png
 	:width: 350
+
 
