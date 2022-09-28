@@ -114,6 +114,14 @@ Please note, the GUI is experimental.
 
 |image_gui_definition|
 
+FEMM Validation (for developers only)
+--------------------------------------
+
+For verification purposes a FEMM model can be created in FEMMT. To do this
+FEMM needs to be installed as well as the FEMM python package.
+The functionality is limited, e.g. the air gaps are limited to the 'center'-type. Other types, like 'percent' are not implemented.
+
+
 .. |image_femmt_screenshot| image:: ../images/FEMMT_Screenshot.png
 .. |image_counting_arrow_system| image:: ../images/counting_arrow_system.png
 .. |image_gui_definition| image:: ../images/femmt_gui_definition.png

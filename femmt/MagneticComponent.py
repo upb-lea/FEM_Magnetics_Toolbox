@@ -144,93 +144,8 @@ class MagneticComponent:
         self.onelab_setup()
         self.onelab_client = onelab.client(__file__)
 
-    def calculate_core_volume_with_air(self) -> float:
-        """Calculates the volume of the core including air.
-
-        :return: Volume of the core
-        :rtype: float
-        """
-        # TODO core_h and core_w should always be set
-        if self.core.core_h is not None and self.core.core_w is not None:
-            core_height = self.core.core_h
-            core_width = self.core.core_w
-        else:
-            core_height = self.core.window_h + self.core.core_w / 2
-            core_width = self.core.r_outer
-
-        return np.pi * core_width**2 * core_height
-
-    def calculate_core_volume(self) -> float:
-        """Calculates the volume of the core excluding air.
-
-        :return: Volume of the core.
-        :rtype: float
-        """
-        # TODO core_h and core_w should always be set
-        if self.core.core_h is not None and self.core.core_w is not None:
-            core_height = self.core.core_h
-            core_width = self.core.core_w
-        else:
-            core_height = self.core.window_h + self.core.core_w / 2
-            core_width = self.core.r_outer
-
-        winding_height = self.core.window_h
-        winding_width = self.core.window_w
-
-        air_gap_volume = 0
-        inner_leg_width = self.core.r_inner - winding_width
-        for leg_position, position_value, height in self.air_gaps.midpoints:
-            width = 0
-
-            if leg_position == AirGapLegPosition.LeftLeg.value:
-                # left leg
-                # TODO this is wrong since the airgap is not centered on the y axis 
-                width = core_width - self.core.r_inner
-            elif leg_position == AirGapLegPosition.CenterLeg.value:
-                # center leg
-                width = inner_leg_width
-            elif leg_position == AirGapLegPosition.RightLeg.value:
-                # right leg
-                # TODO this is wrong since the airgap is not centered on the y axis
-                width = core_width - self.core.r_inner
-            else:
-                raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
-
-            air_gap_volume += np.pi * width**2 * height
-
-        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
-
-    def get_wire_distances(self) -> List[List[float]]:
-        """Helper function which returns the distance (radius) of each conductor to the y-axis 
-
-        :return: Wire distances
-        :rtype: List[List[float]]
-        """
-        wire_distance = []
-        for winding in self.two_d_axi.p_conductor:
-            # 5 points are for 1 wire
-            num_points = len(winding)
-            num_windings = num_points//5
-            winding_list = []
-            for i in range(num_windings):
-                winding_list.append(winding[i*5][0])
-            wire_distance.append(winding_list)
-
-        return wire_distance
-
-    def get_wire_lengths(self) -> List[float]:
-        distances = self.get_wire_distances()
-        lengths = []
-        for winding in distances:
-            lengths.append(sum([2 * np.pi * turn for turn in winding]))
-
-        return lengths
-
-
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
-
-    # Start thermal simulation
     def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
                            case_gap_right: float, case_gap_bot: float, show_results: bool = True, visualize_before: bool = False, color_scheme: Dict = ff.colors_femmt_default,
                            colors_geometry: Dict = ff.colors_geometry_femmt_default):
@@ -1467,6 +1382,105 @@ class MagneticComponent:
         mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
         self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
 
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    # Miscellaneous
+    def calculate_core_volume_with_air(self) -> float:
+        """Calculates the volume of the core including air.
+
+        :return: Volume of the core
+        :rtype: float
+        """
+        # TODO core_h and core_w should always be set
+        if self.core.core_h is not None and self.core.core_w is not None:
+            core_height = self.core.core_h
+            core_width = self.core.core_w
+        else:
+            core_height = self.core.window_h + self.core.core_w / 2
+            core_width = self.core.r_outer
+
+        return np.pi * core_width**2 * core_height
+
+    def calculate_core_volume(self) -> float:
+        """Calculates the volume of the core excluding air.
+
+        :return: Volume of the core.
+        :rtype: float
+        """
+        # TODO core_h and core_w should always be set
+        if self.core.core_h is not None and self.core.core_w is not None:
+            core_height = self.core.core_h
+            core_width = self.core.core_w
+        else:
+            core_height = self.core.window_h + self.core.core_w / 2
+            core_width = self.core.r_outer
+
+        winding_height = self.core.window_h
+        winding_width = self.core.window_w
+
+        air_gap_volume = 0
+        inner_leg_width = self.core.r_inner - winding_width
+        for leg_position, position_value, height in self.air_gaps.midpoints:
+            width = 0
+
+            if leg_position == AirGapLegPosition.LeftLeg.value:
+                # left leg
+                # TODO this is wrong since the airgap is not centered on the y axis 
+                width = core_width - self.core.r_inner
+            elif leg_position == AirGapLegPosition.CenterLeg.value:
+                # center leg
+                width = inner_leg_width
+            elif leg_position == AirGapLegPosition.RightLeg.value:
+                # right leg
+                # TODO this is wrong since the airgap is not centered on the y axis
+                width = core_width - self.core.r_inner
+            else:
+                raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
+
+            air_gap_volume += np.pi * width**2 * height
+
+        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
+
+    def get_wire_distances(self) -> List[List[float]]:
+        """Helper function which returns the distance (radius) of each conductor to the y-axis 
+
+        :return: Wire distances
+        :rtype: List[List[float]]
+        """
+        wire_distance = []
+        for winding in self.two_d_axi.p_conductor:
+            # 5 points are for 1 wire
+            num_points = len(winding)
+            num_windings = num_points//5
+            winding_list = []
+            for i in range(num_windings):
+                winding_list.append(winding[i*5][0])
+            wire_distance.append(winding_list)
+
+        return wire_distance
+
+    def calculate_wire_lengths(self) -> List[float]:
+        distances = self.get_wire_distances()
+        lengths = []
+        for winding in distances:
+            lengths.append(sum([2 * np.pi * turn for turn in winding]))
+
+        return lengths
+
+    def calculate_wire_volumes(self) -> List[float]:
+        wire_volumes = []
+        wire_lenghts = self.calculate_wire_lengths()
+        for index, winding in enumerate(self.windings):
+            cross_section_area = 0
+            if winding.conductor_type == ConductorType.RoundLitz or winding.conductor_type == ConductorType.RoundSolid:
+                cross_section_area = np.pi * winding.conductor_radius ** 2
+            elif winding.conductor_type == ConductorType.RectangularSolid:
+                cross_section_area = winding.thickness ** 2 # This does not work for interpolate wrap para type!
+            else:
+                raise Exception(f"Unknown conductor type {winding.conductor_type}")
+
+            wire_volumes.append(wire_lenghts[index] * cross_section_area)
+
+        return wire_volumes
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
@@ -2068,6 +2082,14 @@ class MagneticComponent:
 
         # Total losses of inductive component according to single or sweep simulation
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
+
+        # ---- Miscellaneous ----
+        log_dict["misc"] = {
+            "volume_core_2daxi": self.calculate_core_volume(),
+            "volume_core_2daxi_total":self.calculate_core_volume_with_air(),
+            "wire_lengths": self.calculate_wire_lengths(),
+            "wire_volumes": self.calculate_wire_volumes()
+        }
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
