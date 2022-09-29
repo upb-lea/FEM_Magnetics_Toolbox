@@ -39,7 +39,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None, silent: bool = False):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None, silent: bool = False, is_gui = False):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -141,7 +141,7 @@ class MagneticComponent:
         # -- FEMM variables --
         self.tot_loss_femm = None
 
-        self.onelab_setup()
+        self.onelab_setup(is_gui)
         self.onelab_client = onelab.client(__file__)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
@@ -240,7 +240,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
-    def onelab_setup(self):
+    def onelab_setup(self, is_gui):
         """
         Either reads ONELAB parent folder path from config.json or asks the user to provide the ONELAB path it.
         Creates a config.json inside the site-packages folder at first run.
@@ -262,6 +262,12 @@ class MagneticComponent:
         # loop until path is correct
         onelab_path_wrong = True
         path_wrong = True
+
+        # This is needed because in the gui the input() command cannot be called (it would result in an infinite loop).
+        # If the config file was not found just return out of the function. The config file will be added later by the gui handler.
+        if is_gui:
+            return
+
         while onelab_path_wrong:
             onelab_path = os.path.normpath(input("Enter the path of onelabs parent folder (path to folder which contains getdp, onelab executables): "))
 

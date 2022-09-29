@@ -4,7 +4,7 @@ import gmsh
 import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem
+from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem, QDialog
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
@@ -14,6 +14,8 @@ import os
 import PIL
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
+
+from gui.onelab_path_popup import OnelabPathDialog
 database = mdb.MaterialDatabase()
 from matplotlib.widgets import Cursor
 import mplcursors
@@ -399,6 +401,26 @@ class MainWindow(QMainWindow):
         "Signals in visualisation tab"
         self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
 
+    def check_onelab_config(self, geo: fmt.MagneticComponent):
+        # Ask for onelab path (if no config file exists)
+        if not os.path.isfile(geo.file_data.config_path):
+            onelab_path_dialog = OnelabPathDialog()
+            valid = onelab_path_dialog.exec_()
+            if valid is None:
+                raise Exception("Something went wrong while entering onelab path")
+            elif valid == 1:
+                onelab_path = onelab_path_dialog.directory
+                if os.path.isdir(onelab_path):
+                    onelab_path_dict = {"onelab": onelab_path}
+                    with open(geo.file_data.config_path, 'w', encoding='utf-8') as fd:
+                        json.dump(onelab_path_dict, fd, indent=2, ensure_ascii=False)
+                else:
+                    raise Exception(f"{onelab_path} is not a valid folder path")
+            elif valid == 0:
+                sys.exit(-1)
+            else:
+                raise Exception(f"Unknown return type from OnelabPathDialog: {valid}")
+
     def datupdateraph(self):
 
         # -----Enter the freq and Temp-----------
@@ -681,7 +703,8 @@ class MainWindow(QMainWindow):
 
     def aut_action_run_simulation(self, sim_value):
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, is_gui=True)
+        self.check_onelab_config(geo)
         core = fmt.Core(core_inner_diameter=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
                         mu_rel=3100, phi_mu_deg=12,
                         sigma=0.6)
@@ -1623,11 +1646,11 @@ class MainWindow(QMainWindow):
         returns: femmt MagneticComponent
 
         """
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, is_gui=True)
+        self.check_onelab_config(geo)
+
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.md_simulation_QLabel.setText('simulation startet...')
-
-            #geo = fmt.MagneticComponent(component_type="inductor")
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
 
             # -----------------------------------------------
             # Core
@@ -1830,7 +1853,9 @@ class MainWindow(QMainWindow):
 
             self.md_simulation_QLabel.setText('simulation startet...')
 
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer)
+            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, is_gui=True)
+            self.check_onelab_config()
+
             #geo = fmt.MagneticComponent(component_type="transformer")
 
 
