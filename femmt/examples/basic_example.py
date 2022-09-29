@@ -92,7 +92,7 @@ if component == "inductor":
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
 
-    core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+    core = fmt.Core(core_inner_diameter=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
                     material="95_100")
                     # mu_rel=3000, phi_mu_deg=10,
                     # sigma=0.5)
@@ -139,7 +139,7 @@ if component == "inductor":
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    #example_thermal_simulation()
+    example_thermal_simulation()
 
     # Reference simulation using FEMM
     # geo.femm_reference(freq=100000, current=[1], sign=[1], non_visualize=0)
@@ -153,7 +153,7 @@ if component == "transformer-interleaved":
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
 
     # 2. set core parameters
-    core = fmt.Core(window_h=0.0295, window_w=0.012, core_w=0.015,
+    core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
                     non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10)
     geo.set_core(core)
 
@@ -208,7 +208,7 @@ if component == "transformer":
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
 
     # 2. set core parameters
-    core = fmt.Core(window_h=0.0295, window_w=0.012, core_w=0.015,
+    core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=1.2)
     geo.set_core(core)
@@ -256,13 +256,13 @@ if component == "integrated_transformer":
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
 
     # 2. set core parameters
-    core = fmt.Core(window_h=0.03, window_w=0.011, core_w=0.02,
+    core = fmt.Core(window_h=0.03, window_w=0.011, core_inner_diameter=0.02,
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=0.6)
     geo.set_core(core)
 
     # 2.1 set stray path parameters
-    stray_path = fmt.StrayPath(start_index=0, length=geo.core.core_w / 2 + geo.core.window_w - 0.001)
+    stray_path = fmt.StrayPath(start_index=0, length=geo.core.core_inner_diameter / 2 + geo.core.window_w - 0.001)
     geo.set_stray_path(stray_path)
 
     # 3. set air gap parameters

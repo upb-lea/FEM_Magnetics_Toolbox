@@ -990,7 +990,7 @@ class Mesh:
         # Every remaining point is added to the mesh with a higher mesh density
 
         min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.insulation.inner_winding_insulations)
-        left_bound = self.core.core_w / 2
+        left_bound = self.core.core_inner_diameter / 2
         right_bound = self.model.r_inner
         top_bound = self.core.window_h / 2
         bot_bound = -self.core.window_h / 2

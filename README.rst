@@ -1,7 +1,7 @@
 FEM Magnetics Toolbox (FEMMT)
 =============================
 
-This README only provides a short overview. For more information please have a look at the detailed documentation `here <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__..
+This README only provides a short overview. For more information please have a look at the detailed documentation `here <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__.
 
 Python toolbox to generate preconfigured figures for FEM simulation
 tools in power electronics.

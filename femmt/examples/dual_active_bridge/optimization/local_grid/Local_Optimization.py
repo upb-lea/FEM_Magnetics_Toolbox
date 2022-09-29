@@ -136,7 +136,7 @@ for wp_data in working_points:
                                               / parameters["window_h"] * 100])
 
         geo.stray_path.update(start_index=0,
-                              radius=geo.core.core_w / 2 + geo.core.window_w - parameters["R_stray"])
+                              radius=geo.core.core_inner_diameter / 2 + geo.core.window_w - parameters["R_stray"])
 
         geo.update_conductors(n_turns=[[parameters["N"][0, 0], parameters["N"][1, 0]],
                                        [parameters["N"][0, 1], parameters["N"][1, 1]]],

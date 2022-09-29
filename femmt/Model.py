@@ -159,7 +159,7 @@ class Core:
     sigma: float            # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
     # Dimensions
-    core_w: float           # Axi symmetric case | core_w := 2x core radius
+    core_inner_diameter: float           # Axi symmetric case | core_w := 2x core radius
     core_h: float
     window_w: float         # Winding window width
     window_h: float         # Winding window height
@@ -180,7 +180,7 @@ class Core:
 
     correct_outer_leg: bool
 
-    def __init__(self, core_w: float, window_w: float, window_h: float, material: str = "custom",  # "95_100" 
+    def __init__(self, core_inner_diameter: float, window_w: float, window_h: float, material: str = "custom",  # "95_100" 
                    loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000,
                    phi_mu_deg: float = None, sigma: float = None, non_linear: bool = False, correct_outer_leg: bool = False, **kwargs):
         """TODO Doc
@@ -205,7 +205,7 @@ class Core:
         :type correct_outer_leg: bool, optional
         """
         # Set parameters
-        self.core_w = core_w
+        self.core_inner_diameter = core_inner_diameter
         self.core_h = None  # TODO Set core_h to not none
         self.window_w = window_w
         self.window_h = window_h
@@ -220,12 +220,13 @@ class Core:
         self.number_core_windows = 2
         self.correct_outer_leg = correct_outer_leg
 
-        self.r_inner = window_w + core_w / 2
+        self.core_h = window_h + core_inner_diameter / 2
+        self.r_inner = window_w + core_inner_diameter / 2
         if correct_outer_leg:
             A_out = 200 * 10 ** -6
             self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
         else:
-            self.r_outer = np.sqrt((core_w / 2) ** 2 + self.r_inner ** 2)
+            self.r_outer = np.sqrt((core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
 
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
@@ -258,7 +259,7 @@ class Core:
 
     def to_dict(self):
         return {
-            "core_w": self.core_w,
+            "core_w": self.core_inner_diameter,
             "window_w": self.window_w,
             "window_h": self.window_h,
             "material": self.material,
@@ -611,7 +612,7 @@ class WindingWindow:
         """
         self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[0]
         self.max_top_bound = core.window_h / 2 - insulations.core_cond[1]
-        self.max_left_bound = core.core_w / 2 + insulations.core_cond[2]
+        self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
         self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
         # Insulations between vwws

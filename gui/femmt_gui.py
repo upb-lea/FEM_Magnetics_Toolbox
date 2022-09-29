@@ -682,7 +682,7 @@ class MainWindow(QMainWindow):
     def aut_action_run_simulation(self, sim_value):
 
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
-        core = fmt.Core(core_w=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
+        core = fmt.Core(core_inner_diameter=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
                         mu_rel=3100, phi_mu_deg=12,
                         sigma=0.6)
         geo.set_core(core)
@@ -1638,7 +1638,7 @@ class MainWindow(QMainWindow):
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()))"""
 
-            core = fmt.Core(core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
+            core = fmt.Core(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             mu_rel=3100, phi_mu_deg=12,
@@ -1837,7 +1837,7 @@ class MainWindow(QMainWindow):
             # -----------------------------------------------
             # Core
             # -----------------------------------------------
-            core = fmt.Core(core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
+            core = fmt.Core(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             mu_rel=3100, phi_mu_deg=12,

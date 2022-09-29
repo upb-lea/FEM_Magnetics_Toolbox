@@ -71,47 +71,25 @@ class TwoDaxiSymmetric:
         """
         # Outer Core
         # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
-        # TODO Case core_h is not None
-        if self.core.core_h is None:
-            self.p_outer[0][:] = [-self.r_outer,
-                                -(self.core.window_h / 2 + self.core.core_w / 4),
-                                0,
-                                self.mesh_data.c_core]
+        self.p_outer[0][:] = [-self.r_outer,
+                            -self.core.core_h/2,
+                            0,
+                            self.mesh_data.c_core]
 
-            self.p_outer[1][:] = [self.r_outer,
-                                -(self.core.window_h / 2 + self.core.core_w / 4),
-                                0,
-                                self.mesh_data.c_core]
+        self.p_outer[1][:] = [self.r_outer,
+                            -self.core.core_h/2,
+                            0,
+                            self.mesh_data.c_core]
 
-            self.p_outer[2][:] = [-self.r_outer,
-                                (self.core.window_h / 2 + self.core.core_w / 4),
-                                0,
-                                self.mesh_data.c_core]
+        self.p_outer[2][:] = [-self.r_outer,
+                            self.core.core_h/2,
+                            0,
+                            self.mesh_data.c_core]
 
-            self.p_outer[3][:] = [self.r_outer,
-                                (self.core.window_h / 2 + self.core.core_w / 4),
-                                0,
-                                self.mesh_data.c_core]
-        else:
-            self.p_outer[0][:] = [-self.r_outer,
-                                -self.core.core_h/2,
-                                0,
-                                self.mesh_data.c_core]
-
-            self.p_outer[1][:] = [self.r_outer,
-                                -self.core.core_h/2,
-                                0,
-                                self.mesh_data.c_core]
-
-            self.p_outer[2][:] = [-self.r_outer,
-                                self.core.core_h/2,
-                                0,
-                                self.mesh_data.c_core]
-
-            self.p_outer[3][:] = [self.r_outer,
-                                self.core.core_h/2,
-                                0,
-                                self.mesh_data.c_core]
+        self.p_outer[3][:] = [self.r_outer,
+                            self.core.core_h/2,
+                            0,
+                            self.mesh_data.c_core]
 
     def draw_window(self):
         # Window
@@ -122,7 +100,7 @@ class TwoDaxiSymmetric:
                             0,
                             self.mesh_data.c_window]
 
-        self.p_window[1] = [-self.core.core_w / 2,
+        self.p_window[1] = [-self.core.core_inner_diameter / 2,
                             -self.core.window_h / 2,
                             0,
                             self.mesh_data.c_window]
@@ -132,12 +110,12 @@ class TwoDaxiSymmetric:
                             0,
                             self.mesh_data.c_window]
 
-        self.p_window[3] = [-self.core.core_w / 2,
+        self.p_window[3] = [-self.core.core_inner_diameter / 2,
                             self.core.window_h / 2,
                             0,
                             self.mesh_data.c_window]
 
-        self.p_window[4] = [self.core.core_w / 2,
+        self.p_window[4] = [self.core.core_inner_diameter / 2,
                             -self.core.window_h / 2,
                             0,
                             self.mesh_data.c_window]
@@ -147,7 +125,7 @@ class TwoDaxiSymmetric:
                             0,
                             self.mesh_data.c_window]
 
-        self.p_window[6] = [self.core.core_w / 2,
+        self.p_window[6] = [self.core.core_inner_diameter / 2,
                             self.core.window_h / 2,
                             0,
                             self.mesh_data.c_window]
@@ -206,8 +184,8 @@ class TwoDaxiSymmetric:
 
                 air_gap_y_position = self.air_gaps.midpoints[i][1]
                 air_gap_height = self.air_gaps.midpoints[i][2]
-                air_gap_length_top = self.core.core_w / 2
-                air_gap_length_bot = self.core.core_w / 2
+                air_gap_length_top = self.core.core_inner_diameter / 2
+                air_gap_length_bot = self.core.core_inner_diameter / 2
 
                 # Check for stray_paths in integrated transformers
                 if self.component_type == ComponentType.IntegratedTransformer:
@@ -248,12 +226,12 @@ class TwoDaxiSymmetric:
 
         # In order to close the air gap when a stray_path is added, additional points need to be added
         if self.component_type == ComponentType.IntegratedTransformer:
-            top_point = [self.core.core_w / 2,
+            top_point = [self.core.core_inner_diameter / 2,
                             self.air_gaps.midpoints[self.stray_path.start_index+1][1] -
                             air_gap_height / 2,
                             0,
                             mesh_accuracy]
-            bot_point = [self.core.core_w / 2,
+            bot_point = [self.core.core_inner_diameter / 2,
                             self.air_gaps.midpoints[self.stray_path.start_index][1] +
                             air_gap_height / 2,
                             0,
@@ -602,6 +580,9 @@ class TwoDaxiSymmetric:
                                 x = left_bound + winding0.conductor_radius
                                 y += winding0.conductor_radius * 2 + \
                                         self.insulation.inner_winding_insulations[winding_number0]
+                    elif winding0.conductor_arrangement == ConductorArrangement.SquareFullWidth:
+                        # TODO Implement?
+                        raise Exception("ConductorArrangement SquareFullWidth is not implemented for interleaved and vertical stacked")
                     else:
                         raise Exception(f"Unknown conductor_arrangement {winding0.conductor_arrangement}")
 
@@ -1010,22 +991,22 @@ class TwoDaxiSymmetric:
 
                 # Region for Boundary Condition
                 self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
-                                            -(self.core.window_h / 2 + self.core.core_w / 4)
+                                            -(self.core.window_h / 2 + self.core.core_inner_diameter / 4)
                                             * self.mesh_data.padding,
                                             0,
                                             self.mesh_data.c_core * self.mesh_data.padding]
                 self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
-                                            -(self.core.window_h / 2 + self.core.core_w / 4)
+                                            -(self.core.window_h / 2 + self.core.core_inner_diameter / 4)
                                             * self.mesh_data.padding,
                                             0,
                                             self.mesh_data.c_core * self.mesh_data.padding]
                 self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
-                                            (self.core.window_h / 2 + self.core.core_w / 4)
+                                            (self.core.window_h / 2 + self.core.core_inner_diameter / 4)
                                             * self.mesh_data.padding,
                                             0,
                                             self.mesh_data.c_core * self.mesh_data.padding]
                 self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
-                                            (self.core.window_h / 2 + self.core.core_w / 4)
+                                            (self.core.window_h / 2 + self.core.core_inner_diameter / 4)
                                             * self.mesh_data.padding,
                                             0,
                                             self.mesh_data.c_core * self.mesh_data.padding]
@@ -1062,7 +1043,7 @@ class TwoDaxiSymmetric:
             print("Insulations are not set because they are not implemented for integrated transformers.")
         else:
             # Useful points for insulation creation
-            left_x = self.core.core_w / 2 + insulation_delta
+            left_x = self.core.core_inner_diameter / 2 + insulation_delta
             top_y = window_h / 2 - insulation_delta
             right_x = self.r_inner - insulation_delta
             bot_y = -window_h / 2 + insulation_delta

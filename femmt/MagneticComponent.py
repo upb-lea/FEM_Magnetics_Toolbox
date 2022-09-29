@@ -230,6 +230,7 @@ class MagneticComponent:
             "core_area": core_area,
             "conductor_radii": wire_radii,
             "wire_distances": self.get_wire_distances(),
+            "case_volume": self.core.r_outer * case_gap_top + self.core.core_h * case_gap_right + self.core.r_outer * case_gap_bot,
             "show_results": show_results,
             "print_sensor_values": False,
             "silent": ff.silent
@@ -376,7 +377,7 @@ class MagneticComponent:
         self.phase_deg = np.zeros(len(windings))
 
         # Default values for global_accuracy and padding
-        self.mesh_data = MeshData(0.5, 1.5, self.mu0, self.core.core_w, self.core.window_w, self.windings)
+        self.mesh_data = MeshData(0.5, 1.5, self.mu0, self.core.core_inner_diameter, self.core.window_w, self.windings)
 
     def set_core(self, core: Core):
         """Adds the core to the model
@@ -1390,13 +1391,8 @@ class MagneticComponent:
         :return: Volume of the core
         :rtype: float
         """
-        # TODO core_h and core_w should always be set
-        if self.core.core_h is not None and self.core.core_w is not None:
-            core_height = self.core.core_h
-            core_width = self.core.core_w
-        else:
-            core_height = self.core.window_h + self.core.core_w / 2
-            core_width = self.core.r_outer
+        core_height = self.core.window_h + self.core.core_inner_diameter / 2
+        core_width = self.core.r_outer
 
         return np.pi * core_width**2 * core_height
 
@@ -1406,13 +1402,8 @@ class MagneticComponent:
         :return: Volume of the core.
         :rtype: float
         """
-        # TODO core_h and core_w should always be set
-        if self.core.core_h is not None and self.core.core_w is not None:
-            core_height = self.core.core_h
-            core_width = self.core.core_w
-        else:
-            core_height = self.core.window_h + self.core.core_w / 2
-            core_width = self.core.r_outer
+        core_height = self.core.window_h + self.core.core_inner_diameter / 2
+        core_width = self.core.r_outer
 
         winding_height = self.core.window_h
         winding_width = self.core.window_w
@@ -1472,13 +1463,40 @@ class MagneticComponent:
         for index, winding in enumerate(self.windings):
             cross_section_area = 0
             if winding.conductor_type == ConductorType.RoundLitz or winding.conductor_type == ConductorType.RoundSolid:
+                # For round wire its always the same
                 cross_section_area = np.pi * winding.conductor_radius ** 2
             elif winding.conductor_type == ConductorType.RectangularSolid:
-                cross_section_area = winding.thickness ** 2 # This does not work for interpolate wrap para type!
+                # Since the foil sizes also depends on the winding scheme, conductor_arrangement and wrap_para_type
+                # the volume calculation is different.
+                for vww_index, vww in enumerate(self.virtual_winding_windows):
+                    for vww_winding in vww.windings:
+                        winding_type = vww_winding.winding_type
+                        winding_scheme = vww_winding.winding_scheme
+                        if vww_winding.winding_number == index:
+                            if winding_type == WindingType.Single:
+                                if winding_scheme == WindingScheme.Full:
+                                    cross_section_area = self.core.window_h * self.core.window_w
+                                elif winding_scheme == WindingScheme.FoilHorizontal:
+                                    cross_section_area = self.core.window_w * winding.thickness
+                                elif winding_scheme == WindingScheme.FoilVertical:
+                                    wrap_para_type = winding.wrap_para
+                                    if wrap_para_type == WrapParaType.FixedThickness:
+                                        cross_section_area = self.core.window_h * winding.thickness
+                                    elif wrap_para_type == WrapParaType.Interpolate:
+                                        cross_section_area = self.core.window_h * self.core.window_w / vww.turns[vww_index]
+                                    else:
+                                        raise Exception(f"Unknown wrap para type {wrap_para_type}")
+                                else:
+                                    raise Exception(f"Unknown winding scheme {winding_scheme}")
+                            elif winding_type == WindingType.Interleaved:
+                                # Since interleaved winding type currently only supports round conductors this can be left empty.
+                                pass
+                            else:
+                                raise Exception(f"Unknown winding type {winding_type}")
             else:
                 raise Exception(f"Unknown conductor type {winding.conductor_type}")
 
-            wire_volumes.append(wire_lenghts[index] * cross_section_area)
+            wire_volumes.append(cross_section_area * wire_lenghts[index])
 
         return wire_volumes
 
@@ -2085,10 +2103,12 @@ class MagneticComponent:
 
         # ---- Miscellaneous ----
         log_dict["misc"] = {
-            "volume_core_2daxi": self.calculate_core_volume(),
-            "volume_core_2daxi_total":self.calculate_core_volume_with_air(),
+            "core_2daxi_volume": self.calculate_core_volume(),
+            "core_2daxi_total_volume":self.calculate_core_volume_with_air(),
+            "core_2daxi_weight": -1,
             "wire_lengths": self.calculate_wire_lengths(),
-            "wire_volumes": self.calculate_wire_volumes()
+            "wire_volumes": self.calculate_wire_volumes(),
+            "wire_weight": -1
         }
 
         # ---- Print current configuration ----

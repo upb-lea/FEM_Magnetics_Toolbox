@@ -27,7 +27,7 @@ if component == "inductor_sweep":
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
 
-    core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+    core = fmt.Core(core_inner_diameter=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
                     material="95_100")
     # mu_rel=3000, phi_mu_deg=10,
     # sigma=0.5)
@@ -81,7 +81,7 @@ if component == "transformer_sweep":
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=True)
 
     # 2. set core parameters
-    core = fmt.Core(window_h=0.0295, window_w=0.012, core_w=0.015,
+    core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=1.2)
     geo.set_core(core)

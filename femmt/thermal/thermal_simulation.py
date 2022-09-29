@@ -184,7 +184,7 @@ def parse_gmsh_parsed(file_path: str):
 
     return value_dict
 
-def post_operation(output_file: str, sensor_points_file: str, core_file: str, insulation_file: str, winding_file: str):
+def post_operation(case_volume, output_file: str, sensor_points_file: str, core_file: str, insulation_file: str, winding_file: str):
     # Extract sensor_points
     sensor_point_values = None
     if sensor_points_file is not None:
@@ -236,6 +236,11 @@ def post_operation(output_file: str, sensor_points_file: str, core_file: str, in
         "mean": mean_sum/len(winding_values.keys())
     }
 
+    misc = {
+        "case_volume": case_volume,
+        "case_weight": -1,
+    }
+
     # fill data for json file
 
     data = {
@@ -250,6 +255,7 @@ def post_operation(output_file: str, sensor_points_file: str, core_file: str, in
             "mean": insulation_mean
         },
         "windings": windings,
+        "misc": misc
     }
 
     if sensor_point_values is not None:
@@ -259,7 +265,7 @@ def post_operation(output_file: str, sensor_points_file: str, core_file: str, in
         json.dump(data, fd, indent=2)
 
 def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict, 
-    boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float, wire_distances: float,
+    boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float, wire_distances: float, case_volume: float,
     show_results: bool, print_sensor_values: bool, silent: bool):
     """
     Runs a thermal simulation.
@@ -351,7 +357,7 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
 
     simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file, silent)
 
-    post_operation(output_file, sensor_points_file, core_file, insulation_file, winding_file)
+    post_operation(case_volume, output_file, sensor_points_file, core_file, insulation_file, winding_file)
 
     if show_results:
         gmsh.open(map_pos_file)
