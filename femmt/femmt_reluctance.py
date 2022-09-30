@@ -3,13 +3,37 @@ import numpy as np
 from itertools import product
 
 
+def plot_r_basis():
+    # width = 1
+    # length = 1
+    # height = np.linspace(10, 0.1, 1000)
+    width = 0.0149
+    length = 0.0005
+    height = np.linspace(0.005, 0, 1000)
+    h_l = height / length
+
+    r_m = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+                1 + np.log(np.pi * height / 4 / length))))
+
+    combined = np.vstack((h_l, r_m)).T
+    print(combined)
+    fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
+    fmt.plt.title("R_basic vs h/l")
+    fmt.plt.xlabel("h/l")
+    fmt.plt.ylabel("R_basic")
+    ax.plot(h_l, r_m)
+    ax.invert_xaxis()
+    ax.grid()
+    fmt.plt.show()
+
+
 class MagneticCircuit:
     """This is a class for calculating the reluctance and inductance for 2D axis symmetric components
         and visualising magnetic circuit"""
 
-    def __init__(self, core_w: list, window_h: list, window_w: list,
-                 no_of_turns: list, n_air_gaps: list, air_gap_h: list, air_gap_position: list, mu_rel: list,
-                 mult_air_gap_type: list = None, air_gap_method=None, component_type='inductor'):
+    def __init__(self, core_w: list, window_h: list, window_w: list, no_of_turns: list, n_air_gaps: list,
+                 air_gap_h: list, air_gap_position: list, mu_rel: list, mult_air_gap_type: list = None,
+                 air_gap_method='percent', component_type='inductor', sim_type='single'):
         """
         :param core_w: Diameter of center leg of the core in meter
         :type core_w: list
@@ -33,37 +57,76 @@ class MagneticCircuit:
         :type mult_air_gap_type: list
         """
 
-        self.pre_processing(core_w, window_h, window_w, no_of_turns, n_air_gaps, air_gap_h, air_gap_position,
-                            mu_rel, mult_air_gap_type, air_gap_method, component_type)
-
         self.row_num = 0
         self.single_air_gap_len = None
         self.data_matrix_len = None
         self.data_matrix = None
 
-        # Creates the data matrix with all the input parameter combinations
-        self.create_data_matrix(core_w, window_h, window_w, no_of_turns, n_air_gaps, air_gap_h, air_gap_position,
-                                mu_rel, mult_air_gap_type)
+        if not all(isinstance(item, int) for item in no_of_turns):
+            raise Exception("no_of_turns list elements should be integer")
+        if not all(isinstance(item, int) for item in n_air_gaps):
+            raise Exception("n_air_gaps list elements should be integer")
+        if not (air_gap_method == 'center' or air_gap_method == 'percent' or air_gap_method == 'manual'):
+            raise Exception("string value wrong for air_gap_method argument")
+        if not (sim_type == 'single' or sim_type == 'sweep'):
+            raise Exception("string value wrong for sim_type argument")
+        if not (component_type == 'inductor' or component_type == 'integrated_transformer'):
+            raise Exception("string value wrong for component_type argument")
+        if any(item > 0.0005 for item in air_gap_h):
+            raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
+        if sim_type == 'single':
+            if not (len(core_w) == 1 and len(window_h) == 1 and len(window_w) == 1 and len(no_of_turns) == 1
+                    and len(n_air_gaps) == 1 and len(mu_rel) == 1):
+                raise Exception("single sim_type requires single list elements")
+            if not (n_air_gaps[0] == len(air_gap_h) and n_air_gaps[0] == len(air_gap_position)):
+                raise Exception("No. of elements of air_gap_h and air_gap_position should match n_air_gaps")
 
-        # Core geometry parameters
-        self.core_w = self.data_matrix[:, 0]  # Diameter of center leg
-        self.window_h = self.data_matrix[:, 1]
-        self.window_w = self.data_matrix[:, 2]
+        # Sort air_gap_position and air_gap_h based on air_gap_position
+        zipped_lists = zip(air_gap_position, air_gap_h)
+        sorted_pairs = sorted(zipped_lists)
+
+        tuples = zip(*sorted_pairs)
+        self.air_gap_position, self.air_gap_h = [list(tpl) for tpl in tuples]
+
+        self.core_w = np.array(core_w)
+        self.window_h = np.array(window_h)
+        self.window_w = np.array(window_w)
+        self.mu_rel = np.array(mu_rel)
+        self.no_of_turns = np.array(no_of_turns)
+        self.n_air_gaps = np.array(n_air_gaps)
+        self.air_gap_h = np.array(self.air_gap_h)
+        self.percent_position_air_gap = np.array(self.air_gap_position)
+        self.mult_air_gap_type = None
+        self.sim_type = sim_type
+        self.data_matrix = np.zeros((1, 10))
+
+        if not len(n_air_gaps):
+            self.n_air_gaps = np.zeros((1, 1))
+
+        # Creates the data matrix with all the input parameter combinations for sim_type = 'sweep'
+        if sim_type == 'sweep':
+            self.create_data_matrix(core_w, window_h, window_w, no_of_turns, n_air_gaps, air_gap_h,
+                                    air_gap_position, mu_rel, mult_air_gap_type)
+
+            self.core_w = self.data_matrix[:, 0]        # Diameter of center leg
+            self.window_h = self.data_matrix[:, 1]
+            self.window_w = self.data_matrix[:, 2]
+            self.mu_rel = self.data_matrix[:, 3]        # 3000
+            self.no_of_turns = self.data_matrix[:, 4]
+            self.n_air_gaps = self.data_matrix[:, 5]
+            self.air_gap_h = self.data_matrix[:, 6]
+            self.percent_position_air_gap = self.data_matrix[:, 7]
+            self.mult_air_gap_type = self.data_matrix[:, 8]
+
         self.core_h = self.window_h + self.core_w / 2
         self.r_outer = None
         self.r_inner = None
         self.core_h_middle = None  # height of upper and lower part of the window in the core
         self.outer_w = None  # Outer leg width
         self.mu_0 = 4 * np.pi * 1e-7
-        self.mu_rel = self.data_matrix[:, 3]  # 3000
 
-        # Air-gap parameters
-        self.no_of_turns = self.data_matrix[:, 4]
-        self.n_air_gaps = self.data_matrix[:, 5]
-        self.air_gap_h = self.data_matrix[:, 6]
-        self.percent_position_air_gap = self.data_matrix[:, 7]
-        self.mult_air_gap_type = self.data_matrix[:, 8]
         self.abs_position_air_gap = None
+        self.air_gap_method = air_gap_method
 
         self.cal_inductance = None
         self.section = None
@@ -74,6 +137,13 @@ class MagneticCircuit:
         self.max_percent_position = None
         self.min_percent_position = None
         self.param_pos_dict = None
+
+        if component_type == 'inductor':
+            self.core_reluctance()
+            if sim_type == "single":
+                self.air_gap_reluctance_single()
+            elif sim_type == "sweep":
+                self.air_gap_reluctance_sweep()
 
     def create_data_matrix(self, core_w: list, window_h: list, window_w: list, no_of_turns: list, n_air_gaps: list,
                            air_gap_h: list, air_gap_position: list, mu_rel: list, mult_air_gap_type: list):
@@ -153,12 +223,12 @@ class MagneticCircuit:
 
         self.data_matrix_len = self.row_num
 
-    def core_reluctance(self, x):
+    def core_reluctance(self):
         """Calculates the core reluctance along with length and area of each section of the core geometry"""
 
         self.core_h_middle = (self.core_h - self.window_h) / 2
         self.r_inner = self.core_w / 2 + self.window_w
-        self.r_outer = np.sqrt((self.data_matrix[:, 0] / 2) ** 2 + self.r_inner ** 2)
+        self.r_outer = np.sqrt((self.core_w / 2) ** 2 + self.r_inner ** 2)
         self.outer_w = self.r_outer - self.r_inner
 
         self.section = [0, 1, 2, 3,
@@ -167,7 +237,11 @@ class MagneticCircuit:
         self.area = np.zeros((len(self.data_matrix), len(self.section)))
         self.reluctance = np.zeros((len(self.data_matrix), len(self.section) + 1))
 
-        self.length[:, 0] = self.window_h - (self.n_air_gaps * self.air_gap_h)
+        if self.sim_type == 'sweep':
+            self.length[:, 0] = self.window_h - (self.n_air_gaps * self.air_gap_h)
+        else:
+            self.length[:, 0] = self.window_h - sum(self.air_gap_h)
+
         self.area[:, 0] = np.pi * ((self.core_w / 2) ** 2)
 
         self.length[:, 1] = (np.pi / 8) * (self.core_w / 2 + self.core_h_middle)
@@ -194,7 +268,7 @@ class MagneticCircuit:
         self.reluctance[:, 4] = self.length[:, 4] / (self.mu_0 * self.mu_rel * self.area[:, 4])
         self.reluctance[:, 1:4] = 2 * self.reluctance[:, 1:4]
 
-    def air_gap_reluctance(self):
+    def air_gap_reluctance_sweep(self):
         """Calculates air-gap reluctance and the inductance of the given geometry"""
 
         # Single air-gap reluctance calculations
@@ -267,111 +341,110 @@ class MagneticCircuit:
 
         return self.param_pos_dict
 
-    # def air_gap_reluctance(self):
-    #     flag_0 = 0
-    #     flag_1 = 0
-    #     flag_2 = 0
-    #
-    #     if self.method == 'center':
-    #         self.section.append(6)  # round-round
-    #         temp1 = fmt.r_basis(self.air_gap_h[0] / 2, self.core_w, (self.window_h - self.air_gap_h[0]) / 2)
-    #         temp2 = fmt.sigma(self.air_gap_h[0], self.core_w / 2, 2 * temp1)
-    #         temp3 = fmt.r_round_round(self.air_gap_h[0], temp2, self.core_w / 2)
-    #         temp4 = self.air_gap_h[0] / (self.mu_0 * np.pi * (self.core_w / 2) ** 2)  # classical reluctance formula
-    #         self.reluctance = np.append(self.reluctance, temp4)
-    #         self.fringe_area = (np.pi * (self.core_w / 2) ** 2) * (1 / (temp2 * temp2))
-    #         self.fringe_dist = np.sqrt(self.fringe_area / np.pi) - (self.core_w / 2)
-    #     # Assuming only equally distributed airgaps
-    #     elif self.method == 'percent':
-    #         self.max_percent = ((self.window_h - self.air_gap_h[self.n_air_gaps - 1] / 2) / self.window_h) * 100
-    #         self.min_percent = ((self.air_gap_h[0] / 2) / self.window_h) * 100
-    #         self.position = np.array(
-    #             self.air_gap_position) / 100 * self.window_h  # Convert percent position to absolute value position
-    #         print(f"Max percent: {self.max_percent}")
-    #         print(f"Min percent: {self.min_percent}")
-    #
-    #         if self.air_gap_position[0] <= self.min_percent:
-    #             flag_0 = 1
-    #             self.section.append(8)
-    #             if self.n_air_gaps == 1:
-    #                 h = self.window_h - self.air_gap_h[0]
-    #             else:
-    #                 h = ((self.position[1] - self.air_gap_h[1] / 2) - self.air_gap_h[0]) / 2
-    #
-    #             temp1 = fmt.r_basis(self.air_gap_h[0], self.core_w, h)
-    #             temp2 = fmt.sigma(self.air_gap_h[0], self.core_w / 2, temp1)
-    #             temp3 = fmt.r_round_inf(self.air_gap_h[0], temp2, self.core_w / 2)
-    #             self.reluctance = np.append(self.reluctance, temp3)
-    #             print('air gap is at lower corner')
-    #
-    #         if self.air_gap_position[self.n_air_gaps - 1] >= self.max_percent:
-    #             flag_1 = 1
-    #             self.section.append(8)
-    #             if self.n_air_gaps == 1:
-    #                 h = self.window_h - self.air_gap_h[self.n_air_gaps - 1]
-    #             else:
-    #                 h = (self.position[self.n_air_gaps - 1] - self.position[self.n_air_gaps - 2] - self.air_gap_h[
-    #                     self.n_air_gaps - 1] / 2 - self.air_gap_h[self.n_air_gaps - 2] / 2) / 2
-    #
-    #             temp1 = fmt.r_basis(self.air_gap_h[self.n_air_gaps - 1], self.core_w, h)
-    #             temp2 = fmt.sigma(self.air_gap_h[self.n_air_gaps - 1], self.core_w / 2, temp1)
-    #             temp3 = fmt.femmt_functions.r_round_inf(self.air_gap_h[self.n_air_gaps - 1], temp2, self.core_w / 2)
-    #             self.reluctance = np.append(self.reluctance, temp3)
-    #             print('air gap is at upper corner')
-    #
-    #         for i in range(self.n_air_gaps):
-    #             if self.min_percent < self.air_gap_position[i] < self.max_percent:
-    #                 self.section.append(7)
-    #                 if flag_2 == 0:
-    #
-    #                     if flag_0 == 0 and flag_1 == 0:  # No corner air-gaps
-    #                         self.position = np.append(self.position,
-    #                                                   self.window_h + (self.window_h - self.position[self.n_air_gaps - 1]))
-    #                         self.position = np.insert(self.position, 0, -self.position[0])
-    #                         self.air_gap_h = np.append(self.air_gap_h, self.air_gap_h[self.n_air_gaps - 1])
-    #                         self.air_gap_h = np.insert(self.air_gap_h, 0, self.air_gap_h[0])
-    #                     elif flag_0 == 1 and flag_1 == 0:  # Only lower air-gap is present
-    #                         self.position = np.append(self.position,
-    #                                                   self.window_h + (self.window_h - self.position[self.n_air_gaps - 1]))
-    #                         self.air_gap_h = np.append(self.air_gap_h, self.air_gap_h[self.n_air_gaps - 1])
-    #                     elif flag_0 == 0 and flag_1 == 1:  # Only Upper air-gap is present
-    #                         self.position = np.insert(self.position, 0, -self.position[0])
-    #                         self.air_gap_h = np.insert(self.air_gap_h, 0, self.air_gap_h[0])
-    #                     flag_2 = 1
-    #
-    #                 if flag_0 == 0 and flag_1 == 0:
-    #                     h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
-    #                         i] / 2) / 2
-    #                     h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[
-    #                         i + 1] / 2) / 2
-    #                     print('No corner air gap detected')
-    #                 elif flag_0 == 1 and flag_1 == 0:
-    #                     h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
-    #                         i - 1] / 2) / 2
-    #                     h2 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
-    #                         i] / 2) / 2
-    #                     print('Lower air gap detected')
-    #                 elif flag_0 == 0 and flag_1 == 1:
-    #                     h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
-    #                         i] / 2) / 2
-    #                     h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[
-    #                         i + 1] / 2) / 2
-    #                     print('Upper air gap detected')
-    #                 else:
-    #                     h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
-    #                         i - 1] / 2) / 2
-    #                     h2 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
-    #                         i] / 2) / 2
-    #                     print('Both air gap detected')
-    #
-    #                 r_basis_1 = fmt.r_basis(self.air_gap_h[i] / 2, self.core_w, h1)
-    #                 r_basis_2 = fmt.r_basis(self.air_gap_h[i] / 2, self.core_w, h2)
-    #                 temp2 = fmt.sigma(self.air_gap_h[i], self.core_w / 2, r_basis_1 + r_basis_2)
-    #                 temp3 = fmt.femmt_functions.r_round_round(self.air_gap_h[i], temp2, self.core_w / 2)
-    #                 self.reluctance = np.append(self.reluctance, temp3)
-    #
-    #     # self.section, self.orientation = set_orientation(self.section, len(self.section))
-    #     self.L = (self.no_of_turns * self.no_of_turns) / sum(self.reluctance)
+    def air_gap_reluctance_single(self):
+        flag_0 = 0
+        flag_1 = 0
+        flag_2 = 0
+        if self.n_air_gaps[0] != 0:
+            if self.air_gap_method == 'center':
+                self.section.append(6)  # round-round type airgap
+                temp1 = fmt.r_basis([self.air_gap_h[0] / 2], [self.core_w], [(self.window_h - self.air_gap_h[0]) / 2])
+                temp2 = fmt.sigma([self.air_gap_h[0]], [self.core_w / 2], 2 * temp1)
+                temp3 = fmt.r_round_round([self.air_gap_h[0]], temp2, [self.core_w / 2])
+                temp4 = self.air_gap_h[0] / (self.mu_0 * np.pi * (self.core_w / 2) ** 2)  # classical reluctance formula
+                self.reluctance[:, 5] = temp3
+
+            elif self.air_gap_method == 'percent' or self.air_gap_method == 'manual':
+                self.max_percent_position = ((self.window_h - self.air_gap_h[self.n_air_gaps - 1] / 2) / self.window_h) * 100
+                self.min_percent_position = ((self.air_gap_h[0] / 2) / self.window_h) * 100
+                if self.air_gap_method == 'percent':
+                    self.position = np.array(self.percent_position_air_gap) / 100 * self.window_h  # Convert percent position to absolute value position
+                print(f"Max percent: {self.max_percent_position}")
+                print(f"Min percent: {self.min_percent_position}")
+
+                if self.percent_position_air_gap[0] <= self.min_percent_position:
+                    flag_0 = 1
+                    self.section.append(8)
+                    if self.n_air_gaps == 1:
+                        h = self.window_h - self.air_gap_h[0]
+                    else:
+                        h = ((self.position[1] - self.air_gap_h[1] / 2) - self.air_gap_h[0]) / 2
+
+                    temp1 = fmt.r_basis([self.air_gap_h[0]], [self.core_w], [h])
+                    temp2 = fmt.sigma([self.air_gap_h[0]], [self.core_w / 2], temp1)
+                    temp3 = fmt.r_round_inf([self.air_gap_h[0]], temp2, [self.core_w / 2])
+                    self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+                    print('air gap is at lower corner')
+
+                if self.percent_position_air_gap[self.n_air_gaps - 1] >= self.max_percent_position:
+                    flag_1 = 1
+                    self.section.append(8)
+                    if self.n_air_gaps == 1:
+                        h = self.window_h - self.air_gap_h[self.n_air_gaps - 1]
+                    else:
+                        h = (self.position[self.n_air_gaps - 1] - self.position[self.n_air_gaps - 2] - self.air_gap_h[
+                            self.n_air_gaps - 1] / 2 - self.air_gap_h[self.n_air_gaps - 2] / 2) / 2
+
+                    temp1 = fmt.r_basis([self.air_gap_h[self.n_air_gaps - 1]], [self.core_w], [h])
+                    temp2 = fmt.sigma([self.air_gap_h[self.n_air_gaps - 1]], [self.core_w / 2], temp1)
+                    temp3 = fmt.femmt_functions.r_round_inf([self.air_gap_h[self.n_air_gaps - 1]], temp2, [self.core_w / 2])
+                    self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+                    print('air gap is at upper corner')
+
+                for i in range(self.n_air_gaps[0]):
+                    if self.min_percent_position < self.percent_position_air_gap[i] < self.max_percent_position:
+                        self.section.append(7)
+                        if flag_2 == 0:
+                            if flag_0 == 0 and flag_1 == 0:  # No corner air-gaps
+                                self.position = np.append(self.position,
+                                                          self.window_h + (self.window_h - self.position[self.n_air_gaps - 1]))
+                                self.position = np.insert(self.position, 0, -self.position[0])
+                                self.air_gap_h = np.append(self.air_gap_h, self.air_gap_h[self.n_air_gaps - 1])
+                                self.air_gap_h = np.insert(self.air_gap_h, 0, self.air_gap_h[0])
+                            elif flag_0 == 1 and flag_1 == 0:  # Only lower air-gap is present
+                                self.position = np.append(self.position,
+                                                          self.window_h + (self.window_h - self.position[self.n_air_gaps - 1]))
+                                self.air_gap_h = np.append(self.air_gap_h, self.air_gap_h[self.n_air_gaps - 1])
+                            elif flag_0 == 0 and flag_1 == 1:  # Only Upper air-gap is present
+                                self.position = np.insert(self.position, 0, -self.position[0])
+                                self.air_gap_h = np.insert(self.air_gap_h, 0, self.air_gap_h[0])
+                            flag_2 = 1
+
+                        if flag_0 == 0 and flag_1 == 0:
+                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
+                                i] / 2) / 2
+                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[
+                                i + 1] / 2) / 2
+                            print('No corner air gap detected')
+                        elif flag_0 == 1 and flag_1 == 0:
+                            h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
+                                i - 1] / 2) / 2
+                            h2 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
+                                i] / 2) / 2
+                            print('Lower air gap detected')
+                        elif flag_0 == 0 and flag_1 == 1:
+                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
+                                i] / 2) / 2
+                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[
+                                i + 1] / 2) / 2
+                            print('Upper air gap detected')
+                        else:
+                            h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
+                                i - 1] / 2) / 2
+                            h2 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
+                                i] / 2) / 2
+                            print('Both air gap detected')
+
+                        r_basis_1 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w], [h1])
+                        r_basis_2 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w], [h2])
+                        temp2 = fmt.sigma([self.air_gap_h[i]], [self.core_w / 2], r_basis_1 + r_basis_2)
+                        temp3 = fmt.femmt_functions.r_round_round([self.air_gap_h[i]], temp2, [self.core_w / 2])
+                        self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+
+    def calculate_inductance(self):
+        # self.section, self.orientation = set_orientation(self.section, len(self.section))
+        self.cal_inductance = (self.no_of_turns * self.no_of_turns) / np.sum(self.reluctance, axis=1)
+        self.data_matrix[:, 9] = self.cal_inductance
 
 
 def single_round_inf(air_gap_h, core_w, h):
@@ -473,13 +546,14 @@ def distributed_type_2(air_gap_h, core_w, n_air_gaps, h_multiple):
 
 
 if __name__ == '__main__':
-    mc1 = MagneticCircuit('inductor', [0.0149], [0.0295], [0.01105], [8], [0], [0.0005], [10], [3000],
-                          [1, 2])  # 0.0149
-    mc1.core_reluctance()
-    mc1.air_gap_reluctance()
-    print(f"Inductance is: {mc1.data_matrix[:, 9]}")
+    mc1 = MagneticCircuit(core_w=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[8], n_air_gaps=[3],
+                          air_gap_h=[0.0005, 0.0002, 0.0001], air_gap_position=[0, 50, 100], mu_rel=[3000], mult_air_gap_type=[1, 2],
+                          air_gap_method='percent', component_type='inductor', sim_type='single')  # 0.0149
 
-    qwerty = 1
+    mc1.calculate_inductance()
+
+    print(f"Inductance is {mc1.cal_inductance}")
+    # plot_r_basis()
 
 # def basic_example_func(f_height, f_position, f_n_turns, f_core_cond_iso, f_current):
 #     # 2. set core parameters
