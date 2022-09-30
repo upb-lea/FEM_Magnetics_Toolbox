@@ -1,4 +1,4 @@
-from femmt_functions import store_as_npy_in_directory
+from Functions import store_as_npy_in_directory
 import numpy as np
 from matplotlib import pyplot as plt
 from operator import itemgetter

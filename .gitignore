@@ -25,6 +25,7 @@ femmt/examples/femmt
 femmt/examples/femm
 femmt/examples/mesh
 femmt/custom_examples
+gui/femmt
 .idea/
 femmt/__pycache__/
 gpgit/
@@ -39,6 +40,9 @@ onelab/
 femmt/electro_magnetic/Parameter.pro
 femmt/electro_magnetic/postquantities.pro
 femmt/electro_magnetic/Strands_Coefficients/PreParameter.pro
+*.geo_unrolled
+*.msh
+*.db
 
 # Thermal: generated files
 femmt/thermal/solver/Constraint.pro
