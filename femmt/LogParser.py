@@ -36,6 +36,7 @@ class FileData():
     total_core_eddy_losses: float
     total_core_hyst_losses: float
     total_core_losses: float
+    core_2daxi_total_volume: float
 
 class FEMMTLogParser:
     """Class to parse the electromagnetic_results_log file created by FEMMT.
@@ -214,6 +215,7 @@ class FEMMTLogParser:
             "total_core_eddy_losses": full_data["total_losses"]["eddy_core"],
             "total_core_hyst_losses": full_data["total_losses"]["hyst_core_fundamental_freq"],
             "total_core_losses": full_data["total_losses"]["core"],
+            "core_2daxi_total_volume": full_data["misc"]["core_2daxi_total_volume"],
         }
 
         return FileData(**total)

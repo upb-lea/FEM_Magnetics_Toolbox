@@ -14,13 +14,19 @@ material_db = mdb.MaterialDatabase()
 
 def automated_design_func():
     # ########################################   {DESIGN PARAMETERS}   #################################################
-    save_directory_name = "sweep_examples_new"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
-    goal_inductance = 200 * 1e-6
+
+    save_directory_name = "sweep_examples_2"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
+    goal_inductance = 120 * 1e-6
+
     L_tolerance_percent = 10
     winding_factor = 0.91
     i_max = 3                               # Max current amplitude with assumption of sinusoidal current waveform
     percent_of_B_sat = 70                   # Percent of B_sat allowed in the designed core
-    percent_of_total_loss = 100             # Percent of total_loss allowed in FEM simulation
+
+
+
+    percent_of_total_loss = 100              # Percent of total_loss allowed in FEM simulation
+
     freq = 100 * 1e3                        # Switching frequency in Hz
     mu_imag = 100                           # TODO: coordinate with Aniket
     Cu_sigma = 5.96 * 1e7                   # copper conductivity (sigma) @ 20 degree celsius
@@ -29,10 +35,12 @@ def automated_design_func():
     # temp_var2 = material_db.permeability_data_to_pro_file(30, 100000, "N87", "manufacturer_datasheet")
 
     # Set core-geometry from core database or/and manual entry
-    manual_core_w = list(np.linspace(0.010, 0.012, 1))
-    manual_window_h = list(np.linspace(0.015, 0.017, 1))
-    manual_window_w = list(np.linspace(0.010, 0.012, 1))
-    db_core_names = ["PQ 40/40", "PQ 20/20"]
+
+    manual_core_w = list(np.linspace(0.007, 0.020, 3))
+    manual_window_h = list(np.linspace(0.007, 0.020, 3))
+    manual_window_w = list(np.linspace(0.010, 0.019, 3))
+    db_core_names = []  # "PQ 40/40", "PQ 40/30"
+
 
     all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
     manual_core_w = [item[0] for item in all_manual_combinations]
@@ -52,7 +60,8 @@ def automated_design_func():
     solid_conductor_r = [0.0013]
 
     litz_db = fmt.litz_database()
-    litz_names = ["1.5x105x0.1", "1.4x200x0.071"]
+
+    litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
     litz_conductor_r = [litz_db[litz_name]["conductor_radii"] for litz_name in litz_names]
     litz_strand_r = [litz_db[litz_name]["strand_radii"] for litz_name in litz_names]
     litz_strand_n = [litz_db[litz_name]["strands_numbers"] for litz_name in litz_names]
@@ -61,11 +70,12 @@ def automated_design_func():
 
     # Set air-gap and core parameters
     no_of_turns = [8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N)
-    n_air_gaps = [1, 2, 3, 4]  # Set No. of air-gaps (n)
-    air_gap_height = list(np.linspace(0.0001, 0.0005, 5))  # Set air-gap length in metre (l)
-    air_gap_position = list(np.linspace(1, 99, 11))  # Set air-gap position in percent w.r.t. core window height
+    n_air_gaps = [1, 2]  # Set No. of air-gaps (n)
+    air_gap_height = list(np.linspace(0.0001, 0.0005, 3))  # Set air-gap length in metre (l)
+    air_gap_position = list(np.linspace(20, 80, 2))  # Set air-gap position in percent w.r.t. core window height
 
-    material_names = ["N95", "N87"]  # Set relative permeability in F/m (u)
+    material_names = ["N95"]  # Set relative permeability in F/m (u) , "N87"
+
     mu_rel = [material_db.get_material_property(material_name=material_name, property="initial_permeability")
               for material_name in material_names]
 
@@ -193,8 +203,15 @@ def automated_design_func():
 
     # ##########################################   {FEM_SIMULATION}   ##################################################
     qwerty = 1
-    # Working directory can be set arbitrarily
-    working_directory = os.path.join(os.path.dirname(__file__), '..')
+
+    example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+    if not os.path.exists(example_results_folder):
+        os.mkdir(example_results_folder)
+
+    working_directory = os.path.join(example_results_folder, "inductor")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
 
     if not os.path.exists(os.path.join(os.path.dirname(__file__), save_directory_name)):
         os.mkdir(os.path.join(os.path.dirname(__file__), save_directory_name))
@@ -202,7 +219,10 @@ def automated_design_func():
     working_directories = []
     file_names = []
 
-    src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/results/log_electro_magnetic.json"
+    # src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/results/log_electro_magnetic.json"
+    src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
+               "inductor/results/log_electro_magnetic.json"
+
 
     counter3 = 0
     for j in range(len(solid_conductor_r) + len(litz_conductor_r)):
@@ -213,9 +233,11 @@ def automated_design_func():
                 continue
 
             # MagneticComponent class object
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory)
 
-            core = fmt.Core(core_w=FEM_data_matrix[i, param["core_w"]], window_w=FEM_data_matrix[i, param["window_w"]],
+            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=False)
+
+            core = fmt.Core(core_inner_diameter=FEM_data_matrix[i, param["core_w"]], window_w=FEM_data_matrix[i, param["window_w"]],
+
                             window_h=FEM_data_matrix[i, param["window_h"]],
                             material="95_100")
             # TODO: wait for material update
@@ -226,41 +248,49 @@ def automated_design_func():
             # 3. set air gap parameters
             air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
             if int(FEM_data_matrix[i, param["n_air_gaps"]]) == 1:
-                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, FEM_data_matrix[i, param["air_gap_position"]],
-                                     FEM_data_matrix[i, param["air_gap_h"]])
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, FEM_data_matrix[i, param["air_gap_h"]],
+                                     FEM_data_matrix[i, param["air_gap_position"]])
             else:
                 if int(FEM_data_matrix[i, param["mult_air_gap_type"]]) == 1:
                     position_list = list(np.linspace(0, 100, int(FEM_data_matrix[i, param["n_air_gaps"]])))
                     for position in position_list:
-                        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, position,
-                                             FEM_data_matrix[i, param["air_gap_h"]])
+                        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, FEM_data_matrix[i, param["air_gap_h"]],
+                                             position)
 
                 elif int(FEM_data_matrix[i, param["mult_air_gap_type"]]) == 2:
                     position_list = list(np.linspace(0, 100, int(FEM_data_matrix[i, param["n_air_gaps"]]) + 2))
                     position_list.remove(0.0)
                     position_list.remove(100.0)
                     for position in position_list:
-                        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, position,
-                                             FEM_data_matrix[i, param["air_gap_h"]])
-
+                        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, FEM_data_matrix[i, param["air_gap_h"]],
+                                             position)
             geo.set_air_gaps(air_gaps)
 
-            # 4. set conductor parameters: use solid wires
-            winding = fmt.Winding(int(FEM_data_matrix[i, param["no_of_turns"]]), 0, fmt.Conductivity.Copper,
-                                  fmt.WindingType.Primary, fmt.WindingScheme.Square)
+            # 4. set insulations
+            insulation = fmt.Insulation()
+            insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+            insulation.add_winding_insulations([0.0005], 0.0001)
+            geo.set_insulation(insulation)
 
+            # 5. create winding window and virtual winding windows (vww)
+            winding_window = fmt.WindingWindow(core, insulation)
+            vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+            # 6. create conductor and set parameters: use solid wires
+            winding = fmt.Conductor(0, fmt.Conductivity.Copper)
             if j < len(litz_conductor_r):
-                winding.set_litz_conductor(conductor_radius=litz_conductor_r[j], number_strands=litz_strand_n[j],
-                                           strand_radius=litz_strand_r[j], fill_factor=None)
+                winding.set_litz_round_conductor(conductor_radius=litz_conductor_r[j], number_strands=litz_strand_n[j],
+                                                 strand_radius=litz_strand_r[j], fill_factor=None,
+                                                 conductor_arrangement=fmt.ConductorArrangement.Square)
             else:
-                winding.set_solid_conductor(conductor_r_list[j])
-            geo.set_windings([winding])
+                winding.set_solid_round_conductor(conductor_radius=conductor_r_list[j],
+                                                  conductor_arrangement=fmt.ConductorArrangement.Square)
+            # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
+            # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
-            # 5. set isolations
-            isolation = fmt.Isolation()
-            isolation.add_core_isolations(0.001, 0.001, 0.001, 0.001)
-            isolation.add_winding_isolations(0.0005)
-            geo.set_isolation(isolation)
+            # 7. add conductor to vww and add winding window to MagneticComponent
+            vww.set_winding(winding, int(FEM_data_matrix[i, param["no_of_turns"]]), None)
+            geo.set_winding_window(winding_window)
 
             try:
                 # 5. create the model
@@ -305,9 +335,12 @@ def load_design(load_directory_name):
     # In this case the self inductivity of winding1 will be analyzed
     inductivities = []
     active_power = []
+    total_volume = []
     for name, data in log_parser.data.items():
         inductivities.append(data.sweeps[0].windings[0].self_inductance)
         active_power.append(data.sweeps[0].windings[0].active_power)
+        total_volume.append(data.core_2daxi_total_volume)
+
 
     real_inductance = []
     for i in range(len(active_power)):
@@ -323,10 +356,10 @@ def load_design(load_directory_name):
     cmap = plt.cm.RdYlGn
 
     fig, ax = plt.subplots()
-    fmt.plt.title("Inductance vs active power")
-    fmt.plt.xlabel("Active power (in W)")
-    fmt.plt.ylabel("Inductance (in H)")
-    sc = plt.scatter(active_power, real_inductance, c=c, s=50, cmap=cmap, norm=norm)
+    fmt.plt.title("Volume vs total losses")
+    fmt.plt.xlabel("Volume (in cubic m)")
+    fmt.plt.ylabel("Total losses (in W)")
+    sc = plt.scatter(total_volume, active_power, c=c, s=50, cmap=cmap, norm=norm)
 
     annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
                         bbox=dict(boxstyle="round", fc="w"),
@@ -362,7 +395,8 @@ def load_design(load_directory_name):
 
 
 if __name__ == '__main__':
-    # automated_design_func()
+    automated_design_func()
 
-    design_name = "sweep_examples"
+    design_name = "sweep_examples_2"
     load_design(design_name)
+

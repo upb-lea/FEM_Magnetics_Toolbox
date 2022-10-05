@@ -1,8 +1,30 @@
-# Python standard libraries
-import numpy as np
-
-# Local libraries
 import femmt as fmt
+import numpy as np
+from itertools import product
+
+
+def plot_r_basis():
+    # width = 1
+    # length = 1
+    # height = np.linspace(10, 0.1, 1000)
+    width = 0.0149
+    length = 0.0005
+    height = np.linspace(0.005, 0, 1000)
+    h_l = height / length
+
+    r_m = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+                1 + np.log(np.pi * height / 4 / length))))
+
+    combined = np.vstack((h_l, r_m)).T
+    print(combined)
+    fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
+    fmt.plt.title("R_basic vs h/l")
+    fmt.plt.xlabel("h/l")
+    fmt.plt.ylabel("R_basic")
+    ax.plot(h_l, r_m)
+    ax.invert_xaxis()
+    ax.grid()
+    fmt.plt.show()
 
 
 def plot_r_basis():
@@ -389,7 +411,7 @@ class MagneticCircuit:
 
                     temp1 = fmt.r_basis([self.air_gap_h[self.n_air_gaps - 1]], [self.core_w], [h])
                     temp2 = fmt.sigma([self.air_gap_h[self.n_air_gaps - 1]], [self.core_w / 2], temp1)
-                    temp3 = fmt.femmt_functions.r_round_inf([self.air_gap_h[self.n_air_gaps - 1]], temp2, [self.core_w / 2])
+                    temp3 = fmt.r_round_inf([self.air_gap_h[self.n_air_gaps - 1]], temp2, [self.core_w / 2])
                     self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
                     print('air gap is at upper corner')
 
@@ -440,7 +462,7 @@ class MagneticCircuit:
                         r_basis_1 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w], [h1])
                         r_basis_2 = fmt.r_basis([self.air_gap_h[i] / 2], [self.core_w], [h2])
                         temp2 = fmt.sigma([self.air_gap_h[i]], [self.core_w / 2], r_basis_1 + r_basis_2)
-                        temp3 = fmt.femmt_functions.r_round_round([self.air_gap_h[i]], temp2, [self.core_w / 2])
+                        temp3 = fmt.r_round_round([self.air_gap_h[i]], temp2, [self.core_w / 2])
                         self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
 
     def calculate_inductance(self):
@@ -582,11 +604,11 @@ if __name__ == '__main__':
 #     # winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
 #     geo.set_windings([winding])
 #
-#     # 5. set insulations
-#     insulation = fmt.insulation()
-#     insulation.add_core_insulations(0.001, 0.001, f_core_cond_iso, 0.001)
-#     insulation.add_winding_insulations(0.0005)
-#     geo.set_insulation(insulation)
+#     # 5. set isolations
+#     isolation = fmt.Isolation()
+#     isolation.add_core_isolations(0.001, 0.001, f_core_cond_iso, 0.001)
+#     isolation.add_winding_isolations(0.0005)
+#     geo.set_isolation(isolation)
 #
 #     # 5. create the model
 #     geo.create_model(freq=100000, visualize_before=False, save_png=False)
