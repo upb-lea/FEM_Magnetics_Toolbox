@@ -76,7 +76,7 @@ def run_inductor_simulations(working_directory, combinations):
         geo = fmt.MagneticComponent(fmt.ComponentType.Inductor, working_directory, True)
 
         core_db = fmt.core_database()["PQ 40/40"]
-        core = fmt.Core(core_db["core_w"], core_db["window_w"], core_db["window_h"],
+        core = fmt.Core(core_db["core_inner_diameter"], core_db["window_w"], core_db["window_h"],
                         "95_100") 
         geo.set_core(core)
         
@@ -128,7 +128,7 @@ def run_transformer_simulations(working_directory, combinations):
         geo = fmt.MagneticComponent(fmt.ComponentType.Transformer, working_directory, True)
 
         core_db = fmt.core_database()["PQ 40/40"]
-        core = fmt.Core(core_db["core_w"], core_db["window_w"], core_db["window_h"],
+        core = fmt.Core(core_db["core_inner_diameter"], core_db["window_w"], core_db["window_h"],
                         "95_100") 
         geo.set_core(core)
         

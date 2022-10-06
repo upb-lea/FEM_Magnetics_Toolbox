@@ -7,7 +7,7 @@ from femmt.femmt_reluctance import MagneticCircuit
 core_db1 = fmt.core_database()["PQ 40/40"]
 core_db2 = fmt.core_database()["PQ 26/25"]
 
-core_width_list = [core_db1["core_w"], core_db2["core_w"]]
+core_width_list = [core_db1["core_inner_diameter"], core_db2["core_inner_diameter"]]
 core_window_w_list = [core_db1["window_w"], core_db2["window_w"]]
 core_window_h_list = [core_db1["window_h"], core_db2["window_h"]]
 
