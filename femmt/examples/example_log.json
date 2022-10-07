@@ -70,7 +70,7 @@
     "component_type": "Inductor",
     "working_directory": "c:\\Uni\\Bachelorarbeit\\github\\FEM_Magnetics_Toolbox\\femmt\\examples\\example_results\\inductor",
     "core": {
-      "core_w": 0.0149,
+      "core_inner_diameter": 0.0149,
       "window_w": 0.01105,
       "window_h": 0.0295,
       "material": "95_100",
@@ -97,17 +97,17 @@
         }
       ]
     },
-    "isolation": {
-      "inner_winding_isolations": [
+    "insulation": {
+      "inner_winding_insulations": [
         0.0005
       ],
-      "core_isolations": [
+      "core_insulations": [
         0.001,
         0.001,
         0.004,
         0.001
       ],
-      "vww_isolation": 0.0001
+      "vww_insulation": 0.0001
     },
     "virtual_winding_windows": [
       {

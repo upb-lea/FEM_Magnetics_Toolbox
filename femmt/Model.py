@@ -259,7 +259,7 @@ class Core:
 
     def to_dict(self):
         return {
-            "core_w": self.core_inner_diameter,
+            "core_inner_diameter": self.core_inner_diameter,
             "window_w": self.window_w,
             "window_h": self.window_h,
             "material": self.material,
