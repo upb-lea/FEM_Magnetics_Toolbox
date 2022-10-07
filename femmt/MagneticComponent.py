@@ -2114,7 +2114,10 @@ class MagneticComponent:
             "core_2daxi_weight": -1,
             "wire_lengths": self.calculate_wire_lengths(),
             "wire_volumes": self.calculate_wire_volumes(),
-            "wire_weight": -1
+            "wire_weight": -1,
+            "core_cost": -1, #cost_function_core(core_2daxi_weight, "ferrite"),
+            "winding_cost": -1,
+            "total_cost_incl_margin": -1
         }
 
         # ---- Print current configuration ----
