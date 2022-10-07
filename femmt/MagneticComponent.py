@@ -39,7 +39,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None, silent: bool = False, is_gui = False):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None, silent: bool = False, is_gui: bool = False):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -48,6 +48,10 @@ class MagneticComponent:
         :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
+        :param silent: True to reduce onelab simulation outputs in command line. False to see full command line output.
+        :type silent: bool
+        :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line. Defaults to 'False' in command-line-mode.
+        :type is_gui: bool
         """
         # Variable to set silent mode
         ff.set_silent_status(silent)
