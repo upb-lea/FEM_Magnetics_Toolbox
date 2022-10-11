@@ -56,7 +56,7 @@ This is the stable release version (recommended).
 
    pip install femmt
 
-For working with the latest version, refer to the `devopers notes <documentation/source/developer_notes.rst>`__.
+For working with the latest version, refer to the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__.
 
 Minimal example
 ------------------
