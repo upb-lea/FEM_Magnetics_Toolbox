@@ -29,6 +29,10 @@ Functionality examples
 * GUI is experimental, 
 * reluctance module is currently working for a single optimization example and not fully implemented yet.
 
+Documentation
+-------------------
+Please have a look at the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__. You will find tutorials and a function description.
+
 Installation
 ---------------
 
@@ -46,16 +50,13 @@ Install FEMMT
 ~~~~~~~~~~~~~~~~~
 
 FEMMT can be installed using the python pip package manager.
-
-FEMMT release version (recommended)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This is the stable release version.
+This is the stable release version (recommended). 
 
 ::
 
    pip install femmt
 
+For working with the latest version, refer to the `devopers notes <documentation/source/developer_notes.rst>`__.
 
 Minimal example
 ------------------
