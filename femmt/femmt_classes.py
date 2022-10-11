@@ -2643,6 +2643,8 @@ class MagneticComponent:
 
         """
 
+
+
         def __init__(self, component):
             self.component = component
 
@@ -3763,9 +3765,6 @@ class MagneticComponent:
             # Synchronize again
             gmsh.model.geo.synchronize()
 
-        def update_core_log(self, frequency):
-            pass
-
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
     def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current',
@@ -3803,7 +3802,7 @@ class MagneticComponent:
         self.flag_imposed_reduced_frequency = imposed_red_f  # if == 0 --> impose frequency f
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
 
-        self.mesh.update_core_log(frequency)  # frequency back to core for creation of pro file
+        self.core.update_core_material_data_with_freq(frequency)  # frequency back to core for creation of pro file
 
         phase_deg_list = np.asarray(phase_deg_list)
         self.red_freq = np.empty(2)

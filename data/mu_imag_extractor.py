@@ -23,21 +23,21 @@ def PolyCoefficients(x, coeffs):
 
 
 # directory = "C:/Users/tillp/OneDrive/Documents/GitHub/FEM_Magnetics_Toolbox/data/materials/N95/N95/100C"
-directory = "C:/Users/tillp/sciebo/Exchange_FEMMT/05_Materials/data/Loss_Data_PHD_Keuck/mu_phi_Plot"
-frequencies_in_kHz = [100]  # [100, 200, 300]
-temperatures = [60, 100]
+directory = "C:/Users/Aniket/sciebo/Exchange_FEMMT/05_Materials/data/Loss_Data_PHD_Keuck/mu_r_Plot"
+frequencies_in_kHz = [300]  # [100, 200, 300]
+temperatures = [30]
 
 for j, temperature in enumerate(temperatures):
     for i, frequency_in_kHz in enumerate(frequencies_in_kHz):
-        file_name = f"mu_phi_{frequency_in_kHz}kHz_N95_{temperature}C.txt"
-
+        # file_name = f"mu_phi_{frequency_in_kHz}kHz_N95_{temperature}C.txt"
+        file_name = f"mu_r_{frequency_in_kHz}kHz_N95_{temperature}C.txt"
         # Get raw data from measurements
         with open(directory + "/" + file_name, newline='\n') as file:
             phi = [re.split(r'\t+', line[0]) for line in list(csv.reader(file))]
 
         phi_raw = np.array([[float(i) for i in j] for j in phi])
 
-        # print(phi_raw)
+        print(phi_raw[:, 1])
 
         # Fit polynomial factors
         poly_degree = 1
@@ -80,5 +80,5 @@ plt.ylabel("$\mu''/\mu_0$")
 plt.xlabel("$B$ / mT")
 plt.legend()
 plt.grid()
-plt.savefig("C:/Users/tillp/sciebo/Exchange_FEMMT/04_Documentation//mu_imag.pdf", bbox_inches="tight")
+plt.savefig("C:/Users/Aniket/sciebo/Exchange_FEMMT/04_Documentation//mu_imag.pdf", bbox_inches="tight")
 plt.show()

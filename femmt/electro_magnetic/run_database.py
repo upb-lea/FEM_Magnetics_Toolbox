@@ -16,6 +16,6 @@ database = mdb.MaterialDatabase()
 # database.get_resistivity(material_name="N95")
 # --------------compare-----------
 # mdb.compare_core_loss_flux_density_data(material_list=["N95", "N87"])
-# mdb.compare_core_loss_temperature(material_list=["N95", "N87"])
-# mdb.compare_core_loss_frequency(material_list=["N95", "N87"], flux=25e-3, temperature=25)
+mdb.compare_core_loss_temperature(material_list=["N95", "N87"])
+# mdb.compare_core_loss_frequency(material_list=["N95", "N87"], temperature=25)
 # mdb.compare_b_h_curve(material_list=["N95", "N87"])

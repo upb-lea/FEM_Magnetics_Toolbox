@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 from typing import List, Union, Optional
 
+import self as self
 from matplotlib.pyplot import fill
 
 import femmt
@@ -197,7 +198,7 @@ class Core:
     type: str
 
     # Standard material data
-    material: str  # "95_100" := TDK-N95 | Currently only works with Numbers corresponding to BH.pro
+    material: str
 
     # Permeability
     # TDK N95 as standard material:
@@ -223,14 +224,21 @@ class Core:
     # Needed for to_dict
     loss_approach: LossApproach = None
 
+    # Database
+    # material_database is variable to load in material_database
+    temperature: float  # temperature at which data is required
+    material: str  # material to be accessed from data base
+    datasource: str  # type of data to be accessed ( datasheet or measurement)
+    file_path_to_solver_folder: str  # location to create temporary pro file
+
     def __init__(self, core_w: float, window_w: float, window_h: float, material: str,
-                 temperature: float = None, datasource: str = None, frequency: float = None,
+                 temperature: float = None, datasource: str = None,
                  loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = None,
                  steinmetz_parameter: list = None, generalized_steinmetz_parameter: list = None,
                  phi_mu_deg: float = None, sigma: float = 1.5, non_linear: bool = False, **kwargs):
         # Set parameters
-        self.Database = None
-        self.file_path = None
+        self.material_database = None
+        self.file_path_to_solver_folder = None
         self.core_w = core_w
         self.core_h = None  # TODO Set core_h to not none
         self.window_w = window_w
@@ -239,42 +247,35 @@ class Core:
         self.material = material
         self.temperature = temperature
         self.datasource = datasource
-        self.frequency = frequency
         self.non_linear = non_linear
         self.mu_rel = mu_rel
         self.phi_mu_deg = phi_mu_deg
         self.sigma = sigma
         self.loss_approach = loss_approach
         # Initialize database
-        Database = mdb.MaterialDatabase()  # TODO check initialization of database
+        self.material_database = mdb.MaterialDatabase()
 
         #  -----create dynamic pro file for complex permeability data
         script_dir = os.path.dirname(__file__)
-        file_path = os.path.join(script_dir, 'electro_magnetic')
-        # Database.permeability_data_to_pro_file(T=self.temperature, f=self.frequency, material_name=self.material,
-        #                                        datasource=self.datasource,
-        #                                        pro=True, parent_directory=file_path)  # TODO freq and datasource
+        self.file_path_to_solver_folder = os.path.join(script_dir, 'electro_magnetic')
+
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
             self.sigma = 0
             if self.material != "custom":
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_rel = Database.get_initial_permeability(material_name=self.material)
+                self.mu_rel = self.material_database.get_material_property(material_name=self.material,
+                                                                           property="initial_permeability")
                 self.ki = \
-                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                datasource="measurements")[
-                        'ki']
+                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                              datasource="measurements")['ki']
                 self.alpha = \
-                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                datasource="measurements")['alpha']
+                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                              datasource="measurements")['alpha']
                 self.beta = \
-                    Database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                datasource="measurements")['beta']
-                # print(f"{self.ki=}")
-                # print(self.alpha)
-                # print(self.beta)
-                # print(self.mu_rel)
-                # self.sigma = f"sigma_from_{self.material}"
+                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                              datasource="measurements")['beta']
+
             if self.material == "custom":  # ----steinmetz_parameter consist of list of ki, alpha , beta from the user
                 self.ki = steinmetz_parameter[0]
                 self.alpha = steinmetz_parameter[1]
@@ -302,9 +303,10 @@ class Core:
             if self.material == "custom":
                 self.sigma = sigma  # ------sigma from user
             if self.material != "custom":
-                self.mu_rel = Database.get_initial_permeability(material_name=self.material)
-                self.sigma = 1 / Database.get_resistivity(
-                    material_name=self.material)  # get resistivity for material from database
+                self.mu_rel = self.material_database.get_material_property(material_name=self.material,
+                                                                           property="initial_permeability")
+                self.sigma = 1 / self.material_database.get_material_property(
+                    material_name=self.material, property="resistivity")  # get resistivity for material from database
 
             if phi_mu_deg is not None and phi_mu_deg != 0:
                 self.permeability_type = PermeabilityType.FixedLossAngle
@@ -322,11 +324,13 @@ class Core:
         # Needed because of to_dict
         self.kwargs = kwargs
 
-    def update_core_log(self, frequency):
-        print(frequency)
-        self.Database.permeability_data_to_pro_file(T=self.temperature, f=frequency, material_name=self.material,
-                                                    datasource=self.datasource,
-                                                    pro=True, parent_directory=self.file_path)
+    # to get frequency set during simulation time
+    def update_core_material_data_with_freq(self, frequency):
+        print(f'freq=', frequency)
+        self.material_database.permeability_data_to_pro_file(T=self.temperature, f=frequency,
+                                                             material_name=self.material,
+                                                             datasource=self.datasource,
+                                                             pro=True, parent_directory=self.file_path_to_solver_folder)
 
     def to_dict(self):
         return {

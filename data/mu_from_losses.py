@@ -4,8 +4,6 @@ k = 0.527
 alpha = 1.507
 beta = 2.382
 
-
-
 # 100 kHz hyst loss
 frequency = 100000
 
@@ -20,10 +18,9 @@ frequency = 100000
 
 # Datasheet
 # 100 C
-b_amp =     np.array([0.025, 0.05,  0.1,  0.2,  0.3])*1000
-mur =       np.array([ 3000, 3000, 3000, 3000, 3000])
-p_hyst =    np.array([    2,    9,   50,  400, 1000])  # 100 kHz
-
+b_amp = np.array([0.025, 0.05, 0.1, 0.2, 0.3]) * 1000
+mur = np.array([3000, 3000, 3000, 3000, 3000])
+p_hyst = np.array([2, 9, 50, 400, 1000])  # 100 kHz
 
 # 25 C
 # b_amp =     np.array([   25,   50,  100,  200,  300])
@@ -45,7 +42,6 @@ plt.xlabel("B in mT")
 plt.ylabel("P_hyst in kW/m^3")
 plt.grid()
 plt.show()
-
 
 # mur_from_losses(b=b_amp, p=p_hyst, f=frequency, phi=phi_mu)
 phis = phi_mu_from_losses(b=b_amp, p=p_hyst, f=frequency, mur=mur)
@@ -83,6 +79,3 @@ plt.show()
 
 # bring the other data into the right format
 # print(b_amp_extrapolated/1000, phi_extrapolated)
-
-
-
