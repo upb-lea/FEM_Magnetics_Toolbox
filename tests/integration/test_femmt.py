@@ -32,7 +32,7 @@ def temp_folder():
         os.mkdir(temp_folder_path)
 
     # Get onelab path
-    onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
+    onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "onelab")
 
     # Test
     yield temp_folder_path, onelab_path
