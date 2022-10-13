@@ -93,7 +93,7 @@ if component == "inductor":
     core_db = fmt.core_database()["PQ 40/40"]
 
     core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    material="95_100")
+                    material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
                     # mu_rel=3000, phi_mu_deg=10,
                     # sigma=0.5)
     geo.set_core(core)
