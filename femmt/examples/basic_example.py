@@ -1,5 +1,4 @@
 import femmt as fmt
-import numpy as np
 import os
 
 def example_thermal_simulation():
@@ -70,6 +69,10 @@ def example_thermal_simulation():
     # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
     geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
+example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+if not os.path.exists(example_results_folder):
+    os.mkdir(example_results_folder)
+
 component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
@@ -79,7 +82,9 @@ component = "inductor"
 # Create Object
 if component == "inductor":
     # Working directory can be set arbitrarily
-    working_directory = os.path.join(os.path.dirname(__file__), '..')
+    working_directory = os.path.join(example_results_folder, "inductor")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory)
@@ -101,8 +106,10 @@ if component == "inductor":
 
     # 4. set conductor parameters: use solid wires
     winding = fmt.Winding(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
+
     winding.set_solid_conductor(0.0013)
     # winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
+
     geo.set_windings([winding])
 
     # 5. set isolations
@@ -112,7 +119,7 @@ if component == "inductor":
     geo.set_isolation(isolation)
 
     # 5. create the model
-    geo.create_model(freq=100000, visualize_before=False, save_png=False)
+    geo.create_model(freq=100000, visualize_before=True, save_png=False)
 
     # 6. start simulation
     geo.single_simulation(freq=100000, current=[4.5], show_results=False)
@@ -127,11 +134,10 @@ if component == "inductor":
     # phase_list = [[0], [10], [20], [30], [40], [50]]
     # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
 
-    # Reference simulation using FEMM
-    # geo.femm_reference(freq=100000, current=[1], sign=[1], non_visualize=0)
-
 if component == "transformer-interleaved":
-    working_directory = os.path.join(os.path.dirname(__file__), '..')
+    working_directory = os.path.join(example_results_folder, "transformer-interleaved")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
@@ -179,7 +185,9 @@ if component == "transformer-interleaved":
     
 if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(os.path.dirname(__file__), '..')
+    working_directory = os.path.join(example_results_folder, "transformer")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
@@ -219,7 +227,9 @@ if component == "transformer":
     geo.femm_reference(freq=250000, current=[4, 4], sign=[-1, 1], non_visualize=0)
 
 if component == "integrated_transformer":
-    working_directory = os.path.join(os.path.dirname(__file__), '..')
+    working_directory = os.path.join(example_results_folder, "integrated-transformer")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
@@ -231,7 +241,7 @@ if component == "integrated_transformer":
     geo.set_core(core)
 
     # 2.1 set stray path parameters
-    stray_path = fmt.StrayPath(start_index=0, radius=geo.core.core_w / 2 + geo.core.window_w - 0.001, width=None, midpoint=None)
+    stray_path = fmt.StrayPath(start_index=0, length=geo.core.core_w / 2 + geo.core.window_w - 0.001)
     geo.set_stray_path(stray_path)
 
     # 3. set air gap parameters
@@ -264,9 +274,13 @@ if component == "integrated_transformer":
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
 
 if component == "load_from_file":
+    working_directory = os.path.join(example_results_folder, "from-file")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
     file = os.path.join(os.path.dirname(__file__), "example_log.json")
 
-    geo = fmt.decode_settings_from_log(file, os.path.dirname(__file__))
+    geo = fmt.decode_settings_from_log(file, working_directory)
 
     geo.create_model(freq=100000, visualize_before=False, save_png=False)
 

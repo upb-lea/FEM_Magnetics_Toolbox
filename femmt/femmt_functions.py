@@ -28,12 +28,12 @@ colors_femmt_default = {"blue": (28, 113, 216),
                         }
 
 colors_geometry_femmt_default = {
-                    "core": "grey",
+                    "core": "black",
                     "air_gap": "yellow",
                     "winding": ["orange", "brown", "yellow"],
                     "isolation": "blue",
-                    "potting_inner": "yellow",
-                    "potting_outer": "yellow",
+                    "potting_inner": "grey",
+                    "potting_outer": "grey",
                 }
 
 
@@ -272,7 +272,7 @@ def pm_core_w_calculator(inner_core_diameter: float, hole_diameter: float) -> fl
     return np.around(2 * np.sqrt(area_total / np.pi), decimals=4)
 
 
-def install_femm_if_missing() -> None:
+def install_pyfemm_if_missing() -> None:
     """
     Windows users only.
     Installs femm-software pip package in case of running on windows machine
@@ -829,7 +829,7 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 mu0 = 4e-7*np.pi
 
 
-def r_basis(basis_air_gap_length: float, basis_air_gap_width: float, basis_air_gap_height_core_material: float) -> None:
+def r_basis(basis_air_gap_length: list, basis_air_gap_width: list, basis_air_gap_height_core_material: list) -> list:
     """
     1-dim reluctance per-unit-of-length
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
@@ -845,12 +845,20 @@ def r_basis(basis_air_gap_length: float, basis_air_gap_width: float, basis_air_g
     :rtype: float
 
     """
-    if basis_air_gap_length <= 0:
-        basis_air_gap_length = 0.0000001
-    return 1 / (mu0 * (basis_air_gap_width / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi * basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
+
+    # for index in range(len(basis_air_gap_length)):
+    #     if basis_air_gap_length[index] <= 0:
+    #         basis_air_gap_length[index] = 0.0000001
+
+    basis_air_gap_length = np.array(basis_air_gap_length)
+    basis_air_gap_width = np.array(basis_air_gap_width)
+    basis_air_gap_height_core_material = np.array(basis_air_gap_height_core_material)
+
+    return 1 / (mu0 * (basis_air_gap_width / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
+                            basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
 
 
-def sigma(l, w, r_equivalent):
+def sigma(l: list, w: list, r_equivalent: list) -> list:
     """
     1-dim fringing factor
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
@@ -866,16 +874,21 @@ def sigma(l, w, r_equivalent):
     :rtype: float
 
     """
+
+    l = np.array(l)
+    w = np.array(w)
+    r_equivalent = np.array(r_equivalent)
+
     return r_equivalent / (l / mu0 / w)
 
 
-def r_round_inf(air_gap_length: float, sigma: float, air_gap_radius: float) -> float:
+def r_round_inf(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
     """
     3-dim reluctance for 2-dim axial-symmetric air gaps
     Round to infinity structure
 
-    :param sigma: fringing factor
-    :type sigma: float
+    :param air_gap_sigma: fringing factor
+    :type air_gap_sigma: float
     :param air_gap_radius: air gap radius
     :type air_gap_radius: float
     :param air_gap_length: air gap length
@@ -885,16 +898,20 @@ def r_round_inf(air_gap_length: float, sigma: float, air_gap_radius: float) -> f
     :rtype: float
 
     """
-    return sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+    air_gap_length = np.array(air_gap_length)
+    air_gap_sigma = np.array(air_gap_sigma)
+    air_gap_radius = np.array(air_gap_radius)
+
+    return air_gap_sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
 
 
-def r_round_round(air_gap_length: float, sigma: float, air_gap_radius: float) -> float:
+def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
     """
     3-dim reluctance for 2-dim axial-symmetric air gaps
     Round to round structure
 
-    :param sigma: fringing factor
-    :type sigma: float
+    :param air_gap_sigma: fringing factor
+    :type air_gap_sigma: float
     :param air_gap_radius: air gap radius
     :type air_gap_radius: float
     :param air_gap_length: air gap length
@@ -904,7 +921,11 @@ def r_round_round(air_gap_length: float, sigma: float, air_gap_radius: float) ->
     :rtype: float
 
     """
-    return sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+    air_gap_length = np.array(air_gap_length)
+    air_gap_sigma = np.array(air_gap_sigma)
+    air_gap_radius = np.array(air_gap_radius)
+
+    return air_gap_sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
 
 
 def r_cyl_cyl(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer) -> float:
@@ -1020,6 +1041,16 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     return loaded_results_dict
 
+def point_is_in_rect(x, y, rect):
+    # x, y of the point
+    # List of 4 points given as tuples with (x, y) in the order top-right, top-left, bottom-right, bottom-left
+
+    # Return true if point is in rect
+    if y < rect[0][1] and y > rect[3][1] and x > rect[0][0] and x < rect[1][0]:
+        return True
+    
+    return False
 
 if __name__ == '__main__':
+    # TODO Relative path
     visualize_simulation_results('/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/results/result_log_electro_magnetic.json')

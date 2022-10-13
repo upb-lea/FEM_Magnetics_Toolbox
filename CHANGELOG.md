@@ -6,9 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+
+## [0.3.0] - 2022-09-01
 ### Added
 - Add color dictionaries for individual geometry visualization
 - Added output json file for thermal simulation
+- Add Parser to read and visualize the result.json-files
+- Add first version of reluctance model including an example file
+- Added dynamic mesh density algorithm for the winding window
+- Simulation settings are now stored in the log file. A simulation can be started using given log-file.
+- Added a new interface for femmt
+
+### Fixed
+- fix #13: improve reading the onelab filepath 
+- fix #16: Wrong Mesh is simulated when changing the number of turns
+- fix #17: Error with integrated_transformer mesh
+- fix #19: Scale update in result plots
+- fix #22: Fix bug for air-gap positions 0 and 100 percent
 
 ## [0.2.1] - 2022-04-28
 ### Updated
@@ -87,7 +102,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/SolidComp.py
 - add femmt/CompRes.py
 
-[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.2.1...HEAD
+[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/upb-lea/transistordatabase/compare/0.3.0...0.2.1
 [0.2.1]: https://github.com/upb-lea/transistordatabase/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/upb-lea/transistordatabase/compare/0.1.2...0.2.0
 [0.1.2]: https://github.com/upb-lea/transistordatabase/compare/0.1.1...0.1.2
