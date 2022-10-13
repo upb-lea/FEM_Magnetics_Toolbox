@@ -21,6 +21,8 @@ def compare_result_logs(first_log, second_log):
         if "working_directory" in second_content["simulation_settings"]:
             del second_content["simulation_settings"]["working_directory"]
 
+    print(first_content)
+    print(second_content)
     return first_content == second_content
 
 @pytest.fixture
