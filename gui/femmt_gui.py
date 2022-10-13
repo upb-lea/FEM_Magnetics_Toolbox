@@ -3,8 +3,12 @@ import pandas as pd
 import gmsh
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib import cm
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem
+from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem, QVBoxLayout
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
@@ -51,6 +55,24 @@ def comma_str_to_point_float(input_str: str) -> float:
 
     return float(output)
 
+class MatplotlibWidget(QWidget):
+    """
+    MatplotlibWidget class which inherits from QWidget and is used to implement a Matplotlib figure inside a QWidget
+    """
+
+    def __init__(self, parent=None):
+        super(MatplotlibWidget, self).__init__(parent)
+        self.figure = Figure()
+        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.axis = self.figure.add_subplot(111)
+        self.layout = QVBoxLayout(self)
+        self.toolbar = NavigationToolbar2QT(self.canvas, self)
+        self.layout.addWidget(self.canvas)
+        self.layout.addWidget(self.toolbar)
+        self.divider = make_axes_locatable(self.axis)
+        self.axis_cm = self.divider.append_axes("right", size="3%", pad=0.03)
+        self.sm = plt.cm.ScalarMappable(cmap=cm.inferno)
+        self.figure.colorbar(mappable=self.sm, cax=self.axis_cm)
 
 class MainWindow(QMainWindow):
 
@@ -312,6 +334,11 @@ class MainWindow(QMainWindow):
         self.aut_airgap_type_listWidget.addItem("Edge distributed")
         self.aut_airgap_type_listWidget.addItem("Centre distributed")
 
+        self.aut_core_geo_add_pushButton.clicked.connect(self.oncgeoMultipleClicked)
+        self.aut_select_all_core_geo_pushButton.clicked.connect(self.cgeoselectall)
+        self.aut_core_geometry_listWidget.itemDoubleClicked.connect(self.oncgeoClicked)
+        self.aut_core_geo_basket_clear_all_pushbutton.clicked.connect(self.oncgeoClearallClicked)
+        self.aut_core_geo_basket_clear_pushbutton.clicked.connect(self.oncgeoClearClicked)
 
         self.aut_core_material_add_pushButton.clicked.connect(self.oncmatMultipleClicked)
         self.aut_select_all_core_mat_pushButton.clicked.connect(self.cmatselectall)
@@ -394,45 +421,51 @@ class MainWindow(QMainWindow):
         self.aut_goal_inductance_val_lineEdit.setValidator(float_validator)
 
         "******* Database Section *********"
-
         "Signals in visualisation tab"
-        self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
+        database = mdb.MaterialDatabase()
+        self.dat_update_preview_pushbutton.clicked.connect(self.plot)
 
-    def datupdateraph(self):
+        "Plot"
+        # Create widget
+        self.matplotlib_widget1 = MatplotlibWidget()
+        self.matplotlib_widget2 = MatplotlibWidget()
 
-        # -----Enter the freq and Temp-----------
+
+
+
+    def plot(self):
+
+        self.matplotlib_widget1.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget)
+        self.layout.addWidget(self.matplotlib_widget1)
+        try:
+            self.matplotlib_widget1.axis_cm.remove()
+        except:
+            pass
+
         temperature1 = int(self.dat_mat1_temp_lineEdit.text())
         mat1_name = self.dat_core_material1_comboBox.currentText()
         mat2_name = self.dat_core_material2_comboBox.currentText()
-        mdb.compare_core_loss_flux_density_data(material_list=[mat1_name, mat2_name], temperature=temperature1)
-        plt.savefig('plot.png', dpi=300, bbox_inches='tight')
+        mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=[mat1_name, mat2_name], temperature=temperature1)
+        self.matplotlib_widget1.axis.legend(fontsize=13)
+        self.matplotlib_widget1.axis.grid()
+        self.matplotlib_widget1.figure.canvas.draw_idle()
 
-        # Loading image
-        self.pixmap = QPixmap('plot.png')
+        ################################################################################################################
 
-        # adding image to label
-        self.dat_update_graph_qlabel.setPixmap(self.pixmap)
-        w = self.dat_update_graph_qlabel.width()
-        h = self.dat_update_graph_qlabel.height()
-        self.dat_update_graph_qlabel.setPixmap(self.pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        plt.close()
+        self.matplotlib_widget2.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_2)
+        self.layout.addWidget(self.matplotlib_widget2)
+        try:
+            self.matplotlib_widget2.axis_cm.remove()
+        except:
+            pass
 
-        # Graph 2------------------------------------------------------------------------------------------------
         flux2 = float(self.dat_mat2_flux_lineEdit.text())
-        mdb.compare_core_loss_temperature(material_list=[mat1_name, mat2_name], flux = flux2)
-        plt.show()
-        plt.savefig('plot2.png', dpi=300, bbox_inches='tight')
-
-        # Loading image
-        self.pixmap = QPixmap('plot2.png')
-
-        # adding image to label
-        self.dat_update_graph_qlabel_2.setPixmap(self.pixmap)
-        w = self.dat_update_graph_qlabel_2.width()
-        h = self.dat_update_graph_qlabel_2.height()
-        self.dat_update_graph_qlabel_2.setPixmap(self.pixmap.scaled(w, h, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-
-
+        mdb.compare_core_loss_temperature(self.matplotlib_widget2, material_list=[mat1_name, mat2_name], flux = flux2)
+        self.matplotlib_widget2.axis.legend(fontsize=13)
+        self.matplotlib_widget2.axis.grid()
+        self.matplotlib_widget2.figure.canvas.draw_idle()
 
     def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
         """
@@ -457,6 +490,40 @@ class MainWindow(QMainWindow):
             self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
             self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
             self.aut_winding1_radius_lineEdit.setEnabled(True)
+
+    def oncgeoClearallClicked(self):
+        self.aut_core_geometry_basket_listWidget.clear()
+
+    def oncgeoClearClicked(self):
+        List_item = self.aut_core_geometry_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_core_geometry_basket_listWidget.takeItem(self.aut_core_geometry_basket_listWidget.row(item))
+
+    def oncgeoMultipleClicked(self):
+        itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_geometry_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_core_geometry_listWidget.selectedItems()]
+        if self.aut_min_core_width_lineEdit.text() and self.aut_max_core_width_lineEdit.text() and self.aut_step_core_width_lineEdit.text()\
+                and self.aut_min_window_height_lineEdit.text() and self.aut_max_window_height_lineEdit.text() and self.aut_step_window_height_lineEdit.text()\
+                and self.aut_min_window_width_lineEdit.text() and self.aut_max_window_width_lineEdit.text() and self.aut_step_window_width_lineEdit.text():
+            checkitems.append(f"Manual choice: {self.aut_min_core_width_lineEdit.text()}*{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_core_geometry_basket_listWidget.addItem(i)
+        else:
+            pass
+
+    def cgeoselectall(self):
+        self.aut_core_geometry_listWidget.selectAll()
+
+    def oncgeoClicked(self):
+        itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_geometry_basket_listWidget.count())]
+        checkitem = self.aut_core_geometry_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_core_geometry_basket_listWidget.addItem(self.aut_core_geometry_listWidget.currentItem().text())
+        else:
+            pass
 
     def onairgaptypeClearallClicked(self):
         self.aut_airgap_type_basket_listwidget.clear()
@@ -593,18 +660,17 @@ class MainWindow(QMainWindow):
         aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
                                     self.translation_dict['implicit_strands_number']]
-        aut_air_gap_method_options = [self.translation_dict["percent"]]
         aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
         aut_tolerance_val_options = [self.translation_dict['+-10']]
         aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
-        aut_core_geometry_options.insert(0, 'Manual')
+        #aut_core_geometry_options.insert(0, 'Manual')
         dat_core_material_options = ['N95', 'N97', 'N87']
         for option in dat_core_material_options:
             self.dat_core_material1_comboBox.addItem(option)
         for option in dat_core_material_options:
             self.dat_core_material2_comboBox.addItem(option)
         for option in aut_core_geometry_options:
-            self.aut_core_geometry_comboBox.addItem(option)
+            self.aut_core_geometry_listWidget.addItem(option)
         for option in aut_simulation_type_options:
             self.aut_simulation_type_comboBox.addItem(option)
         for option in aut_winding_material_options:
@@ -616,8 +682,6 @@ class MainWindow(QMainWindow):
         for option in aut_implicit_litz_options:
             self.aut_winding1_implicit_litz_comboBox.addItem(option)
             self.aut_winding2_implicit_litz_comboBox.addItem(option)
-        for option in aut_air_gap_method_options:
-            self.aut_air_gap_placement_method_comboBox.addItem(option)
         for option in aut_winding_scheme_options:
             self.aut_winding1_scheme_comboBox.addItem(option)
             self.aut_winding2_scheme_comboBox.addItem(option)
@@ -2311,19 +2375,78 @@ class MainWindow(QMainWindow):
 
 
     def inductancecalc(self):
+
+        air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
+        air_gap_heigth_array = []
+        air_gap_position_array = []
+        air_gap_position_tag_array = []
+
+        if air_gap_count >= 1:
+            md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
+            md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
+
+            air_gap_heigth_array.append(md_air_gap_1_height)
+            air_gap_position_array.append(md_air_gap_1_position)
+            air_gap_position_tag_array.append(0)
+
+        if air_gap_count >= 2:
+            md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
+            md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
+
+            air_gap_heigth_array.append(md_air_gap_2_height)
+            air_gap_position_array.append(md_air_gap_2_position)
+            air_gap_position_tag_array.append(0)
+
+        if air_gap_count >= 3:
+            md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
+            md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
+
+            air_gap_heigth_array.append(md_air_gap_3_height)
+            air_gap_position_array.append(md_air_gap_3_position)
+            air_gap_position_tag_array.append(0)
+
+        if air_gap_count >= 4:
+            md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
+            md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
+
+            air_gap_heigth_array.append(md_air_gap_4_height)
+            air_gap_position_array.append(md_air_gap_4_position)
+            air_gap_position_tag_array.append(0)
+
+        if air_gap_count >= 5:
+            md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
+            md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
+
+            air_gap_heigth_array.append(md_air_gap_5_height)
+            air_gap_position_array.append(md_air_gap_5_position)
+            air_gap_position_tag_array.append(0)
+
         self.core_w = comma_str_to_point_float(self.md_core_width_lineEdit.text())
         self.window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text())
         self.window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text())
         n_turns=int(self.md_winding1_turns_lineEdit.text())
         method=(self.md_air_gap_placement_method_comboBox.currentText())
-        n_air_gaps=int(self.md_air_gap_count_comboBox.currentText())
+        murel = database.get_initial_permeability("N95")
         air_gap_h = self.md_air_gap_1_length_lineEdit.text()
         air_gap_position = self.md_air_gap_1_position_lineEdit.text()
-        mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
-                                      [air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
+        #mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
+                                      #[air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
 
-        mc1.core_reluctance()
-        mc1.air_gap_reluctance()
+        if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
+            mc1 = fmt.MagneticCircuit(core_w=[self.core_w], window_h=[self.window_h], window_w=[self.window_w], no_of_turns=[n_turns],
+                                      n_air_gaps=[air_gap_count],air_gap_h= air_gap_heigth_array, air_gap_position= air_gap_position_array,
+                                      mu_rel=[murel],mult_air_gap_type=[1, 2],air_gap_method='percent',
+                                      component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')  # 0.0149
+        elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['manually']:
+            mc1 = fmt.MagneticCircuit(core_w=[self.core_w], window_h=[self.window_h], window_w=[self.window_w],
+                                      no_of_turns=[n_turns],
+                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_heigth_array,
+                                      air_gap_position=air_gap_position_array,
+                                      mu_rel=[murel], mult_air_gap_type=[1, 2], air_gap_method='manually',
+                                      component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')
+
+
+        mc1.calculate_inductance()
         inductance = mc1.data_matrix[:, 9]
 
         self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
