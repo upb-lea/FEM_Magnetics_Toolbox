@@ -26,7 +26,7 @@ mc1.air_gap_reluctance()
 
 def aut_action_run_simulation(sim_value):
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
-    core = fmt.Core(core_w=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
+    core = fmt.Core(core_inner_diameter=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
                     mu_rel=3100, phi_mu_deg=12,
                     sigma=0.6)
     geo.set_core(core)

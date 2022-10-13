@@ -21,33 +21,33 @@ if sweep == "air_gap_height":
             os.mkdir(directory)
 
         working_directories.append(directory)
-        print(working_directories)
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=directory, silent=True)
 
         core_db = fmt.core_database()["PQ 40/40"]
-
-        core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+        core = fmt.Core(core_inner_diameter=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
                         material="95_100")
-                        # mu_rel=3000, phi_mu_deg=10,
-                        # sigma=0.5)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, height)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, height, 50)
         geo.set_air_gaps(air_gaps)
 
-        winding = fmt.Winding(9, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
-        winding.set_litz_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, fill_factor=None)
-        geo.set_windings([winding])
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+        insulation.add_winding_insulations([0.0005])
+        geo.set_insulation(insulation)
 
-        isolation = fmt.Isolation()
-        isolation.add_core_isolations(0.001, 0.001, 0.004, 0.001)
-        isolation.add_winding_isolations(0.0005)
-        geo.set_isolation(isolation)
+        winding_window = fmt.WindingWindow(core, insulation)
+        complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        conductor = fmt.Conductor(0, fmt.Conductivity.Copper)
+        conductor.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
+                                            fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+        complete.set_winding(conductor, 9, None)
+        geo.set_winding_window(winding_window)
 
         geo.create_model(freq=100000, visualize_before=False, save_png=False)
-
         geo.single_simulation(freq=100000, current=[4.5], show_results=False)
 
     # After the simulations the sweep can be analyzed

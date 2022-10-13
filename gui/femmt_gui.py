@@ -8,7 +8,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import cm
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem, QDialog
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
@@ -18,6 +18,8 @@ import os
 import PIL
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
+
+from gui.onelab_path_popup import OnelabPathDialog
 database = mdb.MaterialDatabase()
 from matplotlib.widgets import Cursor
 import mplcursors
@@ -81,7 +83,8 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.md_simulation_type_comboBox = None
         self.aut_simulation_type_comboBox = None
-        uic.loadUi('femmt_gui.ui', self)
+        ui_file_path = os.path.join(os.path.dirname(__file__), "femmt_gui.ui")
+        uic.loadUi(ui_file_path, self)
         _translate = QtCore.QCoreApplication.translate
         #self.setWindowIcon(QIcon('Images\\logo.png'))
         self.setWindowTitle(_translate("MainWindow", "FEM Magnetics Toolbox"))
@@ -425,23 +428,27 @@ class MainWindow(QMainWindow):
         database = mdb.MaterialDatabase()
         self.dat_update_preview_pushbutton.clicked.connect(self.plot)
 
-        "Plot"
-        # Create widget
-        self.matplotlib_widget1 = MatplotlibWidget()
-        self.matplotlib_widget2 = MatplotlibWidget()
+    def check_onelab_config(self, geo: fmt.MagneticComponent):
+        # Ask for onelab path (if no config file exists)
+        if not os.path.isfile(geo.file_data.config_path):
+            onelab_path_dialog = OnelabPathDialog()
+            valid = onelab_path_dialog.exec_()
+            if valid is None:
+                raise Exception("Something went wrong while entering onelab path")
+            elif valid == 1:
+                onelab_path = onelab_path_dialog.directory
+                if os.path.isdir(onelab_path):
+                    onelab_path_dict = {"onelab": onelab_path}
+                    with open(geo.file_data.config_path, 'w', encoding='utf-8') as fd:
+                        json.dump(onelab_path_dict, fd, indent=2, ensure_ascii=False)
+                else:
+                    raise Exception(f"{onelab_path} is not a valid folder path")
+            elif valid == 0:
+                sys.exit(-1)
+            else:
+                raise Exception(f"Unknown return type from OnelabPathDialog: {valid}")
 
-
-
-
-    def plot(self):
-
-        self.matplotlib_widget1.axis.clear()
-        self.layout = QVBoxLayout(self.plotwidget)
-        self.layout.addWidget(self.matplotlib_widget1)
-        try:
-            self.matplotlib_widget1.axis_cm.remove()
-        except:
-            pass
+    def datupdateraph(self):
 
         temperature1 = int(self.dat_mat1_temp_lineEdit.text())
         mat1_name = self.dat_core_material1_comboBox.currentText()
@@ -744,8 +751,9 @@ class MainWindow(QMainWindow):
 
     def aut_action_run_simulation(self, sim_value):
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
-        core = fmt.Core(core_w=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, is_gui=True)
+        self.check_onelab_config(geo)
+        core = fmt.Core(core_inner_diameter=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
                         mu_rel=3100, phi_mu_deg=12,
                         sigma=0.6)
         geo.set_core(core)
@@ -1686,11 +1694,11 @@ class MainWindow(QMainWindow):
         returns: femmt MagneticComponent
 
         """
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, is_gui=True)
+        self.check_onelab_config(geo)
+
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.md_simulation_QLabel.setText('simulation startet...')
-
-            #geo = fmt.MagneticComponent(component_type="inductor")
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor)
 
             # -----------------------------------------------
             # Core
@@ -1701,7 +1709,7 @@ class MainWindow(QMainWindow):
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()))"""
 
-            core = fmt.Core(core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
+            core = fmt.Core(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             mu_rel=3100, phi_mu_deg=12,
@@ -1893,14 +1901,16 @@ class MainWindow(QMainWindow):
 
             self.md_simulation_QLabel.setText('simulation startet...')
 
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer)
+            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, is_gui=True)
+            self.check_onelab_config()
+
             #geo = fmt.MagneticComponent(component_type="transformer")
 
 
             # -----------------------------------------------
             # Core
             # -----------------------------------------------
-            core = fmt.Core(core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
+            core = fmt.Core(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             mu_rel=3100, phi_mu_deg=12,

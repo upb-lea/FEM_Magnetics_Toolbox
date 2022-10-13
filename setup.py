@@ -44,6 +44,7 @@ setup(
 					  'scipy>=1.7.2',
                       'pytest',
                       'PyQt5>=5.15.6',
+                      'mplcursors>=0.5.1' # TODO Is this necessary?
 					  ],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
@@ -61,7 +62,7 @@ setup(
         "Documentation": "https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html",
         "Source Code": "https://github.com/upb-lea/FEM_Magnetics_Toolbox",
     },
-    version='0.2.1',
+    version='0.3.0',
     zip_safe=False,
     data_files=[('', ['CHANGELOG.md'])]
 )
