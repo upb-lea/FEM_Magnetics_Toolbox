@@ -17,7 +17,7 @@ core_db2 = fmt.core_database()["PQ 20/20"]
 core_db3 = fmt.core_database()["PQ 26/20"]
 core_db4 = fmt.core_database()["PQ 26/25"]
 
-core_width_list = [core_db1["core_w"], core_db2["core_w"], core_db3["core_w"], core_db4["core_w"]]
+core_width_list = [core_db1["core_inner_diameter"], core_db2["core_inner_diameter"], core_db3["core_inner_diameter"], core_db4["core_inner_diameter"]]
 core_window_w_list = [core_db1["window_w"], core_db2["window_w"], core_db3["window_w"], core_db4["window_w"]]
 core_window_h_list = [core_db1["window_h"], core_db2["window_h"], core_db3["window_h"], core_db4["window_h"]]
 
@@ -101,11 +101,11 @@ qwerty = 1
 #     # winding.set_solid_conductor(0.0015)
 #     geo.set_windings([winding])
 #
-#     # 5. set isolations
-#     isolation = fmt.Isolation()
-#     isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-#     isolation.add_winding_isolations(0.0001)
-#     geo.set_isolation(isolation)
+#     # 5. set insulations
+#     insulation = fmt.insulation()
+#     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+#     insulation.add_winding_insulations(0.0001)
+#     geo.set_insulation(insulation)
 #
 #     # 5. create the model
 #     geo.create_model(freq=100000, visualize_before=False, save_png=False)
