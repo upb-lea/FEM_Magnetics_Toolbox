@@ -51,7 +51,7 @@ def femmt_simulation(temp_folder):
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True, is_gui=True)
 
         # Set onelab path manually
-        geo.file_data.onelab_path = onelab_folder
+        geo.file_data.onelab_folder_path = onelab_folder
         
         core_db = fmt.core_database()["PQ 40/40"]
 
