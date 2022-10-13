@@ -32,7 +32,7 @@ jobs:
             # Answer here: https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo
             sudo apt install libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libglu1
             # Unzip used for onelab
-            sudo apt install unzip 
+            sudo apt install unzip
             pip install --upgrade pip
             pip install opencv-python
             pip install -e .
@@ -41,22 +41,21 @@ jobs:
       - name: Install ONELAB
         run: |
           wget https://onelab.info/files/onelab-Linux64.zip
-          unzip onelab-Linux64.zip -d onelab
+          unzip onelab-Linux64.zip -d .
+          mv onelab-Linux64 onelab
           rm onelab-Linux64.zip
 
       # Runs a set of commands using the runners shell
       - name: Run pytests
         run: |
           echo Start testing...
-          cd tests/
-          pytest
+          pytest tests
           echo tests finished.
-          
+
       - name: Install sphinx and build documentation with sphinx
         run: |
           pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email
           pwd
           ls
-          cd sphinx/
+          cd documentation/
           make html
-          

@@ -1,6 +1,6 @@
 import numpy as np
 from femmt import MagneticComponent
-from femmt_functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
+from Functions import get_dict_with_unique_keys, get_dicts_with_keys_and_values, find_common_frequencies, \
     sort_out_small_harmonics
 from DAB.optimization.global_grid.DAB_Input_Data import working_points, power_nom
 
@@ -103,7 +103,7 @@ geo.air_gaps.update(method="percent",
                                       / parameters["window_h"] * 100])
 
 geo.stray_path.update(start_index=0,
-                      radius=geo.core.core_w / 2 + geo.core.window_w - parameters["R_stray"])
+                      radius=geo.core.core_inner_diameter / 2 + geo.core.window_w - parameters["R_stray"])
 
 geo.update_conductors(n_turns=[[parameters["N"][0, 0], parameters["N"][1, 0]],
                                [parameters["N"][0, 1], parameters["N"][1, 1]]],
