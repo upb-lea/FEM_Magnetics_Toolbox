@@ -411,5 +411,3 @@ if __name__ == '__main__':
     design_name = "sweep_examples_2"
     load_design(design_name)
 
-    # temp_var1 = material_db.permeability_data_to_pro_file(30, 100000, "N95", "manufacturer_datasheet")
-    # temp_var2 = material_db.permeability_data_to_pro_file(30, 100000, "N87", "manufacturer_datasheet")

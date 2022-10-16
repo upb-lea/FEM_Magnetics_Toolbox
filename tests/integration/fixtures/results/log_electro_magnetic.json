@@ -66,9 +66,7 @@
     "core": 0.005229138216900487
   },
   "simulation_settings": {
-    "date": "2022-09-12 13:57:20",
     "component_type": "Inductor",
-    "working_directory": "c:\\Uni\\Bachelorarbeit\\github\\FEM_Magnetics_Toolbox\\femmt\\examples\\example_results\\inductor",
     "core": {
       "core_inner_diameter": 0.0149,
       "window_w": 0.01105,
@@ -80,34 +78,6 @@
       "sigma": 0.16666666666666666,
       "non_linear": false,
       "correct_outer_leg": false
-    },
-    "air_gaps": {
-      "method": "Percent",
-      "air_gap_number": 2,
-      "air_gaps": [
-        {
-          "leg_position": "CenterLeg",
-          "position_value": 10,
-          "height": 0.0005
-        },
-        {
-          "leg_position": "CenterLeg",
-          "position_value": 90,
-          "height": 0.0005
-        }
-      ]
-    },
-    "insulation": {
-      "inner_winding_insulations": [
-        0.0005
-      ],
-      "core_insulations": [
-        0.001,
-        0.001,
-        0.004,
-        0.001
-      ],
-      "vww_insulation": 0.0001
     },
     "virtual_winding_windows": [
       {
@@ -135,6 +105,49 @@
           9
         ]
       }
-    ]
+    ],
+    "air_gaps": {
+      "method": "Percent",
+      "air_gap_number": 2,
+      "air_gaps": [
+        {
+          "leg_position": "CenterLeg",
+          "position_value": 10,
+          "height": 0.0005
+        },
+        {
+          "leg_position": "CenterLeg",
+          "position_value": 90,
+          "height": 0.0005
+        }
+      ]
+    },
+    "insulation": {
+      "inner_winding_insulations": [
+        0.0005
+      ],
+      "core_insulations": [
+        0.001,
+        0.001,
+        0.004,
+        0.001
+      ],
+      "vww_insulation": 0.0001
+    }
+  },
+  "misc": {
+    "core_2daxi_volume": 1.9422585955845275e-05,
+    "core_2daxi_total_volume": 4.61718454654407e-05,
+    "core_2daxi_weight": -1,
+    "wire_lengths": [
+      0.7209955139988575
+    ],
+    "wire_volumes": [
+      3.827975414984513e-06
+    ],
+    "wire_weight": -1,
+    "core_cost": -1,
+    "winding_cost": -1,
+    "total_cost_incl_margin": -1
   }
 }

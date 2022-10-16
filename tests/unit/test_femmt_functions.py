@@ -39,3 +39,19 @@ def test_find_common_frequencies():
     common_phase = [[10, 50], [20, 60], [30, 70], [40, 90]]
     out_test = [common_f, common_a, common_phase]
     assert out == out_test
+
+def test_cost_function_core():
+    assert femmt.cost_function_core(1, "ferrite") == 5.5
+    assert femmt.cost_function_core(1.25, "ferrite") == 6.875
+    assert femmt.cost_function_core(1.25, "nanocristalline") == 28.75
+
+def test_cost_function_winding():
+    assert femmt.cost_function_winding([0.1], [femmt.ConductorType.RoundSolid.name]) == [4.7]
+    assert femmt.cost_function_winding([0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == [4.7, 35.1]
+    single_strand_cross_section_75um = (75e-6 / 2) ** 2 * np.pi
+    assert femmt.cost_function_winding([0.1], [femmt.ConductorType.RoundLitz.name], [single_strand_cross_section_75um]) == [pytest.approx(7, rel=1e-3)]
+
+def test_cost_function_total():
+    assert femmt.cost_function_total(1.25, "ferrite" ,[0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == pytest.approx(62.233, rel=1e-3)
+
+
