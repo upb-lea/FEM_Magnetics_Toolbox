@@ -15,32 +15,22 @@ material_db = mdb.MaterialDatabase()
 def automated_design_func():
     # ########################################   {DESIGN PARAMETERS}   #################################################
 
-    save_directory_name = "sweep_examples_2"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
     goal_inductance = 120 * 1e-6
-
     L_tolerance_percent = 10
     winding_factor = 0.91
-    i_max = 3                               # Max current amplitude with assumption of sinusoidal current waveform
+    i_max = 8                               # Max current amplitude with assumption of sinusoidal current waveform
     percent_of_B_sat = 70                   # Percent of B_sat allowed in the designed core
-
-
-
-    percent_of_total_loss = 100              # Percent of total_loss allowed in FEM simulation
+    percent_of_total_loss = 30              # Percent of total_loss allowed in FEM simulation
 
     freq = 100 * 1e3                        # Switching frequency in Hz
     mu_imag = 100                           # TODO: coordinate with Aniket
     Cu_sigma = 5.96 * 1e7                   # copper conductivity (sigma) @ 20 degree celsius
 
-    # temp_var1 = material_db.permeability_data_to_pro_file(30, 100000, "N95", "manufacturer_datasheet")
-    # temp_var2 = material_db.permeability_data_to_pro_file(30, 100000, "N87", "manufacturer_datasheet")
-
     # Set core-geometry from core database or/and manual entry
-
-    manual_core_w = list(np.linspace(0.007, 0.020, 3))
-    manual_window_h = list(np.linspace(0.007, 0.020, 3))
-    manual_window_w = list(np.linspace(0.010, 0.019, 3))
+    manual_core_w = list(np.linspace(0.005, 0.05, 10))
+    manual_window_h = list(np.linspace(0.01, 0.08, 5))
+    manual_window_w = list(np.linspace(0.005, 0.04, 10))
     db_core_names = []  # "PQ 40/40", "PQ 40/30"
-
 
     all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
     manual_core_w = [item[0] for item in all_manual_combinations]
@@ -58,10 +48,9 @@ def automated_design_func():
 
     # Set winding settings (Solid and Litz winding type)
     solid_conductor_r = [0.0013]
+    litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
 
     litz_db = fmt.litz_database()
-
-    litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
     litz_conductor_r = [litz_db[litz_name]["conductor_radii"] for litz_name in litz_names]
     litz_strand_r = [litz_db[litz_name]["strand_radii"] for litz_name in litz_names]
     litz_strand_n = [litz_db[litz_name]["strands_numbers"] for litz_name in litz_names]
@@ -69,9 +58,10 @@ def automated_design_func():
     min_conductor_r = min(litz_conductor_r + solid_conductor_r)
 
     # Set air-gap and core parameters
-    no_of_turns = [8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N)
+    no_of_turns = [2, 3, 4, 5, 6, 7]  # Set No. of turns (N)
+    print(f"{no_of_turns = }")
     n_air_gaps = [1, 2]  # Set No. of air-gaps (n)
-    air_gap_height = list(np.linspace(0.0001, 0.0005, 3))  # Set air-gap length in metre (l)
+    air_gap_height = list(np.linspace(0.0001, 0.0005, 5))  # Set air-gap length in metre (l)
     air_gap_position = list(np.linspace(20, 80, 2))  # Set air-gap position in percent w.r.t. core window height
 
     material_names = ["N95"]  # Set relative permeability in F/m (u) , "N87"
@@ -85,6 +75,7 @@ def automated_design_func():
     # 'Type1 = with corner air-gaps; 'Type2' = without corner air-gaps; 'Type0' = single air-gap
     mult_air_gap_type = [2]
     # TODO: check if the issue has been resolved
+
     # ######################################   {RELUCTANCE_CALCULATION}   ##############################################
     # Call to Reluctance model (Class MagneticCircuit)
     mc1 = fmt.MagneticCircuit(core_w=core_w_list, window_h=window_h_list, window_w=window_w_list,
@@ -118,8 +109,6 @@ def automated_design_func():
 
     # 3rd Filter:-------------------------------------------------------------------------------------------------------
     # Filter out cases where B_max is greater than B_sat
-
-    # Create dict for B_saturation from the material database
     B_sat_dict = {}
     counter1 = 0
     for material_name in material_names:
@@ -192,13 +181,26 @@ def automated_design_func():
     param["DC_loss"] = 19
 
     total_loss = DC_loss + total_hyst_loss
+    max_total_loss = max(total_loss)
+    normalized_total_loss = total_loss / max_total_loss
     data_matrix_3 = np.hstack((data_matrix_3, np.reshape(total_loss, (len(total_loss), 1))))  # position: 20
     param["total_loss"] = 20
+    data_matrix_3 = np.hstack((data_matrix_3, np.reshape(normalized_total_loss, (len(normalized_total_loss), 1))))  # position: 20
+    param["normalized_total_loss"] = 21
+
+    total_volume = np.pi * (data_matrix_3[:, param["r_outer"]] ** 2) * data_matrix_3[:, param["core_h_middle"]]
+    max_volume = max(total_volume)
+    normalized_total_volume = total_volume / max_volume
+    data_matrix_3 = np.hstack((data_matrix_3, np.reshape(total_volume, (len(total_volume), 1))))  # position: 20
+    param["total_volume"] = 22
+    data_matrix_3 = np.hstack((data_matrix_3, np.reshape(normalized_total_volume, (len(normalized_total_volume), 1))))  # position: 20
+    param["normalized_total_volume"] = 23
 
     # Sort the data_matrix with respect to total losses column----------------------------------------------------------
-    data_matrix_3 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
+    # data_matrix_4 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
+    FEM_data_matrix  = data_matrix_3[np.where(data_matrix_3[:, param["normalized_total_loss"]] * data_matrix_3[:, param["normalized_total_volume"]] <= 0.01)]
 
-    FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
+    # FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
     n_cases_FEM = len(FEM_data_matrix)
 
     # ##########################################   {FEM_SIMULATION}   ##################################################
@@ -212,7 +214,6 @@ def automated_design_func():
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-
     if not os.path.exists(os.path.join(os.path.dirname(__file__), save_directory_name)):
         os.mkdir(os.path.join(os.path.dirname(__file__), save_directory_name))
 
@@ -223,23 +224,23 @@ def automated_design_func():
     src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
                "inductor/results/log_electro_magnetic.json"
 
-
     counter3 = 0
     for j in range(len(solid_conductor_r) + len(litz_conductor_r)):
         conductor_r_list = litz_conductor_r + solid_conductor_r
         for i in range(len(FEM_data_matrix)):
+            print(f"value of i:{i}")
             if not ((FEM_data_matrix[i, param["no_of_turns"]] * np.pi * conductor_r_list[j] ** 2)
                     < (winding_factor * FEM_data_matrix[i, param["window_h"]] * mc1.data_matrix[i, param["window_w"]])):
                 continue
 
             # MagneticComponent class object
-
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=False)
+            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
 
             core = fmt.Core(core_inner_diameter=FEM_data_matrix[i, param["core_w"]], window_w=FEM_data_matrix[i, param["window_w"]],
-
                             window_h=FEM_data_matrix[i, param["window_h"]],
                             material="95_100")
+            # mu_rel = 3000, phi_mu_deg = 10,
+            # sigma = 0.5)
             # TODO: wait for material update
             # mu_rel=3000, phi_mu_deg=10,
             # sigma=0.5)
@@ -292,15 +293,21 @@ def automated_design_func():
             vww.set_winding(winding, int(FEM_data_matrix[i, param["no_of_turns"]]), None)
             geo.set_winding_window(winding_window)
 
-            try:
-                # 5. create the model
-                geo.create_model(freq=freq, visualize_before=False, save_png=False)
+            # try:
+            #     # 5. create the model
+            #     geo.create_model(freq=freq, visualize_before=False, save_png=False)
+            #
+            #     # 6. start simulation
+            #     geo.single_simulation(freq=freq, current=[i_max], show_results=False)
+            # except (Exception,) as e:
+            #     print("next iteration")
+            #     logging.exception(e)
 
-                # 6. start simulation
-                geo.single_simulation(freq=freq, current=[i_max], show_results=False)
-            except (Exception,) as e:
-                print("next iteration")
-                logging.exception(e)
+            # 5. create the model
+            geo.create_model(freq=freq, visualize_before=False, save_png=False)
+
+            # 6. start simulation
+            geo.single_simulation(freq=freq, current=[i_max], show_results=False)
 
             shutil.copy2(src_path, os.path.join(os.path.dirname(__file__), save_directory_name))
             old_filename = os.path.join(os.path.dirname(__file__), save_directory_name, "log_electro_magnetic.json")
@@ -315,6 +322,9 @@ def load_design(load_directory_name):
     working_directories = []
     labels = []
     working_directory = os.path.join(os.path.dirname(__file__), load_directory_name)
+    print("##########################")
+    print(f"{working_directory =}")
+    print("##########################")
     file_names = [f for f in listdir(working_directory) if isfile(join(working_directory, f))]
     file_names.sort()
     counter2 = 0
@@ -395,8 +405,11 @@ def load_design(load_directory_name):
 
 
 if __name__ == '__main__':
+    save_directory_name = "sweep_examples_2"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
     automated_design_func()
 
     design_name = "sweep_examples_2"
     load_design(design_name)
 
+    # temp_var1 = material_db.permeability_data_to_pro_file(30, 100000, "N95", "manufacturer_datasheet")
+    # temp_var2 = material_db.permeability_data_to_pro_file(30, 100000, "N87", "manufacturer_datasheet")
