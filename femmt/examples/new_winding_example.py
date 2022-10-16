@@ -14,7 +14,7 @@ geo = fmc.MagneticComponent(component_type=ComponentType.Transformer, working_di
 
 core_db = ff.core_database()["PQ 40/40"]
 
-core = model.Core(core_inner_diameter=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+core = model.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
                 material="95_100")
 
 geo.set_core(core)

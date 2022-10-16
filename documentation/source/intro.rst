@@ -85,3 +85,4 @@ Helper functions
 .. automodule:: femmt.Functions
     :members: core_database, litz_database, wire_material_database
 
+.. include:: developer_notes.rst

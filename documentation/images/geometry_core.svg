@@ -28,12 +28,12 @@
      inkscape:document-units="mm"
      showgrid="true"
      inkscape:zoom="1.6819304"
-     inkscape:cx="353.76018"
-     inkscape:cy="136.15308"
-     inkscape:window-width="1920"
-     inkscape:window-height="1172"
-     inkscape:window-x="1920"
-     inkscape:window-y="0"
+     inkscape:cx="287.76458"
+     inkscape:cy="68.373816"
+     inkscape:window-width="1280"
+     inkscape:window-height="964"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer1"
      showguides="false">
@@ -285,18 +285,26 @@
          transform="scale(-0.4)"
          inkscape:connector-curvature="0" />
     </marker>
+    <marker
+       inkscape:stockid="TriangleInM"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker14281-6-0-3"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path14279-0-6-6"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         transform="scale(-0.4)"
+         inkscape:connector-curvature="0" />
+    </marker>
   </defs>
   <g
      inkscape:label="Ebene 1"
      inkscape:groupmode="layer"
      id="layer1">
-    <rect
-       style="opacity:0.4;fill:#c01c28;stroke:#c01c28;stroke-width:0.264583"
-       id="rect5473-54-6-2"
-       width="10.583335"
-       height="1.3229116"
-       x="31.781641"
-       y="15.90663" />
     <rect
        style="opacity:1;fill:#5e5c64;stroke:#5e5c64;stroke-width:0.264583"
        id="rect5413-6-7-2-8"
@@ -341,7 +349,7 @@
     <path
        inkscape:connector-curvature="0"
        id="path5718-7-5-9-2"
-       d="m 32.543749,33.072916 h 8.99584"
+       d="m 32.54375,20.902083 h 8.99584"
        style="fill:none;stroke:#000000;stroke-width:0.264999;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#TriangleInM-6-1);marker-end:url(#TriangleOutM-1)"
        sodipodi:nodetypes="cc" />
     <path
@@ -365,14 +373,14 @@
     <text
        xml:space="preserve"
        style="font-size:3.52778px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
-       x="42.862495"
-       y="33.866661"
+       x="43.723278"
+       y="6.3605843"
        id="text9979"><tspan
          sodipodi:role="line"
          id="tspan9977"
-         x="42.862495"
-         y="33.866661"
-         style="font-size:3.52778px;stroke-width:0.264583">core_w</tspan></text>
+         x="43.723278"
+         y="6.3605843"
+         style="font-size:3.52778px;stroke-width:0.264583">core_inner_diameter</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:3.52777px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
@@ -435,6 +443,12 @@
        id="path5293-3-6-3"
        d="M 11.641667,47.624999 9.2604175,54.239583"
        style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.529167, 0.529167;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#marker14281-6-0)"
+       sodipodi:nodetypes="cc" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path5293-3-6-3-7"
+       d="M 39.6875,19.84375 48.947917,6.6145833"
+       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.529167, 0.529167;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#marker14281-6-0-3)"
        sodipodi:nodetypes="cc" />
   </g>
 </svg>

@@ -41,15 +41,15 @@ jobs:
       - name: Install ONELAB
         run: |
           wget https://onelab.info/files/onelab-Linux64.zip
-          unzip onelab-Linux64.zip -d onelab
+          unzip onelab-Linux64.zip -d .
+          mv onelab-Linux64 onelab
           rm onelab-Linux64.zip
 
       # Runs a set of commands using the runners shell
       - name: Run pytests
         run: |
           echo Start testing...
-          cd tests/
-          pytest
+          pytest tests
           echo tests finished.
 
       - name: Install sphinx and build documentation with sphinx

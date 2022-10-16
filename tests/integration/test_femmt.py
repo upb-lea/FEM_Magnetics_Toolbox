@@ -9,56 +9,61 @@ def compare_result_logs(first_log, second_log):
 
     with open(first_log, "r") as fd:
         first_content = json.loads(fd.read())
-        del first_content["simulation_settings"]["date"]
-        del first_content["simulation_settings"]["working_directory"]
+        if "date" in first_content["simulation_settings"]:
+            del first_content["simulation_settings"]["date"]
+        if "working_directory" in first_content["simulation_settings"]:
+            del first_content["simulation_settings"]["working_directory"]
 
     with open(second_log, "r") as fd:
         second_content = json.loads(fd.read())
-        del second_content["simulation_settings"]["date"]
-        del second_content["simulation_settings"]["working_directory"]
+        if "date" in second_content["simulation_settings"]:
+            del second_content["simulation_settings"]["date"]
+        if "working_directory" in second_content["simulation_settings"]:
+            del second_content["simulation_settings"]["working_directory"]
 
+    print(first_content)
+    print(second_content)
     return first_content == second_content
 
 @pytest.fixture
 def temp_folder():
-    # Setup
+    # Setup temp folder
     temp_folder_path = os.path.join(os.path.dirname(__file__), "temp")
 
     if not os.path.exists(temp_folder_path):
         os.mkdir(temp_folder_path)
 
-    # Create config.json
-    config_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
-    if os.path.exists(config_file_path):
-        config_content = {"onelab": config_file_path}
-        with open(os.path.join(temp_folder_path, "config.json"), "w") as fd:
-            fd.write(json.dumps(config_content))
-    else:
-        assert 0, "onelab folder not found"
-        exit(0)
+    # Get onelab path
+    onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
 
     # Test
-    yield temp_folder_path
+    yield temp_folder_path, onelab_path
 
 @pytest.fixture
 def femmt_simulation(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    
     # Create new temp folder, build model and simulate
     try:
-        working_directory = temp_folder
+        working_directory = temp_folder_path
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
+        # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True, is_gui=True)
 
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+        
         core_db = fmt.core_database()["PQ 40/40"]
 
-        core = fmt.Core(core_inner_diameter=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+        core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
                         material="95_100")
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 10, 0.0005)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 90, 0.0005)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 10)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
         geo.set_air_gaps(air_gaps)
 
         insulation = fmt.Insulation()
@@ -118,7 +123,7 @@ def femmt_simulation(temp_folder):
     except KeyboardInterrupt:
         print("Keyboard interrupt..")
 
-    return os.path.join(temp_folder, "results", "log_electro_magnetic.json")
+    return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
 
 def test_femmt(femmt_simulation):
     """
@@ -128,7 +133,7 @@ def test_femmt(femmt_simulation):
     Those differences could even occur when running the simulation on different machines
     -> This was observed when creating a docker image and running the tests.
 
-    Now as an exaple only the result log will be checked.
+    Now as an example only the result log will be checked.
     """
     test_result_log = femmt_simulation
 

@@ -61,7 +61,7 @@ Now the core object can be created and added to the model (geo object)
 
 .. code:: python
 
-   core = fmt.Core(core_w=core_db["core_w"], window_w=core_db["window_w"], window_h=core_db["window_h"], material="95_100")
+   core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"], material="95_100")
    core.set_core(core)
 
 Material database
