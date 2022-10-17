@@ -16,7 +16,7 @@ def automated_design_func():
     # ########################################   {DESIGN PARAMETERS}   #################################################
 
     goal_inductance = 120 * 1e-6
-    L_tolerance_percent = 10
+    L_tolerance_percent = 10                # Inductance tolerance of +-10% is applied
     winding_factor = 0.91
     i_max = 8                               # Max current amplitude with assumption of sinusoidal current waveform
     percent_of_B_sat = 70                   # Percent of B_sat allowed in the designed core
@@ -48,7 +48,7 @@ def automated_design_func():
 
     # Set winding settings (Solid and Litz winding type)
     solid_conductor_r = [0.0013]
-    litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
+    litz_names = []  # "1.5x105x0.1", "1.4x200x0.071"
 
     litz_db = fmt.litz_database()
     litz_conductor_r = [litz_db[litz_name]["conductor_radii"] for litz_name in litz_names]
@@ -58,7 +58,7 @@ def automated_design_func():
     min_conductor_r = min(litz_conductor_r + solid_conductor_r)
 
     # Set air-gap and core parameters
-    no_of_turns = [2, 3, 4, 5, 6, 7]  # Set No. of turns (N)
+    no_of_turns = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]  # Set No. of turns (N)
     print(f"{no_of_turns = }")
     n_air_gaps = [1, 2]  # Set No. of air-gaps (n)
     air_gap_height = list(np.linspace(0.0001, 0.0005, 5))  # Set air-gap length in metre (l)
@@ -145,7 +145,6 @@ def automated_design_func():
 
     # 4th Filter:-------------------------------------------------------------------------------------------------------
     # Filter out data-matrix according to calculated hysteresis loss + DC winding loss
-
     # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
     volume_center = (np.pi * (data_matrix_3[:, param["core_w"]] / 2) ** 2) * \
                     (data_matrix_3[:, param["window_h"]] + data_matrix_3[:, param["core_h_middle"]] -
@@ -198,7 +197,7 @@ def automated_design_func():
 
     # Sort the data_matrix with respect to total losses column----------------------------------------------------------
     # data_matrix_4 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
-    FEM_data_matrix  = data_matrix_3[np.where(data_matrix_3[:, param["normalized_total_loss"]] * data_matrix_3[:, param["normalized_total_volume"]] <= 0.01)]
+    FEM_data_matrix = data_matrix_3[np.where(data_matrix_3[:, param["normalized_total_loss"]] * data_matrix_3[:, param["normalized_total_volume"]] <= 0.01)]
 
     # FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
     n_cases_FEM = len(FEM_data_matrix)
@@ -238,9 +237,9 @@ def automated_design_func():
 
             core = fmt.Core(core_inner_diameter=FEM_data_matrix[i, param["core_w"]], window_w=FEM_data_matrix[i, param["window_w"]],
                             window_h=FEM_data_matrix[i, param["window_h"]],
-                            material="95_100")
-            # mu_rel = 3000, phi_mu_deg = 10,
-            # sigma = 0.5)
+                            # material="95_100")
+            mu_rel=3000, phi_mu_deg=10,
+            sigma=0.5)
             # TODO: wait for material update
             # mu_rel=3000, phi_mu_deg=10,
             # sigma=0.5)
