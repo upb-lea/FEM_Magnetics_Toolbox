@@ -11,34 +11,35 @@ import logging
 
 material_db = mdb.MaterialDatabase()
 
-
-def automated_design_func():
+def automated_design_func(self):
     # ########################################   {DESIGN PARAMETERS}   #################################################
 
-    save_directory_name = "sweep_examples_2"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
-    goal_inductance = 120 * 1e-6
+    save_directory_name = "sweep_examples_2" #Include Directory name in FEM Simulation
+    # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
+    goal_inductance = self.aut_goal_inductance_val_lineEdit.text() # 120 * 1e-6 #Automated design-Reluctacne model-Goal Inductance
+    L_tolerance_percent = 10 #+/-10%
+    winding_factor = 0.91 #Include
+    i_max = 3     #Automated design-Reluctacne model
+    # Max current amplitude with assumption of sinusoidal current waveform
+    percent_of_B_sat = 70        #Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
 
-    L_tolerance_percent = 10
-    winding_factor = 0.91
-    i_max = 3                               # Max current amplitude with assumption of sinusoidal current waveform
-    percent_of_B_sat = 70                   # Percent of B_sat allowed in the designed core
 
 
+    percent_of_total_loss = 100    #Automated design-Reluctacne model-%hysterisis loss(total loss)
+    # Percent of total_loss allowed in FEM simulation
 
-    percent_of_total_loss = 100              # Percent of total_loss allowed in FEM simulation
-
-    freq = 100 * 1e3                        # Switching frequency in Hz
+    freq = 100 * 1e3   #Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
     mu_imag = 100                           # TODO: coordinate with Aniket
-    Cu_sigma = 5.96 * 1e7                   # copper conductivity (sigma) @ 20 degree celsius
+    Cu_sigma = 5.96 * 1e7     #Constant              # copper conductivity (sigma) @ 20 degree celsius
 
     # temp_var1 = material_db.permeability_data_to_pro_file(30, 100000, "N95", "manufacturer_datasheet")
     # temp_var2 = material_db.permeability_data_to_pro_file(30, 100000, "N87", "manufacturer_datasheet")
 
     # Set core-geometry from core database or/and manual entry
 
-    manual_core_w = list(np.linspace(0.007, 0.020, 3))
-    manual_window_h = list(np.linspace(0.007, 0.020, 3))
-    manual_window_w = list(np.linspace(0.010, 0.019, 3))
+    manual_core_w = list(np.linspace(0.007, 0.020, 3)) #Automated design-Definition min max step
+    manual_window_h = list(np.linspace(0.007, 0.020, 3)) #Automated design-Definition min max step
+    manual_window_w = list(np.linspace(0.010, 0.019, 3)) #Automated design-Definition min max step
     db_core_names = []  # "PQ 40/40", "PQ 40/30"
 
 
@@ -57,7 +58,7 @@ def automated_design_func():
     window_w_list = db_window_w + manual_window_w
 
     # Set winding settings (Solid and Litz winding type)
-    solid_conductor_r = [0.0013]
+    solid_conductor_r = [0.0013] #Automated design-Definition-Wire radius
 
     litz_db = fmt.litz_database()
 
@@ -68,8 +69,8 @@ def automated_design_func():
 
     min_conductor_r = min(litz_conductor_r + solid_conductor_r)
 
-    # Set air-gap and core parameters
-    no_of_turns = [8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N)
+    # Set air-gap and core parameters7
+    no_of_turns = [8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
     n_air_gaps = [1, 2]  # Set No. of air-gaps (n)
     air_gap_height = list(np.linspace(0.0001, 0.0005, 3))  # Set air-gap length in metre (l)
     air_gap_position = list(np.linspace(20, 80, 2))  # Set air-gap position in percent w.r.t. core window height
@@ -83,7 +84,7 @@ def automated_design_func():
     # Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100])
     # Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75])
     # 'Type1 = with corner air-gaps; 'Type2' = without corner air-gaps; 'Type0' = single air-gap
-    mult_air_gap_type = [2]
+    mult_air_gap_type = [2] #Type1-Edge, Type2: Centre
     # TODO: check if the issue has been resolved
     # ######################################   {RELUCTANCE_CALCULATION}   ##############################################
     # Call to Reluctance model (Class MagneticCircuit)
@@ -220,7 +221,7 @@ def automated_design_func():
     file_names = []
 
     # src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/results/log_electro_magnetic.json"
-    src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
+    src_path = "C:/LEA_Project/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
                "inductor/results/log_electro_magnetic.json"
 
 
