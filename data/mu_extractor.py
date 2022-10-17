@@ -40,7 +40,10 @@ def load_and_extract(parameter: str, read_directory: str, write_directory: str, 
 
             b = data[:, 0]
             mur = data[:, 1]
-
+            b = list(b)
+            mur = list(mur)
+            print(f'b=', b)
+            print(f'mur=', mur)
             if not os.path.isdir(write_directory):
                 os.mkdir(write_directory)
             np.savetxt(write_directory + f"b_{int(frequency/1000)}kHz_{material}_{temperature}C.csv", b, newline=', ', fmt='%f')
@@ -60,7 +63,7 @@ def load_and_extract(parameter: str, read_directory: str, write_directory: str, 
         plt.legend(ncol=2)
         plt.grid()
         if save_plot:
-            plt.savefig("C:/Users/tillp/sciebo/Exchange_FEMMT/04_Documentation/mu_r.pdf", bbox_inches="tight")
+            plt.savefig("C:/Users/Aniket/sciebo/Exchange_FEMMT/04_Documentation/mu_r.pdf", bbox_inches="tight")
         plt.show()
 
 
@@ -174,7 +177,7 @@ def create_arithmetic_form(temperatures: list[int], frequencies: list[int], mate
             mu_imag = np.sin(np.deg2rad(phi_full_range)) * PolyCoefficients(x=b_full_range, coeffs=z_mur)  # * (1+np.sign(b_max-b_full_range))/2
             plt.plot(b_full_range, mu_imag, label="imaginary part")
 
-            mu_real
+            # mu_real
 
             mu_real = np.cos(np.deg2rad(phi_full_range)) * PolyCoefficients(x=b_full_range, coeffs=z_mur)  # * (1+np.sign(b_max-b_full_range))/2 + (1-np.sign(b_max-b_full_range))/2
             plt.plot(b_full_range, mu_real, label="real part")

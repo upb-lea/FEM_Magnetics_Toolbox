@@ -5,7 +5,7 @@ Include "Parameter.pro";
 Include "postquantities.pro";
 Include "BH.pro";
 //Include "mu_imag.pro";
-Include "core_materials.pro";
+Include "core_materials_temp.pro";
 ExtGmsh = ".pos";
 
 
@@ -190,15 +190,15 @@ Function {
   // Hysteresis Loss
   // Imaginary Part Of Permeability
   // Liste von Lukas hinterlegen
-  //mu_imag[ #{Iron} ] = mu0 * f_N95_mu_imag[$1, $2];
+  //mu_imag[ #{Iron} ] = mu0 * f_mu_imag[$1, $2];
 
   If(!Flag_NL)
     If(Flag_Fixed_Loss_Angle)
         mu[#{Iron}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
         nu[#{Iron}]   = 1/mu[$1, $2] ;
     ElseIf(Flag_Permeability_From_Data)
-        //mu[#{Iron}]   = Complex[mu0*(mur^2-f_N95_mu_imag[$1, $2]^2)^(0.5), mu0*f_N95_mu_imag[$1, $2]] ;  // TODO
-        mu[#{Iron}]   = Complex[mu0*f_N95_mu_real[$1], -mu0*f_N95_mu_imag[$1]] ;
+        //mu[#{Iron}]   = Complex[mu0*(mur^2-f_mu_imag[$1, $2]^2)^(0.5), mu0*f_mu_imag[$1, $2]] ;  // TODO
+        mu[#{Iron}]   = Complex[mu0*f_mu_real[$1], -mu0*f_mu_imag[$1]] ;
         nu[#{Iron}]   = 1/mu[$1, $2] ;
     Else
         mu[#{Iron}]   = mu0*mur ;

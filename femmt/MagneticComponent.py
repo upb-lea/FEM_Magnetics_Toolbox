@@ -1538,7 +1538,7 @@ class MagneticComponent:
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
-
+        self.core.update_core_material_data_with_freq(frequency)  # frequency update to core class
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
