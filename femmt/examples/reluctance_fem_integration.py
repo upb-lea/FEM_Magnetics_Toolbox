@@ -11,8 +11,7 @@ import logging
 
 material_db = mdb.MaterialDatabase()
 
-
-def automated_design_func():
+def automated_design_func(self):
     # ########################################   {DESIGN PARAMETERS}   #################################################
 
     goal_inductance = 120 * 1e-6
@@ -22,9 +21,9 @@ def automated_design_func():
     percent_of_B_sat = 70                   # Percent of B_sat allowed in the designed core
     percent_of_total_loss = 30              # Percent of total_loss allowed in FEM simulation
 
-    freq = 100 * 1e3                        # Switching frequency in Hz
+    freq = 100 * 1e3   #Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
     mu_imag = 100                           # TODO: coordinate with Aniket
-    Cu_sigma = 5.96 * 1e7                   # copper conductivity (sigma) @ 20 degree celsius
+    Cu_sigma = 5.96 * 1e7     #Constant              # copper conductivity (sigma) @ 20 degree celsius
 
     # Set core-geometry from core database or/and manual entry
     manual_core_w = list(np.linspace(0.005, 0.05, 10))
@@ -73,7 +72,7 @@ def automated_design_func():
     # Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100])
     # Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75])
     # 'Type1 = with corner air-gaps; 'Type2' = without corner air-gaps; 'Type0' = single air-gap
-    mult_air_gap_type = [2]
+    mult_air_gap_type = [2] #Type1-Edge, Type2: Centre
     # TODO: check if the issue has been resolved
 
     # ######################################   {RELUCTANCE_CALCULATION}   ##############################################
@@ -220,7 +219,7 @@ def automated_design_func():
     file_names = []
 
     # src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/results/log_electro_magnetic.json"
-    src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
+    src_path = "C:/LEA_Project/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
                "inductor/results/log_electro_magnetic.json"
 
     counter3 = 0
