@@ -1893,26 +1893,13 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="md_QWidget_3">
          <attribute name="title">
           <string>Definition</string>
          </attribute>
          <layout class="QGridLayout" name="gridLayout_25">
-          <item row="1" column="0">
-           <spacer name="verticalSpacer_14">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
           <item row="0" column="3">
            <spacer name="horizontalSpacer_36">
             <property name="orientation">
@@ -2655,23 +2642,53 @@
                  <string>Winding Scheme</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_30">
-                 <item row="1" column="1" colspan="3">
-                  <widget class="QComboBox" name="aut_winding1_scheme_comboBox"/>
-                 </item>
-                 <item row="3" column="5">
-                  <widget class="QLineEdit" name="aut_step_winding2_turns_lineEdit">
-                   <property name="text">
-                    <string/>
+                 <item row="3" column="2">
+                  <spacer name="horizontalSpacer_76">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
                    </property>
-                  </widget>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
                  </item>
                  <item row="3" column="3">
                   <widget class="QLineEdit" name="aut_max_winding2_turns_lineEdit"/>
                  </item>
-                 <item row="4" column="0">
-                  <widget class="QLabel" name="aut_winding2_scheme_label">
+                 <item row="0" column="4">
+                  <spacer name="horizontalSpacer_75">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QLineEdit" name="aut_max_winding1_turns_lineEdit">
                    <property name="text">
-                    <string>Winding Scheme (Winding 2)</string>
+                    <string>14</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="aut_winding2_scheme_label_2">
+                   <property name="text">
+                    <string>Winding factor</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="aut_winding2_turns_label">
+                   <property name="text">
+                    <string>Number of Turns (Winding 2)</string>
                    </property>
                   </widget>
                  </item>
@@ -2688,46 +2705,8 @@
                    </property>
                   </spacer>
                  </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="aut_winding1_scheme_label">
-                   <property name="text">
-                    <string>Winding Scheme (Winding 1)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="3">
-                  <widget class="QLineEdit" name="aut_max_winding1_turns_lineEdit">
-                   <property name="text">
-                    <string>14</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="aut_winding1_turns_label">
-                   <property name="text">
-                    <string>Number of Turns (Winding 1)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="2">
-                  <spacer name="horizontalSpacer_76">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item row="3" column="0">
-                  <widget class="QLabel" name="aut_winding2_turns_label">
-                   <property name="text">
-                    <string>Number of Turns (Winding 2)</string>
-                   </property>
-                  </widget>
+                 <item row="1" column="1" colspan="3">
+                  <widget class="QComboBox" name="aut_winding1_scheme_comboBox"/>
                  </item>
                  <item row="3" column="1">
                   <widget class="QLineEdit" name="aut_min_winding2_turns_lineEdit">
@@ -2739,18 +2718,19 @@
                  <item row="4" column="1" colspan="3">
                   <widget class="QComboBox" name="aut_winding2_scheme_comboBox"/>
                  </item>
-                 <item row="0" column="4">
-                  <spacer name="horizontalSpacer_75">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="aut_winding1_turns_label">
+                   <property name="text">
+                    <string>Number of Turns (Winding 1)</string>
                    </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="aut_winding1_scheme_label">
+                   <property name="text">
+                    <string>Winding Scheme (Winding 1)</string>
                    </property>
-                  </spacer>
+                  </widget>
                  </item>
                  <item row="0" column="2">
                   <spacer name="horizontalSpacer_25">
@@ -2765,6 +2745,13 @@
                    </property>
                   </spacer>
                  </item>
+                 <item row="2" column="1" colspan="2">
+                  <widget class="QLineEdit" name="aut_wdg_factor_lineEdit">
+                   <property name="text">
+                    <string>0.91</string>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="0" column="1">
                   <widget class="QLineEdit" name="aut_min_winding1_turns_lineEdit">
                    <property name="text">
@@ -2772,24 +2759,24 @@
                    </property>
                   </widget>
                  </item>
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="aut_winding2_scheme_label">
+                   <property name="text">
+                    <string>Winding Scheme (Winding 2)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="5">
+                  <widget class="QLineEdit" name="aut_step_winding2_turns_lineEdit">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="0" column="5">
                   <widget class="QLineEdit" name="aut_step_winding1_turns_lineEdit">
                    <property name="text">
                     <string>7</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="aut_winding2_scheme_label_2">
-                   <property name="text">
-                    <string>Winding factor</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1" colspan="2">
-                  <widget class="QLineEdit" name="aut_wdg_factor_lineEdit">
-                   <property name="text">
-                    <string>0.91</string>
                    </property>
                   </widget>
                  </item>
@@ -2802,31 +2789,17 @@
                  <string>Air Gap Definition</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_31">
-                 <item row="2" column="3">
-                  <widget class="QLineEdit" name="aut_air_gap_length_step_lineEdit">
+                 <item row="4" column="3">
+                  <widget class="QLineEdit" name="aut_air_gap_position_step_lineEdit">
                    <property name="text">
-                    <string>3</string>
+                    <string>2</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="0" column="1">
-                  <widget class="QLineEdit" name="aut_min_air_gap_count_lineEdit">
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_92">
                    <property name="text">
-                    <string>1</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLineEdit" name="aut_air_gap_length_min_lineEdit">
-                   <property name="text">
-                    <string>0.0001</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="aut_air_gap_1_length_label">
-                   <property name="text">
-                    <string>Length [m]</string>
+                    <string>No. of Air Gaps</string>
                    </property>
                   </widget>
                  </item>
@@ -2837,43 +2810,52 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="4" column="3">
-                  <widget class="QLineEdit" name="aut_air_gap_position_step_lineEdit">
+                 <item row="4" column="0">
+                  <widget class="QLabel" name="aut_air_gap_1_position_label">
                    <property name="text">
-                    <string>2</string>
+                    <string>Position</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="2" column="2">
-                  <widget class="QLineEdit" name="aut_air_gap_length_max_lineEdit">
+                 <item row="0" column="1">
+                  <widget class="QLineEdit" name="aut_min_air_gap_count_lineEdit">
                    <property name="text">
-                    <string>0.0005</string>
+                    <string>1</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="1">
-                  <widget class="QListWidget" name="aut_airgap_type_listWidget">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>40</height>
-                    </size>
-                   </property>
-                   <property name="selectionMode">
-                    <enum>QAbstractItemView::ExtendedSelection</enum>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="aut_air_gap_1_length_label">
+                   <property name="text">
+                    <string>Length [m]</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="label_92">
+                 <item row="1" column="2">
+                  <widget class="QPushButton" name="aut_select_all_airgap_type_pushButton">
                    <property name="text">
-                    <string>No. of Air Gaps</string>
+                    <string>Select all</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QPushButton" name="aut_add_air_gap_type_pushButton">
+                   <property name="text">
+                    <string>Add</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QLineEdit" name="aut_air_gap_length_step_lineEdit">
+                   <property name="text">
+                    <string>3</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLineEdit" name="aut_air_gap_length_min_lineEdit">
+                   <property name="text">
+                    <string>0.0001</string>
                    </property>
                   </widget>
                  </item>
@@ -2897,31 +2879,29 @@
                    </property>
                   </spacer>
                  </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="label_106">
-                   <property name="text">
-                    <string>Air gap type</string>
+                 <item row="1" column="1">
+                  <widget class="QListWidget" name="aut_airgap_type_listWidget">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>40</height>
+                    </size>
+                   </property>
+                   <property name="selectionMode">
+                    <enum>QAbstractItemView::ExtendedSelection</enum>
                    </property>
                   </widget>
                  </item>
-                 <item row="4" column="0">
-                  <widget class="QLabel" name="aut_air_gap_1_position_label">
+                 <item row="2" column="2">
+                  <widget class="QLineEdit" name="aut_air_gap_length_max_lineEdit">
                    <property name="text">
-                    <string>Position</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="2">
-                  <widget class="QPushButton" name="aut_select_all_airgap_type_pushButton">
-                   <property name="text">
-                    <string>Select all</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="3">
-                  <widget class="QPushButton" name="aut_add_air_gap_type_pushButton">
-                   <property name="text">
-                    <string>Add</string>
+                    <string>0.0005</string>
                    </property>
                   </widget>
                  </item>
@@ -2929,6 +2909,13 @@
                   <widget class="QLineEdit" name="aut_air_gap_position_min_lineEdit">
                    <property name="text">
                     <string>20</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_106">
+                   <property name="text">
+                    <string>Air gap type</string>
                    </property>
                   </widget>
                  </item>
@@ -3145,22 +3132,9 @@
              </layout>
             </item>
             <item>
-             <spacer name="horizontalSpacer_26">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
              <widget class="QGroupBox" name="groupBox_28">
               <property name="title">
-               <string>                                                  </string>
+               <string>                                                   </string>
               </property>
               <widget class="QLabel" name="label_77">
                <property name="geometry">
@@ -3461,7 +3435,33 @@
               </widget>
              </widget>
             </item>
+            <item>
+             <spacer name="horizontalSpacer_26">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
            </layout>
+          </item>
+          <item row="1" column="0">
+           <spacer name="verticalSpacer_14">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </widget>
@@ -3480,8 +3480,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1236</width>
-               <height>971</height>
+               <width>59</width>
+               <height>16</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_26">

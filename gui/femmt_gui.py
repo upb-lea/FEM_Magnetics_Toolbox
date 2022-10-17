@@ -468,14 +468,14 @@ class MainWindow(QMainWindow):
         # Set core-geometry from core database or/and manual entry
         min_core_w = comma_str_to_point_float(self.aut_min_core_width_lineEdit.text())
         max_core_w = comma_str_to_point_float(self.aut_max_core_width_lineEdit.text())
-        step_core_w = comma_str_to_point_float(self.aut_step_core_width_lineEdit.text())
+        step_core_w = int(self.aut_step_core_width_lineEdit.text())
         min_window_h = comma_str_to_point_float(self.aut_min_window_height_lineEdit.text())
         max_window_h = comma_str_to_point_float(self.aut_max_window_height_lineEdit.text())
-        step_window_h = comma_str_to_point_float(self.aut_step_window_height_lineEdit.text())
+        step_window_h = int(self.aut_step_window_height_lineEdit.text())
         min_window_w = comma_str_to_point_float(self.aut_min_window_width_lineEdit.text())
         max_window_w = comma_str_to_point_float(self.aut_max_window_width_lineEdit.text())
-        step_window_w = comma_str_to_point_float(self.aut_step_window_width_lineEdit.text())
-        print(type(min_core_w))
+        step_window_w = int(self.aut_step_window_width_lineEdit.text())
+
         manual_core_w = list(np.linspace(min_core_w, max_core_w, step_core_w))  # Automated design-Definition min max step
         manual_window_h = list(np.linspace(min_window_h, max_window_h, step_window_h))  # Automated design-Definition min max step
         manual_window_w = list(np.linspace(min_window_w, max_window_w, step_window_w))  # Automated design-Definition min max step
@@ -514,20 +514,21 @@ class MainWindow(QMainWindow):
         min_conductor_r = min(litz_conductor_r + solid_conductor_r)
 
         # Set air-gap and core parameters7
-        no_turns_min = comma_str_to_point_float(self.aut_min_winding1_turns_lineEdit.text())
-        no_turns_max = comma_str_to_point_float(self.aut_max_winding1_turns_lineEdit.text())
-        no_turns_step = comma_str_to_point_float(self.aut_step_winding1_turns_lineEdit.text())
-        no_airgaps_min = comma_str_to_point_float(self.aut_min_air_gap_count_lineEdit.text())
-        no_airgaps_max = comma_str_to_point_float(self.aut_max_air_gap_count_lineEdit.text())
+        no_turns_min = int(self.aut_min_winding1_turns_lineEdit.text())
+        no_turns_max = int(self.aut_max_winding1_turns_lineEdit.text())
+        no_turns_step = int(self.aut_step_winding1_turns_lineEdit.text())
+        no_airgaps_min = int(self.aut_min_air_gap_count_lineEdit.text())
+        no_airgaps_max = int(self.aut_max_air_gap_count_lineEdit.text())
         airgap_h_min = comma_str_to_point_float(self.aut_air_gap_length_min_lineEdit.text())
         airgap_h_max = comma_str_to_point_float(self.aut_air_gap_length_max_lineEdit.text())
-        airgap_h_step = comma_str_to_point_float(self.aut_air_gap_length_step_lineEdit.text())
-        airgap_pos_min = comma_str_to_point_float(self.aut_air_gap_position_min_lineEdit.text())
-        airgap_pos_max = comma_str_to_point_float(self.aut_air_gap_position_max_lineEdit.text())
-        airgap_pos_step = comma_str_to_point_float(self.aut_air_gap_position_step_lineEdit.text())
+        airgap_h_step = int(self.aut_air_gap_length_step_lineEdit.text())
+        airgap_pos_min = int(self.aut_air_gap_position_min_lineEdit.text())
+        airgap_pos_max = int(self.aut_air_gap_position_max_lineEdit.text())
+        airgap_pos_step = int(self.aut_air_gap_position_step_lineEdit.text())
 
 
-        no_of_turns = list(np.linspace(no_turns_min, no_turns_max,no_turns_step)) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
+        #no_of_turns = list((np.linspace(no_turns_min, no_turns_max,no_turns_step))) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
+        no_of_turns = [8, 9, 10, 11, 12, 13, 14]
         n_air_gaps = [no_airgaps_min, no_airgaps_max]  # Set No. of air-gaps (n)
         air_gap_height = list(np.linspace(airgap_h_min, airgap_h_max, airgap_h_step))  # Set air-gap length in metre (l)
         air_gap_position = list(np.linspace(airgap_pos_min, airgap_pos_max, airgap_pos_step))  # Set air-gap position in percent w.r.t. core window height
@@ -545,12 +546,8 @@ class MainWindow(QMainWindow):
         # Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100])
         # Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75])
         # 'Type1 = with corner air-gaps; 'Type2' = without corner air-gaps; 'Type0' = single air-gap
-        mult_air_gap = []
-        for i in range(self.aut_airgap_type_basket_listwidget.count()):
-            mult_air_gap.append(self.aut_airgap_type_basket_listwidget.item(i).text())
-        mult_air_gap_type = [self.trans_dict[mult_air_gap[0]], self.trans_dict[mult_air_gap[1]]] # Type1-Edge, Type2: Centre
-
-        #mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre
+        mult_air_gap_type = []
+        mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre
         # TODO: check if the issue has been resolved
         # ######################################   {RELUCTANCE_CALCULATION}   ##############################################
         # Call to Reluctance model (Class MagneticCircuit)
