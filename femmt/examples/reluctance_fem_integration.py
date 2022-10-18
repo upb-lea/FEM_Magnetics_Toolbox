@@ -85,7 +85,7 @@ def automated_design_func():
                               air_gap_method='percent', component_type='inductor', sim_type='sweep')
     param = mc1.get_param_pos_dict()
     n_cases_0 = len(mc1.data_matrix)
-
+    print(n_cases_0)
     # Calculate total reluctance and creates data_matrix to access all corresponding parameters and results
     # To access all/any data from MagneticCircuit class, use self.data_matrix[:, param["parameter_name"]].
     # The parameters are arranged as shown below:
@@ -100,21 +100,21 @@ def automated_design_func():
                                                                                       param[
                                                                                           "window_w"]]))]
     n_cases_1 = len(data_matrix_1)
-
+    print(n_cases_1)
     # 2nd Filter:-------------------------------------------------------------------------------------------------------
     # Based on +-10% goal inductance tolerance band
     data_matrix_2 = data_matrix_1[
         np.where((data_matrix_1[:, param["inductance"]] > ((100 - L_tolerance_percent) / 100) * goal_inductance) &
                  (data_matrix_1[:, param["inductance"]] < ((100 + L_tolerance_percent) / 100) * goal_inductance))]
     n_cases_2 = len(data_matrix_2)
-
+    print(n_cases_2)
     # 3rd Filter:-------------------------------------------------------------------------------------------------------
     # Filter out cases where B_max is greater than B_sat
     B_sat_dict = {}
     counter1 = 0
     for material_name in material_names:
         B_sat_key = material_db.get_material_property(material_name=material_name, property="initial_permeability")
-        B_sat_dict[B_sat_key] = material_db.get_material_property(material_name=material_name, property="max_flux_density") / 1000
+        B_sat_dict[B_sat_key] = material_db.get_material_property(material_name=material_name, property="max_flux_density")
         counter1 = counter1 + 1
 
     # Creating B_saturated array corresponding to the material type
@@ -143,7 +143,7 @@ def automated_design_func():
                 (data_matrix_2[index, param["B_max_outer"]] < (percent_of_B_sat / 100) * B_sat[index]):
             data_matrix_3 = np.vstack([data_matrix_3, data_matrix_2[index, :]])
     n_cases_3 = len(data_matrix_3)
-
+    print(n_cases_3)
     # 4th Filter:-------------------------------------------------------------------------------------------------------
     # Filter out data-matrix according to calculated hysteresis loss + DC winding loss
     # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
@@ -204,6 +204,7 @@ def automated_design_func():
     data_matrix_3 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
     FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
     n_cases_FEM = len(FEM_data_matrix)
+    print(n_cases_FEM)
 
     fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
     fmt.plt.title("Normalised volume vs Normalised losses")
@@ -419,8 +420,8 @@ def load_design(load_directory_name):
 
 if __name__ == '__main__':
 
-    automated_design_func()
+    #automated_design_func()
 
-    # design_name = "sweep_examples_4"
-    # load_design(design_name)
+    design_name = "sweep_examples_4"
+    load_design(design_name)
 
