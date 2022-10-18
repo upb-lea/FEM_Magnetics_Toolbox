@@ -8,7 +8,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import cm
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem, QDialog, QVBoxLayout
+from PyQt5.QtWidgets import QLabel, QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem, QDialog, QVBoxLayout, QScrollArea, QFormLayout
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
 import femmt as fmt
@@ -327,17 +327,16 @@ class MainWindow(QMainWindow):
         self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
         self.aut_core_material_data_listWidget.addItem("N87")
         self.aut_core_material_data_listWidget.addItem("N95")
-        self.aut_core_material_data_listWidget.addItem("N97")
 
-        self.aut_litz_data_listWidget.addItem("1.5*105*0.1")
-        self.aut_litz_data_listWidget.addItem("1.4*200*0.071")
-        self.aut_litz_data_listWidget.addItem("2.0*405*0.071")
-        self.aut_litz_data_listWidget.addItem("2.0*800*0.05")
+        self.aut_litz_data_listWidget.addItem("1.5x105x0.1")
+        self.aut_litz_data_listWidget.addItem("1.4x200x0.071")
+        self.aut_litz_data_listWidget.addItem("2.0x405x0.071")
+        self.aut_litz_data_listWidget.addItem("2.0x800x0.05")
 
-        self.aut_litz2_data_listWidget.addItem("1.5*105*0.1")
-        self.aut_litz2_data_listWidget.addItem("1.4*200*0.071")
-        self.aut_litz2_data_listWidget.addItem("2.0*405*0.071")
-        self.aut_litz2_data_listWidget.addItem("2.0*800*0.05")
+        self.aut_litz2_data_listWidget.addItem("1.5x105x0.1")
+        self.aut_litz2_data_listWidget.addItem("1.4x200x0.071")
+        self.aut_litz2_data_listWidget.addItem("2.0x405x0.071")
+        self.aut_litz2_data_listWidget.addItem("2.0x800x0.05")
 
         self.aut_airgap_type_listWidget.addItem("Edge distributed")
         self.aut_airgap_type_listWidget.addItem("Centre distributed")
@@ -441,7 +440,7 @@ class MainWindow(QMainWindow):
         # ########################################   {DESIGN PARAMETERS}   #################################################
 
         save_directory_name = self.aut_directoryname_lineEdit.text() #"sweep_examples_2" # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
-        goal_inductance = self.aut_goal_inductance_val_lineEdit.text()  # 120 * 1e-6 #Automated design-Reluctacne model-Goal Inductance
+        goal_inductance = comma_str_to_point_float(self.aut_goal_inductance_val_lineEdit.text())  # 120 * 1e-6 #Automated design-Reluctacne model-Goal Inductance
         self.trans_dict =  {
             # key: Used in FEMMT code
             # value: Used in GUI
@@ -449,16 +448,16 @@ class MainWindow(QMainWindow):
             "Edge distributed":"1",
             "Centre distributed":"2"
         }
-        L_tolerance_percent = self.trans_dict[self.aut_tolerance_val_comboBox.currentText()]  # +/-10%
-        winding_factor = self.aut_wdg_factor_lineEdit.text() #0.91  # Include
-        i_max = self.aut_maximum_current_lineEdit.text()#3  # Automated design-Reluctacne model
+        L_tolerance_percent = int(self.trans_dict[self.aut_tolerance_val_comboBox.currentText()])  # +/-10%
+        winding_factor = comma_str_to_point_float(self.aut_wdg_factor_lineEdit.text()) #0.91  # Include
+        i_max = comma_str_to_point_float(self.aut_maximum_current_lineEdit.text())#3  # Automated design-Reluctacne model
         # Max current amplitude with assumption of sinusoidal current waveform
-        percent_of_B_sat = self.aut_b_sat_lineEdit.text() #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
+        percent_of_B_sat = int(self.aut_b_sat_lineEdit.text()) #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
 
-        percent_of_total_loss = self.aut_hysterisis_loss_options_lineEdit.text() #100  # Automated design-Reluctacne model-%hysterisis loss(total loss)
+        percent_of_total_loss = comma_str_to_point_float(self.aut_hysterisis_loss_options_lineEdit.text()) #100  # Automated design-Reluctacne model-%hysterisis loss(total loss)
         # Percent of total_loss allowed in FEM simulation
 
-        freq = self.aut_switching_freq_lineEdit.text() #100 * 1e3  # Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
+        freq = comma_str_to_point_float(self.aut_switching_freq_lineEdit.text()) #100 * 1e3  # Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
         mu_imag = 100  # TODO: coordinate with Aniket
         Cu_sigma = 5.96 * 1e7  # Constant              # copper conductivity (sigma) @ 20 degree celsius
 
@@ -490,7 +489,7 @@ class MainWindow(QMainWindow):
         manual_window_w = [item[2] for item in all_manual_combinations]
 
         core_db = fmt.core_database()
-        db_core_w = [core_db[core_name]["core_w"] for core_name in db_core_names]
+        db_core_w = [core_db[core_name]["core_inner_diameter"] for core_name in db_core_names]
         db_window_h = [core_db[core_name]["window_h"] for core_name in db_core_names]
         db_window_w = [core_db[core_name]["window_w"] for core_name in db_core_names]
 
@@ -499,8 +498,7 @@ class MainWindow(QMainWindow):
         window_w_list = db_window_w + manual_window_w
 
         # Set winding settings (Solid and Litz winding type)
-        solid_conductor_r = [self.aut_winding1_radius_lineEdit.text()]  # Automated design-Definition-Wire radius
-
+        solid_conductor_r = [comma_str_to_point_float(self.aut_winding1_radius_lineEdit.text())]  # Automated design-Definition-Wire radius
         litz_db = fmt.litz_database()
         #litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
         litz_names = []
@@ -512,7 +510,6 @@ class MainWindow(QMainWindow):
         litz_strand_n = [litz_db[litz_name]["strands_numbers"] for litz_name in litz_names]
 
         min_conductor_r = min(litz_conductor_r + solid_conductor_r)
-
         # Set air-gap and core parameters7
         no_turns_min = int(self.aut_min_winding1_turns_lineEdit.text())
         no_turns_max = int(self.aut_max_winding1_turns_lineEdit.text())
@@ -527,8 +524,8 @@ class MainWindow(QMainWindow):
         airgap_pos_step = int(self.aut_air_gap_position_step_lineEdit.text())
 
 
-        #no_of_turns = list((np.linspace(no_turns_min, no_turns_max,no_turns_step))) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
-        no_of_turns = [8, 9, 10, 11, 12, 13, 14]
+        no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max,no_turns_step))) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
+        no_of_turns = [int(item) for item in no_of_turns_float]
         n_air_gaps = [no_airgaps_min, no_airgaps_max]  # Set No. of air-gaps (n)
         air_gap_height = list(np.linspace(airgap_h_min, airgap_h_max, airgap_h_step))  # Set air-gap length in metre (l)
         air_gap_position = list(np.linspace(airgap_pos_min, airgap_pos_max, airgap_pos_step))  # Set air-gap position in percent w.r.t. core window height
@@ -546,8 +543,7 @@ class MainWindow(QMainWindow):
         # Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100])
         # Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75])
         # 'Type1 = with corner air-gaps; 'Type2' = without corner air-gaps; 'Type0' = single air-gap
-        mult_air_gap_type = []
-        mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre
+        mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre #TODO
         # TODO: check if the issue has been resolved
         # ######################################   {RELUCTANCE_CALCULATION}   ##############################################
         # Call to Reluctance model (Class MagneticCircuit)
@@ -558,6 +554,7 @@ class MainWindow(QMainWindow):
         param = mc1.get_param_pos_dict()
         n_cases_0 = len(mc1.data_matrix)
         self.ncases0_label.setText(f"{n_cases_0}")
+
         # Calculate total reluctance and creates data_matrix to access all corresponding parameters and results
         # To access all/any data from MagneticCircuit class, use self.data_matrix[:, param["parameter_name"]].
         # The parameters are arranged as shown below:
@@ -566,14 +563,10 @@ class MainWindow(QMainWindow):
         # ############################################   {FILTRATION}   ####################################################
         # 1st Filter: ------------------------------------------------------------------------------------------------------
         # Filter out cases where physical geometry is not possible
-        data_matrix_1 = mc1.data_matrix[
-            np.where((mc1.data_matrix[:, param["no_of_turns"]] * np.pi * min_conductor_r ** 2)
-                     < (winding_factor * mc1.data_matrix[:,
-                                         param["window_h"]] * mc1.data_matrix[:,
-                                                              param[
-                                                                  "window_w"]]))]
+        data_matrix_1 = mc1.data_matrix[np.where((mc1.data_matrix[:, param["no_of_turns"]] * np.pi * min_conductor_r ** 2) < (winding_factor * mc1.data_matrix[:,param["window_h"]] * mc1.data_matrix[:,param["window_w"]]))]
+
         n_cases_1 = len(data_matrix_1)
-        self.ncases1_label.setText(f"{n_cases_1}")
+        # self.ncases1_label.setText(f"{n_cases_1}")
 
         # 2nd Filter:-------------------------------------------------------------------------------------------------------
         # Based on +-10% goal inductance tolerance band
@@ -581,7 +574,7 @@ class MainWindow(QMainWindow):
             np.where((data_matrix_1[:, param["inductance"]] > ((100 - L_tolerance_percent) / 100) * goal_inductance) &
                      (data_matrix_1[:, param["inductance"]] < ((100 + L_tolerance_percent) / 100) * goal_inductance))]
         n_cases_2 = len(data_matrix_2)
-        self.ncases2_label.setText(f"{n_cases_2}")
+        self.ncases1_label.setText(f"{n_cases_2}")
 
         # 3rd Filter:-------------------------------------------------------------------------------------------------------
         # Filter out cases where B_max is greater than B_sat
@@ -621,7 +614,7 @@ class MainWindow(QMainWindow):
                     (data_matrix_2[index, param["B_max_outer"]] < (percent_of_B_sat / 100) * B_sat[index]):
                 data_matrix_3 = np.vstack([data_matrix_3, data_matrix_2[index, :]])
         n_cases_3 = len(data_matrix_3)
-        self.ncases3_label.setText(f"{n_cases_3}")
+        self.ncases2_label.setText(f"{n_cases_3}")
 
         # 4th Filter:-------------------------------------------------------------------------------------------------------
         # Filter out data-matrix according to calculated hysteresis loss + DC winding loss
@@ -890,6 +883,9 @@ class MainWindow(QMainWindow):
     def datupdateraph(self):
         self.matplotlib_widget1 = MatplotlibWidget()
         self.matplotlib_widget2 = MatplotlibWidget()
+        self.matplotlib_widget3 = MatplotlibWidget()
+        self.matplotlib_widget4 = MatplotlibWidget()
+
         self.matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget)
         self.layout.addWidget(self.matplotlib_widget1)
@@ -898,10 +894,10 @@ class MainWindow(QMainWindow):
         except:
             pass
 
-        temperature1 = int(self.dat_mat1_temp_lineEdit.text())
         mat1_name = self.dat_core_material1_comboBox.currentText()
         mat2_name = self.dat_core_material2_comboBox.currentText()
-        mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=[mat1_name, mat2_name], temperature=temperature1)
+        mat1_temp = int(self.aut_temp_m1_comboBox.currentText())
+        mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
         self.matplotlib_widget1.axis.legend(fontsize=13)
         self.matplotlib_widget1.axis.grid()
         self.matplotlib_widget1.figure.canvas.draw_idle()
@@ -916,11 +912,42 @@ class MainWindow(QMainWindow):
         except:
             pass
 
-        flux2 = float(self.dat_mat2_flux_lineEdit.text())
-        mdb.compare_core_loss_temperature(self.matplotlib_widget2, material_list=[mat1_name, mat2_name], flux = flux2)
+        fluxval = float(self.aut_flux_m1_comboBox.currentText())
+        mdb.compare_core_loss_temperature(self.matplotlib_widget2, material_list=[mat1_name, mat2_name], flux = fluxval)
         self.matplotlib_widget2.axis.legend(fontsize=13)
         self.matplotlib_widget2.axis.grid()
         self.matplotlib_widget2.figure.canvas.draw_idle()
+
+        ################################################################################################################
+
+        self.matplotlib_widget3.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_3)
+        self.layout.addWidget(self.matplotlib_widget3)
+        try:
+            self.matplotlib_widget3.axis_cm.remove()
+        except:
+            pass
+
+        mdb.compare_core_loss_frequency(self.matplotlib_widget3, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
+        self.matplotlib_widget3.axis.legend(fontsize=13)
+        self.matplotlib_widget3.axis.grid()
+        self.matplotlib_widget3.figure.canvas.draw_idle()
+
+        ################################################################################################################
+
+        self.matplotlib_widget4.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_4)
+        self.layout.addWidget(self.matplotlib_widget4)
+        try:
+            self.matplotlib_widget4.axis_cm.remove()
+        except:
+            pass
+
+        mdb.compare_b_h_curve(self.matplotlib_widget4, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
+        self.matplotlib_widget4.axis.legend(fontsize=13)
+        self.matplotlib_widget4.axis.grid()
+        self.matplotlib_widget4.figure.canvas.draw_idle()
+
 
     def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
         """
@@ -1120,10 +1147,41 @@ class MainWindow(QMainWindow):
         aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
         #aut_core_geometry_options.insert(0, 'Manual')
         dat_core_material_options = ['N95', 'N97', 'N87']
+        aut_temp_options = ['25', '100']
+        aut_flux_options = ['0.025', '0.050', '0.100', '0.200']
+
+        for option in aut_flux_options:
+            self.aut_flux_m1_comboBox.addItem(option)
+        for option in aut_flux_options:
+            self.aut_flux_m2_comboBox.addItem(option)
+        for option in aut_flux_options:
+            self.aut_flux_m3_comboBox.addItem(option)
+        for option in aut_flux_options:
+            self.aut_flux_m4_comboBox.addItem(option)
+        for option in aut_flux_options:
+            self.aut_flux_m5_comboBox.addItem(option)
+
+        for option in aut_temp_options:
+            self.aut_temp_m1_comboBox.addItem(option)
+        for option in aut_temp_options:
+            self.aut_temp_m2_comboBox.addItem(option)
+        for option in aut_temp_options:
+            self.aut_temp_m3_comboBox.addItem(option)
+        for option in aut_temp_options:
+            self.aut_temp_m4_comboBox.addItem(option)
+        for option in aut_temp_options:
+            self.aut_temp_m5_comboBox.addItem(option)
         for option in dat_core_material_options:
             self.dat_core_material1_comboBox.addItem(option)
         for option in dat_core_material_options:
             self.dat_core_material2_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material3_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material4_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material5_comboBox.addItem(option)
+
         for option in aut_core_geometry_options:
             self.aut_core_geometry_listWidget.addItem(option)
         for option in aut_simulation_type_options:
@@ -2884,23 +2942,33 @@ class MainWindow(QMainWindow):
         self.window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text())
         n_turns=int(self.md_winding1_turns_lineEdit.text())
         method=(self.md_air_gap_placement_method_comboBox.currentText())
-        murel = database.get_initial_permeability("N95")
+        #murel = database.get_initial_permeability(self.md_core_material_comboBox.currentText())
+        #murel = database.get_initial_permeability("N95")
         air_gap_h = self.md_air_gap_1_length_lineEdit.text()
         air_gap_position = self.md_air_gap_1_position_lineEdit.text()
+
+        material_names = []
+        material_names.append(self.md_core_material_comboBox.currentText())
+        mu_rel_val = [database.get_material_property(material_name=material_name, property="initial_permeability")
+                  for material_name in material_names]
+        mu_rel = [int(item) for item in mu_rel_val]
+        print(air_gap_heigth_array)
+        print(air_gap_position_array)
+
         #mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
                                       #[air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
 
         if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
             mc1 = fmt.MagneticCircuit(core_w=[self.core_w], window_h=[self.window_h], window_w=[self.window_w], no_of_turns=[n_turns],
                                       n_air_gaps=[air_gap_count],air_gap_h= air_gap_heigth_array, air_gap_position= air_gap_position_array,
-                                      mu_rel=[murel],mult_air_gap_type=[1, 2],air_gap_method='percent',
+                                      mu_rel=mu_rel,mult_air_gap_type=[1, 2],air_gap_method='percent',
                                       component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')  # 0.0149
         elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['manually']:
             mc1 = fmt.MagneticCircuit(core_w=[self.core_w], window_h=[self.window_h], window_w=[self.window_w],
                                       no_of_turns=[n_turns],
                                       n_air_gaps=[air_gap_count], air_gap_h=air_gap_heigth_array,
                                       air_gap_position=air_gap_position_array,
-                                      mu_rel=[murel], mult_air_gap_type=[1, 2], air_gap_method='manually',
+                                      mu_rel=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='manually',
                                       component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')
 
 
