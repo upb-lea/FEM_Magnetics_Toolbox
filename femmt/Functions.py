@@ -248,15 +248,18 @@ def wire_material_database() -> Dict:
     :return: Dict with materials and conductivity
     :rtype: Dict
     """
-
     wire_material = {}
 
     wire_material["Copper"] = {
         "sigma": 5.8e7,
+        "thermal_conductivity": 400,
+        "volumetric_mass_density": 8920,
     }
 
     wire_material["Aluminium"] = {
         "sigma": 3.7e7,
+        "thermal_conductivity": 235,
+        "volumetric_mass_density": 2699,
     }
 
     return wire_material
@@ -1130,14 +1133,14 @@ def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     return sigma_core * core_weight
 
 
-def cost_function_winding(winding_weight_list: List[float], winding_type: List[str], single_strand_cross_section_list: List[float] = []):
+def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str], single_strand_cross_section_list: List[float] = []):
     """
     Calculates single winding material and fabrication costs depending on winding-type and weight
 
-    :param winding_weight_list: winding weight in kg in list-form
-    :type winding_weight_list: List[float]
-    :param winding_type: winding type. Must fit to enum-names in ConductorType-Enum
-    :type winding_type: List[str]
+    :param wire_weight_list: winding weight in kg in list-form
+    :type wire_weight_list: List[float]
+    :param wire_type_list: winding type. Must fit to enum-names in ConductorType-Enum
+    :type wire_type_list: List[str]
     :param single_strand_cross_section_list: single strand cross section in list-form
     :type single_strand_cross_section_list: List[float]
     :return: winding cost of single winding
@@ -1146,20 +1149,20 @@ def cost_function_winding(winding_weight_list: List[float], winding_type: List[s
     cost_database = cost_material_database()
     winding_cost_list = []
 
-    for winding_count, winding_weight in enumerate(winding_weight_list):
+    for winding_count, winding_weight in enumerate(wire_weight_list):
         # material cost (per kilogram and per unit)
-        sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram"][winding_type[winding_count]]
+        sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram"][wire_type_list[winding_count]]
         if sigma_material_winding_euro_per_kilogram == -1:
             # case for special litz wire calculation. Additional data is loaded from cost_database.
             sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_numerator"] / (single_strand_cross_section_list[winding_count] * 1e6 + cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_denumerator"])
 
-        winding_material_euro_per_unit = cost_database["winding_material_euro_per_unit"][winding_type[winding_count]]
+        winding_material_euro_per_unit = cost_database["winding_material_euro_per_unit"][wire_type_list[winding_count]]
 
         winding_material_cost = sigma_material_winding_euro_per_kilogram * winding_weight + winding_material_euro_per_unit
 
         # fabrication cost (per kilogram and per unit)
-        sigma_fabrication_euro_per_kilogram = cost_database["winding_fabrication_euro_per_kilogram"][winding_type[winding_count]]
-        fabrication_material_euro_per_unit = cost_database["winding_fabrication_euro_per_unit"][winding_type[winding_count]]
+        sigma_fabrication_euro_per_kilogram = cost_database["winding_fabrication_euro_per_kilogram"][wire_type_list[winding_count]]
+        fabrication_material_euro_per_unit = cost_database["winding_fabrication_euro_per_unit"][wire_type_list[winding_count]]
 
         winding_fabrication_cost = sigma_fabrication_euro_per_kilogram * winding_weight + fabrication_material_euro_per_unit
 
@@ -1169,7 +1172,7 @@ def cost_function_winding(winding_weight_list: List[float], winding_type: List[s
 
 
 
-def cost_function_total(core_weight: float, core_type: str, winding_weight_list: List[float], winding_type_list: List[str]) -> float:
+def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str]) -> float:
     """
     Calculates the total costs for a inductive element.
     This includes material costs for core and winding, fabrication costs for core and winding and manufacturer margin
@@ -1178,10 +1181,10 @@ def cost_function_total(core_weight: float, core_type: str, winding_weight_list:
     :type core_weight: float
     :param core_type: core type. Can be "ferrite", "amorphous", "nanocristalline", "high_si_steel", "goes"
     :type core_type: str
-    :param winding_weight_list: winding weight in kg
-    :type winding_weight_list: float
-    :param winding_type_list: winding type in list-form. Must fit to enum-names in ConductorType-Enum
-    :type winding_type_list: List[str]
+    :param wire_weight_list: winding weight in kg
+    :type wire_weight_list: float
+    :param wire_type_list: winding type in list-form. Must fit to enum-names in ConductorType-Enum
+    :type wire_type_list: List[str]
     :return: total costs for inductive element
     :rtype: float
     """
@@ -1190,7 +1193,7 @@ def cost_function_total(core_weight: float, core_type: str, winding_weight_list:
     cost_core = cost_function_core(core_weight, core_type)
 
 
-    cost_winding_list = cost_function_winding(winding_weight_list, winding_type_list)
+    cost_winding_list = cost_function_winding(wire_weight_list, wire_type_list)
     cost_winding = sum(cost_winding_list)
 
     total_cost_including_margin = 1 / (1 - cost_database["gross_margin"]) * (cost_core + cost_winding)

@@ -16,6 +16,7 @@ from datetime import datetime
 
 # Third parry libraries
 from onelab import onelab
+import materialdatabase as mdb
 
 # Local libraries
 import femmt.Functions as ff
@@ -1441,6 +1442,15 @@ class MagneticComponent:
 
         return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
 
+    def calculate_core_weight(self) -> float:
+        """
+        Calculates the weight of the core in kg.
+        This method is using the core volume from for an ideal rotation-symmetric core and the volumetric mass density from the material database.
+        """
+        material_database = mdb.MaterialDatabase()
+        volumetric_mass_density = material_database.get_material_property(material_name=self.core.material, property="volumetric_mass_density")
+        return self.calculate_core_volume() * volumetric_mass_density
+
     def get_wire_distances(self) -> List[List[float]]:
         """Helper function which returns the distance (radius) of each conductor to the y-axis 
 
@@ -1509,6 +1519,17 @@ class MagneticComponent:
             wire_volumes.append(cross_section_area * wire_lenghts[index])
 
         return wire_volumes
+
+    def calculate_wire_weight(self) -> List[float]:
+        wire_material = ff.wire_material_database()
+
+        wire_weight = []
+
+        # TODO: distinguish between wire material. Only copper at the moment
+        for wire_volume in self.calculate_wire_volumes():
+            wire_weight.append(wire_volume * wire_material["Copper"]["volumetric_mass_density"])
+
+        return wire_weight
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
@@ -2111,17 +2132,29 @@ class MagneticComponent:
         # Total losses of inductive component according to single or sweep simulation
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
 
+        # ---- Introduce calculations for writing the misc-dict into the result-log ----
+        wire_type_list = []
+        for winding in self.windings:
+            wire_type_list.append(winding.conductor_type.name)
+
+        single_strand_cross_section_list = []
+        for winding in self.windings:
+            single_strand_cross_section_list.append(winding.strand_radius)
+
+        wire_weight_list = self.calculate_wire_weight()
+        core_weight = self.calculate_core_weight()
+
         # ---- Miscellaneous ----
         log_dict["misc"] = {
             "core_2daxi_volume": self.calculate_core_volume(),
             "core_2daxi_total_volume":self.calculate_core_volume_with_air(),
-            "core_2daxi_weight": -1,
+            "core_2daxi_weight": core_weight,
             "wire_lengths": self.calculate_wire_lengths(),
             "wire_volumes": self.calculate_wire_volumes(),
-            "wire_weight": -1,
-            "core_cost": -1, #cost_function_core(core_2daxi_weight, "ferrite"),
-            "winding_cost": -1,
-            "total_cost_incl_margin": -1
+            "wire_weight": wire_weight_list,
+            "core_cost": ff.cost_function_core(core_weight, core_type = "ferrite"),
+            "winding_cost": ff.cost_function_winding(wire_weight_list= wire_weight_list, wire_type_list= wire_type_list, single_strand_cross_section_list = single_strand_cross_section_list),
+            "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite", wire_weight_list= wire_weight_list, wire_type_list=wire_type_list)
         }
 
         # ---- Print current configuration ----
