@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - cost functions for core and wire material according to IEEE paper 'Component cost models for multi-objective optimizations of switched-mode power converters'
+- connect femmt to the new pip package for the material database
+- add optimization routine for automated design process
+- Update GUI according to material database connection and optimization routine
 
 
 ## [0.3.0] - 2022-09-01
