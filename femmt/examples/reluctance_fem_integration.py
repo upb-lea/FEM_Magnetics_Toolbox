@@ -11,9 +11,10 @@ import logging
 
 material_db = mdb.MaterialDatabase()
 
-def automated_design_func(self):
-    # ########################################   {DESIGN PARAMETERS}   #################################################
 
+def automated_design_func():
+    # ########################################   {DESIGN PARAMETERS}   #################################################
+    save_directory_name = "sweep_examples_4"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
     goal_inductance = 120 * 1e-6
     L_tolerance_percent = 10                # Inductance tolerance of +-10% is applied
     winding_factor = 0.91
@@ -21,15 +22,16 @@ def automated_design_func(self):
     percent_of_B_sat = 70                   # Percent of B_sat allowed in the designed core
     percent_of_total_loss = 30              # Percent of total_loss allowed in FEM simulation
 
-    freq = 100 * 1e3   #Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
+    freq = 100 * 1e3                        # Switching frequency in Hz
     mu_imag = 100                           # TODO: coordinate with Aniket
-    Cu_sigma = 5.96 * 1e7     #Constant              # copper conductivity (sigma) @ 20 degree celsius
+    Cu_sigma = 5.96 * 1e7                   # copper conductivity (sigma) @ 20 degree celsius
 
     # Set core-geometry from core database or/and manual entry
+    db_core_names = []  # "PQ 40/40", "PQ 40/30"
+
     manual_core_w = list(np.linspace(0.005, 0.05, 10))
     manual_window_h = list(np.linspace(0.01, 0.08, 5))
     manual_window_w = list(np.linspace(0.005, 0.04, 10))
-    db_core_names = []  # "PQ 40/40", "PQ 40/30"
 
     all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
     manual_core_w = [item[0] for item in all_manual_combinations]
@@ -37,7 +39,7 @@ def automated_design_func(self):
     manual_window_w = [item[2] for item in all_manual_combinations]
 
     core_db = fmt.core_database()
-    db_core_w = [core_db[core_name]["core_w"] for core_name in db_core_names]
+    db_core_w = [core_db[core_name]["core_inner_diameter"] for core_name in db_core_names]
     db_window_h = [core_db[core_name]["window_h"] for core_name in db_core_names]
     db_window_w = [core_db[core_name]["window_w"] for core_name in db_core_names]
 
@@ -47,7 +49,7 @@ def automated_design_func(self):
 
     # Set winding settings (Solid and Litz winding type)
     solid_conductor_r = [0.0013]
-    litz_names = []  # "1.5x105x0.1", "1.4x200x0.071"
+    litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
 
     litz_db = fmt.litz_database()
     litz_conductor_r = [litz_db[litz_name]["conductor_radii"] for litz_name in litz_names]
@@ -57,7 +59,7 @@ def automated_design_func(self):
     min_conductor_r = min(litz_conductor_r + solid_conductor_r)
 
     # Set air-gap and core parameters
-    no_of_turns = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]  # Set No. of turns (N)
+    no_of_turns = [2,3,4,5,6,7,8, 9, 10, 11, 12, 13, 14,15,16,17,18,19,20]  # Set No. of turns (N)
     print(f"{no_of_turns = }")
     n_air_gaps = [1, 2]  # Set No. of air-gaps (n)
     air_gap_height = list(np.linspace(0.0001, 0.0005, 5))  # Set air-gap length in metre (l)
@@ -83,7 +85,7 @@ def automated_design_func(self):
                               air_gap_method='percent', component_type='inductor', sim_type='sweep')
     param = mc1.get_param_pos_dict()
     n_cases_0 = len(mc1.data_matrix)
-
+    print(n_cases_0)
     # Calculate total reluctance and creates data_matrix to access all corresponding parameters and results
     # To access all/any data from MagneticCircuit class, use self.data_matrix[:, param["parameter_name"]].
     # The parameters are arranged as shown below:
@@ -98,21 +100,21 @@ def automated_design_func(self):
                                                                                       param[
                                                                                           "window_w"]]))]
     n_cases_1 = len(data_matrix_1)
-
+    print(n_cases_1)
     # 2nd Filter:-------------------------------------------------------------------------------------------------------
     # Based on +-10% goal inductance tolerance band
     data_matrix_2 = data_matrix_1[
         np.where((data_matrix_1[:, param["inductance"]] > ((100 - L_tolerance_percent) / 100) * goal_inductance) &
                  (data_matrix_1[:, param["inductance"]] < ((100 + L_tolerance_percent) / 100) * goal_inductance))]
     n_cases_2 = len(data_matrix_2)
-
+    print(n_cases_2)
     # 3rd Filter:-------------------------------------------------------------------------------------------------------
     # Filter out cases where B_max is greater than B_sat
     B_sat_dict = {}
     counter1 = 0
     for material_name in material_names:
         B_sat_key = material_db.get_material_property(material_name=material_name, property="initial_permeability")
-        B_sat_dict[B_sat_key] = material_db.get_material_property(material_name=material_name, property="max_flux_density") / 1000
+        B_sat_dict[B_sat_key] = material_db.get_material_property(material_name=material_name, property="max_flux_density")
         counter1 = counter1 + 1
 
     # Creating B_saturated array corresponding to the material type
@@ -141,7 +143,7 @@ def automated_design_func(self):
                 (data_matrix_2[index, param["B_max_outer"]] < (percent_of_B_sat / 100) * B_sat[index]):
             data_matrix_3 = np.vstack([data_matrix_3, data_matrix_2[index, :]])
     n_cases_3 = len(data_matrix_3)
-
+    print(n_cases_3)
     # 4th Filter:-------------------------------------------------------------------------------------------------------
     # Filter out data-matrix according to calculated hysteresis loss + DC winding loss
     # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
@@ -179,10 +181,12 @@ def automated_design_func(self):
     param["DC_loss"] = 19
 
     total_loss = DC_loss + total_hyst_loss
-    max_total_loss = max(total_loss)
-    normalized_total_loss = total_loss / max_total_loss
     data_matrix_3 = np.hstack((data_matrix_3, np.reshape(total_loss, (len(total_loss), 1))))  # position: 20
     param["total_loss"] = 20
+
+    total_loss = data_matrix_3[:, param["total_loss"]]
+    max_total_loss = max(total_loss)
+    normalized_total_loss = total_loss / max_total_loss
     data_matrix_3 = np.hstack((data_matrix_3, np.reshape(normalized_total_loss, (len(normalized_total_loss), 1))))  # position: 20
     param["normalized_total_loss"] = 21
 
@@ -195,11 +199,20 @@ def automated_design_func(self):
     param["normalized_total_volume"] = 23
 
     # Sort the data_matrix with respect to total losses column----------------------------------------------------------
-    # data_matrix_4 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
-    FEM_data_matrix = data_matrix_3[np.where(data_matrix_3[:, param["normalized_total_loss"]] * data_matrix_3[:, param["normalized_total_volume"]] <= 0.01)]
-
-    # FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
+    # FEM_data_matrix = data_matrix_3[np.where(data_matrix_3[:, param["normalized_total_loss"]] *
+    #                                          data_matrix_3[:, param["normalized_total_volume"]] <= 0.1)]
+    data_matrix_3 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
+    FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
     n_cases_FEM = len(FEM_data_matrix)
+    print(n_cases_FEM)
+
+    fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
+    fmt.plt.title("Normalised volume vs Normalised losses")
+    fmt.plt.xlabel("Normalised Volume")
+    fmt.plt.ylabel("Normalised Losses")
+    ax.plot(FEM_data_matrix[:, param['normalized_total_volume']], FEM_data_matrix[:, param['normalized_total_loss']], 'o')
+    ax.grid()
+    fmt.plt.show()
 
     # ##########################################   {FEM_SIMULATION}   ##################################################
     qwerty = 1
@@ -219,7 +232,9 @@ def automated_design_func(self):
     file_names = []
 
     # src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/results/log_electro_magnetic.json"
-    src_path = "C:/LEA_Project/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
+    # src_path = "C:/LEA_Project/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
+    #            "inductor/results/log_electro_magnetic.json"
+    src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
                "inductor/results/log_electro_magnetic.json"
 
     counter3 = 0
@@ -236,9 +251,10 @@ def automated_design_func(self):
 
             core = fmt.Core(core_inner_diameter=FEM_data_matrix[i, param["core_w"]], window_w=FEM_data_matrix[i, param["window_w"]],
                             window_h=FEM_data_matrix[i, param["window_h"]],
+                            material="N95", temperature=25, frequency=freq, datasource="manufacturer_datasheet")
                             # material="95_100")
-            mu_rel=3000, phi_mu_deg=10,
-            sigma=0.5)
+            # mu_rel=3000, phi_mu_deg=10,
+            # sigma=0.5)
             # TODO: wait for material update
             # mu_rel=3000, phi_mu_deg=10,
             # sigma=0.5)
@@ -291,29 +307,30 @@ def automated_design_func(self):
             vww.set_winding(winding, int(FEM_data_matrix[i, param["no_of_turns"]]), None)
             geo.set_winding_window(winding_window)
 
-            # try:
-            #     # 5. create the model
-            #     geo.create_model(freq=freq, visualize_before=False, save_png=False)
+            try:
+                # 5. create the model
+                geo.create_model(freq=freq, visualize_before=False, save_png=False)
+
+                # 6. start simulation
+                geo.single_simulation(freq=freq, current=[i_max], show_results=False)
+
+                shutil.copy2(src_path, os.path.join(os.path.dirname(__file__), save_directory_name))
+                old_filename = os.path.join(os.path.dirname(__file__), save_directory_name, "log_electro_magnetic.json")
+                new_filename = os.path.join(os.path.dirname(__file__), save_directory_name, f"case{counter3}.json")
+                os.rename(old_filename, new_filename)
+                working_directories.append(new_filename)
+                file_names.append(f"case{counter3}")
+                counter3 = counter3 + 1
+
+            except (Exception,) as e:
+                print("next iteration")
+                logging.exception(e)
+
+            # # 5. create the model
+            # geo.create_model(freq=freq, visualize_before=False, save_png=False)
             #
-            #     # 6. start simulation
-            #     geo.single_simulation(freq=freq, current=[i_max], show_results=False)
-            # except (Exception,) as e:
-            #     print("next iteration")
-            #     logging.exception(e)
-
-            # 5. create the model
-            geo.create_model(freq=freq, visualize_before=False, save_png=False)
-
-            # 6. start simulation
-            geo.single_simulation(freq=freq, current=[i_max], show_results=False)
-
-            shutil.copy2(src_path, os.path.join(os.path.dirname(__file__), save_directory_name))
-            old_filename = os.path.join(os.path.dirname(__file__), save_directory_name, "log_electro_magnetic.json")
-            new_filename = os.path.join(os.path.dirname(__file__), save_directory_name, f"case{counter3}.json")
-            os.rename(old_filename, new_filename)
-            working_directories.append(new_filename)
-            file_names.append(f"case{counter3}")
-            counter3 = counter3 + 1
+            # # 6. start simulation
+            # geo.single_simulation(freq=freq, current=[i_max], show_results=False)
 
 
 def load_design(load_directory_name):
@@ -348,7 +365,6 @@ def load_design(load_directory_name):
         inductivities.append(data.sweeps[0].windings[0].self_inductance)
         active_power.append(data.sweeps[0].windings[0].active_power)
         total_volume.append(data.core_2daxi_total_volume)
-
 
     real_inductance = []
     for i in range(len(active_power)):
@@ -403,9 +419,9 @@ def load_design(load_directory_name):
 
 
 if __name__ == '__main__':
-    save_directory_name = "sweep_examples_2"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
-    automated_design_func()
 
-    design_name = "sweep_examples_2"
+    #automated_design_func()
+
+    design_name = "sweep_examples_4"
     load_design(design_name)
 
