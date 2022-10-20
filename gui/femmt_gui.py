@@ -949,6 +949,7 @@ class MainWindow(QMainWindow):
         self.matplotlib_widget4.figure.canvas.draw_idle()
 
 
+
     def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
         """
         Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:

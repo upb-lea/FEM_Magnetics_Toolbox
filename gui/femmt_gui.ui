@@ -1893,7 +1893,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="md_QWidget_3">
          <attribute name="title">
@@ -3901,8 +3901,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1236</width>
-               <height>971</height>
+               <width>59</width>
+               <height>16</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_27">
@@ -6658,8 +6658,8 @@
              <widget class="QWidget" name="plotwidget" native="true">
               <property name="geometry">
                <rect>
-                <x>40</x>
-                <y>60</y>
+                <x>30</x>
+                <y>70</y>
                 <width>1041</width>
                 <height>321</height>
                </rect>
