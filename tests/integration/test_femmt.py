@@ -4,7 +4,7 @@ import json
 import femmt as fmt
 import deepdiff
 
-def compare_result_logs(first_log_filepath, second_log_filepath):
+def compare_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
     first_content = None
     second_content = None
 
@@ -22,7 +22,7 @@ def compare_result_logs(first_log_filepath, second_log_filepath):
         if "working_directory" in second_content["simulation_settings"]:
             del second_content["simulation_settings"]["working_directory"]
 
-    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=6)
+    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=significant_digits)
     print(f"{difference = }")
 
 
@@ -480,7 +480,7 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
-    compare_result_logs(test_result_log, fixture_result_log)
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
 
