@@ -228,8 +228,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         winding = fmt.Conductor(0, fmt.Conductivity.Copper)
-        winding.set_solid_round_conductor(conductor_radius=0.0013,
-                                          conductor_arrangement=fmt.ConductorArrangement.Square)
+        winding.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 9, None)
         geo.set_winding_window(winding_window)
