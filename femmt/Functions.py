@@ -1109,9 +1109,9 @@ def set_silent_status(s: bool):
     global silent
     silent = s
 
-def femmt_print(text):
+def femmt_print(text, end='\n'):
     if not silent:
-        print(text)
+        print(text, end)
 
 def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     """
