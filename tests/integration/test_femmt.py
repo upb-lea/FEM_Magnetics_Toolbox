@@ -46,7 +46,7 @@ def temp_folder():
     yield temp_folder_path, onelab_path
 
 @pytest.fixture
-def femmt_simulation(temp_folder):
+def femmt_simulation_core_material(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
     
     # Create new temp folder, build model and simulate
@@ -131,7 +131,64 @@ def femmt_simulation(temp_folder):
 
     return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
 
-def test_femmt(femmt_simulation):
+
+@pytest.fixture
+def femmt_simulation_core_fixed_loss_angle(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                    silent=True, is_gui=True)
+
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        core_db = fmt.core_database()["PQ 40/40"]
+
+        core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
+                        window_h=core_db["window_h"],
+                        mu_rel=3000, phi_mu_deg=10, sigma=0.5)
+        geo.set_core(core)
+
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 10)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
+        geo.set_air_gaps(air_gaps)
+
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+        insulation.add_winding_insulations([0.0005], 0.0001)
+        geo.set_insulation(insulation)
+
+        winding_window = fmt.WindingWindow(core, insulation)
+        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding.set_solid_round_conductor(conductor_radius=0.0013,
+                                          conductor_arrangement=fmt.ConductorArrangement.Square)
+
+        vww.set_winding(winding, 9, None)
+        geo.set_winding_window(winding_window)
+
+        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+
+        geo.single_simulation(freq=100000, current=[4.5], show_results=False)
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+
+
+def test_femmt_core_material(femmt_simulation_core_material):
     """
     The first idea was to compare the simulated meshes with test meshes simulated manually.
     It turns out that the meshes cannot be compared because even slightly differences in the mesh,
@@ -141,11 +198,23 @@ def test_femmt(femmt_simulation):
 
     Now as an example only the result log will be checked.
     """
-    test_result_log = femmt_simulation
+    test_result_log = femmt_simulation_core_material
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_core_material.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
+
+def test_femmt_core_fixed_loss_angle(femmt_simulation_core_fixed_loss_angle):
+    """
+    Check the result log for fixed core loss anlge
+    """
+    test_result_log = femmt_simulation_core_material
+
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+    # e_m mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_core_fixed_loss_angle.json")
+    compare_result_logs(test_result_log, fixture_result_log)
