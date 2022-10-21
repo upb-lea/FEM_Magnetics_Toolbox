@@ -480,7 +480,7 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
-    assert compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
 
