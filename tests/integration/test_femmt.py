@@ -374,7 +374,7 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
         # 8. start simulation with given frequency, currents and phases
         geo.create_model(freq=250000, visualize_before=False)
-        geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 175])
+        geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 175], show_results=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
