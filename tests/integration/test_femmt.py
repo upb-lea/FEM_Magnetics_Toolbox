@@ -26,7 +26,7 @@ def compare_result_logs(first_log_filepath, second_log_filepath, significant_dig
     print(f"{difference = }")
 
 
-    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=6)
+    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=significant_digits)
     # made several tests with the deepdiff command:
     # tried adding not existing keys in one of the dicts: results as expected in an error
     # changed values in very nested dict: results as expected in an error
@@ -480,7 +480,7 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
-    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+    assert compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
 
