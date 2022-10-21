@@ -211,7 +211,7 @@ def test_femmt_core_fixed_loss_angle(femmt_simulation_core_fixed_loss_angle):
     """
     Check the result log for fixed core loss anlge
     """
-    test_result_log = femmt_simulation_core_material
+    test_result_log = femmt_simulation_core_fixed_loss_angle
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
