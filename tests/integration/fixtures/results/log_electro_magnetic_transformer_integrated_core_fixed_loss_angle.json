@@ -1,0 +1,251 @@
+{
+  "single_sweeps": [
+    {
+      "f": 250000,
+      "winding1": {
+        "turn_losses": [
+          0.06808180327284838,
+          0.07807986014884961,
+          0.1008264358612327,
+          0.06265943810156378
+        ],
+        "flux": [
+          3.743022742073445e-06,
+          3.533266099341549e-06
+        ],
+        "self_inductance": [
+          4.678778427591807e-07,
+          4.416582624176936e-07
+        ],
+        "mag_field_energy": [
+          4.605982759598607e-06,
+          2.780131404591124e-07
+        ],
+        "V": [
+          -5.550041393373647,
+          5.879526374358743
+        ],
+        "number_turns": 4,
+        "I": [
+          8.0,
+          0.0
+        ],
+        "winding_losses": 0.3096475373844942,
+        "P": -22.200165573494587,
+        "Q": 23.518105497434973,
+        "S": 32.34112919610345
+      },
+      "winding2": {
+        "turn_losses": [
+          0.04172080657991212,
+          0.05096443635913923,
+          0.0515160235446756,
+          0.03415552543641401,
+          0.01880580139960078,
+          0.01277400591148994,
+          0.02551825414570003,
+          0.01482559397843088
+        ],
+        "flux": [
+          2.277670717719097e-06,
+          7.013912397338141e-06
+        ],
+        "self_inductance": [
+          5.694176794297743e-07,
+          1.753478099334535e-06
+        ],
+        "mag_field_energy": [
+          4.605982759598607e-06,
+          2.780131404591124e-07
+        ],
+        "V": [
+          -11.04666463894305,
+          3.577756797041457
+        ],
+        "number_turns": 8,
+        "I": [
+          -3.984778792366982,
+          0.3486229709906328
+        ],
+        "winding_losses": 0.2502804473553627,
+        "P": 22.632901591858527,
+        "Q": -5.202724181566064,
+        "S": 23.22319042199423
+      },
+      "core_eddy_losses": 0.00114303934812078,
+      "core_hyst_losses": 0.01116095693086915,
+      "all_winding_losses": 0.5599279847398568
+    }
+  ],
+  "total_losses": {
+    "winding1": {
+      "total": 0.30964753738449446,
+      "turns": [
+        0.06808180327284838,
+        0.07807986014884961,
+        0.1008264358612327,
+        0.06265943810156378
+      ]
+    },
+    "winding2": {
+      "total": 0.2502804473553626,
+      "turns": [
+        0.04172080657991212,
+        0.05096443635913923,
+        0.0515160235446756,
+        0.03415552543641401,
+        0.01880580139960078,
+        0.01277400591148994,
+        0.02551825414570003,
+        0.01482559397843088
+      ]
+    },
+    "all_windings": 0.5599279847398568,
+    "eddy_core": 0.00114303934812078,
+    "hyst_core_fundamental_freq": 0.01116095693086915,
+    "core": 0.012303996278989931
+  },
+  "simulation_settings": {
+    "date": "2022-10-21 13:07:21",
+    "component_type": "IntegratedTransformer",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/integrated-transformer",
+    "core": {
+      "core_inner_diameter": 0.02,
+      "window_w": 0.011,
+      "window_h": 0.03,
+      "material": "custom",
+      "loss_approach": "LossAngle",
+      "mu_rel": 3100,
+      "phi_mu_deg": 12,
+      "sigma": 0.6,
+      "non_linear": false,
+      "correct_outer_leg": false
+    },
+    "virtual_winding_windows": [
+      {
+        "bot_bound": -0.002999999999999999,
+        "top_bound": 0.013999999999999999,
+        "left_bound": 0.012,
+        "right_bound": 0.019999999999999997,
+        "winding_type": "Interleaved",
+        "winding_scheme": "HorizontalAlternating",
+        "wrap_para": null,
+        "windings": [
+          {
+            "winding_number": 0,
+            "conductivity": "Copper",
+            "conductor_type": "RoundLitz",
+            "thickness": null,
+            "conductor_radius": 0.0009899494936611666,
+            "conductor_arrangement": "Square",
+            "number_strands": 100,
+            "strand_radius": 7e-05,
+            "fill_factor": 0.5
+          },
+          {
+            "winding_number": 1,
+            "conductivity": "Copper",
+            "conductor_type": "RoundLitz",
+            "thickness": null,
+            "conductor_radius": 0.0009899494936611666,
+            "conductor_arrangement": "Square",
+            "number_strands": 100,
+            "strand_radius": 7e-05,
+            "fill_factor": 0.5
+          }
+        ],
+        "turns": [
+          3,
+          6
+        ]
+      },
+      {
+        "bot_bound": -0.013999999999999999,
+        "top_bound": -0.006,
+        "left_bound": 0.012,
+        "right_bound": 0.019999999999999997,
+        "winding_type": "Interleaved",
+        "winding_scheme": "HorizontalAlternating",
+        "wrap_para": null,
+        "windings": [
+          {
+            "winding_number": 0,
+            "conductivity": "Copper",
+            "conductor_type": "RoundLitz",
+            "thickness": null,
+            "conductor_radius": 0.0009899494936611666,
+            "conductor_arrangement": "Square",
+            "number_strands": 100,
+            "strand_radius": 7e-05,
+            "fill_factor": 0.5
+          },
+          {
+            "winding_number": 1,
+            "conductivity": "Copper",
+            "conductor_type": "RoundLitz",
+            "thickness": null,
+            "conductor_radius": 0.0009899494936611666,
+            "conductor_arrangement": "Square",
+            "number_strands": 100,
+            "strand_radius": 7e-05,
+            "fill_factor": 0.5
+          }
+        ],
+        "turns": [
+          1,
+          2
+        ]
+      }
+    ],
+    "air_gaps": {
+      "method": "Percent",
+      "air_gap_number": 2,
+      "air_gaps": [
+        {
+          "leg_position": "CenterLeg",
+          "position_value": 30,
+          "height": 0.001
+        },
+        {
+          "leg_position": "CenterLeg",
+          "position_value": 40,
+          "height": 0.001
+        }
+      ]
+    },
+    "insulation": {
+      "inner_winding_insulations": [
+        0.0002,
+        0.0002
+      ],
+      "core_insulations": [
+        0.001,
+        0.001,
+        0.002,
+        0.001
+      ],
+      "vww_insulation": 0.0001
+    },
+    "stray_path": {
+      "start_index": 0,
+      "length": 0.019999999999999997
+    }
+  },
+  "misc": {
+    "core_2daxi_volume": 3.5217253646741575e-05,
+    "core_2daxi_total_volume": 6.798406502368311e-05,
+    "core_2daxi_weight": -1,
+    "wire_lengths": [
+      0.38879969872003983,
+      0.652946078396614
+    ],
+    "wire_volumes": [
+      1.1970212716724661e-06,
+      2.0102647910194465e-06
+    ],
+    "wire_weight": -1,
+    "core_cost": -1,
+    "winding_cost": -1,
+    "total_cost_incl_margin": -1
+  }
+}

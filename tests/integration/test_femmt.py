@@ -302,7 +302,7 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
 
         # 8. start simulation with given frequency, currents and phases
         geo.create_model(freq=250000, visualize_before=False)
-        geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_results=True)
+        geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_results=False)
 
 
 
@@ -313,9 +313,75 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
 
     return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
 
+@pytest.fixture
+def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
 
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
 
+        # 1. chose simulation type
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                    working_directory=working_directory, silent=True, is_gui=True)
 
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        # 2. set core parameters
+        core = fmt.Core(window_h=0.03, window_w=0.011, core_inner_diameter=0.02,
+                        mu_rel=3100, phi_mu_deg=12,
+                        sigma=0.6)
+        geo.set_core(core)
+
+        # 2.1 set stray path parameters
+        stray_path = fmt.StrayPath(start_index=0, length=geo.core.core_inner_diameter / 2 + geo.core.window_w - 0.001)
+        geo.set_stray_path(stray_path)
+
+        # 3. set air gap parameters
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 30)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 40)
+        geo.set_air_gaps(air_gaps)
+
+        # 4. set insulations
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+        insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+        geo.set_insulation(insulation)
+
+        # 5. create winding window and virtual winding windows (vww)
+        # For an integrated transformer it is not necessary to set horizontal and vertical split factors
+        # since this is determined by the stray_path
+        winding_window = fmt.WindingWindow(core, insulation, stray_path, air_gaps)
+        top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+
+        # 6. set conductor parameters
+        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+
+        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+
+        # 7. add conductor to vww and add winding window to MagneticComponent
+        top.set_interleaved_winding(winding1, 3, winding2, 6, fmt.InterleavedWindingScheme.HorizontalAlternating,
+                                    0.0005)
+        bot.set_interleaved_winding(winding1, 1, winding2, 2, fmt.InterleavedWindingScheme.HorizontalAlternating,
+                                    0.0005)
+        geo.set_winding_window(winding_window)
+
+        # 8. start simulation with given frequency, currents and phases
+        geo.create_model(freq=250000, visualize_before=False)
+        geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 175])
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
 
 def test_inductor_core_material_old_database(femmt_simulation_inductor_core_material_old_database):
     """
@@ -369,5 +435,18 @@ def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transfor
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
+
+def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transformer_integrated_core_fixed_loss_angle):
+    """
+    Check the result log for fixed core loss anlge
+    """
+    test_result_log = femmt_simulation_transformer_integrated_core_fixed_loss_angle
+
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+    # e_m mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
+    compare_result_logs(test_result_log, fixture_result_log)
+
