@@ -202,7 +202,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    silent=True, is_gui=True)
+                                    silent=False, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
