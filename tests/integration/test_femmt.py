@@ -360,10 +360,10 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
         # 6. set conductor parameters
         winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-        winding1.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+        winding1.set_solid_round_conductor(0.0011, None)
 
         winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-        winding2.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+        winding2.set_solid_round_conductor(0.0011, None)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
         top.set_interleaved_winding(winding1, 3, winding2, 6, fmt.InterleavedWindingScheme.HorizontalAlternating,
