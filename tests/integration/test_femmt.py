@@ -46,7 +46,7 @@ def temp_folder():
     yield temp_folder_path, onelab_path
 
 @pytest.fixture
-def femmt_simulation_core_material(temp_folder):
+def femmt_simulation_inductor_core_material_old_database(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
     
     # Create new temp folder, build model and simulate
@@ -133,7 +133,7 @@ def femmt_simulation_core_material(temp_folder):
 
 
 @pytest.fixture
-def femmt_simulation_core_fixed_loss_angle(temp_folder):
+def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -187,8 +187,74 @@ def femmt_simulation_core_fixed_loss_angle(temp_folder):
 
     return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
 
+@pytest.fixture
+def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
 
-def test_femmt_core_material(femmt_simulation_core_material):
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # 1. chose simulation type
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                    silent=True, is_gui=True)
+
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        # 2. set core parameters
+        core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
+                        mu_rel=3100, phi_mu_deg=12,
+                        sigma=1.2)
+        geo.set_core(core)
+
+        # 3. set air gap parameters
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+        geo.set_air_gaps(air_gaps)
+
+        # 4. set insulation
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+        insulation.add_winding_insulations([0.0002, 0.0002], 0.0005)
+        geo.set_insulation(insulation)
+
+        # 5. create winding window and virtual winding windows (vww)
+        winding_window = fmt.WindingWindow(core, insulation)
+        left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+
+        # 6. create conductors and set parameters
+        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+
+        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+
+        # 7. add conductor to vww and add winding window to MagneticComponent
+        left.set_winding(winding1, 10, None)
+        right.set_winding(winding2, 10, None)
+        geo.set_winding_window(winding_window)
+
+        # 8. start simulation with given frequency, currents and phases
+        geo.create_model(freq=250000, visualize_before=True)
+        geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178])
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+
+
+
+
+
+
+
+def test_inductor_core_material_old_database(femmt_simulation_inductor_core_material_old_database):
     """
     The first idea was to compare the simulated meshes with test meshes simulated manually.
     It turns out that the meshes cannot be compared because even slightly differences in the mesh,
@@ -198,7 +264,7 @@ def test_femmt_core_material(femmt_simulation_core_material):
 
     Now as an example only the result log will be checked.
     """
-    test_result_log = femmt_simulation_core_material
+    test_result_log = femmt_simulation_inductor_core_material_old_database
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
@@ -207,14 +273,26 @@ def test_femmt_core_material(femmt_simulation_core_material):
     compare_result_logs(test_result_log, fixture_result_log)
 
 
-def test_femmt_core_fixed_loss_angle(femmt_simulation_core_fixed_loss_angle):
+def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_loss_angle):
     """
     Check the result log for fixed core loss anlge
     """
-    test_result_log = femmt_simulation_core_fixed_loss_angle
+    test_result_log = femmt_simulation_inductor_core_fixed_loss_angle
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_core_fixed_loss_angle.json")
+    compare_result_logs(test_result_log, fixture_result_log)
+
+def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fixed_loss_angle):
+    """
+    Check the result log for fixed core loss anlge
+    """
+    test_result_log = femmt_simulation_transformer_core_fixed_loss_angle
+
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+    # e_m mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
