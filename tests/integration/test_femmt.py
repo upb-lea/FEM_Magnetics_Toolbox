@@ -241,7 +241,7 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
         geo.set_winding_window(winding_window)
 
         # 8. start simulation with given frequency, currents and phases
-        geo.create_model(freq=250000, visualize_before=True)
+        geo.create_model(freq=250000, visualize_before=False)
         geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178])
 
     except Exception as e:
