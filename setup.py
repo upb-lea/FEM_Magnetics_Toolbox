@@ -44,7 +44,8 @@ setup(
 					  'scipy>=1.7.2',
                       'pytest',
                       'PyQt5>=5.15.6',
-                      'mplcursors>=0.5.1' # TODO Is this necessary?
+                      'mplcursors>=0.5.1', # TODO Is this necessary?
+                      'deepdiff>=6.2.1', # comparing result dicts for pytests
 					  ],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,

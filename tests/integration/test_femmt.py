@@ -2,28 +2,34 @@ import pytest
 import os
 import json
 import femmt as fmt
+import deepdiff
 
-def compare_result_logs(first_log, second_log):
+def compare_result_logs(first_log_filepath, second_log_filepath):
     first_content = None
     second_content = None
 
-    with open(first_log, "r") as fd:
+    with open(first_log_filepath, "r") as fd:
         first_content = json.loads(fd.read())
         if "date" in first_content["simulation_settings"]:
             del first_content["simulation_settings"]["date"]
         if "working_directory" in first_content["simulation_settings"]:
             del first_content["simulation_settings"]["working_directory"]
 
-    with open(second_log, "r") as fd:
+    with open(second_log_filepath, "r") as fd:
         second_content = json.loads(fd.read())
         if "date" in second_content["simulation_settings"]:
             del second_content["simulation_settings"]["date"]
         if "working_directory" in second_content["simulation_settings"]:
             del second_content["simulation_settings"]["working_directory"]
 
-    print(first_content)
-    print(second_content)
-    return first_content == second_content
+
+    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=6)
+    # made several tests with the deepdiff command:
+    # tried adding not existing keys in one of the dicts: results as expected in an error
+    # changed values in very nested dict: results as expected in an error
+    # So this command is valid to compare the dicts.
+
+    #return first_content == second_content
 
 @pytest.fixture
 def temp_folder():
@@ -141,4 +147,5 @@ def test_femmt(femmt_simulation):
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic.json")
-    assert compare_result_logs(test_result_log, fixture_result_log), "Electro magnetic results file is wrong."
+    compare_result_logs(test_result_log, fixture_result_log)
+
