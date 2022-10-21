@@ -54,6 +54,7 @@ femmt/thermal/solver/PostOperation.pro
 # Used for integration test
 !tests/integration/fixtures/results/log_electro_magnetic_inductor_core_material.json
 !tests/integration/fixtures/results/log_electro_magnetic_inductor_core_fixed_loss_angle.json
+!tests/integration/fixtures/results/log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json
 !tests/integration/fixtures/results/log_electro_magnetic_transformer_core_fixed_loss_angle.json
 !tests/integration/fixtures/results/log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json
 !tests/integration/fixtures/results/log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json
