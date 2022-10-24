@@ -236,16 +236,19 @@ class Core:
                 self.sigma = f"sigma_from_{self.material}"
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
+
         elif loss_approach == LossApproach.LossAngle:
             if self.material == "custom":
                 self.sigma = sigma
+                if phi_mu_deg is not None and phi_mu_deg != 0:
+                    self.permeability_type = PermeabilityType.FixedLossAngle
+                else:
+                    self.permeability_type = PermeabilityType.RealValue
+
             else:
                 self.sigma = f"sigma_from_{self.material}"
+                self.permeability_type = PermeabilityType.FromData
 
-            if phi_mu_deg is not None and phi_mu_deg != 0:
-                self.permeability_type = PermeabilityType.FixedLossAngle
-            else:
-                self.permeability_type = PermeabilityType.RealValue
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
 
