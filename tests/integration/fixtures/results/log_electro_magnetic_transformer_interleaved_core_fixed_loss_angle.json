@@ -138,7 +138,7 @@
     "core": 0.0043865372206324475
   },
   "simulation_settings": {
-    "date": "2022-10-21 12:58:52",
+    "date": "2022-10-27 15:06:07",
     "component_type": "Transformer",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/transformer-interleaved",
     "core": {
@@ -220,7 +220,7 @@
   "misc": {
     "core_2daxi_volume": 2.0622592275408493e-05,
     "core_2daxi_total_volume": 5.0738292151801945e-05,
-    "core_2daxi_weight": -1,
+    "core_2daxi_weight": 0.0,
     "wire_lengths": [
       1.7379290559658735,
       0.5849645520984195
@@ -229,9 +229,15 @@
       6.606436837165986e-06,
       2.2236416107742344e-06
     ],
-    "wire_weight": -1,
-    "core_cost": -1,
-    "winding_cost": -1,
-    "total_cost_incl_margin": -1
+    "wire_weight": [
+      0.05892941658752059,
+      0.019834883168106172
+    ],
+    "core_cost": 0.0,
+    "winding_cost": [
+      4.0018000819878505,
+      3.3371930138578048
+    ],
+    "total_cost_incl_margin": 9.785324127794206
   }
 }
