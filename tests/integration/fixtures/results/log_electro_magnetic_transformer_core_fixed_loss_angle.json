@@ -1,0 +1,240 @@
+{
+  "single_sweeps": [
+    {
+      "f": 250000,
+      "winding1": {
+        "turn_losses": [
+          0.8164362086590758,
+          0.5970339532013245,
+          0.318520668624144,
+          0.1232062373172927,
+          0.02568381893213128,
+          0.6553431731236045,
+          0.4798833203509638,
+          0.2614015537363846,
+          0.1036339802200637,
+          0.02400046024992344
+        ],
+        "flux": [
+          8.302112830186173e-06,
+          5.599634058410788e-06
+        ],
+        "self_inductance": [
+          2.075528207546543e-06,
+          1.399908514602697e-06
+        ],
+        "mag_field_energy": [
+          1.874603803429325e-05,
+          -2.075618698287657e-06
+        ],
+        "V": [
+          -8.79588461034727,
+          13.04092833829318
+        ],
+        "number_turns": 10,
+        "I": [
+          4.0,
+          0.0
+        ],
+        "winding_losses": 3.405143374414892,
+        "P": -17.59176922069454,
+        "Q": 26.08185667658636,
+        "S": 31.4600316594273
+      },
+      "winding2": {
+        "turn_losses": [
+          0.02632836763231396,
+          0.124236692948061,
+          0.3186821659899611,
+          0.5963990836181754,
+          0.8155298704652207,
+          0.02498990116202089,
+          0.1045644460763222,
+          0.2618692456946578,
+          0.4799397422538036,
+          0.6547707917975649
+        ],
+        "flux": [
+          -1.189548676496199e-05,
+          8.180760166418813e-06
+        ],
+        "self_inductance": [
+          -2.973871691240497e-06,
+          2.045190041604703e-06
+        ],
+        "mag_field_energy": [
+          1.874603803429325e-05,
+          -2.075618698287657e-06
+        ],
+        "V": [
+          -12.85030801980065,
+          -18.68538691583955
+        ],
+        "number_turns": 10,
+        "I": [
+          -3.997563308076383,
+          0.13959798681000457
+        ],
+        "winding_losses": 3.407310307638109,
+        "P": 24.380738720608782,
+        "Q": 38.24494713071167,
+        "S": 45.35522463392198
+      },
+      "core_eddy_losses": 0.003737535471751,
+      "core_hyst_losses": 0.03024998793601559,
+      "all_winding_losses": 6.812453682053
+    }
+  ],
+  "total_losses": {
+    "winding1": {
+      "total": 3.405143374414908,
+      "turns": [
+        0.8164362086590758,
+        0.5970339532013245,
+        0.318520668624144,
+        0.1232062373172927,
+        0.02568381893213128,
+        0.6553431731236045,
+        0.4798833203509638,
+        0.2614015537363846,
+        0.1036339802200637,
+        0.02400046024992344
+      ]
+    },
+    "winding2": {
+      "total": 3.407310307638102,
+      "turns": [
+        0.02632836763231396,
+        0.124236692948061,
+        0.3186821659899611,
+        0.5963990836181754,
+        0.8155298704652207,
+        0.02498990116202089,
+        0.1045644460763222,
+        0.2618692456946578,
+        0.4799397422538036,
+        0.6547707917975649
+      ]
+    },
+    "all_windings": 6.812453682053,
+    "eddy_core": 0.003737535471751,
+    "hyst_core_fundamental_freq": 0.03024998793601559,
+    "core": 0.03398752340776659
+  },
+  "simulation_settings": {
+    "date": "2022-10-27 15:03:41",
+    "component_type": "Transformer",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/transformer",
+    "core": {
+      "core_inner_diameter": 0.015,
+      "window_w": 0.012,
+      "window_h": 0.0295,
+      "material": "custom",
+      "loss_approach": "LossAngle",
+      "mu_rel": 3100,
+      "phi_mu_deg": 12,
+      "sigma": 1.2,
+      "non_linear": false,
+      "correct_outer_leg": false
+    },
+    "virtual_winding_windows": [
+      {
+        "bot_bound": 0.00025,
+        "top_bound": 0.013749999999999998,
+        "left_bound": 0.0095,
+        "right_bound": 0.0185,
+        "winding_type": "Single",
+        "winding_scheme": null,
+        "wrap_para": null,
+        "windings": [
+          {
+            "winding_number": 0,
+            "conductivity": "Copper",
+            "conductor_type": "RoundSolid",
+            "thickness": null,
+            "conductor_radius": 0.0011,
+            "conductor_arrangement": "Square",
+            "number_strands": 0,
+            "strand_radius": null,
+            "fill_factor": null
+          }
+        ],
+        "turns": [
+          10
+        ]
+      },
+      {
+        "bot_bound": -0.013749999999999998,
+        "top_bound": -0.00025,
+        "left_bound": 0.0095,
+        "right_bound": 0.0185,
+        "winding_type": "Single",
+        "winding_scheme": null,
+        "wrap_para": null,
+        "windings": [
+          {
+            "winding_number": 1,
+            "conductivity": "Copper",
+            "conductor_type": "RoundSolid",
+            "thickness": null,
+            "conductor_radius": 0.0011,
+            "conductor_arrangement": "Square",
+            "number_strands": 0,
+            "strand_radius": null,
+            "fill_factor": null
+          }
+        ],
+        "turns": [
+          10
+        ]
+      }
+    ],
+    "air_gaps": {
+      "method": "Percent",
+      "air_gap_number": 1,
+      "air_gaps": [
+        {
+          "leg_position": "CenterLeg",
+          "position_value": 50,
+          "height": 0.0005
+        }
+      ]
+    },
+    "insulation": {
+      "inner_winding_insulations": [
+        0.0002,
+        0.0002
+      ],
+      "core_insulations": [
+        0.001,
+        0.001,
+        0.002,
+        0.001
+      ],
+      "vww_insulation": 0.0005
+    }
+  },
+  "misc": {
+    "core_2daxi_volume": 2.0622592275408493e-05,
+    "core_2daxi_total_volume": 5.0738292151801945e-05,
+    "core_2daxi_weight": 0.0,
+    "wire_lengths": [
+      0.7414158662471914,
+      0.7414158662471914
+    ],
+    "wire_volumes": [
+      2.8183642327750778e-06,
+      2.8183642327750778e-06
+    ],
+    "wire_weight": [
+      0.025139808956353694,
+      0.025139808956353694
+    ],
+    "core_cost": 0.0,
+    "winding_cost": [
+      3.427376752258013,
+      3.427376752258013
+    ],
+    "total_cost_incl_margin": 9.1396713393547
+  }
+}
