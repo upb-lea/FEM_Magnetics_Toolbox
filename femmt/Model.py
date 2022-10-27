@@ -251,63 +251,69 @@ class Core:
         else:
             self.r_outer = np.sqrt((core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
 
-            # Check loss approach
-            if loss_approach == LossApproach.Steinmetz:
-                self.sigma = 0
-                if self.material != "custom":
-                    self.permeability_type = PermeabilityType.FromData
-                    self.mu_rel = self.material_database.get_material_property(material_name=self.material,
-                                                                               property="initial_permeability")
-                    self.ki = \
-                        self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                                  datasource="measurements")['ki']
-                    self.alpha = \
-                        self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                                  datasource="measurements")['alpha']
-                    self.beta = \
-                        self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                                  datasource="measurements")['beta']
+        # Check loss approach
+        if loss_approach == LossApproach.Steinmetz:
+            self.sigma = 0
+            if self.material != "custom":
+                self.permeability_type = PermeabilityType.FromData
+                self.mu_rel = self.material_database.get_material_property(material_name=self.material,
+                                                                           property="initial_permeability")
+                self.ki = \
+                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                              datasource="measurements")['ki']
+                self.alpha = \
+                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                              datasource="measurements")['alpha']
+                self.beta = \
+                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                              datasource="measurements")['beta']
 
-                if self.material == "custom":  # ----steinmetz_parameter consist of list of ki, alpha , beta from the user
-                    self.ki = steinmetz_parameter[0]
-                    self.alpha = steinmetz_parameter[1]
-                    self.beta = steinmetz_parameter[2]
-                    print(self.ki)
-                    print(self.alpha)
-                    print(self.beta)
-                else:
-                    raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
-            # if loss_approach == LossApproach.Generalized_Steinmetz:
-            #     raise NotImplemented
-                # self.sigma = 0
-                # if self.material != "custom":
-                #     self.permeability_type = PermeabilityType.FromData
-                #     self.mu_rel = Database.get_initial_permeability(material_name=self.material)
-                #     self.t_rise = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
-                #         't_rise']
-                #     self.t_fall = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
-                #         't_fall']
-                # elif self.material == "custom":  # ----generalized_steinmetz_parameter consist of list of ki, alpha , beta from the user
-                #     self.t_rise = generalized_steinmetz_parameter[0]
-                #     self.t_fall = generalized_steinmetz_parameter[1]
+            if self.material == "custom":  # ----steinmetz_parameter consist of list of ki, alpha , beta from the user
+                self.ki = steinmetz_parameter[0]
+                self.alpha = steinmetz_parameter[1]
+                self.beta = steinmetz_parameter[2]
+                print(self.ki)
+                print(self.alpha)
+                print(self.beta)
+            else:
+                raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
+        # if loss_approach == LossApproach.Generalized_Steinmetz:
+        #     raise NotImplemented
+            # self.sigma = 0
+            # if self.material != "custom":
+            #     self.permeability_type = PermeabilityType.FromData
+            #     self.mu_rel = Database.get_initial_permeability(material_name=self.material)
+            #     self.t_rise = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
+            #         't_rise']
+            #     self.t_fall = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
+            #         't_fall']
+            # elif self.material == "custom":  # ----generalized_steinmetz_parameter consist of list of ki, alpha , beta from the user
+            #     self.t_rise = generalized_steinmetz_parameter[0]
+            #     self.t_fall = generalized_steinmetz_parameter[1]
 
-            if loss_approach == LossApproach.LossAngle:
-                if self.material == "custom":
-                    self.sigma = sigma  # ------sigma from user
-                if self.material != "custom":
-                    self.mu_rel = self.material_database.get_material_property(material_name=self.material,
-                                                                               property="initial_permeability")
-                    self.sigma = 1 / self.material_database.get_material_property(
-                        material_name=self.material,
-                        property="resistivity")  # get resistivity for material from database
+        if loss_approach == LossApproach.LossAngle:
+            if self.material == "custom":
+                self.sigma = sigma  # ------sigma from user
 
+                # this is a service for the user:
+                # In case of not giving a fixed loss angle phi_mu_deg,
+                # the initial permeability from datasheet is used (RealValue)
                 if phi_mu_deg is not None and phi_mu_deg != 0:
                     self.permeability_type = PermeabilityType.FixedLossAngle
                 else:
-                    self.permeability_type = PermeabilityType.FromData
-                    # self.permeability_type = PermeabilityType.RealValue
-            else:
-                raise Exception("Loss approach {loss_approach.value} is not implemented")
+                    self.permeability_type = PermeabilityType.RealValue
+
+
+            elif self.material != "custom":
+                self.permeability_type = PermeabilityType.FromData
+                self.mu_rel = self.material_database.get_material_property(material_name=self.material,
+                                                                           property="initial_permeability")
+                self.sigma = 1 / self.material_database.get_material_property(
+                    material_name=self.material,
+                    property="resistivity")  # get resistivity for material from database
+        else:
+            raise Exception("Loss approach {loss_approach.value} is not implemented")
+
 
         # Set attributes of core with given keywords
         # TODO Should we allow this? Technically this is not how an user interface should be designed
