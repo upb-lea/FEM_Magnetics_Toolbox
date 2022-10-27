@@ -40,11 +40,19 @@ jobs:
 
       - name: install material database package
         run: |
+            pwd
+            ls
             wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/main.zip
             unzip main.zip
+            rm main.zip
             cd materialdatabase-main
             pip install -e .
             cd ..
+            ech show folder path
+            pwd
+            echo show folder structure:
+            ls 
+
 
       - name: Install ONELAB
         run: |
