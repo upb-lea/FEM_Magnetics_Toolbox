@@ -1448,7 +1448,11 @@ class MagneticComponent:
         This method is using the core volume from for an ideal rotation-symmetric core and the volumetric mass density from the material database.
         """
         material_database = mdb.MaterialDatabase()
-        volumetric_mass_density = material_database.get_material_property(material_name=self.core.material, property="volumetric_mass_density")
+        if self.core.material == 'custom':
+            volumetric_mass_density = 0
+            warnings.warn("Volumetric mass density not implemented for custom cores. Returns '0' in log-file: Core cost will also result to 0.")
+        else:
+            volumetric_mass_density = material_database.get_material_property(material_name=self.core.material, property="volumetric_mass_density")
         return self.calculate_core_volume() * volumetric_mass_density
 
     def get_wire_distances(self) -> List[List[float]]:
@@ -1559,7 +1563,8 @@ class MagneticComponent:
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
-        self.core.update_core_material_data_with_freq(frequency)  # frequency update to core class
+        if self.core.material != 'custom':
+            self.core.update_core_material_data_with_freq(frequency)  # frequency update to core class
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
