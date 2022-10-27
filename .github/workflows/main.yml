@@ -38,6 +38,13 @@ jobs:
             pip install -e .
             pip install pytest
 
+      - name: install material database package
+        run: |
+            wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/main.zip
+            unzip main.zip
+            cd materialdatabase-main
+            pip install -e .
+
       - name: Install ONELAB
         run: |
           wget https://onelab.info/files/onelab-Linux64.zip
