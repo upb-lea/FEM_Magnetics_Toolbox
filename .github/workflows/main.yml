@@ -44,6 +44,7 @@ jobs:
             unzip main.zip
             cd materialdatabase-main
             pip install -e .
+            cd ..
 
       - name: Install ONELAB
         run: |
