@@ -48,7 +48,7 @@ jobs:
             cd materialdatabase-main
             pip install -e .
             cd ..
-            ech show folder path
+            echo show folder path
             pwd
             echo show folder structure:
             ls 
