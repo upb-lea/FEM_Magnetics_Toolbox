@@ -60,6 +60,8 @@ jobs:
           unzip onelab-Linux64.zip -d .
           mv onelab-Linux64 onelab
           rm onelab-Linux64.zip
+          pwd
+          ls
 
       # Runs a set of commands using the runners shell
       - name: Run pytests
