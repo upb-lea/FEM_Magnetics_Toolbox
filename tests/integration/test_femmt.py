@@ -518,10 +518,19 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
-def test_load_files(temp_folder):
+def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
+                    femmt_simulation_inductor_core_fixed_loss_angle,
+                    femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
+                    femmt_simulation_transformer_core_fixed_loss_angle,
+                    femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
+                    femmt_simulation_transformer_integrated_core_fixed_loss_angle
+                    ):
     """
     This functin tests if simulations can be set up from a simulation file.
     There is no complete function check, there is just an error-check if the load will fail or not.
+
+    Note: Fixtures are used, to make sure that the latest self-generated log-files can be read.
+    It is not okay to use predefined logfiles which where generated once.
     """
     temp_folder_path, onelab_folder = temp_folder
 
@@ -531,21 +540,13 @@ def test_load_files(temp_folder):
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
 
-        fixture_result_log_1 = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                          "log_electro_magnetic_inductor_core_material.json")
-        fixture_result_log_2 = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                          "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
-        fixture_result_log_3 = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                          "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
-        fixture_result_log_4 = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                          "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
-        fixture_result_log_5 = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                          "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
-        fixture_result_log_6 = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                          "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
-
-        result_log_filepath_list = [fixture_result_log_1, fixture_result_log_2, fixture_result_log_3,
-                                    fixture_result_log_4, fixture_result_log_5, fixture_result_log_6]
+        result_log_filepath_list = [femmt_simulation_inductor_core_material_database,
+                                    femmt_simulation_inductor_core_fixed_loss_angle,
+                                    femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
+                                    femmt_simulation_transformer_core_fixed_loss_angle,
+                                    femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
+                                    femmt_simulation_transformer_integrated_core_fixed_loss_angle
+                                    ]
 
         for file in result_log_filepath_list:
             geo = fmt.MagneticComponent.decode_settings_from_log(file, working_directory)
