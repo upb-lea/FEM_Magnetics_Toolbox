@@ -56,6 +56,7 @@ class MagneticComponent:
         """
         # Variable to set silent mode
         ff.set_silent_status(silent)
+        mdb.set_silent_status(silent)
 
         ff.femmt_print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type.name}\n"
