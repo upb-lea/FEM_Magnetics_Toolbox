@@ -106,9 +106,9 @@
     "core": 0.008597741297967922
   },
   "simulation_settings": {
-    "date": "2022-10-21 13:44:35",
+    "date": "2022-10-28 09:18:32",
     "component_type": "IntegratedTransformer",
-    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/integrated-transformer",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/integration",
     "core": {
       "core_inner_diameter": 0.02,
       "window_w": 0.011,
@@ -234,7 +234,7 @@
   "misc": {
     "core_2daxi_volume": 3.5217253646741575e-05,
     "core_2daxi_total_volume": 6.798406502368311e-05,
-    "core_2daxi_weight": -1,
+    "core_2daxi_weight": 0.0,
     "wire_lengths": [
       0.3970973114137499,
       0.6584778201924206
@@ -243,9 +243,15 @@
       1.509496775520211e-06,
       2.5030895897866785e-06
     ],
-    "wire_weight": -1,
-    "core_cost": -1,
-    "winding_cost": -1,
-    "total_cost_incl_margin": -1
+    "wire_weight": [
+      0.013464711237640281,
+      0.022327559140897173
+    ],
+    "core_cost": 0.0,
+    "winding_cost": [
+      3.2289000910398844,
+      3.3795685053952518
+    ],
+    "total_cost_incl_margin": 8.811291461913514
   }
 }

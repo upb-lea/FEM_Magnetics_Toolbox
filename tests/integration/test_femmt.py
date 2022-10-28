@@ -67,7 +67,7 @@ def femmt_simulation_inductor_core_material_old_database(temp_folder):
         core_db = fmt.core_database()["PQ 40/40"]
 
         core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                        material="95_100")
+                        material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -298,7 +298,7 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
 
         # 8. start simulation with given frequency, currents and phases
         geo.create_model(freq=250000, visualize_before=False)
-        geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178])
+        geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178], show_results=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)

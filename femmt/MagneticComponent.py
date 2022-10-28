@@ -2144,7 +2144,11 @@ class MagneticComponent:
 
         single_strand_cross_section_list = []
         for winding in self.windings:
-            single_strand_cross_section_list.append(winding.strand_radius)
+            if winding.strand_radius:
+                single_strand_cross_section = winding.strand_radius ** 2 * np.pi
+                single_strand_cross_section_list.append(single_strand_cross_section)
+            else:
+                single_strand_cross_section_list.append(None)
 
         wire_weight_list = self.calculate_wire_weight()
         core_weight = self.calculate_core_weight()
@@ -2159,7 +2163,7 @@ class MagneticComponent:
             "wire_weight": wire_weight_list,
             "core_cost": ff.cost_function_core(core_weight, core_type = "ferrite"),
             "winding_cost": ff.cost_function_winding(wire_weight_list= wire_weight_list, wire_type_list= wire_type_list, single_strand_cross_section_list = single_strand_cross_section_list),
-            "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite", wire_weight_list= wire_weight_list, wire_type_list=wire_type_list)
+            "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite", wire_weight_list= wire_weight_list, wire_type_list=wire_type_list, single_strand_cross_section_list = single_strand_cross_section_list)
         }
 
         # ---- Print current configuration ----
