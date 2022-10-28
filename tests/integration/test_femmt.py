@@ -49,7 +49,7 @@ def temp_folder():
     yield temp_folder_path, onelab_path
 
 @pytest.fixture
-def femmt_simulation_inductor_core_material_old_database(temp_folder):
+def femmt_simulation_inductor_core_material_database(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
     
     # Create new temp folder, build model and simulate
@@ -202,7 +202,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    silent=False, is_gui=True)
+                                    silent=True, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -439,7 +439,7 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
     return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
 
-def test_inductor_core_material_old_database(femmt_simulation_inductor_core_material_old_database):
+def test_inductor_core_material_database(femmt_simulation_inductor_core_material_database):
     """
     The first idea was to compare the simulated meshes with test meshes simulated manually.
     It turns out that the meshes cannot be compared because even slightly differences in the mesh,
@@ -449,7 +449,7 @@ def test_inductor_core_material_old_database(femmt_simulation_inductor_core_mate
 
     Now as an example only the result log will be checked.
     """
-    test_result_log = femmt_simulation_inductor_core_material_old_database
+    test_result_log = femmt_simulation_inductor_core_material_database
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 

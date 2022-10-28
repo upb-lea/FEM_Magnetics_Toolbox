@@ -2410,14 +2410,14 @@ class MagneticComponent:
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:
-                    ff.femmt_print(line.replace(' 0\n', '\n'), end='')
+                    print(line.replace(' 0\n', '\n'), end='')
 
         # Corrects pB coefficient error at 0Hz
         # Must be changed in future in cell.pro
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:
-                    ff.femmt_print(line.replace(' 0\n', ' 1\n'), end='')
+                    print(line.replace(' 0\n', ' 1\n'), end='')
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # FEMM [alternative Solver]
