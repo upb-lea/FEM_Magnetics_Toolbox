@@ -3150,8 +3150,9 @@ class MagneticComponent:
                     if conductor_type == ConductorType.RectangularSolid:
                         conductor.set_rectangular_conductor(winding["thickness"])
                     elif conductor_type == ConductorType.RoundLitz:
-                        conductor.set_litz_round_conductor(winding["conductor_radius"], winding["number_strands"], 
-                        winding["strand_radius"], winding["fill_factor"], ConductorArrangement[winding["conductor_arrangement"]])
+                        # 3 of 4 wire preferences are allowed, so fill-factor is set to None, even the value is known from the log.
+                        conductor.set_litz_round_conductor(winding["conductor_radius"], winding["number_strands"],
+                        winding["strand_radius"], None, ConductorArrangement[winding["conductor_arrangement"]])
                     elif conductor_type == ConductorType.RoundSolid:
                         conductor.set_solid_round_conductor(winding["conductor_radius"], ConductorArrangement[winding["conductor_arrangement"]])
                     else:
