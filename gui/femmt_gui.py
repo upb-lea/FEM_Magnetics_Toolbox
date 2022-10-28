@@ -83,6 +83,18 @@ class MatplotlibWidget(QWidget):
 
 class MainWindow(QMainWindow):
 
+    "Global variable declaration"
+    litz_conductor_r = 0
+    FEM_data_matrix = 0
+    winding_factor = 0
+    mc1 = 0
+    freq = 0
+    i_max = 0
+    litz_strand_n = []
+    litz_strand_r = []
+    param = []
+    no_of_turns  = 0
+
     def __init__(self, parent=None):
 
         super(MainWindow, self).__init__(parent)
@@ -116,6 +128,10 @@ class MainWindow(QMainWindow):
             "+-10": "+/- 10%",
             "excel": "MS Excel"
         }
+
+
+
+
 
         "******* Manual Design *********"
 
@@ -431,6 +447,12 @@ class MainWindow(QMainWindow):
 
         self.aut_simulate_pushButton.clicked.connect(self.automated_design_func)
 
+        "Signals in FEM Simulations tab"
+
+        self.aut_pos_mod_sim_pushButton.clicked.connect(self.automated_design_fem_sim)
+
+
+
         "******* Database Section *********"
         "Signals in visualisation tab"
         self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
@@ -439,7 +461,6 @@ class MainWindow(QMainWindow):
     def automated_design_func(self):
         # ########################################   {DESIGN PARAMETERS}   #################################################
 
-        save_directory_name = self.aut_directoryname_lineEdit.text() #"sweep_examples_2" # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
         goal_inductance = comma_str_to_point_float(self.aut_goal_inductance_val_lineEdit.text())  # 120 * 1e-6 #Automated design-Reluctacne model-Goal Inductance
         self.trans_dict =  {
             # key: Used in FEMMT code
@@ -449,15 +470,15 @@ class MainWindow(QMainWindow):
             "Centre distributed":"2"
         }
         L_tolerance_percent = int(self.trans_dict[self.aut_tolerance_val_comboBox.currentText()])  # +/-10%
-        winding_factor = comma_str_to_point_float(self.aut_wdg_factor_lineEdit.text()) #0.91  # Include
-        i_max = comma_str_to_point_float(self.aut_maximum_current_lineEdit.text())#3  # Automated design-Reluctacne model
+        self.winding_factor = comma_str_to_point_float(self.aut_wdg_factor_lineEdit.text()) #0.91  # Include
+        self.i_max = comma_str_to_point_float(self.aut_maximum_current_lineEdit.text())#3  # Automated design-Reluctacne model
         # Max current amplitude with assumption of sinusoidal current waveform
-        percent_of_B_sat = int(self.aut_b_sat_lineEdit.text()) #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
+        percent_of_B_sat = comma_str_to_point_float(self.aut_b_sat_lineEdit.text()) #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
 
         percent_of_total_loss = comma_str_to_point_float(self.aut_hysterisis_loss_options_lineEdit.text()) #100  # Automated design-Reluctacne model-%hysterisis loss(total loss)
         # Percent of total_loss allowed in FEM simulation
 
-        freq = comma_str_to_point_float(self.aut_switching_freq_lineEdit.text()) #100 * 1e3  # Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
+        self.freq = comma_str_to_point_float(self.aut_switching_freq_lineEdit.text()) #100 * 1e3  # Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
         mu_imag = 100  # TODO: coordinate with Aniket
         Cu_sigma = 5.96 * 1e7  # Constant              # copper conductivity (sigma) @ 20 degree celsius
 
@@ -478,15 +499,16 @@ class MainWindow(QMainWindow):
         manual_core_w = list(np.linspace(min_core_w, max_core_w, step_core_w))  # Automated design-Definition min max step
         manual_window_h = list(np.linspace(min_window_h, max_window_h, step_window_h))  # Automated design-Definition min max step
         manual_window_w = list(np.linspace(min_window_w, max_window_w, step_window_w))  # Automated design-Definition min max step
-        db_core_names = []  # "PQ 40/40", "PQ 40/30"
-        for i in range(self.aut_core_geometry_basket_listWidget.count()):
-            db_core_names.append(self.aut_core_geometry_basket_listWidget.item(i).text())
-        print(db_core_names)
 
         all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
         manual_core_w = [item[0] for item in all_manual_combinations]
         manual_window_h = [item[1] for item in all_manual_combinations]
         manual_window_w = [item[2] for item in all_manual_combinations]
+
+        db_core_names = []  # "PQ 40/40", "PQ 40/30"
+        for i in range(self.aut_core_geometry_basket_listWidget.count()):
+            db_core_names.append(self.aut_core_geometry_basket_listWidget.item(i).text())
+        print(db_core_names)
 
         core_db = fmt.core_database()
         db_core_w = [core_db[core_name]["core_inner_diameter"] for core_name in db_core_names]
@@ -499,17 +521,19 @@ class MainWindow(QMainWindow):
 
         # Set winding settings (Solid and Litz winding type)
         solid_conductor_r = [comma_str_to_point_float(self.aut_winding1_radius_lineEdit.text())]  # Automated design-Definition-Wire radius
+        ## TODO: enable wire rad for solid
+        # TODO: solid_conductor_r as list
         litz_db = fmt.litz_database()
         #litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
         litz_names = []
         for i in range(self.aut_litz_basket_listWidget.count()):
             litz_names.append(self.aut_litz_basket_listWidget.item(i).text())
         print(litz_names)
-        litz_conductor_r = [litz_db[litz_name]["conductor_radii"] for litz_name in litz_names]
-        litz_strand_r = [litz_db[litz_name]["strand_radii"] for litz_name in litz_names]
-        litz_strand_n = [litz_db[litz_name]["strands_numbers"] for litz_name in litz_names]
+        self.litz_conductor_r = [litz_db[litz_name]["conductor_radii"] for litz_name in litz_names]
+        self.litz_strand_r = [litz_db[litz_name]["strand_radii"] for litz_name in litz_names]
+        self.litz_strand_n = [litz_db[litz_name]["strands_numbers"] for litz_name in litz_names]
 
-        min_conductor_r = min(litz_conductor_r + solid_conductor_r)
+        min_conductor_r = min(self.litz_conductor_r + solid_conductor_r)
         # Set air-gap and core parameters7
         no_turns_min = int(self.aut_min_winding1_turns_lineEdit.text())
         no_turns_max = int(self.aut_max_winding1_turns_lineEdit.text())
@@ -538,7 +562,7 @@ class MainWindow(QMainWindow):
 
         mu_rel = [database.get_material_property(material_name=material_name, property="initial_permeability")
                   for material_name in material_names]
-
+        component = self.aut_simulation_type_comboBox.currentText()
         # Set two types of equally distributed air-gaps (used only for air-gaps more than 1):
         # Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100])
         # Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75])
@@ -547,12 +571,13 @@ class MainWindow(QMainWindow):
         # TODO: check if the issue has been resolved
         # ######################################   {RELUCTANCE_CALCULATION}   ##############################################
         # Call to Reluctance model (Class MagneticCircuit)
-        mc1 = fmt.MagneticCircuit(core_w=core_w_list, window_h=window_h_list, window_w=window_w_list,
+        #if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+        self.mc1 = fmt.MagneticCircuit(core_w=core_w_list, window_h=window_h_list, window_w=window_w_list,
                                   no_of_turns=no_of_turns, n_air_gaps=n_air_gaps, air_gap_h=air_gap_height,
                                   air_gap_position=air_gap_position, mu_rel=mu_rel, mult_air_gap_type=mult_air_gap_type,
-                                  air_gap_method='percent', component_type='inductor', sim_type='sweep')
-        param = mc1.get_param_pos_dict()
-        n_cases_0 = len(mc1.data_matrix)
+                                  air_gap_method='percent', component_type=component, sim_type='sweep')
+        self.param = self.mc1.get_param_pos_dict()
+        n_cases_0 = len(self.mc1.data_matrix)
         self.ncases0_label.setText(f"{n_cases_0}")
 
         # Calculate total reluctance and creates data_matrix to access all corresponding parameters and results
@@ -563,7 +588,7 @@ class MainWindow(QMainWindow):
         # ############################################   {FILTRATION}   ####################################################
         # 1st Filter: ------------------------------------------------------------------------------------------------------
         # Filter out cases where physical geometry is not possible
-        data_matrix_1 = mc1.data_matrix[np.where((mc1.data_matrix[:, param["no_of_turns"]] * np.pi * min_conductor_r ** 2) < (winding_factor * mc1.data_matrix[:,param["window_h"]] * mc1.data_matrix[:,param["window_w"]]))]
+        data_matrix_1 = self.mc1.data_matrix[np.where((self.mc1.data_matrix[:, self.param["no_of_turns"]] * np.pi * min_conductor_r ** 2) < (self.winding_factor * self.mc1.data_matrix[:,self.param["window_h"]] * self.mc1.data_matrix[:,self.param["window_w"]]))]
 
         n_cases_1 = len(data_matrix_1)
         # self.ncases1_label.setText(f"{n_cases_1}")
@@ -571,10 +596,10 @@ class MainWindow(QMainWindow):
         # 2nd Filter:-------------------------------------------------------------------------------------------------------
         # Based on +-10% goal inductance tolerance band
         data_matrix_2 = data_matrix_1[
-            np.where((data_matrix_1[:, param["inductance"]] > ((100 - L_tolerance_percent) / 100) * goal_inductance) &
-                     (data_matrix_1[:, param["inductance"]] < ((100 + L_tolerance_percent) / 100) * goal_inductance))]
+            np.where((data_matrix_1[:, self.param["inductance"]] > ((100 - L_tolerance_percent) / 100) * goal_inductance) &
+                     (data_matrix_1[:, self.param["inductance"]] < ((100 + L_tolerance_percent) / 100) * goal_inductance))]
         n_cases_2 = len(data_matrix_2)
-        self.ncases1_label.setText(f"{n_cases_2}")
+        self.ncases2_label.setText(f"{n_cases_2}")
 
         # 3rd Filter:-------------------------------------------------------------------------------------------------------
         # Filter out cases where B_max is greater than B_sat
@@ -585,90 +610,97 @@ class MainWindow(QMainWindow):
         for material_name in material_names:
             B_sat_key = database.get_material_property(material_name=material_name, property="initial_permeability")
             B_sat_dict[B_sat_key] = database.get_material_property(material_name=material_name,
-                                                                      property="max_flux_density") / 1000
+                                                                      property="max_flux_density")
             counter1 = counter1 + 1
-
+        print(f"Bsat: {B_sat_dict}")
         # Creating B_saturated array corresponding to the material type
         B_sat = np.zeros((len(data_matrix_2), 1))
         for index in range(len(data_matrix_2)):
-            B_sat[index] = B_sat_dict[data_matrix_2[index, param["mu_rel"]]]
+            B_sat[index] = B_sat_dict[data_matrix_2[index, self.param["mu_rel"]]]
 
         # flux_max = L * i_max / N
-        total_flux_max = (data_matrix_2[:, param["inductance"]] * i_max) / data_matrix_2[:, param["no_of_turns"]]
+        total_flux_max = (data_matrix_2[:, self.param["inductance"]] * self.i_max) / data_matrix_2[:, self.param["no_of_turns"]]
         data_matrix_2 = np.hstack((data_matrix_2, np.reshape(total_flux_max, (len(total_flux_max), 1))))
-        param["total_flux_max"] = 15
+        self.param["total_flux_max"] = 15
 
-        B_max_center = total_flux_max / data_matrix_2[:, param["center_leg_area"]]
+        B_max_center = total_flux_max / data_matrix_2[:, self.param["center_leg_area"]]
         B_max_middle = total_flux_max / (
-                np.pi * data_matrix_2[:, param["core_w"]] * data_matrix_2[:, param["core_h_middle"]])
-        B_max_outer = total_flux_max / data_matrix_2[:, param["outer_leg_area"]]
+                np.pi * data_matrix_2[:, self.param["core_w"]] * data_matrix_2[:, self.param["core_h_middle"]])
+        B_max_outer = total_flux_max / data_matrix_2[:, self.param["outer_leg_area"]]
 
         data_matrix_2 = np.hstack((data_matrix_2, np.reshape(B_max_center, (len(B_max_center), 1))))
-        param["B_max_center"] = 16
+        self.param["B_max_center"] = 16
         data_matrix_2 = np.hstack((data_matrix_2, np.reshape(B_max_outer, (len(B_max_outer), 1))))
-        param["B_max_outer"] = 17
+        self.param["B_max_outer"] = 17
 
         data_matrix_3 = np.zeros((0, 18))
         for index in range(len(data_matrix_2)):
-            if (data_matrix_2[index, param["B_max_center"]] < (percent_of_B_sat / 100) * B_sat[index]) & \
-                    (data_matrix_2[index, param["B_max_outer"]] < (percent_of_B_sat / 100) * B_sat[index]):
+            if (data_matrix_2[index, self.param["B_max_center"]] < (percent_of_B_sat / 100) * B_sat[index]) & \
+                    (data_matrix_2[index, self.param["B_max_outer"]] < (percent_of_B_sat / 100) * B_sat[index]):
                 data_matrix_3 = np.vstack([data_matrix_3, data_matrix_2[index, :]])
         n_cases_3 = len(data_matrix_3)
-        self.ncases2_label.setText(f"{n_cases_3}")
+        self.ncases3_label.setText(f"{n_cases_3}")
 
         # 4th Filter:-------------------------------------------------------------------------------------------------------
         # Filter out data-matrix according to calculated hysteresis loss + DC winding loss
 
         # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
-        volume_center = (np.pi * (data_matrix_3[:, param["core_w"]] / 2) ** 2) * \
-                        (data_matrix_3[:, param["window_h"]] + data_matrix_3[:, param["core_h_middle"]] -
-                         (data_matrix_3[:, param["n_air_gaps"]] * data_matrix_3[:, param["air_gap_h"]]))
+        volume_center = (np.pi * (data_matrix_3[:, self.param["core_w"]] / 2) ** 2) * \
+                        (data_matrix_3[:, self.param["window_h"]] + data_matrix_3[:, self.param["core_h_middle"]] -
+                         (data_matrix_3[:, self.param["n_air_gaps"]] * data_matrix_3[:, self.param["air_gap_h"]]))
         volume_outer = (np.pi * (
-                    (data_matrix_3[:, param["r_outer"]] ** 2) - (data_matrix_3[:, param["r_inner"]] ** 2))) * \
-                       (data_matrix_3[:, param["window_h"]] + data_matrix_3[:, param["core_h_middle"]])
+                    (data_matrix_3[:, self.param["r_outer"]] ** 2) - (data_matrix_3[:, self.param["r_inner"]] ** 2))) * \
+                       (data_matrix_3[:, self.param["window_h"]] + data_matrix_3[:, self.param["core_h_middle"]])
 
-        P_hyst_center = 0.5 * (2 * np.pi * freq) * mu_imag * fmt.mu0 * ((data_matrix_3[:, param["B_max_center"]] /
+        P_hyst_center = 0.5 * (2 * np.pi * self.freq) * mu_imag * fmt.mu0 * ((data_matrix_3[:, self.param["B_max_center"]] /
                                                                          (fmt.mu0 * data_matrix_3[:,
-                                                                                    param["mu_rel"]])) ** 2)
-        P_hyst_outer = 0.5 * (2 * np.pi * freq) * mu_imag * fmt.mu0 * ((data_matrix_3[:, param["B_max_outer"]] /
+                                                                                    self.param["mu_rel"]])) ** 2)
+        P_hyst_outer = 0.5 * (2 * np.pi * self.freq) * mu_imag * fmt.mu0 * ((data_matrix_3[:, self.param["B_max_outer"]] /
                                                                         (fmt.mu0 * data_matrix_3[:,
-                                                                                   param["mu_rel"]])) ** 2)
+                                                                                   self.param["mu_rel"]])) ** 2)
         P_hyst_density_center = P_hyst_center * volume_center
-        P_hyst_density_middle = 0.5 * (2 * np.pi * freq) * mu_imag * fmt.mu0 * \
-                                ((data_matrix_3[:, param["total_flux_max"]] / (
-                                        fmt.mu0 * data_matrix_3[:, param["mu_rel"]])) ** 2) * \
-                                (1 / (2 * np.pi * data_matrix_3[:, param["core_h_middle"]])) * \
-                                np.log((data_matrix_3[:, param["r_inner"]] * 2) / data_matrix_3[:, param["core_w"]])
+        P_hyst_density_middle = 0.5 * (2 * np.pi * self.freq) * mu_imag * fmt.mu0 * \
+                                ((data_matrix_3[:, self.param["total_flux_max"]] / (
+                                        fmt.mu0 * data_matrix_3[:, self.param["mu_rel"]])) ** 2) * \
+                                (1 / (2 * np.pi * data_matrix_3[:, self.param["core_h_middle"]])) * \
+                                np.log((data_matrix_3[:, self.param["r_inner"]] * 2) / data_matrix_3[:, self.param["core_w"]])
         P_hyst_density_outer = P_hyst_outer * volume_outer
 
         total_hyst_loss = P_hyst_density_center + (2 * P_hyst_density_middle) + P_hyst_density_outer
         data_matrix_3 = np.hstack(
             (data_matrix_3, np.reshape(total_hyst_loss, (len(total_hyst_loss), 1))))  # position: 18
-        param["P_hyst_density_total"] = 18
+        self.param["P_hyst_density_total"] = 18
 
         # Winding loss (only DC loss)
-        Resistance = (data_matrix_3[:, param["no_of_turns"]] * 2 * np.pi *
-                      (data_matrix_3[:, param["core_w"]] / 2 + min_conductor_r)) / \
+        Resistance = (data_matrix_3[:, self.param["no_of_turns"]] * 2 * np.pi *
+                      (data_matrix_3[:, self.param["core_w"]] / 2 + min_conductor_r)) / \
                      (Cu_sigma * (np.pi * (min_conductor_r ** 2)))
 
-        DC_loss = ((i_max ** 2) / 2) * Resistance
+        DC_loss = ((self.i_max ** 2) / 2) * Resistance
         data_matrix_3 = np.hstack((data_matrix_3, np.reshape(DC_loss, (len(DC_loss), 1))))  # position: 19
-        param["DC_loss"] = 19
+        self.param["DC_loss"] = 19
 
         total_loss = DC_loss + total_hyst_loss
         data_matrix_3 = np.hstack((data_matrix_3, np.reshape(total_loss, (len(total_loss), 1))))  # position: 20
-        param["total_loss"] = 20
+        self.param["total_loss"] = 20
 
         # Sort the data_matrix with respect to total losses column----------------------------------------------------------
-        data_matrix_3 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
+        data_matrix_3 = data_matrix_3[data_matrix_3[:, self.param["total_loss"]].argsort()]
 
-        FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
-        n_cases_FEM = len(FEM_data_matrix)
+        self.FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
+        n_cases_FEM = len(self.FEM_data_matrix)
         self.fem_cases_label.setText(f"{n_cases_FEM}")
 
-        # ##########################################   {FEM_SIMULATION}   ##################################################
-        qwerty = 1
+    def automated_design_fem_sim(self):
 
+        ###########################################   {FEM_SIMULATION}   ##################################################
+        qwerty = 1
+        solid_conductor_r = [comma_str_to_point_float(self.aut_winding1_radius_lineEdit.text())]  # Automated design-Definition-Wire radius
+        ## TODO: enable wire rad for solid
+        # TODO: solid_conductor_r as list
+
+
+        save_directory_name = self.aut_directoryname_lineEdit.text()  # "sweep_examples_2" # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
         example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
         if not os.path.exists(example_results_folder):
             os.mkdir(example_results_folder)
@@ -687,50 +719,52 @@ class MainWindow(QMainWindow):
         src_path = "C:/LEA_Project/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
                    "inductor/results/log_electro_magnetic.json"
 
+
+
         counter3 = 0
-        for j in range(len(solid_conductor_r) + len(litz_conductor_r)):
-            conductor_r_list = litz_conductor_r + solid_conductor_r
-            for i in range(len(FEM_data_matrix)):
-                if not ((FEM_data_matrix[i, param["no_of_turns"]] * np.pi * conductor_r_list[j] ** 2)
-                        < (winding_factor * FEM_data_matrix[i, param["window_h"]] * mc1.data_matrix[
-                            i, param["window_w"]])):
+        for j in range(len(solid_conductor_r) + len(self.litz_conductor_r)):
+            conductor_r_list = self.litz_conductor_r + solid_conductor_r
+            for i in range(len(self.FEM_data_matrix)):
+                if not ((self.FEM_data_matrix[i, self.param["no_of_turns"]] * np.pi * conductor_r_list[j] ** 2)
+                        < (self.winding_factor * self.FEM_data_matrix[i, self.param["window_h"]] * self.mc1.data_matrix[
+                            i, self.param["window_w"]])):
                     continue
 
                 # MagneticComponent class object
 
                 geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
-                                            working_directory=working_directory, silent=False)
+                                            working_directory=working_directory, silent=True)
 
-                core = fmt.Core(core_inner_diameter=FEM_data_matrix[i, param["core_w"]],
-                                window_w=FEM_data_matrix[i, param["window_w"]],
+                core = fmt.Core(core_inner_diameter=self.FEM_data_matrix[i, self.param["core_w"]],
+                                window_w=self.FEM_data_matrix[i, self.param["window_w"]],
 
-                                window_h=FEM_data_matrix[i, param["window_h"]],
-                                material="95_100")
+                                window_h=self.FEM_data_matrix[i, self.param["window_h"]],
+                                # material="95_100")
                 # TODO: wait for material update
-                # mu_rel=3000, phi_mu_deg=10,
-                # sigma=0.5)
+                mu_rel=3000, phi_mu_deg=10,
+                sigma=0.5)
                 geo.set_core(core)
 
                 # 3. set air gap parameters
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-                if int(FEM_data_matrix[i, param["n_air_gaps"]]) == 1:
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, FEM_data_matrix[i, param["air_gap_h"]],
-                                         FEM_data_matrix[i, param["air_gap_position"]])
+                if int(self.FEM_data_matrix[i, self.param["n_air_gaps"]]) == 1:
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, self.FEM_data_matrix[i, self.param["air_gap_h"]],
+                                         self.FEM_data_matrix[i, self.param["air_gap_position"]])
                 else:
-                    if int(FEM_data_matrix[i, param["mult_air_gap_type"]]) == 1:
-                        position_list = list(np.linspace(0, 100, int(FEM_data_matrix[i, param["n_air_gaps"]])))
+                    if int(self.FEM_data_matrix[i, self.param["mult_air_gap_type"]]) == 1:
+                        position_list = list(np.linspace(0, 100, int(self.FEM_data_matrix[i, self.param["n_air_gaps"]])))
                         for position in position_list:
                             air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg,
-                                                 FEM_data_matrix[i, param["air_gap_h"]],
+                                                 self.FEM_data_matrix[i, self.param["air_gap_h"]],
                                                  position)
 
-                    elif int(FEM_data_matrix[i, param["mult_air_gap_type"]]) == 2:
-                        position_list = list(np.linspace(0, 100, int(FEM_data_matrix[i, param["n_air_gaps"]]) + 2))
+                    elif int(self.FEM_data_matrix[i, self.param["mult_air_gap_type"]]) == 2:
+                        position_list = list(np.linspace(0, 100, int(self.FEM_data_matrix[i, self.param["n_air_gaps"]]) + 2))
                         position_list.remove(0.0)
                         position_list.remove(100.0)
                         for position in position_list:
                             air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg,
-                                                 FEM_data_matrix[i, param["air_gap_h"]],
+                                                 self.FEM_data_matrix[i, self.param["air_gap_h"]],
                                                  position)
                 geo.set_air_gaps(air_gaps)
 
@@ -746,10 +780,10 @@ class MainWindow(QMainWindow):
 
                 # 6. create conductor and set parameters: use solid wires
                 winding = fmt.Conductor(0, fmt.Conductivity.Copper)
-                if j < len(litz_conductor_r):
-                    winding.set_litz_round_conductor(conductor_radius=litz_conductor_r[j],
-                                                     number_strands=litz_strand_n[j],
-                                                     strand_radius=litz_strand_r[j], fill_factor=None,
+                if j < len(self.litz_conductor_r):
+                    winding.set_litz_round_conductor(conductor_radius=self.litz_conductor_r[j],
+                                                     number_strands=self.litz_strand_n[j],
+                                                     strand_radius=self.litz_strand_r[j], fill_factor=None,
                                                      conductor_arrangement=fmt.ConductorArrangement.Square)
                 else:
                     winding.set_solid_round_conductor(conductor_radius=conductor_r_list[j],
@@ -758,28 +792,30 @@ class MainWindow(QMainWindow):
                 # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
                 # 7. add conductor to vww and add winding window to MagneticComponent
-                vww.set_winding(winding, int(FEM_data_matrix[i, param["no_of_turns"]]), None)
+                vww.set_winding(winding, int(self.FEM_data_matrix[i, self.param["no_of_turns"]]), None)
                 geo.set_winding_window(winding_window)
 
                 try:
                     # 5. create the model
-                    geo.create_model(freq=freq, visualize_before=False, save_png=False)
+                    geo.create_model(freq=self.freq, visualize_before=False, save_png=False)
 
                     # 6. start simulation
-                    geo.single_simulation(freq=freq, current=[i_max], show_results=False)
+                    geo.single_simulation(freq=self.freq, current=[self.i_max], show_results=False)
+
+                    shutil.copy2(src_path, os.path.join(os.path.dirname(__file__), save_directory_name))
+                    old_filename = os.path.join(os.path.dirname(__file__), save_directory_name,
+                                                "log_electro_magnetic.json")
+                    new_filename = os.path.join(os.path.dirname(__file__), save_directory_name, f"case{counter3}.json")
+                    os.rename(old_filename, new_filename)
+                    working_directories.append(new_filename)
+                    file_names.append(f"case{counter3}")
+                    counter3 = counter3 + 1
                 except (Exception,) as e:
                     print("next iteration")
                     logging.exception(e)
+        self.load_design(save_directory_name)
 
-                shutil.copy2(src_path, os.path.join(os.path.dirname(__file__), save_directory_name))
-                old_filename = os.path.join(os.path.dirname(__file__), save_directory_name, "log_electro_magnetic.json")
-                new_filename = os.path.join(os.path.dirname(__file__), save_directory_name, f"case{counter3}.json")
-                os.rename(old_filename, new_filename)
-                working_directories.append(new_filename)
-                file_names.append(f"case{counter3}")
-                counter3 = counter3 + 1
-
-    def load_design(load_directory_name):
+    def load_design(self, load_directory_name):
         working_directories = []
         labels = []
         working_directory = os.path.join(os.path.dirname(__file__), load_directory_name)
@@ -1235,26 +1271,10 @@ class MainWindow(QMainWindow):
         for option in aut_download_options:
             self.aut_download_comboBox.addItem(option)
 
-        self.aut_pos_mod_sim_pushButton.clicked.connect(self.aut_reluctance_model_matrix)
+        self.aut_pos_mod_sim_pushButton.clicked.connect(self.automated_design_fem_sim)
 
-        self.aut_pos_mod_download_pushButton.clicked.connect(self.aut_download_pos_model_data)
+        self.aut_pos_mod_download_pushButton.clicked.connect(self.automated_design_fem_sim)
 
-    def aut_reluctance_model_matrix(self):
-        self.aut_rel_model_calc_timeline.setText("Simulating possible models..")
-        matrix = [[0.0149, 0.0295, 0.01105, 0.0001],
-                  [0.0149, 0.0295, 0.01105, 0.0002],
-                  [0.0149, 0.0295, 0.01105, 0.0003],
-                  [0.0149, 0.0295, 0.01105, 0.0004]]
-        num_r = len(matrix)
-        flag = 0
-        m = []
-        for i in range(num_r):
-            m.append([float(x) for x in matrix[i]])
-        for i in m:
-            self.aut_action_run_simulation(i)
-            flag += 1
-        if flag == 4:
-            self.aut_rel_model_calc_timeline.setText("Simulation ended.Ready to download!")
 
     def aut_action_run_simulation(self, sim_value):
 
@@ -2354,7 +2374,7 @@ class MainWindow(QMainWindow):
                                                            comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
                                                            comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
                                                            comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text())],
-                                      cond_cond_isolation=[comma_str_to_point_float(self.self.md_isolation_p2p_lineEdit.text())],
+                                      cond_cond_isolation=[comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text())],
                                       conductivity_sigma=[self.md_winding1_material_comboBox.currentText()])"""
 
             elif self.md_winding1_type_comboBox.currentText() == self.translation_dict['litz']:

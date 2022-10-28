@@ -30,7 +30,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="md_QWidget_2">
        <attribute name="title">
@@ -1893,7 +1893,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="md_QWidget_3">
          <attribute name="title">
@@ -3571,7 +3571,7 @@
                 <string/>
                </property>
               </widget>
-              <widget class="QLabel" name="ncases1_label">
+              <widget class="QLabel" name="ncases2_label">
                <property name="geometry">
                 <rect>
                  <x>250</x>
@@ -3623,7 +3623,7 @@
                 <string>Maximum current</string>
                </property>
               </widget>
-              <widget class="QLineEdit" name="aut_maximum_current_lineEdit">
+              <widget class="QLineEdit" name="aut_switching_freq_lineEdit">
                <property name="geometry">
                 <rect>
                  <x>250</x>
@@ -3649,7 +3649,7 @@
                 <string>Switching frequency</string>
                </property>
               </widget>
-              <widget class="QLineEdit" name="aut_switching_freq_lineEdit">
+              <widget class="QLineEdit" name="aut_maximum_current_lineEdit">
                <property name="geometry">
                 <rect>
                  <x>250</x>
@@ -3714,7 +3714,7 @@
                 <string/>
                </property>
               </widget>
-              <widget class="QLabel" name="ncases2_label">
+              <widget class="QLabel" name="ncases3_label">
                <property name="geometry">
                 <rect>
                  <x>250</x>
@@ -3901,8 +3901,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>59</width>
-               <height>16</height>
+               <width>1236</width>
+               <height>971</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_27">

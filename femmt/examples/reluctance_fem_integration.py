@@ -14,24 +14,24 @@ material_db = mdb.MaterialDatabase()
 
 def automated_design_func():
     # ########################################   {DESIGN PARAMETERS}   #################################################
-    save_directory_name = "sweep_examples_4"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
+    save_directory_name = "hyperbolic_filtered_0_01_0_6"  # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
     goal_inductance = 120 * 1e-6
     L_tolerance_percent = 10                # Inductance tolerance of +-10% is applied
     winding_factor = 0.91
-    i_max = 8                               # Max current amplitude with assumption of sinusoidal current waveform
+    i_max = 3                               # Max current amplitude with assumption of sinusoidal current waveform 8
     percent_of_B_sat = 70                   # Percent of B_sat allowed in the designed core
-    percent_of_total_loss = 30              # Percent of total_loss allowed in FEM simulation
+    percent_of_total_loss = 100              # Percent of total_loss allowed in FEM simulation 30
 
     freq = 100 * 1e3                        # Switching frequency in Hz
     mu_imag = 100                           # TODO: coordinate with Aniket
     Cu_sigma = 5.96 * 1e7                   # copper conductivity (sigma) @ 20 degree celsius
 
     # Set core-geometry from core database or/and manual entry
-    db_core_names = []  # "PQ 40/40", "PQ 40/30"
+    db_core_names = ["PQ 40/40"]  # "PQ 40/40", "PQ 40/30"    blank
 
-    manual_core_w = list(np.linspace(0.005, 0.05, 10))
-    manual_window_h = list(np.linspace(0.01, 0.08, 5))
-    manual_window_w = list(np.linspace(0.005, 0.04, 10))
+    manual_core_w = list(np.linspace(0.005, 0.05, 0))# 10
+    manual_window_h = list(np.linspace(0.01, 0.08, 0))# 5
+    manual_window_w = list(np.linspace(0.005, 0.04, 0))# 10
 
     all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
     manual_core_w = [item[0] for item in all_manual_combinations]
@@ -48,7 +48,7 @@ def automated_design_func():
     window_w_list = db_window_w + manual_window_w
 
     # Set winding settings (Solid and Litz winding type)
-    solid_conductor_r = [0.0013]
+    solid_conductor_r = [0.0013]  # blank
     litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
 
     litz_db = fmt.litz_database()
@@ -59,10 +59,10 @@ def automated_design_func():
     min_conductor_r = min(litz_conductor_r + solid_conductor_r)
 
     # Set air-gap and core parameters
-    no_of_turns = [2,3,4,5,6,7,8, 9, 10, 11, 12, 13, 14,15,16,17,18,19,20]  # Set No. of turns (N)
+    no_of_turns = [8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N)   2,3,4,5,6,7,8, 9, 10, 11, 12, 13, 14,15,16,17,18,19,20
     print(f"{no_of_turns = }")
     n_air_gaps = [1, 2]  # Set No. of air-gaps (n)
-    air_gap_height = list(np.linspace(0.0001, 0.0005, 5))  # Set air-gap length in metre (l)
+    air_gap_height = list(np.linspace(0.0001, 0.0005, 3))  # Set air-gap length in metre (l)
     air_gap_position = list(np.linspace(20, 80, 2))  # Set air-gap position in percent w.r.t. core window height
 
     material_names = ["N95"]  # Set relative permeability in F/m (u) , "N87"
@@ -183,26 +183,25 @@ def automated_design_func():
     total_loss = DC_loss + total_hyst_loss
     data_matrix_3 = np.hstack((data_matrix_3, np.reshape(total_loss, (len(total_loss), 1))))  # position: 20
     param["total_loss"] = 20
+    data_matrix_3 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
+    data_matrix_4 = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
 
-    total_loss = data_matrix_3[:, param["total_loss"]]
+    total_loss = data_matrix_4[:, param["total_loss"]]
     max_total_loss = max(total_loss)
     normalized_total_loss = total_loss / max_total_loss
-    data_matrix_3 = np.hstack((data_matrix_3, np.reshape(normalized_total_loss, (len(normalized_total_loss), 1))))  # position: 20
+    data_matrix_4 = np.hstack((data_matrix_4, np.reshape(normalized_total_loss, (len(normalized_total_loss), 1))))  # position: 20
     param["normalized_total_loss"] = 21
 
-    total_volume = np.pi * (data_matrix_3[:, param["r_outer"]] ** 2) * data_matrix_3[:, param["core_h_middle"]]
+    total_volume = np.pi * (data_matrix_4[:, param["r_outer"]] ** 2) * data_matrix_4[:, param["core_h_middle"]]
     max_volume = max(total_volume)
     normalized_total_volume = total_volume / max_volume
-    data_matrix_3 = np.hstack((data_matrix_3, np.reshape(total_volume, (len(total_volume), 1))))  # position: 20
+    data_matrix_4 = np.hstack((data_matrix_4, np.reshape(total_volume, (len(total_volume), 1))))  # position: 20
     param["total_volume"] = 22
-    data_matrix_3 = np.hstack((data_matrix_3, np.reshape(normalized_total_volume, (len(normalized_total_volume), 1))))  # position: 20
+    data_matrix_4 = np.hstack((data_matrix_4, np.reshape(normalized_total_volume, (len(normalized_total_volume), 1))))  # position: 20
     param["normalized_total_volume"] = 23
 
     # Sort the data_matrix with respect to total losses column----------------------------------------------------------
-    # FEM_data_matrix = data_matrix_3[np.where(data_matrix_3[:, param["normalized_total_loss"]] *
-    #                                          data_matrix_3[:, param["normalized_total_volume"]] <= 0.1)]
-    data_matrix_3 = data_matrix_3[data_matrix_3[:, param["total_loss"]].argsort()]
-    FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
+    FEM_data_matrix = data_matrix_4[np.where(data_matrix_4[:, param["normalized_total_loss"]] <= ((0.01 / data_matrix_4[:, param["normalized_total_volume"]]) + 0.6))]
     n_cases_FEM = len(FEM_data_matrix)
     print(n_cases_FEM)
 
@@ -242,6 +241,7 @@ def automated_design_func():
         conductor_r_list = litz_conductor_r + solid_conductor_r
         for i in range(len(FEM_data_matrix)):
             print(f"value of i:{i}")
+            print(f"value of j:{j}")
             if not ((FEM_data_matrix[i, param["no_of_turns"]] * np.pi * conductor_r_list[j] ** 2)
                     < (winding_factor * FEM_data_matrix[i, param["window_h"]] * mc1.data_matrix[i, param["window_w"]])):
                 continue
@@ -251,10 +251,10 @@ def automated_design_func():
 
             core = fmt.Core(core_inner_diameter=FEM_data_matrix[i, param["core_w"]], window_w=FEM_data_matrix[i, param["window_w"]],
                             window_h=FEM_data_matrix[i, param["window_h"]],
-                            material="N95", temperature=25, frequency=freq, datasource="manufacturer_datasheet")
+                            # material="N95", temperature=25, frequency=freq, datasource="manufacturer_datasheet")
                             # material="95_100")
-            # mu_rel=3000, phi_mu_deg=10,
-            # sigma=0.5)
+            mu_rel=3000, phi_mu_deg=10,
+            sigma=0.5)
             # TODO: wait for material update
             # mu_rel=3000, phi_mu_deg=10,
             # sigma=0.5)
@@ -321,6 +321,7 @@ def automated_design_func():
                 working_directories.append(new_filename)
                 file_names.append(f"case{counter3}")
                 counter3 = counter3 + 1
+                print(f"{counter3} of {n_cases_FEM * 2}")
 
             except (Exception,) as e:
                 print("next iteration")
@@ -418,10 +419,72 @@ def load_design(load_directory_name):
     plt.show()
 
 
+def compare_graph(directory_names):
+    temp = 0
+
+    for directory_name in directory_names:
+        working_directories = []
+        labels = []
+        working_directory = os.path.join(os.path.dirname(__file__), directory_name)
+        print("##########################")
+        print(f"{working_directory =}")
+        print("##########################")
+        file_names = [f for f in listdir(working_directory) if isfile(join(working_directory, f))]
+        file_names.sort()
+        counter2 = 0
+        for name in file_names:
+            temp_var = os.path.join(os.path.dirname(__file__), directory_name, name)
+            working_directories.append(temp_var)
+            # labels.append(f"case{counter2}")
+            labels.append(name)
+            counter2 = counter2 + 1
+
+        zip_iterator = zip(file_names, working_directories)
+        logs = dict(zip_iterator)
+
+        # After the simulations the sweep can be analyzed
+        # This could be done using the FEMMTLogParser:
+        log_parser = fmt.FEMMTLogParser(logs)
+
+        # In this case the self inductivity of winding1 will be analyzed
+        inductivities = []
+        active_power = []
+        total_volume = []
+        for name, data in log_parser.data.items():
+            inductivities.append(data.sweeps[0].windings[0].self_inductance)
+            active_power.append(data.sweeps[0].windings[0].active_power)
+            total_volume.append(data.core_2daxi_total_volume)
+
+        real_inductance = []
+        for i in range(len(active_power)):
+            real_inductance.append(inductivities[i].real)
+
+        print(real_inductance)
+        print(active_power)
+
+        # fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
+        # fmt.plt.title("Normalised volume vs Normalised losses")
+        # fmt.plt.xlabel("Normalised Volume")
+        # fmt.plt.ylabel("Normalised Losses")
+        # ax.grid()
+        if temp == 0:
+            plt.plot(total_volume, active_power, 'o')
+            temp =1
+        else:
+            plt.plot(total_volume, active_power, '*')
+    plt.title("volume vs losses")
+    plt.xlabel("Total Volume")
+    plt.ylabel("Total Losses")
+    plt.grid()
+    fmt.plt.show()
+
+
 if __name__ == '__main__':
 
-    #automated_design_func()
+    automated_design_func()
+    #
+    # design_name = "hyperbolic_filtered_0_01_0_6"
+    # load_design(design_name)
 
-    design_name = "sweep_examples_4"
-    load_design(design_name)
-
+    # directory_names = ["sweep_examples_5", "hyperbolic_filtered_0_01_0_6"]
+    # compare_graph(directory_names)
