@@ -1179,8 +1179,6 @@ class MagneticComponent:
 
             return valid_parameter_results
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Standard Simulations
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False,
                      save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
                      colors_geometry: Dict = ff.colors_geometry_femmt_default):
@@ -1217,183 +1215,6 @@ class MagneticComponent:
             self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
         else:
             raise Exception("The model is not valid. The simulation won't start.")
-
-    def pre_simulation(self):
-        """
-        - Complete "pre-simulation" call
-        """
-        self.high_level_geo_gen()
-        self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
-        self.file_communication()
-        self.pre_simulate()
-
-    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None, show_results = True):
-        """
-
-        Start a _single_ electromagnetic ONELAB simulation.
-        :param NL_core:
-        :param freq: frequency to simulate
-        :type freq: float
-        :param current: current to simulate
-        :param skin_mesh_factor:
-        :type skin_mesh_factor: float
-        :param phi_deg: phase angle in degree
-        :type phi_deg: List[float]
-        """
-        phi_deg = phi_deg or []
-
-        self.mesh.generate_electro_magnetic_mesh()
-        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
-        self.file_communication()
-        self.pre_simulate()
-        self.simulate()
-        self.calculate_and_write_log()
-        if show_results:
-            self.visualize()
-        # results =
-        # return results
-
-    def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last: bool = False, return_results: bool = False, 
-                         excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False, save_png: bool = False,
-                         color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default) -> Dict:
-        """
-        Performs a sweep simulation for frequency-current pairs. Both values can
-        be passed in lists of the same length. The mesh is only created ones (fast sweep)!
-
-        :Example Code for Inductor:
-
-        >>> import femmt as fmt
-        >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
-        >>> amplitue_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
-        >>> phase_list_list = [[0], [10], [20], [30], [40], [50]]
-        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
-
-        :Example Code for Transformer with 2 windings:
-
-        >>> import femmt as fmt
-        >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
-        >>> amplitue_list_list = [[10, 2], [2, 1], [1, 0.5], [0.5, 0.25], [0.2, 0.1], [0.1, 0.05]]
-        >>> phase_list_list = [[0, 170], [10, 180], [20, 190], [30, 200], [40, 210], [50, 220]]
-        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
-
-        :param frequency_list: Frequency in a list
-        :type frequency_list: List
-        :param current_list_list: current amplitude, must be a list in a list, see example!
-        :type current_list_list: List
-        :param phi_deg_list_list: phase in degree, must be a list in a list, see example!
-        :type phi_deg_list_list: List
-        :param show_last: shows last simulation in gmsh if set to True
-        :type show_last: bool
-        :param return_results: returns results in a dictionary
-        :type return_results: bool
-        :param visualize_before: show genarated mesh before the simulation is run
-        :type visualize_before: bool
-        :param meshing:
-        :type meshing: bool
-        :param color_scheme: colorfile (definition for red, green, blue, ...)
-        :type color_scheme: Dict
-        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
-        :type colors_geometry: Dict
-
-
-        :return: Results in a dictionary
-        :rtype: Dict
-        """
-        # frequencies = frequencies or []
-        # currents = currents or []
-        # phi = phi or []
-        if show_last:
-            self.plot_fields = "standard"
-        else:
-            self.plot_fields = False
-
-        # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
-        # In case of litz wire, only the lowest frequency is meshed (frequency indepent due to litz-approximation)
-        if excitation_meshing_type is None:
-            for winding in self.windings:
-                if winding.conductor_type == ConductorType.RoundSolid:
-                    excitation_meshing_type = ExcitationMeshingType.MeshEachFrequency
-                    break
-                if winding.conductor_type == ConductorType.RoundLitz:
-                    excitation_meshing_type = ExcitationMeshingType.MeshOnlyLowestFrequency
-
-        if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
-            for i in range(0, len(frequency_list)):
-                self.high_level_geo_gen(frequency=frequency_list[i], skin_mesh_factor=skin_mesh_factor)
-                if self.valid:
-                    self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
-                    self.mesh.generate_electro_magnetic_mesh()
-                
-                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
-                                    phase_deg_list=phi_deg_list_list[i])  # frequency and current
-                self.file_communication()
-                self.pre_simulate()
-                self.simulate()
-        else:
-            if excitation_meshing_type == ExcitationMeshingType.MeshOnlyHighestFrequency:
-                self.high_level_geo_gen(frequency=max(frequency_list), skin_mesh_factor=skin_mesh_factor)
-            elif excitation_meshing_type == ExcitationMeshingType.MeshOnlyLowestFrequency:
-                self.high_level_geo_gen(frequency=min(frequency_list), skin_mesh_factor=skin_mesh_factor)
-            else:
-                raise Exception(f"Unknown excitation meshing type {excitation_meshing_type}")
-            if self.valid:
-                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
-                self.mesh.generate_electro_magnetic_mesh()
-
-            for i in range(0, len(frequency_list)):
-                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
-                                phase_deg_list=phi_deg_list_list[i])  # frequency and current
-                self.file_communication()
-                self.pre_simulate()
-                self.simulate()
-                # self.visualize()
-
-        if self.valid:
-            self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
-
-            if show_last:
-                self.visualize()
-
-            if return_results:
-                # Return a Dictionary with the results
-                results = {"j2F": self.load_result("j2F", len(frequency_list), "real"),
-                           "j2H": self.load_result("j2H", len(frequency_list), "real"),
-                           "p_hyst": self.load_result("p_hyst", len(frequency_list), "real")}
-                return results
-
-        else:
-            if return_results:
-                return {"FEM_results": "invalid"}
-
-    def simulate(self):
-        """
-        Initializes a onelab client. Provides the GetDP based solver with the created mesh file.
-        """
-        ff.femmt_print(f"\n---\n"
-              f"Initialize ONELAB API\n"
-              f"Run Simulation\n")
-
-        # -- Simulation --
-        # create a new onelab client
-
-        # Initial Clearing of gmsh data
-        gmsh.clear()
-
-        # get model file names with correct path
-        solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
-
-        os.chdir(self.file_data.working_directory)
-
-        verbose = ""
-        if ff.silent:
-            verbose = "-verbose 1"
-        else:
-            verbose = "-verbose 5"
-
-        # Run simulations as sub clients (non blocking??)
-        mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
-        self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
@@ -1565,7 +1386,7 @@ class MagneticComponent:
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.material != 'custom':
-            self.core.update_core_material_data_with_freq(frequency)  # frequency update to core class
+            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path)  # frequency update to core class
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
@@ -1620,6 +1441,44 @@ class MagneticComponent:
             self.delta = 1e20  # random huge value
             self.red_freq[num] = 0
 
+    def simulate(self):
+        """
+        Initializes a onelab client. Provides the GetDP based solver with the created mesh file.
+        """
+        ff.femmt_print(f"\n---\n"
+              f"Initialize ONELAB API\n"
+              f"Run Simulation\n")
+
+        # -- Simulation --
+        # create a new onelab client
+
+        # Initial Clearing of gmsh data
+        gmsh.clear()
+
+        # get model file names with correct path
+        solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
+
+        os.chdir(self.file_data.working_directory)
+
+        verbose = ""
+        if ff.silent:
+            verbose = "-verbose 1"
+        else:
+            verbose = "-verbose 5"
+
+        # Run simulations as sub clients (non blocking??)
+        mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
+        self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
+    
+    def pre_simulation(self):
+        """
+        - Complete "pre-simulation" call
+        """
+        self.high_level_geo_gen()
+        self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
+        self.file_communication()
+        self.pre_simulate()
+
     def file_communication(self):
         """
         Interaction between python and Prolog files.
@@ -1635,6 +1494,142 @@ class MagneticComponent:
         # Write postprocessing parameters in .pro file
         self.write_electro_magnetic_post_pro()
 
+    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None, show_results = True):
+        """
+
+        Start a _single_ electromagnetic ONELAB simulation.
+        :param NL_core:
+        :param freq: frequency to simulate
+        :type freq: float
+        :param current: current to simulate
+        :param skin_mesh_factor:
+        :type skin_mesh_factor: float
+        :param phi_deg: phase angle in degree
+        :type phi_deg: List[float]
+        """
+        phi_deg = phi_deg or []
+
+        self.mesh.generate_electro_magnetic_mesh()
+        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
+        self.file_communication()
+        self.pre_simulate()
+        self.simulate()
+        self.calculate_and_write_log()
+        if show_results:
+            self.visualize()
+
+    def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
+                         show_last: bool = False, return_results: bool = False, 
+                         excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False, save_png: bool = False,
+                         color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default) -> Dict:
+        """
+        Performs a sweep simulation for frequency-current pairs. Both values can
+        be passed in lists of the same length. The mesh is only created ones (fast sweep)!
+
+        :Example Code for Inductor:
+
+        >>> import femmt as fmt
+        >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
+        >>> amplitue_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+        >>> phase_list_list = [[0], [10], [20], [30], [40], [50]]
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+
+        :Example Code for Transformer with 2 windings:
+
+        >>> import femmt as fmt
+        >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
+        >>> amplitue_list_list = [[10, 2], [2, 1], [1, 0.5], [0.5, 0.25], [0.2, 0.1], [0.1, 0.05]]
+        >>> phase_list_list = [[0, 170], [10, 180], [20, 190], [30, 200], [40, 210], [50, 220]]
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+
+        :param frequency_list: Frequency in a list
+        :type frequency_list: List
+        :param current_list_list: current amplitude, must be a list in a list, see example!
+        :type current_list_list: List
+        :param phi_deg_list_list: phase in degree, must be a list in a list, see example!
+        :type phi_deg_list_list: List
+        :param show_last: shows last simulation in gmsh if set to True
+        :type show_last: bool
+        :param return_results: returns results in a dictionary
+        :type return_results: bool
+        :param visualize_before: show genarated mesh before the simulation is run
+        :type visualize_before: bool
+        :param meshing:
+        :type meshing: bool
+        :param color_scheme: colorfile (definition for red, green, blue, ...)
+        :type color_scheme: Dict
+        :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
+        :type colors_geometry: Dict
+
+
+        :return: Results in a dictionary
+        :rtype: Dict
+        """
+        # frequencies = frequencies or []
+        # currents = currents or []
+        # phi = phi or []
+        if show_last:
+            self.plot_fields = "standard"
+        else:
+            self.plot_fields = False
+
+        # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
+        # In case of litz wire, only the lowest frequency is meshed (frequency indepent due to litz-approximation)
+        if excitation_meshing_type is None:
+            for winding in self.windings:
+                if winding.conductor_type == ConductorType.RoundSolid:
+                    excitation_meshing_type = ExcitationMeshingType.MeshEachFrequency
+                    break
+                if winding.conductor_type == ConductorType.RoundLitz:
+                    excitation_meshing_type = ExcitationMeshingType.MeshOnlyLowestFrequency
+
+        if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
+            for i in range(0, len(frequency_list)):
+                self.high_level_geo_gen(frequency=frequency_list[i], skin_mesh_factor=skin_mesh_factor)
+                if self.valid:
+                    self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                    self.mesh.generate_electro_magnetic_mesh()
+                
+                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
+                                    phase_deg_list=phi_deg_list_list[i])  # frequency and current
+                self.file_communication()
+                self.pre_simulate()
+                self.simulate()
+        else:
+            if excitation_meshing_type == ExcitationMeshingType.MeshOnlyHighestFrequency:
+                self.high_level_geo_gen(frequency=max(frequency_list), skin_mesh_factor=skin_mesh_factor)
+            elif excitation_meshing_type == ExcitationMeshingType.MeshOnlyLowestFrequency:
+                self.high_level_geo_gen(frequency=min(frequency_list), skin_mesh_factor=skin_mesh_factor)
+            else:
+                raise Exception(f"Unknown excitation meshing type {excitation_meshing_type}")
+            if self.valid:
+                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                self.mesh.generate_electro_magnetic_mesh()
+
+            for i in range(0, len(frequency_list)):
+                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
+                                phase_deg_list=phi_deg_list_list[i])  # frequency and current
+                self.file_communication()
+                self.pre_simulate()
+                self.simulate()
+                # self.visualize()
+
+        if self.valid:
+            self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
+
+            if show_last:
+                self.visualize()
+
+            if return_results:
+                # Return a Dictionary with the results
+                results = {"j2F": self.load_result("j2F", len(frequency_list), "real"),
+                           "j2H": self.load_result("j2H", len(frequency_list), "real"),
+                           "p_hyst": self.load_result("p_hyst", len(frequency_list), "real")}
+                return results
+
+        else:
+            if return_results:
+                return {"FEM_results": "invalid"}
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
