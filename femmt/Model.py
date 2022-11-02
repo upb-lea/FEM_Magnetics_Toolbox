@@ -221,7 +221,6 @@ class Core:
         :type correct_outer_leg: bool, optional
         """
         # Set parameters
-        self.material_database = None
         self.file_path_to_solver_folder = None
         self.temperature = temperature
         self.datasource = datasource
@@ -236,13 +235,12 @@ class Core:
         self.phi_mu_deg = phi_mu_deg
         self.sigma = sigma
         self.loss_approach = loss_approach
-        # Initialize database
-        self.material_database = mdb.MaterialDatabase()
         self.number_core_windows = 2
         self.correct_outer_leg = correct_outer_leg
-        #  -----create dynamic pro file for complex permeability data
-        script_dir = os.path.dirname(__file__)
-        self.file_path_to_solver_folder = os.path.join(script_dir, 'electro_magnetic')
+
+        # Initialize database
+        self.material_database = mdb.MaterialDatabase()
+
         self.core_h = window_h + core_inner_diameter / 2
         self.r_inner = window_w + core_inner_diameter / 2
         if correct_outer_leg:
@@ -258,15 +256,12 @@ class Core:
                 self.permeability_type = PermeabilityType.FromData
                 self.mu_rel = self.material_database.get_material_property(material_name=self.material,
                                                                            property="initial_permeability")
-                self.ki = \
-                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                              datasource="measurements")['ki']
-                self.alpha = \
-                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                              datasource="measurements")['alpha']
-                self.beta = \
-                    self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                              datasource="measurements")['beta']
+
+                steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
+                                                              datasource="measurements")
+                self.ki = steinmetz_data['ki']
+                self.alpha = steinmetz_data['alpha']
+                self.beta = steinmetz_data['beta']
 
             if self.material == "custom":  # ----steinmetz_parameter consist of list of ki, alpha , beta from the user
                 self.ki = steinmetz_parameter[0]
@@ -314,7 +309,6 @@ class Core:
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
 
-
         # Set attributes of core with given keywords
         # TODO Should we allow this? Technically this is not how an user interface should be designed
         for key, value in kwargs.items():
@@ -323,14 +317,14 @@ class Core:
         # Needed because of to_dict
         self.kwargs = kwargs
 
-    # to get frequency set during simulation time
-    def update_core_material_data_with_freq(self, frequency):
-        # print(f'freq=', frequency)
+    def update_core_material_pro_file(self, frequency, electro_magnetic_folder):
+        # This function is needed to updated the pro file for the solver depending on the frequency of the
+        # upcoming simulation
         self.material_database.permeability_data_to_pro_file(T=self.temperature, f=frequency,
                                                              material_name=self.material,
                                                              datasource=self.datasource,
                                                              pro=True,
-                                                             parent_directory=self.file_path_to_solver_folder)
+                                                             parent_directory=electro_magnetic_folder)
 
     def to_dict(self):
         return {
@@ -555,7 +549,7 @@ class VirtualWindingWindow:
 
     winding_type: WindingType
     winding_scheme: Union[
-        WindingScheme, InterleavedWindingScheme]  # Or InterleavedWindingScheme in case of an interleaved winding
+        WindingScheme, InterleavedWindingScheme]  # Either WindingScheme or InterleavedWindingScheme (Depending on the winding)
     wrap_para: WrapParaType
 
     windings: List[Conductor]
