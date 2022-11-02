@@ -1172,7 +1172,8 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
 
 
 
-def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str]) -> float:
+def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str],
+                        single_strand_cross_section_list: List[float] = []) -> float:
     """
     Calculates the total costs for a inductive element.
     This includes material costs for core and winding, fabrication costs for core and winding and manufacturer margin
@@ -1185,6 +1186,8 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
     :type wire_weight_list: float
     :param wire_type_list: winding type in list-form. Must fit to enum-names in ConductorType-Enum
     :type wire_type_list: List[str]
+    :param single_strand_cross_section_list: single strand cross section in list-form
+    :type single_strand_cross_section_list: List[float]
     :return: total costs for inductive element
     :rtype: float
     """
@@ -1193,7 +1196,7 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
     cost_core = cost_function_core(core_weight, core_type)
 
 
-    cost_winding_list = cost_function_winding(wire_weight_list, wire_type_list)
+    cost_winding_list = cost_function_winding(wire_weight_list, wire_type_list, single_strand_cross_section_list)
     cost_winding = sum(cost_winding_list)
 
     total_cost_including_margin = 1 / (1 - cost_database["gross_margin"]) * (cost_core + cost_winding)

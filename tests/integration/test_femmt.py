@@ -49,7 +49,7 @@ def temp_folder():
     yield temp_folder_path, onelab_path
 
 @pytest.fixture
-def femmt_simulation_inductor_core_material_old_database(temp_folder):
+def femmt_simulation_inductor_core_material_database(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
     
     # Create new temp folder, build model and simulate
@@ -67,7 +67,7 @@ def femmt_simulation_inductor_core_material_old_database(temp_folder):
         core_db = fmt.core_database()["PQ 40/40"]
 
         core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                        material="95_100")
+                        material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -202,7 +202,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    silent=False, is_gui=True)
+                                    silent=True, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -298,7 +298,7 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
 
         # 8. start simulation with given frequency, currents and phases
         geo.create_model(freq=250000, visualize_before=False)
-        geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178])
+        geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178], show_results=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -439,7 +439,7 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
     return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
 
-def test_inductor_core_material_old_database(femmt_simulation_inductor_core_material_old_database):
+def test_inductor_core_material_database(femmt_simulation_inductor_core_material_database):
     """
     The first idea was to compare the simulated meshes with test meshes simulated manually.
     It turns out that the meshes cannot be compared because even slightly differences in the mesh,
@@ -449,7 +449,7 @@ def test_inductor_core_material_old_database(femmt_simulation_inductor_core_mate
 
     Now as an example only the result log will be checked.
     """
-    test_result_log = femmt_simulation_inductor_core_material_old_database
+    test_result_log = femmt_simulation_inductor_core_material_database
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
@@ -481,10 +481,6 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
-
-
-
-
 
 def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fixed_loss_angle):
     """
@@ -522,3 +518,40 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
+def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
+                    femmt_simulation_inductor_core_fixed_loss_angle,
+                    femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
+                    femmt_simulation_transformer_core_fixed_loss_angle,
+                    femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
+                    femmt_simulation_transformer_integrated_core_fixed_loss_angle
+                    ):
+    """
+    This functin tests if simulations can be set up from a simulation file.
+    There is no complete function check, there is just an error-check if the load will fail or not.
+
+    Note: Fixtures are used, to make sure that the latest self-generated log-files can be read.
+    It is not okay to use predefined logfiles which where generated once.
+    """
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        result_log_filepath_list = [femmt_simulation_inductor_core_material_database,
+                                    femmt_simulation_inductor_core_fixed_loss_angle,
+                                    femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
+                                    femmt_simulation_transformer_core_fixed_loss_angle,
+                                    femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
+                                    femmt_simulation_transformer_integrated_core_fixed_loss_angle
+                                    ]
+
+        for file in result_log_filepath_list:
+            geo = fmt.MagneticComponent.decode_settings_from_log(file, working_directory)
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")

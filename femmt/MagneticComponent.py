@@ -56,6 +56,7 @@ class MagneticComponent:
         """
         # Variable to set silent mode
         ff.set_silent_status(silent)
+        mdb.set_silent_status(silent)
 
         ff.femmt_print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type.name}\n"
@@ -1178,8 +1179,6 @@ class MagneticComponent:
 
             return valid_parameter_results
 
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Standard Simulations
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False,
                      save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
                      colors_geometry: Dict = ff.colors_geometry_femmt_default):
@@ -1217,6 +1216,259 @@ class MagneticComponent:
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
+    # Miscellaneous
+    def calculate_core_volume_with_air(self) -> float:
+        """Calculates the volume of the core including air.
+
+        :return: Volume of the core
+        :rtype: float
+        """
+        core_height = self.core.window_h + self.core.core_inner_diameter / 2
+        core_width = self.core.r_outer
+
+        return np.pi * core_width**2 * core_height
+
+    def calculate_core_volume(self) -> float:
+        """Calculates the volume of the core excluding air.
+
+        :return: Volume of the core.
+        :rtype: float
+        """
+        core_height = self.core.window_h + self.core.core_inner_diameter / 2
+        core_width = self.core.r_outer
+
+        winding_height = self.core.window_h
+        winding_width = self.core.window_w
+
+        air_gap_volume = 0
+        inner_leg_width = self.core.r_inner - winding_width
+        for leg_position, position_value, height in self.air_gaps.midpoints:
+            width = 0
+
+            if leg_position == AirGapLegPosition.LeftLeg.value:
+                # left leg
+                # TODO this is wrong since the airgap is not centered on the y axis 
+                width = core_width - self.core.r_inner
+            elif leg_position == AirGapLegPosition.CenterLeg.value:
+                # center leg
+                width = inner_leg_width
+            elif leg_position == AirGapLegPosition.RightLeg.value:
+                # right leg
+                # TODO this is wrong since the airgap is not centered on the y axis
+                width = core_width - self.core.r_inner
+            else:
+                raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
+
+            air_gap_volume += np.pi * width**2 * height
+
+        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
+
+    def calculate_core_weight(self) -> float:
+        """
+        Calculates the weight of the core in kg.
+        This method is using the core volume from for an ideal rotation-symmetric core and the volumetric mass density from the material database.
+        """
+        if self.core.material == 'custom':
+            volumetric_mass_density = 0
+            warnings.warn("Volumetric mass density not implemented for custom cores. Returns '0' in log-file: Core cost will also result to 0.")
+        else:
+            volumetric_mass_density = self.core.material_database.get_material_property(material_name=self.core.material, property="volumetric_mass_density")
+        return self.calculate_core_volume() * volumetric_mass_density
+
+    def get_wire_distances(self) -> List[List[float]]:
+        """Helper function which returns the distance (radius) of each conductor to the y-axis 
+
+        :return: Wire distances
+        :rtype: List[List[float]]
+        """
+        wire_distance = []
+        for winding in self.two_d_axi.p_conductor:
+            # 5 points are for 1 wire
+            num_points = len(winding)
+            num_windings = num_points//5
+            winding_list = []
+            for i in range(num_windings):
+                winding_list.append(winding[i*5][0])
+            wire_distance.append(winding_list)
+
+        return wire_distance
+
+    def calculate_wire_lengths(self) -> List[float]:
+        distances = self.get_wire_distances()
+        lengths = []
+        for winding in distances:
+            lengths.append(sum([2 * np.pi * turn for turn in winding]))
+
+        return lengths
+
+    def calculate_wire_volumes(self) -> List[float]:
+        wire_volumes = []
+        wire_lenghts = self.calculate_wire_lengths()
+        for index, winding in enumerate(self.windings):
+            cross_section_area = 0
+            if winding.conductor_type == ConductorType.RoundLitz or winding.conductor_type == ConductorType.RoundSolid:
+                # For round wire its always the same
+                cross_section_area = np.pi * winding.conductor_radius ** 2
+            elif winding.conductor_type == ConductorType.RectangularSolid:
+                # Since the foil sizes also depends on the winding scheme, conductor_arrangement and wrap_para_type
+                # the volume calculation is different.
+                for vww_index, vww in enumerate(self.virtual_winding_windows):
+                    for vww_winding in vww.windings:
+                        winding_type = vww_winding.winding_type
+                        winding_scheme = vww_winding.winding_scheme
+                        if vww_winding.winding_number == index:
+                            if winding_type == WindingType.Single:
+                                if winding_scheme == WindingScheme.Full:
+                                    cross_section_area = self.core.window_h * self.core.window_w
+                                elif winding_scheme == WindingScheme.FoilHorizontal:
+                                    cross_section_area = self.core.window_w * winding.thickness
+                                elif winding_scheme == WindingScheme.FoilVertical:
+                                    wrap_para_type = winding.wrap_para
+                                    if wrap_para_type == WrapParaType.FixedThickness:
+                                        cross_section_area = self.core.window_h * winding.thickness
+                                    elif wrap_para_type == WrapParaType.Interpolate:
+                                        cross_section_area = self.core.window_h * self.core.window_w / vww.turns[vww_index]
+                                    else:
+                                        raise Exception(f"Unknown wrap para type {wrap_para_type}")
+                                else:
+                                    raise Exception(f"Unknown winding scheme {winding_scheme}")
+                            elif winding_type == WindingType.Interleaved:
+                                # Since interleaved winding type currently only supports round conductors this can be left empty.
+                                pass
+                            else:
+                                raise Exception(f"Unknown winding type {winding_type}")
+            else:
+                raise Exception(f"Unknown conductor type {winding.conductor_type}")
+
+            wire_volumes.append(cross_section_area * wire_lenghts[index])
+
+        return wire_volumes
+
+    def calculate_wire_weight(self) -> List[float]:
+        wire_material = ff.wire_material_database()
+
+        wire_weight = []
+
+        # TODO: distinguish between wire material. Only copper at the moment
+        for wire_volume in self.calculate_wire_volumes():
+            wire_weight.append(wire_volume * wire_material["Copper"]["volumetric_mass_density"])
+
+        return wire_weight
+
+    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # GetDP Interaction / Simulation / Excitation
+    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current', imposed_red_f=0):
+        """
+        - excitation of the electromagnetic problem
+        - current, voltage or current density
+        - frequency or reduced frequency
+
+        :param frequency: Frequency
+        :type frequency: float
+        :param amplitude_list: Current amplitudes according to windings
+        :type amplitude_list: List
+        :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
+        :type phase_deg_list: List
+        :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
+        :type ex_type: str
+        :param imposed_red_f:
+        :type imposed_red_f:
+        """
+        ff.femmt_print(f"\n---\n"
+              f"Excitation: \n"
+              f"Frequency: {frequency}\n"
+              f"Current(s): {amplitude_list}\n"
+              f"Phase(s): {phase_deg_list}\n")
+
+
+        # -- Excitation --
+        self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
+        if self.core.material != 'custom':
+            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path)  # frequency update to core class
+        # Has the user provided a list of phase angles?
+        phase_deg_list = phase_deg_list or []
+        # phase_deg_list = np.asarray(phase_deg_list)
+
+        for num in range(len(self.windings)):
+
+            # Imposed current
+            if self.flag_excitation_type == 'current':
+                if len(phase_deg_list) == 0:
+                    if self.component_type == ComponentType.Inductor:
+                        # Define complex current phasor as real value
+                        self.current[num] = complex(amplitude_list[num], 0)
+                        phase_deg_list.append(0)  # set to zero
+
+                    else:
+                        raise ValueError
+                else:
+                    self.phase_deg = phase_deg_list
+                    # Define complex current phasor as excitation
+                    self.current[num] = complex(amplitude_list[num]*np.cos(np.deg2rad(phase_deg_list[num])),
+                                                amplitude_list[num]*np.sin(np.deg2rad(phase_deg_list[num])))
+
+        # Imposed current density
+        if self.flag_excitation_type == 'current_density':
+            raise NotImplementedError
+
+        # Imposed voltage
+        if self.flag_excitation_type == 'voltage':
+            raise NotImplementedError
+
+
+        # -- Frequency --
+
+        self.frequency = frequency  # in Hz
+
+        # Define reduced frequency (used for homogenization technique)
+        self.red_freq = np.empty(2)
+
+        if self.frequency != 0:
+            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0)) #TODO: distingish between material conductivities
+            for num in range(len(self.windings)):
+                if self.windings[num].conductor_type == ConductorType.RoundLitz:
+                    self.red_freq[num] = self.windings[num].strand_radius / self.delta
+                elif self.windings[num].conductor_type == ConductorType.RoundSolid:
+                    self.red_freq[num] = self.windings[num].conductor_radius / self.delta
+                else:
+                    ff.femmt_print("Reduced Frequency does not have a physical value here")
+                    ff.femmt_print(self.windings[num].conductor_type)
+                    self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
+        else:
+            # DC case
+            self.delta = 1e20  # random huge value
+            self.red_freq[num] = 0
+
+    def simulate(self):
+        """
+        Initializes a onelab client. Provides the GetDP based solver with the created mesh file.
+        """
+        ff.femmt_print(f"\n---\n"
+              f"Initialize ONELAB API\n"
+              f"Run Simulation\n")
+
+        # -- Simulation --
+        # create a new onelab client
+
+        # Initial Clearing of gmsh data
+        gmsh.clear()
+
+        # get model file names with correct path
+        solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
+
+        os.chdir(self.file_data.working_directory)
+
+        verbose = ""
+        if ff.silent:
+            verbose = "-verbose 1"
+        else:
+            verbose = "-verbose 5"
+
+        # Run simulations as sub clients (non blocking??)
+        mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
+        self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
+    
     def pre_simulation(self):
         """
         - Complete "pre-simulation" call
@@ -1225,6 +1477,21 @@ class MagneticComponent:
         self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
         self.file_communication()
         self.pre_simulate()
+
+    def file_communication(self):
+        """
+        Interaction between python and Prolog files.
+        """
+        # --------------------------------- File Communication --------------------------------
+        # All shared control variables and parameters are passed to a temporary Prolog file
+        ff.femmt_print(f"\n---\n"
+              f"File Communication\n")
+
+        # Write initialization parameters for simulation in .pro file
+        self.write_electro_magnetic_parameter_pro()
+
+        # Write postprocessing parameters in .pro file
+        self.write_electro_magnetic_post_pro()
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None, show_results = True):
         """
@@ -1249,8 +1516,6 @@ class MagneticComponent:
         self.calculate_and_write_log()
         if show_results:
             self.visualize()
-        # results =
-        # return results
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last: bool = False, return_results: bool = False, 
@@ -1364,276 +1629,6 @@ class MagneticComponent:
         else:
             if return_results:
                 return {"FEM_results": "invalid"}
-
-    def simulate(self):
-        """
-        Initializes a onelab client. Provides the GetDP based solver with the created mesh file.
-        """
-        ff.femmt_print(f"\n---\n"
-              f"Initialize ONELAB API\n"
-              f"Run Simulation\n")
-
-        # -- Simulation --
-        # create a new onelab client
-
-        # Initial Clearing of gmsh data
-        gmsh.clear()
-
-        # get model file names with correct path
-        solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
-
-        os.chdir(self.file_data.working_directory)
-
-        verbose = ""
-        if ff.silent:
-            verbose = "-verbose 1"
-        else:
-            verbose = "-verbose 5"
-
-        # Run simulations as sub clients (non blocking??)
-        mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
-        self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
-
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
-    # Miscellaneous
-    def calculate_core_volume_with_air(self) -> float:
-        """Calculates the volume of the core including air.
-
-        :return: Volume of the core
-        :rtype: float
-        """
-        core_height = self.core.window_h + self.core.core_inner_diameter / 2
-        core_width = self.core.r_outer
-
-        return np.pi * core_width**2 * core_height
-
-    def calculate_core_volume(self) -> float:
-        """Calculates the volume of the core excluding air.
-
-        :return: Volume of the core.
-        :rtype: float
-        """
-        core_height = self.core.window_h + self.core.core_inner_diameter / 2
-        core_width = self.core.r_outer
-
-        winding_height = self.core.window_h
-        winding_width = self.core.window_w
-
-        air_gap_volume = 0
-        inner_leg_width = self.core.r_inner - winding_width
-        for leg_position, position_value, height in self.air_gaps.midpoints:
-            width = 0
-
-            if leg_position == AirGapLegPosition.LeftLeg.value:
-                # left leg
-                # TODO this is wrong since the airgap is not centered on the y axis 
-                width = core_width - self.core.r_inner
-            elif leg_position == AirGapLegPosition.CenterLeg.value:
-                # center leg
-                width = inner_leg_width
-            elif leg_position == AirGapLegPosition.RightLeg.value:
-                # right leg
-                # TODO this is wrong since the airgap is not centered on the y axis
-                width = core_width - self.core.r_inner
-            else:
-                raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
-
-            air_gap_volume += np.pi * width**2 * height
-
-        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
-
-    def calculate_core_weight(self) -> float:
-        """
-        Calculates the weight of the core in kg.
-        This method is using the core volume from for an ideal rotation-symmetric core and the volumetric mass density from the material database.
-        """
-        material_database = mdb.MaterialDatabase()
-        if self.core.material == 'custom':
-            volumetric_mass_density = 0
-            warnings.warn("Volumetric mass density not implemented for custom cores. Returns '0' in log-file: Core cost will also result to 0.")
-        else:
-            volumetric_mass_density = material_database.get_material_property(material_name=self.core.material, property="volumetric_mass_density")
-        return self.calculate_core_volume() * volumetric_mass_density
-
-    def get_wire_distances(self) -> List[List[float]]:
-        """Helper function which returns the distance (radius) of each conductor to the y-axis 
-
-        :return: Wire distances
-        :rtype: List[List[float]]
-        """
-        wire_distance = []
-        for winding in self.two_d_axi.p_conductor:
-            # 5 points are for 1 wire
-            num_points = len(winding)
-            num_windings = num_points//5
-            winding_list = []
-            for i in range(num_windings):
-                winding_list.append(winding[i*5][0])
-            wire_distance.append(winding_list)
-
-        return wire_distance
-
-    def calculate_wire_lengths(self) -> List[float]:
-        distances = self.get_wire_distances()
-        lengths = []
-        for winding in distances:
-            lengths.append(sum([2 * np.pi * turn for turn in winding]))
-
-        return lengths
-
-    def calculate_wire_volumes(self) -> List[float]:
-        wire_volumes = []
-        wire_lenghts = self.calculate_wire_lengths()
-        for index, winding in enumerate(self.windings):
-            cross_section_area = 0
-            if winding.conductor_type == ConductorType.RoundLitz or winding.conductor_type == ConductorType.RoundSolid:
-                # For round wire its always the same
-                cross_section_area = np.pi * winding.conductor_radius ** 2
-            elif winding.conductor_type == ConductorType.RectangularSolid:
-                # Since the foil sizes also depends on the winding scheme, conductor_arrangement and wrap_para_type
-                # the volume calculation is different.
-                for vww_index, vww in enumerate(self.virtual_winding_windows):
-                    for vww_winding in vww.windings:
-                        winding_type = vww_winding.winding_type
-                        winding_scheme = vww_winding.winding_scheme
-                        if vww_winding.winding_number == index:
-                            if winding_type == WindingType.Single:
-                                if winding_scheme == WindingScheme.Full:
-                                    cross_section_area = self.core.window_h * self.core.window_w
-                                elif winding_scheme == WindingScheme.FoilHorizontal:
-                                    cross_section_area = self.core.window_w * winding.thickness
-                                elif winding_scheme == WindingScheme.FoilVertical:
-                                    wrap_para_type = winding.wrap_para
-                                    if wrap_para_type == WrapParaType.FixedThickness:
-                                        cross_section_area = self.core.window_h * winding.thickness
-                                    elif wrap_para_type == WrapParaType.Interpolate:
-                                        cross_section_area = self.core.window_h * self.core.window_w / vww.turns[vww_index]
-                                    else:
-                                        raise Exception(f"Unknown wrap para type {wrap_para_type}")
-                                else:
-                                    raise Exception(f"Unknown winding scheme {winding_scheme}")
-                            elif winding_type == WindingType.Interleaved:
-                                # Since interleaved winding type currently only supports round conductors this can be left empty.
-                                pass
-                            else:
-                                raise Exception(f"Unknown winding type {winding_type}")
-            else:
-                raise Exception(f"Unknown conductor type {winding.conductor_type}")
-
-            wire_volumes.append(cross_section_area * wire_lenghts[index])
-
-        return wire_volumes
-
-    def calculate_wire_weight(self) -> List[float]:
-        wire_material = ff.wire_material_database()
-
-        wire_weight = []
-
-        # TODO: distinguish between wire material. Only copper at the moment
-        for wire_volume in self.calculate_wire_volumes():
-            wire_weight.append(wire_volume * wire_material["Copper"]["volumetric_mass_density"])
-
-        return wire_weight
-
-    #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # GetDP Interaction / Simulation / Excitation
-    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current', imposed_red_f=0):
-        """
-        - excitation of the electromagnetic problem
-        - current, voltage or current density
-        - frequency or reduced frequency
-
-        :param frequency: Frequency
-        :type frequency: float
-        :param amplitude_list: Current amplitudes according to windings
-        :type amplitude_list: List
-        :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
-        :type phase_deg_list: List
-        :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
-        :type ex_type: str
-        :param imposed_red_f:
-        :type imposed_red_f:
-        """
-        ff.femmt_print(f"\n---\n"
-              f"Excitation: \n"
-              f"Frequency: {frequency}\n"
-              f"Current(s): {amplitude_list}\n"
-              f"Phase(s): {phase_deg_list}\n")
-
-
-        # -- Excitation --
-        self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
-        if self.core.material != 'custom':
-            self.core.update_core_material_data_with_freq(frequency)  # frequency update to core class
-        # Has the user provided a list of phase angles?
-        phase_deg_list = phase_deg_list or []
-        # phase_deg_list = np.asarray(phase_deg_list)
-
-        for num in range(len(self.windings)):
-
-            # Imposed current
-            if self.flag_excitation_type == 'current':
-                if len(phase_deg_list) == 0:
-                    if self.component_type == ComponentType.Inductor:
-                        # Define complex current phasor as real value
-                        self.current[num] = complex(amplitude_list[num], 0)
-                        phase_deg_list.append(0)  # set to zero
-
-                    else:
-                        raise ValueError
-                else:
-                    self.phase_deg = phase_deg_list
-                    # Define complex current phasor as excitation
-                    self.current[num] = complex(amplitude_list[num]*np.cos(np.deg2rad(phase_deg_list[num])),
-                                                amplitude_list[num]*np.sin(np.deg2rad(phase_deg_list[num])))
-
-        # Imposed current density
-        if self.flag_excitation_type == 'current_density':
-            raise NotImplementedError
-
-        # Imposed voltage
-        if self.flag_excitation_type == 'voltage':
-            raise NotImplementedError
-
-
-        # -- Frequency --
-
-        self.frequency = frequency  # in Hz
-
-        # Define reduced frequency (used for homogenization technique)
-        self.red_freq = np.empty(2)
-
-        if self.frequency != 0:
-            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0)) #TODO: distingish between material conductivities
-            for num in range(len(self.windings)):
-                if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                    self.red_freq[num] = self.windings[num].strand_radius / self.delta
-                elif self.windings[num].conductor_type == ConductorType.RoundSolid:
-                    self.red_freq[num] = self.windings[num].conductor_radius / self.delta
-                else:
-                    ff.femmt_print("Reduced Frequency does not have a physical value here")
-                    ff.femmt_print(self.windings[num].conductor_type)
-                    self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
-        else:
-            # DC case
-            self.delta = 1e20  # random huge value
-            self.red_freq[num] = 0
-
-    def file_communication(self):
-        """
-        Interaction between python and Prolog files.
-        """
-        # --------------------------------- File Communication --------------------------------
-        # All shared control variables and parameters are passed to a temporary Prolog file
-        ff.femmt_print(f"\n---\n"
-              f"File Communication\n")
-
-        # Write initialization parameters for simulation in .pro file
-        self.write_electro_magnetic_parameter_pro()
-
-        # Write postprocessing parameters in .pro file
-        self.write_electro_magnetic_post_pro()
-
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
@@ -2144,7 +2139,11 @@ class MagneticComponent:
 
         single_strand_cross_section_list = []
         for winding in self.windings:
-            single_strand_cross_section_list.append(winding.strand_radius)
+            if winding.strand_radius:
+                single_strand_cross_section = winding.strand_radius ** 2 * np.pi
+                single_strand_cross_section_list.append(single_strand_cross_section)
+            else:
+                single_strand_cross_section_list.append(None)
 
         wire_weight_list = self.calculate_wire_weight()
         core_weight = self.calculate_core_weight()
@@ -2159,7 +2158,7 @@ class MagneticComponent:
             "wire_weight": wire_weight_list,
             "core_cost": ff.cost_function_core(core_weight, core_type = "ferrite"),
             "winding_cost": ff.cost_function_winding(wire_weight_list= wire_weight_list, wire_type_list= wire_type_list, single_strand_cross_section_list = single_strand_cross_section_list),
-            "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite", wire_weight_list= wire_weight_list, wire_type_list=wire_type_list)
+            "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite", wire_weight_list= wire_weight_list, wire_type_list=wire_type_list, single_strand_cross_section_list = single_strand_cross_section_list)
         }
 
         # ---- Print current configuration ----
@@ -2406,14 +2405,14 @@ class MagneticComponent:
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:
-                    ff.femmt_print(line.replace(' 0\n', '\n'), end='')
+                    print(line.replace(' 0\n', '\n'), end='')
 
         # Corrects pB coefficient error at 0Hz
         # Must be changed in future in cell.pro
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:
-                    ff.femmt_print(line.replace(' 0\n', ' 1\n'), end='')
+                    print(line.replace(' 0\n', ' 1\n'), end='')
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # FEMM [alternative Solver]
@@ -3145,8 +3144,9 @@ class MagneticComponent:
                     if conductor_type == ConductorType.RectangularSolid:
                         conductor.set_rectangular_conductor(winding["thickness"])
                     elif conductor_type == ConductorType.RoundLitz:
-                        conductor.set_litz_round_conductor(winding["conductor_radius"], winding["number_strands"], 
-                        winding["strand_radius"], winding["fill_factor"], ConductorArrangement[winding["conductor_arrangement"]])
+                        # 3 of 4 wire preferences are allowed, so fill-factor is set to None, even the value is known from the log.
+                        conductor.set_litz_round_conductor(winding["conductor_radius"], winding["number_strands"],
+                        winding["strand_radius"], None, ConductorArrangement[winding["conductor_arrangement"]])
                     elif conductor_type == ConductorType.RoundSolid:
                         conductor.set_solid_round_conductor(winding["conductor_radius"], ConductorArrangement[winding["conductor_arrangement"]])
                     else:
