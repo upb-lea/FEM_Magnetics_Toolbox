@@ -56,7 +56,6 @@ class MagneticComponent:
         """
         # Variable to set silent mode
         ff.set_silent_status(silent)
-        mdb.set_silent_status(silent)
 
         ff.femmt_print(f"\n"
               f"Initialized a new Magnetic Component of type {component_type.name}\n"
@@ -2357,9 +2356,15 @@ class MagneticComponent:
         text_file.close()
         cell_geo = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.geo")
 
+        verbose = ""
+        if ff.silent:
+            verbose = "-verbose 1"
+        else:
+            verbose = "-verbose 5"
+
         # Run gmsh as a sub client
         mygmsh = os.path.join(self.file_data.onelab_folder_path, "gmsh")
-        self.onelab_client.runSubClient("myGmsh", mygmsh + " " + cell_geo + " -2 -v 2")
+        self.onelab_client.runSubClient("myGmsh", mygmsh + " " + cell_geo + " -2 " + verbose)
 
         modes = [1, 2]  # 1 = "skin", 2 = "proximity"
         reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
@@ -2382,9 +2387,10 @@ class MagneticComponent:
                 input_file = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell_dat.pro")
                 cell = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.pro")
 
+
                 # Run simulations as sub clients
                 mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
-                self.onelab_client.runSubClient("myGetDP", mygetdp + " " + cell + " -input " + input_file + " -solve MagDyn_a -v2")
+                self.onelab_client.runSubClient("myGetDP", mygetdp + " " + cell + " -input " + input_file + " -solve MagDyn_a " + verbose)
 
         # Formatting stuff
         # Litz Approximation Coefficients are created with 4 layers
