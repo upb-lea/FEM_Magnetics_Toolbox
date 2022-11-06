@@ -239,7 +239,7 @@ class Core:
         self.correct_outer_leg = correct_outer_leg
 
         # Initialize database
-        self.material_database = mdb.MaterialDatabase()
+        self.material_database = mdb.MaterialDatabase(ff.silent)
 
         self.core_h = window_h + core_inner_diameter / 2
         self.r_inner = window_w + core_inner_diameter / 2

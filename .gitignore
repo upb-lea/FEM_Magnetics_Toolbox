@@ -45,6 +45,11 @@ femmt/electro_magnetic/core_materials_temp.pro
 *.msh
 *.db
 
+# FEMMT: GUI generated files
+femmt/md_winding_1.png
+femmt/md_winding_2.png
+femmt/results.png
+
 # Thermal: generated files
 femmt/thermal/solver/Constraint.pro
 femmt/thermal/solver/Function.pro

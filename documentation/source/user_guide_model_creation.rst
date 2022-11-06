@@ -25,7 +25,10 @@ This results to the following code:
 
    import femmt as fmt
 
-   geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory) 
+   geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=False) 
+
+Note about the silent-flag. In case of False, all outputs are printed in the terminal. In case of True, no command line outputs are shown. This simple feature significantly speeds up simulation time, especially for many automated simulations. 
+
 
 Creating a core
 ------------------

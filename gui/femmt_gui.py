@@ -357,7 +357,10 @@ class MainWindow(QMainWindow):
         self.aut_airgap_type_listWidget.addItem("Edge distributed")
         self.aut_airgap_type_listWidget.addItem("Centre distributed")
 
+        self.aut_winding1_type_comboBox.currentTextChanged.connect(self.aut_winding1_change_wire_type)
+
         self.aut_core_geo_add_pushButton.clicked.connect(self.oncgeoMultipleClicked)
+        self.aut_core_geo_manual_add_pushButton.clicked.connect(self.oncgeomanualMultipleClicked)
         self.aut_select_all_core_geo_pushButton.clicked.connect(self.cgeoselectall)
         self.aut_core_geometry_listWidget.itemDoubleClicked.connect(self.oncgeoClicked)
         self.aut_core_geo_basket_clear_all_pushbutton.clicked.connect(self.oncgeoClearallClicked)
@@ -443,6 +446,13 @@ class MainWindow(QMainWindow):
 
         self.aut_goal_inductance_val_lineEdit.setValidator(float_validator)
 
+        "Set Validators in Definition Tab"
+        self.aut_goal_inductance_val_lineEdit.setValidator(float_validator)
+        self.aut_maximum_current_lineEdit.setValidator(float_validator)
+        self.aut_switching_freq_lineEdit.setValidator(float_validator)
+        self.aut_b_sat_lineEdit.setValidator(float_validator)
+        self.aut_hysterisis_loss_options_lineEdit.setValidator(float_validator)
+
         "Signals in Reluctance Models tab"
 
         self.aut_simulate_pushButton.clicked.connect(self.automated_design_func)
@@ -451,7 +461,8 @@ class MainWindow(QMainWindow):
 
         self.aut_pos_mod_sim_pushButton.clicked.connect(self.automated_design_fem_sim)
 
-
+        "Signals in Load(Results) tab"
+        self.aut_load_design_pushButton.clicked.connect(self.load_design)
 
         "******* Database Section *********"
         "Signals in visualisation tab"
@@ -1022,15 +1033,24 @@ class MainWindow(QMainWindow):
         itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_geometry_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_core_geometry_listWidget.selectedItems()]
-        if self.aut_min_core_width_lineEdit.text() and self.aut_max_core_width_lineEdit.text() and self.aut_step_core_width_lineEdit.text()\
-                and self.aut_min_window_height_lineEdit.text() and self.aut_max_window_height_lineEdit.text() and self.aut_step_window_height_lineEdit.text()\
-                and self.aut_min_window_width_lineEdit.text() and self.aut_max_window_width_lineEdit.text() and self.aut_step_window_width_lineEdit.text():
-            checkitems.append(f"Manual choice: {self.aut_min_core_width_lineEdit.text()}*{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
         reqlist = list(set(checkitems).difference(itemsTextList))
         for i in reqlist:
             self.aut_core_geometry_basket_listWidget.addItem(i)
         else:
             pass
+
+    def oncgeomanualMultipleClicked(self):
+        items = []
+
+        if self.aut_min_core_width_lineEdit.text() and self.aut_max_core_width_lineEdit.text() and self.aut_step_core_width_lineEdit.text() \
+                and self.aut_min_window_height_lineEdit.text() and self.aut_max_window_height_lineEdit.text() and self.aut_step_window_height_lineEdit.text() \
+                and self.aut_min_window_width_lineEdit.text() and self.aut_max_window_width_lineEdit.text() and self.aut_step_window_width_lineEdit.text():
+            items.append(f"{self.aut_min_core_width_lineEdit.text()}*{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
+        itemsTextList = [str(self.aut_core_geometry_manual_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_geometry_manual_basket_listWidget.count())]
+        for i in items:
+            if i not in itemsTextList:
+                self.aut_core_geometry_manual_basket_listWidget.addItem(i)
 
     def cgeoselectall(self):
         self.aut_core_geometry_listWidget.selectAll()
@@ -1321,6 +1341,57 @@ class MainWindow(QMainWindow):
         data = pd.DataFrame({col1: list1, col2: list2, col3: list3, col4: list4})
         data.to_excel('sample_data.xlsx', sheet_name='sheet1', index=False)
         self.aut_pos_model_download_status.setText("Downloaded!")
+
+    def aut_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
+        """
+        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        :param implicit_type_from_combo_box: input type to implicit
+        :type implicit_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(False)
+        if implicit_type_from_combo_box == self.translation_dict['implicit_strands_number']:
+            self.aut_winding1_strands_lineEdit.setEnabled(False)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+        if implicit_type_from_combo_box == self.translation_dict['implicit_ff']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+
+    def aut_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
+        """
+        Enables / Disables input parameter for litz/solid wire
+        :param wire_type_from_combot_box: wire type
+        :type wire_type_from_combot_box: str
+        :return: None
+        :rtype: None
+        """
+        self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
+        if wire_type_from_combot_box == self.translation_dict['litz']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_implicit_litz_comboBox.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+            self.aut_litz_data_listWidget.setEnabled(True)
+            self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
+
+        elif wire_type_from_combot_box == self.translation_dict['solid']:
+            self.aut_winding1_strands_lineEdit.setEnabled(False)
+            self.aut_winding1_implicit_litz_comboBox.setEnabled(False)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(False)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+            self.aut_litz_data_listWidget.setEnabled(False)
+
 
 
 
