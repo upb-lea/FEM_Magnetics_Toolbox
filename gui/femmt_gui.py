@@ -842,7 +842,6 @@ class MainWindow(QMainWindow):
 
         zip_iterator = zip(file_names, working_directories)
         logs = dict(zip_iterator)
-
         # After the simulations the sweep can be analyzed
         # This could be done using the FEMMTLogParser:
         log_parser = fmt.FEMMTLogParser(logs)
@@ -879,6 +878,38 @@ class MainWindow(QMainWindow):
                             bbox=dict(boxstyle="round", fc="w"),
                             arrowprops=dict(arrowstyle="->"))
         annot.set_visible(False)
+
+        """
+        self.matplotlib_widget1 = MatplotlibWidget()
+        self.matplotlib_widget1.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_fem_sim)
+        self.layout.addWidget(self.matplotlib_widget1)
+        try:
+            self.matplotlib_widget1.axis_cm.remove()
+        except:
+            pass
+
+
+
+
+        mat1_name = self.dat_core_material1_comboBox.currentText()
+        mat2_name = self.dat_core_material2_comboBox.currentText()
+        mat1_temp = int(self.aut_temp_m1_comboBox.currentText())
+        
+                        label = f"{material}", f"F={frequency[j]}Hz", f"T={temperature}°C"
+                lines = matplotlib_widget.axis.plot(b[j], power_loss[j], label=label, color=color,
+                                                    linestyle=line_style[j])
+                mplcursors.cursor(lines)
+
+    matplotlib_widget.axis.set(xlabel="B in T", ylabel="Relative power loss in W/m\u00b3", yscale='log', xscale='log')
+    mdb_print(f"Material properties of {material_list} are compared.")
+        
+        
+        
+        mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
+        self.matplotlib_widget1.axis.legend(fontsize=13)
+        self.matplotlib_widget1.axis.grid()
+        self.matplotlib_widget1.figure.canvas.draw_idle()"""
 
         def update_annot(ind):
             pos = sc.get_offsets()[ind["ind"][0]]
