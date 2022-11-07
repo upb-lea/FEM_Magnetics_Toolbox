@@ -2127,7 +2127,7 @@
                  <item row="19" column="0">
                   <widget class="QLineEdit" name="aut_step_core_width_lineEdit">
                    <property name="text">
-                    <string>3</string>
+                    <string>0</string>
                    </property>
                   </widget>
                  </item>
@@ -2141,7 +2141,7 @@
                  <item row="19" column="2">
                   <widget class="QLineEdit" name="aut_step_window_height_lineEdit">
                    <property name="text">
-                    <string>3</string>
+                    <string>0</string>
                    </property>
                   </widget>
                  </item>
@@ -2169,7 +2169,7 @@
                  <item row="19" column="4">
                   <widget class="QLineEdit" name="aut_step_window_width_lineEdit">
                    <property name="text">
-                    <string>3</string>
+                    <string>0</string>
                    </property>
                   </widget>
                  </item>
@@ -3957,8 +3957,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>59</width>
-               <height>16</height>
+               <width>1236</width>
+               <height>971</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_27">
@@ -3966,8 +3966,8 @@
                <rect>
                 <x>10</x>
                 <y>10</y>
-                <width>991</width>
-                <height>221</height>
+                <width>1211</width>
+                <height>761</height>
                </rect>
               </property>
               <property name="title">
@@ -4082,6 +4082,22 @@
                </property>
                <property name="text">
                 <string>Current waveform </string>
+               </property>
+              </widget>
+              <widget class="QWidget" name="plotwidget_fem_sim" native="true">
+               <property name="geometry">
+                <rect>
+                 <x>70</x>
+                 <y>250</y>
+                 <width>1050</width>
+                 <height>350</height>
+                </rect>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>350</height>
+                </size>
                </property>
               </widget>
              </widget>
