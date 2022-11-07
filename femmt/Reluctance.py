@@ -57,7 +57,7 @@ class MagneticCircuit:
 
     def __init__(self, core_w: list, window_h: list, window_w: list, no_of_turns: list, n_air_gaps: list,
                  air_gap_h: list, air_gap_position: list, mu_rel: list, mult_air_gap_type: list = None,
-                 air_gap_method='percent', component_type='inductor', sim_type='single'):
+                 air_gap_method: str = 'percent', component_type: str = 'inductor', sim_type: str = 'single'):
         """
         :param core_w: Diameter of center leg of the core in meter
         :type core_w: list
@@ -355,13 +355,15 @@ class MagneticCircuit:
             (self.data_matrix, np.reshape(self.area[:, 0], (self.data_matrix_len, 1))))  # position: 13
         self.data_matrix = np.hstack(
             (self.data_matrix, np.reshape(self.area[:, 4], (self.data_matrix_len, 1))))  # position: 14
+        self.data_matrix = np.hstack(
+            (self.data_matrix, np.reshape(self.core_h, (self.data_matrix_len, 1))))  # position: 15
 
     def get_param_pos_dict(self):
         self.param_pos_dict = {"core_w": 0, "window_h": 1, "window_w": 2, "mu_rel": 3, "no_of_turns": 4,
                                "n_air_gaps": 5,
                                "air_gap_h": 6, "air_gap_position": 7, "mult_air_gap_type": 8, "inductance": 9,
                                "core_h_middle": 10,
-                               "r_inner": 11, "r_outer": 12, "center_leg_area": 13, "outer_leg_area": 14}
+                               "r_inner": 11, "r_outer": 12, "center_leg_area": 13, "outer_leg_area": 14, "core_h": 15}
 
         return self.param_pos_dict
 
