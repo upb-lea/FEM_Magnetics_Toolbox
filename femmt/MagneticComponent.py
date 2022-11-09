@@ -1313,9 +1313,10 @@ class MagneticComponent:
                 # Since the foil sizes also depends on the winding scheme, conductor_arrangement and wrap_para_type
                 # the volume calculation is different.
                 for vww_index, vww in enumerate(self.virtual_winding_windows):
+                    winding_type = vww.winding_type
+                    winding_scheme = vww.winding_scheme
+                    wrap_para_type = vww.wrap_para
                     for vww_winding in vww.windings:
-                        winding_type = vww_winding.winding_type
-                        winding_scheme = vww_winding.winding_scheme
                         if vww_winding.winding_number == index:
                             if winding_type == WindingType.Single:
                                 if winding_scheme == WindingScheme.Full:
@@ -1323,7 +1324,6 @@ class MagneticComponent:
                                 elif winding_scheme == WindingScheme.FoilHorizontal:
                                     cross_section_area = self.core.window_w * winding.thickness
                                 elif winding_scheme == WindingScheme.FoilVertical:
-                                    wrap_para_type = winding.wrap_para
                                     if wrap_para_type == WrapParaType.FixedThickness:
                                         cross_section_area = self.core.window_h * winding.thickness
                                     elif wrap_para_type == WrapParaType.Interpolate:
