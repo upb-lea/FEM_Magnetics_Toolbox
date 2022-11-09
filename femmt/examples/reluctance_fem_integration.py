@@ -280,7 +280,7 @@ class AutomatedDesign:
     def __init__(self, working_directory: str, component: str, goal_inductance: float, frequency: float,
                  inductance_percent_tolerance: int, winding_scheme: str, current_max: float, percent_of_b_sat: int,
                  percent_of_total_loss: int, database_core_names: list, database_litz_names: list,
-                 solid_conductor_r: list, manual_core_w: list, manual_window_h: list, manual_window_w: list,
+                 solid_conductor_r: list, manual_core_inner_diameter: list, manual_window_h: list, manual_window_w: list,
                  no_of_turns: list, n_air_gaps: list, air_gap_height: list, air_gap_position: list, material_list: list,
                  mult_air_gap_type: list, top_core_insulation: float, bot_core_insulation: float,
                  left_core_insulation: float, right_core_insulation: float, inner_winding_insulations: list,
@@ -311,8 +311,8 @@ class AutomatedDesign:
                 :type database_litz_names: list
                 :param solid_conductor_r: Solid conductor radius [in meter]
                 :type solid_conductor_r: list
-                :param manual_core_w: Diameter of center leg of the core [in meter]
-                :type manual_core_w: list
+                :param manual_core_inner_diameter: Diameter of center leg of the core [in meter]
+                :type manual_core_inner_diameter: list
                 :param manual_window_h: Height of the core window [in meter]
                 :type manual_window_h: list
                 :param manual_window_w: Width of the core window [in meter]
@@ -360,7 +360,7 @@ class AutomatedDesign:
 
         # Set core-geometry from core database or/and manual entry
         self.db_core_names = database_core_names
-        self.manual_core_w = manual_core_w
+        self.manual_core_inner_diameter = manual_core_inner_diameter
         self.manual_window_h = manual_window_h
         self.manual_window_w = manual_window_w
 
@@ -389,14 +389,14 @@ class AutomatedDesign:
         self.right_core_insulation = right_core_insulation
         self.inner_winding_insulations = inner_winding_insulations
 
-        self.core_w_list, self.window_h_list, self.window_w_list, self.litz_conductor_r, self.litz_strand_r, \
+        self.core_inner_diameter_list, self.window_h_list, self.window_w_list, self.litz_conductor_r, self.litz_strand_r, \
         self.litz_strand_n, self.mu_rel, self.mult_air_gap_type_list = self.input_pre_process()
 
         self.min_conductor_r = min(self.litz_conductor_r + self.solid_conductor_r)
         self.conductor_r_list = self.litz_conductor_r + self.solid_conductor_r
 
         # Call to Reluctance model (Class MagneticCircuit)
-        mc = fmt.MagneticCircuit(core_w=self.core_w_list, window_h=self.window_h_list, window_w=self.window_w_list,
+        mc = fmt.MagneticCircuit(core_inner_diameter=self.core_inner_diameter_list, window_h=self.window_h_list, window_w=self.window_w_list,
                                  no_of_turns=self.no_of_turns, n_air_gaps=self.n_air_gaps,
                                  air_gap_h=self.air_gap_height, air_gap_position=self.air_gap_position,
                                  mu_rel=self.mu_rel, mult_air_gap_type=self.mult_air_gap_type_list,
@@ -416,17 +416,17 @@ class AutomatedDesign:
 
     def input_pre_process(self):
         """ Pre-process the user input to prepare lists for reluctance model"""
-        all_manual_combinations = list(product(self.manual_core_w, self.manual_window_h, self.manual_window_w))
-        manual_core_w = [item[0] for item in all_manual_combinations]
+        all_manual_combinations = list(product(self.manual_core_inner_diameter, self.manual_window_h, self.manual_window_w))
+        manual_core_inner_diameter = [item[0] for item in all_manual_combinations]
         manual_window_h = [item[1] for item in all_manual_combinations]
         manual_window_w = [item[2] for item in all_manual_combinations]
 
         core_db = fmt.core_database()
-        db_core_w = [core_db[core_name]["core_inner_diameter"] for core_name in self.db_core_names]
+        db_core_inner_diameter = [core_db[core_name]["core_inner_diameter"] for core_name in self.db_core_names]
         db_window_h = [core_db[core_name]["window_h"] for core_name in self.db_core_names]
         db_window_w = [core_db[core_name]["window_w"] for core_name in self.db_core_names]
 
-        core_w_list = db_core_w + manual_core_w
+        core_inner_diameter_list = db_core_inner_diameter + manual_core_inner_diameter
         window_h_list = db_window_h + manual_window_h
         window_w_list = db_window_w + manual_window_w
 
@@ -447,7 +447,7 @@ class AutomatedDesign:
             else:
                 raise Exception('Wrong string input for multiple air-gap type')
 
-        return core_w_list, window_h_list, window_w_list, litz_conductor_r, litz_strand_r, litz_strand_n, mu_rel, mult_air_gap_type_list
+        return core_inner_diameter_list, window_h_list, window_w_list, litz_conductor_r, litz_strand_r, litz_strand_n, mu_rel, mult_air_gap_type_list
 
     def filter1_geometry(self, data_matrix):
         """
@@ -506,7 +506,7 @@ class AutomatedDesign:
                                                                                          self.param["no_of_turns"]]
         b_max_center = total_flux_max / data_matrix[:, self.param["center_leg_area"]]
         b_max_middle = total_flux_max / (
-                np.pi * data_matrix[:, self.param["core_w"]] * data_matrix[:, self.param["core_h_middle"]])
+                np.pi * data_matrix[:, self.param["core_inner_diameter"]] * data_matrix[:, self.param["core_h_middle"]])
         b_max_outer = total_flux_max / data_matrix[:, self.param["outer_leg_area"]]
 
         data_matrix = self.add_column_to_data_matrix(data_matrix, total_flux_max, 'total_flux_max')
@@ -552,7 +552,7 @@ class AutomatedDesign:
             mu_imag[index] = mu_imag_interpol_func[mu_imag_dict[data_matrix[index, self.param["mu_rel"]]]] \
                 (data_matrix[index, self.param["b_max_center"]])
 
-        volume_center = (np.pi * (data_matrix[:, self.param["core_w"]] / 2) ** 2) * \
+        volume_center = (np.pi * (data_matrix[:, self.param["core_inner_diameter"]] / 2) ** 2) * \
                         (data_matrix[:, self.param["window_h"]] + data_matrix[:, self.param["core_h_middle"]] -
                          (data_matrix[:, self.param["n_air_gaps"]] * data_matrix[:, self.param["air_gap_h"]]))
         volume_outer = (np.pi * ((data_matrix[:, self.param["r_outer"]] ** 2) -
@@ -574,13 +574,13 @@ class AutomatedDesign:
                                         fmt.mu0 * data_matrix[:, self.param["mu_rel"]])) ** 2) * \
                                 (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * \
                                 np.log(
-                                    (data_matrix[:, self.param["r_inner"]] * 2) / data_matrix[:, self.param["core_w"]])
+                                    (data_matrix[:, self.param["r_inner"]] * 2) / data_matrix[:, self.param["core_inner_diameter"]])
         P_hyst_density_outer = P_hyst_outer * volume_outer
         total_hyst_loss = P_hyst_density_center + (2 * P_hyst_density_middle) + P_hyst_density_outer
 
         # Winding loss (only DC loss)
         Resistance = (data_matrix[:, self.param["no_of_turns"]] * 2 * np.pi *
-                      (data_matrix[:, self.param["core_w"]] / 2 + self.min_conductor_r)) / \
+                      (data_matrix[:, self.param["core_inner_diameter"]] / 2 + self.min_conductor_r)) / \
                      (self.copper_conductivity * (np.pi * (self.min_conductor_r ** 2)))
 
         DC_loss = ((self.current_max ** 2) / 2) * Resistance
@@ -644,7 +644,7 @@ class AutomatedDesign:
                 geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
                                             working_directory=working_directory, silent=True)
 
-                core = fmt.Core(core_inner_diameter=self.data_matrix_fem[i, self.param["core_w"]],
+                core = fmt.Core(core_inner_diameter=self.data_matrix_fem[i, self.param["core_inner_diameter"]],
                                 window_w=self.data_matrix_fem[i, self.param["window_w"]],
                                 window_h=self.data_matrix_fem[i, self.param["window_h"]],
                                 # material="N95", temperature=25, frequency=freq, datasource="manufacturer_datasheet")
@@ -777,14 +777,14 @@ if __name__ == '__main__':
                          database_core_names=[],
                          database_litz_names=['1.5x105x0.1'],
                          solid_conductor_r=[0.0013],
-                         manual_core_w=list(np.linspace(0.005, 0.05, 10)),
+                         manual_core_inner_diameter=list(np.linspace(0.005, 0.05, 10)),
                          manual_window_h=list(np.linspace(0.01, 0.08, 5)),
                          manual_window_w=list(np.linspace(0.005, 0.04, 10)),
                          no_of_turns=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
                          n_air_gaps=[1, 2],
                          air_gap_height=list(np.linspace(0.0001, 0.0005, 5)),
                          air_gap_position=list(np.linspace(20, 80, 2)),
-                         material_list=['N95'],
+                         material_list=['N87'],
                          mult_air_gap_type=['center_distributed'],
                          top_core_insulation=0.0001,
                          bot_core_insulation=0.0001,
