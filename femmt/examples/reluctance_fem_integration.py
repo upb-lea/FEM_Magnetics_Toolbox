@@ -15,7 +15,7 @@ import materialdatabase as mdb
 material_db = mdb.MaterialDatabase()
 
 
-def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, annotations: list):
+def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, annotations: list) -> object:
     """
         Visualize data in 2d plot with popover next to mouse position.
 
@@ -400,7 +400,7 @@ class AutomatedDesign:
                                  no_of_turns=self.no_of_turns, n_air_gaps=self.n_air_gaps,
                                  air_gap_h=self.air_gap_height, air_gap_position=self.air_gap_position,
                                  mu_rel=self.mu_rel, mult_air_gap_type=self.mult_air_gap_type_list,
-                                 air_gap_method='percent', component_type=self.component, sim_type='sweep')
+                                 air_gap_method='Percent', component_type=self.component, sim_type='sweep')
         self.param = mc.get_param_pos_dict()
 
         # Filtration of the design cases which are not important
@@ -647,10 +647,10 @@ class AutomatedDesign:
                 core = fmt.Core(core_inner_diameter=self.data_matrix_fem[i, self.param["core_inner_diameter"]],
                                 window_w=self.data_matrix_fem[i, self.param["window_w"]],
                                 window_h=self.data_matrix_fem[i, self.param["window_h"]],
-                                # material="N95", temperature=25, frequency=freq, datasource="manufacturer_datasheet")
+                                material="N95", temperature=self.temperature, frequency=self.frequency, datasource="manufacturer_datasheet")
                                 # material="95_100")
-                                mu_rel=self.data_matrix_fem[i, self.param["mu_rel"]], phi_mu_deg=10,
-                                sigma=0.5)
+                                # mu_rel=self.data_matrix_fem[i, self.param["mu_rel"]], phi_mu_deg=10,
+                                # sigma=0.5)
                 # TODO: (completed)
                 # mu_rel=3000, phi_mu_deg=10,
                 # sigma=0.5)
@@ -765,7 +765,7 @@ class AutomatedDesign:
 
 
 if __name__ == '__main__':
-    ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/sweep3d',
+    ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/new_sweep_icpe_paper',
                          component='inductor',
                          goal_inductance=120 * 1e-6,
                          frequency=100000,
@@ -773,10 +773,10 @@ if __name__ == '__main__':
                          winding_scheme='Square',
                          current_max=8,
                          percent_of_b_sat=70,
-                         percent_of_total_loss=1,
+                         percent_of_total_loss=30,
                          database_core_names=[],
-                         database_litz_names=['1.5x105x0.1'],
-                         solid_conductor_r=[0.0013],
+                         database_litz_names=['1.5x105x0.1', "1.4x200x0.071"],
+                         solid_conductor_r=[], # 0.0013
                          manual_core_inner_diameter=list(np.linspace(0.005, 0.05, 10)),
                          manual_window_h=list(np.linspace(0.01, 0.08, 5)),
                          manual_window_w=list(np.linspace(0.005, 0.04, 10)),
@@ -784,22 +784,35 @@ if __name__ == '__main__':
                          n_air_gaps=[1, 2],
                          air_gap_height=list(np.linspace(0.0001, 0.0005, 5)),
                          air_gap_position=list(np.linspace(20, 80, 2)),
-                         material_list=['N87'],
+                         material_list=['N95'],
                          mult_air_gap_type=['center_distributed'],
-                         top_core_insulation=0.0001,
-                         bot_core_insulation=0.0001,
-                         left_core_insulation=0.0004,
-                         right_core_insulation=0.0001,
+                         top_core_insulation=0.001,
+                         bot_core_insulation=0.001,
+                         left_core_insulation=0.001,
+                         right_core_insulation=0.001,
                          inner_winding_insulations=[0.0005],
-                         temperature=25.0)
+                         temperature=100.0)
 
     ad.fem_simulation()
-    real_inductance, total_loss, total_volume, total_cost, labels = load_design \
-        (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/sweep3d')
-    # plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
-    #         title='Volume vs Loss', annotations=labels)
+    # real_inductance, total_loss, total_volume, total_cost, labels = load_design \
+    #     (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
+    # # plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
+    # #         title='Volume vs Loss', annotations=labels)
     # plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac',
     #         title='Volume vs Cost', annotations=labels)
-    plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3',
-            y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20],
-            z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
+    # plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3',
+    #         y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20],
+    #         z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
+
+
+    working_directory = 'D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost'
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+    file = os.path.join(working_directory, "fem_simulation_data/case0.json")
+
+    geo = fmt.MagneticComponent.decode_settings_from_log(file, working_directory)
+
+    geo.create_model(freq=100000, visualize_before=False, save_png=False)
+
+    geo.single_simulation(freq=100000, current=[8], show_results=True)
