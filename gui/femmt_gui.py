@@ -418,7 +418,7 @@ class MainWindow(QMainWindow):
 
         self.aut_min_winding1_turns_lineEdit.setValidator(float_validator)
         self.aut_max_winding1_turns_lineEdit.setValidator(float_validator)
-        self.aut_step_winding1_turns_lineEdit.setValidator(float_validator)
+
 
         self.aut_min_winding2_turns_lineEdit.setValidator(float_validator)
         self.aut_max_winding2_turns_lineEdit.setValidator(float_validator)
@@ -511,6 +511,43 @@ class MainWindow(QMainWindow):
         manual_window_h = list(np.linspace(min_window_h, max_window_h, step_window_h))  # Automated design-Definition min max step
         manual_window_w = list(np.linspace(min_window_w, max_window_w, step_window_w))  # Automated design-Definition min max step
 
+
+
+
+        ########################################################################
+
+        ad = fmt.AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/sweep3d',
+                             component='inductor',
+                             goal_inductance=120 * 1e-6,
+                             frequency=100000,
+                             inductance_percent_tolerance=10,
+                             winding_scheme='Square',
+                             current_max=8,
+                             percent_of_b_sat=70,
+                             percent_of_total_loss=1,
+                             database_core_names=[],
+                             database_litz_names=['1.5x105x0.1'],
+                             solid_conductor_r=[0.0013],
+                             manual_core_w=list(np.linspace(0.005, 0.05, 10)),
+                             manual_window_h=list(np.linspace(0.01, 0.08, 5)),
+                             manual_window_w=list(np.linspace(0.005, 0.04, 10)),
+                             no_of_turns=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+                             n_air_gaps=[1, 2],
+                             air_gap_height=list(np.linspace(0.0001, 0.0005, 5)),
+                             air_gap_position=list(np.linspace(20, 80, 2)),
+                             material_list=['N95'],
+                             mult_air_gap_type=['center_distributed'],
+                             top_core_insulation=0.0001,
+                             bot_core_insulation=0.0001,
+                             left_core_insulation=0.0004,
+                             right_core_insulation=0.0001,
+                             inner_winding_insulations=[0.0005],
+                             temperature=25.0)
+
+        len(ad.data_matrix_fem)
+
+        ########################################################################
+
         all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
         manual_core_w = [item[0] for item in all_manual_combinations]
         manual_window_h = [item[1] for item in all_manual_combinations]
@@ -548,7 +585,6 @@ class MainWindow(QMainWindow):
         # Set air-gap and core parameters7
         no_turns_min = int(self.aut_min_winding1_turns_lineEdit.text())
         no_turns_max = int(self.aut_max_winding1_turns_lineEdit.text())
-        no_turns_step = int(self.aut_step_winding1_turns_lineEdit.text())
         no_airgaps_min = int(self.aut_min_air_gap_count_lineEdit.text())
         no_airgaps_max = int(self.aut_max_air_gap_count_lineEdit.text())
         airgap_h_min = comma_str_to_point_float(self.aut_air_gap_length_min_lineEdit.text())
@@ -559,7 +595,7 @@ class MainWindow(QMainWindow):
         airgap_pos_step = int(self.aut_air_gap_position_step_lineEdit.text())
 
 
-        no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max,no_turns_step))) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
+        no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max))) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
         no_of_turns = [int(item) for item in no_of_turns_float]
         n_air_gaps = [no_airgaps_min, no_airgaps_max]  # Set No. of air-gaps (n)
         air_gap_height = list(np.linspace(airgap_h_min, airgap_h_max, airgap_h_step))  # Set air-gap length in metre (l)
@@ -1300,7 +1336,6 @@ class MainWindow(QMainWindow):
         self.aut_step_window_width_lineEdit.setPlaceholderText("Step value")
         self.aut_min_winding1_turns_lineEdit.setPlaceholderText("Minimum value")
         self.aut_max_winding1_turns_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_step_winding1_turns_lineEdit.setPlaceholderText("Step value")
         self.aut_min_winding2_turns_lineEdit.setPlaceholderText("Minimum value")
         self.aut_max_winding2_turns_lineEdit.setPlaceholderText("Maximum value")
         self.aut_step_winding2_turns_lineEdit.setPlaceholderText("Step value")
@@ -1647,7 +1682,7 @@ class MainWindow(QMainWindow):
         if core_type != 'Manual':
             core = core_dict[core_type]
 
-            self.md_core_width_lineEdit.setText(str(core["core_w"]))
+            self.md_core_width_lineEdit.setText(str(core["core_inner_diameter"]))
             self.md_window_height_lineEdit.setText(str(core["window_h"]))
             self.md_window_width_lineEdit.setText(str(core["window_w"]))
             self.md_core_width_lineEdit.setEnabled(False)
