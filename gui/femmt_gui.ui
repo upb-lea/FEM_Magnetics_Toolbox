@@ -2649,6 +2649,36 @@
                  <string>Winding Scheme</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_30">
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="aut_winding1_scheme_label">
+                   <property name="text">
+                    <string>Winding Scheme (Winding 1)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="5">
+                  <widget class="QLineEdit" name="aut_step_winding2_turns_lineEdit">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QLineEdit" name="aut_max_winding2_turns_lineEdit"/>
+                 </item>
+                 <item row="2" column="2">
+                  <spacer name="horizontalSpacer_76">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
                  <item row="0" column="2">
                   <spacer name="horizontalSpacer_25">
                    <property name="orientation">
@@ -2662,10 +2692,17 @@
                    </property>
                   </spacer>
                  </item>
-                 <item row="0" column="1">
-                  <widget class="QLineEdit" name="aut_min_winding1_turns_lineEdit">
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="aut_winding2_turns_label">
                    <property name="text">
-                    <string>8</string>
+                    <string>Number of Turns (Winding 2)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="aut_winding2_scheme_label">
+                   <property name="text">
+                    <string>Winding Scheme (Winding 2)</string>
                    </property>
                   </widget>
                  </item>
@@ -2673,6 +2710,33 @@
                   <widget class="QLabel" name="aut_winding1_turns_label">
                    <property name="text">
                     <string>Number of Turns (Winding 1)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLineEdit" name="aut_min_winding2_turns_lineEdit">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="4">
+                  <spacer name="horizontalSpacer_77">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="QLineEdit" name="aut_max_winding1_turns_lineEdit">
+                   <property name="text">
+                    <string>14</string>
                    </property>
                   </widget>
                  </item>
@@ -2695,74 +2759,10 @@
                    </property>
                   </spacer>
                  </item>
-                 <item row="2" column="0">
-                  <widget class="QLabel" name="aut_winding2_turns_label">
+                 <item row="0" column="1">
+                  <widget class="QLineEdit" name="aut_min_winding1_turns_lineEdit">
                    <property name="text">
-                    <string>Number of Turns (Winding 2)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="3">
-                  <widget class="QLineEdit" name="aut_max_winding1_turns_lineEdit">
-                   <property name="text">
-                    <string>14</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="4">
-                  <spacer name="horizontalSpacer_77">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QLabel" name="aut_winding1_scheme_label">
-                   <property name="text">
-                    <string>Winding Scheme (Winding 1)</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="5">
-                  <widget class="QLineEdit" name="aut_step_winding2_turns_lineEdit">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="2">
-                  <spacer name="horizontalSpacer_76">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item row="2" column="3">
-                  <widget class="QLineEdit" name="aut_max_winding2_turns_lineEdit"/>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QLineEdit" name="aut_min_winding2_turns_lineEdit">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="3" column="0">
-                  <widget class="QLabel" name="aut_winding2_scheme_label">
-                   <property name="text">
-                    <string>Winding Scheme (Winding 2)</string>
+                    <string>8</string>
                    </property>
                   </widget>
                  </item>
@@ -2834,7 +2834,7 @@
                  <item row="2" column="3">
                   <widget class="QLineEdit" name="aut_air_gap_length_step_lineEdit">
                    <property name="text">
-                    <string>3</string>
+                    <string>5</string>
                    </property>
                   </widget>
                  </item>
@@ -3083,6 +3083,49 @@
                   <widget class="QLabel" name="label_96">
                    <property name="text">
                     <string>Core2Cond bottom [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_33">
+                <property name="title">
+                 <string/>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_38">
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="aut_isolation_p2p_label_2">
+                   <property name="text">
+                    <string>Temperature</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLineEdit" name="aut_temp_lineEdit">
+                   <property name="text">
+                    <string>25</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <spacer name="horizontalSpacer_43">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QLabel" name="label_124">
+                   <property name="text">
+                    <string>°C</string>
                    </property>
                   </widget>
                  </item>
@@ -3502,8 +3545,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1236</width>
-               <height>971</height>
+               <width>59</width>
+               <height>16</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_26">
@@ -3936,8 +3979,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1236</width>
-               <height>971</height>
+               <width>59</width>
+               <height>16</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_27">

@@ -26,6 +26,9 @@ import matplotlib.pyplot as plt
 
 from gui.onelab_path_popup import OnelabPathDialog
 database = mdb.MaterialDatabase()
+
+from femmt.examples.reluctance_fem_integration import AutomatedDesign
+
 from matplotlib.widgets import Cursor
 import mplcursors
 
@@ -444,9 +447,9 @@ class MainWindow(QMainWindow):
         self.aut_isolation_core2cond_inner_lineEdit.setValidator(float_validator)
         self.aut_isolation_core2cond_outer_lineEdit.setValidator(float_validator)
 
-        self.aut_goal_inductance_val_lineEdit.setValidator(float_validator)
+        self.aut_temp_lineEdit.setValidator(float_validator)
 
-        "Set Validators in Definition Tab"
+        "Set Validators in Reluctance Models tab"
         self.aut_goal_inductance_val_lineEdit.setValidator(float_validator)
         self.aut_maximum_current_lineEdit.setValidator(float_validator)
         self.aut_switching_freq_lineEdit.setValidator(float_validator)
@@ -468,7 +471,6 @@ class MainWindow(QMainWindow):
         "Signals in visualisation tab"
         self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
 
-
     def automated_design_func(self):
         # ########################################   {DESIGN PARAMETERS}   #################################################
 
@@ -481,7 +483,6 @@ class MainWindow(QMainWindow):
             "Centre distributed":"2"
         }
         L_tolerance_percent = int(self.trans_dict[self.aut_tolerance_val_comboBox.currentText()])  # +/-10%
-        self.winding_factor = comma_str_to_point_float(self.aut_wdg_factor_lineEdit.text()) #0.91  # Include
         self.i_max = comma_str_to_point_float(self.aut_maximum_current_lineEdit.text())#3  # Automated design-Reluctacne model
         # Max current amplitude with assumption of sinusoidal current waveform
         percent_of_B_sat = comma_str_to_point_float(self.aut_b_sat_lineEdit.text()) #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
@@ -512,51 +513,14 @@ class MainWindow(QMainWindow):
         manual_window_w = list(np.linspace(min_window_w, max_window_w, step_window_w))  # Automated design-Definition min max step
 
 
-
-
-        ########################################################################
-
-        ad = fmt.AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/sweep3d',
-                             component='inductor',
-                             goal_inductance=120 * 1e-6,
-                             frequency=100000,
-                             inductance_percent_tolerance=10,
-                             winding_scheme='Square',
-                             current_max=8,
-                             percent_of_b_sat=70,
-                             percent_of_total_loss=1,
-                             database_core_names=[],
-                             database_litz_names=['1.5x105x0.1'],
-                             solid_conductor_r=[0.0013],
-                             manual_core_w=list(np.linspace(0.005, 0.05, 10)),
-                             manual_window_h=list(np.linspace(0.01, 0.08, 5)),
-                             manual_window_w=list(np.linspace(0.005, 0.04, 10)),
-                             no_of_turns=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-                             n_air_gaps=[1, 2],
-                             air_gap_height=list(np.linspace(0.0001, 0.0005, 5)),
-                             air_gap_position=list(np.linspace(20, 80, 2)),
-                             material_list=['N95'],
-                             mult_air_gap_type=['center_distributed'],
-                             top_core_insulation=0.0001,
-                             bot_core_insulation=0.0001,
-                             left_core_insulation=0.0004,
-                             right_core_insulation=0.0001,
-                             inner_winding_insulations=[0.0005],
-                             temperature=25.0)
-
-        len(ad.data_matrix_fem)
-
-        ########################################################################
-
-        all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
-        manual_core_w = [item[0] for item in all_manual_combinations]
-        manual_window_h = [item[1] for item in all_manual_combinations]
-        manual_window_w = [item[2] for item in all_manual_combinations]
+        # all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
+        # manual_core_w = [item[0] for item in all_manual_combinations]
+        # manual_window_h = [item[1] for item in all_manual_combinations]
+        # manual_window_w = [item[2] for item in all_manual_combinations]
 
         db_core_names = []  # "PQ 40/40", "PQ 40/30"
         for i in range(self.aut_core_geometry_basket_listWidget.count()):
             db_core_names.append(self.aut_core_geometry_basket_listWidget.item(i).text())
-        print(db_core_names)
 
         core_db = fmt.core_database()
         db_core_w = [core_db[core_name]["core_inner_diameter"] for core_name in db_core_names]
@@ -576,35 +540,40 @@ class MainWindow(QMainWindow):
         litz_names = []
         for i in range(self.aut_litz_basket_listWidget.count()):
             litz_names.append(self.aut_litz_basket_listWidget.item(i).text())
-        print(litz_names)
         self.litz_conductor_r = [litz_db[litz_name]["conductor_radii"] for litz_name in litz_names]
         self.litz_strand_r = [litz_db[litz_name]["strand_radii"] for litz_name in litz_names]
         self.litz_strand_n = [litz_db[litz_name]["strands_numbers"] for litz_name in litz_names]
+
+        winding_scheme = self.aut_winding1_scheme_comboBox.currentText()
 
         min_conductor_r = min(self.litz_conductor_r + solid_conductor_r)
         # Set air-gap and core parameters7
         no_turns_min = int(self.aut_min_winding1_turns_lineEdit.text())
         no_turns_max = int(self.aut_max_winding1_turns_lineEdit.text())
+        no_turns_step = (no_turns_max - no_turns_min)+1
         no_airgaps_min = int(self.aut_min_air_gap_count_lineEdit.text())
         no_airgaps_max = int(self.aut_max_air_gap_count_lineEdit.text())
         airgap_h_min = comma_str_to_point_float(self.aut_air_gap_length_min_lineEdit.text())
         airgap_h_max = comma_str_to_point_float(self.aut_air_gap_length_max_lineEdit.text())
         airgap_h_step = int(self.aut_air_gap_length_step_lineEdit.text())
+        print(f"air: {airgap_h_min}")
+        print(airgap_h_max)
+        print(airgap_h_step)
         airgap_pos_min = int(self.aut_air_gap_position_min_lineEdit.text())
         airgap_pos_max = int(self.aut_air_gap_position_max_lineEdit.text())
         airgap_pos_step = int(self.aut_air_gap_position_step_lineEdit.text())
 
 
-        no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max))) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
+        no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max, no_turns_step))) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
         no_of_turns = [int(item) for item in no_of_turns_float]
         n_air_gaps = [no_airgaps_min, no_airgaps_max]  # Set No. of air-gaps (n)
         air_gap_height = list(np.linspace(airgap_h_min, airgap_h_max, airgap_h_step))  # Set air-gap length in metre (l)
+        print(f"airgap h:{air_gap_height}")
         air_gap_position = list(np.linspace(airgap_pos_min, airgap_pos_max, airgap_pos_step))  # Set air-gap position in percent w.r.t. core window height
 
         material_names = []
         for i in range(self.aut_core_material_basket_listWidget.count()):
             material_names.append(self.aut_core_material_basket_listWidget.item(i).text())
-        print(material_names)
         #material_names = ["N95"]  # Set relative permeability in F/m (u) , "N87"
 
         mu_rel = [database.get_material_property(material_name=material_name, property="initial_permeability")
@@ -616,6 +585,130 @@ class MainWindow(QMainWindow):
         # 'Type1 = with corner air-gaps; 'Type2' = without corner air-gaps; 'Type0' = single air-gap
         mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre #TODO
         # TODO: check if the issue has been resolved
+
+        print("VALIDATE!!!")
+        print(goal_inductance)
+        print(self.freq)
+        print(winding_scheme)
+        print(self.i_max)
+        print(percent_of_B_sat)
+        print(percent_of_total_loss)
+        print(litz_names)
+        print(solid_conductor_r)
+        print(manual_core_w)
+        print(manual_window_h)
+        print(manual_window_w)
+        print(no_of_turns)
+        print(n_air_gaps)
+        print(list(np.linspace(0.0001, 0.0005, 5)))
+        print(material_names)
+        print(goal_inductance)
+        print(goal_inductance)
+        print(goal_inductance)
+
+
+        ########################################################################
+
+        if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+            ad = AutomatedDesign(working_directory='C:\LEA_Project\FEM_Magnetics_Toolbox',
+                                     component='inductor',
+                                     goal_inductance=goal_inductance,
+                                     frequency=self.freq,
+                                     inductance_percent_tolerance=L_tolerance_percent,
+                                     winding_scheme=winding_scheme,
+                                     current_max=self.i_max,
+                                     percent_of_b_sat=percent_of_B_sat,
+                                     percent_of_total_loss=percent_of_total_loss,
+                                     database_core_names=[],
+                                     database_litz_names=litz_names,
+                                     solid_conductor_r=solid_conductor_r,
+                                     manual_core_inner_diameter= manual_core_w,
+                                     manual_window_h=manual_window_h,
+                                     manual_window_w=manual_window_w,
+                                     no_of_turns=no_of_turns,
+                                     n_air_gaps=n_air_gaps,
+                                     air_gap_height=list(np.linspace(0.0001, 0.0005, 5)),
+                                     air_gap_position=air_gap_position,
+                                     material_list=material_names,
+                                     mult_air_gap_type=['center_distributed'],
+                                     top_core_insulation=comma_str_to_point_float(
+                                         self.aut_isolation_core2cond_top_lineEdit.text()),
+                                     bot_core_insulation=comma_str_to_point_float(
+                                         self.aut_isolation_core2cond_bot_lineEdit.text()),
+                                     left_core_insulation=comma_str_to_point_float(
+                                         self.aut_isolation_core2cond_inner_lineEdit.text()),
+                                     right_core_insulation=comma_str_to_point_float(
+                                         self.aut_isolation_core2cond_outer_lineEdit.text()),
+                                     inner_winding_insulations=[self.aut_isolation_p2p_lineEdit.text()],
+                                     temperature=self.aut_temp_lineEdit.text())
+
+
+        n_cases_0 = len(ad.data_matrix_0)
+        self.ncases0_label.setText(f"{n_cases_0}")
+
+        n_cases_2 = len(ad.data_matrix_2)
+        self.ncases2_label.setText(f"{n_cases_2}")
+
+        n_cases_3 = len(ad.data_matrix_3)
+        self.ncases3_label.setText(f"{n_cases_3}")
+
+        n_cases_FEM = len(ad.data_matrix_fem)
+        self.fem_cases_label.setText(f"{n_cases_FEM}")
+
+        #ad.fem_simulation()
+
+        # real_inductance, total_loss, total_volume, total_cost, labels = fmt.load_design(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
+        # fmt.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
+        # fmt.plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac', title='Volume vs Cost', annotations=labels)
+        # fmt.plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20], z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
+
+        # self.matplotlib_widget1 = MatplotlibWidget()
+        # self.matplotlib_widget1.axis.clear()
+        # self.layout = QVBoxLayout(self.plotwidget)
+        # self.layout.addWidget(self.plotwidget_fem_sim)
+        # try:
+        #     self.matplotlib_widget1.axis_cm.remove()
+        # except:
+        #     pass
+        # real_inductance, total_loss, total_volume, total_cost, labels = fmt.load_design(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
+        # fmt.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
+        #
+
+
+
+        # self.matplotlib_widget1 = MatplotlibWidget()
+        # self.matplotlib_widget2 = MatplotlibWidget()
+        # self.matplotlib_widget3 = MatplotlibWidget()
+        # self.matplotlib_widget4 = MatplotlibWidget()
+        #
+        # self.matplotlib_widget1.axis.clear()
+        # self.layout = QVBoxLayout(self.plotwidget)
+        # self.layout.addWidget(self.matplotlib_widget1)
+        # try:
+        #     self.matplotlib_widget1.axis_cm.remove()
+        # except:
+        #     pass
+        #
+        # mat1_name = self.dat_core_material1_comboBox.currentText()
+        # mat2_name = self.dat_core_material2_comboBox.currentText()
+        # mat1_temp = int(self.aut_temp_m1_comboBox.currentText())
+        # mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
+        # self.matplotlib_widget1.axis.legend(fontsize=13)
+        # self.matplotlib_widget1.axis.grid()
+        # self.matplotlib_widget1.figure.canvas.draw_idle()
+    #     lines = matplotlib_widget.axis.plot(b[j], power_loss[j], label=label, color=color,
+    #                                         linestyle=line_style[j])
+    #     mplcursors.cursor(lines)
+    #     # plt.legend()
+    #
+    # matplotlib_widget.axis.set(xlabel="B in T", ylabel="Relative power loss in W/m\u00b3", yscale='log', xscale='log')
+
+
+
+
+
+
+        """
         # ######################################   {RELUCTANCE_CALCULATION}   ##############################################
         # Call to Reluctance model (Class MagneticCircuit)
         #if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
@@ -736,7 +829,7 @@ class MainWindow(QMainWindow):
 
         self.FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
         n_cases_FEM = len(self.FEM_data_matrix)
-        self.fem_cases_label.setText(f"{n_cases_FEM}")
+        self.fem_cases_label.setText(f"{n_cases_FEM}")"""
 
     def automated_design_fem_sim(self):
 
@@ -894,9 +987,6 @@ class MainWindow(QMainWindow):
         real_inductance = []
         for i in range(len(active_power)):
             real_inductance.append(inductivities[i].real)
-
-        print(real_inductance)
-        print(active_power)
 
         names = np.array(labels)
         c = np.random.randint(1, 5, size=len(active_power))
@@ -3110,8 +3200,6 @@ class MainWindow(QMainWindow):
         mu_rel_val = [database.get_material_property(material_name=material_name, property="initial_permeability")
                   for material_name in material_names]
         mu_rel = [int(item) for item in mu_rel_val]
-        print(air_gap_heigth_array)
-        print(air_gap_position_array)
 
         #mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
                                       #[air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
