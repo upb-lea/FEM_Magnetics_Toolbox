@@ -794,9 +794,9 @@ if __name__ == '__main__':
                          temperature=100.0)
 
     ad.fem_simulation()
-    # real_inductance, total_loss, total_volume, total_cost, labels = load_design \
-    #     (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
-    # # plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
+    real_inductance, total_loss, total_volume, total_cost, labels = load_design \
+        (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
+    # #plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
     # #         title='Volume vs Loss', annotations=labels)
     # plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac',
     #         title='Volume vs Cost', annotations=labels)
