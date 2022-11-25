@@ -1203,6 +1203,47 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
 
     return total_cost_including_margin
 
+def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_max: list):
+    """
+    find a result log-file in a folder with many result-log files.
+    Check a dictornary keyword list for matching a certain value (equel, greater equal, smaller equal).
+
+    :param result_log_folder: filepath to result-log folder
+    :type result_log_folder: str
+    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
+    :type keyword_list: list
+    :param value_min_max: value to check for
+    :type value_min_max: list
+
+    :Example:
+    Check for files with a core inner diameter smaller equal than 0.02 m.
+    >>> import femmt as fmt
+    >>> fmt.find_result_log_file("/home/filepath/fem_simulation_data", ["simulation_settings", "core", "core_inner_diameter"],[0.015, 0.02])
+
+    """
+
+    files_list = os.listdir(result_log_folder)
+
+    value_min = value_min_max[0]
+    value_max = value_min_max[1]
+
+    for file in files_list:
+        file_path = os.path.join(result_log_folder, file)
+        with open(file_path, "r") as fd:
+            full_data = json.loads(fd.read())
+
+        if len(keyword_list) == 2:
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]]
+        elif len(keyword_list) == 3:
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]]
+        elif len(keyword_list) == 4:
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]]
+        elif len(keyword_list) == 5:
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]][keyword_list[5]]
+
+        if value_min <= data_to_compare and data_to_compare <= value_max:
+            print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
+
+
 if __name__ == '__main__':
-    # TODO Relative path
-    visualize_simulation_results('/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/results/result_log_electro_magnetic.json')
+    pass
