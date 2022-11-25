@@ -6,16 +6,57 @@ from os import listdir
 from os.path import isfile, join
 import shutil
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import proj3d
+from mpl_toolkits.mplot3d import Axes3D
 from itertools import product
 import logging
 from scipy.interpolate import interp1d
-from mpl_toolkits.mplot3d import proj3d
 import materialdatabase as mdb
+
 
 material_db = mdb.MaterialDatabase()
 
 
-def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, annotations: list) -> object:
+def load_from_single_file(working_directory: str, file_name: str):
+    """
+        Load from a single FEM simulation case for checking the result in detail
+
+        param working_directory: Working directory where all the simulated cases have been saved from the automated design
+        :type working_directory: str
+        :param file_name: Log file which needs to be simulated (e.g. 'case1344.json')
+        :type file_name: str
+    """
+
+    file_path = os.path.join(working_directory, "fem_simulation_data", file_name)
+
+    example_results_folder = os.path.join(working_directory, "example_results")
+    if not os.path.exists(example_results_folder):
+        os.mkdir(example_results_folder)
+
+    working_directory = os.path.join(example_results_folder, "from-file")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+    file_path_dict = {file_name: file_path}
+    # After the simulations the sweep can be analyzed
+    # This could be done using the FEMMTLogParser:
+    log_parser = fmt.FEMMTLogParser(file_path_dict)
+
+    frequency = 0
+    current = 0
+    for name, data in log_parser.data.items():
+        frequency = data.sweeps[0].frequency
+        current = data.sweeps[0].windings[0].current.real
+
+    geo = fmt.MagneticComponent.decode_settings_from_log(file_path, working_directory)
+    # TODO: Update the decode_settings_from_log as per the new core database
+
+    geo.create_model(freq=frequency, visualize_before=False, save_png=False)
+
+    geo.single_simulation(freq=frequency, current=[current], show_results=True)
+
+
+def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, annotations: list, plot_color: str):
     """
         Visualize data in 2d plot with popover next to mouse position.
 
@@ -31,21 +72,25 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         :type title: str
         :param annotations: Annotations corresponding to the 3D points
         :type annotations: list
-        """
+        :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
+        :type annotations: str
+    """
     names = np.array(annotations)
     x_value_str = [str(round(x, 6)) for x in x_value]
     y_value_str = [str(round(y, 6)) for y in y_value]
-
-    c = np.random.randint(1, 5, size=len(y_value))
-
-    norm = plt.Normalize(1, 4)
-    cmap = plt.cm.RdYlGn
 
     fig, ax = plt.subplots()
     fmt.plt.title(title)
     fmt.plt.xlabel(x_label)
     fmt.plt.ylabel(y_label)
-    sc = plt.scatter(x_value, y_value, c=c, s=50, cmap=cmap, norm=norm)
+
+    # c = np.random.randint(1, 5, size=len(y_value))
+    # norm = plt.Normalize(1, 4)
+    # cmap = plt.cm.RdYlGn
+
+    # sc = plt.scatter(x_value, y_value, c=c, s=50, cmap=cmap, norm=norm)
+
+    sc = plt.scatter(x_value, y_value, c='#%02x%02x%02x' % fmt.colors_femmt_default[plot_color])
 
     annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
                         bbox=dict(boxstyle="round", fc="w"),
@@ -57,11 +102,11 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
 
         pos = sc.get_offsets()[ind["ind"][0]]
         annot.xy = pos
-        text = "{}\nVolume: {}\nLoss:{}".format(" ".join([names[n] for n in ind["ind"]]),
-                                                " ".join([x_value_str[n] for n in ind["ind"]]),
+        text = "{}\n{}: {}\n{}:{}".format(" ".join([names[n] for n in ind["ind"]]), x_label,
+                                                " ".join([x_value_str[n] for n in ind["ind"]]), y_label,
                                                 " ".join([y_value_str[n] for n in ind["ind"]]))
         annot.set_text(text)
-        annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
+        # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
         annot.get_bbox_patch().set_alpha(0.4)
 
     def hover(event):
@@ -84,36 +129,33 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     plt.show()
 
 
-def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: str, z_label: str, x_limit: list,
-            y_limit: list, z_limit: list, title: str, annotations: list):
+def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: str, z_label: str,
+            title: str, annotations: list, plot_color: str):
     """
-    Visualize data in 3d plot with popover next to mouse position.
+        Visualize data in 3d plot with popover next to mouse position.
 
-    param x_value: Data points for x-axis
-    :type x_value: list
-    :param y_value: Data points for y-axis
-    :type y_value: list
-    :param z_value: Data points for z-axis
-    :type z_value: list
-    :param x_label: x-axis label
-    :type x_label: str
-    :param y_label: y-axis label
-    :type y_label: str
-    :param z_label: z-axis label
-    :type z_label: str
-    :param x_limit: Min and max limit of x-axis
-    :type x_limit: list
-    :param y_limit: Min and max limit of y-axis
-    :type y_limit: list
-    :param z_limit: Min and max limit of z-axis
-    :type z_limit: list
-    :param title: Title of the graph
-    :type title: str
-    :param annotations: Annotations corresponding to the 3D points
-    :type annotations: list
+        param x_value: Data points for x-axis
+        :type x_value: list
+        :param y_value: Data points for y-axis
+        :type y_value: list
+        :param z_value: Data points for z-axis
+        :type z_value: list
+        :param x_label: x-axis label
+        :type x_label: str
+        :param y_label: y-axis label
+        :type y_label: str
+        :param z_label: z-axis label
+        :type z_label: str
+        :param title: Title of the graph
+        :type title: str
+        :param annotations: Annotations corresponding to the 3D points
+        :type annotations: list
+        :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
+        :type annotations: str
     """
     names = np.array(annotations)
     num = [re.findall(r'\d+', item) for item in names]
+    print(num)
     case_num_list = [int(item[0]) for item in num]
 
     X = np.zeros((len(x_value), 1))
@@ -128,31 +170,21 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
     y_value_str = [str(round(y, 6)) for y in X[:, 1]]
     z_value_str = [str(round(z, 6)) for z in X[:, 2]]
 
-    fig = plt.figure(figsize=(16, 10))
+    fig = plt.figure()  # figsize=(16, 10)
     ax = fig.add_subplot(111, projection='3d')
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     ax.set_zlabel(z_label)
-    ax.set_xlim(xmin=x_limit[0], xmax=x_limit[1])
-    ax.set_ylim(ymin=y_limit[0], ymax=y_limit[1])
-    ax.set_zlim(zmin=z_limit[0], zmax=z_limit[1])
-    XX = X[:, 0]
-    XX[XX > x_limit[1]] = np.nan
-    YY = X[:, 1]
-    YY[YY > y_limit[1]] = np.nan
-    ZZ = X[:, 2]
-    ZZ[ZZ > z_limit[1]] = np.nan
-    X[:, 0] = XX
-    X[:, 1] = YY
-    X[:, 2] = ZZ
-    print(X)
-    c = np.random.randint(1, 5, size=len(X))
 
-    norm = plt.Normalize(1, 4)
-    cmap = plt.cm.RdYlGn
+    # c = np.random.randint(1, 5, size=len(X))
+    #
+    # norm = plt.Normalize(1, 4)
+    # cmap = plt.cm.RdYlGn
+    # ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=c, s=10, cmap=cmap, norm=norm, depthshade=False, picker=True)
 
-    ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=c, s=10, cmap=cmap, norm=norm, depthshade=False, picker=True)
+    ax.scatter(X[:, 0], X[:, 1], X[:, 2], c='#%02x%02x%02x' % fmt.colors_femmt_default[plot_color],
+               depthshade=True, picker=True)
 
     def distance(point, event):
         """Return distance between mouse position and given data point
@@ -269,7 +301,7 @@ def load_design(working_directory: str):
 class AutomatedDesign:
     """
     AutomatedDesign class implements brute force optimization for magnetic component design.
-    It consists of input parameters sweep, filtration, FEM simulation and plotting of relevant results.
+    It consists of input parameters sweep, filtration, FEM simulation and plotting of the relevant results.
     """
 
     # copper conductivity (sigma) @ 20 degree celsius (in siemens/meter)
@@ -600,8 +632,15 @@ class AutomatedDesign:
         data_matrix = self.add_column_to_data_matrix(data_matrix, total_volume, 'total_volume')
         data_matrix = self.add_column_to_data_matrix(data_matrix, normalized_total_volume, 'normalized_total_volume')
 
+
+
         data_matrix = data_matrix[data_matrix[:, self.param["total_loss"]].argsort()]
         data_matrix = data_matrix[0:int((self.percent_of_total_loss / 100) * len(data_matrix)), :]
+
+        test_var = data_matrix[np.where(data_matrix[:, self.param["total_volume"]] >= 0.0003574349)]
+        print(test_var)
+        test_var_2 = test_var[np.where(test_var[:, self.param["total_volume"]] <= 0.0003574350)]
+        print(test_var_2)
 
         return data_matrix
 
@@ -755,17 +794,22 @@ class AutomatedDesign:
        :type data_matrix: array
         """
         fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
-        fmt.plt.title("Normalised volume vs Normalised losses")
-        fmt.plt.xlabel("Normalised Volume")
-        fmt.plt.ylabel("Normalised Losses")
-        ax.plot(data_matrix[:, self.param['normalized_total_volume']],
-                data_matrix[:, self.param['normalized_total_loss']], 'o')
+        # fmt.plt.title("Normalised volume vs Normalised losses")
+        # fmt.plt.xlabel("Normalised Volume")
+        # fmt.plt.ylabel("Normalised Losses")
+        # ax.plot(data_matrix[:, self.param['normalized_total_volume']],
+        #         data_matrix[:, self.param['normalized_total_loss']], 'o')
+        fmt.plt.title("total volume vs total losses")
+        fmt.plt.xlabel("Total Volume")
+        fmt.plt.ylabel("Total Losses")
+        ax.plot(data_matrix[:, self.param['total_volume']],
+                data_matrix[:, self.param['total_loss']], 'o')
         ax.grid()
         fmt.plt.show()
 
 
 if __name__ == '__main__':
-    ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/new_sweep_icpe_paper',
+    ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-20_fem_simulation_data',
                          component='inductor',
                          goal_inductance=120 * 1e-6,
                          frequency=100000,
@@ -793,26 +837,24 @@ if __name__ == '__main__':
                          inner_winding_insulations=[0.0005],
                          temperature=100.0)
 
-    ad.fem_simulation()
-    real_inductance, total_loss, total_volume, total_cost, labels = load_design \
-        (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
-    # #plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
-    # #         title='Volume vs Loss', annotations=labels)
+
+    # ad.fem_simulation()
+    #
+    # inductance, total_loss, total_volume, total_cost, annotation_list = load_design \
+    #     (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-20_fem_simulation_data')
+    #
+    # plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
+    #         title='Volume vs Loss', annotations=annotation_list, plot_color='red')
     # plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac',
-    #         title='Volume vs Cost', annotations=labels)
+    #         title='Volume vs Cost', annotations=annotation_list, plot_color='red')
     # plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3',
-    #         y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20],
-    #         z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
+    #         y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss vs Cost',
+    #         annotations=annotation_list, plot_color='red')
+
+    load_from_single_file(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-20_fem_simulation_data',
+                   file_name='case1922.json')
+
+    # plot_2d(x_value=total_volume, y_value=inductance, x_label='Volume / m\u00b3', y_label='Inductance / H',
+    #         title='Volume vs Inductance', annotations=annotation_list, plot_color='red')
 
 
-    working_directory = 'D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost'
-    if not os.path.exists(working_directory):
-        os.mkdir(working_directory)
-
-    file = os.path.join(working_directory, "fem_simulation_data/case0.json")
-
-    geo = fmt.MagneticComponent.decode_settings_from_log(file, working_directory)
-
-    geo.create_model(freq=100000, visualize_before=False, save_png=False)
-
-    geo.single_simulation(freq=100000, current=[8], show_results=True)
