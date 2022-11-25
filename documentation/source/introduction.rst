@@ -47,9 +47,19 @@ Also have a look at the . `developers notes </developers_notes.md>`__.
 
 ::
 
-   cd /Documents/Folder/of/Interest   
+   cd /Documents/Folder/of/Interest/FEMMT   
    git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
    pip install -e .
+
+FEMMT is using the material database. To use the latest version for developing, also install the material database in developer mode.
+
+::
+
+   cd /Documents/Folder/of/Interest/materialdatabase   
+   git clone git@github.com:upb-lea/materialdatabase.git
+   pip install -e .
+
+
 
 Examples
 -----------

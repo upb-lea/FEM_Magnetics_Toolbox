@@ -151,7 +151,9 @@
       "phi_mu_deg": 10,
       "sigma": 1,
       "non_linear": false,
-      "correct_outer_leg": false
+      "correct_outer_leg": false,
+      "temperature": null,
+      "datasource": null
     },
     "virtual_winding_windows": [
       {

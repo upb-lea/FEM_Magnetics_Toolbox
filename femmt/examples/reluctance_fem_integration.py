@@ -837,6 +837,7 @@ if __name__ == '__main__':
                          inner_winding_insulations=[0.0005],
                          temperature=100.0)
 
+
     # ad.fem_simulation()
     #
     # inductance, total_loss, total_volume, total_cost, annotation_list = load_design \

@@ -337,9 +337,10 @@ class Core:
             "phi_mu_deg": self.phi_mu_deg,
             "sigma": self.sigma,
             "non_linear": self.non_linear,
-            "correct_outer_leg": self.correct_outer_leg
+            "correct_outer_leg": self.correct_outer_leg,
+            "temperature": self.temperature,
+            "datasource": self.datasource
         }
-
 
 class AirGaps:
     """
