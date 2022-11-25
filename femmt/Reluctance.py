@@ -1,54 +1,131 @@
 import femmt as fmt
 import numpy as np
+import matplotlib
+matplotlib.rc('xtick', labelsize=12)
+matplotlib.rc('ytick', labelsize=12)
 from itertools import product
 
 
-def plot_r_basis():
-    # width = 1
-    # length = 1
-    # height = np.linspace(10, 0.1, 1000)
-    width = 0.0149
-    length = 0.0005
-    height = np.linspace(0.005, 0, 1000)
-    h_l = height / length
+def plot_limitation():
 
-    r_m = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+    length = 15
+    width = 100 * length
+    height = 101 - length
+
+    r_mx = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
+    print(height)
 
-    combined = np.vstack((h_l, r_m)).T
-    print(combined)
+    # width_c = 100
+    # length_c = 0.5
+    # height1_c = np.linspace(50, 100, 1000)
+    # height2_c =100 - height1_c
+    # h_l = height2_c / length
+    #
+    # r_m1 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+    #         1 + np.log(np.pi * height1_c / 4 / length_c))))
+    #
+    # r_m2 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+    #         1 + np.log(np.pi * height2_c / 4 / length_c))))
+    #
+    # r_m = r_m1 + r_m2
+    # combined = np.vstack((h_l, r_m)).T
+    # print(combined)
+
+    width_c = 100
+    length_c = 0.5
+    height1_c = np.linspace(50, 100, 1000)
+    height2_c =100 - height1_c
+    h_l = height2_c / length
+    # print(h_l)
+    r_m1 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+            1 + np.log(np.pi * height1_c / 4 / length_c))))
+
+    r_m2 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+            1 + np.log(np.pi * height2_c / 4 / length_c))))
+
+    r_m = r_m1 + r_m2
+    ratio = r_mx / r_m
+    # print(ratio)
     fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
     fmt.plt.title("R_basic vs h/l")
     fmt.plt.xlabel("h/l")
     fmt.plt.ylabel("R_basic")
     ax.plot(h_l, r_m)
+    # ax.hlines(y=r_m, xmin=0, xmax=50, linewidth=2, color='g')
+    ax.hlines(y=r_mx, xmin=-1, xmax=51, linewidth=2, color='r')
     ax.invert_xaxis()
     ax.grid()
     fmt.plt.show()
 
 
 def plot_r_basis():
-    # width = 1
+    # width = 100
     # length = 1
-    # height = np.linspace(10, 0.1, 1000)
-    width = 0.0149
-    length = 0.0005
-    height = np.linspace(0.005, 0, 1000)
-    h_l = height / length
+    # height = np.linspace(100, 0, 1000)
+    # h_l = height / length
+    #
+    # r_m = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+    #             1 + np.log(np.pi * height / 4 / length))))
+    #
+    # combined = np.vstack((h_l, r_m)).T
+    # print(combined)
+    # fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
+    # # fmt.plt.title("R_basic vs h/l")
+    # fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=12)
+    # fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
+    # ax.plot(h_l, r_m, linewidth=2, label=f'w/l ={width}')
+    # ax.invert_xaxis()
+    # ax.legend()
+    # ax.grid()
+    # fmt.plt.show()
 
-    r_m = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+    # width = np.linspace(100, 0, 10000)
+    # length = 1
+    # height = 100
+    # w_l = width / length
+    #
+    # r_m = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+    #         1 + np.log(np.pi * height / 4 / length))))
+    #
+    # combined = np.vstack((w_l, r_m)).T
+    # print(combined)
+    # fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
+    # # fmt.plt.title("R_basic vs w/l")
+    # fmt.plt.xlabel("$\dfrac{w}{l}$", fontsize=12)
+    # fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
+    # ax.plot(w_l, r_m, linewidth=2, label=f'h/l ={height}')
+    # ax.invert_xaxis()
+    # ax.legend()
+    # ax.grid()
+    # fmt.plt.show()
+
+    width = np.linspace(100, 0, 5)
+    length = 1
+    height = np.linspace(100, 0, 1000)
+    h_l = height / length
+    w_l = width / length
+    fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
+    # fmt.plt.title("$R_{basic}$ vs $\dfrac{h}{l}$", fontsize=20)
+    fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=12)
+    fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
+
+    for i, wid in enumerate(width):
+        r_m = 1 / (fmt.mu0 * (wid / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
 
-    combined = np.vstack((h_l, r_m)).T
-    print(combined)
-    fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
-    fmt.plt.title("R_basic vs h/l")
-    fmt.plt.xlabel("h/l")
-    fmt.plt.ylabel("R_basic")
-    ax.plot(h_l, r_m)
+        combined = np.vstack((h_l, r_m)).T
+        # print(combined)
+
+        ax.plot(h_l, r_m, linewidth=2, label=f'w/l ={w_l[i]}')
     ax.invert_xaxis()
+    # ax.set_yscale('log')
+    ax.legend()
     ax.grid()
     fmt.plt.show()
+
+
+
 
 
 class MagneticCircuit:
@@ -586,11 +663,19 @@ def distributed_type_2(air_gap_h, core_inner_diameter, n_air_gaps, h_multiple):
 
 
 if __name__ == '__main__':
-    mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[8], n_air_gaps=[3],
-                          air_gap_h=[0.0005, 0.0002, 0.0001], air_gap_position=[0, 50, 100], mu_rel=[3000], mult_air_gap_type=[1, 2],
-                          air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
-
-    mc1.calculate_inductance()
-
-    print(f"Inductance is {mc1.cal_inductance}")
-    # plot_r_basis()
+    # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9], n_air_gaps=[3],
+    #                       air_gap_h=[0.0005, 0.0005, 0.0005], air_gap_position=[23.3, 25, 26.7], mu_rel=[3000], mult_air_gap_type=[1, 2],
+    #                       air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
+    #
+    # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9],
+    #                       n_air_gaps=[1],
+    #                       air_gap_h=[0.0005], air_gap_position=[26.7], mu_rel=[3000],
+    #                       mult_air_gap_type=[1, 2],
+    #                       air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
+    # # print(np.sum(mc1.reluctance, axis=1) - mc1.reluctance[0, 5])
+    # print(mc1.reluctance[0, 5])
+    # mc1.calculate_inductance()
+    #
+    # print(f"Inductance is {mc1.cal_inductance}")
+    plot_r_basis()
+    # plot_limitation()
