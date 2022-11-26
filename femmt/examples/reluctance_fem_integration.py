@@ -286,7 +286,7 @@ def load_design(working_directory: str):
     total_cost = []
     for name, data in log_parser.data.items():
         inductivities.append(data.sweeps[0].windings[0].self_inductance)
-        total_loss.append(data.total_winding_losses + data.total_core_losses)
+        total_loss.append(data.total_core_losses + data.total_winding_losses)
         total_volume.append(data.core_2daxi_total_volume)
         total_cost.append(data.total_cost)
 

@@ -1239,7 +1239,7 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
         elif len(keyword_list) == 4:
             data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]]
         elif len(keyword_list) == 5:
-            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]][keyword_list[5]]
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]][keyword_list[4]]
 
         if value_min <= data_to_compare and data_to_compare <= value_max:
             print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
