@@ -55,3 +55,13 @@ def test_cost_function_total():
     assert femmt.cost_function_total(1.25, "ferrite" ,[0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == pytest.approx(62.233, rel=1e-3)
 
 
+def test_reluctance():
+    core_inner_diameter = 0.045
+    single_air_gap_total_hight = 0.0002
+    core_hight = 0.01
+
+    r_gap_round_round = femmt.r_air_gap_round_round(single_air_gap_total_hight, core_inner_diameter, core_hight, core_hight)
+    assert r_gap_round_round == pytest.approx(97100, rel=1e-3)
+
+    r_gap_round_inf = femmt.r_air_gap_round_inf(single_air_gap_total_hight, core_inner_diameter, core_hight)
+    assert r_gap_round_inf == pytest.approx(94983, rel=1e-3)
