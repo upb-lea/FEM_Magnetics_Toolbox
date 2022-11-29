@@ -885,114 +885,6 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 # Reluctance Model [with calculation]
 mu0 = 4e-7*np.pi
 
-
-# def r_basis(basis_air_gap_length: list, basis_air_gap_diameter: list, basis_air_gap_height_core_material: list) -> list:
-#     """
-#     1-dim reluctance per-unit-of-length
-#     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
-#
-#     :param basis_air_gap_diameter: width of basis air gap
-#     :type basis_air_gap_diameter: float
-#     :param basis_air_gap_length: length of basis air gap
-#     :type basis_air_gap_length: float
-#     :param basis_air_gap_height_core_material: height of core material direct on the air gap
-#     :type basis_air_gap_height_core_material: float
-#
-#     :return: basis air gap
-#     :rtype: float
-#
-#     """
-#
-#     # for index in range(len(basis_air_gap_length)):
-#     #     if basis_air_gap_length[index] <= 0:
-#     #         basis_air_gap_length[index] = 0.0000001
-#
-#     basis_air_gap_length = np.array(basis_air_gap_length)
-#     basis_air_gap_diameter = np.array(basis_air_gap_diameter)
-#     basis_air_gap_height_core_material = np.array(basis_air_gap_height_core_material)
-#
-#     return 1 / (mu0 * (basis_air_gap_diameter / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
-#                                                                                                    basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
-#
-#
-# def sigma(air_gap_total_hight: list, air_gap_radius: list, r_equivalent: list) -> list:
-#     """
-#     1-dim fringing factor
-#     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
-#
-#     :param air_gap_radius: air gap radius
-#     :type air_gap_radius: list
-#     :param air_gap_total_hight:
-#     :type air_gap_total_hight: list
-#     :param r_equivalent: equivalent air gap resistance what was calculated using series/parallel-connection of r_basis
-#     :type r_equivalent: list
-#
-#     :return:
-#     :rtype: list
-#
-#     """
-#
-#     air_gap_total_hight = np.array(air_gap_total_hight)
-#     air_gap_radius = np.array(air_gap_radius)
-#     r_equivalent = np.array(r_equivalent)
-#
-#     return r_equivalent / (air_gap_total_hight / mu0 / air_gap_radius)
-#
-#
-# def r_round_inf(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
-#     """
-#     3-dim reluctance for 2-dim axial-symmetric air gaps
-#     Round to infinity structure
-#
-#     :param air_gap_sigma: fringing factor
-#     :type air_gap_sigma: float
-#     :param air_gap_radius: air gap radius
-#     :type air_gap_radius: float
-#     :param air_gap_length: air gap length
-#     :type air_gap_length: float
-#
-#     :return: air gap reluctance
-#     :rtype: float
-#
-#     """
-#     air_gap_length = np.array(air_gap_length)
-#     air_gap_sigma = np.array(air_gap_sigma)
-#     air_gap_radius = np.array(air_gap_radius)
-#
-#     return air_gap_sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
-#
-#
-# def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
-#     """
-#     3-dim reluctance for 2-dim axial-symmetric air gaps
-#     Round to round structure
-#
-#     :param air_gap_sigma: fringing factor
-#     :type air_gap_sigma: float
-#     :param air_gap_radius: air gap radius
-#     :type air_gap_radius: float
-#     :param air_gap_length: air gap length
-#     :type air_gap_length: float
-#
-#     :return: air gap reluctance
-#     :rtype: float
-#
-#     """
-#     air_gap_length = np.array(air_gap_length)
-#     air_gap_sigma = np.array(air_gap_sigma)
-#     air_gap_radius = np.array(air_gap_radius)
-#
-#     r_air_gap_round_ideal = air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
-#
-#     return air_gap_sigma ** 2 * r_air_gap_round_ideal
-
-
-
-#### new and simplified versions of reluctance model
-
-
-
-
 def r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight):
     """
     Do not use this function directly!
@@ -1079,76 +971,75 @@ def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-def r_cyl_cyl(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer) -> float:
+def r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_radius):
     """
-    Cylinder-cylinder air gap reluctance
+    Do not use this function directly!
+    Use it indirectly by using
+     - r_air_gap_tablet_cyl
+    instead!
 
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
-    :param sigma: fringing factor
-    :type sigma: float
-    :param air_gap_width: air gap width
-    :type air_gap_width: float
-    :param radius_outer: outer cylinder radius
-    :type radius_outer: float
+    This function calculates the r_basic for a round to infinite structure according to the following paper:
+    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
-    :return: air gap reluctance
-    :rtype: float
+    Note: this is the same function as r_basic_round_inf, but with clear variable names for tablet-cylinder structure
 
+    :param tablet_hight: tablet hight = air gap width for tablet-cylinder structure
+    :param air_gap_basic_hight: air gap hight for the BASIC-AIR-GAP (e.g. if you use a round-round structure, this is half of the total air gap).
+    :param tablet_radius: tablet radius
+    :return: basic reluctance for tablet - cylinder structure
     """
-    return sigma * np.log(radius_outer / (radius_outer - air_gap_length)) / 2 / mu0 / np.pi / air_gap_width
+    conductance_basic = mu0 * (tablet_hight / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * tablet_radius / 4 / air_gap_basic_hight)))
+
+    return 1 / conductance_basic
+
+def sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight):
+    """
+    Do not use this function directly!
+    Use it indirectly by using
+     - r_air_gap_tablet_cyl
+    instead!
+
+    Note: this is the same function as sigma_round, but with clear variable names for tablet-cylinder structure
+
+    :param r_equivalent: this is a series/parallel connection of r_basic, depending on the air gap structure
+    :param tablet_hight: tablet hight
+    :param air_gap_total_hight: air gap total hight (for the total air gap)
+    :return: fringing factor 'sigma' for tablet - cylinder structure
+    """
+    return r_equivalent * mu0 * tablet_hight / air_gap_total_hight
 
 
-def r_cyl_cyl_real(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer: float,
-                   real_core_heigth: float) -> float:
+def r_air_gap_tablet_cyl(tablet_hight, tablet_diameter, r_outer):
+    """
+    :param tablet_hight: tablet hight
+    :param tablet_diameter: tablet diameter
+    :param r_outer: radius of outer core window
+    :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
 
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
-    :param sigma: fringing factor
-    :type sigma: float
-    :param air_gap_width: air gap width
-    :type air_gap_width: float
-    :param radius_outer: outer cylinder radius
-    :type radius_outer: float
+    # ToDo: Check this whole section!
 
-    :return: air gap reluctance
-    :rtype: float
+    if tablet_diameter / 2 >= r_outer:
+        raise Exception("tablet radius is greater than r_outer")
 
-    """
-    return sigma * np.log(radius_outer / (radius_outer - air_gap_length)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_heigth / 2 / radius_outer)) / air_gap_width
+    # translate practical core dimensions to non-practial air-gap dimensions
+    air_gap_total_hight = r_outer - tablet_diameter / 2
 
+    air_gap_basic_hight = air_gap_total_hight
+    r_basic = r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_diameter / 2)
 
-def r_cheap_cyl_cyl(radius_outer: float, air_gap_length: float, air_gap_width: float) -> float:
-    """
-    Simplified method to calculate cylinder-cylinder air gap reluctance
+    r_equivalent = r_basic / 2
+    sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
+    if sigma > 1:
+        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
-    :param radius_outer: outer cylinder radius
-    :type radius_outer: float
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
-    :param air_gap_width: air gap width
-    :type air_gap_width: float
+    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu0 / np.pi / tablet_hight
+    # Original formular taken from r_cyl_cyl_real. Note, there is a new parameter for real_core_height
+    # r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_heigth / 2 / r_outer)) / tablet_hight
 
-    :return: air gap reluctance
-    :rtype: float
+    r_air_gap = sigma * r_air_gap_ideal
 
-    """
-    r_i = radius_outer - air_gap_length
-    return (radius_outer - r_i) / mu0 / air_gap_width / np.pi / (radius_outer + r_i)
-
+    return r_air_gap
 
 def calculate_reluctances(N, L):
     """
