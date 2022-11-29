@@ -886,105 +886,105 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 mu0 = 4e-7*np.pi
 
 
-def r_basis(basis_air_gap_length: list, basis_air_gap_diameter: list, basis_air_gap_height_core_material: list) -> list:
-    """
-    1-dim reluctance per-unit-of-length
-    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
-
-    :param basis_air_gap_diameter: width of basis air gap
-    :type basis_air_gap_diameter: float
-    :param basis_air_gap_length: length of basis air gap
-    :type basis_air_gap_length: float
-    :param basis_air_gap_height_core_material: height of core material direct on the air gap
-    :type basis_air_gap_height_core_material: float
-
-    :return: basis air gap
-    :rtype: float
-
-    """
-
-    # for index in range(len(basis_air_gap_length)):
-    #     if basis_air_gap_length[index] <= 0:
-    #         basis_air_gap_length[index] = 0.0000001
-
-    basis_air_gap_length = np.array(basis_air_gap_length)
-    basis_air_gap_diameter = np.array(basis_air_gap_diameter)
-    basis_air_gap_height_core_material = np.array(basis_air_gap_height_core_material)
-
-    return 1 / (mu0 * (basis_air_gap_diameter / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
-                                                                                                   basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
-
-
-def sigma(air_gap_total_hight: list, air_gap_radius: list, r_equivalent: list) -> list:
-    """
-    1-dim fringing factor
-    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
-
-    :param air_gap_radius: air gap radius
-    :type air_gap_radius: list
-    :param air_gap_total_hight:
-    :type air_gap_total_hight: list
-    :param r_equivalent: equivalent air gap resistance what was calculated using series/parallel-connection of r_basis
-    :type r_equivalent: list
-
-    :return:
-    :rtype: list
-
-    """
-
-    air_gap_total_hight = np.array(air_gap_total_hight)
-    air_gap_radius = np.array(air_gap_radius)
-    r_equivalent = np.array(r_equivalent)
-
-    return r_equivalent / (air_gap_total_hight / mu0 / air_gap_radius)
-
-
-def r_round_inf(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
-    """
-    3-dim reluctance for 2-dim axial-symmetric air gaps
-    Round to infinity structure
-
-    :param air_gap_sigma: fringing factor
-    :type air_gap_sigma: float
-    :param air_gap_radius: air gap radius
-    :type air_gap_radius: float
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
-
-    :return: air gap reluctance
-    :rtype: float
-
-    """
-    air_gap_length = np.array(air_gap_length)
-    air_gap_sigma = np.array(air_gap_sigma)
-    air_gap_radius = np.array(air_gap_radius)
-
-    return air_gap_sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
-
-
-def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
-    """
-    3-dim reluctance for 2-dim axial-symmetric air gaps
-    Round to round structure
-
-    :param air_gap_sigma: fringing factor
-    :type air_gap_sigma: float
-    :param air_gap_radius: air gap radius
-    :type air_gap_radius: float
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
-
-    :return: air gap reluctance
-    :rtype: float
-
-    """
-    air_gap_length = np.array(air_gap_length)
-    air_gap_sigma = np.array(air_gap_sigma)
-    air_gap_radius = np.array(air_gap_radius)
-
-    r_air_gap_round_ideal = air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
-
-    return air_gap_sigma ** 2 * r_air_gap_round_ideal
+# def r_basis(basis_air_gap_length: list, basis_air_gap_diameter: list, basis_air_gap_height_core_material: list) -> list:
+#     """
+#     1-dim reluctance per-unit-of-length
+#     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
+#
+#     :param basis_air_gap_diameter: width of basis air gap
+#     :type basis_air_gap_diameter: float
+#     :param basis_air_gap_length: length of basis air gap
+#     :type basis_air_gap_length: float
+#     :param basis_air_gap_height_core_material: height of core material direct on the air gap
+#     :type basis_air_gap_height_core_material: float
+#
+#     :return: basis air gap
+#     :rtype: float
+#
+#     """
+#
+#     # for index in range(len(basis_air_gap_length)):
+#     #     if basis_air_gap_length[index] <= 0:
+#     #         basis_air_gap_length[index] = 0.0000001
+#
+#     basis_air_gap_length = np.array(basis_air_gap_length)
+#     basis_air_gap_diameter = np.array(basis_air_gap_diameter)
+#     basis_air_gap_height_core_material = np.array(basis_air_gap_height_core_material)
+#
+#     return 1 / (mu0 * (basis_air_gap_diameter / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
+#                                                                                                    basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
+#
+#
+# def sigma(air_gap_total_hight: list, air_gap_radius: list, r_equivalent: list) -> list:
+#     """
+#     1-dim fringing factor
+#     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
+#
+#     :param air_gap_radius: air gap radius
+#     :type air_gap_radius: list
+#     :param air_gap_total_hight:
+#     :type air_gap_total_hight: list
+#     :param r_equivalent: equivalent air gap resistance what was calculated using series/parallel-connection of r_basis
+#     :type r_equivalent: list
+#
+#     :return:
+#     :rtype: list
+#
+#     """
+#
+#     air_gap_total_hight = np.array(air_gap_total_hight)
+#     air_gap_radius = np.array(air_gap_radius)
+#     r_equivalent = np.array(r_equivalent)
+#
+#     return r_equivalent / (air_gap_total_hight / mu0 / air_gap_radius)
+#
+#
+# def r_round_inf(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
+#     """
+#     3-dim reluctance for 2-dim axial-symmetric air gaps
+#     Round to infinity structure
+#
+#     :param air_gap_sigma: fringing factor
+#     :type air_gap_sigma: float
+#     :param air_gap_radius: air gap radius
+#     :type air_gap_radius: float
+#     :param air_gap_length: air gap length
+#     :type air_gap_length: float
+#
+#     :return: air gap reluctance
+#     :rtype: float
+#
+#     """
+#     air_gap_length = np.array(air_gap_length)
+#     air_gap_sigma = np.array(air_gap_sigma)
+#     air_gap_radius = np.array(air_gap_radius)
+#
+#     return air_gap_sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+#
+#
+# def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
+#     """
+#     3-dim reluctance for 2-dim axial-symmetric air gaps
+#     Round to round structure
+#
+#     :param air_gap_sigma: fringing factor
+#     :type air_gap_sigma: float
+#     :param air_gap_radius: air gap radius
+#     :type air_gap_radius: float
+#     :param air_gap_length: air gap length
+#     :type air_gap_length: float
+#
+#     :return: air gap reluctance
+#     :rtype: float
+#
+#     """
+#     air_gap_length = np.array(air_gap_length)
+#     air_gap_sigma = np.array(air_gap_sigma)
+#     air_gap_radius = np.array(air_gap_radius)
+#
+#     r_air_gap_round_ideal = air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+#
+#     return air_gap_sigma ** 2 * r_air_gap_round_ideal
 
 
 
@@ -994,14 +994,50 @@ def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: lis
 
 
 def r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight):
+    """
+    Do not use this function directly!
+    Use it indirectly by using
+     - r_air_gap_round_round
+     - r_air_gap_round_inf
+    instead!
+
+    This function calculates the r_basic for a round to infinite structure according to the following paper:
+    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
+
+    :param air_gap_radius: air gap radius
+    :param air_gap_basic_hight: air gap hight for the BASIC-AIR-GAP (e.g. if you use a round-round structure, this is half of the total air gap).
+    :param core_hight: core hight
+    :return: basic reluctance for round - infinite structure
+    """
     conductance_basic = mu0 * (air_gap_radius * 2 / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * core_hight / 4 / air_gap_basic_hight)))
 
     return 1 / conductance_basic
 
 def sigma_round(r_equivalent, air_gap_radius, air_gap_total_hight):
+    """
+    Do not use this function directly!
+    Use it indirectly by using
+     - r_air_gap_round_round
+     - r_air_gap_round_inf
+    instead!
+
+    :param r_equivalent: this is a series/parallel connection of r_basic, depending on the air gap structure
+    :param air_gap_radius: air gap radius
+    :param air_gap_total_hight: air gap total hight (for the total air gap, also for round-round structures)
+    :return: fringing factor 'sigma'
+    """
     return r_equivalent * mu0 * air_gap_radius / air_gap_total_hight
 
 def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_upper, core_hight_lower):
+    """
+    Returns the reluctance of a round-round air gap structure and includes finging effects.
+
+    :param air_gap_total_hight: total air gap hight of the air gap
+    :param core_inner_diameter: core inner diameter
+    :param core_hight_upper: core hight upper (needed for better calculating fringing effects)
+    :param core_hight_lower: core hight lower (needed for better calculating fringing effects)
+    :return: air gap reluctance for round-round structure including fringing effects
+    """
     air_gap_radius = core_inner_diameter/ 2
 
     air_gap_basic_hight = air_gap_total_hight / 2
@@ -1021,6 +1057,14 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     return r_air_gap
 
 def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
+    """
+    Returns the reluctance of a round-infinite air gap structure and includes fringing effects
+
+    :param air_gap_total_hight: total air gap hight of the air gap
+    :param core_inner_diameter: core inner diameter
+    :param core_hight: core hight (needed for better calculating fringing effects)
+    :return: air gap reluctance for round-inf structure including fringing effects
+    """
     air_gap_radius = core_inner_diameter / 2
     r_basic = r_basic_round_inf(air_gap_radius, air_gap_total_hight, core_hight)
 

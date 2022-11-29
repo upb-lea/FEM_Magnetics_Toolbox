@@ -473,11 +473,8 @@ class MagneticCircuit:
         if self.n_air_gaps[0] != 0:
             if self.air_gap_method == 'Center':
                 self.section.append(6)  # round-round type airgap
-                temp1 = ff.r_basis([self.air_gap_h[0] / 2], [self.core_inner_diameter], [(self.window_h - self.air_gap_h[0]) / 2])
-                temp2 = ff.sigma([self.air_gap_h[0]], [self.core_inner_diameter / 2], 2 * temp1)
-                temp3 = ff.r_round_round([self.air_gap_h[0]], temp2, [self.core_inner_diameter / 2])
-                temp4 = self.air_gap_h[0] / (self.mu_0 * np.pi * (self.core_inner_diameter / 2) ** 2)  # classical reluctance formula
-                self.reluctance[:, 5] = temp3
+
+                self.reluctance[:, 5] = ff.r_air_gap_round_round([self.air_gap_h[0]], [self.core_inner_diameter], [(self.window_h - self.air_gap_h[0]) / 2])
 
             elif self.air_gap_method == 'Percent' or self.air_gap_method == 'Manually':
                 self.max_percent_position = ((self.window_h - self.air_gap_h[self.n_air_gaps - 1] / 2) / self.window_h) * 100
@@ -495,10 +492,7 @@ class MagneticCircuit:
                     else:
                         h = ((self.position[1] - self.air_gap_h[1] / 2) - self.air_gap_h[0]) / 2
 
-                    temp1 = ff.r_basis([self.air_gap_h[0]], [self.core_inner_diameter], [h])
-                    temp2 = ff.sigma([self.air_gap_h[0]], [self.core_inner_diameter / 2], temp1)
-                    temp3 = ff.r_round_inf([self.air_gap_h[0]], temp2, [self.core_inner_diameter / 2])
-                    self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+                    self.reluctance[:, 5] = self.reluctance[:, 5] + ff.r_air_gap_round_inf([self.air_gap_h[0]], [self.core_inner_diameter], [h])
                     print('air gap is at lower corner')
 
                 if self.percent_position_air_gap[self.n_air_gaps - 1] >= self.max_percent_position:
@@ -510,10 +504,7 @@ class MagneticCircuit:
                         h = (self.position[self.n_air_gaps - 1] - self.position[self.n_air_gaps - 2] - self.air_gap_h[
                             self.n_air_gaps - 1] / 2 - self.air_gap_h[self.n_air_gaps - 2] / 2) / 2
 
-                    temp1 = ff.r_basis([self.air_gap_h[self.n_air_gaps - 1]], [self.core_inner_diameter], [h])
-                    temp2 = ff.sigma([self.air_gap_h[self.n_air_gaps - 1]], [self.core_inner_diameter / 2], temp1)
-                    temp3 = ff.r_round_inf([self.air_gap_h[self.n_air_gaps - 1]], temp2, [self.core_inner_diameter / 2])
-                    self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+                    self.reluctance[:, 5] = self.reluctance[:, 5] + ff.r_air_gap_round_inf([self.air_gap_h[self.n_air_gaps - 1]], [self.core_inner_diameter], [h])
                     print('air gap is at upper corner')
 
                 for i in range(self.n_air_gaps[0]):
@@ -560,11 +551,7 @@ class MagneticCircuit:
                                 i] / 2) / 2
                             print('Both air gap detected')
 
-                        r_basis_1 = ff.r_basis([self.air_gap_h[i] / 2], [self.core_inner_diameter], [h1])
-                        r_basis_2 = ff.r_basis([self.air_gap_h[i] / 2], [self.core_inner_diameter], [h2])
-                        temp2 = ff.sigma([self.air_gap_h[i]], [self.core_inner_diameter / 2], r_basis_1 + r_basis_2)
-                        temp3 = ff.r_round_round([self.air_gap_h[i]], temp2, [self.core_inner_diameter / 2])
-                        self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+                        self.reluctance[:, 5] = self.reluctance[:, 5] + ff.r_air_gap_round_round([self.air_gap_h[i]], [self.core_inner_diameter], [h1], [h2])
 
     def calculate_inductance(self):
         # self.section, self.orientation = set_orientation(self.section, len(self.section))
