@@ -588,19 +588,14 @@ def distributed_type_1(air_gap_hight_single_air_gap, core_inner_diameter, n_air_
     # ToDo: Raise Error for less than two air gaps
 
     # first part calculates the two outer air gaps (very top and very bottom)
-    r_basis = ff.r_basis(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple)
-    sigma_round_inf = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis)
-    reluctance_round_inf = ff.r_round_inf(air_gap_hight_single_air_gap, sigma_round_inf, core_inner_diameter / 2)
-    reluctance = (2 * reluctance_round_inf)
+    reluctance_round_inf = ff.r_air_gap_round_inf(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple)
+    reluctance_total = (2 * reluctance_round_inf)
 
     # second part calculates the inner air gaps between top and bottom air gaps (if available)
-    r_basis_1 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
-    r_basis_2 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
-    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_1 + r_basis_2)
-    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
-    reluctance = reluctance + ((n_air_gaps - 2) * reluctance_round_round)
+    reluctance_round_round = ff.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple, h_multiple)
+    reluctance_total = reluctance_total + ((n_air_gaps - 2) * reluctance_round_round)
 
-    return reluctance
+    return reluctance_total
 
 
 def distributed_type_2(air_gap_hight_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
@@ -620,17 +615,11 @@ def distributed_type_2(air_gap_hight_single_air_gap, core_inner_diameter, n_air_
     #ToDo: Raise Error for less than two air gaps
 
     # First part calculates two outer air gaps (very top and very bottom)
-    r_basis_airgap_airgap = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
-    r_basis_airgap_corner = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
-    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_airgap_airgap + r_basis_airgap_corner)
-    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
+    reluctance_round_round = ff.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple, h_multiple / 2)
     reluctance = (2 * reluctance_round_round)
 
     # second part calculates air gaps between the outer air gaps (if available)
-    r_basis_airgap_airgap_1 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
-    r_basis_airgap_airgap_2 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
-    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_airgap_airgap_1 + r_basis_airgap_airgap_2)
-    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
+    reluctance_round_round = ff.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple / 2, h_multiple / 2)
     reluctance = reluctance + ((n_air_gaps - 2) * reluctance_round_round)
 
     return reluctance
