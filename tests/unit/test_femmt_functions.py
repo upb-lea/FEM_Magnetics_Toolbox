@@ -65,3 +65,7 @@ def test_reluctance():
 
     r_gap_round_inf = femmt.r_air_gap_round_inf(single_air_gap_total_hight, core_inner_diameter, core_hight)
     assert r_gap_round_inf == pytest.approx(94983, rel=1e-3)
+
+    r_gap_tablet_cylinder = femmt.r_air_gap_tablet_cyl(0.01, 0.0002, 0.03)
+    assert r_gap_tablet_cylinder == pytest.approx(73876, rel=1e-3)
+

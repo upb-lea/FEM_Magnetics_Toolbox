@@ -1009,15 +1009,50 @@ def sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight):
     return r_equivalent * mu0 * tablet_hight / air_gap_total_hight
 
 
-def r_air_gap_tablet_cyl(tablet_hight, tablet_diameter, r_outer):
+def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, r_outer):
     """
+    Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
+    This function calculates the air gap reluctance for a 2D-axisymmetric core.
+
     :param tablet_hight: tablet hight
-    :param tablet_diameter: tablet diameter
+    :param air_gap_total_hight: total air gap hight
     :param r_outer: radius of outer core window
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
 
-    # ToDo: Check this whole section!
+    # translate practical core dimensions to non-practial air-gap dimensions
+    tablet_radius = r_outer - air_gap_total_hight
+
+    air_gap_basic_hight = air_gap_total_hight
+    r_basic = r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_radius)
+
+    r_equivalent = r_basic / 2
+    sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
+    if sigma > 1:
+        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
+
+    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu0 / np.pi / tablet_hight
+
+    r_air_gap = sigma * r_air_gap_ideal
+
+    return r_air_gap
+
+
+def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, tablet_diameter, r_outer, real_core_width_no_2d_axi):
+    """
+    Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
+    Note:
+    This function differes from r_air_gap_tablet_cyl (ideal 2D axisymmetric core). Here, the air gap reluctance for
+    a non-2D-axisymmetric core is taken into account, as a real PQ core is open at the side. So, there is no air gap
+    taken into account for the side-sections. The new real_core_width_no_2d_axi parameter describes the width of the
+    core when you are in a xy-coordinate system.
+
+    :param tablet_hight: tablet hight
+    :param tablet_diameter: tablet diameter
+    :param r_outer: radius of outer core window
+    :param real_core_width_no_2d_axi: core width for a real core (e.g. PQ-core) in xy-coordinate system.
+    :return: air gap reluctance for tablet - cylinder structure including air gap fringing
+    """
 
     if tablet_diameter / 2 >= r_outer:
         raise Exception("tablet radius is greater than r_outer")
@@ -1033,9 +1068,7 @@ def r_air_gap_tablet_cyl(tablet_hight, tablet_diameter, r_outer):
     if sigma > 1:
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
-    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu0 / np.pi / tablet_hight
-    # Original formular taken from r_cyl_cyl_real. Note, there is a new parameter for real_core_height
-    # r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_heigth / 2 / r_outer)) / tablet_hight
+    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_width_no_2d_axi / 2 / r_outer)) / tablet_hight
 
     r_air_gap = sigma * r_air_gap_ideal
 
