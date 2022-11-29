@@ -987,6 +987,66 @@ def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: lis
     return air_gap_sigma ** 2 * r_air_gap_round_ideal
 
 
+
+#### new and simplified versions of reluctance model
+
+
+
+
+def r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight):
+    conductance_basic = mu0 * (air_gap_radius * 2 / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * core_hight / 4 / air_gap_basic_hight)))
+
+    return 1 / conductance_basic
+
+def sigma_round(r_equivalent, air_gap_radius, air_gap_total_hight):
+    return r_equivalent * mu0 * air_gap_radius / air_gap_total_hight
+
+def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_upper, core_hight_lower):
+    air_gap_radius = core_inner_diameter/ 2
+
+    air_gap_basic_hight = air_gap_total_hight / 2
+    r_basic_upper = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_upper)
+    r_basic_lower = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_lower)
+    print(f"{r_basic_upper = }")
+
+    r_equivalent_round_round = r_basic_upper + r_basic_lower
+
+    sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_hight)
+    print(f"{sigma = }")
+
+    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
+    print(f"{r_air_gap_ideal = }")
+    r_air_gap = sigma ** 2 * r_air_gap_ideal
+
+    return r_air_gap
+
+def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
+    air_gap_radius = core_inner_diameter / 2
+    r_basic = r_basic_round_inf(air_gap_radius, air_gap_total_hight, core_hight)
+
+    r_equivalent_round_inf = r_basic
+    sigma = sigma_round(r_equivalent_round_inf, air_gap_radius, air_gap_total_hight)
+
+    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
+    r_air_gap = sigma ** 2 * r_air_gap_ideal
+
+    return r_air_gap
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def r_cyl_cyl(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer) -> float:
     """
     Cylinder-cylinder air gap reluctance
