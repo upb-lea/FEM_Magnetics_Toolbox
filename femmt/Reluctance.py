@@ -457,7 +457,7 @@ class MagneticCircuit:
         self.data_matrix = np.hstack(
             (self.data_matrix, np.reshape(self.core_h, (self.data_matrix_len, 1))))  # position: 15
 
-    def get_param_pos_dict(self):
+    def get_parameters_position_dict(self):
         self.param_pos_dict = {"core_inner_diameter": 0, "window_h": 1, "window_w": 2, "mu_rel": 3, "no_of_turns": 4,
                                "n_air_gaps": 5,
                                "air_gap_h": 6, "air_gap_position": 7, "mult_air_gap_type": 8, "inductance": 9,
