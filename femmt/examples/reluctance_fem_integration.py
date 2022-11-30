@@ -1,5 +1,7 @@
 import femmt as fmt
 import numpy as np
+import json
+import csv
 import re
 import os
 from os import listdir
@@ -20,7 +22,8 @@ def load_from_single_file(working_directory: str, file_name: str):
     """
         Load from a single FEM simulation case for checking the result in detail
 
-        param working_directory: Working directory where all the simulated cases have been saved from the automated design
+        param working_directory: Working directory where all the simulated cases have been saved
+        from the automated design
         :type working_directory: str
         :param file_name: Log file which needs to be simulated (e.g. 'case1344.json')
         :type file_name: str
@@ -48,14 +51,14 @@ def load_from_single_file(working_directory: str, file_name: str):
         current = data.sweeps[0].windings[0].current.real
 
     geo = fmt.MagneticComponent.decode_settings_from_log(file_path, working_directory)
-    # TODO: Update the decode_settings_from_log as per the new core database
 
     geo.create_model(freq=frequency, visualize_before=False, save_png=False)
 
     geo.single_simulation(freq=frequency, current=[current], show_results=True)
 
 
-def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, plot_color: str, annotations: list = None):
+def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, plot_color: str, z_value: list = None,
+            z_label: str = None, inductance_value: list = None, annotations: list = None):
     """
         Visualize data in 2d plot with popover next to mouse position.
 
@@ -63,12 +66,18 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         :type x_value: list
         :param y_value: Data points for y-axis
         :type y_value: list
+        :param z_value: Data points for z-axis
+        :type z_value: list
         :param x_label: x-axis label
         :type x_label: str
         :param y_label: y-axis label
         :type y_label: str
+        :param z_label: z-axis label
+        :type z_label: str
         :param title: Title of the graph
         :type title: str
+        :param inductance_value: Data points for inductance value corresponding to the (x, y, z): (Optional)
+        :type inductance_value: list
         :param annotations: Annotations corresponding to the 3D points
         :type annotations: list
         :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
@@ -77,10 +86,20 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     if annotations is None:
         names = [str(x) for x in list(range(len(x_value)))]
     else:
-        names = np.array(annotations)
+        temp_var = [int(x) for x in annotations]
+        names = [str(x) for x in temp_var]
+
+    if inductance_value is not None:
+        l_label = 'L / H'
+
+    if z_value is not None:
+        z_value_str = [str(round(z, 3)) for z in z_value]
+
+    if inductance_value is not None:
+        l_value_str = [str(round(l, 6)) for l in inductance_value]
 
     x_value_str = [str(round(x, 6)) for x in x_value]
-    y_value_str = [str(round(y, 6)) for y in y_value]
+    y_value_str = [str(round(y, 3)) for y in y_value]
 
     fig, ax = plt.subplots()
     fmt.plt.title(title)
@@ -92,8 +111,13 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     # cmap = plt.cm.RdYlGn
 
     # sc = plt.scatter(x_value, y_value, c=c, s=50, cmap=cmap, norm=norm)
-
-    sc = plt.scatter(x_value, y_value, c='#%02x%02x%02x' % fmt.colors_femmt_default[plot_color])
+    if z_value is None:
+        sc = plt.scatter(x_value, y_value, c='#%02x%02x%02x' % fmt.colors_femmt_default[plot_color])
+    else:
+        sc = plt.scatter(x_value, y_value, c=z_value, cmap=plot_color)
+        cbar = plt.colorbar(sc)
+        cbar.ax.get_yaxis().labelpad = 15
+        cbar.ax.set_ylabel(z_label, rotation=270)
 
     annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
                         bbox=dict(boxstyle="round", fc="w"),
@@ -105,9 +129,31 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
 
         pos = sc.get_offsets()[ind["ind"][0]]
         annot.xy = pos
-        text = "{}\n{}: {}\n{}:{}".format(" ".join([names[n] for n in ind["ind"]]), x_label,
-                                                " ".join([x_value_str[n] for n in ind["ind"]]), y_label,
-                                                " ".join([y_value_str[n] for n in ind["ind"]]))
+        text = ""
+        if z_label is None and inductance_value is None:
+            text = "case: {}\n{}: {}\n{}:{}".\
+                format(" ".join([names[n] for n in ind["ind"]]),
+                       x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
+                       y_label, " ".join([y_value_str[n] for n in ind["ind"]]))
+        elif z_label is not None and inductance_value is None:
+            text = "case: {}\n{}: {}\n{}:{}\n{}:{}". \
+                format(" ".join([names[n] for n in ind["ind"]]),
+                       x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
+                       y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
+                       z_label, " ".join([z_value_str[n] for n in ind["ind"]]))
+        elif z_label is None and inductance_value is not None:
+            text = "case: {}\n{}: {}\n{}:{}\n{}:{}". \
+                format(" ".join([names[n] for n in ind["ind"]]),
+                       x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
+                       y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
+                       l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
+        else:
+            text = "case: {}\n{}: {}\n{}:{}\n{}:{}\n{}:{}".\
+                format(" ".join([names[n] for n in ind["ind"]]),
+                       x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
+                       y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
+                       z_label, " ".join([z_value_str[n] for n in ind["ind"]]),
+                       l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
         annot.set_text(text)
         # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
         annot.get_bbox_patch().set_alpha(0.4)
@@ -158,7 +204,7 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
     """
     names = np.array(annotations)
     num = [re.findall(r'\d+', item) for item in names]
-    print(num)
+    # print(num)
     case_num_list = [int(item[0]) for item in num]
 
     X = np.zeros((len(x_value), 1))
@@ -250,6 +296,24 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
     plt.show()
 
 
+def filter_after_fem(inductance: list, total_loss: list, total_volume: list, total_cost: list,
+                     annotation_list: list, goal_inductance: float, percent_tolerance: int):
+    inductance = np.array(inductance)
+    total_loss = np.array(total_loss)
+    total_volume = np.array(total_volume)
+    total_cost = np.array(total_cost)
+
+    names = np.array(annotation_list)
+    num = [re.findall(r'\d+', item) for item in names]
+    case_num_list = [int(item[0]) for item in num]
+
+    data_array = np.column_stack((inductance, total_volume, total_loss, total_cost, case_num_list))
+    data_array = data_array[np.where((data_array[:, 0] > ((100 - percent_tolerance) / 100) * goal_inductance) &
+                                     (data_array[:, 0] < ((100 + percent_tolerance) / 100) * goal_inductance))]
+
+    return data_array
+
+
 def load_design(working_directory: str):
     """
     Load FEM simulation results from given working directory
@@ -293,10 +357,6 @@ def load_design(working_directory: str):
     real_inductance = []
     for i in range(len(total_loss)):
         real_inductance.append(inductivities[i].real)
-    print(f'labels: {labels}')
-    print(total_volume)
-    print(total_loss)
-    print(total_cost)
 
     return real_inductance, total_loss, total_volume, total_cost, labels
 
@@ -311,7 +371,8 @@ class AutomatedDesign:
     copper_conductivity = 5.96 * 1e7
     winding_scheme_dict = {'Square': [0.785, fmt.ConductorArrangement.Square],
                            'Hexagonal': [0.907, fmt.ConductorArrangement.Hexagonal]}
-    constant_convert_dict = {np.nan: None}
+    component_type_dict = {'inductor': fmt.ComponentType.Inductor,
+                           'integrated_transformer': fmt.ComponentType.IntegratedTransformer}
 
     def __init__(self, working_directory: str, magnetic_component: str, goal_inductance: float, frequency: float,
                  goal_inductance_percent_tolerance: int, winding_scheme: str, peak_current: float, percent_of_b_sat: int,
@@ -433,11 +494,10 @@ class AutomatedDesign:
 
         # Pre-process function to prepare inputs for Reluctance model
         self.core_inner_diameter_list, self.window_h_list, self.window_w_list, self.litz_conductor_r, \
-        self.litz_strand_r, self.litz_strand_n, self.litz_fill_factor, self.mu_rel, \
-        self.mult_air_gap_type_list = self.input_pre_process()
+            self.litz_strand_r, self.litz_strand_n, self.litz_fill_factor, self.mu_rel, \
+            self.mult_air_gap_type_list = self.input_pre_process()
 
-        # self.min_conductor_r = min(self.litz_conductor_r + self.solid_conductor_r)  # TODO:
-        self.conductor_r_list = self.litz_conductor_r + self.solid_conductor_r  # TODO:
+        # self.conductor_r_list = self.litz_conductor_r + self.solid_conductor_r
 
         # Call to Reluctance model (Class MagneticCircuit)
         mc = fmt.MagneticCircuit(core_inner_diameter=self.core_inner_diameter_list, window_h=self.window_h_list, window_w=self.window_w_list,
@@ -449,25 +509,22 @@ class AutomatedDesign:
 
         # Filtration of the design cases which are not important
         self.data_matrix_0 = mc.data_matrix
-
         self.data_matrix_1 = self.filter_goal_inductance(self.data_matrix_0)
         self.data_matrix_2 = self.filter_flux_saturation(self.data_matrix_1)
         self.data_matrix_3 = self.filter_geometry(self.data_matrix_2)
         self.data_matrix_4 = self.filter_losses(self.data_matrix_3)
-
-        #self.plot_volume_loss(self.data_matrix_4)
-        #   TODO: remove plot from here
         self.data_matrix_fem = self.data_matrix_4
-        #     # FEM_data_matrix = data_matrix_4[np.where(data_matrix_4[:, param["normalized_total_loss"]]
-        #     <= ((0.01 / data_matrix_4[:, param["normalized_total_volume"]]) + 0.6))]
 
     def input_pre_process(self):
         """ Pre-process the user input to prepare lists for reluctance model"""
+
+        # Creating all possible combinations from the given manual geometry parameters
         all_manual_combinations = list(product(self.manual_core_inner_diameter, self.manual_window_h, self.manual_window_w))
         manual_core_inner_diameter = [item[0] for item in all_manual_combinations]
         manual_window_h = [item[1] for item in all_manual_combinations]
         manual_window_w = [item[2] for item in all_manual_combinations]
 
+        # Segregating core geometry parameters from the core database and saving in lists
         core_db = fmt.core_database()
         db_core_inner_diameter = [core_db[core_name]["core_inner_diameter"] for core_name in self.database_core_names]
         db_window_h = [core_db[core_name]["window_h"] for core_name in self.database_core_names]
@@ -477,6 +534,7 @@ class AutomatedDesign:
         window_h_list = db_window_h + manual_window_h
         window_w_list = db_window_w + manual_window_w
 
+        # Segregating core geometry parameters from the litz database and saving in lists
         litz_db = fmt.litz_database()
         db_litz_conductor_r = [np.nan if litz_db[litz_name]["conductor_radii"] == ""
                                else litz_db[litz_name]["conductor_radii"] for litz_name in self.database_litz_names]
@@ -492,9 +550,11 @@ class AutomatedDesign:
         litz_strand_n = db_litz_strand_n + self.manual_litz_strand_n
         litz_fill_factor = db_litz_fill_factor + self.manual_litz_fill_factor
 
+        # List of initial permeability extracted from core material database
         mu_rel = [material_db.get_material_property(material_name=material_name, property="initial_permeability")
                   for material_name in self.core_material]
 
+        # Mapping mult_air_gap_type string to float value (To include it in numpy float array easily)
         mult_air_gap_type_list = []
         for item in self.mult_air_gap_type:
             if item == 'edge_distributed':
@@ -507,6 +567,64 @@ class AutomatedDesign:
         return core_inner_diameter_list, window_h_list, window_w_list, litz_conductor_r, litz_strand_r, litz_strand_n, \
                litz_fill_factor, mu_rel, mult_air_gap_type_list
 
+    def filter_goal_inductance(self, data_matrix):
+        """
+        Filter out design cases which are in between the given goal inductance tolerance band
+
+        param data_matrix: Matrix containing the design parameters
+        :type data_matrix: ndarray
+        """
+        data_matrix = data_matrix[np.where((data_matrix[:, self.param["inductance"]] >
+                                            ((100 - self.goal_inductance_percent_tolerance) / 100) *
+                                            self.goal_inductance) &
+                                           (data_matrix[:, self.param["inductance"]] <
+                                            ((100 + self.goal_inductance_percent_tolerance) / 100) *
+                                            self.goal_inductance))]
+        return data_matrix
+
+    def filter_flux_saturation(self, data_matrix):
+        """
+        Filter out design cases based on the maximum magnetic flux allowed in the magnetic core.
+
+        param data_matrix: Matrix containing the design parameters
+        :type data_matrix: ndarray
+        """
+        # Dictionary to store {initial_permeability: 'Material_name'} to map material_name during FEM iteration
+        b_sat_dict = {}
+        for material_name in self.core_material:
+            b_sat_key = material_db.get_material_property(material_name=material_name, property="initial_permeability")
+            b_sat_dict[b_sat_key] = material_db.get_material_property(material_name=material_name,
+                                                                      property="max_flux_density")
+            self.core_material_dict[b_sat_key] = material_name
+        # print(self.core_material_dict)
+
+        # Creating B_saturated array corresponding to the material type
+        b_sat = np.zeros((len(data_matrix), 1))
+        for index in range(len(data_matrix)):
+            b_sat[index] = b_sat_dict[data_matrix[index, self.param["mu_rel"]]]
+
+        # flux_max = L * i_max / N
+        total_flux_max = (data_matrix[:, self.param["inductance"]] * self.peak_current) / data_matrix[:,
+                                                                                         self.param["no_of_turns"]]
+        b_max_center = total_flux_max / data_matrix[:, self.param["center_leg_area"]]
+        b_max_middle = total_flux_max / (
+                np.pi * data_matrix[:, self.param["core_inner_diameter"]] * data_matrix[:, self.param["core_h_middle"]])
+        b_max_outer = total_flux_max / data_matrix[:, self.param["outer_leg_area"]]
+
+        data_matrix = self.add_column_to_data_matrix(data_matrix, total_flux_max, 'total_flux_max')     # 16
+        data_matrix = self.add_column_to_data_matrix(data_matrix, b_max_center, 'b_max_center')         # 17
+        data_matrix = self.add_column_to_data_matrix(data_matrix, b_max_middle, 'b_max_middle')         # 18
+        data_matrix = self.add_column_to_data_matrix(data_matrix, b_max_outer, 'b_max_outer')           # 19
+
+        data_matrix_temp = np.zeros((0, len(data_matrix[0])))
+        for index in range(len(data_matrix)):
+            if (data_matrix[index, self.param["b_max_center"]] < (self.percent_of_b_sat / 100) * b_sat[index]) & \
+                    (data_matrix[index, self.param["b_max_center"]] < (self.percent_of_b_sat / 100) * b_sat[index]) & \
+                    (data_matrix[index, self.param["b_max_outer"]] < (self.percent_of_b_sat / 100) * b_sat[index]):
+                data_matrix_temp = np.vstack([data_matrix_temp, data_matrix[index, :]])
+
+        return data_matrix_temp
+
     def filter_geometry(self, data_matrix):
         """
         Filter out design cases which are not physical possible based on no_of_turns and winding area
@@ -518,6 +636,8 @@ class AutomatedDesign:
         final_data_matrix1 = np.zeros((len(data_matrix), len(data_matrix[0]) + 6))
         final_data_matrix2 = np.zeros((len(data_matrix), len(data_matrix[0]) + 6))
 
+        # Adds litz and solid core details to data_matrix with all combinations possible and prepare data matrix for
+        # FEM simulation
         for i in range(len(self.litz_conductor_r)):
             temp_var1 = np.full((len(data_matrix), 1), self.litz_conductor_r[i])
             temp_var2 = np.full((len(data_matrix), 1), self.litz_strand_r[i])
@@ -558,6 +678,7 @@ class AutomatedDesign:
             else:
                 final_data_matrix2 = np.concatenate((final_data_matrix2, temp_data_matrix), axis=0)
 
+        # Handles all the different cases of litz or/and solid conductor inputs
         if not len(self.litz_conductor_r) and len(self.solid_conductor_r):
             final_data_matrix = final_data_matrix2
         elif not len(self.solid_conductor_r) and len(self.litz_conductor_r):
@@ -575,67 +696,11 @@ class AutomatedDesign:
                             (self.left_core_insulation + self.right_core_insulation)))
 
         data_matrix = final_data_matrix[
-            np.where((final_data_matrix[:, self.param["no_of_turns"]] * np.pi * final_data_matrix[:, self.param["conductor_radius"]] ** 2)
+            np.where((final_data_matrix[:, self.param["no_of_turns"]] * np.pi *
+                      final_data_matrix[:, self.param["conductor_radius"]] ** 2)
                      < (self.winding_factor * (window_area - insulation_area)))]
 
         return data_matrix
-
-    def filter_goal_inductance(self, data_matrix):
-        """
-        Filter out design cases which are in between the given goal inductance tolerance band
-
-        param data_matrix: Matrix containing the design parameters
-        :type data_matrix: array
-        """
-        data_matrix = data_matrix[np.where((data_matrix[:, self.param["inductance"]] >
-                                            ((100 - self.goal_inductance_percent_tolerance) / 100) *
-                                            self.goal_inductance) &
-                                           (data_matrix[:, self.param["inductance"]] <
-                                            ((100 + self.goal_inductance_percent_tolerance) / 100) *
-                                            self.goal_inductance))]
-        return data_matrix
-
-    def filter_flux_saturation(self, data_matrix):
-        """
-        Filter out design cases based on the maximum magnetic flux allowed in the magnetic core.
-
-        param data_matrix: Matrix containing the design parameters
-        :type data_matrix: array
-        """
-        b_sat_dict = {}
-        for material_name in self.core_material:
-            b_sat_key = material_db.get_material_property(material_name=material_name, property="initial_permeability")
-            b_sat_dict[b_sat_key] = material_db.get_material_property(material_name=material_name,
-                                                                      property="max_flux_density")
-            self.core_material_dict[b_sat_key] = material_name
-        print(self.core_material_dict)
-
-        # Creating B_saturated array corresponding to the material type
-        b_sat = np.zeros((len(data_matrix), 1))
-        for index in range(len(data_matrix)):
-            b_sat[index] = b_sat_dict[data_matrix[index, self.param["mu_rel"]]]
-
-        # flux_max = L * i_max / N
-        total_flux_max = (data_matrix[:, self.param["inductance"]] * self.peak_current) / data_matrix[:,
-                                                                                         self.param["no_of_turns"]]
-        b_max_center = total_flux_max / data_matrix[:, self.param["center_leg_area"]]
-        b_max_middle = total_flux_max / (
-                np.pi * data_matrix[:, self.param["core_inner_diameter"]] * data_matrix[:, self.param["core_h_middle"]])
-        b_max_outer = total_flux_max / data_matrix[:, self.param["outer_leg_area"]]
-
-        data_matrix = self.add_column_to_data_matrix(data_matrix, total_flux_max, 'total_flux_max')     # 16
-        data_matrix = self.add_column_to_data_matrix(data_matrix, b_max_center, 'b_max_center')         # 17
-        data_matrix = self.add_column_to_data_matrix(data_matrix, b_max_middle, 'b_max_middle')         # 18
-        data_matrix = self.add_column_to_data_matrix(data_matrix, b_max_outer, 'b_max_outer')           # 19
-
-        data_matrix_temp = np.zeros((0, len(data_matrix[0])))
-        for index in range(len(data_matrix)):
-            if (data_matrix[index, self.param["b_max_center"]] < (self.percent_of_b_sat / 100) * b_sat[index]) & \
-                    (data_matrix[index, self.param["b_max_center"]] < (self.percent_of_b_sat / 100) * b_sat[index]) & \
-                    (data_matrix[index, self.param["b_max_outer"]] < (self.percent_of_b_sat / 100) * b_sat[index]):
-                data_matrix_temp = np.vstack([data_matrix_temp, data_matrix[index, :]])
-
-        return data_matrix_temp
 
     def filter_losses(self, data_matrix):
         """
@@ -644,8 +709,7 @@ class AutomatedDesign:
        param data_matrix: Matrix containing the design parameters
        :type data_matrix: ndarray
         """
-        # Filter out data-matrix according to calculated hysteresis loss + DC winding loss
-        # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
+        # Dictionary to store {initial_permeability: counter}
         mu_imag_dict = {}
         counter = 0
         for material_name in self.core_material:
@@ -657,8 +721,9 @@ class AutomatedDesign:
         material_data_list = [material_db.permeability_data_to_pro_file(self.temperature, self.frequency,
                                                                         material_name, "manufacturer_datasheet")
                               for material_name in self.core_material]
-        print(material_data_list)
+        # print(material_data_list)
 
+        # Creating interpolation function between mu_imaginary and magnetic flux density
         mu_imag_interpol_func = [interp1d(material_data_list[i][0], material_data_list[i][1], kind="cubic") for i in
                                  range(len(self.core_material))]
 
@@ -668,6 +733,7 @@ class AutomatedDesign:
             mu_imag[index] = mu_imag_interpol_func[mu_imag_dict[data_matrix[index, self.param["mu_rel"]]]] \
                 (data_matrix[index, self.param["b_max_center"]])
 
+        # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
         volume_center = (np.pi * (data_matrix[:, self.param["core_inner_diameter"]] / 2) ** 2) * \
                         (data_matrix[:, self.param["window_h"]] + data_matrix[:, self.param["core_h_middle"]] -
                          (data_matrix[:, self.param["n_air_gaps"]] * data_matrix[:, self.param["air_gap_h"]]))
@@ -699,6 +765,7 @@ class AutomatedDesign:
                       (data_matrix[:, self.param["core_inner_diameter"]] / 2 + data_matrix[:, self.param["conductor_radius"]])) / \
                      (self.copper_conductivity * (np.pi * (data_matrix[:, self.param["conductor_radius"]] ** 2)))
 
+        # I^2 * R loss
         DC_loss = ((self.peak_current ** 2) / 2) * Resistance       # Assuming sinusoidal current waveform
 
         total_loss = DC_loss + total_hyst_loss
@@ -718,11 +785,6 @@ class AutomatedDesign:
 
         data_matrix = data_matrix[data_matrix[:, self.param["total_loss"]].argsort()]
         data_matrix = data_matrix[0:int((self.percent_of_total_loss / 100) * len(data_matrix)), :]
-
-        # test_var = data_matrix[np.where(data_matrix[:, self.param["total_volume"]] >= 0.0003574349)]
-        # print(test_var)
-        # test_var_2 = test_var[np.where(test_var[:, self.param["total_volume"]] <= 0.0003574350)]
-        # print(test_var_2)
 
         return data_matrix
 
@@ -746,10 +808,11 @@ class AutomatedDesign:
 
         data_files = []
         file_names = []
+        successful_sim_counter = 0
         for i in range(len(self.data_matrix_fem)):
 
             # MagneticComponent class object
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
+            geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
                                         working_directory=working_directory, silent=True)
 
             core = fmt.Core(core_inner_diameter=self.data_matrix_fem[i, self.param["core_inner_diameter"]],
@@ -805,7 +868,6 @@ class AutomatedDesign:
             # 6. create conductor and set parameters: use solid wires
             winding = fmt.Conductor(0, fmt.Conductivity.Copper)
             if np.isnan(self.data_matrix_fem[i, self.param["solid_conductor_r"]]):
-
                 winding.set_litz_round_conductor(conductor_radius=None if np.isnan(self.data_matrix_fem[i, self.param["litz_conductor_r"]]) else self.data_matrix_fem[i, self.param["litz_conductor_r"]],
                                                  number_strands=None if np.isnan(self.data_matrix_fem[i, self.param["litz_strand_n"]]) else self.data_matrix_fem[i, self.param["litz_strand_n"]],
                                                  strand_radius=None if np.isnan(self.data_matrix_fem[i, self.param["litz_strand_r"]]) else self.data_matrix_fem[i, self.param["litz_strand_r"]],
@@ -833,10 +895,12 @@ class AutomatedDesign:
                 data_files.append(new_filename)
                 file_names.append(f"case{i}")
                 print(f"Case {i} of {len(self.data_matrix_fem)} completed")
+                successful_sim_counter = successful_sim_counter + 1
 
             except (Exception,) as e:
                 print("next iteration")
                 logging.exception(e)
+        print(f"Successful FEM simulations: {successful_sim_counter} out of total cases: {len(self.data_matrix_fem)}")
 
     def add_column_to_data_matrix(self, data_matrix, column_value, column_name: str):
         """
@@ -855,30 +919,68 @@ class AutomatedDesign:
 
         return data_matrix
 
-    # def plot_volume_loss(self, x_value: list, y_value: list, x_label: str, y_label: str,
-    #         title: str, plot_color: str):
-    #     """
-    #     Plots estimated normalised volume vs loss graph from reluctance model results
-    #
-    #     param data_matrix: Matrix containing the design parameters
-    #    :type data_matrix: array
-    #     """
-    #     fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
-    #     # fmt.plt.title("Normalised volume vs Normalised losses")
-    #     # fmt.plt.xlabel("Normalised Volume")
-    #     # fmt.plt.ylabel("Normalised Losses")
-    #     # ax.plot(data_matrix[:, self.param['normalized_total_volume']],
-    #     #         data_matrix[:, self.param['normalized_total_loss']], 'o')
-    #     fmt.plt.title(title)
-    #     fmt.plt.xlabel(x_label)
-    #     fmt.plt.ylabel(y_label)
-    #     ax.plot(x_value, y_value, 'o', color='#%02x%02x%02x' % fmt.colors_femmt_default[plot_color])
-    #     ax.grid()
-    #     fmt.plt.show()
+    def write_data_matrix_fem_to_csv(self):
+        header = list(self.param.keys())
+        header.insert(0, 'Case_no.')
+        data = self.data_matrix_fem
+        a = np.array(range(len(self.data_matrix_fem)))
+        data = np.insert(data, 0, a, axis=1)
+        file_name = self.working_directory + '/data_matrix_fem.csv'
+        with open(file_name, 'w', encoding='UTF8', newline='') as f:
+            writer = csv.writer(f)
+
+            # write the header
+            writer.writerow(header)
+
+            # write multiple rows
+            writer.writerows(data)
+
+    def automated_design_settings(self):
+        dictionary = {
+            "Working_directory": self.working_directory,
+            "magnetic_component": self.magnetic_component,
+            "frequency": self.frequency,
+            "temperature": self.temperature,
+            "goal_inductance": self.goal_inductance,
+            "goal_inductance_percent_tolerance": self.goal_inductance_percent_tolerance,
+            "winding_scheme": self.winding_scheme,
+            "peak_current": self.peak_current,
+            "percent_of_b_sat": self.percent_of_b_sat,
+            "percent_of_total_loss": self.percent_of_total_loss,
+            "database_core_names": self.database_core_names,
+            "database_litz_names": self.database_litz_names,
+            "solid_conductor_r": self.solid_conductor_r,
+            "manual_core_inner_diameter": self.manual_core_inner_diameter,
+            "manual_window_h": self.manual_window_h,
+            "manual_window_w": self.manual_window_w,
+            "no_of_turns": self.no_of_turns,
+            "n_air_gaps": self.n_air_gaps,
+            "air_gap_height": self.air_gap_height,
+            "air_gap_position": self.air_gap_position,
+            "core_material": self.core_material,
+            "mult_air_gap_type": self.mult_air_gap_type,
+            "top_core_insulation": self.top_core_insulation,
+            "bot_core_insulation": self.bot_core_insulation,
+            "right_core_insulation": self.right_core_insulation,
+            "left_core_insulation": self.left_core_insulation,
+            "inner_winding_insulation": self.inner_winding_insulation,
+            "manual_litz_conductor_r": self.manual_litz_conductor_r,
+            "manual_litz_strand_r": self.manual_litz_strand_r,
+            "manual_litz_strand_n": self.manual_litz_strand_n,
+            "manual_litz_fill_factor": self.manual_litz_fill_factor
+        }
+
+        # Serializing json
+        json_object = json.dumps(dictionary, indent=4)
+
+        # Writing to sample.json
+        with open(self.working_directory + "/automated_design_settings.json", "w") as outfile:
+            outfile.write(json_object)
 
 
 if __name__ == '__main__':
-    ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-26_fem_simulation_data',
+    # Inpult parameters for the Automated Design
+    ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-30_fem_simulation_data',
                          magnetic_component='inductor',
                          goal_inductance=120 * 1e-6,
                          frequency=100000,
@@ -886,7 +988,7 @@ if __name__ == '__main__':
                          winding_scheme='Square',
                          peak_current=8,
                          percent_of_b_sat=70,
-                         percent_of_total_loss=30,
+                         percent_of_total_loss=1,
                          database_core_names=[],
                          database_litz_names=['1.5x105x0.1', "1.4x200x0.071"],
                          solid_conductor_r=[],  # 0.0013
@@ -910,27 +1012,56 @@ if __name__ == '__main__':
                          manual_litz_strand_n=[],
                          manual_litz_fill_factor=[])
 
+    # Create csv file of data_matrix_fem which consist of all the fem simulation cases details
+    ad.write_data_matrix_fem_to_csv()
+
+    # Plot of volume vs loss calculated using Reluctance Model
     plot_2d(x_value=ad.data_matrix_fem[:, ad.param["total_volume"]],
             y_value=ad.data_matrix_fem[:, ad.param["total_loss"]],
-            x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', plot_color='red')
+            x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', plot_color='blue')
 
-    ad.fem_simulation()
+    print(f"Total number of cases to be simulated: {len(ad.data_matrix_fem)}")
+    print(f"Estimated time of completion of FEM simulations (5 sec/case): {5 * len(ad.data_matrix_fem)} seconds")
+    print("##########################################################################################################")
+    choice = int(input("Press 1 to run FEM simulations as per the given inputs or "
+                    "any other number to load previous design as per given directory:"))
 
+    if choice == 1:
+        # Run FEM simulation of "self.data_matrix_fem"
+        ad.fem_simulation()
+
+        # Save simulation settings in json file for later review
+        ad.automated_design_settings()
+
+    # Load design and plot various plots for analysis
     inductance, total_loss, total_volume, total_cost, annotation_list = load_design \
-        (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-26_fem_simulation_data')
+        (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-30_fem_simulation_data')
 
-    plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
-            title='Volume vs Loss', annotations=annotation_list, plot_color='red')
+    plot_data = filter_after_fem(inductance=inductance, total_loss=total_loss, total_volume=total_volume, total_cost=total_cost,
+                     annotation_list=annotation_list, goal_inductance=ad.goal_inductance, percent_tolerance=20)
+
+    plot_2d(x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
+            x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+            annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+
+    #
+    # plot_2d(x_value=data_array[:, 1], y_value=data_array[:, 3], z_value=data_array[:, 2], x_label='Volume / m\u00b3', y_label='Cost / \u20ac', z_label='Loss / W',
+    #         title='Volume vs Cost', plot_color='red')
+
+    # plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W',
+    #         title='Volume vs Loss', annotations=annotation_list, plot_color='red')
     # plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac',
     #         title='Volume vs Cost', annotations=annotation_list, plot_color='red')
+    # plot_2d(x_value=total_volume, y_value=inductance, x_label='Volume / m\u00b3', y_label='Inductance / H',
+    #         title='Volume vs Inductance', annotations=annotation_list, plot_color='red')
     # plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3',
     #         y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss vs Cost',
     #         annotations=annotation_list, plot_color='red')
 
-    # load_from_single_file(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-20_fem_simulation_data',
-    #                file_name='case1922.json')
+    # load_from_single_file(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-27_fem_simulation_data',
+    #                file_name='case4.json')
 
-    # plot_2d(x_value=total_volume, y_value=inductance, x_label='Volume / m\u00b3', y_label='Inductance / H',
-    #         title='Volume vs Inductance', annotations=annotation_list, plot_color='red')
+
+
 
 
