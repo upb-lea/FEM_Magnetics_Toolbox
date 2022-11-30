@@ -886,13 +886,13 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 mu0 = 4e-7*np.pi
 
 
-def r_basis(basis_air_gap_length: list, basis_air_gap_width: list, basis_air_gap_height_core_material: list) -> list:
+def r_basis(basis_air_gap_length: list, basis_air_gap_diameter: list, basis_air_gap_height_core_material: list) -> list:
     """
     1-dim reluctance per-unit-of-length
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
-    :param basis_air_gap_width: width of basis air gap
-    :type basis_air_gap_width: float
+    :param basis_air_gap_diameter: width of basis air gap
+    :type basis_air_gap_diameter: float
     :param basis_air_gap_length: length of basis air gap
     :type basis_air_gap_length: float
     :param basis_air_gap_height_core_material: height of core material direct on the air gap
@@ -908,35 +908,35 @@ def r_basis(basis_air_gap_length: list, basis_air_gap_width: list, basis_air_gap
     #         basis_air_gap_length[index] = 0.0000001
 
     basis_air_gap_length = np.array(basis_air_gap_length)
-    basis_air_gap_width = np.array(basis_air_gap_width)
+    basis_air_gap_diameter = np.array(basis_air_gap_diameter)
     basis_air_gap_height_core_material = np.array(basis_air_gap_height_core_material)
 
-    return 1 / (mu0 * (basis_air_gap_width / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
-                            basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
+    return 1 / (mu0 * (basis_air_gap_diameter / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
+                                                                                                   basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
 
 
-def sigma(l: list, w: list, r_equivalent: list) -> list:
+def sigma(air_gap_total_hight: list, air_gap_radius: list, r_equivalent: list) -> list:
     """
     1-dim fringing factor
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
-    :param w:
-    :type w: float
-    :param l:
-    :type l: float
-    :param r_equivalent:
-    :type r_equivalent: float
+    :param air_gap_radius: air gap radius
+    :type air_gap_radius: list
+    :param air_gap_total_hight:
+    :type air_gap_total_hight: list
+    :param r_equivalent: equivalent air gap resistance what was calculated using series/parallel-connection of r_basis
+    :type r_equivalent: list
 
     :return:
-    :rtype: float
+    :rtype: list
 
     """
 
-    l = np.array(l)
-    w = np.array(w)
+    air_gap_total_hight = np.array(air_gap_total_hight)
+    air_gap_radius = np.array(air_gap_radius)
     r_equivalent = np.array(r_equivalent)
 
-    return r_equivalent / (l / mu0 / w)
+    return r_equivalent / (air_gap_total_hight / mu0 / air_gap_radius)
 
 
 def r_round_inf(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
@@ -982,7 +982,9 @@ def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: lis
     air_gap_sigma = np.array(air_gap_sigma)
     air_gap_radius = np.array(air_gap_radius)
 
-    return air_gap_sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+    r_air_gap_round_ideal = air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+
+    return air_gap_sigma ** 2 * r_air_gap_round_ideal
 
 
 def r_cyl_cyl(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer) -> float:
