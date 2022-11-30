@@ -409,7 +409,7 @@ class AutomatedDesign:
         self.data_matrix_2 = self.filter2_inductance(self.data_matrix_1)
         self.data_matrix_3 = self.filter3_flux_saturation(self.data_matrix_2)
         self.data_matrix_4 = self.filter4_losses(self.data_matrix_3)
-        self.plot_volume_loss(self.data_matrix_4)
+        #self.plot_volume_loss(self.data_matrix_4)
         self.data_matrix_fem = self.data_matrix_4
         #     # FEM_data_matrix = data_matrix_4[np.where(data_matrix_4[:, param["normalized_total_loss"]]
         #     <= ((0.01 / data_matrix_4[:, param["normalized_total_volume"]]) + 0.6))]

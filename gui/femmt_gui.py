@@ -1,4 +1,6 @@
 import sys
+import re
+from mpl_toolkits.mplot3d import proj3d
 import pandas as pd
 import gmsh
 import matplotlib.pyplot as plt
@@ -28,6 +30,7 @@ from gui.onelab_path_popup import OnelabPathDialog
 database = mdb.MaterialDatabase()
 
 from femmt.examples.reluctance_fem_integration import AutomatedDesign
+from femmt.examples.reluctance_fem_integration import load_design, plot_2d
 
 from matplotlib.widgets import Cursor
 import mplcursors
@@ -97,6 +100,7 @@ class MainWindow(QMainWindow):
     litz_strand_r = []
     param = []
     no_of_turns  = 0
+    ad = 0
 
     def __init__(self, parent=None):
 
@@ -344,8 +348,9 @@ class MainWindow(QMainWindow):
         if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.aut_winding2_enable(False)
         self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
-        self.aut_core_material_data_listWidget.addItem("N87")
         self.aut_core_material_data_listWidget.addItem("N95")
+        self.aut_core_material_data_listWidget.addItem("N87")
+        self.aut_core_material_data_listWidget.addItem("N49")
 
         self.aut_litz_data_listWidget.addItem("1.5x105x0.1")
         self.aut_litz_data_listWidget.addItem("1.4x200x0.071")
@@ -361,6 +366,7 @@ class MainWindow(QMainWindow):
         self.aut_airgap_type_listWidget.addItem("Centre distributed")
 
         self.aut_winding1_type_comboBox.currentTextChanged.connect(self.aut_winding1_change_wire_type)
+
 
         self.aut_core_geo_add_pushButton.clicked.connect(self.oncgeoMultipleClicked)
         self.aut_core_geo_manual_add_pushButton.clicked.connect(self.oncgeomanualMultipleClicked)
@@ -465,11 +471,241 @@ class MainWindow(QMainWindow):
         self.aut_pos_mod_sim_pushButton.clicked.connect(self.automated_design_fem_sim)
 
         "Signals in Load(Results) tab"
-        self.aut_load_design_pushButton.clicked.connect(self.load_design)
+        self.aut_load_design_pushButton.clicked.connect(self.load_designs)
 
         "******* Database Section *********"
         "Signals in visualisation tab"
         self.dat_update_preview_pushbutton.clicked.connect(self.datupdateraph)
+
+        self.dat_core_material1_comboBox.currentTextChanged.connect(self.tempfluxinput1)
+        self.dat_core_material2_comboBox.currentTextChanged.connect(self.tempfluxinput2)
+        self.dat_core_material3_comboBox.currentTextChanged.connect(self.tempfluxinput3)
+        self.dat_core_material4_comboBox.currentTextChanged.connect(self.tempfluxinput4)
+        self.dat_core_material5_comboBox.currentTextChanged.connect(self.tempfluxinput5)
+
+        self.dat_core_material1_comboBox_2.currentTextChanged.connect(self.tempfreqinput1)
+        self.dat_core_material2_comboBox_2.currentTextChanged.connect(self.tempfreqinput2)
+        self.dat_core_material3_comboBox_2.currentTextChanged.connect(self.tempfreqinput3)
+        self.dat_core_material4_comboBox_2.currentTextChanged.connect(self.tempfreqinput4)
+        self.dat_core_material5_comboBox_2.currentTextChanged.connect(self.tempfreqinput5)
+
+
+    def plot_volume_loss(self, data_matrix, matplotlib_widget):
+        """
+        Plots estimated normalised volume vs loss graph from reluctance model results
+
+        param data_matrix: Matrix containing the design parameters
+       :type data_matrix: array
+        """
+
+
+        #fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
+
+        #fmt.plt.title("Normalised volume vs Normalised losses")
+
+        matplotlib_widget.axis.set(xlabel="B in T", ylabel="Relative power loss in W/m\u00b3", yscale='log',
+                                   xscale='log')
+        lines = matplotlib_widget.axis.plot(data_matrix[:, 25],
+                                            data_matrix[:, 23], 'o')
+        mplcursors.cursor(lines)
+
+    def plot_2d(self, x_value: list, y_value: list, x_label: str, y_label: str, title: str, annotations: list) -> object:
+        """
+            Visualize data in 2d plot with popover next to mouse position.
+
+            param x_value: Data points for x-axis
+            :type x_value: list
+            :param y_value: Data points for y-axis
+            :type y_value: list
+            :param x_label: x-axis label
+            :type x_label: str
+            :param y_label: y-axis label
+            :type y_label: str
+            :param title: Title of the graph
+            :type title: str
+            :param annotations: Annotations corresponding to the 3D points
+            :type annotations: list
+            """
+        names = np.array(annotations)
+        x_value_str = [str(round(x, 6)) for x in x_value]
+        y_value_str = [str(round(y, 6)) for y in y_value]
+
+        c = np.random.randint(1, 5, size=len(y_value))
+
+        norm = plt.Normalize(1, 4)
+        cmap = plt.cm.RdYlGn
+
+        fig, ax = plt.subplots()
+        fmt.plt.title(title)
+        fmt.plt.xlabel(x_label)
+        fmt.plt.ylabel(y_label)
+        sc = plt.scatter(x_value, y_value, c=c, s=50, cmap=cmap, norm=norm)
+
+        annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                            bbox=dict(boxstyle="round", fc="w"),
+                            arrowprops=dict(arrowstyle="->"))
+        annot.set_visible(False)
+
+        def update_annot(ind):
+            """Create popover annotations in 2d plot"""
+
+            pos = sc.get_offsets()[ind["ind"][0]]
+            annot.xy = pos
+            text = "{}\nVolume: {}\nLoss:{}".format(" ".join([names[n] for n in ind["ind"]]),
+                                                    " ".join([x_value_str[n] for n in ind["ind"]]),
+                                                    " ".join([y_value_str[n] for n in ind["ind"]]))
+            annot.set_text(text)
+            annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
+            annot.get_bbox_patch().set_alpha(0.4)
+
+        def hover(event):
+            """Event that is triggered when mouse is hovered.
+            Shows text annotation over data point closest to mouse."""
+            vis = annot.get_visible()
+            if event.inaxes == ax:
+                cont, ind = sc.contains(event)
+                if cont:
+                    update_annot(ind)
+                    annot.set_visible(True)
+                    fig.canvas.draw_idle()
+                else:
+                    if vis:
+                        annot.set_visible(False)
+                        fig.canvas.draw_idle()
+
+        fig.canvas.mpl_connect("motion_notify_event", hover)
+        ax.grid()
+        plt.show()
+
+    def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: str, z_label: str, x_limit: list,
+                y_limit: list, z_limit: list, title: str, annotations: list):
+        """
+        Visualize data in 3d plot with popover next to mouse position.
+
+        param x_value: Data points for x-axis
+        :type x_value: list
+        :param y_value: Data points for y-axis
+        :type y_value: list
+        :param z_value: Data points for z-axis
+        :type z_value: list
+        :param x_label: x-axis label
+        :type x_label: str
+        :param y_label: y-axis label
+        :type y_label: str
+        :param z_label: z-axis label
+        :type z_label: str
+        :param x_limit: Min and max limit of x-axis
+        :type x_limit: list
+        :param y_limit: Min and max limit of y-axis
+        :type y_limit: list
+        :param z_limit: Min and max limit of z-axis
+        :type z_limit: list
+        :param title: Title of the graph
+        :type title: str
+        :param annotations: Annotations corresponding to the 3D points
+        :type annotations: list
+        """
+        names = np.array(annotations)
+        num = [re.findall(r'\d+', item) for item in names]
+        case_num_list = [int(item[0]) for item in num]
+
+        X = np.zeros((len(x_value), 1))
+        X = np.hstack((X, np.reshape(x_value, (len(x_value), 1))))
+        X = np.hstack((X, np.reshape(y_value, (len(y_value), 1))))
+        X = np.hstack((X, np.reshape(z_value, (len(z_value), 1))))
+        X = np.hstack((X, np.reshape(case_num_list, (len(case_num_list), 1))))
+        X = np.delete(X, 0, 1)
+        X = X[X[:, 3].argsort()]
+
+        x_value_str = [str(round(x, 6)) for x in X[:, 0]]
+        y_value_str = [str(round(y, 6)) for y in X[:, 1]]
+        z_value_str = [str(round(z, 6)) for z in X[:, 2]]
+
+        fig = plt.figure(figsize=(16, 10))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.set_title(title)
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+        ax.set_zlabel(z_label)
+        ax.set_xlim(xmin=x_limit[0], xmax=x_limit[1])
+        ax.set_ylim(ymin=y_limit[0], ymax=y_limit[1])
+        ax.set_zlim(zmin=z_limit[0], zmax=z_limit[1])
+        XX = X[:, 0]
+        XX[XX > x_limit[1]] = np.nan
+        YY = X[:, 1]
+        YY[YY > y_limit[1]] = np.nan
+        ZZ = X[:, 2]
+        ZZ[ZZ > z_limit[1]] = np.nan
+        X[:, 0] = XX
+        X[:, 1] = YY
+        X[:, 2] = ZZ
+        print(X)
+        c = np.random.randint(1, 5, size=len(X))
+
+        norm = plt.Normalize(1, 4)
+        cmap = plt.cm.RdYlGn
+
+        ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=c, s=10, cmap=cmap, norm=norm, depthshade=False, picker=True)
+
+        def distance(point, event):
+            """Return distance between mouse position and given data point
+
+            Args:
+                point (np.array): np.array of shape (3,), with x,y,z in data coords
+                event (MouseEvent): mouse event (which contains mouse position in .x and .xdata)
+            Returns:
+                distance (np.float64): distance (in screen coords) between mouse pos and data point
+            """
+            assert point.shape == (3,), "distance: point.shape is wrong: %s, must be (3,)" % point.shape
+
+            # Project 3d data space to 2d data space
+            x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], plt.gca().get_proj())
+            # Convert 2d data space to 2d screen space
+            x3, y3 = ax.transData.transform((x2, y2))
+
+            return np.sqrt((x3 - event.x) ** 2 + (y3 - event.y) ** 2)
+
+        def calcClosestDatapoint(X, event):
+            """Calculate which data point is closest to the mouse position.
+
+            Args:
+                X (np.array) - array of points, of shape (numPoints, 3)
+                event (MouseEvent) - mouse event (containing mouse position)
+            Returns:
+                smallestIndex (int) - the index (into the array of points X) of the element closest to the mouse position
+            """
+            X_modified = X[np.all(~np.isnan(X), axis=1), 0:3]
+            distances = [distance(X_modified[i, 0:3], event) for i in range(X_modified.shape[0])]
+            return np.argmin(distances)
+
+        def annotatePlot(X, index):
+            """Create popover label in 3d chart
+
+            Args:
+                X (np.array) - array of points, of shape (numPoints, 3)
+                index (int) - index (into points array X) of item which should be printed
+            Returns:
+                None
+            """
+            # If we have previously displayed another label, remove it first
+            if hasattr(annotatePlot, 'label'):
+                annotatePlot.label.remove()
+            # Get data point from array of points X, at position index
+            x2, y2, _ = proj3d.proj_transform(X[index, 0], X[index, 1], X[index, 2], ax.get_proj())
+            annotatePlot.label = plt.annotate(
+                f'case{index}\nVolume:{x_value_str[index]}\nLoss:{y_value_str[index]}\nCost:{z_value_str[index]}',
+                xy=(x2, y2), xytext=(-20, 20), textcoords='offset points', ha='right', va='bottom',
+                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+            fig.canvas.draw()
+
+        def onMouseMotion(event):
+            """Event that is triggered when mouse is moved. Shows text annotation over data point closest to mouse."""
+            closestIndex = calcClosestDatapoint(X, event)
+            annotatePlot(X, closestIndex)
+
+        fig.canvas.mpl_connect('motion_notify_event', onMouseMotion)  # on mouse motion
+        plt.show()
 
     def automated_design_func(self):
         # ########################################   {DESIGN PARAMETERS}   #################################################
@@ -485,9 +721,9 @@ class MainWindow(QMainWindow):
         L_tolerance_percent = int(self.trans_dict[self.aut_tolerance_val_comboBox.currentText()])  # +/-10%
         self.i_max = comma_str_to_point_float(self.aut_maximum_current_lineEdit.text())#3  # Automated design-Reluctacne model
         # Max current amplitude with assumption of sinusoidal current waveform
-        percent_of_B_sat = comma_str_to_point_float(self.aut_b_sat_lineEdit.text()) #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
+        percent_of_B_sat = int(self.aut_b_sat_lineEdit.text()) #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
 
-        percent_of_total_loss = comma_str_to_point_float(self.aut_hysterisis_loss_options_lineEdit.text()) #100  # Automated design-Reluctacne model-%hysterisis loss(total loss)
+        percent_of_total_loss = int(self.aut_hysterisis_loss_options_lineEdit.text()) #100  # Automated design-Reluctacne model-%hysterisis loss(total loss)
         # Percent of total_loss allowed in FEM simulation
 
         self.freq = comma_str_to_point_float(self.aut_switching_freq_lineEdit.text()) #100 * 1e3  # Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
@@ -556,9 +792,6 @@ class MainWindow(QMainWindow):
         airgap_h_min = comma_str_to_point_float(self.aut_air_gap_length_min_lineEdit.text())
         airgap_h_max = comma_str_to_point_float(self.aut_air_gap_length_max_lineEdit.text())
         airgap_h_step = int(self.aut_air_gap_length_step_lineEdit.text())
-        print(f"air: {airgap_h_min}")
-        print(airgap_h_max)
-        print(airgap_h_step)
         airgap_pos_min = int(self.aut_air_gap_position_min_lineEdit.text())
         airgap_pos_max = int(self.aut_air_gap_position_max_lineEdit.text())
         airgap_pos_step = int(self.aut_air_gap_position_step_lineEdit.text())
@@ -568,7 +801,6 @@ class MainWindow(QMainWindow):
         no_of_turns = [int(item) for item in no_of_turns_float]
         n_air_gaps = [no_airgaps_min, no_airgaps_max]  # Set No. of air-gaps (n)
         air_gap_height = list(np.linspace(airgap_h_min, airgap_h_max, airgap_h_step))  # Set air-gap length in metre (l)
-        print(f"airgap h:{air_gap_height}")
         air_gap_position = list(np.linspace(airgap_pos_min, airgap_pos_max, airgap_pos_step))  # Set air-gap position in percent w.r.t. core window height
 
         material_names = []
@@ -586,31 +818,22 @@ class MainWindow(QMainWindow):
         mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre #TODO
         # TODO: check if the issue has been resolved
 
-        print("VALIDATE!!!")
-        print(goal_inductance)
-        print(self.freq)
-        print(winding_scheme)
-        print(self.i_max)
-        print(percent_of_B_sat)
-        print(percent_of_total_loss)
-        print(litz_names)
-        print(solid_conductor_r)
-        print(manual_core_w)
-        print(manual_window_h)
-        print(manual_window_w)
-        print(no_of_turns)
-        print(n_air_gaps)
-        print(list(np.linspace(0.0001, 0.0005, 5)))
-        print(material_names)
-        print(goal_inductance)
-        print(goal_inductance)
-        print(goal_inductance)
 
 
         ########################################################################
 
+        self.matplotlib_widget = MatplotlibWidget()
+        self.matplotlib_widget.axis.clear()
+        self.layout = QVBoxLayout(self.fem_vol_loss_plotwidget)
+        self.layout.addWidget(self.matplotlib_widget)
+        try:
+            self.matplotlib_widget.axis_cm.remove()
+        except:
+            pass
+
+
         if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-            ad = AutomatedDesign(working_directory='C:\LEA_Project\FEM_Magnetics_Toolbox',
+            self.ad = AutomatedDesign(working_directory='C:/LEA_Project/FEM_Magnetics_Toolbox/files',
                                      component='inductor',
                                      goal_inductance=goal_inductance,
                                      frequency=self.freq,
@@ -619,7 +842,7 @@ class MainWindow(QMainWindow):
                                      current_max=self.i_max,
                                      percent_of_b_sat=percent_of_B_sat,
                                      percent_of_total_loss=percent_of_total_loss,
-                                     database_core_names=[],
+                                     database_core_names=db_core_names,
                                      database_litz_names=litz_names,
                                      solid_conductor_r=solid_conductor_r,
                                      manual_core_inner_diameter= manual_core_w,
@@ -627,7 +850,7 @@ class MainWindow(QMainWindow):
                                      manual_window_w=manual_window_w,
                                      no_of_turns=no_of_turns,
                                      n_air_gaps=n_air_gaps,
-                                     air_gap_height=list(np.linspace(0.0001, 0.0005, 5)),
+                                     air_gap_height=air_gap_height,
                                      air_gap_position=air_gap_position,
                                      material_list=material_names,
                                      mult_air_gap_type=['center_distributed'],
@@ -639,23 +862,24 @@ class MainWindow(QMainWindow):
                                          self.aut_isolation_core2cond_inner_lineEdit.text()),
                                      right_core_insulation=comma_str_to_point_float(
                                          self.aut_isolation_core2cond_outer_lineEdit.text()),
-                                     inner_winding_insulations=[self.aut_isolation_p2p_lineEdit.text()],
-                                     temperature=self.aut_temp_lineEdit.text())
+                                     inner_winding_insulations=[comma_str_to_point_float(self.aut_isolation_p2p_lineEdit.text())],
+                                     temperature=comma_str_to_point_float(self.aut_temp_lineEdit.text()))
+        # TODO: call plot_volume_loss here
 
+        self.plot_volume_loss(self.ad.data_matrix_4, self.matplotlib_widget)
 
-        n_cases_0 = len(ad.data_matrix_0)
+        n_cases_0 = len(self.ad.data_matrix_0)
         self.ncases0_label.setText(f"{n_cases_0}")
 
-        n_cases_2 = len(ad.data_matrix_2)
+        n_cases_2 = len(self.ad.data_matrix_2)
         self.ncases2_label.setText(f"{n_cases_2}")
 
-        n_cases_3 = len(ad.data_matrix_3)
+        n_cases_3 = len(self.ad.data_matrix_3)
         self.ncases3_label.setText(f"{n_cases_3}")
 
-        n_cases_FEM = len(ad.data_matrix_fem)
+        n_cases_FEM = len(self.ad.data_matrix_fem)
         self.fem_cases_label.setText(f"{n_cases_FEM}")
 
-        #ad.fem_simulation()
 
         # real_inductance, total_loss, total_volume, total_cost, labels = fmt.load_design(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
         # fmt.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
@@ -704,365 +928,24 @@ class MainWindow(QMainWindow):
     # matplotlib_widget.axis.set(xlabel="B in T", ylabel="Relative power loss in W/m\u00b3", yscale='log', xscale='log')
 
 
-
-
-
-
-        """
-        # ######################################   {RELUCTANCE_CALCULATION}   ##############################################
-        # Call to Reluctance model (Class MagneticCircuit)
-        #if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-        self.mc1 = fmt.MagneticCircuit(core_w=core_w_list, window_h=window_h_list, window_w=window_w_list,
-                                  no_of_turns=no_of_turns, n_air_gaps=n_air_gaps, air_gap_h=air_gap_height,
-                                  air_gap_position=air_gap_position, mu_rel=mu_rel, mult_air_gap_type=mult_air_gap_type,
-                                  air_gap_method='percent', component_type=component, sim_type='sweep')
-        self.param = self.mc1.get_param_pos_dict()
-        n_cases_0 = len(self.mc1.data_matrix)
-        self.ncases0_label.setText(f"{n_cases_0}")
-
-        # Calculate total reluctance and creates data_matrix to access all corresponding parameters and results
-        # To access all/any data from MagneticCircuit class, use self.data_matrix[:, param["parameter_name"]].
-        # The parameters are arranged as shown below:
-        # Example: If you want to access inductance, type self.data_matrix[:, param["inductance"]]
-
-        # ############################################   {FILTRATION}   ####################################################
-        # 1st Filter: ------------------------------------------------------------------------------------------------------
-        # Filter out cases where physical geometry is not possible
-        data_matrix_1 = self.mc1.data_matrix[np.where((self.mc1.data_matrix[:, self.param["no_of_turns"]] * np.pi * min_conductor_r ** 2) < (self.winding_factor * self.mc1.data_matrix[:,self.param["window_h"]] * self.mc1.data_matrix[:,self.param["window_w"]]))]
-
-        n_cases_1 = len(data_matrix_1)
-        # self.ncases1_label.setText(f"{n_cases_1}")
-
-        # 2nd Filter:-------------------------------------------------------------------------------------------------------
-        # Based on +-10% goal inductance tolerance band
-        data_matrix_2 = data_matrix_1[
-            np.where((data_matrix_1[:, self.param["inductance"]] > ((100 - L_tolerance_percent) / 100) * goal_inductance) &
-                     (data_matrix_1[:, self.param["inductance"]] < ((100 + L_tolerance_percent) / 100) * goal_inductance))]
-        n_cases_2 = len(data_matrix_2)
-        self.ncases2_label.setText(f"{n_cases_2}")
-
-        # 3rd Filter:-------------------------------------------------------------------------------------------------------
-        # Filter out cases where B_max is greater than B_sat
-
-        # Create dict for B_saturation from the material database
-        B_sat_dict = {}
-        counter1 = 0
-        for material_name in material_names:
-            B_sat_key = database.get_material_property(material_name=material_name, property="initial_permeability")
-            B_sat_dict[B_sat_key] = database.get_material_property(material_name=material_name,
-                                                                      property="max_flux_density")
-            counter1 = counter1 + 1
-        print(f"Bsat: {B_sat_dict}")
-        # Creating B_saturated array corresponding to the material type
-        B_sat = np.zeros((len(data_matrix_2), 1))
-        for index in range(len(data_matrix_2)):
-            B_sat[index] = B_sat_dict[data_matrix_2[index, self.param["mu_rel"]]]
-
-        # flux_max = L * i_max / N
-        total_flux_max = (data_matrix_2[:, self.param["inductance"]] * self.i_max) / data_matrix_2[:, self.param["no_of_turns"]]
-        data_matrix_2 = np.hstack((data_matrix_2, np.reshape(total_flux_max, (len(total_flux_max), 1))))
-        self.param["total_flux_max"] = 15
-
-        B_max_center = total_flux_max / data_matrix_2[:, self.param["center_leg_area"]]
-        B_max_middle = total_flux_max / (
-                np.pi * data_matrix_2[:, self.param["core_w"]] * data_matrix_2[:, self.param["core_h_middle"]])
-        B_max_outer = total_flux_max / data_matrix_2[:, self.param["outer_leg_area"]]
-
-        data_matrix_2 = np.hstack((data_matrix_2, np.reshape(B_max_center, (len(B_max_center), 1))))
-        self.param["B_max_center"] = 16
-        data_matrix_2 = np.hstack((data_matrix_2, np.reshape(B_max_outer, (len(B_max_outer), 1))))
-        self.param["B_max_outer"] = 17
-
-        data_matrix_3 = np.zeros((0, 18))
-        for index in range(len(data_matrix_2)):
-            if (data_matrix_2[index, self.param["B_max_center"]] < (percent_of_B_sat / 100) * B_sat[index]) & \
-                    (data_matrix_2[index, self.param["B_max_outer"]] < (percent_of_B_sat / 100) * B_sat[index]):
-                data_matrix_3 = np.vstack([data_matrix_3, data_matrix_2[index, :]])
-        n_cases_3 = len(data_matrix_3)
-        self.ncases3_label.setText(f"{n_cases_3}")
-
-        # 4th Filter:-------------------------------------------------------------------------------------------------------
-        # Filter out data-matrix according to calculated hysteresis loss + DC winding loss
-
-        # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
-        volume_center = (np.pi * (data_matrix_3[:, self.param["core_w"]] / 2) ** 2) * \
-                        (data_matrix_3[:, self.param["window_h"]] + data_matrix_3[:, self.param["core_h_middle"]] -
-                         (data_matrix_3[:, self.param["n_air_gaps"]] * data_matrix_3[:, self.param["air_gap_h"]]))
-        volume_outer = (np.pi * (
-                    (data_matrix_3[:, self.param["r_outer"]] ** 2) - (data_matrix_3[:, self.param["r_inner"]] ** 2))) * \
-                       (data_matrix_3[:, self.param["window_h"]] + data_matrix_3[:, self.param["core_h_middle"]])
-
-        P_hyst_center = 0.5 * (2 * np.pi * self.freq) * mu_imag * fmt.mu0 * ((data_matrix_3[:, self.param["B_max_center"]] /
-                                                                         (fmt.mu0 * data_matrix_3[:,
-                                                                                    self.param["mu_rel"]])) ** 2)
-        P_hyst_outer = 0.5 * (2 * np.pi * self.freq) * mu_imag * fmt.mu0 * ((data_matrix_3[:, self.param["B_max_outer"]] /
-                                                                        (fmt.mu0 * data_matrix_3[:,
-                                                                                   self.param["mu_rel"]])) ** 2)
-        P_hyst_density_center = P_hyst_center * volume_center
-        P_hyst_density_middle = 0.5 * (2 * np.pi * self.freq) * mu_imag * fmt.mu0 * \
-                                ((data_matrix_3[:, self.param["total_flux_max"]] / (
-                                        fmt.mu0 * data_matrix_3[:, self.param["mu_rel"]])) ** 2) * \
-                                (1 / (2 * np.pi * data_matrix_3[:, self.param["core_h_middle"]])) * \
-                                np.log((data_matrix_3[:, self.param["r_inner"]] * 2) / data_matrix_3[:, self.param["core_w"]])
-        P_hyst_density_outer = P_hyst_outer * volume_outer
-
-        total_hyst_loss = P_hyst_density_center + (2 * P_hyst_density_middle) + P_hyst_density_outer
-        data_matrix_3 = np.hstack(
-            (data_matrix_3, np.reshape(total_hyst_loss, (len(total_hyst_loss), 1))))  # position: 18
-        self.param["P_hyst_density_total"] = 18
-
-        # Winding loss (only DC loss)
-        Resistance = (data_matrix_3[:, self.param["no_of_turns"]] * 2 * np.pi *
-                      (data_matrix_3[:, self.param["core_w"]] / 2 + min_conductor_r)) / \
-                     (Cu_sigma * (np.pi * (min_conductor_r ** 2)))
-
-        DC_loss = ((self.i_max ** 2) / 2) * Resistance
-        data_matrix_3 = np.hstack((data_matrix_3, np.reshape(DC_loss, (len(DC_loss), 1))))  # position: 19
-        self.param["DC_loss"] = 19
-
-        total_loss = DC_loss + total_hyst_loss
-        data_matrix_3 = np.hstack((data_matrix_3, np.reshape(total_loss, (len(total_loss), 1))))  # position: 20
-        self.param["total_loss"] = 20
-
-        # Sort the data_matrix with respect to total losses column----------------------------------------------------------
-        data_matrix_3 = data_matrix_3[data_matrix_3[:, self.param["total_loss"]].argsort()]
-
-        self.FEM_data_matrix = data_matrix_3[0:int((percent_of_total_loss / 100) * len(data_matrix_3)), :]
-        n_cases_FEM = len(self.FEM_data_matrix)
-        self.fem_cases_label.setText(f"{n_cases_FEM}")"""
-
     def automated_design_fem_sim(self):
 
         ###########################################   {FEM_SIMULATION}   ##################################################
-        qwerty = 1
-        solid_conductor_r = [comma_str_to_point_float(self.aut_winding1_radius_lineEdit.text())]  # Automated design-Definition-Wire radius
-        ## TODO: enable wire rad for solid
-        # TODO: solid_conductor_r as list
 
+        self.ad.fem_simulation()
 
-        save_directory_name = self.aut_directoryname_lineEdit.text()  # "sweep_examples_2" # New directory is created in FEM_Magnetics_Toolbox/femmt/examples/
-        example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
-        if not os.path.exists(example_results_folder):
-            os.mkdir(example_results_folder)
+        real_inductance, total_loss, total_volume, total_cost, labels = load_design(working_directory='C:/LEA_Project/FEM_Magnetics_Toolbox/files')
 
-        working_directory = os.path.join(example_results_folder, "inductor")
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
+        self.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
+        #self.plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac', title='Volume vs Cost', annotations=labels)
+        #self.plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20], z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
 
-        if not os.path.exists(os.path.join(os.path.dirname(__file__), save_directory_name)):
-            os.mkdir(os.path.join(os.path.dirname(__file__), save_directory_name))
+    def load_designs(self):
 
-        working_directories = []
-        file_names = []
-
-        # src_path = "D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/results/log_electro_magnetic.json"
-        src_path = "C:/LEA_Project/FEM_Magnetics_Toolbox/femmt/examples/example_results/" \
-                   "inductor/results/log_electro_magnetic.json"
-
-
-
-        counter3 = 0
-        for j in range(len(solid_conductor_r) + len(self.litz_conductor_r)):
-            conductor_r_list = self.litz_conductor_r + solid_conductor_r
-            for i in range(len(self.FEM_data_matrix)):
-                if not ((self.FEM_data_matrix[i, self.param["no_of_turns"]] * np.pi * conductor_r_list[j] ** 2)
-                        < (self.winding_factor * self.FEM_data_matrix[i, self.param["window_h"]] * self.mc1.data_matrix[
-                            i, self.param["window_w"]])):
-                    continue
-
-                # MagneticComponent class object
-
-                geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
-                                            working_directory=working_directory, silent=True)
-
-                core = fmt.Core(core_inner_diameter=self.FEM_data_matrix[i, self.param["core_w"]],
-                                window_w=self.FEM_data_matrix[i, self.param["window_w"]],
-
-                                window_h=self.FEM_data_matrix[i, self.param["window_h"]],
-                                # material="95_100")
-                # TODO: wait for material update
-                mu_rel=3000, phi_mu_deg=10,
-                sigma=0.5)
-                geo.set_core(core)
-
-                # 3. set air gap parameters
-                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-                if int(self.FEM_data_matrix[i, self.param["n_air_gaps"]]) == 1:
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, self.FEM_data_matrix[i, self.param["air_gap_h"]],
-                                         self.FEM_data_matrix[i, self.param["air_gap_position"]])
-                else:
-                    if int(self.FEM_data_matrix[i, self.param["mult_air_gap_type"]]) == 1:
-                        position_list = list(np.linspace(0, 100, int(self.FEM_data_matrix[i, self.param["n_air_gaps"]])))
-                        for position in position_list:
-                            air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg,
-                                                 self.FEM_data_matrix[i, self.param["air_gap_h"]],
-                                                 position)
-
-                    elif int(self.FEM_data_matrix[i, self.param["mult_air_gap_type"]]) == 2:
-                        position_list = list(np.linspace(0, 100, int(self.FEM_data_matrix[i, self.param["n_air_gaps"]]) + 2))
-                        position_list.remove(0.0)
-                        position_list.remove(100.0)
-                        for position in position_list:
-                            air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg,
-                                                 self.FEM_data_matrix[i, self.param["air_gap_h"]],
-                                                 position)
-                geo.set_air_gaps(air_gaps)
-
-                # 4. set insulations
-                insulation = fmt.Insulation()
-                insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-                insulation.add_winding_insulations([0.0005], 0.0001)
-                geo.set_insulation(insulation)
-
-                # 5. create winding window and virtual winding windows (vww)
-                winding_window = fmt.WindingWindow(core, insulation)
-                vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-
-                # 6. create conductor and set parameters: use solid wires
-                winding = fmt.Conductor(0, fmt.Conductivity.Copper)
-                if j < len(self.litz_conductor_r):
-                    winding.set_litz_round_conductor(conductor_radius=self.litz_conductor_r[j],
-                                                     number_strands=self.litz_strand_n[j],
-                                                     strand_radius=self.litz_strand_r[j], fill_factor=None,
-                                                     conductor_arrangement=fmt.ConductorArrangement.Square)
-                else:
-                    winding.set_solid_round_conductor(conductor_radius=conductor_r_list[j],
-                                                      conductor_arrangement=fmt.ConductorArrangement.Square)
-                # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
-                # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
-
-                # 7. add conductor to vww and add winding window to MagneticComponent
-                vww.set_winding(winding, int(self.FEM_data_matrix[i, self.param["no_of_turns"]]), None)
-                geo.set_winding_window(winding_window)
-
-                try:
-                    # 5. create the model
-                    geo.create_model(freq=self.freq, visualize_before=False, save_png=False)
-
-                    # 6. start simulation
-                    geo.single_simulation(freq=self.freq, current=[self.i_max], show_results=False)
-
-                    shutil.copy2(src_path, os.path.join(os.path.dirname(__file__), save_directory_name))
-                    old_filename = os.path.join(os.path.dirname(__file__), save_directory_name,
-                                                "log_electro_magnetic.json")
-                    new_filename = os.path.join(os.path.dirname(__file__), save_directory_name, f"case{counter3}.json")
-                    os.rename(old_filename, new_filename)
-                    working_directories.append(new_filename)
-                    file_names.append(f"case{counter3}")
-                    counter3 = counter3 + 1
-                except (Exception,) as e:
-                    print("next iteration")
-                    logging.exception(e)
-        self.load_design(save_directory_name)
-
-    def load_design(self, load_directory_name):
-        working_directories = []
-        labels = []
-        working_directory = os.path.join(os.path.dirname(__file__), load_directory_name)
-        file_names = [f for f in listdir(working_directory) if isfile(join(working_directory, f))]
-        file_names.sort()
-        counter2 = 0
-        for name in file_names:
-            temp_var = os.path.join(os.path.dirname(__file__), load_directory_name, name)
-            working_directories.append(temp_var)
-            # labels.append(f"case{counter2}")
-            labels.append(name)
-            counter2 = counter2 + 1
-
-        zip_iterator = zip(file_names, working_directories)
-        logs = dict(zip_iterator)
-        # After the simulations the sweep can be analyzed
-        # This could be done using the FEMMTLogParser:
-        log_parser = fmt.FEMMTLogParser(logs)
-
-        # In this case the self inductivity of winding1 will be analyzed
-        inductivities = []
-        active_power = []
-        total_volume = []
-        for name, data in log_parser.data.items():
-            inductivities.append(data.sweeps[0].windings[0].self_inductance)
-            active_power.append(data.sweeps[0].windings[0].active_power)
-            total_volume.append(data.core_2daxi_total_volume)
-
-        real_inductance = []
-        for i in range(len(active_power)):
-            real_inductance.append(inductivities[i].real)
-
-        names = np.array(labels)
-        c = np.random.randint(1, 5, size=len(active_power))
-
-        norm = plt.Normalize(1, 4)
-        cmap = plt.cm.RdYlGn
-
-        fig, ax = plt.subplots()
-        fmt.plt.title("Volume vs total losses")
-        fmt.plt.xlabel("Volume (in cubic m)")
-        fmt.plt.ylabel("Total losses (in W)")
-        sc = plt.scatter(total_volume, active_power, c=c, s=50, cmap=cmap, norm=norm)
-
-        annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-                            bbox=dict(boxstyle="round", fc="w"),
-                            arrowprops=dict(arrowstyle="->"))
-        annot.set_visible(False)
-
-        """
-        self.matplotlib_widget1 = MatplotlibWidget()
-        self.matplotlib_widget1.axis.clear()
-        self.layout = QVBoxLayout(self.plotwidget_fem_sim)
-        self.layout.addWidget(self.matplotlib_widget1)
-        try:
-            self.matplotlib_widget1.axis_cm.remove()
-        except:
-            pass
-
-
-
-
-        mat1_name = self.dat_core_material1_comboBox.currentText()
-        mat2_name = self.dat_core_material2_comboBox.currentText()
-        mat1_temp = int(self.aut_temp_m1_comboBox.currentText())
-        
-                        label = f"{material}", f"F={frequency[j]}Hz", f"T={temperature}°C"
-                lines = matplotlib_widget.axis.plot(b[j], power_loss[j], label=label, color=color,
-                                                    linestyle=line_style[j])
-                mplcursors.cursor(lines)
-
-    matplotlib_widget.axis.set(xlabel="B in T", ylabel="Relative power loss in W/m\u00b3", yscale='log', xscale='log')
-    mdb_print(f"Material properties of {material_list} are compared.")
-        
-        
-        
-        mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
-        self.matplotlib_widget1.axis.legend(fontsize=13)
-        self.matplotlib_widget1.axis.grid()
-        self.matplotlib_widget1.figure.canvas.draw_idle()"""
-
-        def update_annot(ind):
-            pos = sc.get_offsets()[ind["ind"][0]]
-            annot.xy = pos
-            # text = "{}, {}".format(" ".join(list(map(str, ind["ind"]))),
-            #                       " ".join([names[n] for n in ind["ind"]]))
-            text = "{}".format(" ".join([names[n] for n in ind["ind"]]))
-            annot.set_text(text)
-            annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
-            annot.get_bbox_patch().set_alpha(0.4)
-
-        def hover(event):
-            vis = annot.get_visible()
-            if event.inaxes == ax:
-                cont, ind = sc.contains(event)
-                if cont:
-                    update_annot(ind)
-                    annot.set_visible(True)
-                    fig.canvas.draw_idle()
-                else:
-                    if vis:
-                        annot.set_visible(False)
-                        fig.canvas.draw_idle()
-
-        fig.canvas.mpl_connect("motion_notify_event", hover)
-        ax.grid()
-        plt.show()
+        real_inductance, total_loss, total_volume, total_cost, labels = load_design(working_directory='C:/LEA_Project/FEM_Magnetics_Toolbox/files')
+        self.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
+        #self.plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac', title='Volume vs Cost', annotations=labels)
+        #self.plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20],z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
 
     def check_onelab_config(self, geo: fmt.MagneticComponent):
         # Ask for onelab path (if no config file exists)
@@ -1085,6 +968,7 @@ class MainWindow(QMainWindow):
                 raise Exception(f"Unknown return type from OnelabPathDialog: {valid}")
 
     def datupdateraph(self):
+
         self.matplotlib_widget1 = MatplotlibWidget()
         self.matplotlib_widget2 = MatplotlibWidget()
         self.matplotlib_widget3 = MatplotlibWidget()
@@ -1360,31 +1244,13 @@ class MainWindow(QMainWindow):
         aut_tolerance_val_options = [self.translation_dict['+-10']]
         aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
         #aut_core_geometry_options.insert(0, 'Manual')
-        dat_core_material_options = ['N95', 'N97', 'N87']
-        aut_temp_options = ['25', '100']
-        aut_flux_options = ['0.025', '0.050', '0.100', '0.200']
 
-        for option in aut_flux_options:
-            self.aut_flux_m1_comboBox.addItem(option)
-        for option in aut_flux_options:
-            self.aut_flux_m2_comboBox.addItem(option)
-        for option in aut_flux_options:
-            self.aut_flux_m3_comboBox.addItem(option)
-        for option in aut_flux_options:
-            self.aut_flux_m4_comboBox.addItem(option)
-        for option in aut_flux_options:
-            self.aut_flux_m5_comboBox.addItem(option)
 
-        for option in aut_temp_options:
-            self.aut_temp_m1_comboBox.addItem(option)
-        for option in aut_temp_options:
-            self.aut_temp_m2_comboBox.addItem(option)
-        for option in aut_temp_options:
-            self.aut_temp_m3_comboBox.addItem(option)
-        for option in aut_temp_options:
-            self.aut_temp_m4_comboBox.addItem(option)
-        for option in aut_temp_options:
-            self.aut_temp_m5_comboBox.addItem(option)
+        get_material_list = mdb.material_list_in_database(material_list = True)
+        dat_core_material_options = get_material_list
+
+
+
         for option in dat_core_material_options:
             self.dat_core_material1_comboBox.addItem(option)
         for option in dat_core_material_options:
@@ -1395,6 +1261,17 @@ class MainWindow(QMainWindow):
             self.dat_core_material4_comboBox.addItem(option)
         for option in dat_core_material_options:
             self.dat_core_material5_comboBox.addItem(option)
+
+        for option in dat_core_material_options:
+            self.dat_core_material1_comboBox_2.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material2_comboBox_2.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material3_comboBox_2.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material4_comboBox_2.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material5_comboBox_2.addItem(option)
 
         for option in aut_core_geometry_options:
             self.aut_core_geometry_listWidget.addItem(option)
@@ -1440,16 +1317,209 @@ class MainWindow(QMainWindow):
         self.aut_air_gap_position_step_lineEdit.setPlaceholderText("Step value")
 
 
-        "Signals in FEM Simulations Tab"
 
-        aut_download_options = [self.translation_dict['excel']]
+    def tempfluxinput1(self):
 
-        for option in aut_download_options:
-            self.aut_download_comboBox.addItem(option)
+        mat_text1 = self.dat_core_material1_comboBox.currentText()
 
-        self.aut_pos_mod_sim_pushButton.clicked.connect(self.automated_design_fem_sim)
+        get_temp1_list = []
+        get_flux1_list = []
+        if mat_text1:
+            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
+            get_flux1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", flux=True)
+        aut_temp_options1 = get_temp1_list
+        aut_flux_options1 = get_flux1_list
 
-        self.aut_pos_mod_download_pushButton.clicked.connect(self.automated_design_fem_sim)
+        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
+        flux_str = [f'{item:.2f}' for item in aut_flux_options1]
+
+        for option in temp_str:
+            self.aut_temp_m1_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m1_comboBox.addItem(option)
+
+    def tempfluxinput2(self):
+
+        mat_text2 = self.dat_core_material2_comboBox.currentText()
+        get_temp2_list = []
+        get_flux2_list = []
+        if mat_text2:
+            get_temp2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="dvd", temperature=True)
+            get_flux2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="dvd", flux=True)
+        aut_temp_options2 = get_temp2_list
+        aut_flux_options2 = get_flux2_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options2]
+        flux_str = [f'{item:.2f}' for item in aut_flux_options2]
+
+        for option in temp_str:
+            self.aut_temp_m2_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m2_comboBox.addItem(option)
+
+    def tempfluxinput3(self):
+
+        mat_text3 = self.dat_core_material3_comboBox.currentText()
+        get_temp3_list = []
+        get_flux3_list = []
+        if mat_text3:
+            get_temp3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="dvd", temperature=True)
+            get_flux3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="dvd", flux=True)
+        aut_temp_options3 = get_temp3_list
+        aut_flux_options3 = get_flux3_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options3]
+        flux_str = [f'{item:.2f}' for item in aut_flux_options3]
+
+        for option in temp_str:
+            self.aut_temp_m3_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m3_comboBox.addItem(option)
+
+    def tempfluxinput4(self):
+
+        mat_text4 = self.dat_core_material4_comboBox.currentText()
+        get_temp4_list = []
+        get_flux4_list = []
+        if mat_text4:
+            get_temp4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="dvd", temperature=True)
+            get_flux4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="dvd", flux=True)
+        aut_temp_options4 = get_temp4_list
+        aut_flux_options4 = get_flux4_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options4]
+        flux_str = [f'{item:.2f}' for item in aut_flux_options4]
+
+        for option in temp_str:
+            self.aut_temp_m4_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m4_comboBox.addItem(option)
+
+    def tempfluxinput5(self):
+
+        mat_text5 = self.dat_core_material5_comboBox.currentText()
+        get_temp5_list = []
+        get_flux5_list = []
+        if mat_text5:
+            get_temp5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="dvd", temperature=True)
+            get_flux5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="dvd", flux=True)
+        aut_temp_options5 = get_temp5_list
+        aut_flux_options5 = get_flux5_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options5]
+        flux_str = [f'{item:.2f}' for item in aut_flux_options5]
+
+        for option in temp_str:
+            self.aut_temp_m5_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m5_comboBox.addItem(option)
+
+    ########################################################################
+    def tempfreqinput1(self):
+
+        mat_text1 = self.dat_core_material1_comboBox_2.currentText()
+
+        get_temp1_list = []
+        get_freq1_list = []
+        if mat_text1:
+            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True)
+            get_freq1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", freq=True)
+        aut_temp_options1 = get_temp1_list
+        aut_freq_options1 = get_freq1_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options1]
+
+        for option in temp_str:
+            self.aut_temp_m1_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m1_comboBox.addItem(option)
+
+    def tempfreqinput2(self):
+
+        mat_text2 = self.dat_core_material2_comboBox_2.currentText()
+        get_temp2_list = []
+        get_freq2_list = []
+        if mat_text2:
+            get_temp2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="mvm", temperature=True)
+            get_freq2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="mvm", freq=True)
+        aut_temp_options2 = get_temp2_list
+        aut_freq_options2 = get_freq2_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options2]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options2]
+
+        for option in temp_str:
+            self.aut_temp_m2_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m2_comboBox.addItem(option)
+
+    def tempfreqinput3(self):
+
+        mat_text3 = self.dat_core_material3_comboBox_2.currentText()
+        get_temp3_list = []
+        get_freq3_list = []
+        if mat_text3:
+            get_temp3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="mvm", temperature=True)
+            get_freq3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="mvm", freq=True)
+        aut_temp_options3 = get_temp3_list
+        aut_freq_options3 = get_freq3_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options3]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options3]
+
+        for option in temp_str:
+            self.aut_temp_m3_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m3_comboBox.addItem(option)
+
+    def tempfreqinput4(self):
+
+        mat_text4 = self.dat_core_material4_comboBox_2.currentText()
+        get_temp4_list = []
+        get_freq4_list = []
+        if mat_text4:
+            get_temp4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="mvm", temperature=True)
+            get_freq4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="mvm", freq=True)
+        aut_temp_options4 = get_temp4_list
+        aut_freq_options4 = get_freq4_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options4]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options4]
+
+        for option in temp_str:
+            self.aut_temp_m4_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m4_comboBox.addItem(option)
+
+    def tempfreqinput5(self):
+
+        mat_text5 = self.dat_core_material5_comboBox_2.currentText()
+        get_temp5_list = []
+        get_freq5_list = []
+        if mat_text5:
+            get_temp5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="mvm", temperature=True)
+            get_freq5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="mvm", freq=True)
+        aut_temp_options5 = get_temp5_list
+        aut_freq_options5 = get_freq5_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options5]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options5]
+
+        for option in temp_str:
+            self.aut_temp_m5_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m5_comboBox.addItem(option)
 
 
     def aut_action_run_simulation(self, sim_value):
@@ -1921,7 +1991,7 @@ class MainWindow(QMainWindow):
             self.md_winding2_implicit_litz_comboBox.setEnabled(True)
             self.md_winding2_fill_factor_lineEdit.setEnabled(True)
             self.md_winding2_strand_radius_lineEdit.setEnabled(True)
-            self.md_winding2_radius_lineEdit.setEnabled(True)
+            self.md_winding2_radius_lineEdit.setEnabled(False)
             self.md_winding2_litz_material_comboBox.setEnabled(True)
             self.md_winding2_change_litz_implicit(self.md_winding2_implicit_litz_comboBox.currentText())
 
@@ -2570,7 +2640,7 @@ class MainWindow(QMainWindow):
 
 
             if self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["square"]:
-                fmt.WindingScheme = fmt.WindingScheme.Square
+                fmt.WindingScheme = fmt.WindingScheme.SquareFullWidth
             elif self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["hexa"]:
                 fmt.WindingScheme = fmt.WindingScheme.Hexagonal
 
