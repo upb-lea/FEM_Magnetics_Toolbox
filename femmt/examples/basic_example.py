@@ -65,10 +65,6 @@ def example_thermal_simulation():
     geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                            case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas)
 
-    # Because the insulations inside of the winding window are not implemented in femm simulation.
-    # The validation only works when the insulations for the FEMMT thermal simulation are turned off.
-    geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
-
 example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
@@ -139,10 +135,7 @@ if component == "inductor":
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation()
-
-    # Reference simulation using FEMM
-    # geo.femm_reference(freq=100000, current=[1], sign=[1], non_visualize=0)
+    # example_thermal_simulation()
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(example_results_folder, "transformer-interleaved")
@@ -192,9 +185,6 @@ if component == "transformer-interleaved":
     # read inductances
     # geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5)
 
-    # perform a reference simulation using FEMM
-    # geo.femm_reference(freq=250000, current=[4, 12], sign=[1, -1], non_visualize=0)
-
     # 9. start thermal simulation
     #example_thermal_simulation()
     
@@ -243,9 +233,6 @@ if component == "transformer":
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
     geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 180])
-
-    # Reference simulation using FEMM
-    geo.femm_reference(freq=250000, current=[4, 4], sign=[-1, 1], non_visualize=0)
 
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")

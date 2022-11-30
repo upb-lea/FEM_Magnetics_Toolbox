@@ -886,13 +886,13 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 mu0 = 4e-7*np.pi
 
 
-def r_basis(basis_air_gap_length: list, basis_air_gap_width: list, basis_air_gap_height_core_material: list) -> list:
+def r_basis(basis_air_gap_length: list, basis_air_gap_diameter: list, basis_air_gap_height_core_material: list) -> list:
     """
     1-dim reluctance per-unit-of-length
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
-    :param basis_air_gap_width: width of basis air gap
-    :type basis_air_gap_width: float
+    :param basis_air_gap_diameter: width of basis air gap
+    :type basis_air_gap_diameter: float
     :param basis_air_gap_length: length of basis air gap
     :type basis_air_gap_length: float
     :param basis_air_gap_height_core_material: height of core material direct on the air gap
@@ -908,35 +908,35 @@ def r_basis(basis_air_gap_length: list, basis_air_gap_width: list, basis_air_gap
     #         basis_air_gap_length[index] = 0.0000001
 
     basis_air_gap_length = np.array(basis_air_gap_length)
-    basis_air_gap_width = np.array(basis_air_gap_width)
+    basis_air_gap_diameter = np.array(basis_air_gap_diameter)
     basis_air_gap_height_core_material = np.array(basis_air_gap_height_core_material)
 
-    return 1 / (mu0 * (basis_air_gap_width / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
-                            basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
+    return 1 / (mu0 * (basis_air_gap_diameter / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
+                                                                                                   basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
 
 
-def sigma(l: list, w: list, r_equivalent: list) -> list:
+def sigma(air_gap_total_hight: list, air_gap_radius: list, r_equivalent: list) -> list:
     """
     1-dim fringing factor
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
-    :param w:
-    :type w: float
-    :param l:
-    :type l: float
-    :param r_equivalent:
-    :type r_equivalent: float
+    :param air_gap_radius: air gap radius
+    :type air_gap_radius: list
+    :param air_gap_total_hight:
+    :type air_gap_total_hight: list
+    :param r_equivalent: equivalent air gap resistance what was calculated using series/parallel-connection of r_basis
+    :type r_equivalent: list
 
     :return:
-    :rtype: float
+    :rtype: list
 
     """
 
-    l = np.array(l)
-    w = np.array(w)
+    air_gap_total_hight = np.array(air_gap_total_hight)
+    air_gap_radius = np.array(air_gap_radius)
     r_equivalent = np.array(r_equivalent)
 
-    return r_equivalent / (l / mu0 / w)
+    return r_equivalent / (air_gap_total_hight / mu0 / air_gap_radius)
 
 
 def r_round_inf(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
@@ -982,7 +982,9 @@ def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: lis
     air_gap_sigma = np.array(air_gap_sigma)
     air_gap_radius = np.array(air_gap_radius)
 
-    return air_gap_sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+    r_air_gap_round_ideal = air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+
+    return air_gap_sigma ** 2 * r_air_gap_round_ideal
 
 
 def r_cyl_cyl(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer) -> float:
@@ -1203,6 +1205,47 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
 
     return total_cost_including_margin
 
+def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_max: list):
+    """
+    find a result log-file in a folder with many result-log files.
+    Check a dictornary keyword list for matching a certain value (equel, greater equal, smaller equal).
+
+    :param result_log_folder: filepath to result-log folder
+    :type result_log_folder: str
+    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
+    :type keyword_list: list
+    :param value_min_max: value to check for
+    :type value_min_max: list
+
+    :Example:
+    Check for files with a core inner diameter smaller equal than 0.02 m.
+    >>> import femmt as fmt
+    >>> fmt.find_result_log_file("/home/filepath/fem_simulation_data", ["simulation_settings", "core", "core_inner_diameter"],[0.015, 0.02])
+
+    """
+
+    files_list = os.listdir(result_log_folder)
+
+    value_min = value_min_max[0]
+    value_max = value_min_max[1]
+
+    for file in files_list:
+        file_path = os.path.join(result_log_folder, file)
+        with open(file_path, "r") as fd:
+            full_data = json.loads(fd.read())
+
+        if len(keyword_list) == 2:
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]]
+        elif len(keyword_list) == 3:
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]]
+        elif len(keyword_list) == 4:
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]]
+        elif len(keyword_list) == 5:
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]][keyword_list[4]]
+
+        if value_min <= data_to_compare and data_to_compare <= value_max:
+            print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
+
+
 if __name__ == '__main__':
-    # TODO Relative path
-    visualize_simulation_results('/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/results/result_log_electro_magnetic.json')
+    pass

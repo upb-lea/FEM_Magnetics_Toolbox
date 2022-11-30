@@ -1,4 +1,8 @@
-# system library imports
+import femmt as fmt
+import numpy as np
+import matplotlib
+matplotlib.rc('xtick', labelsize=12)
+matplotlib.rc('ytick', labelsize=12)
 from itertools import product
 
 # 3rd library imports
@@ -8,52 +12,128 @@ from matplotlib import pyplot as plt
 # femmt imports
 import femmt.Functions as ff
 
-def plot_r_basis():
-    # width = 1
-    # length = 1
-    # height = np.linspace(10, 0.1, 1000)
-    width = 0.0149
-    length = 0.0005
-    height = np.linspace(0.005, 0, 1000)
-    h_l = height / length
+def plot_limitation():
+    length = 15
+    width = 100 * length
+    height = 101 - length
 
-    r_m = 1 / (ff.mu0 * (width / 2 / length + 2 / np.pi * (
+    r_mx = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
+    print(height)
 
-    combined = np.vstack((h_l, r_m)).T
-    print(combined)
-    fig, ax = plt.subplots()  # Create a figure containing a single axes.
-    plt.title("R_basic vs h/l")
-    plt.xlabel("h/l")
-    plt.ylabel("R_basic")
+    # width_c = 100
+    # length_c = 0.5
+    # height1_c = np.linspace(50, 100, 1000)
+    # height2_c =100 - height1_c
+    # h_l = height2_c / length
+    #
+    # r_m1 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+    #         1 + np.log(np.pi * height1_c / 4 / length_c))))
+    #
+    # r_m2 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+    #         1 + np.log(np.pi * height2_c / 4 / length_c))))
+    #
+    # r_m = r_m1 + r_m2
+    # combined = np.vstack((h_l, r_m)).T
+    # print(combined)
+
+    width_c = 100
+    length_c = 0.5
+    height1_c = np.linspace(50, 100, 1000)
+    height2_c =100 - height1_c
+    h_l = height2_c / length
+    # print(h_l)
+    r_m1 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+            1 + np.log(np.pi * height1_c / 4 / length_c))))
+
+    r_m2 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+            1 + np.log(np.pi * height2_c / 4 / length_c))))
+
+    r_m = r_m1 + r_m2
+    ratio = r_mx / r_m
+    # print(ratio)
+    fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
+    fmt.plt.title("R_basic vs h/l")
+    fmt.plt.xlabel("h/l")
+    fmt.plt.ylabel("R_basic")
+
     ax.plot(h_l, r_m)
+    # ax.hlines(y=r_m, xmin=0, xmax=50, linewidth=2, color='g')
+    ax.hlines(y=r_mx, xmin=-1, xmax=51, linewidth=2, color='r')
     ax.invert_xaxis()
     ax.grid()
     plt.show()
 
 
 def plot_r_basis():
-    # width = 1
+    # width = 100
     # length = 1
-    # height = np.linspace(10, 0.1, 1000)
-    width = 0.0149
-    length = 0.0005
-    height = np.linspace(0.005, 0, 1000)
+    # height = np.linspace(100, 0, 1000)
+    # h_l = height / length
+    #
+    # r_m = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+    #             1 + np.log(np.pi * height / 4 / length))))
+    #
+    # combined = np.vstack((h_l, r_m)).T
+    # print(combined)
+    # fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
+    # # fmt.plt.title("R_basic vs h/l")
+    # fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=12)
+    # fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
+    # ax.plot(h_l, r_m, linewidth=2, label=f'w/l ={width}')
+    # ax.invert_xaxis()
+    # ax.legend()
+    # ax.grid()
+    # fmt.plt.show()
+
+    # width = np.linspace(100, 0, 10000)
+    # length = 1
+    # height = 100
+    # w_l = width / length
+    #
+    # r_m = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+    #         1 + np.log(np.pi * height / 4 / length))))
+    #
+    # combined = np.vstack((w_l, r_m)).T
+    # print(combined)
+    # fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
+    # # fmt.plt.title("R_basic vs w/l")
+    # fmt.plt.xlabel("$\dfrac{w}{l}$", fontsize=12)
+    # fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
+    # ax.plot(w_l, r_m, linewidth=2, label=f'h/l ={height}')
+    # ax.invert_xaxis()
+    # ax.legend()
+    # ax.grid()
+    # fmt.plt.show()
+
+    width = np.linspace(100, 0, 5)
+    length = 1
+    height = np.linspace(100, 0, 1000)
     h_l = height / length
 
-    r_m = 1 / (ff.mu0 * (width / 2 / length + 2 / np.pi * (
+    w_l = width / length
+    fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
+    # fmt.plt.title("$R_{basic}$ vs $\dfrac{h}{l}$", fontsize=20)
+    fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=12)
+    fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
+
+    for i, wid in enumerate(width):
+        r_m = 1 / (fmt.mu0 * (wid / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
 
-    combined = np.vstack((h_l, r_m)).T
-    print(combined)
-    fig, ax = plt.subplots()  # Create a figure containing a single axes.
-    plt.title("R_basic vs h/l")
-    plt.xlabel("h/l")
-    plt.ylabel("R_basic")
-    ax.plot(h_l, r_m)
+        combined = np.vstack((h_l, r_m)).T
+        # print(combined)
+
+        ax.plot(h_l, r_m, linewidth=2, label=f'w/l ={w_l[i]}')
+
     ax.invert_xaxis()
+    # ax.set_yscale('log')
+    ax.legend()
     ax.grid()
     plt.show()
+
+
+
 
 
 class MagneticCircuit:
@@ -377,7 +457,7 @@ class MagneticCircuit:
         self.data_matrix = np.hstack(
             (self.data_matrix, np.reshape(self.core_h, (self.data_matrix_len, 1))))  # position: 15
 
-    def get_param_pos_dict(self):
+    def get_parameters_position_dict(self):
         self.param_pos_dict = {"core_inner_diameter": 0, "window_h": 1, "window_w": 2, "mu_rel": 3, "no_of_turns": 4,
                                "n_air_gaps": 5,
                                "air_gap_h": 6, "air_gap_position": 7, "mult_air_gap_type": 8, "inductance": 9,
@@ -492,52 +572,52 @@ class MagneticCircuit:
         self.data_matrix[:, 9] = self.cal_inductance
 
 
-def single_round_inf(air_gap_h, core_inner_diameter, h):
+def single_round_inf(air_gap_h, core_inner_diameter, height_core_material):
     """Returns reluctance of a single air-gap at the corner
 
     :param air_gap_h: Air-gap height [in meter]
     :type air_gap_h: list
     :param core_inner_diameter: Diameter of center leg of the core [in meter]
     :type core_inner_diameter: list
-    :param h: Core distance between air-gap and other end of the window-h [in meter]
-    :type h: list
+    :param height_core_material: Core distance between air-gap and other end of the window-h [in meter]
+    :type height_core_material: list
     :return: Reluctance of a single air-gap at the corner
     :rtype: list"""
 
-    temp1 = ff.r_basis(air_gap_h, core_inner_diameter, h)
-    temp2 = ff.sigma(air_gap_h, core_inner_diameter / 2, temp1)
-    temp3 = ff.r_round_inf(air_gap_h, temp2, core_inner_diameter / 2)
+    r_basis_round_inf = ff.r_basis(air_gap_h, core_inner_diameter, height_core_material)
+    sigma_round_inf = ff.sigma(air_gap_h, core_inner_diameter / 2, r_basis_round_inf)
+    reluctance_round_inf = ff.r_round_inf(air_gap_h, sigma_round_inf, core_inner_diameter / 2)
 
-    return temp3
+    return reluctance_round_inf
 
 
-def single_round_round(air_gap_h, core_inner_diameter, h0, h1):
+def single_round_round(air_gap_total_hight, core_inner_diameter, height_core_material_0, height_core_material_1):
     """Returns reluctance of a single air-gap at position other than corner on the center leg
 
-    :param air_gap_h: Air-gap height [in meter]
-    :type air_gap_h: list
+    :param air_gap_total_hight: Air-gap total height [in meter]
+    :type air_gap_total_hight: list
     :param core_inner_diameter: Diameter of center leg of the core [in meter]
     :type core_inner_diameter: list
-    :param h0: Distance between window_h and air_gap_position for a single air-gap [in meter]
-    :type h0: list
-    :param h1: Height of air-gap from the base of the core window [in meter]
-    :type h1: list
+    :param height_core_material_0: Distance between window_h and air_gap_position for a single air-gap [in meter]
+    :type height_core_material_0: list
+    :param height_core_material_1: Height of air-gap from the base of the core window [in meter]
+    :type height_core_material_1: list
     :return: Reluctance of a single air-gap at position other than corner on the center leg
     :rtype: list"""
 
-    r_basis_1 = ff.r_basis(air_gap_h / 2, core_inner_diameter, h0)
-    r_basis_2 = ff.r_basis(air_gap_h / 2, core_inner_diameter, h1)
-    temp2 = ff.sigma(air_gap_h, core_inner_diameter / 2, r_basis_1 + r_basis_2)
-    temp3 = ff.r_round_round(air_gap_h, temp2, core_inner_diameter / 2)
+    r_basis_1 = ff.r_basis(air_gap_total_hight / 2, core_inner_diameter, height_core_material_0)
+    r_basis_2 = ff.r_basis(air_gap_total_hight / 2, core_inner_diameter, height_core_material_1)
+    sigma_round_round = ff.sigma(air_gap_total_hight, core_inner_diameter / 2, r_basis_1 + r_basis_2)
+    reluctance_round_round = ff.r_round_round(air_gap_total_hight, sigma_round_round, core_inner_diameter / 2)
 
-    return temp3
+    return reluctance_round_round
 
 
-def distributed_type_1(air_gap_h, core_inner_diameter, n_air_gaps, h_multiple):
+def distributed_type_1(air_gap_hight_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
     """Returns distributed air-gap reluctance of Type 1 (Where corner air-gaps are present)
 
-    :param air_gap_h: Air-gap height [in meter]
-    :type air_gap_h: list
+    :param air_gap_hight_single_air_gap: Air-gap height [in meter]
+    :type air_gap_hight_single_air_gap: list
     :param core_inner_diameter: Diameter of center leg of the core [in meter]
     :type core_inner_diameter: list
     :param n_air_gaps: Number of air-gaps in the center leg of the core
@@ -547,25 +627,29 @@ def distributed_type_1(air_gap_h, core_inner_diameter, n_air_gaps, h_multiple):
     :return: Distributed air-gap reluctance of Type 1 (Where corner air-gaps are present)
     :rtype: list"""
 
-    temp1 = ff.r_basis(air_gap_h, core_inner_diameter, h_multiple)
-    temp2 = ff.sigma(air_gap_h, core_inner_diameter / 2, temp1)
-    temp3 = ff.r_round_inf(air_gap_h, temp2, core_inner_diameter / 2)
-    reluctance = (2 * temp3)
+    # ToDo: Raise Error for less than two air gaps
 
-    r_basis_1 = ff.r_basis(air_gap_h / 2, core_inner_diameter, h_multiple)
-    r_basis_2 = ff.r_basis(air_gap_h / 2, core_inner_diameter, h_multiple)
-    temp2 = ff.sigma(air_gap_h, core_inner_diameter / 2, r_basis_1 + r_basis_2)
-    temp3 = ff.r_round_round(air_gap_h, temp2, core_inner_diameter / 2)
-    reluctance = reluctance + ((n_air_gaps - 2) * temp3)
+    # first part calculates the two outer air gaps (very top and very bottom)
+    r_basis = ff.r_basis(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple)
+    sigma_round_inf = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis)
+    reluctance_round_inf = ff.r_round_inf(air_gap_hight_single_air_gap, sigma_round_inf, core_inner_diameter / 2)
+    reluctance = (2 * reluctance_round_inf)
+
+    # second part calculates the inner air gaps between top and bottom air gaps (if available)
+    r_basis_1 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
+    r_basis_2 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
+    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_1 + r_basis_2)
+    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
+    reluctance = reluctance + ((n_air_gaps - 2) * reluctance_round_round)
 
     return reluctance
 
 
-def distributed_type_2(air_gap_h, core_inner_diameter, n_air_gaps, h_multiple):
+def distributed_type_2(air_gap_hight_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
     """Returns distributed air-gap reluctance of Type 2 (Where corner air-gaps are absent)
 
-    :param air_gap_h: Air-gap height [in meter]
-    :type air_gap_h: list
+    :param air_gap_hight_single_air_gap: Air-gap height [in meter]
+    :type air_gap_hight_single_air_gap: list
     :param core_inner_diameter: Diameter of center leg of the core [in meter]
     :type core_inner_diameter: list
     :param n_air_gaps: Number of air-gaps in the center leg of the core
@@ -575,27 +659,39 @@ def distributed_type_2(air_gap_h, core_inner_diameter, n_air_gaps, h_multiple):
     :return: Distributed air-gap reluctance of Type 2 (Where corner air-gaps are absent)
     :rtype: list"""
 
-    r_basis_1 = ff.r_basis(air_gap_h / 2, core_inner_diameter, h_multiple)
-    r_basis_2 = ff.r_basis(air_gap_h / 2, core_inner_diameter, h_multiple / 2)
-    temp2 = ff.sigma(air_gap_h, core_inner_diameter / 2, r_basis_1 + r_basis_2)
-    temp3 = ff.r_round_round(air_gap_h, temp2, core_inner_diameter / 2)
-    reluctance = (2 * temp3)
+    #ToDo: Raise Error for less than two air gaps
 
-    r_basis_1 = ff.r_basis(air_gap_h / 2, core_inner_diameter, h_multiple / 2)
-    r_basis_2 = ff.r_basis(air_gap_h / 2, core_inner_diameter, h_multiple / 2)
-    temp2 = ff.sigma(air_gap_h, core_inner_diameter / 2, r_basis_1 + r_basis_2)
-    temp3 = ff.r_round_round(air_gap_h, temp2, core_inner_diameter / 2)
-    reluctance = reluctance + ((n_air_gaps - 2) * temp3)
+    # First part calculates two outer air gaps (very top and very bottom)
+    r_basis_airgap_airgap = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
+    r_basis_airgap_corner = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
+    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_airgap_airgap + r_basis_airgap_corner)
+    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
+    reluctance = (2 * reluctance_round_round)
+
+    # second part calculates air gaps between the outer air gaps (if available)
+    r_basis_airgap_airgap_1 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
+    r_basis_airgap_airgap_2 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
+    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_airgap_airgap_1 + r_basis_airgap_airgap_2)
+    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
+    reluctance = reluctance + ((n_air_gaps - 2) * reluctance_round_round)
 
     return reluctance
 
 
 if __name__ == '__main__':
-    mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[8], n_air_gaps=[3],
-                          air_gap_h=[0.0005, 0.0002, 0.0001], air_gap_position=[0, 50, 100], mu_rel=[3000], mult_air_gap_type=[1, 2],
-                          air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
-
-    mc1.calculate_inductance()
-
-    print(f"Inductance is {mc1.cal_inductance}")
-    # plot_r_basis()
+    # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9], n_air_gaps=[3],
+    #                       air_gap_h=[0.0005, 0.0005, 0.0005], air_gap_position=[23.3, 25, 26.7], mu_rel=[3000], mult_air_gap_type=[1, 2],
+    #                       air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
+    #
+    # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9],
+    #                       n_air_gaps=[1],
+    #                       air_gap_h=[0.0005], air_gap_position=[26.7], mu_rel=[3000],
+    #                       mult_air_gap_type=[1, 2],
+    #                       air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
+    # # print(np.sum(mc1.reluctance, axis=1) - mc1.reluctance[0, 5])
+    # print(mc1.reluctance[0, 5])
+    # mc1.calculate_inductance()
+    #
+    # print(f"Inductance is {mc1.cal_inductance}")
+    plot_r_basis()
+    # plot_limitation()
