@@ -1,4 +1,5 @@
 import sys
+import matplotlib
 import re
 from mpl_toolkits.mplot3d import proj3d
 import pandas as pd
@@ -30,7 +31,7 @@ from gui.onelab_path_popup import OnelabPathDialog
 database = mdb.MaterialDatabase()
 
 from femmt.examples.reluctance_fem_integration import AutomatedDesign
-from femmt.examples.reluctance_fem_integration import load_design, plot_2d
+from femmt.examples.reluctance_fem_integration import load_design, plot_2d, filter_after_fem
 
 from matplotlib.widgets import Cursor
 import mplcursors
@@ -87,6 +88,7 @@ class MatplotlibWidget(QWidget):
         self.sm = plt.cm.ScalarMappable(cmap=cm.inferno)
         self.figure.colorbar(mappable=self.sm, cax=self.axis_cm)
 
+
 class MainWindow(QMainWindow):
 
     "Global variable declaration"
@@ -133,6 +135,7 @@ class MainWindow(QMainWindow):
             "hexa": "Hexadimensional",
             "square": "Square",
             "+-10": "+/- 10%",
+            "+-20": "+/- 20%",
             "excel": "MS Excel"
         }
 
@@ -503,13 +506,16 @@ class MainWindow(QMainWindow):
 
         #fmt.plt.title("Normalised volume vs Normalised losses")
 
-        matplotlib_widget.axis.set(xlabel="B in T", ylabel="Relative power loss in W/m\u00b3", yscale='log',
-                                   xscale='log')
-        lines = matplotlib_widget.axis.plot(data_matrix[:, 25],
-                                            data_matrix[:, 23], 'o')
+        matplotlib_widget.axis.set(xlabel="Volume / m\u00b3", ylabel="Loss / W", title="Normalised volume vs Normalised losses")
+        lines = matplotlib_widget.axis.plot(data_matrix[:, 30],
+                                            data_matrix[:, 28], 'o')
         mplcursors.cursor(lines)
+        matplotlib_widget.figure.tight_layout()
 
-    def plot_2d(self, x_value: list, y_value: list, x_label: str, y_label: str, title: str, annotations: list) -> object:
+
+    def plot_2d(self, matplotlib_widget, x_value: list, y_value: list, x_label: str, y_label: str, title: str, plot_color: str,
+                z_value: list = None,
+                z_label: str = None, inductance_value: list = None, annotations: list = None):
         """
             Visualize data in 2d plot with popover next to mouse position.
 
@@ -517,65 +523,121 @@ class MainWindow(QMainWindow):
             :type x_value: list
             :param y_value: Data points for y-axis
             :type y_value: list
+            :param z_value: Data points for z-axis
+            :type z_value: list
             :param x_label: x-axis label
             :type x_label: str
             :param y_label: y-axis label
             :type y_label: str
+            :param z_label: z-axis label
+            :type z_label: str
             :param title: Title of the graph
             :type title: str
+            :param inductance_value: Data points for inductance value corresponding to the (x, y, z): (Optional)
+            :type inductance_value: list
             :param annotations: Annotations corresponding to the 3D points
             :type annotations: list
-            """
-        names = np.array(annotations)
+            :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
+            :type annotations: str
+        """
+        if annotations is None:
+            names = [str(x) for x in list(range(len(x_value)))]
+        else:
+            temp_var = [int(x) for x in annotations]
+            names = [str(x) for x in temp_var]
+
+        if inductance_value is not None:
+            l_label = 'L / H'
+
+        if z_value is not None:
+            z_value_str = [str(round(z, 3)) for z in z_value]
+
+        if inductance_value is not None:
+            l_value_str = [str(round(l, 6)) for l in inductance_value]
+
         x_value_str = [str(round(x, 6)) for x in x_value]
-        y_value_str = [str(round(y, 6)) for y in y_value]
+        y_value_str = [str(round(y, 3)) for y in y_value]
 
-        c = np.random.randint(1, 5, size=len(y_value))
+        # fig, ax = plt.subplots()
+        # fmt.plt.title(title)
+        # fmt.plt.xlabel(x_label)
+        # fmt.plt.ylabel(y_label)
 
-        norm = plt.Normalize(1, 4)
-        cmap = plt.cm.RdYlGn
+        # c = np.random.randint(1, 5, size=len(y_value))
+        # norm = plt.Normalize(1, 4)
+        # cmap = plt.cm.RdYlGn
 
-        fig, ax = plt.subplots()
-        fmt.plt.title(title)
-        fmt.plt.xlabel(x_label)
-        fmt.plt.ylabel(y_label)
-        sc = plt.scatter(x_value, y_value, c=c, s=50, cmap=cmap, norm=norm)
+        # sc = plt.scatter(x_value, y_value, c=c, s=50, cmap=cmap, norm=norm)
+        if z_value is None:
+            sc = matplotlib_widget.axis.scatter(x_value, y_value, c='#%02x%02x%02x' % fmt.colors_femmt_default[plot_color])
 
-        annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+        else:
+            sc = matplotlib_widget.axis.scatter(x_value, y_value, c=z_value, cmap=plot_color)
+            cbar = matplotlib_widget.figure.colorbar(sc)
+            cbar.ax.get_yaxis().labelpad = 15
+            cbar.ax.set_ylabel(z_label, rotation=270)
+
+        mplcursors.cursor(sc)
+        matplotlib_widget.axis.set(xlabel="B in T", ylabel="Relative power loss in W/m\u00b3", yscale='log',
+                                   xscale='log', title = 'Hello there')
+        annot = matplotlib_widget.axis.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
                             bbox=dict(boxstyle="round", fc="w"),
                             arrowprops=dict(arrowstyle="->"))
         annot.set_visible(False)
+        matplotlib_widget.figure.tight_layout()
 
         def update_annot(ind):
             """Create popover annotations in 2d plot"""
 
             pos = sc.get_offsets()[ind["ind"][0]]
             annot.xy = pos
-            text = "{}\nVolume: {}\nLoss:{}".format(" ".join([names[n] for n in ind["ind"]]),
-                                                    " ".join([x_value_str[n] for n in ind["ind"]]),
-                                                    " ".join([y_value_str[n] for n in ind["ind"]]))
+            text = ""
+            if z_label is None and inductance_value is None:
+                text = "case: {}\n{}: {}\n{}:{}". \
+                    format(" ".join([names[n] for n in ind["ind"]]),
+                           x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
+                           y_label, " ".join([y_value_str[n] for n in ind["ind"]]))
+            elif z_label is not None and inductance_value is None:
+                text = "case: {}\n{}: {}\n{}:{}\n{}:{}". \
+                    format(" ".join([names[n] for n in ind["ind"]]),
+                           x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
+                           y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
+                           z_label, " ".join([z_value_str[n] for n in ind["ind"]]))
+            elif z_label is None and inductance_value is not None:
+                text = "case: {}\n{}: {}\n{}:{}\n{}:{}". \
+                    format(" ".join([names[n] for n in ind["ind"]]),
+                           x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
+                           y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
+                           l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
+            else:
+                text = "case: {}\n{}: {}\n{}:{}\n{}:{}\n{}:{}". \
+                    format(" ".join([names[n] for n in ind["ind"]]),
+                           x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
+                           y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
+                           z_label, " ".join([z_value_str[n] for n in ind["ind"]]),
+                           l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
             annot.set_text(text)
-            annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
+            # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
             annot.get_bbox_patch().set_alpha(0.4)
 
-        def hover(event):
-            """Event that is triggered when mouse is hovered.
-            Shows text annotation over data point closest to mouse."""
-            vis = annot.get_visible()
-            if event.inaxes == ax:
-                cont, ind = sc.contains(event)
-                if cont:
-                    update_annot(ind)
-                    annot.set_visible(True)
-                    fig.canvas.draw_idle()
-                else:
-                    if vis:
-                        annot.set_visible(False)
-                        fig.canvas.draw_idle()
-
-        fig.canvas.mpl_connect("motion_notify_event", hover)
-        ax.grid()
-        plt.show()
+        # def hover(event):
+        #     """Event that is triggered when mouse is hovered.
+        #     Shows text annotation over data point closest to mouse."""
+        #     vis = annot.get_visible()
+        #     if event.inaxes == ax:
+        #         cont, ind = sc.contains(event)
+        #         if cont:
+        #             update_annot(ind)
+        #             annot.set_visible(True)
+        #             fig.canvas.draw_idle()
+        #         else:
+        #             if vis:
+        #                 annot.set_visible(False)
+        #                 fig.canvas.draw_idle()
+        #
+        # fig.canvas.mpl_connect("motion_notify_event", hover)
+        # ax.grid()
+        # plt.show()
 
     def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: str, z_label: str, x_limit: list,
                 y_limit: list, z_limit: list, title: str, annotations: list):
@@ -718,7 +780,7 @@ class MainWindow(QMainWindow):
             "Edge distributed":"1",
             "Centre distributed":"2"
         }
-        L_tolerance_percent = int(self.trans_dict[self.aut_tolerance_val_comboBox.currentText()])  # +/-10%
+        L_tolerance_percent = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])  # +/-10%
         self.i_max = comma_str_to_point_float(self.aut_maximum_current_lineEdit.text())#3  # Automated design-Reluctacne model
         # Max current amplitude with assumption of sinusoidal current waveform
         percent_of_B_sat = int(self.aut_b_sat_lineEdit.text()) #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
@@ -831,15 +893,16 @@ class MainWindow(QMainWindow):
         except:
             pass
 
+        fem_directory = self.FEM_sim_working_dir_LineEdit.text()
 
         if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-            self.ad = AutomatedDesign(working_directory='C:/LEA_Project/FEM_Magnetics_Toolbox/files',
-                                     component='inductor',
+            self.ad = AutomatedDesign(working_directory=fem_directory,
+                                     magnetic_component='inductor',
                                      goal_inductance=goal_inductance,
                                      frequency=self.freq,
-                                     inductance_percent_tolerance=L_tolerance_percent,
+                                     goal_inductance_percent_tolerance=L_tolerance_percent,
                                      winding_scheme=winding_scheme,
-                                     current_max=self.i_max,
+                                     peak_current=self.i_max,
                                      percent_of_b_sat=percent_of_B_sat,
                                      percent_of_total_loss=percent_of_total_loss,
                                      database_core_names=db_core_names,
@@ -852,7 +915,7 @@ class MainWindow(QMainWindow):
                                      n_air_gaps=n_air_gaps,
                                      air_gap_height=air_gap_height,
                                      air_gap_position=air_gap_position,
-                                     material_list=material_names,
+                                     core_material=material_names,
                                      mult_air_gap_type=['center_distributed'],
                                      top_core_insulation=comma_str_to_point_float(
                                          self.aut_isolation_core2cond_top_lineEdit.text()),
@@ -862,9 +925,14 @@ class MainWindow(QMainWindow):
                                          self.aut_isolation_core2cond_inner_lineEdit.text()),
                                      right_core_insulation=comma_str_to_point_float(
                                          self.aut_isolation_core2cond_outer_lineEdit.text()),
-                                     inner_winding_insulations=[comma_str_to_point_float(self.aut_isolation_p2p_lineEdit.text())],
-                                     temperature=comma_str_to_point_float(self.aut_temp_lineEdit.text()))
-        # TODO: call plot_volume_loss here
+                                     inner_winding_insulation=comma_str_to_point_float(self.aut_isolation_p2p_lineEdit.text()),
+                                     temperature=comma_str_to_point_float(self.aut_temp_lineEdit.text()),
+                                      manual_litz_conductor_r=[],
+                                      manual_litz_strand_r=[],
+                                      manual_litz_strand_n=[],
+                                      manual_litz_fill_factor=[])
+        # Create csv file of data_matrix_fem which consist of all the fem simulation cases details
+        self.ad.write_data_matrix_fem_to_csv()
 
         self.plot_volume_loss(self.ad.data_matrix_4, self.matplotlib_widget)
 
@@ -881,71 +949,60 @@ class MainWindow(QMainWindow):
         self.fem_cases_label.setText(f"{n_cases_FEM}")
 
 
-        # real_inductance, total_loss, total_volume, total_cost, labels = fmt.load_design(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
-        # fmt.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
-        # fmt.plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac', title='Volume vs Cost', annotations=labels)
-        # fmt.plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20], z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
-
-        # self.matplotlib_widget1 = MatplotlibWidget()
-        # self.matplotlib_widget1.axis.clear()
-        # self.layout = QVBoxLayout(self.plotwidget)
-        # self.layout.addWidget(self.plotwidget_fem_sim)
-        # try:
-        #     self.matplotlib_widget1.axis_cm.remove()
-        # except:
-        #     pass
-        # real_inductance, total_loss, total_volume, total_cost, labels = fmt.load_design(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/FEM_Magnetics_Toolbox/femmt/examples/sweep_new_3d_with_cost')
-        # fmt.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
-        #
-
-
-
-        # self.matplotlib_widget1 = MatplotlibWidget()
-        # self.matplotlib_widget2 = MatplotlibWidget()
-        # self.matplotlib_widget3 = MatplotlibWidget()
-        # self.matplotlib_widget4 = MatplotlibWidget()
-        #
-        # self.matplotlib_widget1.axis.clear()
-        # self.layout = QVBoxLayout(self.plotwidget)
-        # self.layout.addWidget(self.matplotlib_widget1)
-        # try:
-        #     self.matplotlib_widget1.axis_cm.remove()
-        # except:
-        #     pass
-        #
-        # mat1_name = self.dat_core_material1_comboBox.currentText()
-        # mat2_name = self.dat_core_material2_comboBox.currentText()
-        # mat1_temp = int(self.aut_temp_m1_comboBox.currentText())
-        # mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
-        # self.matplotlib_widget1.axis.legend(fontsize=13)
-        # self.matplotlib_widget1.axis.grid()
-        # self.matplotlib_widget1.figure.canvas.draw_idle()
-    #     lines = matplotlib_widget.axis.plot(b[j], power_loss[j], label=label, color=color,
-    #                                         linestyle=line_style[j])
-    #     mplcursors.cursor(lines)
-    #     # plt.legend()
-    #
-    # matplotlib_widget.axis.set(xlabel="B in T", ylabel="Relative power loss in W/m\u00b3", yscale='log', xscale='log')
-
-
     def automated_design_fem_sim(self):
 
         ###########################################   {FEM_SIMULATION}   ##################################################
 
+        # Run FEM simulation of "self.data_matrix_fem"
         self.ad.fem_simulation()
 
-        real_inductance, total_loss, total_volume, total_cost, labels = load_design(working_directory='C:/LEA_Project/FEM_Magnetics_Toolbox/files')
+        # Save simulation settings in json file for later review
+        self.ad.automated_design_settings()
+        design_directory = self.aut_load_design_directoryname_lineEdit.text()
+        real_inductance, total_loss, total_volume, total_cost, labels = load_design(working_directory=design_directory)
 
-        self.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
-        #self.plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac', title='Volume vs Cost', annotations=labels)
-        #self.plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20], z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
+
+        self.matplotlib_widget = MatplotlibWidget()
+        self.matplotlib_widget.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_5)
+        self.layout.addWidget(self.matplotlib_widget)
+        try:
+            self.matplotlib_widget.axis_cm.remove()
+        except:
+            pass
+
+        plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
+                                     total_cost=total_cost,
+                                     annotation_list=labels, goal_inductance=self.ad.goal_inductance,
+                                     percent_tolerance=20)
+
+        self.plot_2d(self.matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
+                x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
     def load_designs(self):
 
-        real_inductance, total_loss, total_volume, total_cost, labels = load_design(working_directory='C:/LEA_Project/FEM_Magnetics_Toolbox/files')
-        self.plot_2d(x_value=total_volume, y_value=total_loss, x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', annotations=labels)
-        #self.plot_2d(x_value=total_volume, y_value=total_cost, x_label='Volume / m\u00b3', y_label='Cost / \u20ac', title='Volume vs Cost', annotations=labels)
-        #self.plot_3d(x_value=total_volume, y_value=total_loss, z_value=total_cost, x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', x_limit=[0, 0.0005], y_limit=[0, 20],z_limit=[4.5, 5.5], title='Volume vs Loss vs Cost', annotations=labels)
+        self.matplotlib_widget = MatplotlibWidget()
+        self.matplotlib_widget.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_9)
+        self.layout.addWidget(self.matplotlib_widget)
+        try:
+            self.matplotlib_widget.axis_cm.remove()
+        except:
+            pass
+
+        design_directory = self.aut_load_design_directoryname_lineEdit.text()
+        real_inductance, total_loss, total_volume, total_cost, labels = load_design(
+            working_directory=design_directory)
+
+        plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
+                                     total_cost=total_cost,
+                                     annotation_list=labels, goal_inductance=0.00012,
+                                     percent_tolerance=20)
+
+        self.plot_2d(self.matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
+                x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
     def check_onelab_config(self, geo: fmt.MagneticComponent):
         # Ask for onelab path (if no config file exists)
@@ -984,9 +1041,37 @@ class MainWindow(QMainWindow):
 
         mat1_name = self.dat_core_material1_comboBox.currentText()
         mat2_name = self.dat_core_material2_comboBox.currentText()
-        mat1_temp = int(self.aut_temp_m1_comboBox.currentText())
-        mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
-        self.matplotlib_widget1.axis.legend(fontsize=13)
+        mat3_name = self.dat_core_material3_comboBox.currentText()
+        mat4_name = self.dat_core_material4_comboBox.currentText()
+        mat5_name = self.dat_core_material5_comboBox.currentText()
+
+        mat1_temp = comma_str_to_point_float(self.aut_temp_m1_comboBox.currentText())
+        mat2_temp = comma_str_to_point_float(self.aut_temp_m2_comboBox.currentText())
+        mat3_temp = comma_str_to_point_float(self.aut_temp_m3_comboBox.currentText())
+        mat4_temp = comma_str_to_point_float(self.aut_temp_m4_comboBox.currentText())
+        mat5_temp = comma_str_to_point_float(self.aut_temp_m5_comboBox.currentText())
+
+        mat1_flux = comma_str_to_point_float(self.aut_flux_m1_comboBox.currentText())
+        mat2_flux = comma_str_to_point_float(self.aut_flux_m2_comboBox.currentText())
+        mat3_flux = comma_str_to_point_float(self.aut_flux_m3_comboBox.currentText())
+        mat4_flux = comma_str_to_point_float(self.aut_flux_m4_comboBox.currentText())
+        mat5_flux = comma_str_to_point_float(self.aut_flux_m5_comboBox.currentText())
+
+        print(f"mat1_name: {mat1_name},{mat2_name},{mat3_name},{mat4_name},{mat5_name}")
+        print(f"mat1_name: {mat1_temp},{mat2_temp},{mat3_temp},{mat4_temp},{mat5_temp}")
+        print(f"mat1_name: {mat1_flux},{mat2_flux},{mat3_flux},{mat4_flux},{mat5_flux}")
+
+        materials_used_list = []
+        material_list = [mat1_name, mat2_name, mat3_name, mat4_name, mat5_name]
+        for items in material_list:
+            if items:
+                materials_used_list.append(items)
+        print(materials_used_list)
+
+
+        mdb.compare_core_loss_flux_density_data(self.matplotlib_widget1, material_list=materials_used_list,
+                                                temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp])
+        #self.matplotlib_widget1.axis.legend(fontsize=13)
         self.matplotlib_widget1.axis.grid()
         self.matplotlib_widget1.figure.canvas.draw_idle()
 
@@ -1000,9 +1085,11 @@ class MainWindow(QMainWindow):
         except:
             pass
 
-        fluxval = float(self.aut_flux_m1_comboBox.currentText())
-        mdb.compare_core_loss_temperature(self.matplotlib_widget2, material_list=[mat1_name, mat2_name], flux = fluxval)
-        self.matplotlib_widget2.axis.legend(fontsize=13)
+        flux_list = [mat1_flux, mat2_flux, mat3_flux, mat4_flux, mat5_flux]
+        print(f"flux_list: {flux_list}")
+        mdb.compare_core_loss_temperature(self.matplotlib_widget2, material_list=materials_used_list,
+                                          flux_list = [mat1_flux, mat2_flux, mat3_flux, mat4_flux, mat5_flux])
+        #self.matplotlib_widget2.axis.legend(fontsize=13)
         self.matplotlib_widget2.axis.grid()
         self.matplotlib_widget2.figure.canvas.draw_idle()
 
@@ -1016,8 +1103,10 @@ class MainWindow(QMainWindow):
         except:
             pass
 
-        mdb.compare_core_loss_frequency(self.matplotlib_widget3, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
-        self.matplotlib_widget3.axis.legend(fontsize=13)
+        mdb.compare_core_loss_frequency(self.matplotlib_widget3, material_list=materials_used_list,
+                                        temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp],
+                                        flux_list=[mat1_flux, mat2_flux, mat3_flux, mat4_flux, mat5_flux])
+        #self.matplotlib_widget3.axis.legend(fontsize=13)
         self.matplotlib_widget3.axis.grid()
         self.matplotlib_widget3.figure.canvas.draw_idle()
 
@@ -1031,8 +1120,9 @@ class MainWindow(QMainWindow):
         except:
             pass
 
-        mdb.compare_b_h_curve(self.matplotlib_widget4, material_list=[mat1_name, mat2_name], temperature=mat1_temp)
-        self.matplotlib_widget4.axis.legend(fontsize=13)
+        mdb.compare_b_h_curve(self.matplotlib_widget4, material_list=materials_used_list,
+                              temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp])
+        #self.matplotlib_widget4.axis.legend(fontsize=13)
         self.matplotlib_widget4.axis.grid()
         self.matplotlib_widget4.figure.canvas.draw_idle()
 
@@ -1241,12 +1331,13 @@ class MainWindow(QMainWindow):
         aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
                                     self.translation_dict['implicit_strands_number']]
         aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
-        aut_tolerance_val_options = [self.translation_dict['+-10']]
+        aut_tolerance_val_options = [self.translation_dict['+-10'], self.translation_dict['+-20']]
         aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
         #aut_core_geometry_options.insert(0, 'Manual')
 
 
         get_material_list = mdb.material_list_in_database(material_list = True)
+        get_material_list.insert(0,None)
         dat_core_material_options = get_material_list
 
 
@@ -1290,7 +1381,9 @@ class MainWindow(QMainWindow):
             self.aut_winding1_scheme_comboBox.addItem(option)
             self.aut_winding2_scheme_comboBox.addItem(option)
         for option in aut_tolerance_val_options:
-            self.aut_tolerance_val_comboBox.addItem(option)
+            self.aut_rel_tolerance_val_comboBox.addItem(option)
+        for option in aut_tolerance_val_options:
+            self.aut_load_tolerance_val_comboBox.addItem(option)
 
         self.aut_min_core_width_lineEdit.setPlaceholderText("Minimum value")
         self.aut_max_core_width_lineEdit.setPlaceholderText("Maximum value")
@@ -1327,6 +1420,9 @@ class MainWindow(QMainWindow):
         if mat_text1:
             get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
             get_flux1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", flux=True)
+
+        # get_temp1_list.insert(0,None)
+        # get_flux1_list.insert(0,None)
         aut_temp_options1 = get_temp1_list
         aut_flux_options1 = get_flux1_list
 
