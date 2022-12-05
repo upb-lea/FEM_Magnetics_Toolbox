@@ -940,10 +940,10 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     r_equivalent_round_round = r_basic_upper + r_basic_lower
 
     sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_hight)
-    print(f"{sigma = }")
+    if sigma > 1:
+        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
     r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
-    print(f"{r_air_gap_ideal = }")
     r_air_gap = sigma ** 2 * r_air_gap_ideal
 
     return r_air_gap
@@ -1073,6 +1073,196 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, tablet_diameter, r_outer, real_
     r_air_gap = sigma * r_air_gap_ideal
 
     return r_air_gap
+
+def r_core_tablet(tablet_hight, tablet_radius, mu_r, core_inner_diameter):
+    """
+    Calculates the magentic resistance of the core tablet
+
+    :param tablet_hight: tablet hight
+    :param tablet_radius: tablet radius
+    :param mu_r: relative permeability (mu_r) of the core material from datasheet
+    :param core_inner_diameter: core inner diameter. For idealized core material, this value can be 0.001.
+    """
+
+    return np.log(tablet_radius / (core_inner_diameter / 2)) / ( 2 * np.pi * mu0 * mu_r * tablet_hight)
+
+
+def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_top_bot_hight):
+    """
+    Calculates the top or bottom core material part
+
+    :param core_inner_diameter: core inner diameter
+    :param window_w: width of winding window
+    :param mu_r: relative permeability (mu_r) of the core material from datasheet
+    :param core_top_bot_hight: hight of the core material top / bottom of the winding window
+    """
+
+    return np.log( (core_inner_diameter + 2 * window_w) / core_inner_diameter) / ( 2 * np.pi * mu0 * mu_r * core_top_bot_hight)
+
+def r_core_round(core_inner_diameter, core_round_hight, mu_r):
+    """
+    :param core_round_hight: hight of the round core part section
+    :param core_inner_diameter: core inner diameter
+    :param mu_r: relative permeability (mu_r) of the core material from datasheet
+    """
+    return core_round_hight / ( mu0 * mu_r * (core_inner_diameter / 2) ** 2 * np.pi)
+
+
+def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, window_h, stray_path_air_gap_length, mu_r, start_index, position_air_gap_percent_list):
+
+    # core geometry calculations
+
+    middle_leg_top_total_hight = (100 - position_air_gap_percent_list[start_index + 1]) * 0.01* window_h + air_gap_middle_leg_list[start_index + 1] / 2
+    middle_leg_bot_total_hight = position_air_gap_percent_list[start_index] * 0.01 * window_h + air_gap_middle_leg_list[start_index] / 2
+    tablet_hight = window_h - middle_leg_top_total_hight - middle_leg_bot_total_hight
+
+    start_index_air_gap_top = start_index + 1
+    stop_index_air_gap_top = len(air_gap_middle_leg_list) - 1
+    #start_index_air_gap_bot = 0
+    #stop_index_air_gap_bot = start_index
+
+    air_gap_middle_leg_bot_list = []
+    position_air_gap_percent_bot_list = []
+    for count, air_gap in enumerate(air_gap_middle_leg_list):
+        if count <= start_index:
+            air_gap_middle_leg_bot_list.append(air_gap)
+            position_air_gap_percent_bot_list.append(position_air_gap_percent_list[count])
+
+
+    # air gap geometry calculations
+    air_gap_total_length_top = 0.0
+    air_gap_middle_leg_top_list = []
+    air_gap_middle_leg_top_percent_list = []
+    for count in range(start_index + 1, len(air_gap_middle_leg_list)):
+        print(f"{air_gap_middle_leg_list[count] = }")
+        air_gap_total_length_top += air_gap_middle_leg_list[count]
+
+    air_gap_total_length_bot = 0.0
+    for count in range(0, start_index + 1):
+        air_gap_total_length_bot += air_gap_middle_leg_list[count]
+    print(f"{air_gap_total_length_top = }")
+    print(f"{air_gap_total_length_bot = }")
+
+    # calculate r_top
+    core_round_hight_top = middle_leg_top_total_hight - air_gap_total_length_top
+
+    r_core_round_top = r_core_round(core_inner_diameter, core_round_hight_top, mu_r)
+    #ToDo: radiant calculation core hight is very simplified using core_inner_diameter/2
+    r_core_top_radiant = r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_inner_diameter/2)
+    r_core_outer_top = r_core_round_top
+    r_core_top = r_core_round_top + r_core_top_radiant + r_core_outer_top
+
+    # calculate r_air_gap_top
+    # sweep trough top air gap list
+    r_air_gap_top = 0
+    for count in range(start_index_air_gap_top, stop_index_air_gap_top+1):
+        # this routine sums up all air gaps inside the middle leg above the stray path
+        # there are three different types of caluclations
+        #  - first air gap is definitely a round_inf structure
+        #  - in cases of last air gap is >95% of window_h, last air gap is treated as round_inf structure
+        #  - other air gaps are treated as round_round structure
+        if count == start_index + 1:
+            # this is for the first air gap, what is definetly a round_inf air gap
+            if start_index_air_gap_top == stop_index_air_gap_top:
+                core_hight = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
+            else:
+                core_hight = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 *window_h / 2
+            r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
+            print('### Case 1: first air gap for top')
+            print(f"{core_hight = }")
+            print(f"{r_air_gap_top = }")
+
+        elif position_air_gap_percent_list[count] > 95 and count != start_index_air_gap_top:
+            # this is for the last air gap in case of very close to the top core (95%), so there will be the assumption for a round-inf air gap
+            core_hight = (position_air_gap_percent_list[stop_index_air_gap_top] - position_air_gap_percent_list[stop_index_air_gap_top - 1]) * 0.01 * window_h / 2
+            r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
+            print('### Case 2: last air gap for top')
+            print(f"{core_hight = }")
+            print(f"{r_air_gap_top = }")
+        else:
+            # air gap in the middle between tablet and top air gap
+            if count + 1 < stop_index_air_gap_top:
+                # this is for multiple air gaps in the top-section. Calculation of core hight is only to the next air gap
+                core_hight_upper = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 * window_h
+            else:
+                # this is for the last (upper) air gap in the top-section. Calculation of core_hight is until the end of the window
+                core_hight_upper = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
+            core_hight_lower = (position_air_gap_percent_list[count] - position_air_gap_percent_list[count - 1]) * 0.01 * window_h
+            r_air_gap_top += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
+            print('### Case 3: middle air gap for top')
+            print(f"{core_hight_upper = }")
+            print(f"{core_hight_lower = }")
+            print(f"{r_air_gap_top = }")
+
+
+    r_top = r_core_top + r_air_gap_top
+
+    # calculate r_bot
+    core_round_hight_bot = middle_leg_bot_total_hight - air_gap_total_length_bot
+
+    r_core_round_bot = r_core_round(core_inner_diameter, core_round_hight_bot, mu_r)
+    #ToDo: radiant calculation core hight is very simplified using core_inner_diameter/2
+    r_core_bot_radiant = r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_inner_diameter/2)
+    r_core_outer_bot = r_core_round_bot
+    r_core_bot = r_core_round_bot + r_core_bot_radiant + r_core_outer_bot
+
+    print('##########################################')
+    print("#### bottom air gap  ####")
+    print('##########################################')
+
+    # calculate r_air_gap_bot
+    # sweep trough bot air gap list
+    r_air_gap_bot = 0
+    for count, air_gap in enumerate(air_gap_middle_leg_bot_list):
+        print(f"{air_gap = }")
+        # this routine sums up all air gaps inside the middle leg below the stray path
+        # there are three different types of caluclations
+        #  - last air gap is definitely a round_inf structure
+        #  - in cases of first air gap is <5% of window_h, first air gap is treated as round_inf structure
+        #  - other air gaps are treated as round_round structure
+        if count == position_air_gap_percent_bot_list.index(max(position_air_gap_percent_bot_list)):
+            # this is for the last air gap, what is definetly a round_inf air gap
+            # the check checks not for the last position in the list, but for the real highest percent value
+            if len(position_air_gap_percent_bot_list) == 1:
+                core_hight = (position_air_gap_percent_bot_list[count]) * 0.01 * window_h
+            else:
+                core_hight = (position_air_gap_percent_bot_list[count] - position_air_gap_percent_bot_list[count - 1]) * 0.01 * window_h / 2
+            r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
+            print('### Case 1: first air gap for bot')
+            print(f"{core_hight = }")
+            print(f"{r_air_gap_bot = }")
+
+        elif position_air_gap_percent_list[count] < 5  and count == 0:
+            # this is for the first air gap in case of very close to the bot core (<5%), so there will be the assumption for a round-inf air gap
+            core_hight = (position_air_gap_percent_list[1] - position_air_gap_percent_list[0]) * 0.01 * window_h / 2
+            r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
+            print('### Case 2: last air gap for bot')
+            print(f"{core_hight = }")
+            print(f"{r_air_gap_bot = }")
+        else:
+            # this is for multiple air gaps in the bot-section. Calculation of core hight is only to the next air gap
+            if count + 1 < len(position_air_gap_percent_bot_list):
+                core_hight_lower = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
+            else:
+                # this is for the first (lower) air gap in the bot-section. Calculation of core_hight is until the end of the window
+                core_hight_lower = (position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
+
+            core_hight_upper  = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
+            r_air_gap_bot += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
+            print('### Case 3: middle air gap for bot')
+            print(f"{core_hight_upper = }")
+            print(f"{core_hight_lower = }")
+            print(f"{r_air_gap_bot = }")
+
+    r_bot = r_core_bot + r_air_gap_bot
+
+
+    # calculate r_stray
+    r_stray_air_gap = r_air_gap_tablet_cyl(tablet_hight, stray_path_air_gap_length, core_inner_diameter / 2 + window_w)
+    r_stray_core = r_core_tablet(tablet_hight, core_inner_diameter / 2 + window_w - stray_path_air_gap_length, mu_r, core_inner_diameter)
+    r_stray = r_stray_air_gap + r_stray_core
+
+    return r_top, r_bot, r_stray
 
 def calculate_reluctances(N, L):
     """
