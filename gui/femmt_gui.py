@@ -1390,13 +1390,14 @@ class MainWindow(QMainWindow):
             get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
             get_flux1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", flux=True)
 
+        print(f"get_flux1_list:  {get_flux1_list}")
         # get_temp1_list.insert(0,None)
         # get_flux1_list.insert(0,None)
         aut_temp_options1 = get_temp1_list
         aut_flux_options1 = get_flux1_list
 
         temp_str = [f'{item:.2f}' for item in aut_temp_options1]
-        flux_str = [f'{item:.2f}' for item in aut_flux_options1]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options1]
 
         for option in temp_str:
             self.aut_temp_m1_comboBox.addItem(option)
@@ -1416,7 +1417,7 @@ class MainWindow(QMainWindow):
         aut_flux_options2 = get_flux2_list
 
         temp_str = [f'{item:.2f}' for item in aut_temp_options2]
-        flux_str = [f'{item:.2f}' for item in aut_flux_options2]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options2]
 
         for option in temp_str:
             self.aut_temp_m2_comboBox.addItem(option)
@@ -1436,7 +1437,7 @@ class MainWindow(QMainWindow):
         aut_flux_options3 = get_flux3_list
 
         temp_str = [f'{item:.2f}' for item in aut_temp_options3]
-        flux_str = [f'{item:.2f}' for item in aut_flux_options3]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options3]
 
         for option in temp_str:
             self.aut_temp_m3_comboBox.addItem(option)
@@ -1456,7 +1457,7 @@ class MainWindow(QMainWindow):
         aut_flux_options4 = get_flux4_list
 
         temp_str = [f'{item:.2f}' for item in aut_temp_options4]
-        flux_str = [f'{item:.2f}' for item in aut_flux_options4]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options4]
 
         for option in temp_str:
             self.aut_temp_m4_comboBox.addItem(option)
@@ -1476,7 +1477,7 @@ class MainWindow(QMainWindow):
         aut_flux_options5 = get_flux5_list
 
         temp_str = [f'{item:.2f}' for item in aut_temp_options5]
-        flux_str = [f'{item:.2f}' for item in aut_flux_options5]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options5]
 
         for option in temp_str:
             self.aut_temp_m5_comboBox.addItem(option)
