@@ -522,14 +522,13 @@ class Insulation:
 class StrayPath:
     """
     This class is needed when an integrated transformer shall be created.
-    An start_index and a length can be given. The start_index sets the position of the tablet.
-    start_index=0 will create the tablet between the lowest and second lowest air gaps. start_index=1 will create it
-    between the seccond lowest and third lowest. Therefore it is necessary for the user to make sure that enough air gaps exist!
+    A start_index and a length can be given. The start_index sets the position of the tablet.
+    start_index=0 will create the tablet between the lowest and second lowest air gaps. start_index=1 will create the tablet
+    between the second lowest and third lowest air gap. Therefore it is necessary for the user to make sure that enough air gaps exist!
     The length parameter sets the length of the tablet starting at the y-axis (not the right side of the center core). It therefore
     determines the air gap between the tablet and the outer core leg.
     """
-    # TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the
-    # "stray air gap" is different in axi-symmetric approximation
+    # TODO: Thickness of the stray path must be fitted for the real Tablet (effective area of the "stray air gap" is different in axi-symmetric approximation)
     start_index: int  # Air gaps are sorted from lowest to highest. This index refers to the air_gap index bottom up
     length: float  # Resembles the length of the whole tablet starting from the y-axis
 
