@@ -930,7 +930,8 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     :param core_hight_lower: core hight lower (needed for better calculating fringing effects)
     :return: air gap reluctance for round-round structure including fringing effects
     """
-    air_gap_radius = core_inner_diameter/ 2
+    core_inner_diameter = np.array(core_inner_diameter)
+    air_gap_radius = core_inner_diameter / 2
 
     air_gap_basic_hight = air_gap_total_hight / 2
     r_basic_upper = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_upper)
@@ -942,11 +943,9 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_hight)
     # if sigma > 1:
     #     raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
-    if sigma.all() < 1:
-        r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
-        r_air_gap = sigma ** 2 * r_air_gap_ideal
-    else:
-        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
+
+    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
+    r_air_gap = sigma ** 2 * r_air_gap_ideal
 
     return r_air_gap
 
@@ -959,6 +958,7 @@ def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
     :param core_hight: core hight (needed for better calculating fringing effects)
     :return: air gap reluctance for round-inf structure including fringing effects
     """
+    core_inner_diameter = np.array(core_inner_diameter)
     air_gap_radius = core_inner_diameter / 2
     r_basic = r_basic_round_inf(air_gap_radius, air_gap_total_hight, core_hight)
 

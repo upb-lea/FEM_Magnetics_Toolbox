@@ -480,6 +480,7 @@ class MainWindow(QMainWindow):
         "Signals in visualisation tab"
         self.dat_update_preview_pushbutton1.clicked.connect(self.datupdateraph1_config)
         self.dat_update_preview_pushbutton2.clicked.connect(self.datupdateraph2_config)
+        self.dat_update_preview_pushbutton3.clicked.connect(self.datupdateraph3_config)
 
         self.matplotlib_widget_datmm1 = MatplotlibWidget()
         self.matplotlib_widget_datmm2 = MatplotlibWidget()
@@ -489,7 +490,7 @@ class MainWindow(QMainWindow):
         self.matplotlib_widget_datdd3 = MatplotlibWidget()
         self.matplotlib_widget_datdd4 = MatplotlibWidget()
 
-
+        self.matplotlib_widget_datdm = MatplotlibWidget()
 
         self.dat_core_material1_comboBox.currentTextChanged.connect(self.tempfluxinput1)
         self.dat_core_material2_comboBox.currentTextChanged.connect(self.tempfluxinput2)
@@ -502,6 +503,12 @@ class MainWindow(QMainWindow):
         self.dat_core_material3_comboBox_2.currentTextChanged.connect(self.tempfreqinput3)
         self.dat_core_material4_comboBox_2.currentTextChanged.connect(self.tempfreqinput4)
         self.dat_core_material5_comboBox_2.currentTextChanged.connect(self.tempfreqinput5)
+
+        self.dat_core_material1_comboBox_3.currentTextChanged.connect(self.tempinput1)
+        self.dat_core_material2_comboBox_3.currentTextChanged.connect(self.tempinput2)
+        self.dat_core_material3_comboBox_3.currentTextChanged.connect(self.tempinput3)
+        self.dat_core_material4_comboBox_3.currentTextChanged.connect(self.tempinput4)
+        self.dat_core_material5_comboBox_3.currentTextChanged.connect(self.tempinput5)
 
 
     def plot_volume_loss(self, data_matrix, matplotlib_widget):
@@ -517,7 +524,7 @@ class MainWindow(QMainWindow):
 
         #fmt.plt.title("Normalised volume vs Normalised losses")
 
-        matplotlib_widget.axis.set(xlabel="Volume / m\u00b3", ylabel="Loss / W", title="Normalised volume vs Normalised losses")
+        matplotlib_widget.axis.set(xlabel="Volume", ylabel="Loss", title="Volume vs Loss")
         lines = matplotlib_widget.axis.plot(data_matrix[:, 30],
                                             data_matrix[:, 28], 'o')
         mplcursors.cursor(lines)
@@ -623,7 +630,7 @@ class MainWindow(QMainWindow):
 
     def automated_design_func(self, matplotlib_widget):
         """
-        MatplotlibWidget class which inherits from QWidget and is used to implement a Matplotlib figure inside a QWidget
+
         """
         # ########################################   {DESIGN PARAMETERS}   #################################################
 
@@ -825,7 +832,7 @@ class MainWindow(QMainWindow):
                                      percent_tolerance=20)
 
         self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-                x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                x_label='Volume', y_label='Loss', z_label='Cost', title='Volume vs Loss',
                 annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
     def load_designs(self, matplotlib_widget):
@@ -849,7 +856,7 @@ class MainWindow(QMainWindow):
                                      percent_tolerance=20)
 
         self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-                x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                x_label='Volume', y_label='Loss', z_label='Cost', title='Volume vs Loss',
                 annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
 
@@ -1052,13 +1059,57 @@ class MainWindow(QMainWindow):
         matplotlib_widget2.figure.canvas.draw_idle()
         matplotlib_widget2.figure.tight_layout()
 
-    def datupdateraph2_config(self):
+    def datupdateraph3(self, matplotlib_widget):
 
-        self.datupdateraph2(self.matplotlib_widget_datmm1, self.matplotlib_widget_datmm2)
+
+        matplotlib_widget.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_15)
+        self.layout.addWidget(matplotlib_widget)
+        try:
+            matplotlib_widget.axis_cm.remove()
+        except:
+            pass
+
+        mat1_name = self.dat_core_material1_comboBox_3.currentText()
+        mat2_name = self.dat_core_material2_comboBox_3.currentText()
+        mat3_name = self.dat_core_material3_comboBox_3.currentText()
+        mat4_name = self.dat_core_material4_comboBox_3.currentText()
+        mat5_name = self.dat_core_material5_comboBox_3.currentText()
+
+        mat1_temp = comma_str_to_point_float(self.aut_temp_m1_comboBox_3.currentText())
+        mat2_temp = comma_str_to_point_float(self.aut_temp_m2_comboBox_3.currentText())
+        mat3_temp = comma_str_to_point_float(self.aut_temp_m3_comboBox_3.currentText())
+        mat4_temp = comma_str_to_point_float(self.aut_temp_m4_comboBox_3.currentText())
+        mat5_temp = comma_str_to_point_float(self.aut_temp_m5_comboBox_3.currentText())
+
+
+        materials_used_list = []
+        material_list = [mat1_name, mat2_name, mat3_name, mat4_name, mat5_name]
+        for items in material_list:
+            if items:
+                materials_used_list.append(items)
+        print(materials_used_list)
+
+        mdb.compare_permeability_measurement_data(matplotlib_widget, material_list=materials_used_list,
+                                                  temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp],
+                                                  plot_real_part=True)
+
+        matplotlib_widget.axis.grid()
+        matplotlib_widget.figure.canvas.draw_idle()
+        matplotlib_widget.figure.tight_layout()
+
+
 
     def datupdateraph1_config(self):
         self.datupdateraph1(self.matplotlib_widget_datdd1, self.matplotlib_widget_datdd2,
                             self.matplotlib_widget_datdd3, self.matplotlib_widget_datdd4)
+
+    def datupdateraph2_config(self):
+        self.datupdateraph2(self.matplotlib_widget_datmm1, self.matplotlib_widget_datmm2)
+
+    def datupdateraph3_config(self):
+        self.datupdateraph3(self.matplotlib_widget_datdm)
+
 
     def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
         """
@@ -1296,6 +1347,17 @@ class MainWindow(QMainWindow):
         for option in dat_core_material_options:
             self.dat_core_material5_comboBox_2.addItem(option)
 
+        for option in dat_core_material_options:
+            self.dat_core_material1_comboBox_3.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material2_comboBox_3.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material3_comboBox_3.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material4_comboBox_3.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material5_comboBox_3.addItem(option)
+
         for option in aut_core_geometry_options:
             self.aut_core_geometry_listWidget.addItem(option)
         for option in aut_simulation_type_options:
@@ -1466,6 +1528,7 @@ class MainWindow(QMainWindow):
         for option in temp_str:
             self.aut_temp_m1_comboBox_2.addItem(option)
 
+
         for option in freq_str:
             self.aut_freq_m1_comboBox.addItem(option)
 
@@ -1548,6 +1611,81 @@ class MainWindow(QMainWindow):
 
         for option in freq_str:
             self.aut_freq_m5_comboBox.addItem(option)
+
+        ########################################################################
+
+    def tempinput1(self):
+
+        mat_text1 = self.dat_core_material1_comboBox_3.currentText()
+
+        get_temp1_list = []
+        if mat_text1:
+            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True)
+        aut_temp_options1 = get_temp1_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
+
+        for option in temp_str:
+            self.aut_temp_m1_comboBox_3.addItem(option)
+
+
+    def tempinput2(self):
+
+        mat_text2 = self.dat_core_material2_comboBox_3.currentText()
+        get_temp2_list = []
+        if mat_text2:
+            get_temp2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="mvm", temperature=True)
+        aut_temp_options2 = get_temp2_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options2]
+
+        for option in temp_str:
+            self.aut_temp_m2_comboBox_3.addItem(option)
+
+
+    def tempinput3(self):
+
+        mat_text3 = self.dat_core_material3_comboBox_3.currentText()
+        get_temp3_list = []
+        if mat_text3:
+            get_temp3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="mvm", temperature=True)
+
+        aut_temp_options3 = get_temp3_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options3]
+
+        for option in temp_str:
+            self.aut_temp_m3_comboBox_3.addItem(option)
+
+
+    def tempinput4(self):
+
+        mat_text4 = self.dat_core_material4_comboBox_3.currentText()
+        get_temp4_list = []
+        if mat_text4:
+            get_temp4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="mvm", temperature=True)
+
+        aut_temp_options4 = get_temp4_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options4]
+
+        for option in temp_str:
+            self.aut_temp_m4_comboBox_3.addItem(option)
+
+
+    def tempinput5(self):
+
+        mat_text5 = self.dat_core_material5_comboBox_3.currentText()
+        get_temp5_list = []
+        if mat_text5:
+            get_temp5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="mvm", temperature=True)
+
+        aut_temp_options5 = get_temp5_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options5]
+
+        for option in temp_str:
+            self.aut_temp_m5_comboBox_3.addItem(option)
 
 
     def aut_action_run_simulation(self, sim_value):
@@ -2919,155 +3057,6 @@ class MainWindow(QMainWindow):
             right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None)
             geo.set_winding_window(winding_window)
 
-            # # -----------------------------------------------
-            # # Conductors
-            # # -----------------------------------------------
-            #
-            # if self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["square"]:
-            #     fmt.WindingScheme = fmt.WindingScheme.Square
-            # elif self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["hexa"]:
-            #     fmt.WindingScheme = fmt.WindingScheme.Hexagonal
-            # if self.md_winding2_scheme_comboBox.currentText() == self.translation_dict["square"]:
-            #     fmt.WindingScheme = fmt.WindingScheme.Square
-            # elif self.md_winding2_scheme_comboBox.currentText() == self.translation_dict["hexa"]:
-            #     fmt.WindingScheme = fmt.WindingScheme.Hexagonal
-            #
-            # wdg1type = self.md_winding1_type_comboBox.currentText()
-            # wdg2type = self.md_winding2_type_comboBox.currentText()
-            #
-            # if wdg1type == self.translation_dict['solid']:
-            #     if wdg2type == self.translation_dict['solid']:
-            #         self.md_simulation_QLabel.setText('setze conductors')
-            #
-            #         winding1 = fmt.Winding(int(self.md_winding1_turns_lineEdit.text()), 0, fmt.Conductivity.Copper, fmt.WindingType.Primary,
-            #                                fmt.WindingScheme)
-            #         winding1.set_solid_conductor(comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()))
-            #
-            #         winding2 = fmt.Winding(0, int(self.md_winding2_turns_lineEdit.text()), fmt.Conductivity.Copper, fmt.WindingType.Secondary,
-            #                                fmt.WindingScheme)
-            #         winding2.set_solid_conductor(comma_str_to_point_float(self.md_winding2_radius_lineEdit.text()))
-            #
-            #         geo.set_windings([winding1, winding2])
-            #
-            #         isolation = fmt.Isolation()
-            #         isolation.add_core_isolations(comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            #         isolation.add_winding_isolations(comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()),
-            #                                          comma_str_to_point_float(self.md_isolation_s2s_lineEdit.text()),
-            #                                          comma_str_to_point_float(self.md_isolation_p2s_lineEdit.text()))
-            #         geo.set_isolation(isolation)
-            #
-            #     elif wdg2type == self.translation_dict['litz']:
-            #         litz_para_type = ''
-            #         if self.md_winding2_implicit_litz_comboBox.currentText() == self.translation_dict[
-            #             'implicit_litz_radius']:
-            #             litz_para_type = "implicit_litz_radius"
-            #         elif self.md_winding2_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_ff']:
-            #             litz_para_type = 'implicit_ff'
-            #         elif self.md_winding2_implicit_litz_comboBox.currentText() == self.translation_dict[
-            #             'implicit_strands_number']:
-            #             litz_para_type = 'implicit_strands_number'
-            #
-            #         winding1 = fmt.Winding(int(self.md_winding1_turns_lineEdit.text()), 0, fmt.Conductivity.Copper, fmt.WindingType.Primary,
-            #                                fmt.WindingScheme)
-            #         winding1.set_solid_conductor(comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()))
-            #
-            #         winding2 = fmt.Winding(0, int(self.md_winding2_turns_lineEdit.text()), fmt.Conductivity.Copper, fmt.WindingType.Secondary,
-            #                                fmt.WindingScheme)
-            #         winding2.set_litz_conductor(None,
-            #                                     comma_str_to_point_float(self.md_winding2_strands_lineEdit.text()),
-            #                                     comma_str_to_point_float(self.md_winding2_strand_radius_lineEdit.text()),
-            #                                     comma_str_to_point_float(self.md_winding2_fill_factor_lineEdit.text()))
-            #
-            #         geo.set_windings([winding1, winding2])
-            #
-            #         isolation = fmt.Isolation()
-            #         isolation.add_core_isolations(comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            #         isolation.add_winding_isolations(comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()),
-            #                                          comma_str_to_point_float(self.md_isolation_s2s_lineEdit.text()),
-            #                                          comma_str_to_point_float(self.md_isolation_p2s_lineEdit.text()))
-            #         geo.set_isolation(isolation)
-            #
-            #
-            # elif wdg1type == self.translation_dict['litz']:
-            #     if wdg2type == self.translation_dict['litz']:
-            #         litz_para_type = ''
-            #         if self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_litz_radius']:
-            #             litz_para_type = "implicit_litz_radius"
-            #         elif self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_ff']:
-            #             litz_para_type = 'implicit_ff'
-            #         elif self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_strands_number']:
-            #             litz_para_type = 'implicit_strands_number'
-            #
-            #         if self.md_winding2_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_litz_radius']:
-            #             litz_para_type = "implicit_litz_radius"
-            #         elif self.md_winding2_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_ff']:
-            #             litz_para_type = 'implicit_ff'
-            #         elif self.md_winding2_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_strands_number']:
-            #             litz_para_type = 'implicit_strands_number'
-            #
-            #         winding1 = fmt.Winding(int(self.md_winding1_turns_lineEdit.text()), 0, fmt.Conductivity.Copper, fmt.WindingType.Primary,
-            #                                fmt.WindingScheme)
-            #         winding1.set_litz_conductor(None,
-            #                                     comma_str_to_point_float(self.md_winding1_strands_lineEdit.text()),
-            #                                     comma_str_to_point_float(self.md_winding1_strand_radius_lineEdit.text()),
-            #                                     comma_str_to_point_float(self.md_winding1_fill_factor_lineEdit.text()))
-            #
-            #         winding2 = fmt.Winding(0, int(self.md_winding2_turns_lineEdit.text()), fmt.Conductivity.Copper, fmt.WindingType.Secondary,
-            #                                fmt.WindingScheme)
-            #         winding2.set_litz_conductor(None,
-            #                                     comma_str_to_point_float(self.md_winding2_strands_lineEdit.text()),
-            #                                     comma_str_to_point_float(self.md_winding2_strand_radius_lineEdit.text()),
-            #                                     comma_str_to_point_float(self.md_winding2_fill_factor_lineEdit.text()))
-            #
-            #         geo.set_windings([winding1, winding2])
-            #
-            #         isolation = fmt.Isolation()
-            #         isolation.add_core_isolations(comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            #         isolation.add_winding_isolations(comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()),
-            #                                          comma_str_to_point_float(self.md_isolation_s2s_lineEdit.text()),
-            #                                          comma_str_to_point_float(self.md_isolation_p2s_lineEdit.text()))
-            #         geo.set_isolation(isolation)
-            #
-            #     elif wdg2type == self.translation_dict['solid']:
-            #         litz_para_type = ''
-            #         if self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_litz_radius']:
-            #             litz_para_type = "implicit_litz_radius"
-            #         elif self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_ff']:
-            #             litz_para_type = 'implicit_ff'
-            #         elif self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_strands_number']:
-            #             litz_para_type = 'implicit_strands_number'
-            #
-            #         winding1 = fmt.Winding(int(self.md_winding1_turns_lineEdit.text()), 0, fmt.Conductivity.Copper, fmt.WindingType.Primary,
-            #                                fmt.WindingScheme)
-            #         winding1.set_litz_conductor(None,
-            #                                     comma_str_to_point_float(self.md_winding1_strands_lineEdit.text()),
-            #                                     comma_str_to_point_float(self.md_winding1_strand_radius_lineEdit.text()),
-            #                                     comma_str_to_point_float(self.md_winding1_fill_factor_lineEdit.text()))
-            #
-            #         winding2 = fmt.Winding(0, int(self.md_winding2_turns_lineEdit.text()), fmt.Conductivity.Copper, fmt.WindingType.Secondary,
-            #                                fmt.WindingScheme)
-            #         winding2.set_solid_conductor(comma_str_to_point_float(self.md_winding2_radius_lineEdit.text()))
-            #
-            #         geo.set_windings([winding1, winding2])
-            #
-            #         isolation = fmt.Isolation()
-            #         isolation.add_core_isolations(comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
-            #                                       comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            #         isolation.add_winding_isolations(comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()),
-            #                                          comma_str_to_point_float(self.md_isolation_s2s_lineEdit.text()),
-            #                                          comma_str_to_point_float(self.md_isolation_p2s_lineEdit.text()))
-            #         geo.set_isolation(isolation)
 
         elif self.md_simulation_type_comboBox.currentText() == 'integrated transformer':
             pass
