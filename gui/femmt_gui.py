@@ -24,6 +24,7 @@ from itertools import product
 import logging
 from typing import List, Union, Optional
 import PIL
+
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
 
@@ -2727,7 +2728,7 @@ class MainWindow(QMainWindow):
                             core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()))"""
-            working_directory = 'C:/LEA_Project/FEM_Magnetics_Toolbox'
+            working_directory = 'C:\LEA_Project\FEM_Magnetics_Toolbox'
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
                                         silent=False)
 
@@ -3313,14 +3314,15 @@ class MainWindow(QMainWindow):
 
         self.md_simulation_QLabel.setText('simulation fertig.')
 
-        loaded_results_dict = fmt.visualize_simulation_results(geo.e_m_results_log_path, './results.png', show_plot=False)
-
+        #loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.femm_results_log_path, './results.png', show_plot=False)
+        loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation,show_plot=False)
+        #pixmap = QPixmap("./results.png")
         pixmap = QPixmap("./results.png")
         self.md_loss_plot_label.setPixmap(pixmap)
         self.md_loss_plot_label.setMask(pixmap.mask())
         self.md_loss_plot_label.show()
 
-        inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductivity"][0]
+        inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductance"][0]
         loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
         loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
         loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]

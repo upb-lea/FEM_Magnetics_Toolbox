@@ -50,7 +50,7 @@ class FileData:
         self.hybrid_color_mesh_file = os.path.join(self.mesh_folder_path, "hybrid_color.msh")
         self.hybrid_color_visualize_file = os.path.join(self.mesh_folder_path, "hybrid_color.png")
         self.thermal_mesh_file = os.path.join(self.mesh_folder_path, "thermal.msh")
-
+        self.results_em_simulation = os.path.join(self.mesh_folder_path, "results.png")
         self.onelab_folder_path = None
 
         # Create necessary folders
