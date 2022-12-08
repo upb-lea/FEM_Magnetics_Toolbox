@@ -589,8 +589,7 @@ class MainWindow(QMainWindow):
             cbar.ax.set_ylabel(z_label, rotation=270)
 
         mplcursors.cursor(sc)
-        matplotlib_widget.axis.set(xlabel=x_label, ylabel= y_label, yscale='log',
-                                   xscale='log', title = title)
+        matplotlib_widget.axis.set(xlabel=x_label, ylabel= y_label, title = title)
         annot = matplotlib_widget.axis.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
                             bbox=dict(boxstyle="round", fc="w"),
                             arrowprops=dict(arrowstyle="->"))
@@ -1999,7 +1998,8 @@ class MainWindow(QMainWindow):
 
         #geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
         geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, save_png=True)
-        image_pre_visualisation = PIL.Image.open(geo.hybrid_color_visualize_file)
+        print(f"geo.file_data.hybrid_color_visualize_file: {geo.file_data.hybrid_color_visualize_file}")
+        image_pre_visualisation = PIL.Image.open(geo.file_data.hybrid_color_visualize_file)
 
         px = image_pre_visualisation.load()
         image_width, image_height = image_pre_visualisation.size
@@ -2023,9 +2023,9 @@ class MainWindow(QMainWindow):
                 break
 
         im_crop = image_pre_visualisation.crop((cut_x_left, cut_y_top, cut_x_right, cut_y_bot))
-        im_crop.save(geo.hybrid_color_visualize_file, quality=95)
+        im_crop.save(geo.file_data.hybrid_color_visualize_file, quality=95)
 
-        pixmap = QPixmap(geo.hybrid_color_visualize_file)
+        pixmap = QPixmap(geo.file_data.hybrid_color_visualize_file)
         self.md_gmsh_visualisation_QLabel.setPixmap(pixmap)
         self.md_gmsh_visualisation_QLabel.setMask(pixmap.mask())
         self.md_gmsh_visualisation_QLabel.show()
@@ -2727,7 +2727,7 @@ class MainWindow(QMainWindow):
                             core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()))"""
-            working_directory = 'C:\LEA_Project\FEM_Magnetics_Toolbox'
+            working_directory = 'C:/LEA_Project/FEM_Magnetics_Toolbox'
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
                                         silent=False)
 

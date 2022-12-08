@@ -940,11 +940,13 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     r_equivalent_round_round = r_basic_upper + r_basic_lower
 
     sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_hight)
-    if sigma > 1:
+    # if sigma > 1:
+    #     raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
+    if sigma.all() < 1:
+        r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
+        r_air_gap = sigma ** 2 * r_air_gap_ideal
+    else:
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
-
-    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
-    r_air_gap = sigma ** 2 * r_air_gap_ideal
 
     return r_air_gap
 
