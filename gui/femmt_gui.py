@@ -504,11 +504,9 @@ class MainWindow(QMainWindow):
         self.dat_core_material4_comboBox_2.currentTextChanged.connect(self.tempfreqinput4)
         self.dat_core_material5_comboBox_2.currentTextChanged.connect(self.tempfreqinput5)
 
-        self.dat_core_material1_comboBox_3.currentTextChanged.connect(self.tempinput1)
-        self.dat_core_material2_comboBox_3.currentTextChanged.connect(self.tempinput2)
-        self.dat_core_material3_comboBox_3.currentTextChanged.connect(self.tempinput3)
-        self.dat_core_material4_comboBox_3.currentTextChanged.connect(self.tempinput4)
-        self.dat_core_material5_comboBox_3.currentTextChanged.connect(self.tempinput5)
+        self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_dat_input)
+        self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_meas_input)
+
 
 
     def plot_volume_loss(self, data_matrix, matplotlib_widget):
@@ -1070,29 +1068,13 @@ class MainWindow(QMainWindow):
         except:
             pass
 
-        mat1_name = self.dat_core_material1_comboBox_3.currentText()
-        mat2_name = self.dat_core_material2_comboBox_3.currentText()
-        mat3_name = self.dat_core_material3_comboBox_3.currentText()
-        mat4_name = self.dat_core_material4_comboBox_3.currentText()
-        mat5_name = self.dat_core_material5_comboBox_3.currentText()
 
-        mat1_temp = comma_str_to_point_float(self.aut_temp_m1_comboBox_3.currentText())
-        mat2_temp = comma_str_to_point_float(self.aut_temp_m2_comboBox_3.currentText())
-        mat3_temp = comma_str_to_point_float(self.aut_temp_m3_comboBox_3.currentText())
-        mat4_temp = comma_str_to_point_float(self.aut_temp_m4_comboBox_3.currentText())
-        mat5_temp = comma_str_to_point_float(self.aut_temp_m5_comboBox_3.currentText())
+        mat_dat_temp = comma_str_to_point_float(self.aut_temp_dat_comboBox.currentText())
+        mat_meas_temp = comma_str_to_point_float(self.aut_temp_meas_comboBox.currentText())
+        mat_name = self.dat_core_material_comboBox.currentText()
 
-
-        materials_used_list = []
-        material_list = [mat1_name, mat2_name, mat3_name, mat4_name, mat5_name]
-        for items in material_list:
-            if items:
-                materials_used_list.append(items)
-        print(materials_used_list)
-
-        mdb.compare_permeability_measurement_data(matplotlib_widget, material_list=materials_used_list,
-                                                  temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp],
-                                                  plot_real_part=True)
+        mdb.compare_core_loss_flux_datasheet_measurement(matplotlib_widget, material=mat_name,
+                                                         temperature_list=[mat_dat_temp, mat_meas_temp])
 
         matplotlib_widget.axis.grid()
         matplotlib_widget.figure.canvas.draw_idle()
@@ -1348,15 +1330,8 @@ class MainWindow(QMainWindow):
             self.dat_core_material5_comboBox_2.addItem(option)
 
         for option in dat_core_material_options:
-            self.dat_core_material1_comboBox_3.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material2_comboBox_3.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material3_comboBox_3.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material4_comboBox_3.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material5_comboBox_3.addItem(option)
+            self.dat_core_material_comboBox.addItem(option)
+
 
         for option in aut_core_geometry_options:
             self.aut_core_geometry_listWidget.addItem(option)
@@ -1614,9 +1589,23 @@ class MainWindow(QMainWindow):
 
         ########################################################################
 
-    def tempinput1(self):
+    def temp_dat_input(self):
 
-        mat_text1 = self.dat_core_material1_comboBox_3.currentText()
+        mat_text1 = self.dat_core_material_comboBox.currentText()
+
+        get_temp1_list = []
+        if mat_text1:
+            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
+        aut_temp_options1 = get_temp1_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
+
+        for option in temp_str:
+            self.aut_temp_dat_comboBox.addItem(option)
+
+    def temp_meas_input(self):
+
+        mat_text1 = self.dat_core_material_comboBox.currentText()
 
         get_temp1_list = []
         if mat_text1:
@@ -1626,66 +1615,9 @@ class MainWindow(QMainWindow):
         temp_str = [f'{item:.2f}' for item in aut_temp_options1]
 
         for option in temp_str:
-            self.aut_temp_m1_comboBox_3.addItem(option)
+            self.aut_temp_meas_comboBox.addItem(option)
 
 
-    def tempinput2(self):
-
-        mat_text2 = self.dat_core_material2_comboBox_3.currentText()
-        get_temp2_list = []
-        if mat_text2:
-            get_temp2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="mvm", temperature=True)
-        aut_temp_options2 = get_temp2_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options2]
-
-        for option in temp_str:
-            self.aut_temp_m2_comboBox_3.addItem(option)
-
-
-    def tempinput3(self):
-
-        mat_text3 = self.dat_core_material3_comboBox_3.currentText()
-        get_temp3_list = []
-        if mat_text3:
-            get_temp3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="mvm", temperature=True)
-
-        aut_temp_options3 = get_temp3_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options3]
-
-        for option in temp_str:
-            self.aut_temp_m3_comboBox_3.addItem(option)
-
-
-    def tempinput4(self):
-
-        mat_text4 = self.dat_core_material4_comboBox_3.currentText()
-        get_temp4_list = []
-        if mat_text4:
-            get_temp4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="mvm", temperature=True)
-
-        aut_temp_options4 = get_temp4_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options4]
-
-        for option in temp_str:
-            self.aut_temp_m4_comboBox_3.addItem(option)
-
-
-    def tempinput5(self):
-
-        mat_text5 = self.dat_core_material5_comboBox_3.currentText()
-        get_temp5_list = []
-        if mat_text5:
-            get_temp5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="mvm", temperature=True)
-
-        aut_temp_options5 = get_temp5_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options5]
-
-        for option in temp_str:
-            self.aut_temp_m5_comboBox_3.addItem(option)
 
 
     def aut_action_run_simulation(self, sim_value):
