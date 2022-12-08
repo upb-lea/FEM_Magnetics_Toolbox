@@ -570,16 +570,6 @@ class MainWindow(QMainWindow):
         x_value_str = [str(round(x, 6)) for x in x_value]
         y_value_str = [str(round(y, 3)) for y in y_value]
 
-        # fig, ax = plt.subplots()
-        # fmt.plt.title(title)
-        # fmt.plt.xlabel(x_label)
-        # fmt.plt.ylabel(y_label)
-
-        # c = np.random.randint(1, 5, size=len(y_value))
-        # norm = plt.Normalize(1, 4)
-        # cmap = plt.cm.RdYlGn
-
-        # sc = plt.scatter(x_value, y_value, c=c, s=50, cmap=cmap, norm=norm)
         if z_value is None:
             sc = matplotlib_widget.axis.scatter(x_value, y_value, c='#%02x%02x%02x' % fmt.colors_femmt_default[plot_color])
 
@@ -629,159 +619,12 @@ class MainWindow(QMainWindow):
                            z_label, " ".join([z_value_str[n] for n in ind["ind"]]),
                            l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
             annot.set_text(text)
-            # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
             annot.get_bbox_patch().set_alpha(0.4)
 
-        # def hover(event):
-        #     """Event that is triggered when mouse is hovered.
-        #     Shows text annotation over data point closest to mouse."""
-        #     vis = annot.get_visible()
-        #     if event.inaxes == ax:
-        #         cont, ind = sc.contains(event)
-        #         if cont:
-        #             update_annot(ind)
-        #             annot.set_visible(True)
-        #             fig.canvas.draw_idle()
-        #         else:
-        #             if vis:
-        #                 annot.set_visible(False)
-        #                 fig.canvas.draw_idle()
-        #
-        # fig.canvas.mpl_connect("motion_notify_event", hover)
-        # ax.grid()
-        # plt.show()
-
-    def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: str, z_label: str, x_limit: list,
-                y_limit: list, z_limit: list, title: str, annotations: list):
-        """
-        Visualize data in 3d plot with popover next to mouse position.
-
-        param x_value: Data points for x-axis
-        :type x_value: list
-        :param y_value: Data points for y-axis
-        :type y_value: list
-        :param z_value: Data points for z-axis
-        :type z_value: list
-        :param x_label: x-axis label
-        :type x_label: str
-        :param y_label: y-axis label
-        :type y_label: str
-        :param z_label: z-axis label
-        :type z_label: str
-        :param x_limit: Min and max limit of x-axis
-        :type x_limit: list
-        :param y_limit: Min and max limit of y-axis
-        :type y_limit: list
-        :param z_limit: Min and max limit of z-axis
-        :type z_limit: list
-        :param title: Title of the graph
-        :type title: str
-        :param annotations: Annotations corresponding to the 3D points
-        :type annotations: list
-        """
-        names = np.array(annotations)
-        num = [re.findall(r'\d+', item) for item in names]
-        case_num_list = [int(item[0]) for item in num]
-
-        X = np.zeros((len(x_value), 1))
-        X = np.hstack((X, np.reshape(x_value, (len(x_value), 1))))
-        X = np.hstack((X, np.reshape(y_value, (len(y_value), 1))))
-        X = np.hstack((X, np.reshape(z_value, (len(z_value), 1))))
-        X = np.hstack((X, np.reshape(case_num_list, (len(case_num_list), 1))))
-        X = np.delete(X, 0, 1)
-        X = X[X[:, 3].argsort()]
-
-        x_value_str = [str(round(x, 6)) for x in X[:, 0]]
-        y_value_str = [str(round(y, 6)) for y in X[:, 1]]
-        z_value_str = [str(round(z, 6)) for z in X[:, 2]]
-
-        fig = plt.figure(figsize=(16, 10))
-        ax = fig.add_subplot(111, projection='3d')
-        ax.set_title(title)
-        ax.set_xlabel(x_label)
-        ax.set_ylabel(y_label)
-        ax.set_zlabel(z_label)
-        ax.set_xlim(xmin=x_limit[0], xmax=x_limit[1])
-        ax.set_ylim(ymin=y_limit[0], ymax=y_limit[1])
-        ax.set_zlim(zmin=z_limit[0], zmax=z_limit[1])
-        XX = X[:, 0]
-        XX[XX > x_limit[1]] = np.nan
-        YY = X[:, 1]
-        YY[YY > y_limit[1]] = np.nan
-        ZZ = X[:, 2]
-        ZZ[ZZ > z_limit[1]] = np.nan
-        X[:, 0] = XX
-        X[:, 1] = YY
-        X[:, 2] = ZZ
-        print(X)
-        c = np.random.randint(1, 5, size=len(X))
-
-        norm = plt.Normalize(1, 4)
-        cmap = plt.cm.RdYlGn
-
-        ax.scatter(X[:, 0], X[:, 1], X[:, 2], c=c, s=10, cmap=cmap, norm=norm, depthshade=False, picker=True)
-
-        def distance(point, event):
-            """Return distance between mouse position and given data point
-
-            Args:
-                point (np.array): np.array of shape (3,), with x,y,z in data coords
-                event (MouseEvent): mouse event (which contains mouse position in .x and .xdata)
-            Returns:
-                distance (np.float64): distance (in screen coords) between mouse pos and data point
-            """
-            assert point.shape == (3,), "distance: point.shape is wrong: %s, must be (3,)" % point.shape
-
-            # Project 3d data space to 2d data space
-            x2, y2, _ = proj3d.proj_transform(point[0], point[1], point[2], plt.gca().get_proj())
-            # Convert 2d data space to 2d screen space
-            x3, y3 = ax.transData.transform((x2, y2))
-
-            return np.sqrt((x3 - event.x) ** 2 + (y3 - event.y) ** 2)
-
-        def calcClosestDatapoint(X, event):
-            """Calculate which data point is closest to the mouse position.
-
-            Args:
-                X (np.array) - array of points, of shape (numPoints, 3)
-                event (MouseEvent) - mouse event (containing mouse position)
-            Returns:
-                smallestIndex (int) - the index (into the array of points X) of the element closest to the mouse position
-            """
-            X_modified = X[np.all(~np.isnan(X), axis=1), 0:3]
-            distances = [distance(X_modified[i, 0:3], event) for i in range(X_modified.shape[0])]
-            return np.argmin(distances)
-
-        def annotatePlot(X, index):
-            """Create popover label in 3d chart
-
-            Args:
-                X (np.array) - array of points, of shape (numPoints, 3)
-                index (int) - index (into points array X) of item which should be printed
-            Returns:
-                None
-            """
-            # If we have previously displayed another label, remove it first
-            if hasattr(annotatePlot, 'label'):
-                annotatePlot.label.remove()
-            # Get data point from array of points X, at position index
-            x2, y2, _ = proj3d.proj_transform(X[index, 0], X[index, 1], X[index, 2], ax.get_proj())
-            annotatePlot.label = plt.annotate(
-                f'case{index}\nVolume:{x_value_str[index]}\nLoss:{y_value_str[index]}\nCost:{z_value_str[index]}',
-                xy=(x2, y2), xytext=(-20, 20), textcoords='offset points', ha='right', va='bottom',
-                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
-            fig.canvas.draw()
-
-        def onMouseMotion(event):
-            """Event that is triggered when mouse is moved. Shows text annotation over data point closest to mouse."""
-            closestIndex = calcClosestDatapoint(X, event)
-            annotatePlot(X, closestIndex)
-
-        fig.canvas.mpl_connect('motion_notify_event', onMouseMotion)  # on mouse motion
-        plt.show()
-
     def automated_design_func(self, matplotlib_widget):
+        """
+        MatplotlibWidget class which inherits from QWidget and is used to implement a Matplotlib figure inside a QWidget
+        """
         # ########################################   {DESIGN PARAMETERS}   #################################################
 
         goal_inductance = comma_str_to_point_float(self.aut_goal_inductance_val_lineEdit.text())  # 120 * 1e-6 #Automated design-Reluctacne model-Goal Inductance
@@ -823,10 +666,6 @@ class MainWindow(QMainWindow):
         manual_window_w = list(np.linspace(min_window_w, max_window_w, step_window_w))  # Automated design-Definition min max step
 
 
-        # all_manual_combinations = list(product(manual_core_w, manual_window_h, manual_window_w))
-        # manual_core_w = [item[0] for item in all_manual_combinations]
-        # manual_window_h = [item[1] for item in all_manual_combinations]
-        # manual_window_w = [item[2] for item in all_manual_combinations]
 
         db_core_names = []  # "PQ 40/40", "PQ 40/30"
         for i in range(self.aut_core_geometry_basket_listWidget.count()):
@@ -891,10 +730,6 @@ class MainWindow(QMainWindow):
         # 'Type1 = with corner air-gaps; 'Type2' = without corner air-gaps; 'Type0' = single air-gap
         mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre #TODO
         # TODO: check if the issue has been resolved
-
-
-
-        ########################################################################
 
 
         matplotlib_widget.axis.clear()
@@ -2979,14 +2814,13 @@ class MainWindow(QMainWindow):
 
             if air_gap_count >= 2:
 
-                """ 
                 md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
                 md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
 
                 air_gap_heigth_array.append(md_air_gap_2_height)
                 air_gap_position_array.append(md_air_gap_2_position)
-                air_gap_position_tag_array.append(0) """
-            """
+                air_gap_position_tag_array.append(0)
+
             if air_gap_count >= 3:
                 md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
                 md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
@@ -3010,8 +2844,6 @@ class MainWindow(QMainWindow):
                 air_gap_heigth_array.append(md_air_gap_5_height)
                 air_gap_position_array.append(md_air_gap_5_position)
                 air_gap_position_tag_array.append(0)
-                """
-
 
             if air_gap_count == 0:
 
@@ -3315,9 +3147,9 @@ class MainWindow(QMainWindow):
         self.md_simulation_QLabel.setText('simulation fertig.')
 
         #loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.femm_results_log_path, './results.png', show_plot=False)
-        loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation,show_plot=False)
+        loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation, show_plot=False)
         #pixmap = QPixmap("./results.png")
-        pixmap = QPixmap("./results.png")
+        pixmap = QPixmap(geo.file_data.results_em_simulation)
         self.md_loss_plot_label.setPixmap(pixmap)
         self.md_loss_plot_label.setMask(pixmap.mask())
         self.md_loss_plot_label.show()
@@ -3405,12 +3237,12 @@ class MainWindow(QMainWindow):
                                       #[air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
 
         if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
-            mc1 = fmt.MagneticCircuit(core_w=[self.core_w], window_h=[self.window_h], window_w=[self.window_w], no_of_turns=[n_turns],
+            mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h], window_w=[self.window_w], no_of_turns=[n_turns],
                                       n_air_gaps=[air_gap_count],air_gap_h= air_gap_heigth_array, air_gap_position= air_gap_position_array,
-                                      mu_rel=mu_rel,mult_air_gap_type=[1, 2],air_gap_method='percent',
+                                      mu_rel=mu_rel,mult_air_gap_type=[1, 2],air_gap_method='Percent',
                                       component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')  # 0.0149
         elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['manually']:
-            mc1 = fmt.MagneticCircuit(core_w=[self.core_w], window_h=[self.window_h], window_w=[self.window_w],
+            mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h], window_w=[self.window_w],
                                       no_of_turns=[n_turns],
                                       n_air_gaps=[air_gap_count], air_gap_h=air_gap_heigth_array,
                                       air_gap_position=air_gap_position_array,

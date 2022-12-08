@@ -46,7 +46,7 @@
            </size>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>3</number>
           </property>
           <widget class="QWidget" name="md_QWidget">
            <attribute name="title">
@@ -1862,6 +1862,28 @@
              </property>
             </widget>
            </widget>
+           <widget class="QGroupBox" name="groupBox_38">
+            <property name="geometry">
+             <rect>
+              <x>460</x>
+              <y>10</y>
+              <width>605</width>
+              <height>985</height>
+             </rect>
+            </property>
+            <property name="title">
+             <string>Simulation Visual Output</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_34">
+             <item row="0" column="0">
+              <widget class="QLabel" name="md_loss_plot_label_2">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </widget>
          </widget>
         </item>
@@ -3545,8 +3567,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1236</width>
-               <height>924</height>
+               <width>59</width>
+               <height>16</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_26">
