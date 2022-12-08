@@ -30,7 +30,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="md_QWidget_2">
        <attribute name="title">
@@ -4393,7 +4393,7 @@
          </rect>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_6">
          <attribute name="title">
@@ -9522,7 +9522,7 @@
           <widget class="QLabel" name="label_226">
            <property name="geometry">
             <rect>
-             <x>10</x>
+             <x>40</x>
              <y>110</y>
              <width>181</width>
              <height>28</height>
@@ -9535,7 +9535,7 @@
           <widget class="QLabel" name="label_227">
            <property name="geometry">
             <rect>
-             <x>240</x>
+             <x>260</x>
              <y>40</y>
              <width>71</width>
              <height>28</height>
@@ -9548,7 +9548,7 @@
           <widget class="QComboBox" name="dat_core_material_comboBox">
            <property name="geometry">
             <rect>
-             <x>230</x>
+             <x>250</x>
              <y>70</y>
              <width>93</width>
              <height>28</height>
@@ -9976,7 +9976,7 @@
           <widget class="QLabel" name="label_228">
            <property name="geometry">
             <rect>
-             <x>330</x>
+             <x>350</x>
              <y>110</y>
              <width>31</width>
              <height>28</height>
@@ -9989,7 +9989,7 @@
           <widget class="QComboBox" name="aut_temp_dat_comboBox">
            <property name="geometry">
             <rect>
-             <x>230</x>
+             <x>250</x>
              <y>110</y>
              <width>91</width>
              <height>28</height>
@@ -9999,7 +9999,7 @@
           <widget class="QComboBox" name="aut_temp_meas_comboBox">
            <property name="geometry">
             <rect>
-             <x>230</x>
+             <x>250</x>
              <y>150</y>
              <width>91</width>
              <height>28</height>
@@ -10009,7 +10009,7 @@
           <widget class="QLabel" name="label_229">
            <property name="geometry">
             <rect>
-             <x>330</x>
+             <x>350</x>
              <y>150</y>
              <width>31</width>
              <height>28</height>
@@ -10022,7 +10022,7 @@
           <widget class="QLabel" name="label_230">
            <property name="geometry">
             <rect>
-             <x>10</x>
+             <x>40</x>
              <y>150</y>
              <width>191</width>
              <height>28</height>
