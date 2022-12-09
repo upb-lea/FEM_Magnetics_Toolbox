@@ -930,13 +930,15 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     :param core_hight_lower: core hight lower (needed for better calculating fringing effects)
     :return: air gap reluctance for round-round structure including fringing effects
     """
+    air_gap_total_hight = np.array(air_gap_total_hight)
     core_inner_diameter = np.array(core_inner_diameter)
+    core_hight_upper = np.array(core_hight_upper)
+    core_hight_lower = np.array(core_hight_lower)
     air_gap_radius = core_inner_diameter / 2
 
     air_gap_basic_hight = air_gap_total_hight / 2
     r_basic_upper = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_upper)
     r_basic_lower = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_lower)
-    print(f"{r_basic_upper = }")
 
     r_equivalent_round_round = r_basic_upper + r_basic_lower
 
