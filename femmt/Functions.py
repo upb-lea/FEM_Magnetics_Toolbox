@@ -941,8 +941,8 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     r_equivalent_round_round = r_basic_upper + r_basic_lower
 
     sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_hight)
-    # if sigma > 1:
-    #     raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
+    if np.any(sigma) > 1:
+        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
     r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
     r_air_gap = sigma ** 2 * r_air_gap_ideal
@@ -963,7 +963,11 @@ def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
     :param core_hight: core hight (needed for better calculating fringing effects)
     :return: air gap reluctance for round-inf structure including fringing effects
     """
+
+    air_gap_total_hight = np.array(air_gap_total_hight)
     core_inner_diameter = np.array(core_inner_diameter)
+    core_hight = np.array(core_hight)
+
     air_gap_radius = core_inner_diameter / 2
     r_basic = r_basic_round_inf(air_gap_radius, air_gap_total_hight, core_hight)
 
@@ -1108,6 +1112,8 @@ def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_top_bot_hig
 
 def r_core_round(core_inner_diameter, core_round_hight, mu_r):
     """
+    Calculates the core reluctance for a round structure
+
     :param core_round_hight: hight of the round core part section
     :param core_inner_diameter: core inner diameter
     :param mu_r: relative permeability (mu_r) of the core material from datasheet
@@ -1119,7 +1125,7 @@ def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, wind
 
     # core geometry calculations
 
-    middle_leg_top_total_hight = (100 - position_air_gap_percent_list[start_index + 1]) * 0.01* window_h + air_gap_middle_leg_list[start_index + 1] / 2
+    middle_leg_top_total_hight = (100 - position_air_gap_percent_list[start_index + 1]) * 0.01 * window_h + air_gap_middle_leg_list[start_index + 1] / 2
     middle_leg_bot_total_hight = position_air_gap_percent_list[start_index] * 0.01 * window_h + air_gap_middle_leg_list[start_index] / 2
     tablet_hight = window_h - middle_leg_top_total_hight - middle_leg_bot_total_hight
 
@@ -1141,14 +1147,14 @@ def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, wind
     air_gap_middle_leg_top_list = []
     air_gap_middle_leg_top_percent_list = []
     for count in range(start_index + 1, len(air_gap_middle_leg_list)):
-        print(f"{air_gap_middle_leg_list[count] = }")
+        #print(f"{air_gap_middle_leg_list[count] = }")
         air_gap_total_length_top += air_gap_middle_leg_list[count]
 
     air_gap_total_length_bot = 0.0
     for count in range(0, start_index + 1):
         air_gap_total_length_bot += air_gap_middle_leg_list[count]
-    print(f"{air_gap_total_length_top = }")
-    print(f"{air_gap_total_length_bot = }")
+    #print(f"{air_gap_total_length_top = }")
+    #print(f"{air_gap_total_length_bot = }")
 
     # calculate r_top
     core_round_hight_top = middle_leg_top_total_hight - air_gap_total_length_top
@@ -1175,17 +1181,17 @@ def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, wind
             else:
                 core_hight = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 *window_h / 2
             r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            print('### Case 1: first air gap for top')
-            print(f"{core_hight = }")
-            print(f"{r_air_gap_top = }")
+            #print('### Case 1: first air gap for top')
+            #print(f"{core_hight = }")
+            #print(f"{r_air_gap_top = }")
 
         elif position_air_gap_percent_list[count] > 95 and count != start_index_air_gap_top:
             # this is for the last air gap in case of very close to the top core (95%), so there will be the assumption for a round-inf air gap
             core_hight = (position_air_gap_percent_list[stop_index_air_gap_top] - position_air_gap_percent_list[stop_index_air_gap_top - 1]) * 0.01 * window_h / 2
             r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            print('### Case 2: last air gap for top')
-            print(f"{core_hight = }")
-            print(f"{r_air_gap_top = }")
+            #print('### Case 2: last air gap for top')
+            #print(f"{core_hight = }")
+            #print(f"{r_air_gap_top = }")
         else:
             # air gap in the middle between tablet and top air gap
             if count + 1 < stop_index_air_gap_top:
@@ -1196,10 +1202,10 @@ def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, wind
                 core_hight_upper = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
             core_hight_lower = (position_air_gap_percent_list[count] - position_air_gap_percent_list[count - 1]) * 0.01 * window_h
             r_air_gap_top += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
-            print('### Case 3: middle air gap for top')
-            print(f"{core_hight_upper = }")
-            print(f"{core_hight_lower = }")
-            print(f"{r_air_gap_top = }")
+            #print('### Case 3: middle air gap for top')
+            #print(f"{core_hight_upper = }")
+            #print(f"{core_hight_lower = }")
+            #print(f"{r_air_gap_top = }")
 
 
     r_top = r_core_top + r_air_gap_top
@@ -1213,15 +1219,15 @@ def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, wind
     r_core_outer_bot = r_core_round_bot
     r_core_bot = r_core_round_bot + r_core_bot_radiant + r_core_outer_bot
 
-    print('##########################################')
-    print("#### bottom air gap  ####")
-    print('##########################################')
+    #print('##########################################')
+    #print("#### bottom air gap  ####")
+    #print('##########################################')
 
     # calculate r_air_gap_bot
     # sweep trough bot air gap list
     r_air_gap_bot = 0
     for count, air_gap in enumerate(air_gap_middle_leg_bot_list):
-        print(f"{air_gap = }")
+        #print(f"{air_gap = }")
         # this routine sums up all air gaps inside the middle leg below the stray path
         # there are three different types of caluclations
         #  - last air gap is definitely a round_inf structure
@@ -1235,17 +1241,17 @@ def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, wind
             else:
                 core_hight = (position_air_gap_percent_bot_list[count] - position_air_gap_percent_bot_list[count - 1]) * 0.01 * window_h / 2
             r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            print('### Case 1: first air gap for bot')
-            print(f"{core_hight = }")
-            print(f"{r_air_gap_bot = }")
+            #print('### Case 1: first air gap for bot')
+            #print(f"{core_hight = }")
+            #print(f"{r_air_gap_bot = }")
 
         elif position_air_gap_percent_list[count] < 5  and count == 0:
             # this is for the first air gap in case of very close to the bot core (<5%), so there will be the assumption for a round-inf air gap
             core_hight = (position_air_gap_percent_list[1] - position_air_gap_percent_list[0]) * 0.01 * window_h / 2
             r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            print('### Case 2: last air gap for bot')
-            print(f"{core_hight = }")
-            print(f"{r_air_gap_bot = }")
+            #print('### Case 2: last air gap for bot')
+            #print(f"{core_hight = }")
+            #print(f"{r_air_gap_bot = }")
         else:
             # this is for multiple air gaps in the bot-section. Calculation of core hight is only to the next air gap
             if count + 1 < len(position_air_gap_percent_bot_list):
@@ -1256,10 +1262,10 @@ def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, wind
 
             core_hight_upper  = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
             r_air_gap_bot += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
-            print('### Case 3: middle air gap for bot')
-            print(f"{core_hight_upper = }")
-            print(f"{core_hight_lower = }")
-            print(f"{r_air_gap_bot = }")
+            #print('### Case 3: middle air gap for bot')
+            #print(f"{core_hight_upper = }")
+            #print(f"{core_hight_lower = }")
+            #print(f"{r_air_gap_bot = }")
 
     r_bot = r_core_bot + r_air_gap_bot
 
@@ -1271,22 +1277,32 @@ def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, wind
 
     return r_top, r_bot, r_stray
 
-def calculate_reluctances(N, L):
+def calculate_reluctances(winding_matrix, inductance_matrix):
     """
     Calculates the Reluctance Matrix.
     Everything must be numpy!
 
+    L. Keuck, "Entwurf eines einstufigen Ladewandlers auf Basis eines LLC-Resonanzwandlers", dissertation 2023
+
+    :param winding_matrix: winding matrix
+    :param inductance_matrix: inductance matrix
     :return: reluctance[-matrix]
+
+    inductance matrix e.g.
+    L = [ [L_11, M], [M, L_22] ]
+
+    winding matrix e.g.
+    N = [ [N_1a, N_2b], [N_1b, N_2b] ]
 
     """
 
     # Reluctance Matrix
-    if np.ndim(N) == 0:
-        L_invert = 1 / L
+    if np.ndim(winding_matrix) == 0:
+        L_invert = 1 / inductance_matrix
     else:
-        L_invert = np.linalg.inv(L)
+        L_invert = np.linalg.inv(inductance_matrix)
 
-    return np.matmul(np.matmul(N, L_invert), np.transpose(N))
+    return np.matmul(np.matmul(winding_matrix, L_invert), np.transpose(winding_matrix))
 
 
 def create_physical_group(dim, entities, name):
