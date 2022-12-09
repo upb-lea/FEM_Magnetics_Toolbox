@@ -3228,6 +3228,9 @@ class MainWindow(QMainWindow):
 
 
     def therm_simulation(self):
+        """
+            Function for implementing the thermal simulation
+        """
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
