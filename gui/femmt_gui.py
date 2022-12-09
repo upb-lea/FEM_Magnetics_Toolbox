@@ -34,16 +34,7 @@ database = mdb.MaterialDatabase()
 from femmt.examples.reluctance_fem_integration import AutomatedDesign
 from femmt.examples.reluctance_fem_integration import load_design, plot_2d, filter_after_fem
 
-from matplotlib.widgets import Cursor
 import mplcursors
-
-# import sys
-# import matplotlib
-#
-# matplotlib.use('Qt5Agg')
-#
-# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-# from matplotlib.figure import Figure
 
 float_validator = QDoubleValidator()
 int_validator = QIntValidator()
@@ -477,7 +468,7 @@ class MainWindow(QMainWindow):
         self.matplotlib_widget_aut_tab4 = MatplotlibWidget()
 
         "******* Database Section *********"
-        "Signals in visualisation tab"
+
         self.dat_update_preview_pushbutton1.clicked.connect(self.datupdateraph1_config)
         self.dat_update_preview_pushbutton2.clicked.connect(self.datupdateraph2_config)
         self.dat_update_preview_pushbutton3.clicked.connect(self.datupdateraph3_config)
@@ -507,7 +498,7 @@ class MainWindow(QMainWindow):
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_dat_input)
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_meas_input)
 
-
+    #  **************************** Automated design tab ************************************************************  #
 
     def plot_volume_loss(self, data_matrix, matplotlib_widget):
         """
@@ -517,10 +508,6 @@ class MainWindow(QMainWindow):
        :type data_matrix: array
         """
 
-
-        #fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
-
-        #fmt.plt.title("Normalised volume vs Normalised losses")
 
         matplotlib_widget.axis.set(xlabel="Volume", ylabel="Loss", title="Volume vs Loss")
         lines = matplotlib_widget.axis.plot(data_matrix[:, 30],
@@ -628,11 +615,15 @@ class MainWindow(QMainWindow):
 
     def automated_design_func(self, matplotlib_widget):
         """
+         The function is created to accept input parameters from the definitions tab, to create matrix with all input combinations.
+         A call is being made to the reluctance model to filter out the cases for FEM simulation.
+
+            param matplotlib_widget: To plot volume vs loss in reluctance models tab
 
         """
-        # ########################################   {DESIGN PARAMETERS}   #################################################
+        #########################################   {DESIGN PARAMETERS}   #################################################
 
-        goal_inductance = comma_str_to_point_float(self.aut_goal_inductance_val_lineEdit.text())  # 120 * 1e-6 #Automated design-Reluctacne model-Goal Inductance
+        goal_inductance = comma_str_to_point_float(self.aut_goal_inductance_val_lineEdit.text()) #Automated design-Reluctacne model-Goal Inductance
         self.trans_dict =  {
             # key: Used in FEMMT code
             # value: Used in GUI
@@ -640,20 +631,17 @@ class MainWindow(QMainWindow):
             "Edge distributed":"1",
             "Centre distributed":"2"
         }
-        L_tolerance_percent = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])  # +/-10%
-        self.i_max = comma_str_to_point_float(self.aut_maximum_current_lineEdit.text())#3  # Automated design-Reluctacne model
+        L_tolerance_percent = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])
+        self.i_max = comma_str_to_point_float(self.aut_maximum_current_lineEdit.text())
         # Max current amplitude with assumption of sinusoidal current waveform
-        percent_of_B_sat = int(self.aut_b_sat_lineEdit.text()) #70  # Automated design-Reluctacne model           # Percent of B_sat allowed in the designed core
+        percent_of_B_sat = int(self.aut_b_sat_lineEdit.text()) # Percent of B_sat allowed in the designed core
 
-        percent_of_total_loss = int(self.aut_hysterisis_loss_options_lineEdit.text()) #100  # Automated design-Reluctacne model-%hysterisis loss(total loss)
+        percent_of_total_loss = int(self.aut_hysterisis_loss_options_lineEdit.text())
         # Percent of total_loss allowed in FEM simulation
 
-        self.freq = comma_str_to_point_float(self.aut_switching_freq_lineEdit.text()) #100 * 1e3  # Automated design-Reluctacne model-Switching freq                     # Switching frequency in Hz
-        mu_imag = 100  # TODO: coordinate with Aniket
-        Cu_sigma = 5.96 * 1e7  # Constant              # copper conductivity (sigma) @ 20 degree celsius
-
-        # temp_var1 = database.permeability_data_to_pro_file(30, 100000, "N95", "manufacturer_datasheet")
-        # temp_var2 = database.permeability_data_to_pro_file(30, 100000, "N87", "manufacturer_datasheet")
+        self.freq = comma_str_to_point_float(self.aut_switching_freq_lineEdit.text())
+        mu_imag = 100
+        Cu_sigma = 5.96 * 1e7  # copper conductivity (sigma) @ 20 degree celsius
 
         # Set core-geometry from core database or/and manual entry
         min_core_w = comma_str_to_point_float(self.aut_min_core_width_lineEdit.text())
@@ -666,9 +654,9 @@ class MainWindow(QMainWindow):
         max_window_w = comma_str_to_point_float(self.aut_max_window_width_lineEdit.text())
         step_window_w = int(self.aut_step_window_width_lineEdit.text())
 
-        manual_core_w = list(np.linspace(min_core_w, max_core_w, step_core_w))  # Automated design-Definition min max step
-        manual_window_h = list(np.linspace(min_window_h, max_window_h, step_window_h))  # Automated design-Definition min max step
-        manual_window_w = list(np.linspace(min_window_w, max_window_w, step_window_w))  # Automated design-Definition min max step
+        manual_core_w = list(np.linspace(min_core_w, max_core_w, step_core_w))
+        manual_window_h = list(np.linspace(min_window_h, max_window_h, step_window_h))
+        manual_window_w = list(np.linspace(min_window_w, max_window_w, step_window_w))
 
 
 
@@ -686,9 +674,8 @@ class MainWindow(QMainWindow):
         window_w_list = db_window_w + manual_window_w
 
         # Set winding settings (Solid and Litz winding type)
-        solid_conductor_r = [comma_str_to_point_float(self.aut_winding1_radius_lineEdit.text())]  # Automated design-Definition-Wire radius
-        ## TODO: enable wire rad for solid
-        # TODO: solid_conductor_r as list
+        solid_conductor_r = [comma_str_to_point_float(self.aut_winding1_radius_lineEdit.text())]
+
         litz_db = fmt.litz_database()
         #litz_names = ["1.5x105x0.1"]  # "1.5x105x0.1", "1.4x200x0.071"
         litz_names = []
@@ -701,6 +688,7 @@ class MainWindow(QMainWindow):
         winding_scheme = self.aut_winding1_scheme_comboBox.currentText()
 
         min_conductor_r = min(self.litz_conductor_r + solid_conductor_r)
+
         # Set air-gap and core parameters7
         no_turns_min = int(self.aut_min_winding1_turns_lineEdit.text())
         no_turns_max = int(self.aut_max_winding1_turns_lineEdit.text())
@@ -715,7 +703,7 @@ class MainWindow(QMainWindow):
         airgap_pos_step = int(self.aut_air_gap_position_step_lineEdit.text())
 
 
-        no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max, no_turns_step))) #[8, 9, 10, 11, 12, 13, 14]  # Set No. of turns (N) # list(np.linspace(8,14,7))
+        no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max, no_turns_step)))
         no_of_turns = [int(item) for item in no_of_turns_float]
         n_air_gaps = [no_airgaps_min, no_airgaps_max]  # Set No. of air-gaps (n)
         air_gap_height = list(np.linspace(airgap_h_min, airgap_h_max, airgap_h_step))  # Set air-gap length in metre (l)
@@ -724,7 +712,7 @@ class MainWindow(QMainWindow):
         material_names = []
         for i in range(self.aut_core_material_basket_listWidget.count()):
             material_names.append(self.aut_core_material_basket_listWidget.item(i).text())
-        #material_names = ["N95"]  # Set relative permeability in F/m (u) , "N87"
+        #material_names = ["N95"]
 
         mu_rel = [database.get_material_property(material_name=material_name, property="initial_permeability")
                   for material_name in material_names]
@@ -733,8 +721,7 @@ class MainWindow(QMainWindow):
         # Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100])
         # Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75])
         # 'Type1 = with corner air-gaps; 'Type2' = without corner air-gaps; 'Type0' = single air-gap
-        mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre #TODO
-        # TODO: check if the issue has been resolved
+        mult_air_gap_type = [2]  # Type1-Edge, Type2: Centre
 
 
         matplotlib_widget.axis.clear()
@@ -783,6 +770,7 @@ class MainWindow(QMainWindow):
                                       manual_litz_strand_r=[],
                                       manual_litz_strand_n=[],
                                       manual_litz_fill_factor=[])
+
         # Create csv file of data_matrix_fem which consist of all the fem simulation cases details
         self.ad.write_data_matrix_fem_to_csv()
 
@@ -804,6 +792,13 @@ class MainWindow(QMainWindow):
 
     def automated_design_fem_sim(self, matplotlib_widget):
 
+        """
+         The function is created to run the fem simulations of the filtered cases from reluctance models tab and to plot
+         the volume vs loss in FEM simulations tab
+
+            param matplotlib_widget: To plot volume vs loss in FEM simulations tab
+
+        """
         ###########################################   {FEM_SIMULATION}   ##################################################
 
         # Run FEM simulation of "self.data_matrix_fem"
@@ -834,6 +829,13 @@ class MainWindow(QMainWindow):
                 annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
     def load_designs(self, matplotlib_widget):
+        """
+         The function is created to plot the volume vs loss from the already run files of FEM simulations from the
+         directory path, in the Load(results) tab
+
+            param matplotlib_widget: To plot volume vs loss in the Load(results) tab
+
+        """
 
         matplotlib_widget = MatplotlibWidget()
         matplotlib_widget.axis.clear()
@@ -859,6 +861,7 @@ class MainWindow(QMainWindow):
 
 
     def check_onelab_config(self, geo: fmt.MagneticComponent):
+
         # Ask for onelab path (if no config file exists)
         if not os.path.isfile(geo.file_data.config_path):
             onelab_path_dialog = OnelabPathDialog()
@@ -879,17 +882,35 @@ class MainWindow(QMainWindow):
                 raise Exception(f"Unknown return type from OnelabPathDialog: {valid}")
 
     def automated_design_func_config(self):
+        """
+            Function to call automated_design_func, when simulate button is pressed in Reluctance models tab
+        """
         self.automated_design_func(self.matplotlib_widget_aut_tab2)
 
     def automated_design_fem_sim_config(self):
+        """
+           Function to call automated_design_fem_sim, when simulate button is pressed in FEM simulations tab
+        """
         self.automated_design_fem_sim(self.matplotlib_widget_aut_tab3)
 
     def load_designs_config(self):
+        """
+           Function to call load_designs, when Load design button is pressed in Load(results) tab
+        """
         self.load_designs(self.matplotlib_widget_aut_tab4)
 
-
+    #  **************************** Database tab ********************************************************************  #
 
     def datupdateraph1(self, matplotlib_widget1, matplotlib_widget2, matplotlib_widget3, matplotlib_widget4):
+
+        """
+           Function for the datasheet-datasheet plot
+            param matplotlib_widget1: for the first plot of relative power loss vs B
+            param matplotlib_widget2: for the second plot of relative power loss vs temperature
+            param matplotlib_widget3: for the third plot of relative power loss vs frequency
+            param matplotlib_widget4: for the fourth plot of B vs H
+
+        """
 
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget)
@@ -991,6 +1012,12 @@ class MainWindow(QMainWindow):
         matplotlib_widget4.figure.tight_layout()
 
     def datupdateraph2(self, matplotlib_widget1, matplotlib_widget2):
+        """
+           Function for the Measurement-Measurement plot
+            param matplotlib_widget1: Fot the first plot of uR/u0 vs B
+            param matplotlib_widget2: for the second plot of uR/u0 vs B
+
+        """
 
 
         matplotlib_widget1.axis.clear()
@@ -1040,7 +1067,7 @@ class MainWindow(QMainWindow):
         matplotlib_widget1.figure.tight_layout()
 
 
-        #########################################################################################################
+        ################################################################################################################
 
         matplotlib_widget2.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_14)
@@ -1058,6 +1085,11 @@ class MainWindow(QMainWindow):
         matplotlib_widget2.figure.tight_layout()
 
     def datupdateraph3(self, matplotlib_widget):
+        """
+           Function for the Datasheet-Measurement plot
+            param matplotlib_widget: To plot relative power loss vs B
+
+        """
 
 
         matplotlib_widget.axis.clear()
@@ -1083,15 +1115,300 @@ class MainWindow(QMainWindow):
 
 
     def datupdateraph1_config(self):
+        """
+           Function to call datupdateraph1, when Update preview button is pressed in Datasheet-Datasheet tab.
+        """
         self.datupdateraph1(self.matplotlib_widget_datdd1, self.matplotlib_widget_datdd2,
                             self.matplotlib_widget_datdd3, self.matplotlib_widget_datdd4)
 
     def datupdateraph2_config(self):
+        """
+            Function to call datupdateraph2, when Update preview button is pressed in Measurement-Measurement tab.
+        """
         self.datupdateraph2(self.matplotlib_widget_datmm1, self.matplotlib_widget_datmm2)
 
     def datupdateraph3_config(self):
+        """
+            Function to call datupdateraph3, when Update preview button is pressed in Datasheet-Measurement tab.
+        """
         self.datupdateraph3(self.matplotlib_widget_datdm)
 
+
+    def tempfluxinput1(self):
+        """
+            Function to get the flux and temperature of a particular material selected.
+        """
+
+        mat_text1 = self.dat_core_material1_comboBox.currentText()
+
+        get_temp1_list = []
+        get_flux1_list = []
+        if mat_text1:
+            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
+            get_flux1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", flux=True)
+
+        print(f"get_flux1_list:  {get_flux1_list}")
+        # get_temp1_list.insert(0,None)
+        # get_flux1_list.insert(0,None)
+        aut_temp_options1 = get_temp1_list
+        aut_flux_options1 = get_flux1_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options1]
+
+        for option in temp_str:
+            self.aut_temp_m1_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m1_comboBox.addItem(option)
+
+    def tempfluxinput2(self):
+        """
+            Function to get the flux and temperature of a particular material selected.
+        """
+
+        mat_text2 = self.dat_core_material2_comboBox.currentText()
+        get_temp2_list = []
+        get_flux2_list = []
+        if mat_text2:
+            get_temp2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="dvd", temperature=True)
+            get_flux2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="dvd", flux=True)
+        aut_temp_options2 = get_temp2_list
+        aut_flux_options2 = get_flux2_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options2]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options2]
+
+        for option in temp_str:
+            self.aut_temp_m2_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m2_comboBox.addItem(option)
+
+    def tempfluxinput3(self):
+        """
+            Function to get the flux and temperature of a particular material selected.
+        """
+
+        mat_text3 = self.dat_core_material3_comboBox.currentText()
+        get_temp3_list = []
+        get_flux3_list = []
+        if mat_text3:
+            get_temp3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="dvd", temperature=True)
+            get_flux3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="dvd", flux=True)
+        aut_temp_options3 = get_temp3_list
+        aut_flux_options3 = get_flux3_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options3]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options3]
+
+        for option in temp_str:
+            self.aut_temp_m3_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m3_comboBox.addItem(option)
+
+    def tempfluxinput4(self):
+        """
+            Function to get the flux and temperature of a particular material selected.
+        """
+
+        mat_text4 = self.dat_core_material4_comboBox.currentText()
+        get_temp4_list = []
+        get_flux4_list = []
+        if mat_text4:
+            get_temp4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="dvd", temperature=True)
+            get_flux4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="dvd", flux=True)
+        aut_temp_options4 = get_temp4_list
+        aut_flux_options4 = get_flux4_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options4]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options4]
+
+        for option in temp_str:
+            self.aut_temp_m4_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m4_comboBox.addItem(option)
+
+    def tempfluxinput5(self):
+        """
+            Function to get the flux and temperature of a particular material selected.
+        """
+
+        mat_text5 = self.dat_core_material5_comboBox.currentText()
+        get_temp5_list = []
+        get_flux5_list = []
+        if mat_text5:
+            get_temp5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="dvd", temperature=True)
+            get_flux5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="dvd", flux=True)
+        aut_temp_options5 = get_temp5_list
+        aut_flux_options5 = get_flux5_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options5]
+        flux_str = [f'{item:.3f}' for item in aut_flux_options5]
+
+        for option in temp_str:
+            self.aut_temp_m5_comboBox.addItem(option)
+
+        for option in flux_str:
+            self.aut_flux_m5_comboBox.addItem(option)
+
+
+    def tempfreqinput1(self):
+        """
+            Function to get the frequency and temperature of a particular material selected.
+        """
+
+        mat_text1 = self.dat_core_material1_comboBox_2.currentText()
+
+        get_temp1_list = []
+        get_freq1_list = []
+        if mat_text1:
+            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True)
+            get_freq1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", freq=True)
+        aut_temp_options1 = get_temp1_list
+        aut_freq_options1 = get_freq1_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options1]
+
+        for option in temp_str:
+            self.aut_temp_m1_comboBox_2.addItem(option)
+
+
+        for option in freq_str:
+            self.aut_freq_m1_comboBox.addItem(option)
+
+    def tempfreqinput2(self):
+        """
+            Function to get the frequency and temperature of a particular material selected.
+        """
+
+        mat_text2 = self.dat_core_material2_comboBox_2.currentText()
+        get_temp2_list = []
+        get_freq2_list = []
+        if mat_text2:
+            get_temp2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="mvm", temperature=True)
+            get_freq2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="mvm", freq=True)
+        aut_temp_options2 = get_temp2_list
+        aut_freq_options2 = get_freq2_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options2]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options2]
+
+        for option in temp_str:
+            self.aut_temp_m2_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m2_comboBox.addItem(option)
+
+    def tempfreqinput3(self):
+        """
+            Function to get the frequency and temperature of a particular material selected.
+        """
+
+        mat_text3 = self.dat_core_material3_comboBox_2.currentText()
+        get_temp3_list = []
+        get_freq3_list = []
+        if mat_text3:
+            get_temp3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="mvm", temperature=True)
+            get_freq3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="mvm", freq=True)
+        aut_temp_options3 = get_temp3_list
+        aut_freq_options3 = get_freq3_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options3]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options3]
+
+        for option in temp_str:
+            self.aut_temp_m3_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m3_comboBox.addItem(option)
+
+    def tempfreqinput4(self):
+        """
+            Function to get the frequency and temperature of a particular material selected.
+        """
+
+        mat_text4 = self.dat_core_material4_comboBox_2.currentText()
+        get_temp4_list = []
+        get_freq4_list = []
+        if mat_text4:
+            get_temp4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="mvm", temperature=True)
+            get_freq4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="mvm", freq=True)
+        aut_temp_options4 = get_temp4_list
+        aut_freq_options4 = get_freq4_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options4]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options4]
+
+        for option in temp_str:
+            self.aut_temp_m4_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m4_comboBox.addItem(option)
+
+    def tempfreqinput5(self):
+        """
+            Function to get the frequency and temperature of a particular material selected.
+        """
+
+        mat_text5 = self.dat_core_material5_comboBox_2.currentText()
+        get_temp5_list = []
+        get_freq5_list = []
+        if mat_text5:
+            get_temp5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="mvm", temperature=True)
+            get_freq5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="mvm", freq=True)
+        aut_temp_options5 = get_temp5_list
+        aut_freq_options5 = get_freq5_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options5]
+        freq_str = [f'{item:.2f}' for item in aut_freq_options5]
+
+        for option in temp_str:
+            self.aut_temp_m5_comboBox_2.addItem(option)
+
+        for option in freq_str:
+            self.aut_freq_m5_comboBox.addItem(option)
+
+        ########################################################################
+
+    def temp_dat_input(self):
+        """
+            Function to get the database temperature of a particular material selected.
+        """
+
+        mat_text1 = self.dat_core_material_comboBox.currentText()
+
+        get_temp1_list = []
+        if mat_text1:
+            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
+        aut_temp_options1 = get_temp1_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
+
+        for option in temp_str:
+            self.aut_temp_dat_comboBox.addItem(option)
+
+    def temp_meas_input(self):
+        """
+            Function to get the measurement temperature of a particular material selected.
+        """
+
+        mat_text1 = self.dat_core_material_comboBox.currentText()
+
+        get_temp1_list = []
+        if mat_text1:
+            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True)
+        aut_temp_options1 = get_temp1_list
+
+        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
+
+        for option in temp_str:
+            self.aut_temp_meas_comboBox.addItem(option)
+
+    #  **************************** Automated design tab initializations ********************************************  #
 
     def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
         """
@@ -1118,14 +1435,23 @@ class MainWindow(QMainWindow):
             self.aut_winding1_radius_lineEdit.setEnabled(True)
 
     def oncgeoClearallClicked(self):
+        """
+            Function to clear all entries
+        """
         self.aut_core_geometry_basket_listWidget.clear()
 
     def oncgeoClearClicked(self):
+        """
+            Function to add the manually selected core choice to the basket.
+        """
         List_item = self.aut_core_geometry_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_core_geometry_basket_listWidget.takeItem(self.aut_core_geometry_basket_listWidget.row(item))
 
     def oncgeoMultipleClicked(self):
+        """
+            Function to accept multiple choices
+        """
         itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_geometry_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_core_geometry_listWidget.selectedItems()]
@@ -1136,6 +1462,9 @@ class MainWindow(QMainWindow):
             pass
 
     def oncgeomanualMultipleClicked(self):
+        """
+            Function to for the manual
+        """
         items = []
 
         if self.aut_min_core_width_lineEdit.text() and self.aut_max_core_width_lineEdit.text() and self.aut_step_core_width_lineEdit.text() \
@@ -1149,9 +1478,15 @@ class MainWindow(QMainWindow):
                 self.aut_core_geometry_manual_basket_listWidget.addItem(i)
 
     def cgeoselectall(self):
+        """
+            Function to select all the choices.
+        """
         self.aut_core_geometry_listWidget.selectAll()
 
     def oncgeoClicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
         itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_geometry_basket_listWidget.count())]
         checkitem = self.aut_core_geometry_listWidget.currentItem().text()
@@ -1161,14 +1496,23 @@ class MainWindow(QMainWindow):
             pass
 
     def onairgaptypeClearallClicked(self):
+        """
+            Function to clear all the entries.
+        """
         self.aut_airgap_type_basket_listwidget.clear()
 
     def onairgaptypeClearClicked(self):
+        """
+            Function to clear the selected entry.
+        """
         List_item = self.aut_airgap_type_basket_listwidget.selectedItems()
         for item in List_item:
             self.aut_airgap_type_basket_listwidget.takeItem(self.aut_airgap_type_basket_listwidget.row(item))
 
     def onairgaptypeMultipleClicked(self):
+        """
+            Function to accept multiple choices.
+        """
         itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
                          range(self.aut_airgap_type_basket_listwidget.count())]
         checkitems = [item.text() for item in self.aut_airgap_type_listWidget.selectedItems()]
@@ -1179,6 +1523,9 @@ class MainWindow(QMainWindow):
             pass
 
     def onairgaptypeClicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
         itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
                          range(self.aut_airgap_type_basket_listwidget.count())]
         checkitem = self.aut_airgap_type_listWidget.currentItem().text()
@@ -1188,17 +1535,29 @@ class MainWindow(QMainWindow):
             pass
 
     def airgaptypeselectall(self):
+        """
+            Function to select all the choices.
+        """
         self.aut_airgap_type_listWidget.selectAll()
 
     def oncmatClearallClicked(self):
+        """
+            Function to clear all entries.
+        """
         self.aut_core_material_basket_listWidget.clear()
 
     def oncmatClearClicked(self):
+        """
+            Function to clear the selected entry.
+        """
         List_item = self.aut_core_material_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_core_material_basket_listWidget.takeItem(self.aut_core_material_basket_listWidget.row(item))
 
     def oncmatMultipleClicked(self):
+        """
+            Function to accept multiple choices.
+        """
         itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_material_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_core_material_data_listWidget.selectedItems()]
@@ -1210,9 +1569,15 @@ class MainWindow(QMainWindow):
 
 
     def cmatselectall(self):
+        """
+            Function to select all the choices.
+        """
         self.aut_core_material_data_listWidget.selectAll()
 
     def oncmatClicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
         itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_material_basket_listWidget.count())]
         checkitem = self.aut_core_material_data_listWidget.currentItem().text()
@@ -1222,14 +1587,23 @@ class MainWindow(QMainWindow):
             pass
 
     def onl1ClearallClicked(self):
+        """
+            Function to clear all entries.
+        """
         self.aut_litz_basket_listWidget.clear()
 
     def onl1ClearClicked(self):
+        """
+            Function to clear the selected entry.
+        """
         List_item = self.aut_litz_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_litz_basket_listWidget.takeItem(self.aut_litz_basket_listWidget.row(item))
 
     def onl1MultipleClicked(self):
+        """
+            Function to accept multiple choices.
+        """
         itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_litz_data_listWidget.selectedItems()]
@@ -1240,6 +1614,9 @@ class MainWindow(QMainWindow):
             pass
 
     def onl1Clicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
         itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz_basket_listWidget.count())]
         checkitem = self.aut_litz_data_listWidget.currentItem().text()
@@ -1249,18 +1626,30 @@ class MainWindow(QMainWindow):
             pass
 
     def litz1selectall(self):
+        """
+            Function to select all the choices.
+        """
         self.aut_litz_data_listWidget.selectAll()
 
 
     def onl2ClearallClicked(self):
+        """
+            Function to clear all entries.
+        """
         self.aut_litz2_basket_listWidget.clear()
 
     def onl2ClearClicked(self):
+        """
+            Function to clear the selected entry.
+        """
         List_item = self.aut_litz2_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_litz2_basket_listWidget.takeItem(self.aut_litz2_basket_listWidget.row(item))
 
     def onl2MultipleClicked(self):
+        """
+            Function to accept multiple choices.
+        """
         itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz2_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_litz2_data_listWidget.selectedItems()]
@@ -1271,6 +1660,9 @@ class MainWindow(QMainWindow):
             pass
 
     def onl2Clicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
         itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz2_basket_listWidget.count())]
         checkitem = self.aut_litz2_data_listWidget.currentItem().text()
@@ -1279,9 +1671,13 @@ class MainWindow(QMainWindow):
         else:
             pass
 
-
     def litz2selectall(self):
+        """
+            Function to select all the choices.
+        """
         self.aut_litz2_data_listWidget.selectAll()
+
+    #  **************************** Automated design tab initializations ********************************************  #
 
     def aut_initialize_controls(self) -> None:
         """
@@ -1298,7 +1694,6 @@ class MainWindow(QMainWindow):
         aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
         aut_tolerance_val_options = [self.translation_dict['+-10'], self.translation_dict['+-20']]
         aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
-        #aut_core_geometry_options.insert(0, 'Manual')
 
 
         get_material_list = mdb.material_list_in_database(material_list = True)
@@ -1378,294 +1773,6 @@ class MainWindow(QMainWindow):
         self.aut_air_gap_position_max_lineEdit.setPlaceholderText("Maximum value")
         self.aut_air_gap_position_step_lineEdit.setPlaceholderText("Step value")
 
-
-
-    def tempfluxinput1(self):
-
-        mat_text1 = self.dat_core_material1_comboBox.currentText()
-
-        get_temp1_list = []
-        get_flux1_list = []
-        if mat_text1:
-            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
-            get_flux1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", flux=True)
-
-        print(f"get_flux1_list:  {get_flux1_list}")
-        # get_temp1_list.insert(0,None)
-        # get_flux1_list.insert(0,None)
-        aut_temp_options1 = get_temp1_list
-        aut_flux_options1 = get_flux1_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
-        flux_str = [f'{item:.3f}' for item in aut_flux_options1]
-
-        for option in temp_str:
-            self.aut_temp_m1_comboBox.addItem(option)
-
-        for option in flux_str:
-            self.aut_flux_m1_comboBox.addItem(option)
-
-    def tempfluxinput2(self):
-
-        mat_text2 = self.dat_core_material2_comboBox.currentText()
-        get_temp2_list = []
-        get_flux2_list = []
-        if mat_text2:
-            get_temp2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="dvd", temperature=True)
-            get_flux2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="dvd", flux=True)
-        aut_temp_options2 = get_temp2_list
-        aut_flux_options2 = get_flux2_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options2]
-        flux_str = [f'{item:.3f}' for item in aut_flux_options2]
-
-        for option in temp_str:
-            self.aut_temp_m2_comboBox.addItem(option)
-
-        for option in flux_str:
-            self.aut_flux_m2_comboBox.addItem(option)
-
-    def tempfluxinput3(self):
-
-        mat_text3 = self.dat_core_material3_comboBox.currentText()
-        get_temp3_list = []
-        get_flux3_list = []
-        if mat_text3:
-            get_temp3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="dvd", temperature=True)
-            get_flux3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="dvd", flux=True)
-        aut_temp_options3 = get_temp3_list
-        aut_flux_options3 = get_flux3_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options3]
-        flux_str = [f'{item:.3f}' for item in aut_flux_options3]
-
-        for option in temp_str:
-            self.aut_temp_m3_comboBox.addItem(option)
-
-        for option in flux_str:
-            self.aut_flux_m3_comboBox.addItem(option)
-
-    def tempfluxinput4(self):
-
-        mat_text4 = self.dat_core_material4_comboBox.currentText()
-        get_temp4_list = []
-        get_flux4_list = []
-        if mat_text4:
-            get_temp4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="dvd", temperature=True)
-            get_flux4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="dvd", flux=True)
-        aut_temp_options4 = get_temp4_list
-        aut_flux_options4 = get_flux4_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options4]
-        flux_str = [f'{item:.3f}' for item in aut_flux_options4]
-
-        for option in temp_str:
-            self.aut_temp_m4_comboBox.addItem(option)
-
-        for option in flux_str:
-            self.aut_flux_m4_comboBox.addItem(option)
-
-    def tempfluxinput5(self):
-
-        mat_text5 = self.dat_core_material5_comboBox.currentText()
-        get_temp5_list = []
-        get_flux5_list = []
-        if mat_text5:
-            get_temp5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="dvd", temperature=True)
-            get_flux5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="dvd", flux=True)
-        aut_temp_options5 = get_temp5_list
-        aut_flux_options5 = get_flux5_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options5]
-        flux_str = [f'{item:.3f}' for item in aut_flux_options5]
-
-        for option in temp_str:
-            self.aut_temp_m5_comboBox.addItem(option)
-
-        for option in flux_str:
-            self.aut_flux_m5_comboBox.addItem(option)
-
-    ########################################################################
-    def tempfreqinput1(self):
-
-        mat_text1 = self.dat_core_material1_comboBox_2.currentText()
-
-        get_temp1_list = []
-        get_freq1_list = []
-        if mat_text1:
-            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True)
-            get_freq1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", freq=True)
-        aut_temp_options1 = get_temp1_list
-        aut_freq_options1 = get_freq1_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
-        freq_str = [f'{item:.2f}' for item in aut_freq_options1]
-
-        for option in temp_str:
-            self.aut_temp_m1_comboBox_2.addItem(option)
-
-
-        for option in freq_str:
-            self.aut_freq_m1_comboBox.addItem(option)
-
-    def tempfreqinput2(self):
-
-        mat_text2 = self.dat_core_material2_comboBox_2.currentText()
-        get_temp2_list = []
-        get_freq2_list = []
-        if mat_text2:
-            get_temp2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="mvm", temperature=True)
-            get_freq2_list = mdb.drop_down_list(material_name=mat_text2, comparison_type="mvm", freq=True)
-        aut_temp_options2 = get_temp2_list
-        aut_freq_options2 = get_freq2_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options2]
-        freq_str = [f'{item:.2f}' for item in aut_freq_options2]
-
-        for option in temp_str:
-            self.aut_temp_m2_comboBox_2.addItem(option)
-
-        for option in freq_str:
-            self.aut_freq_m2_comboBox.addItem(option)
-
-    def tempfreqinput3(self):
-
-        mat_text3 = self.dat_core_material3_comboBox_2.currentText()
-        get_temp3_list = []
-        get_freq3_list = []
-        if mat_text3:
-            get_temp3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="mvm", temperature=True)
-            get_freq3_list = mdb.drop_down_list(material_name=mat_text3, comparison_type="mvm", freq=True)
-        aut_temp_options3 = get_temp3_list
-        aut_freq_options3 = get_freq3_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options3]
-        freq_str = [f'{item:.2f}' for item in aut_freq_options3]
-
-        for option in temp_str:
-            self.aut_temp_m3_comboBox_2.addItem(option)
-
-        for option in freq_str:
-            self.aut_freq_m3_comboBox.addItem(option)
-
-    def tempfreqinput4(self):
-
-        mat_text4 = self.dat_core_material4_comboBox_2.currentText()
-        get_temp4_list = []
-        get_freq4_list = []
-        if mat_text4:
-            get_temp4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="mvm", temperature=True)
-            get_freq4_list = mdb.drop_down_list(material_name=mat_text4, comparison_type="mvm", freq=True)
-        aut_temp_options4 = get_temp4_list
-        aut_freq_options4 = get_freq4_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options4]
-        freq_str = [f'{item:.2f}' for item in aut_freq_options4]
-
-        for option in temp_str:
-            self.aut_temp_m4_comboBox_2.addItem(option)
-
-        for option in freq_str:
-            self.aut_freq_m4_comboBox.addItem(option)
-
-    def tempfreqinput5(self):
-
-        mat_text5 = self.dat_core_material5_comboBox_2.currentText()
-        get_temp5_list = []
-        get_freq5_list = []
-        if mat_text5:
-            get_temp5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="mvm", temperature=True)
-            get_freq5_list = mdb.drop_down_list(material_name=mat_text5, comparison_type="mvm", freq=True)
-        aut_temp_options5 = get_temp5_list
-        aut_freq_options5 = get_freq5_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options5]
-        freq_str = [f'{item:.2f}' for item in aut_freq_options5]
-
-        for option in temp_str:
-            self.aut_temp_m5_comboBox_2.addItem(option)
-
-        for option in freq_str:
-            self.aut_freq_m5_comboBox.addItem(option)
-
-        ########################################################################
-
-    def temp_dat_input(self):
-
-        mat_text1 = self.dat_core_material_comboBox.currentText()
-
-        get_temp1_list = []
-        if mat_text1:
-            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
-        aut_temp_options1 = get_temp1_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
-
-        for option in temp_str:
-            self.aut_temp_dat_comboBox.addItem(option)
-
-    def temp_meas_input(self):
-
-        mat_text1 = self.dat_core_material_comboBox.currentText()
-
-        get_temp1_list = []
-        if mat_text1:
-            get_temp1_list = mdb.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True)
-        aut_temp_options1 = get_temp1_list
-
-        temp_str = [f'{item:.2f}' for item in aut_temp_options1]
-
-        for option in temp_str:
-            self.aut_temp_meas_comboBox.addItem(option)
-
-
-
-
-    def aut_action_run_simulation(self, sim_value):
-
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, is_gui=True)
-        self.check_onelab_config(geo)
-        core = fmt.Core(core_inner_diameter=sim_value[0], window_h=sim_value[1], window_w=sim_value[2],
-                        mu_rel=3100, phi_mu_deg=12,
-                        sigma=0.6)
-        geo.set_core(core)
-
-        # 3. set air gap parameters
-        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, sim_value[3])
-        geo.set_air_gaps(air_gaps)
-
-        # 4. set conductor parameters: use solid wires
-        winding = fmt.Winding(8, 0, fmt.Conductivity.Copper, fmt.WindingType.Primary, fmt.WindingScheme.Square)
-        winding.set_litz_conductor(None, 600, 35.5e-6, 0.6)
-        # winding.set_solid_conductor(0.0015)
-        geo.set_windings([winding])
-
-        # 5. set isolations
-        isolation = fmt.Isolation()
-        isolation.add_core_isolations(0.001, 0.001, 0.002, 0.001)
-        isolation.add_winding_isolations(0.0001)
-        geo.set_isolation(isolation)
-
-        # 5. create the model
-        geo.create_model(freq=100000, visualize_before=False, save_png=False)
-
-        # 6.a. start simulation
-        geo.single_simulation(freq=100000, current=[3], show_results=True)
-
-    def aut_download_pos_model_data(self):
-
-        list1 = [0.0149, 0.0149, 0.0149]
-        list2 = [0.0295, 0.0295, 0.0295]
-        list3 = [0.01105, 0.01105, 0.01105]
-        list4 = [0.0001, 0.0002, 0.0003]
-        col1 = "core_w"
-        col2 = "window_w"
-        col3 = "window_h"
-        col4 = "core_h"
-        data = pd.DataFrame({col1: list1, col2: list2, col3: list3, col4: list4})
-        data.to_excel('sample_data.xlsx', sheet_name='sheet1', index=False)
-        self.aut_pos_model_download_status.setText("Downloaded!")
 
     def aut_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
         """
@@ -1784,7 +1891,7 @@ class MainWindow(QMainWindow):
         self.aut_litz2_basket_clear_pushbutton.setVisible(status)
         self.aut_litzbasket2_label.setVisible(status)
 
-
+    #  **************************** Manual design tab initializations ***********************************************  #
 
     def md_initialize_controls(self) -> None:
         """
@@ -2782,63 +2889,6 @@ class MainWindow(QMainWindow):
             #----------------------------------------------------------------------
             vww.set_winding(winding, 9, None)
             geo.set_winding_window(winding_window)
-
-
-
-            # # -----------------------------------------------
-            # # Conductors
-            # # -----------------------------------------------
-            #
-            #
-            # if self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["square"]:
-            #     fmt.WindingScheme = fmt.WindingScheme.SquareFullWidth
-            # elif self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["hexa"]:
-            #     fmt.WindingScheme = fmt.WindingScheme.Hexagonal
-            #
-            # if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
-            #     self.md_simulation_QLabel.setText('setze conductors')
-            #     winding = fmt.Winding(int(self.md_winding1_turns_lineEdit.text()), 0,
-            #                           fmt.Conductivity.Copper,
-            #                           fmt.WindingType.Primary,
-            #                           fmt.WindingScheme)
-            #     cond_radii = comma_str_to_point_float(self.md_winding1_radius_lineEdit.text())
-            #     winding.set_solid_conductor(cond_radii)
-            #     geo.set_windings([winding])
-            #     isolation = fmt.Isolation()
-            #     isolation.add_core_isolations(comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
-            #                                   comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
-            #                                   comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
-            #                                   comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            #     isolation.add_winding_isolations(comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()))
-            #     geo.set_isolation(isolation)
-            #
-            # elif self.md_winding1_type_comboBox.currentText() == self.translation_dict['litz']:
-            #     litz_para_type = ''
-            #     if self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict['implicit_litz_radius']:
-            #         litz_para_type = "implicit_litz_radius"
-            #     elif self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict[
-            #         'implicit_ff']:
-            #         litz_para_type = 'implicit_ff'
-            #     elif self.md_winding1_implicit_litz_comboBox.currentText() == self.translation_dict[
-            #         'implicit_strands_number']:
-            #         litz_para_type = 'implicit_strands_number'
-            #     winding = fmt.Winding(int(self.md_winding1_turns_lineEdit.text()), 0,
-            #                           fmt.Conductivity.Copper,
-            #                           fmt.WindingType.Primary,
-            #                           fmt.WindingScheme)
-            #     cond_radii = comma_str_to_point_float(self.md_winding1_radius_lineEdit.text())
-            #     winding.set_litz_conductor(None,
-            #                                comma_str_to_point_float(self.md_winding1_strands_lineEdit.text()),
-            #                                comma_str_to_point_float(self.md_winding1_strand_radius_lineEdit.text()),
-            #                                comma_str_to_point_float(self.md_winding1_fill_factor_lineEdit.text()))
-            #     geo.set_windings([winding])
-            #     isolation = fmt.Isolation()
-            #     isolation.add_core_isolations(comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
-            #                                   comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
-            #                                   comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
-            #                                   comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            #     isolation.add_winding_isolations(comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()))
-            #     geo.set_isolation(isolation)
 
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
