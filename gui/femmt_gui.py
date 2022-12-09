@@ -3204,6 +3204,18 @@ class MainWindow(QMainWindow):
                   for material_name in material_names]
         mu_rel = [int(item) for item in mu_rel_val]
 
+        print(f"core_inner_diameter: {[self.core_w]}")
+        print(f"window_h: {[self.window_h]}")
+        print(f"window_w: {[self.window_w]}")
+        print(f"no_of_turns: {[n_turns]}")
+        print(f"n_air_gaps: {[air_gap_count]}")
+        print(f"air_gap_h: {air_gap_heigth_array}")
+        print(f"air_gap_position: {air_gap_position_array}")
+        print(f"mu_rel: {mu_rel}")
+        print(f"component_type: {self.md_simulation_type_comboBox.currentText()}")
+
+
+
         #mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
                                       #[air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
 

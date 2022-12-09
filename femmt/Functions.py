@@ -950,6 +950,11 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     return r_air_gap
 
 def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
+
+    print(f"air_gap_total_hight: {air_gap_total_hight}")
+    print(f"core_inner_diameter: {core_inner_diameter}")
+    print(f"core_hight: {core_hight}")
+
     """
     Returns the reluctance of a round-infinite air gap structure and includes fringing effects
 
