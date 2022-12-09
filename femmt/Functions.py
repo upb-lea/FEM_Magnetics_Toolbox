@@ -930,7 +930,8 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     :param core_hight_lower: core hight lower (needed for better calculating fringing effects)
     :return: air gap reluctance for round-round structure including fringing effects
     """
-    air_gap_radius = core_inner_diameter/ 2
+    core_inner_diameter = np.array(core_inner_diameter)
+    air_gap_radius = core_inner_diameter / 2
 
     air_gap_basic_hight = air_gap_total_hight / 2
     r_basic_upper = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_upper)
@@ -957,6 +958,7 @@ def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
     :param core_hight: core hight (needed for better calculating fringing effects)
     :return: air gap reluctance for round-inf structure including fringing effects
     """
+
     air_gap_total_hight = np.array(air_gap_total_hight)
     core_inner_diameter = np.array(core_inner_diameter)
     core_hight = np.array(core_hight)
@@ -1309,7 +1311,7 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     with open(simulation_result_file_path, "r") as fd:
         loaded_results_dict = json.loads(fd.read())
 
-    inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductivity"][0]
+    inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductance"][0]
     loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
     loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
     loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]

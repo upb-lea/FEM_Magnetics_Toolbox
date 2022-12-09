@@ -30,7 +30,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="md_QWidget_2">
        <attribute name="title">
@@ -235,7 +235,7 @@
                    <item row="6" column="4">
                     <widget class="QLineEdit" name="md_winding1_strand_radius_lineEdit">
                      <property name="text">
-                      <string>35.5e-6</string>
+                      <string>100e-6</string>
                      </property>
                     </widget>
                    </item>
@@ -245,7 +245,7 @@
                    <item row="6" column="1">
                     <widget class="QLineEdit" name="md_winding1_strands_lineEdit">
                      <property name="text">
-                      <string>600</string>
+                      <string>150</string>
                      </property>
                     </widget>
                    </item>
@@ -266,7 +266,7 @@
                    <item row="4" column="1">
                     <widget class="QLineEdit" name="md_winding1_radius_lineEdit">
                      <property name="text">
-                      <string>0.0015</string>
+                      <string>0.0013</string>
                      </property>
                     </widget>
                    </item>
@@ -376,7 +376,7 @@
                    <item row="4" column="1">
                     <widget class="QLineEdit" name="md_winding2_radius_lineEdit">
                      <property name="text">
-                      <string>0.0015</string>
+                      <string>0.0013</string>
                      </property>
                     </widget>
                    </item>
@@ -1862,6 +1862,28 @@
              </property>
             </widget>
            </widget>
+           <widget class="QGroupBox" name="groupBox_38">
+            <property name="geometry">
+             <rect>
+              <x>460</x>
+              <y>10</y>
+              <width>605</width>
+              <height>985</height>
+             </rect>
+            </property>
+            <property name="title">
+             <string>Simulation Visual Output</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_34">
+             <item row="0" column="0">
+              <widget class="QLabel" name="md_loss_plot_label_2">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </widget>
          </widget>
         </item>
@@ -1893,7 +1915,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="md_QWidget_3">
          <attribute name="title">
@@ -1915,6 +1937,19 @@
           </item>
           <item row="2" column="0">
            <spacer name="verticalSpacer_15">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="0">
+           <spacer name="verticalSpacer_14">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -1955,8 +1990,29 @@
                  <string>Core Definition</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_27">
-                 <item row="19" column="1">
-                  <spacer name="horizontalSpacer_72">
+                 <item row="15" column="0">
+                  <widget class="QLabel" name="label_53">
+                   <property name="text">
+                    <string>Core inner diameter [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="aut_core_material_label">
+                   <property name="text">
+                    <string>Material</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="19" column="2">
+                  <widget class="QLineEdit" name="aut_step_window_height_lineEdit">
+                   <property name="text">
+                    <string>5</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="18" column="3">
+                  <spacer name="horizontalSpacer_73">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
@@ -1968,51 +2024,10 @@
                    </property>
                   </spacer>
                  </item>
-                 <item row="17" column="0">
-                  <widget class="QLineEdit" name="aut_min_core_width_lineEdit">
+                 <item row="17" column="2">
+                  <widget class="QLineEdit" name="aut_min_window_height_lineEdit">
                    <property name="text">
-                    <string>0.007</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="13" column="4">
-                  <widget class="QPushButton" name="aut_core_geo_add_pushButton">
-                   <property name="text">
-                    <string>Add</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="15" column="2">
-                  <widget class="QLabel" name="label_55">
-                   <property name="text">
-                    <string>Window Height [m]</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="17" column="1">
-                  <spacer name="horizontalSpacer_24">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item row="17" column="4">
-                  <widget class="QLineEdit" name="aut_min_window_width_lineEdit">
-                   <property name="text">
-                    <string>0.010</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="15" column="4">
-                  <widget class="QLabel" name="label_14">
-                   <property name="text">
-                    <string>Window Width [m]</string>
+                    <string>0.01</string>
                    </property>
                   </widget>
                  </item>
@@ -2029,10 +2044,58 @@
                    </property>
                   </spacer>
                  </item>
-                 <item row="18" column="0">
-                  <widget class="QLineEdit" name="aut_max_core_width_lineEdit">
+                 <item row="19" column="1">
+                  <spacer name="horizontalSpacer_72">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="15" column="4">
+                  <widget class="QLabel" name="label_14">
                    <property name="text">
-                    <string>0.020</string>
+                    <string>Window Width [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="17" column="4">
+                  <widget class="QLineEdit" name="aut_min_window_width_lineEdit">
+                   <property name="text">
+                    <string>0.005</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="19" column="0">
+                  <widget class="QLineEdit" name="aut_step_core_width_lineEdit">
+                   <property name="text">
+                    <string>10</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="14" column="4">
+                  <widget class="QPushButton" name="aut_core_geo_manual_add_pushButton">
+                   <property name="text">
+                    <string>Add</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="15" column="2">
+                  <widget class="QLabel" name="label_55">
+                   <property name="text">
+                    <string>Window Height [m]</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="14" column="0" colspan="3">
+                  <widget class="QLabel" name="label_78">
+                   <property name="text">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;2D axisymmetric core parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                   </widget>
                  </item>
@@ -2049,65 +2112,17 @@
                    </property>
                   </spacer>
                  </item>
-                 <item row="18" column="3">
-                  <spacer name="horizontalSpacer_73">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item row="15" column="0">
-                  <widget class="QLabel" name="label_53">
+                 <item row="17" column="0">
+                  <widget class="QLineEdit" name="aut_min_core_width_lineEdit">
                    <property name="text">
-                    <string>Core inner diameter [m]</string>
+                    <string>0.005</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="14" column="0" colspan="3">
-                  <widget class="QLabel" name="label_78">
-                   <property name="text">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;2D axisymmetric core parameters&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="aut_core_material_label">
-                   <property name="text">
-                    <string>Material</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="2">
-                  <widget class="QPushButton" name="aut_select_all_core_mat_pushButton">
+                 <item row="13" column="2">
+                  <widget class="QPushButton" name="aut_select_all_core_geo_pushButton">
                    <property name="text">
                     <string>Select all</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="18" column="2">
-                  <widget class="QLineEdit" name="aut_max_window_height_lineEdit">
-                   <property name="text">
-                    <string>0.020</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0" rowspan="2">
-                  <widget class="QLabel" name="label_103">
-                   <property name="text">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Crore from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="3" colspan="2">
-                  <widget class="QPushButton" name="aut_core_material_add_pushButton">
-                   <property name="text">
-                    <string>Add</string>
                    </property>
                   </widget>
                  </item>
@@ -2124,38 +2139,10 @@
                    </property>
                   </spacer>
                  </item>
-                 <item row="19" column="0">
-                  <widget class="QLineEdit" name="aut_step_core_width_lineEdit">
+                 <item row="19" column="4">
+                  <widget class="QLineEdit" name="aut_step_window_width_lineEdit">
                    <property name="text">
-                    <string>0</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QListWidget" name="aut_core_material_data_listWidget">
-                   <property name="selectionMode">
-                    <enum>QAbstractItemView::ExtendedSelection</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="19" column="2">
-                  <widget class="QLineEdit" name="aut_step_window_height_lineEdit">
-                   <property name="text">
-                    <string>0</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="13" column="2">
-                  <widget class="QPushButton" name="aut_select_all_core_geo_pushButton">
-                   <property name="text">
-                    <string>Select all</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="17" column="2">
-                  <widget class="QLineEdit" name="aut_min_window_height_lineEdit">
-                   <property name="text">
-                    <string>0.007</string>
+                    <string>10</string>
                    </property>
                   </widget>
                  </item>
@@ -2166,22 +2153,70 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="19" column="4">
-                  <widget class="QLineEdit" name="aut_step_window_width_lineEdit">
+                 <item row="2" column="0" rowspan="2">
+                  <widget class="QLabel" name="label_103">
                    <property name="text">
-                    <string>0</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#1c71d8;&quot;&gt;Crore from database&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                   </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="QPushButton" name="aut_select_all_core_mat_pushButton">
+                   <property name="text">
+                    <string>Select all</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="18" column="2">
+                  <widget class="QLineEdit" name="aut_max_window_height_lineEdit">
+                   <property name="text">
+                    <string>0.08</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QListWidget" name="aut_core_material_data_listWidget">
+                   <property name="selectionMode">
+                    <enum>QAbstractItemView::ExtendedSelection</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3" colspan="2">
+                  <widget class="QPushButton" name="aut_core_material_add_pushButton">
+                   <property name="text">
+                    <string>Add</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="18" column="0">
+                  <widget class="QLineEdit" name="aut_max_core_width_lineEdit">
+                   <property name="text">
+                    <string>0.05</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="17" column="1">
+                  <spacer name="horizontalSpacer_24">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
                  </item>
                  <item row="18" column="4">
                   <widget class="QLineEdit" name="aut_max_window_width_lineEdit">
                    <property name="text">
-                    <string>0.019</string>
+                    <string>0.04</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="14" column="4">
-                  <widget class="QPushButton" name="aut_core_geo_manual_add_pushButton">
+                 <item row="13" column="4">
+                  <widget class="QPushButton" name="aut_core_geo_add_pushButton">
                    <property name="text">
                     <string>Add</string>
                    </property>
@@ -2736,7 +2771,7 @@
                  <item row="0" column="3">
                   <widget class="QLineEdit" name="aut_max_winding1_turns_lineEdit">
                    <property name="text">
-                    <string>14</string>
+                    <string>20</string>
                    </property>
                   </widget>
                  </item>
@@ -2762,7 +2797,7 @@
                  <item row="0" column="1">
                   <widget class="QLineEdit" name="aut_min_winding1_turns_lineEdit">
                    <property name="text">
-                    <string>8</string>
+                    <string>2</string>
                    </property>
                   </widget>
                  </item>
@@ -3105,7 +3140,7 @@
                  <item row="0" column="1">
                   <widget class="QLineEdit" name="aut_temp_lineEdit">
                    <property name="text">
-                    <string>25</string>
+                    <string>100</string>
                    </property>
                   </widget>
                  </item>
@@ -3515,19 +3550,6 @@
             </item>
            </layout>
           </item>
-          <item row="1" column="0">
-           <spacer name="verticalSpacer_14">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="tab_3">
@@ -3545,8 +3567,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1236</width>
-               <height>924</height>
+               <width>59</width>
+               <height>16</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_26">
@@ -3571,7 +3593,7 @@
                 </rect>
                </property>
                <property name="text">
-                <string>0.00012</string>
+                <string>0.000120</string>
                </property>
               </widget>
               <widget class="QComboBox" name="aut_rel_tolerance_val_comboBox">
@@ -3737,7 +3759,7 @@
                 </rect>
                </property>
                <property name="text">
-                <string>3</string>
+                <string>8</string>
                </property>
               </widget>
               <widget class="QLabel" name="label_117">
@@ -3854,7 +3876,7 @@
                 </rect>
                </property>
                <property name="text">
-                <string>100</string>
+                <string>30</string>
                </property>
               </widget>
               <widget class="QLabel" name="label_120">
@@ -4007,8 +4029,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1236</width>
-               <height>971</height>
+               <width>59</width>
+               <height>16</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_27">
@@ -4121,7 +4143,7 @@
                 </rect>
                </property>
                <property name="text">
-                <string>Directory name: </string>
+                <string>Directory path: </string>
                </property>
               </widget>
               <widget class="QGroupBox" name="groupBox_34">
@@ -4152,7 +4174,7 @@
                  <property name="geometry">
                   <rect>
                    <x>0</x>
-                   <y>-63</y>
+                   <y>0</y>
                    <width>1072</width>
                    <height>522</height>
                   </rect>
@@ -4251,7 +4273,7 @@
               </rect>
              </property>
              <property name="text">
-              <string>Directory name: </string>
+              <string>Directory path:</string>
              </property>
             </widget>
             <widget class="QLineEdit" name="aut_load_design_directoryname_lineEdit">
@@ -6860,7 +6882,7 @@
              <property name="title">
               <string>Preview</string>
              </property>
-             <widget class="QPushButton" name="dat_update_preview_pushbutton">
+             <widget class="QPushButton" name="dat_update_preview_pushbutton1">
               <property name="geometry">
                <rect>
                 <x>10</x>
@@ -6891,7 +6913,7 @@
                  <x>0</x>
                  <y>0</y>
                  <width>1072</width>
-                 <height>1443</height>
+                 <height>2043</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -6900,7 +6922,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
-                    <height>350</height>
+                    <height>500</height>
                    </size>
                   </property>
                  </widget>
@@ -6910,7 +6932,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
-                    <height>350</height>
+                    <height>500</height>
                    </size>
                   </property>
                  </widget>
@@ -6920,7 +6942,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
-                    <height>350</height>
+                    <height>500</height>
                    </size>
                   </property>
                  </widget>
@@ -6930,7 +6952,7 @@
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
-                    <height>350</height>
+                    <height>500</height>
                    </size>
                   </property>
                  </widget>
@@ -6959,7 +6981,7 @@
           <property name="title">
            <string>Preview</string>
           </property>
-          <widget class="QPushButton" name="dat_update_preview_pushbutton_2">
+          <widget class="QPushButton" name="dat_update_preview_pushbutton2">
            <property name="geometry">
             <rect>
              <x>10</x>
@@ -6990,7 +7012,7 @@
               <x>0</x>
               <y>0</y>
               <width>1072</width>
-              <height>1443</height>
+              <height>1029</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -6999,7 +7021,7 @@
                <property name="minimumSize">
                 <size>
                  <width>0</width>
-                 <height>350</height>
+                 <height>500</height>
                 </size>
                </property>
               </widget>
@@ -7009,27 +7031,7 @@
                <property name="minimumSize">
                 <size>
                  <width>0</width>
-                 <height>350</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QWidget" name="plotwidget_15" native="true">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>350</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QWidget" name="plotwidget_16" native="true">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>350</height>
+                 <height>500</height>
                 </size>
                </property>
               </widget>
@@ -9498,6 +9500,598 @@
              <height>28</height>
             </rect>
            </property>
+          </widget>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tab_8">
+         <attribute name="title">
+          <string>Datasheet-Measurement</string>
+         </attribute>
+         <widget class="QGroupBox" name="groupBox_39">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>10</y>
+            <width>1129</width>
+            <height>269</height>
+           </rect>
+          </property>
+          <property name="title">
+           <string/>
+          </property>
+          <widget class="QLabel" name="label_226">
+           <property name="geometry">
+            <rect>
+             <x>40</x>
+             <y>110</y>
+             <width>181</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Temperature (Datasheet)</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_227">
+           <property name="geometry">
+            <rect>
+             <x>260</x>
+             <y>40</y>
+             <width>71</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Material</string>
+           </property>
+          </widget>
+          <widget class="QComboBox" name="dat_core_material_comboBox">
+           <property name="geometry">
+            <rect>
+             <x>250</x>
+             <y>70</y>
+             <width>93</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="palette">
+            <palette>
+             <active>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Button">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>170</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Light">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Midlight">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>212</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Dark">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>85</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Mid">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>113</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Text">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="BrightText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ButtonText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Window">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>170</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Shadow">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="AlternateBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>212</red>
+                 <green>127</green>
+                 <blue>127</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>220</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </active>
+             <inactive>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>208</red>
+                 <green>208</green>
+                 <blue>208</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Button">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>64</red>
+                 <green>65</green>
+                 <blue>66</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Light">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Midlight">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>227</red>
+                 <green>227</green>
+                 <blue>227</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Dark">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>64</red>
+                 <green>65</green>
+                 <blue>66</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Mid">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>160</red>
+                 <green>160</green>
+                 <blue>160</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Text">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>208</red>
+                 <green>208</green>
+                 <blue>208</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="BrightText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>51</green>
+                 <blue>51</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ButtonText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>208</red>
+                 <green>208</green>
+                 <blue>208</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>46</red>
+                 <green>47</green>
+                 <blue>48</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Window">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>46</red>
+                 <green>47</green>
+                 <blue>48</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Shadow">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>105</red>
+                 <green>105</green>
+                 <blue>105</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="AlternateBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>53</red>
+                 <green>54</green>
+                 <blue>55</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>64</red>
+                 <green>65</green>
+                 <blue>66</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>208</red>
+                 <green>208</green>
+                 <blue>208</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </inactive>
+             <disabled>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>85</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Button">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>170</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Light">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Midlight">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>212</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Dark">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>85</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Mid">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>113</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Text">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>85</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="BrightText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>255</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ButtonText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>85</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>170</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Window">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>170</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Shadow">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="AlternateBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>53</red>
+                 <green>54</green>
+                 <blue>55</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>64</red>
+                 <green>65</green>
+                 <blue>66</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>208</red>
+                 <green>208</green>
+                 <blue>208</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </disabled>
+            </palette>
+           </property>
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_228">
+           <property name="geometry">
+            <rect>
+             <x>350</x>
+             <y>110</y>
+             <width>31</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>°C</string>
+           </property>
+          </widget>
+          <widget class="QComboBox" name="aut_temp_dat_comboBox">
+           <property name="geometry">
+            <rect>
+             <x>250</x>
+             <y>110</y>
+             <width>91</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+          <widget class="QComboBox" name="aut_temp_meas_comboBox">
+           <property name="geometry">
+            <rect>
+             <x>250</x>
+             <y>150</y>
+             <width>91</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_229">
+           <property name="geometry">
+            <rect>
+             <x>350</x>
+             <y>150</y>
+             <width>31</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>°C</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_230">
+           <property name="geometry">
+            <rect>
+             <x>40</x>
+             <y>150</y>
+             <width>191</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Temperature (Measurement)</string>
+           </property>
+          </widget>
+         </widget>
+         <widget class="QGroupBox" name="groupBox_63">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>290</y>
+            <width>1129</width>
+            <height>2000</height>
+           </rect>
+          </property>
+          <property name="title">
+           <string>Preview</string>
+          </property>
+          <widget class="QPushButton" name="dat_update_preview_pushbutton3">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>30</y>
+             <width>231</width>
+             <height>31</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Update preview</string>
+           </property>
+          </widget>
+          <widget class="QScrollArea" name="scrollArea_9">
+           <property name="geometry">
+            <rect>
+             <x>20</x>
+             <y>70</y>
+             <width>1091</width>
+             <height>461</height>
+            </rect>
+           </property>
+           <property name="widgetResizable">
+            <bool>true</bool>
+           </property>
+           <widget class="QWidget" name="scrollAreaWidgetContents_9">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>1072</width>
+              <height>522</height>
+             </rect>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_14">
+             <item>
+              <widget class="QWidget" name="plotwidget_15" native="true">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>500</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </widget>
          </widget>
         </widget>
