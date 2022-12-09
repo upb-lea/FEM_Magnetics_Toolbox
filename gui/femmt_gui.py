@@ -899,6 +899,488 @@ class MainWindow(QMainWindow):
         """
         self.load_designs(self.matplotlib_widget_aut_tab4)
 
+
+    #  **************************** Automated design tab initializations ********************************************  #
+
+    def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
+        """
+        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        :param implicit_type_from_combo_box: input type to implicit
+        :type implicit_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_litz_radius']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(False)
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_strands_number']:
+            self.aut_winding1_strands_lineEdit.setEnabled(False)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+        if implicit_typ_from_combo_box == self.translation_dict['implicit_ff']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+
+    def oncgeoClearallClicked(self):
+        """
+            Function to clear all entries
+        """
+        self.aut_core_geometry_basket_listWidget.clear()
+
+    def oncgeoClearClicked(self):
+        """
+            Function to add the manually selected core choice to the basket.
+        """
+        List_item = self.aut_core_geometry_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_core_geometry_basket_listWidget.takeItem(self.aut_core_geometry_basket_listWidget.row(item))
+
+    def oncgeoMultipleClicked(self):
+        """
+            Function to accept multiple choices
+        """
+        itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_geometry_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_core_geometry_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_core_geometry_basket_listWidget.addItem(i)
+        else:
+            pass
+
+    def oncgeomanualMultipleClicked(self):
+        """
+            Function to for the manual
+        """
+        items = []
+
+        if self.aut_min_core_width_lineEdit.text() and self.aut_max_core_width_lineEdit.text() and self.aut_step_core_width_lineEdit.text() \
+                and self.aut_min_window_height_lineEdit.text() and self.aut_max_window_height_lineEdit.text() and self.aut_step_window_height_lineEdit.text() \
+                and self.aut_min_window_width_lineEdit.text() and self.aut_max_window_width_lineEdit.text() and self.aut_step_window_width_lineEdit.text():
+            items.append(f"{self.aut_min_core_width_lineEdit.text()}*{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
+        itemsTextList = [str(self.aut_core_geometry_manual_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_geometry_manual_basket_listWidget.count())]
+        for i in items:
+            if i not in itemsTextList:
+                self.aut_core_geometry_manual_basket_listWidget.addItem(i)
+
+    def cgeoselectall(self):
+        """
+            Function to select all the choices.
+        """
+        self.aut_core_geometry_listWidget.selectAll()
+
+    def oncgeoClicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
+        itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_geometry_basket_listWidget.count())]
+        checkitem = self.aut_core_geometry_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_core_geometry_basket_listWidget.addItem(self.aut_core_geometry_listWidget.currentItem().text())
+        else:
+            pass
+
+    def onairgaptypeClearallClicked(self):
+        """
+            Function to clear all the entries.
+        """
+        self.aut_airgap_type_basket_listwidget.clear()
+
+    def onairgaptypeClearClicked(self):
+        """
+            Function to clear the selected entry.
+        """
+        List_item = self.aut_airgap_type_basket_listwidget.selectedItems()
+        for item in List_item:
+            self.aut_airgap_type_basket_listwidget.takeItem(self.aut_airgap_type_basket_listwidget.row(item))
+
+    def onairgaptypeMultipleClicked(self):
+        """
+            Function to accept multiple choices.
+        """
+        itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
+                         range(self.aut_airgap_type_basket_listwidget.count())]
+        checkitems = [item.text() for item in self.aut_airgap_type_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_airgap_type_basket_listwidget.addItem(i)
+        else:
+            pass
+
+    def onairgaptypeClicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
+        itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
+                         range(self.aut_airgap_type_basket_listwidget.count())]
+        checkitem = self.aut_airgap_type_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_airgap_type_basket_listwidget.addItem(self.aut_airgap_type_listWidget.currentItem().text())
+        else:
+            pass
+
+    def airgaptypeselectall(self):
+        """
+            Function to select all the choices.
+        """
+        self.aut_airgap_type_listWidget.selectAll()
+
+    def oncmatClearallClicked(self):
+        """
+            Function to clear all entries.
+        """
+        self.aut_core_material_basket_listWidget.clear()
+
+    def oncmatClearClicked(self):
+        """
+            Function to clear the selected entry.
+        """
+        List_item = self.aut_core_material_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_core_material_basket_listWidget.takeItem(self.aut_core_material_basket_listWidget.row(item))
+
+    def oncmatMultipleClicked(self):
+        """
+            Function to accept multiple choices.
+        """
+        itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_material_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_core_material_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_core_material_basket_listWidget.addItem(i)
+        else:
+            pass
+
+
+    def cmatselectall(self):
+        """
+            Function to select all the choices.
+        """
+        self.aut_core_material_data_listWidget.selectAll()
+
+    def oncmatClicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
+        itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_core_material_basket_listWidget.count())]
+        checkitem = self.aut_core_material_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_core_material_basket_listWidget.addItem(self.aut_core_material_data_listWidget.currentItem().text())
+        else:
+            pass
+
+    def onl1ClearallClicked(self):
+        """
+            Function to clear all entries.
+        """
+        self.aut_litz_basket_listWidget.clear()
+
+    def onl1ClearClicked(self):
+        """
+            Function to clear the selected entry.
+        """
+        List_item = self.aut_litz_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_litz_basket_listWidget.takeItem(self.aut_litz_basket_listWidget.row(item))
+
+    def onl1MultipleClicked(self):
+        """
+            Function to accept multiple choices.
+        """
+        itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_litz_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_litz_basket_listWidget.addItem(i)
+        else:
+            pass
+
+    def onl1Clicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
+        itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz_basket_listWidget.count())]
+        checkitem = self.aut_litz_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_litz_basket_listWidget.addItem(self.aut_litz_data_listWidget.currentItem().text())
+        else:
+            pass
+
+    def litz1selectall(self):
+        """
+            Function to select all the choices.
+        """
+        self.aut_litz_data_listWidget.selectAll()
+
+
+    def onl2ClearallClicked(self):
+        """
+            Function to clear all entries.
+        """
+        self.aut_litz2_basket_listWidget.clear()
+
+    def onl2ClearClicked(self):
+        """
+            Function to clear the selected entry.
+        """
+        List_item = self.aut_litz2_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_litz2_basket_listWidget.takeItem(self.aut_litz2_basket_listWidget.row(item))
+
+    def onl2MultipleClicked(self):
+        """
+            Function to accept multiple choices.
+        """
+        itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz2_basket_listWidget.count())]
+        checkitems = [item.text() for item in self.aut_litz2_data_listWidget.selectedItems()]
+        reqlist = list(set(checkitems).difference(itemsTextList))
+        for i in reqlist:
+            self.aut_litz2_basket_listWidget.addItem(i)
+        else:
+            pass
+
+    def onl2Clicked(self):
+        """
+            Function to add a choice by click to the basket if it is not already in the basket.
+        """
+        itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
+                         range(self.aut_litz2_basket_listWidget.count())]
+        checkitem = self.aut_litz2_data_listWidget.currentItem().text()
+        if checkitem not in itemsTextList:
+            self.aut_litz2_basket_listWidget.addItem(self.aut_litz2_data_listWidget.currentItem().text())
+        else:
+            pass
+
+    def litz2selectall(self):
+        """
+            Function to select all the choices.
+        """
+        self.aut_litz2_data_listWidget.selectAll()
+
+    def aut_initialize_controls(self) -> None:
+        """
+        Initialize the comboboxes with pre-defined values.
+
+        :return: None
+        :rtype: None
+        """
+        aut_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
+        aut_winding_material_options = [key for key in fmt.wire_material_database()]
+        aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
+        aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
+                                    self.translation_dict['implicit_strands_number']]
+        aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
+        aut_tolerance_val_options = [self.translation_dict['+-10'], self.translation_dict['+-20']]
+        aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
+
+
+        get_material_list = mdb.material_list_in_database(material_list = True)
+        get_material_list.insert(0,None)
+        dat_core_material_options = get_material_list
+
+
+
+        for option in dat_core_material_options:
+            self.dat_core_material1_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material2_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material3_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material4_comboBox.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material5_comboBox.addItem(option)
+
+        for option in dat_core_material_options:
+            self.dat_core_material1_comboBox_2.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material2_comboBox_2.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material3_comboBox_2.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material4_comboBox_2.addItem(option)
+        for option in dat_core_material_options:
+            self.dat_core_material5_comboBox_2.addItem(option)
+
+        for option in dat_core_material_options:
+            self.dat_core_material_comboBox.addItem(option)
+
+
+        for option in aut_core_geometry_options:
+            self.aut_core_geometry_listWidget.addItem(option)
+        for option in aut_simulation_type_options:
+            self.aut_simulation_type_comboBox.addItem(option)
+        for option in aut_winding_material_options:
+            self.aut_winding1_material_comboBox.addItem(option)
+            self.aut_winding2_material_comboBox.addItem(option)
+        for option in aut_winding_type_options:
+            self.aut_winding1_type_comboBox.addItem(option)
+            self.aut_winding2_type_comboBox.addItem(option)
+        for option in aut_implicit_litz_options:
+            self.aut_winding1_implicit_litz_comboBox.addItem(option)
+            self.aut_winding2_implicit_litz_comboBox.addItem(option)
+        for option in aut_winding_scheme_options:
+            self.aut_winding1_scheme_comboBox.addItem(option)
+            self.aut_winding2_scheme_comboBox.addItem(option)
+        for option in aut_tolerance_val_options:
+            self.aut_rel_tolerance_val_comboBox.addItem(option)
+        for option in aut_tolerance_val_options:
+            self.aut_load_tolerance_val_comboBox.addItem(option)
+
+        self.aut_min_core_width_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_core_width_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_core_width_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_window_height_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_window_height_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_window_height_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_window_width_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_window_width_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_window_width_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_winding1_turns_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_winding1_turns_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_min_winding2_turns_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_winding2_turns_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_step_winding2_turns_lineEdit.setPlaceholderText("Step value")
+        self.aut_min_air_gap_count_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_max_air_gap_count_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_goal_inductance_val_lineEdit.setPlaceholderText(" Value in Henry")
+        self.aut_air_gap_length_min_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_air_gap_length_max_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_air_gap_length_step_lineEdit.setPlaceholderText("Step value")
+        self.aut_air_gap_position_min_lineEdit.setPlaceholderText("Minimum value")
+        self.aut_air_gap_position_max_lineEdit.setPlaceholderText("Maximum value")
+        self.aut_air_gap_position_step_lineEdit.setPlaceholderText("Step value")
+
+
+    def aut_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
+        """
+        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        :param implicit_type_from_combo_box: input type to implicit
+        :type implicit_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(False)
+        if implicit_type_from_combo_box == self.translation_dict['implicit_strands_number']:
+            self.aut_winding1_strands_lineEdit.setEnabled(False)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+        if implicit_type_from_combo_box == self.translation_dict['implicit_ff']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+
+    def aut_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
+        """
+        Enables / Disables input parameter for litz/solid wire
+        :param wire_type_from_combot_box: wire type
+        :type wire_type_from_combot_box: str
+        :return: None
+        :rtype: None
+        """
+        self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
+        if wire_type_from_combot_box == self.translation_dict['litz']:
+            self.aut_winding1_strands_lineEdit.setEnabled(True)
+            self.aut_winding1_implicit_litz_comboBox.setEnabled(True)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+            self.aut_litz_data_listWidget.setEnabled(True)
+            self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
+
+        elif wire_type_from_combot_box == self.translation_dict['solid']:
+            self.aut_winding1_strands_lineEdit.setEnabled(False)
+            self.aut_winding1_implicit_litz_comboBox.setEnabled(False)
+            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
+            self.aut_winding1_strand_radius_lineEdit.setEnabled(False)
+            self.aut_winding1_radius_lineEdit.setEnabled(True)
+            self.aut_litz_data_listWidget.setEnabled(False)
+
+
+
+
+    def aut_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
+        """
+        Action performed when signal of aut_simulation_type_comboBox text has changed.
+        Action will be enabling / disabling user inputs for not-used windings.
+
+        :param simulation_type_from_combo_box:
+        :type simulation_type_from_combo_box: str
+        :return: None
+        :rtype: None
+        """
+        if simulation_type_from_combo_box == self.translation_dict['inductor']:
+            self.aut_winding2_enable(False)
+
+        elif simulation_type_from_combo_box == self.translation_dict['transformer']:
+            # set winding definitions of winding 2 to editable
+            self.aut_winding2_enable(True)
+
+        elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
+            # set winding definitions of winding 2 to editable
+            self.aut_winding2_enable(True)
+
+    def aut_winding2_enable(self, status: bool) -> None:
+        """
+        Enable/disable all fields being in contact with winding 2.
+
+        :param status: True / False
+        :type status: bool
+        :return: None
+        :rtype: None
+        """
+        # set winding definitions of winding 2 (enable and visible)
+        self.aut_winding2_material_comboBox.setEnabled(status)
+        self.aut_winding2_type_comboBox.setEnabled(status)
+        self.aut_min_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_max_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_step_winding2_turns_lineEdit.setEnabled(status)
+        self.aut_winding2_strands_lineEdit.setEnabled(status)
+        self.aut_winding2_radius_lineEdit.setEnabled(False)
+        self.aut_winding2_fill_factor_lineEdit.setEnabled(status)
+        self.aut_winding2_strand_radius_lineEdit.setEnabled(status)
+        self.aut_winding2_groupBox.setVisible(status)
+
+        # Set turns of winding 2 (enable and visible)
+        self.aut_min_winding2_turns_lineEdit.setVisible(status)
+        self.aut_max_winding2_turns_lineEdit.setVisible(status)
+        self.aut_step_winding2_turns_lineEdit.setVisible(status)
+        self.aut_winding2_scheme_comboBox.setVisible(status)
+        self.aut_winding2_turns_label.setVisible(status)
+        self.aut_winding2_scheme_label.setVisible(status)
+
+        # set isolation of winding 2 (enable and visible)
+        self.aut_isolation_s2s_lineEdit.setEnabled(status)
+        self.aut_isolation_p2s_lineEdit.setEnabled(status)
+        self.aut_isolation_s2s_lineEdit.setVisible(status)
+        self.aut_isolation_p2s_lineEdit.setVisible(status)
+        self.aut_isolation_s2s_label.setVisible(status)
+        self.aut_isolation_p2s_label.setVisible(status)
+
+        self.aut_litz2_basket_listWidget.setEnabled(status)
+        self.aut_litz2_basket_listWidget.setVisible(status)
+        self.aut_litz2_basket_clear_all_pushbutton.setVisible(status)
+        self.aut_litz2_basket_clear_pushbutton.setVisible(status)
+        self.aut_litzbasket2_label.setVisible(status)
+
     #  **************************** Database tab ********************************************************************  #
 
     def datupdateraph1(self, matplotlib_widget1, matplotlib_widget2, matplotlib_widget3, matplotlib_widget4):
@@ -1408,489 +1890,6 @@ class MainWindow(QMainWindow):
         for option in temp_str:
             self.aut_temp_meas_comboBox.addItem(option)
 
-    #  **************************** Automated design tab initializations ********************************************  #
-
-    def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
-        """
-        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
-        :param implicit_type_from_combo_box: input type to implicit
-        :type implicit_type_from_combo_box: str
-        :return: None
-        :rtype: None
-        """
-        if implicit_typ_from_combo_box == self.translation_dict['implicit_litz_radius']:
-            self.aut_winding1_strands_lineEdit.setEnabled(True)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(False)
-        if implicit_typ_from_combo_box == self.translation_dict['implicit_strands_number']:
-            self.aut_winding1_strands_lineEdit.setEnabled(False)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(True)
-        if implicit_typ_from_combo_box == self.translation_dict['implicit_ff']:
-            self.aut_winding1_strands_lineEdit.setEnabled(True)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(True)
-
-    def oncgeoClearallClicked(self):
-        """
-            Function to clear all entries
-        """
-        self.aut_core_geometry_basket_listWidget.clear()
-
-    def oncgeoClearClicked(self):
-        """
-            Function to add the manually selected core choice to the basket.
-        """
-        List_item = self.aut_core_geometry_basket_listWidget.selectedItems()
-        for item in List_item:
-            self.aut_core_geometry_basket_listWidget.takeItem(self.aut_core_geometry_basket_listWidget.row(item))
-
-    def oncgeoMultipleClicked(self):
-        """
-            Function to accept multiple choices
-        """
-        itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_core_geometry_basket_listWidget.count())]
-        checkitems = [item.text() for item in self.aut_core_geometry_listWidget.selectedItems()]
-        reqlist = list(set(checkitems).difference(itemsTextList))
-        for i in reqlist:
-            self.aut_core_geometry_basket_listWidget.addItem(i)
-        else:
-            pass
-
-    def oncgeomanualMultipleClicked(self):
-        """
-            Function to for the manual
-        """
-        items = []
-
-        if self.aut_min_core_width_lineEdit.text() and self.aut_max_core_width_lineEdit.text() and self.aut_step_core_width_lineEdit.text() \
-                and self.aut_min_window_height_lineEdit.text() and self.aut_max_window_height_lineEdit.text() and self.aut_step_window_height_lineEdit.text() \
-                and self.aut_min_window_width_lineEdit.text() and self.aut_max_window_width_lineEdit.text() and self.aut_step_window_width_lineEdit.text():
-            items.append(f"{self.aut_min_core_width_lineEdit.text()}*{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
-        itemsTextList = [str(self.aut_core_geometry_manual_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_core_geometry_manual_basket_listWidget.count())]
-        for i in items:
-            if i not in itemsTextList:
-                self.aut_core_geometry_manual_basket_listWidget.addItem(i)
-
-    def cgeoselectall(self):
-        """
-            Function to select all the choices.
-        """
-        self.aut_core_geometry_listWidget.selectAll()
-
-    def oncgeoClicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
-        itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_core_geometry_basket_listWidget.count())]
-        checkitem = self.aut_core_geometry_listWidget.currentItem().text()
-        if checkitem not in itemsTextList:
-            self.aut_core_geometry_basket_listWidget.addItem(self.aut_core_geometry_listWidget.currentItem().text())
-        else:
-            pass
-
-    def onairgaptypeClearallClicked(self):
-        """
-            Function to clear all the entries.
-        """
-        self.aut_airgap_type_basket_listwidget.clear()
-
-    def onairgaptypeClearClicked(self):
-        """
-            Function to clear the selected entry.
-        """
-        List_item = self.aut_airgap_type_basket_listwidget.selectedItems()
-        for item in List_item:
-            self.aut_airgap_type_basket_listwidget.takeItem(self.aut_airgap_type_basket_listwidget.row(item))
-
-    def onairgaptypeMultipleClicked(self):
-        """
-            Function to accept multiple choices.
-        """
-        itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
-                         range(self.aut_airgap_type_basket_listwidget.count())]
-        checkitems = [item.text() for item in self.aut_airgap_type_listWidget.selectedItems()]
-        reqlist = list(set(checkitems).difference(itemsTextList))
-        for i in reqlist:
-            self.aut_airgap_type_basket_listwidget.addItem(i)
-        else:
-            pass
-
-    def onairgaptypeClicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
-        itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
-                         range(self.aut_airgap_type_basket_listwidget.count())]
-        checkitem = self.aut_airgap_type_listWidget.currentItem().text()
-        if checkitem not in itemsTextList:
-            self.aut_airgap_type_basket_listwidget.addItem(self.aut_airgap_type_listWidget.currentItem().text())
-        else:
-            pass
-
-    def airgaptypeselectall(self):
-        """
-            Function to select all the choices.
-        """
-        self.aut_airgap_type_listWidget.selectAll()
-
-    def oncmatClearallClicked(self):
-        """
-            Function to clear all entries.
-        """
-        self.aut_core_material_basket_listWidget.clear()
-
-    def oncmatClearClicked(self):
-        """
-            Function to clear the selected entry.
-        """
-        List_item = self.aut_core_material_basket_listWidget.selectedItems()
-        for item in List_item:
-            self.aut_core_material_basket_listWidget.takeItem(self.aut_core_material_basket_listWidget.row(item))
-
-    def oncmatMultipleClicked(self):
-        """
-            Function to accept multiple choices.
-        """
-        itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_core_material_basket_listWidget.count())]
-        checkitems = [item.text() for item in self.aut_core_material_data_listWidget.selectedItems()]
-        reqlist = list(set(checkitems).difference(itemsTextList))
-        for i in reqlist:
-            self.aut_core_material_basket_listWidget.addItem(i)
-        else:
-            pass
-
-
-    def cmatselectall(self):
-        """
-            Function to select all the choices.
-        """
-        self.aut_core_material_data_listWidget.selectAll()
-
-    def oncmatClicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
-        itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_core_material_basket_listWidget.count())]
-        checkitem = self.aut_core_material_data_listWidget.currentItem().text()
-        if checkitem not in itemsTextList:
-            self.aut_core_material_basket_listWidget.addItem(self.aut_core_material_data_listWidget.currentItem().text())
-        else:
-            pass
-
-    def onl1ClearallClicked(self):
-        """
-            Function to clear all entries.
-        """
-        self.aut_litz_basket_listWidget.clear()
-
-    def onl1ClearClicked(self):
-        """
-            Function to clear the selected entry.
-        """
-        List_item = self.aut_litz_basket_listWidget.selectedItems()
-        for item in List_item:
-            self.aut_litz_basket_listWidget.takeItem(self.aut_litz_basket_listWidget.row(item))
-
-    def onl1MultipleClicked(self):
-        """
-            Function to accept multiple choices.
-        """
-        itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_litz_basket_listWidget.count())]
-        checkitems = [item.text() for item in self.aut_litz_data_listWidget.selectedItems()]
-        reqlist = list(set(checkitems).difference(itemsTextList))
-        for i in reqlist:
-            self.aut_litz_basket_listWidget.addItem(i)
-        else:
-            pass
-
-    def onl1Clicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
-        itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_litz_basket_listWidget.count())]
-        checkitem = self.aut_litz_data_listWidget.currentItem().text()
-        if checkitem not in itemsTextList:
-            self.aut_litz_basket_listWidget.addItem(self.aut_litz_data_listWidget.currentItem().text())
-        else:
-            pass
-
-    def litz1selectall(self):
-        """
-            Function to select all the choices.
-        """
-        self.aut_litz_data_listWidget.selectAll()
-
-
-    def onl2ClearallClicked(self):
-        """
-            Function to clear all entries.
-        """
-        self.aut_litz2_basket_listWidget.clear()
-
-    def onl2ClearClicked(self):
-        """
-            Function to clear the selected entry.
-        """
-        List_item = self.aut_litz2_basket_listWidget.selectedItems()
-        for item in List_item:
-            self.aut_litz2_basket_listWidget.takeItem(self.aut_litz2_basket_listWidget.row(item))
-
-    def onl2MultipleClicked(self):
-        """
-            Function to accept multiple choices.
-        """
-        itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_litz2_basket_listWidget.count())]
-        checkitems = [item.text() for item in self.aut_litz2_data_listWidget.selectedItems()]
-        reqlist = list(set(checkitems).difference(itemsTextList))
-        for i in reqlist:
-            self.aut_litz2_basket_listWidget.addItem(i)
-        else:
-            pass
-
-    def onl2Clicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
-        itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
-                         range(self.aut_litz2_basket_listWidget.count())]
-        checkitem = self.aut_litz2_data_listWidget.currentItem().text()
-        if checkitem not in itemsTextList:
-            self.aut_litz2_basket_listWidget.addItem(self.aut_litz2_data_listWidget.currentItem().text())
-        else:
-            pass
-
-    def litz2selectall(self):
-        """
-            Function to select all the choices.
-        """
-        self.aut_litz2_data_listWidget.selectAll()
-
-    #  **************************** Automated design tab initializations ********************************************  #
-
-    def aut_initialize_controls(self) -> None:
-        """
-        Initialize the comboboxes with pre-defined values.
-
-        :return: None
-        :rtype: None
-        """
-        aut_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
-        aut_winding_material_options = [key for key in fmt.wire_material_database()]
-        aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
-        aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
-                                    self.translation_dict['implicit_strands_number']]
-        aut_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
-        aut_tolerance_val_options = [self.translation_dict['+-10'], self.translation_dict['+-20']]
-        aut_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
-
-
-        get_material_list = mdb.material_list_in_database(material_list = True)
-        get_material_list.insert(0,None)
-        dat_core_material_options = get_material_list
-
-
-
-        for option in dat_core_material_options:
-            self.dat_core_material1_comboBox.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material2_comboBox.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material3_comboBox.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material4_comboBox.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material5_comboBox.addItem(option)
-
-        for option in dat_core_material_options:
-            self.dat_core_material1_comboBox_2.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material2_comboBox_2.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material3_comboBox_2.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material4_comboBox_2.addItem(option)
-        for option in dat_core_material_options:
-            self.dat_core_material5_comboBox_2.addItem(option)
-
-        for option in dat_core_material_options:
-            self.dat_core_material_comboBox.addItem(option)
-
-
-        for option in aut_core_geometry_options:
-            self.aut_core_geometry_listWidget.addItem(option)
-        for option in aut_simulation_type_options:
-            self.aut_simulation_type_comboBox.addItem(option)
-        for option in aut_winding_material_options:
-            self.aut_winding1_material_comboBox.addItem(option)
-            self.aut_winding2_material_comboBox.addItem(option)
-        for option in aut_winding_type_options:
-            self.aut_winding1_type_comboBox.addItem(option)
-            self.aut_winding2_type_comboBox.addItem(option)
-        for option in aut_implicit_litz_options:
-            self.aut_winding1_implicit_litz_comboBox.addItem(option)
-            self.aut_winding2_implicit_litz_comboBox.addItem(option)
-        for option in aut_winding_scheme_options:
-            self.aut_winding1_scheme_comboBox.addItem(option)
-            self.aut_winding2_scheme_comboBox.addItem(option)
-        for option in aut_tolerance_val_options:
-            self.aut_rel_tolerance_val_comboBox.addItem(option)
-        for option in aut_tolerance_val_options:
-            self.aut_load_tolerance_val_comboBox.addItem(option)
-
-        self.aut_min_core_width_lineEdit.setPlaceholderText("Minimum value")
-        self.aut_max_core_width_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_step_core_width_lineEdit.setPlaceholderText("Step value")
-        self.aut_min_window_height_lineEdit.setPlaceholderText("Minimum value")
-        self.aut_max_window_height_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_step_window_height_lineEdit.setPlaceholderText("Step value")
-        self.aut_min_window_width_lineEdit.setPlaceholderText("Minimum value")
-        self.aut_max_window_width_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_step_window_width_lineEdit.setPlaceholderText("Step value")
-        self.aut_min_winding1_turns_lineEdit.setPlaceholderText("Minimum value")
-        self.aut_max_winding1_turns_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_min_winding2_turns_lineEdit.setPlaceholderText("Minimum value")
-        self.aut_max_winding2_turns_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_step_winding2_turns_lineEdit.setPlaceholderText("Step value")
-        self.aut_min_air_gap_count_lineEdit.setPlaceholderText("Minimum value")
-        self.aut_max_air_gap_count_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_goal_inductance_val_lineEdit.setPlaceholderText(" Value in Henry")
-        self.aut_air_gap_length_min_lineEdit.setPlaceholderText("Minimum value")
-        self.aut_air_gap_length_max_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_air_gap_length_step_lineEdit.setPlaceholderText("Step value")
-        self.aut_air_gap_position_min_lineEdit.setPlaceholderText("Minimum value")
-        self.aut_air_gap_position_max_lineEdit.setPlaceholderText("Maximum value")
-        self.aut_air_gap_position_step_lineEdit.setPlaceholderText("Step value")
-
-
-    def aut_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
-        """
-        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
-        :param implicit_type_from_combo_box: input type to implicit
-        :type implicit_type_from_combo_box: str
-        :return: None
-        :rtype: None
-        """
-        if implicit_type_from_combo_box == self.translation_dict['implicit_litz_radius']:
-            self.aut_winding1_strands_lineEdit.setEnabled(True)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(False)
-        if implicit_type_from_combo_box == self.translation_dict['implicit_strands_number']:
-            self.aut_winding1_strands_lineEdit.setEnabled(False)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(True)
-        if implicit_type_from_combo_box == self.translation_dict['implicit_ff']:
-            self.aut_winding1_strands_lineEdit.setEnabled(True)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(True)
-
-    def aut_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
-        """
-        Enables / Disables input parameter for litz/solid wire
-        :param wire_type_from_combot_box: wire type
-        :type wire_type_from_combot_box: str
-        :return: None
-        :rtype: None
-        """
-        self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
-        if wire_type_from_combot_box == self.translation_dict['litz']:
-            self.aut_winding1_strands_lineEdit.setEnabled(True)
-            self.aut_winding1_implicit_litz_comboBox.setEnabled(True)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(True)
-            self.aut_litz_data_listWidget.setEnabled(True)
-            self.aut_winding1_change_litz_implicit(self.aut_winding1_implicit_litz_comboBox.currentText())
-
-        elif wire_type_from_combot_box == self.translation_dict['solid']:
-            self.aut_winding1_strands_lineEdit.setEnabled(False)
-            self.aut_winding1_implicit_litz_comboBox.setEnabled(False)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(False)
-            self.aut_winding1_radius_lineEdit.setEnabled(True)
-            self.aut_litz_data_listWidget.setEnabled(False)
-
-
-
-
-    def aut_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
-        """
-        Action performed when signal of aut_simulation_type_comboBox text has changed.
-        Action will be enabling / disabling user inputs for not-used windings.
-
-        :param simulation_type_from_combo_box:
-        :type simulation_type_from_combo_box: str
-        :return: None
-        :rtype: None
-        """
-        if simulation_type_from_combo_box == self.translation_dict['inductor']:
-            self.aut_winding2_enable(False)
-
-        elif simulation_type_from_combo_box == self.translation_dict['transformer']:
-            # set winding definitions of winding 2 to editable
-            self.aut_winding2_enable(True)
-
-        elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
-            # set winding definitions of winding 2 to editable
-            self.aut_winding2_enable(True)
-
-    def aut_winding2_enable(self, status: bool) -> None:
-        """
-        Enable/disable all fields being in contact with winding 2.
-
-        :param status: True / False
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        # set winding definitions of winding 2 (enable and visible)
-        self.aut_winding2_material_comboBox.setEnabled(status)
-        self.aut_winding2_type_comboBox.setEnabled(status)
-        self.aut_min_winding2_turns_lineEdit.setEnabled(status)
-        self.aut_max_winding2_turns_lineEdit.setEnabled(status)
-        self.aut_step_winding2_turns_lineEdit.setEnabled(status)
-        self.aut_winding2_strands_lineEdit.setEnabled(status)
-        self.aut_winding2_radius_lineEdit.setEnabled(False)
-        self.aut_winding2_fill_factor_lineEdit.setEnabled(status)
-        self.aut_winding2_strand_radius_lineEdit.setEnabled(status)
-        self.aut_winding2_groupBox.setVisible(status)
-
-        # Set turns of winding 2 (enable and visible)
-        self.aut_min_winding2_turns_lineEdit.setVisible(status)
-        self.aut_max_winding2_turns_lineEdit.setVisible(status)
-        self.aut_step_winding2_turns_lineEdit.setVisible(status)
-        self.aut_winding2_scheme_comboBox.setVisible(status)
-        self.aut_winding2_turns_label.setVisible(status)
-        self.aut_winding2_scheme_label.setVisible(status)
-
-        # set isolation of winding 2 (enable and visible)
-        self.aut_isolation_s2s_lineEdit.setEnabled(status)
-        self.aut_isolation_p2s_lineEdit.setEnabled(status)
-        self.aut_isolation_s2s_lineEdit.setVisible(status)
-        self.aut_isolation_p2s_lineEdit.setVisible(status)
-        self.aut_isolation_s2s_label.setVisible(status)
-        self.aut_isolation_p2s_label.setVisible(status)
-
-        self.aut_litz2_basket_listWidget.setEnabled(status)
-        self.aut_litz2_basket_listWidget.setVisible(status)
-        self.aut_litz2_basket_clear_all_pushbutton.setVisible(status)
-        self.aut_litz2_basket_clear_pushbutton.setVisible(status)
-        self.aut_litzbasket2_label.setVisible(status)
-
     #  **************************** Manual design tab initializations ***********************************************  #
 
     def md_initialize_controls(self) -> None:
@@ -2007,6 +2006,9 @@ class MainWindow(QMainWindow):
         self.md_isolation_p2s_label.setVisible(status)
 
     def md_gmsh_pre_visualisation(self):
+        """
+            Function for pre-visualization when Update preview button is pressed in the definitions tab
+        """
         geo = self.md_setup_geometry()
         print(f"geo:{geo}")
 
@@ -2715,6 +2717,9 @@ class MainWindow(QMainWindow):
         return winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list
 
     def wdg_scheme(self):
+        """
+         Function to choose the winding scheme
+        """
         if self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["square"]:
             scheme = 'square'
         elif self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["hexa"]:
@@ -3076,12 +3081,6 @@ class MainWindow(QMainWindow):
                                       current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
                                       phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
 
-                                      #phi_deg=[- 1.66257715 / np.pi * 180, 170])
-
-
-            #geo.single_simulation(freq=winding1_frequency_list[0], current=winding1_amplitude_list)
-            #geo.single_simulation(freq=250000, current=[4.14723021, 14.58960019],
-                                 # phi_deg=[- 1.66257715 / np.pi * 180, 170])
 
         else:
 
