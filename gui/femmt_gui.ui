@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1906</width>
+    <width>2187</width>
     <height>1177</height>
    </rect>
   </property>
@@ -934,6 +934,20 @@
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_5">
                 <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_5">
+                  <item>
+                   <widget class="QLabel" name="label_57">
+                    <property name="text">
+                     <string>Working Directory</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLineEdit" name="md_working_directory_lineEdit"/>
+                  </item>
+                 </layout>
+                </item>
+                <item>
                  <widget class="QGroupBox" name="groupBox_15">
                   <property name="title">
                    <string>Gmsh Visualisation</string>
@@ -965,6 +979,19 @@
                       <string>Update Preview</string>
                      </property>
                     </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <spacer name="verticalSpacer_20">
+                     <property name="orientation">
+                      <enum>Qt::Vertical</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>20</width>
+                       <height>40</height>
+                      </size>
+                     </property>
+                    </spacer>
                    </item>
                   </layout>
                  </widget>
@@ -3567,8 +3594,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>59</width>
-               <height>16</height>
+               <width>96</width>
+               <height>26</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_26">
@@ -3974,8 +4001,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>1072</width>
-                  <height>522</height>
+                  <width>96</width>
+                  <height>512</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -4029,8 +4056,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>59</width>
-               <height>16</height>
+               <width>96</width>
+               <height>26</height>
               </rect>
              </property>
              <widget class="QGroupBox" name="groupBox_27">
@@ -4175,8 +4202,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>1072</width>
-                   <height>522</height>
+                   <width>96</width>
+                   <height>512</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -4221,8 +4248,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1262</width>
-             <height>1030</height>
+             <width>1260</width>
+             <height>1028</height>
             </rect>
            </property>
            <widget class="QGroupBox" name="groupBox_29">
@@ -4355,8 +4382,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>1072</width>
-                <height>522</height>
+                <width>96</width>
+                <height>512</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -6912,8 +6939,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>1072</width>
-                 <height>2043</height>
+                 <width>1073</width>
+                 <height>2030</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -7011,8 +7038,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>1072</width>
-              <height>1029</height>
+              <width>96</width>
+              <height>1018</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -10075,8 +10102,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>1072</width>
-              <height>522</height>
+              <width>96</width>
+              <height>512</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -10106,8 +10133,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1906</width>
-     <height>25</height>
+     <width>2187</width>
+     <height>32</height>
     </rect>
    </property>
   </widget>
