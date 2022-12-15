@@ -509,7 +509,7 @@ class MainWindow(QMainWindow):
         """
 
 
-        matplotlib_widget.axis.set(xlabel="Volume", ylabel="Loss", title="Volume vs Loss")
+        matplotlib_widget.axis.set(xlabel="Volume / m\u00b3", ylabel="Loss / W", title=" Volume vs Loss")
         lines = matplotlib_widget.axis.plot(data_matrix[:, 30],
                                             data_matrix[:, 28], 'o')
         mplcursors.cursor(lines)
@@ -825,7 +825,7 @@ class MainWindow(QMainWindow):
                                      percent_tolerance=20)
 
         self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-                x_label='Volume', y_label='Loss', z_label='Cost', title='Volume vs Loss',
+                x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
                 annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
     def load_designs(self, matplotlib_widget):
@@ -856,7 +856,7 @@ class MainWindow(QMainWindow):
                                      percent_tolerance=20)
 
         self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-                x_label='Volume', y_label='Loss', z_label='Cost', title='Volume vs Loss',
+                x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
                 annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
 
@@ -3203,6 +3203,18 @@ class MainWindow(QMainWindow):
         mu_rel_val = [database.get_material_property(material_name=material_name, property="initial_permeability")
                   for material_name in material_names]
         mu_rel = [int(item) for item in mu_rel_val]
+
+        print(f"core_inner_diameter: {[self.core_w]}")
+        print(f"window_h: {[self.window_h]}")
+        print(f"window_w: {[self.window_w]}")
+        print(f"no_of_turns: {[n_turns]}")
+        print(f"n_air_gaps: {[air_gap_count]}")
+        print(f"air_gap_h: {air_gap_heigth_array}")
+        print(f"air_gap_position: {air_gap_position_array}")
+        print(f"mu_rel: {mu_rel}")
+        print(f"component_type: {self.md_simulation_type_comboBox.currentText()}")
+
+
 
         #mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
                                       #[air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
