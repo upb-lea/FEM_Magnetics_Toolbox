@@ -1550,13 +1550,13 @@ def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity
     return 2 * np.pi / k.real
 
 
-def check_mqs_condiction(radius, f, complex_permeability, complex_permittivity, conductivity, relative_margin_to_first_resonance=0.5):
+def check_mqs_condition(radius, f, complex_permeability, complex_permittivity, conductivity, relative_margin_to_first_resonance=0.5):
     axial_lambda = axial_wavelength(f, complex_permeability, complex_permittivity, conductivity)
     diameter_to_wavelength_ratio_of_first_resonance = 0.7655
     diameter_to_wavelength_ratio = 2 * radius / axial_lambda
     if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
-        print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}\n"
-              f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
+        raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
+                      f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
 
 
 if __name__ == '__main__':

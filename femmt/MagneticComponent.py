@@ -1215,16 +1215,33 @@ class MagneticComponent:
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
+    def get_single_complex_permeability(self):
+        """
+        Function returns the complex permeability.
+        In case of amplitude dependent material definition, the initial permeability is used.
+        :return: complex
+        """
+        if self.core.permeability_type == PermeabilityType.FromData:
+            # take datasheet value from database
+            complex_permeability = ff.mu0 * mdb.MaterialDatabase.get_material_property(material_name=self.core.material, property="initial_permeability")
+        if self.core.permeability_type == PermeabilityType.FixedLossAngle:
+            complex_permeability = ff.mu0 * self.core.mu_rel * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
+        if self.core.permeability_type == PermeabilityType.RealValue:
+            complex_permeability = ff.mu0 * self.core.mu_rel
+        return complex_permeability
+
     def check_model(self):
         """
         Is called before a simulation.
         e.g.: Used to check the model for magneto-quasi-static condition.
         :return:
         """
-        complex_permeability = ff.mu0 * complex(3000, 500)  # take from fix value or if not able from datasheet value of database...
+
+        # Not included in database yet; assume value:
         complex_permittivity = ff.epsilon_0 * complex(50000, 20000)
-        ff.check_mqs_condiction(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=complex_permeability,
-                                complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+
+        ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                               complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
