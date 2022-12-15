@@ -1036,7 +1036,7 @@ def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, r_outer):
 
     r_equivalent = r_basic / 2
     sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
-    if sigma > 1:
+    if np.any(sigma) > 1:
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
     r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu0 / np.pi / tablet_hight
@@ -1073,7 +1073,7 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, tablet_diameter, r_outer, real_
 
     r_equivalent = r_basic / 2
     sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
-    if sigma > 1:
+    if np.any(sigma) > 1:
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
     r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_width_no_2d_axi / 2 / r_outer)) / tablet_hight
@@ -1301,6 +1301,53 @@ def calculate_reluctances(winding_matrix, inductance_matrix):
 
     return np.matmul(np.matmul(winding_matrix, L_invert), np.transpose(winding_matrix))
 
+def calculate_inductances(reluctance_matrix, winding_matrix):
+    """
+    Calculates the inductance matrix out of reluctance matrix and winding matrix.
+
+    :param reluctance_matrix: matrix of transformer reluctance
+    :param winding_matrix: matrix of transformer windings
+    :return: inductance matrix
+
+
+    reluctance matrix e.g.
+    r = [ [], [] ]
+
+    winding matrix e.g.
+    N = [ [N_1a, N_2b], [N_1b, N_2b] ]
+
+    returns inductance matrix e.g.
+    L = [ [L_11, M], [M, L_22] ]
+    """
+
+    if np.ndim(reluctance_matrix) == 0:
+        reluctance_matrix_invert = 1 / reluctance_matrix
+    else:
+        reluctance_matrix_invert = np.linalg.inv(reluctance_matrix)
+
+    return np.matmul(np.matmul(np.transpose(winding_matrix), reluctance_matrix_invert), winding_matrix)
+
+
+
+def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
+    """
+    Calculates the transformer primary concentrated circuit parameters from matrix
+    :param inductance_matrix: input reluctance matrix in form of [[L_11, M], [M, L_22]]
+    :return l_s: primary concentrated stray inductance
+    :return l_h: primary concentrated main inductance
+    :return n: ratio
+    """
+
+    l_11 = inductance_matrix[0, 0]
+    l_22 = inductance_matrix[1, 1]
+    mutal_inductance = inductance_matrix[1, 0]
+
+    coupling_factor = mutal_inductance / (np.sqrt(l_11 * l_22))
+    n = mutal_inductance / l_22
+    l_s = (1 - coupling_factor ** 2) / l_11
+    l_h = mutal_inductance ** 2 / l_22
+
+    return l_s, l_h, n
 
 def create_physical_group(dim, entities, name):
     tag = gmsh.model.addPhysicalGroup(dim, entities)
