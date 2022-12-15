@@ -1215,6 +1215,17 @@ class MagneticComponent:
         else:
             raise Exception("The model is not valid. The simulation won't start.")
 
+    def check_model(self):
+        """
+        Is called before a simulation.
+        e.g.: Used to check the model for magneto-quasi-static condition.
+        :return:
+        """
+        complex_permeability = ff.mu0 * complex(3000, 500)  # take from fix value or if not able from datasheet value of database...
+        complex_permittivity = ff.epsilon_0 * complex(50000, 20000)
+        ff.check_mqs_condiction(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=complex_permeability,
+                                complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
     def calculate_core_volume_with_air(self) -> float:
@@ -1509,6 +1520,7 @@ class MagneticComponent:
 
         self.mesh.generate_electro_magnetic_mesh()
         self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
+        self.check_model()
         self.file_communication()
         self.pre_simulate()
         self.simulate()
@@ -1590,6 +1602,7 @@ class MagneticComponent:
                 
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
                                     phase_deg_list=phi_deg_list_list[i])  # frequency and current
+                self.check_model()
                 self.file_communication()
                 self.pre_simulate()
                 self.simulate()
@@ -1607,6 +1620,7 @@ class MagneticComponent:
             for i in range(0, len(frequency_list)):
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
                                 phase_deg_list=phi_deg_list_list[i])  # frequency and current
+                self.check_model()
                 self.file_communication()
                 self.pre_simulate()
                 self.simulate()
@@ -1811,6 +1825,7 @@ class MagneticComponent:
         # self.high_level_geo_gen(frequency=0, skin_mesh_factor=skin_mesh_factor)
         # self.mesh.generate_mesh()
         self.excitation(frequency=f_switch, amplitude_list=Ipeak, phase_deg_list=[0, 180])  # frequency and current
+        self.check_model()
         self.file_com
 
     def write_electro_magnetic_parameter_pro(self):
