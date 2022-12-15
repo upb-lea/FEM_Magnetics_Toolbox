@@ -20,6 +20,7 @@ import materialdatabase as mdb
 
 # Local libraries
 import femmt.Functions as ff
+from femmt.constants import *
 from femmt.Mesh import Mesh
 from femmt.Model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
 from femmt.Enumerations import *
@@ -110,8 +111,6 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Materials
-        self.mu0 = np.pi * 4e-7
-        self.e0 = 8.8541878128e-12
         self.Ipeak = None
         # self.ki = None
         # self.alpha = None
@@ -388,7 +387,7 @@ class MagneticComponent:
         self.phase_deg = np.zeros(len(windings))
 
         # Default values for global_accuracy and padding
-        self.mesh_data = MeshData(0.5, 1.5, self.mu0, self.core.core_inner_diameter, self.core.window_w, self.windings)
+        self.mesh_data = MeshData(0.5, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
 
     def set_core(self, core: Core):
         """Adds the core to the model
@@ -478,7 +477,7 @@ class MagneticComponent:
 
                     if types[n_reluctance] == ("round-round" or "round-inf"):
                         A_core = (self.component.core.core_w / 2) ** 2 * np.pi
-                        length = R_0 * self.component.mu0 * A_core
+                        length = R_0 * mu_0 * A_core
 
                     if types[n_reluctance] == "cyl-cyl":
                         # return R_0 * self.component.mu0 * w * np.pi * (r_o + r_i)
@@ -779,8 +778,8 @@ class MagneticComponent:
                       self.A_core * ((100 - self.component.stray_path.midpoint) / 100 * self.component.core.window_h - \
                                      self.air_gap_lengths["R_top"])
 
-            p_top = 0.5 * self.component.mu0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b_top) * Vol_top * 2 * np.pi * self.f_1st * \
-                    (b_top / self.component.core.mu_rel / self.component.mu0) ** 2 + \
+            p_top = 0.5 * mu_0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b_top) * Vol_top * 2 * np.pi * self.f_1st * \
+                    (b_top / self.component.core.mu_rel / mu_0) ** 2 + \
                     self.p_loss_cyl(Phi_top, length_corner, ri, ro)[0]
 
             # Bot Part
@@ -788,8 +787,8 @@ class MagneticComponent:
             Vol_bot = self.A_core * self.component.stray_path.midpoint / 100 * self.component.core.window_h + \
                       self.A_core * (self.component.stray_path.midpoint / 100 * self.component.core.window_h + \
                                      self.air_gap_lengths["R_bot"])
-            p_bot = 0.5 * self.component.mu0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b_bot) * Vol_bot * 2 * np.pi * self.f_1st * \
-                    (b_bot / self.component.core.mu_rel / self.component.mu0) ** 2 + \
+            p_bot = 0.5 * mu_0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b_bot) * Vol_bot * 2 * np.pi * self.f_1st * \
+                    (b_bot / self.component.core.mu_rel / mu_0) ** 2 + \
                     self.p_loss_cyl(Phi_bot, length_corner, ri, ro)[0]
 
             # Stray Path
@@ -808,8 +807,8 @@ class MagneticComponent:
             def p_loss_density(r, Phi, w):
                 return 2 * np.pi * r * w * \
                        np.pi * self.f_1st * \
-                       self.component.mu0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b(r, Phi, w)) * \
-                       (b(r, Phi, w) / self.component.core.mu_rel / self.component.mu0) ** 2
+                       mu_0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b(r, Phi, w)) * \
+                       (b(r, Phi, w) / self.component.core.mu_rel / mu_0) ** 2
 
             return quad(p_loss_density, ri, ro, args=(Phi, w), epsabs=1e-4)
 
@@ -1223,11 +1222,11 @@ class MagneticComponent:
         """
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
-            complex_permeability = ff.mu0 * mdb.MaterialDatabase.get_material_property(material_name=self.core.material, property="initial_permeability")
+            complex_permeability = mu_0 * mdb.MaterialDatabase.get_material_property(material_name=self.core.material, property="initial_permeability")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-            complex_permeability = ff.mu0 * self.core.mu_rel * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
+            complex_permeability = mu_0 * self.core.mu_rel * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
         if self.core.permeability_type == PermeabilityType.RealValue:
-            complex_permeability = ff.mu0 * self.core.mu_rel
+            complex_permeability = mu_0 * self.core.mu_rel
         return complex_permeability
 
     def check_model(self):
@@ -1238,7 +1237,7 @@ class MagneticComponent:
         """
 
         # Not included in database yet; assume value:
-        complex_permittivity = ff.epsilon_0 * complex(50000, 20000)
+        complex_permittivity = epsilon_0 * complex(50000, 20000)
 
         ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
                                complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
@@ -1452,7 +1451,7 @@ class MagneticComponent:
         self.red_freq = np.empty(2)
 
         if self.frequency != 0:
-            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * self.mu0)) #TODO: distingish between material conductivities
+            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * mu_0))  # TODO: distinguish between material conductivities
             for num in range(len(self.windings)):
                 if self.windings[num].conductor_type == ConductorType.RoundLitz:
                     self.red_freq[num] = self.windings[num].strand_radius / self.delta
@@ -1874,7 +1873,7 @@ class MagneticComponent:
             text_file.write(f"Flag_Conducting_Core = 1;\n")
             if isinstance(self.core.sigma, str):
                 # TODO: Make following definition general
-                # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
                 self.core.sigma = 1 / 6
             text_file.write(f"sigma_core = {self.core.sigma};\n")
         else:
@@ -1957,7 +1956,7 @@ class MagneticComponent:
         # Nature Constants
         text_file.write(f"mu0 = 4.e-7 * Pi;\n")
         text_file.write(f"nu0 = 1 / mu0;\n")
-        text_file.write(f"e0 = {self.e0};\n")
+        text_file.write(f"e0 = {epsilon_0};\n")
 
         # Material Properties
 
@@ -2502,7 +2501,7 @@ class MagneticComponent:
         if self.core.sigma != 0:
             if isinstance(self.core.sigma, str):
                 # TODO: Make following definition general
-                # self.core.sigma = 2 * np.pi * self.frequency * self.e0 * f_N95_er_imag(f=self.frequency) + 1 / 6
+                # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
                 self.core.sigma = 1 / 6
 
 
@@ -2660,7 +2659,7 @@ class MagneticComponent:
 
         femm.mi_drawrectangle(0, region_add*self.two_d_axi.p_outer[0][1], region_add*self.two_d_axi.p_outer[3][0], 
         region_add*self.two_d_axi.p_outer[3][1])
-        # mi_addboundprop('Asymptotic', 0, 0, 0, 0, 0, 0, 1 / (para.mu_0 * bound.width), 0, 2); % Mixed
+        # mi_addboundprop('Asymptotic', 0, 0, 0, 0, 0, 0, 1 / (mu_0 * bound.width), 0, 2); % Mixed
         femm.mi_addboundprop('Asymptotic', 0, 0, 0, 0, 1, 50, 0, 0, 1)
         femm.mi_selectsegment(region_add*self.two_d_axi.p_outer[3][0], region_add*self.two_d_axi.p_outer[3][1])
         femm.mi_setsegmentprop('Asymptotic', 1, 1, 0, 0)

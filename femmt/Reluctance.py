@@ -17,7 +17,7 @@ def plot_limitation():
     width = 100 * length
     height = 101 - length
 
-    r_mx = 1 / (fmt.mu0 * (width / 2 / length + 2 / np.pi * (
+    r_mx = 1 / (fmt.mu_0 * (width / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
     print(height)
 
@@ -43,10 +43,10 @@ def plot_limitation():
     height2_c =100 - height1_c
     h_l = height2_c / length
     # print(h_l)
-    r_m1 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+    r_m1 = 1 / (fmt.mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
             1 + np.log(np.pi * height1_c / 4 / length_c))))
 
-    r_m2 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+    r_m2 = 1 / (fmt.mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
             1 + np.log(np.pi * height2_c / 4 / length_c))))
 
     r_m = r_m1 + r_m2
@@ -118,7 +118,7 @@ def plot_r_basis():
     fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
 
     for i, wid in enumerate(width):
-        r_m = 1 / (fmt.mu0 * (wid / 2 / length + 2 / np.pi * (
+        r_m = 1 / (fmt.mu_0 * (wid / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
 
         combined = np.vstack((h_l, r_m)).T

@@ -19,6 +19,7 @@ from femmt.Enumerations import ConductorType
 import gmsh
 
 # Local libraries
+from femmt.constants import *
 from femmt.Enumerations import *
 
 # Needed for femmt_print
@@ -883,8 +884,6 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 
 
 # Reluctance Model [with calculation]
-mu0 = 4e-7*np.pi
-epsilon_0 = 8.8541878128e-12
 
 def r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight):
     """
@@ -902,7 +901,7 @@ def r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight):
     :param core_hight: core hight
     :return: basic reluctance for round - infinite structure
     """
-    conductance_basic = mu0 * (air_gap_radius * 2 / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * core_hight / 4 / air_gap_basic_hight)))
+    conductance_basic = mu_0 * (air_gap_radius * 2 / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * core_hight / 4 / air_gap_basic_hight)))
 
     return 1 / conductance_basic
 
@@ -919,7 +918,7 @@ def sigma_round(r_equivalent, air_gap_radius, air_gap_total_hight):
     :param air_gap_total_hight: air gap total hight (for the total air gap, also for round-round structures)
     :return: fringing factor 'sigma'
     """
-    return r_equivalent * mu0 * air_gap_radius / air_gap_total_hight
+    return r_equivalent * mu_0 * air_gap_radius / air_gap_total_hight
 
 def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_upper, core_hight_lower):
     """
@@ -947,7 +946,7 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     if np.any(sigma) > 1:
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
-    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
+    r_air_gap_ideal = air_gap_total_hight / mu_0 / np.pi / (air_gap_radius ** 2)
     r_air_gap = sigma ** 2 * r_air_gap_ideal
 
     return r_air_gap
@@ -977,7 +976,7 @@ def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
     r_equivalent_round_inf = r_basic
     sigma = sigma_round(r_equivalent_round_inf, air_gap_radius, air_gap_total_hight)
 
-    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
+    r_air_gap_ideal = air_gap_total_hight / mu_0 / np.pi / (air_gap_radius ** 2)
     r_air_gap = sigma ** 2 * r_air_gap_ideal
 
     return r_air_gap
@@ -1002,7 +1001,7 @@ def r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_radius):
     :param tablet_radius: tablet radius
     :return: basic reluctance for tablet - cylinder structure
     """
-    conductance_basic = mu0 * (tablet_hight / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * tablet_radius / 4 / air_gap_basic_hight)))
+    conductance_basic = mu_0 * (tablet_hight / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * tablet_radius / 4 / air_gap_basic_hight)))
 
     return 1 / conductance_basic
 
@@ -1020,7 +1019,7 @@ def sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight):
     :param air_gap_total_hight: air gap total hight (for the total air gap)
     :return: fringing factor 'sigma' for tablet - cylinder structure
     """
-    return r_equivalent * mu0 * tablet_hight / air_gap_total_hight
+    return r_equivalent * mu_0 * tablet_hight / air_gap_total_hight
 
 
 def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, r_outer):
@@ -1045,7 +1044,7 @@ def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, r_outer):
     if np.any(sigma) > 1:
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
-    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu0 / np.pi / tablet_hight
+    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu_0 / np.pi / tablet_hight
 
     r_air_gap = sigma * r_air_gap_ideal
 
@@ -1082,7 +1081,7 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, tablet_diameter, r_outer, real_
     if np.any(sigma) > 1:
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
-    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_width_no_2d_axi / 2 / r_outer)) / tablet_hight
+    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / mu_0 / (2 * np.pi - 4 * np.arccos(real_core_width_no_2d_axi / 2 / r_outer)) / tablet_hight
 
     r_air_gap = sigma * r_air_gap_ideal
 
@@ -1098,7 +1097,7 @@ def r_core_tablet(tablet_hight, tablet_radius, mu_r, core_inner_diameter):
     :param core_inner_diameter: core inner diameter. For idealized core material, this value can be 0.001.
     """
 
-    return np.log(tablet_radius / (core_inner_diameter / 2)) / ( 2 * np.pi * mu0 * mu_r * tablet_hight)
+    return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu_0 * mu_r * tablet_hight)
 
 
 def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_top_bot_hight):
@@ -1111,7 +1110,7 @@ def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_top_bot_hig
     :param core_top_bot_hight: hight of the core material top / bottom of the winding window
     """
 
-    return np.log( (core_inner_diameter + 2 * window_w) / core_inner_diameter) / ( 2 * np.pi * mu0 * mu_r * core_top_bot_hight)
+    return np.log( (core_inner_diameter + 2 * window_w) / core_inner_diameter) / (2 * np.pi * mu_0 * mu_r * core_top_bot_hight)
 
 def r_core_round(core_inner_diameter, core_round_hight, mu_r):
     """
@@ -1121,7 +1120,7 @@ def r_core_round(core_inner_diameter, core_round_hight, mu_r):
     :param core_inner_diameter: core inner diameter
     :param mu_r: relative permeability (mu_r) of the core material from datasheet
     """
-    return core_round_hight / ( mu0 * mu_r * (core_inner_diameter / 2) ** 2 * np.pi)
+    return core_round_hight / (mu_0 * mu_r * (core_inner_diameter / 2) ** 2 * np.pi)
 
 
 def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, window_h, stray_path_air_gap_length, mu_r, start_index, position_air_gap_percent_list):
