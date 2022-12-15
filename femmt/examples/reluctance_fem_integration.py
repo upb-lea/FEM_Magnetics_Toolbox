@@ -156,7 +156,7 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
                        l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
         annot.set_text(text)
         # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
-        annot.get_bbox_patch().set_alpha(0.4)
+        annot.get_bbox_patch().set_alpha(0.8)
 
     def hover(event):
         """Event that is triggered when mouse is hovered.
@@ -894,7 +894,7 @@ class AutomatedDesign:
                 os.rename(old_filename, new_filename)
                 data_files.append(new_filename)
                 file_names.append(f"case{i}")
-                print(f"Case {i} of {len(self.data_matrix_fem)} completed")
+                fmt.femmt_print(f"Case {i} of {len(self.data_matrix_fem)} completed")
                 successful_sim_counter = successful_sim_counter + 1
 
             except (Exception,) as e:
@@ -980,7 +980,7 @@ class AutomatedDesign:
 
 if __name__ == '__main__':
     # Inpult parameters for the Automated Design
-    ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-30_fem_simulation_data',
+    ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-27_fem_simulation_data',
                          magnetic_component='inductor',
                          goal_inductance=120 * 1e-6,
                          frequency=100000,
@@ -988,7 +988,7 @@ if __name__ == '__main__':
                          winding_scheme='Square',
                          peak_current=8,
                          percent_of_b_sat=70,
-                         percent_of_total_loss=1,
+                         percent_of_total_loss=30,
                          database_core_names=[],
                          database_litz_names=['1.5x105x0.1', "1.4x200x0.071"],
                          solid_conductor_r=[],  # 0.0013
@@ -1010,7 +1010,7 @@ if __name__ == '__main__':
                          manual_litz_conductor_r=[],
                          manual_litz_strand_r=[],
                          manual_litz_strand_n=[],
-                         manual_litz_fill_factor=[])
+                         manual_litz_fill_factor=[])    #'N87'
 
     # Create csv file of data_matrix_fem which consist of all the fem simulation cases details
     ad.write_data_matrix_fem_to_csv()
@@ -1035,7 +1035,7 @@ if __name__ == '__main__':
 
     # Load design and plot various plots for analysis
     inductance, total_loss, total_volume, total_cost, annotation_list = load_design \
-        (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-30_fem_simulation_data')
+        (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-27_fem_simulation_data')
 
     plot_data = filter_after_fem(inductance=inductance, total_loss=total_loss, total_volume=total_volume, total_cost=total_cost,
                      annotation_list=annotation_list, goal_inductance=ad.goal_inductance, percent_tolerance=20)
@@ -1044,7 +1044,11 @@ if __name__ == '__main__':
             x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
             annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
-    #
+    plot_2d(x_value=plot_data[:, 1], y_value=plot_data[:, 3], z_value=plot_data[:, 2],
+            x_label='Volume / m\u00b3', y_label='Cost / \u20ac', z_label='Loss / W', title='Volume vs Cost',
+            annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+
+
     # plot_2d(x_value=data_array[:, 1], y_value=data_array[:, 3], z_value=data_array[:, 2], x_label='Volume / m\u00b3', y_label='Cost / \u20ac', z_label='Loss / W',
     #         title='Volume vs Cost', plot_color='red')
 

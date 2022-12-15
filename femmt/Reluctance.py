@@ -1,8 +1,12 @@
 import femmt as fmt
 import numpy as np
 import matplotlib
-matplotlib.rc('xtick', labelsize=12)
-matplotlib.rc('ytick', labelsize=12)
+import os
+from os import listdir
+from os.path import isfile, join
+import json
+matplotlib.rc('xtick', labelsize=24)
+matplotlib.rc('ytick', labelsize=24)
 from itertools import product
 
 # 3rd library imports
@@ -11,6 +15,53 @@ from matplotlib import pyplot as plt
 
 # femmt imports
 import femmt.Functions as ff
+
+
+def load_design(working_directory: str):
+    """
+    Load FEM simulation results from given working directory
+
+    param working_directory: Sets the working directory
+    :type working_directory: str
+    """
+    working_directories = []
+    labels = []
+    # working_directory = os.path.join(working_directory, 'fem_simulation_data')
+    print("##########################")
+    print(f"{working_directory =}")
+    print("##########################")
+    file_names = [f for f in listdir(working_directory) if isfile(join(working_directory, f))]
+
+    counter = 0
+    for name in file_names:
+        temp_var = os.path.join(working_directory, name)
+        working_directories.append(temp_var)
+        labels.append(name.removesuffix('.json'))
+        counter = counter + 1
+
+    zip_iterator = zip(file_names, working_directories)
+    logs = dict(zip_iterator)
+
+    # After the simulations the sweep can be analyzed
+    # This could be done using the FEMMTLogParser:
+    log_parser = fmt.FEMMTLogParser(logs)
+
+    # In this case the self inductivity of winding1 will be analyzed
+    inductivities = []
+    total_loss = []
+    total_volume = []
+    total_cost = []
+    for name, data in log_parser.data.items():
+        inductivities.append(data.sweeps[0].windings[0].self_inductance)
+        total_loss.append(data.total_core_losses + data.total_winding_losses)
+        total_volume.append(data.core_2daxi_total_volume)
+        total_cost.append(data.total_cost)
+
+    real_inductance = []
+    for i in range(len(total_loss)):
+        real_inductance.append(inductivities[i].real)
+
+    return real_inductance, total_loss, total_volume, total_cost, labels
 
 def plot_limitation():
     length = 15
@@ -78,11 +129,11 @@ def plot_r_basis():
     # print(combined)
     # fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
     # # fmt.plt.title("R_basic vs h/l")
-    # fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=12)
-    # fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
-    # ax.plot(h_l, r_m, linewidth=2, label=f'w/l ={width}')
+    # fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=24)
+    # fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
+    # ax.plot(h_l, r_m, linewidth=4, label=f'w/l ={width}')
     # ax.invert_xaxis()
-    # ax.legend()
+    # ax.legend(fontsize=24)
     # ax.grid()
     # fmt.plt.show()
 
@@ -98,11 +149,11 @@ def plot_r_basis():
     # print(combined)
     # fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
     # # fmt.plt.title("R_basic vs w/l")
-    # fmt.plt.xlabel("$\dfrac{w}{l}$", fontsize=12)
-    # fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
-    # ax.plot(w_l, r_m, linewidth=2, label=f'h/l ={height}')
+    # fmt.plt.xlabel("$\dfrac{w}{l}$", fontsize=24)
+    # fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
+    # ax.plot(w_l, r_m, linewidth=4, label=f'h/l ={height}')
     # ax.invert_xaxis()
-    # ax.legend()
+    # ax.legend(fontsize=24)
     # ax.grid()
     # fmt.plt.show()
 
@@ -114,8 +165,8 @@ def plot_r_basis():
     w_l = width / length
     fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
     # fmt.plt.title("$R_{basic}$ vs $\dfrac{h}{l}$", fontsize=20)
-    fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=12)
-    fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=12)
+    fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=24)
+    fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
 
     for i, wid in enumerate(width):
         r_m = 1 / (fmt.mu0 * (wid / 2 / length + 2 / np.pi * (
@@ -124,11 +175,11 @@ def plot_r_basis():
         combined = np.vstack((h_l, r_m)).T
         # print(combined)
 
-        ax.plot(h_l, r_m, linewidth=2, label=f'w/l ={w_l[i]}')
+        ax.plot(h_l, r_m, linewidth=4, label=f'w/l ={w_l[i]}')
 
     ax.invert_xaxis()
-    # ax.set_yscale('log')
-    ax.legend()
+    ax.set_yscale('log')
+    ax.legend(fontsize=24)
     ax.grid()
     plt.show()
 
@@ -188,8 +239,8 @@ class MagneticCircuit:
             raise Exception("string value wrong for sim_type argument")
         if not (component_type == 'inductor' or component_type == 'integrated_transformer'):
             raise Exception("string value wrong for component_type argument")
-        if any(item > 0.0005 for item in air_gap_h):
-            raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
+        # if any(item > 0.0005 for item in air_gap_h):
+        #     raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
         if sim_type == 'single':
             if not (len(core_inner_diameter) == 1 and len(window_h) == 1 and len(window_w) == 1 and len(no_of_turns) == 1
                     and len(n_air_gaps) == 1 and len(mu_rel) == 1):
@@ -679,9 +730,9 @@ def distributed_type_2(air_gap_hight_single_air_gap, core_inner_diameter, n_air_
 
 
 if __name__ == '__main__':
-    # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9], n_air_gaps=[3],
-    #                       air_gap_h=[0.0005, 0.0005, 0.0005], air_gap_position=[23.3, 25, 26.7], mu_rel=[3000], mult_air_gap_type=[1, 2],
-    #                       air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
+    mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9], n_air_gaps=[3],
+                          air_gap_h=[0.0005, 0.0005, 0.0005], air_gap_position=[23.3, 25, 26.7], mu_rel=[3000], mult_air_gap_type=[1, 2],
+                          air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
     #
     # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9],
     #                       n_air_gaps=[1],
@@ -690,8 +741,135 @@ if __name__ == '__main__':
     #                       air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
     # # print(np.sum(mc1.reluctance, axis=1) - mc1.reluctance[0, 5])
     # print(mc1.reluctance[0, 5])
-    # mc1.calculate_inductance()
+    mc1.calculate_inductance()
     #
     # print(f"Inductance is {mc1.cal_inductance}")
-    plot_r_basis()
+    # plot_r_basis()
     # plot_limitation()
+
+    # # Sweep of air-gap and winding position and compare it with FEM simulation
+    # sweep_air_gap_h = np.linspace(0.0001, 0.001, 5)
+    # sweep_wndg_pos = np.linspace(0.001, 0.007, 7)
+    # # sweep_current = np.linspace(0.1, 10, 5)
+    # fem_ind = np.zeros((len(sweep_air_gap_h), len(sweep_wndg_pos)))
+    # cal_ind = np.zeros((len(sweep_air_gap_h), len(sweep_wndg_pos)))
+    # # fem_ind = np.zeros(len(sweep_wndg_pos))
+    # # cal_ind = np.zeros(len(sweep_wndg_pos))
+    # # cal_fringe_dist = np.zeros((len(sweep_air_gap_h), len(sweep_wndg_pos)))
+    #
+    # example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+    # if not os.path.exists(example_results_folder):
+    #     os.mkdir(example_results_folder)
+    #
+    # working_directory = os.path.join(example_results_folder, "inductor")
+    # if not os.path.exists(working_directory):
+    #     os.mkdir(working_directory)
+    #
+    # for j in range(len(sweep_air_gap_h)):
+    #     for k in range(len(sweep_wndg_pos)):
+    #             mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9], n_air_gaps=[1],
+    #                           air_gap_h=[sweep_air_gap_h[j]], air_gap_position=[50], mu_rel=[3000], mult_air_gap_type=[1, 2],
+    #                           air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
+    #             mc1.calculate_inductance()
+    #             cal_ind[j, k] = mc1.data_matrix[:, 9]  # - (2.38295 * 1e-6 - 0.000326175 * sweep_wndg_pos[k])
+    #             # cal_fringe_dist[j, k] = mc1.fringe_dist
+    #             # mc1.max_percent = ((mc1.window_h - (sweep_air_gap_h[j] / 2)) / mc1.window_h) * 100
+    #             # mc1.min_percent = ((sweep_air_gap_h[j] / 2) / mc1.window_h) * 100
+    #
+    #             # 1. chose simulation type
+    #             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
+    #                                         working_directory=working_directory,
+    #                                         silent=True)
+    #
+    #             # 2. set core parameters
+    #             core_db = fmt.core_database()["PQ 40/40"]
+    #
+    #             core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
+    #                             window_h=core_db["window_h"],
+    #                             material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
+    #             # mu_rel=3000, phi_mu_deg=10,
+    #             # sigma=0.5)
+    #             geo.set_core(core)
+    #
+    #             # 3. set air gap parameters
+    #             air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    #             air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, sweep_air_gap_h[j], 50)
+    #             # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
+    #             geo.set_air_gaps(air_gaps)
+    #
+    #             # 4. set insulations
+    #             insulation = fmt.Insulation()
+    #             insulation.add_core_insulations(0.001, 0.001, sweep_wndg_pos[k], 0.001)
+    #             insulation.add_winding_insulations([0.0005], 0.0001)
+    #             geo.set_insulation(insulation)
+    #
+    #             # 5. create winding window and virtual winding windows (vww)
+    #             winding_window = fmt.WindingWindow(core, insulation)
+    #             vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+    #
+    #             # 6. create conductor and set parameters: use solid wires
+    #             winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+    #             # winding.set_solid_round_conductor(conductor_radius=0.0013,
+    #             #                                   conductor_arrangement=fmt.ConductorArrangement.Square)
+    #             winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
+    #             fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+    #
+    #             # 7. add conductor to vww and add winding window to MagneticComponent
+    #             vww.set_winding(winding, 9, None)
+    #             geo.set_winding_window(winding_window)
+    #
+    #             # 8. create the model
+    #             geo.create_model(freq=100000, visualize_before=False, save_png=False)
+    #
+    #             # 6.a. start simulation
+    #             geo.single_simulation(freq=100000, current=[4.5], show_results=False)
+    #
+    #             # basic_example_func(sweep_air_gap_h[j], [mc1.min_percent + 0.1, 25, 50, 75, mc1.max_percent - 0.1], 9, sweep_wndg_pos[k], 10)
+    #             # basic_example_func(sweep_air_gap_h[j], [50], 9, sweep_wndg_pos[k], 10)
+    #             fem_ind[j, k] = geo.read_log()["single_sweeps"][0]["winding1"]["self_inductance"][0]
+    #             # Load design and plot various plots for analysis
+    #             # working_directory_load = os.path.join(working_directory, "results")
+    #             # inductance, total_loss, total_volume, total_cost, annotation_list = load_design \
+    #             #     (working_directory=working_directory_load)
+    #             # print(inductance)
+    #             # fem_ind[j, k] = inductance
+    #             # fem_ind[j, k] = geo.read_log()["single_sweeps"][0]["winding1"]["Q"]
+    #
+    #
+    # # print(f"Air-gap length: {sweep_air_gap_h}")
+    # print(f"Winding position: {sweep_wndg_pos}")
+    # print(f"FEM inductance: {fem_ind}")
+    # print(f"Calculated inductance: {cal_ind}")
+    # # print(f"Calculated fringe dist: {cal_fringe_dist}")
+    #
+    # # h_by_l = ((0.0295 - sweep_air_gap_h) / 2) / sweep_air_gap_h
+    #
+    # abs_error = cal_ind - fem_ind
+    # error = (abs_error / fem_ind) * 100
+    # # avg_abs_error = np.sum(abs_error, axis=0) / 5
+    #
+    # # print(f"h_by_l: {h_by_l}")
+    # print(f"abs_error: {abs_error}")
+    # print(f"percent error: {error}")
+    # # print(f"average actual error: {avg_abs_error}")
+    #
+    # # np.savetxt('absolute_error.txt', abs_error)
+    #
+    # print(type(error))
+    # print(type(sweep_wndg_pos))
+    #
+    #
+    # # Plotting tools
+    # fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
+    # fmt.plt.title("(9 litz-conductors) (Center air-gap)", fontsize=24)
+    # fmt.plt.xlabel("Winding position (in m)", fontsize=24)
+    # fmt.plt.ylabel("Percent inductance error (in %)", fontsize=24)
+    # # ax.plot(sweep_wndg_pos, error, 'o', c='#%02x%02x%02x' % fmt.colors_femmt_default['red'], linewidth=4)
+    # # ax.plot(sweep_wndg_pos, error, linewidth=4)
+    # for j in range(len(sweep_air_gap_h)):
+    #     # ax.plot(sweep_wndg_pos, fem_ind[j, :], sweep_wndg_pos, cal_ind[j, :], label=str(sweep_air_gap_h[j]))
+    #     ax.plot(sweep_wndg_pos, error[j, :], label=f"{str(round(sweep_air_gap_h[j], 5))} m", linewidth=4)
+    # ax.legend(loc='best', fontsize=18, title="air-gap length", title_fontsize=18)
+    # ax.grid()
+    # fmt.plt.show()
+
