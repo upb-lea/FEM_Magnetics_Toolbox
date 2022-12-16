@@ -98,6 +98,10 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
 
+        self.default_gui_working_directory = os.path.join(os.path.dirname(__file__), "GUI_working_directory")
+        if not os.path.exists(self.default_gui_working_directory):
+            os.mkdir(self.default_gui_working_directory)
+
         super(MainWindow, self).__init__(parent)
         self.md_simulation_type_comboBox = None
         self.aut_simulation_type_comboBox = None
@@ -134,6 +138,11 @@ class MainWindow(QMainWindow):
         "******* Manual Design *********"
 
         "Signals in Definition Tab"
+        # predefine working directory
+        self.md_working_directory_lineEdit.setText(self.default_gui_working_directory)
+        self.FEM_sim_working_dir_LineEdit.setText(self.default_gui_working_directory)
+        self.aut_load_design_directoryname_lineEdit.setText(self.default_gui_working_directory)
+
         # simulation
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.md_change_simulation_type)
         # core
@@ -2746,8 +2755,8 @@ class MainWindow(QMainWindow):
                             core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()))"""
-            working_directory = 'C:\LEA_Project\FEM_Magnetics_Toolbox'
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+
+            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=self.md_working_directory_lineEdit.text(),
                                         silent=False)
 
             core_db = fmt.core_database()["PQ 40/40"]
@@ -2901,11 +2910,9 @@ class MainWindow(QMainWindow):
 
             self.md_simulation_QLabel.setText('simulation startet...')
 
-            working_directory = 'C:\LEA_Project\FEM_Magnetics_Toolbox'
-
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer,
-                                        working_directory=working_directory)
+                                        working_directory=self.md_working_directory_lineEdit.text())
 
             # -----------------------------------------------
             # Core
