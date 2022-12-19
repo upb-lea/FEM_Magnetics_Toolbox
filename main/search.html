@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search &mdash; FEM Magnetics Toolbox 0.4.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="#" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> FEM Magnetics Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation"><span class="sectnum">1.1</span> Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#onelab-installation"><span class="sectnum">1.1.1</span> ONELAB installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#install-femmt"><span class="sectnum">1.1.2</span> Install FEMMT</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-release-version-recommended"><span class="sectnum">1.1.2.1</span> FEMMT release version (recommended)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-development-version-for-developers-only"><span class="sectnum">1.1.2.2</span> FEMMT development version (for developers only)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#examples"><span class="sectnum">1.2</span> Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#basics"><span class="sectnum">1.2.1</span> Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#counting-arrow-system"><span class="sectnum">1.2.2</span> Counting arrow system</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#gui-experimental"><span class="sectnum">1.3</span> GUI (Experimental)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#femm-validation-for-developers-only"><span class="sectnum">1.4</span> FEMM Validation (for developers only)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#user-guide-how-to-create-a-femmt-model"><span class="sectnum">2</span> User Guide: How to create a FEMMT model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#working-directory"><span class="sectnum">2.1</span> Working directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#creating-a-core"><span class="sectnum">2.2</span> Creating a core</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#material-database"><span class="sectnum">2.2.1</span> Material database</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#adding-air-gaps-to-the-core"><span class="sectnum">2.3</span> Adding air gaps to the core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#set-insulation-distances"><span class="sectnum">2.4</span> Set insulation distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#add-windings-to-the-winding-window"><span class="sectnum">2.5</span> Add windings to the winding window</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#virtual-winding-windows"><span class="sectnum">2.5.1</span> Virtual Winding Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#winding-types-and-winding-schemes"><span class="sectnum">2.5.2</span> Winding types and winding schemes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#conductorarrangement"><span class="sectnum">2.5.2.1</span> ConductorArrangement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#wrapparatype"><span class="sectnum">2.5.2.2</span> WrapParaType</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#add-conductors"><span class="sectnum">2.6</span> Add conductors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#add-conductors-to-virtual-winding-windows"><span class="sectnum">2.6.1</span> Add conductors to virtual winding windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#create-model-and-start-simulation"><span class="sectnum">2.7</span> Create model and start simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#optional-create-thermal-simulation"><span class="sectnum">2.8</span> [Optional] Create thermal simulation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#winding-types"><span class="sectnum">3</span> Winding types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#femmt-class-and-function-documentation"><span class="sectnum">4</span> FEMMT class and function documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-magneticcomponent-class"><span class="sectnum">4.1</span> The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-core-class"><span class="sectnum">4.2</span> The <code class="docutils literal notranslate"><span class="pre">Core</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-airgaps-class"><span class="sectnum">4.3</span> The <code class="docutils literal notranslate"><span class="pre">AirGaps</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-insulation-class"><span class="sectnum">4.4</span> The <code class="docutils literal notranslate"><span class="pre">Insulation</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-conductor-class"><span class="sectnum">4.5</span> The <code class="docutils literal notranslate"><span class="pre">Conductor</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-windingwindow-class"><span class="sectnum">4.6</span> The <code class="docutils literal notranslate"><span class="pre">WindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-virtualwindingwindow-class"><span class="sectnum">4.7</span> The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-logparser-class"><span class="sectnum">4.8</span> The <code class="docutils literal notranslate"><span class="pre">LogParser</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#module-femmt.Enumerations"><span class="sectnum">4.9</span> <code class="docutils literal notranslate"><span class="pre">Enumerations</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#module-femmt.Functions"><span class="sectnum">4.10</span> Helper functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#developer-notes-for-femmt"><span class="sectnum">5</span> Developer Notes for FEMMT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#winding-creation"><span class="sectnum">5.1</span> Winding creation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Search</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <noscript>
+  <div id="fallback" class="admonition warning">
+    <p class="last">
+      Please activate JavaScript to enable the search functionality.
+    </p>
+  </div>
+  </noscript>
+
+  
+  <div id="search-results">
+  
+  </div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, LEA, Paderborn University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+  <script>
+    jQuery(function() { Search.loadIndex("searchindex.js"); });
+  </script>
+  
+  <script id="searchindexloader"></script>
+   
+
+
+</body>
+</html>

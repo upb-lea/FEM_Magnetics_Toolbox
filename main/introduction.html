@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FEM Magnetics Toolbox (FEMMT) &mdash; FEM Magnetics Toolbox 0.4.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> FEM Magnetics Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation"><span class="sectnum">1.1</span> Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#onelab-installation"><span class="sectnum">1.1.1</span> ONELAB installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#install-femmt"><span class="sectnum">1.1.2</span> Install FEMMT</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-release-version-recommended"><span class="sectnum">1.1.2.1</span> FEMMT release version (recommended)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-development-version-for-developers-only"><span class="sectnum">1.1.2.2</span> FEMMT development version (for developers only)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#examples"><span class="sectnum">1.2</span> Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#basics"><span class="sectnum">1.2.1</span> Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#counting-arrow-system"><span class="sectnum">1.2.2</span> Counting arrow system</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#gui-experimental"><span class="sectnum">1.3</span> GUI (Experimental)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#femm-validation-for-developers-only"><span class="sectnum">1.4</span> FEMM Validation (for developers only)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#user-guide-how-to-create-a-femmt-model"><span class="sectnum">2</span> User Guide: How to create a FEMMT model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#working-directory"><span class="sectnum">2.1</span> Working directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#creating-a-core"><span class="sectnum">2.2</span> Creating a core</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#material-database"><span class="sectnum">2.2.1</span> Material database</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#adding-air-gaps-to-the-core"><span class="sectnum">2.3</span> Adding air gaps to the core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#set-insulation-distances"><span class="sectnum">2.4</span> Set insulation distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#add-windings-to-the-winding-window"><span class="sectnum">2.5</span> Add windings to the winding window</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#virtual-winding-windows"><span class="sectnum">2.5.1</span> Virtual Winding Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#winding-types-and-winding-schemes"><span class="sectnum">2.5.2</span> Winding types and winding schemes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#conductorarrangement"><span class="sectnum">2.5.2.1</span> ConductorArrangement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#wrapparatype"><span class="sectnum">2.5.2.2</span> WrapParaType</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#add-conductors"><span class="sectnum">2.6</span> Add conductors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#add-conductors-to-virtual-winding-windows"><span class="sectnum">2.6.1</span> Add conductors to virtual winding windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#create-model-and-start-simulation"><span class="sectnum">2.7</span> Create model and start simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#optional-create-thermal-simulation"><span class="sectnum">2.8</span> [Optional] Create thermal simulation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#winding-types"><span class="sectnum">3</span> Winding types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#femmt-class-and-function-documentation"><span class="sectnum">4</span> FEMMT class and function documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-magneticcomponent-class"><span class="sectnum">4.1</span> The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-core-class"><span class="sectnum">4.2</span> The <code class="docutils literal notranslate"><span class="pre">Core</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-airgaps-class"><span class="sectnum">4.3</span> The <code class="docutils literal notranslate"><span class="pre">AirGaps</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-insulation-class"><span class="sectnum">4.4</span> The <code class="docutils literal notranslate"><span class="pre">Insulation</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-conductor-class"><span class="sectnum">4.5</span> The <code class="docutils literal notranslate"><span class="pre">Conductor</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-windingwindow-class"><span class="sectnum">4.6</span> The <code class="docutils literal notranslate"><span class="pre">WindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-virtualwindingwindow-class"><span class="sectnum">4.7</span> The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-logparser-class"><span class="sectnum">4.8</span> The <code class="docutils literal notranslate"><span class="pre">LogParser</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#module-femmt.Enumerations"><span class="sectnum">4.9</span> <code class="docutils literal notranslate"><span class="pre">Enumerations</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#module-femmt.Functions"><span class="sectnum">4.10</span> Helper functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#developer-notes-for-femmt"><span class="sectnum">5</span> Developer Notes for FEMMT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#winding-creation"><span class="sectnum">5.1</span> Winding creation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>FEM Magnetics Toolbox (FEMMT)</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/introduction.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fem-magnetics-toolbox-femmt">
+<h1>FEM Magnetics Toolbox (FEMMT)<a class="headerlink" href="#fem-magnetics-toolbox-femmt" title="Permalink to this headline"></a></h1>
+<p>Python toolbox to generate preconfigured figures for FEM simulation
+tools in power electronics.</p>
+<p>The toolbox contains two parts, a reluctance module and a FEM module.</p>
+<ul class="simple">
+<li><p>The reluctance module is for pre-calculations</p></li>
+<li><p>The FEM module is for detailed calculations</p></li>
+</ul>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
+<p>To run FEMMT, python (version 3.8 or above) and onelab is needed.</p>
+<section id="onelab-installation">
+<h3>ONELAB installation<a class="headerlink" href="#onelab-installation" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>Go to <a class="reference external" href="https://onelab.info/">https://onelab.info/</a></p></li>
+<li><p>Download the Desktop Version for your OS (Windows, Linux or macOS)</p></li>
+<li><p>Unpack the software and remember the file path. This will be needed
+later when installing FEMMT.</p></li>
+</ul>
+</section>
+<section id="install-femmt">
+<h3>Install FEMMT<a class="headerlink" href="#install-femmt" title="Permalink to this headline"></a></h3>
+<p>FEMMT can be installed using the python pip package manager.
+Either a release version can be installed using pip or a developement version by downloading this repository.</p>
+<section id="femmt-release-version-recommended">
+<h4>FEMMT release version (recommended)<a class="headerlink" href="#femmt-release-version-recommended" title="Permalink to this headline"></a></h4>
+<p>This installs the stable release version.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">femmt</span>
+</pre></div>
+</div>
+</section>
+<section id="femmt-development-version-for-developers-only">
+<h4>FEMMT development version (for developers only)<a class="headerlink" href="#femmt-development-version-for-developers-only" title="Permalink to this headline"></a></h4>
+<p>This is the latest development version with the latest features. Note:
+You may need to install <a class="reference external" href="https://git-scm.com/downloads">git</a>.
+Also have a look at the <a class="reference external" href="/developers_notes.md">developers notes</a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Folder</span><span class="o">/</span><span class="n">of</span><span class="o">/</span><span class="n">Interest</span><span class="o">/</span><span class="n">FEMMT</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">upb</span><span class="o">-</span><span class="n">lea</span><span class="o">/</span><span class="n">FEM_Magnetics_Toolbox</span><span class="o">.</span><span class="n">git</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>FEMMT is using the material database. To use the latest version for developing, also install the material database in developer mode.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Folder</span><span class="o">/</span><span class="n">of</span><span class="o">/</span><span class="n">Interest</span><span class="o">/</span><span class="n">materialdatabase</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">upb</span><span class="o">-</span><span class="n">lea</span><span class="o">/</span><span class="n">materialdatabase</span><span class="o">.</span><span class="n">git</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline"></a></h2>
+<p>This toolbox is able to build a complete FEM simulation from simple
+Python code. The following figure shows the Python code on the left and
+the corresponding FEM simulation on the right. <img alt="image_femmt_screenshot" src="_images/FEMMT_Screenshot.png" /></p>
+<p>Code examples can be found in this <a class="reference external" href="/femmt/examples/basic_example.py">example file</a>. This file is updated
+regulary.</p>
+<section id="basics">
+<h3>Basics<a class="headerlink" href="#basics" title="Permalink to this headline"></a></h3>
+<p>The magnetic component can be an inductor, a transformer, or a
+transformer with integrated stray path. The parameterization process is
+divided into the following steps:</p>
+<ol class="arabic simple">
+<li><p>Chose simulation type,</p></li>
+<li><p>set core parameters (geometry, material),</p></li>
+<li><p>set air gap parameters (position, height),</p></li>
+<li><p>set conductor parameters (litz/solid wire),</p></li>
+<li><p>start simulation with given frequencies and currents and phases.</p></li>
+</ol>
+<p>Please have a look at the <a class="reference external" href="/femmt/examples/basic_example.py">basic_example</a>.</p>
+<p>The examples contain among other things:</p>
+<ul class="simple">
+<li><p>Geometries: Coil, transformer, transformer with integrated stray path,</p></li>
+<li><p>wire and stranded wire definition,</p></li>
+<li><p>air gaps definition,</p></li>
+<li><p>excitation with different frequencies, amplitudes and phases.</p></li>
+</ul>
+<p>The simulation results can be found in <cite>working_directory/results/result_log_electro_magnetic.json</cite>. Working directory can either be set by the user otherwise it located at <cite>/python-side-packages-path/femmt</cite>.
+In it you can find</p>
+<ul class="simple">
+<li><p>power loss in the core: hysteresis losses and eddy current losses,</p></li>
+<li><p>losses per winding and for each individual winding,</p></li>
+<li><p>self- and mutual inductances.</p></li>
+</ul>
+<p>For a more detailed guide on how to create a model, plase have a look <a class="reference internal" href="intro.html#user-guide-model-creation"><span class="std std-ref">here</span></a>.</p>
+</section>
+<section id="counting-arrow-system">
+<h3>Counting arrow system<a class="headerlink" href="#counting-arrow-system" title="Permalink to this headline"></a></h3>
+<p>Defined as depicted here:</p>
+<p><img alt="image_counting_arrow_system" src="_images/counting_arrow_system.png" /></p>
+</section>
+</section>
+<section id="gui-experimental">
+<h2>GUI (Experimental)<a class="headerlink" href="#gui-experimental" title="Permalink to this headline"></a></h2>
+<p>There is a first preview for a GUI. Installing this is a bit cumbersome
+at first, but will be simplified in the future:</p>
+<ul class="simple">
+<li><p>Download the complete repository via <code class="docutils literal notranslate"><span class="pre">Code</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Download</span> <span class="pre">ZIP</span></code> and unpack it.</p></li>
+<li><p>install the development version of femmt as described above</p></li>
+<li><p>run python <code class="docutils literal notranslate"><span class="pre">downloads/path-to_femmt/femmt/gui/femmt_gui.py</span></code></p></li>
+</ul>
+<p>Please note, the GUI is experimental.</p>
+<p><img alt="image_gui_definition" src="_images/femmt_gui_definition.png" /></p>
+</section>
+<section id="femm-validation-for-developers-only">
+<h2>FEMM Validation (for developers only)<a class="headerlink" href="#femm-validation-for-developers-only" title="Permalink to this headline"></a></h2>
+<p>For verification purposes a FEMM model can be created in FEMMT. To do this
+FEMM needs to be installed as well as the FEMM python package.
+The functionality is limited, e.g. the air gaps are limited to the ‘center’-type. Other types, like ‘percent’ are not implemented.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, LEA, Paderborn University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

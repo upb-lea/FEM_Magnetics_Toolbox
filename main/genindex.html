@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Index &mdash; FEM Magnetics Toolbox 0.4.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> FEM Magnetics Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation"><span class="sectnum">1.1</span> Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#onelab-installation"><span class="sectnum">1.1.1</span> ONELAB installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#install-femmt"><span class="sectnum">1.1.2</span> Install FEMMT</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-release-version-recommended"><span class="sectnum">1.1.2.1</span> FEMMT release version (recommended)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-development-version-for-developers-only"><span class="sectnum">1.1.2.2</span> FEMMT development version (for developers only)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#examples"><span class="sectnum">1.2</span> Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#basics"><span class="sectnum">1.2.1</span> Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#counting-arrow-system"><span class="sectnum">1.2.2</span> Counting arrow system</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#gui-experimental"><span class="sectnum">1.3</span> GUI (Experimental)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#femm-validation-for-developers-only"><span class="sectnum">1.4</span> FEMM Validation (for developers only)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#user-guide-how-to-create-a-femmt-model"><span class="sectnum">2</span> User Guide: How to create a FEMMT model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#working-directory"><span class="sectnum">2.1</span> Working directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#creating-a-core"><span class="sectnum">2.2</span> Creating a core</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#material-database"><span class="sectnum">2.2.1</span> Material database</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#adding-air-gaps-to-the-core"><span class="sectnum">2.3</span> Adding air gaps to the core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#set-insulation-distances"><span class="sectnum">2.4</span> Set insulation distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#add-windings-to-the-winding-window"><span class="sectnum">2.5</span> Add windings to the winding window</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#virtual-winding-windows"><span class="sectnum">2.5.1</span> Virtual Winding Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#winding-types-and-winding-schemes"><span class="sectnum">2.5.2</span> Winding types and winding schemes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#conductorarrangement"><span class="sectnum">2.5.2.1</span> ConductorArrangement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#wrapparatype"><span class="sectnum">2.5.2.2</span> WrapParaType</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#add-conductors"><span class="sectnum">2.6</span> Add conductors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#add-conductors-to-virtual-winding-windows"><span class="sectnum">2.6.1</span> Add conductors to virtual winding windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#create-model-and-start-simulation"><span class="sectnum">2.7</span> Create model and start simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#optional-create-thermal-simulation"><span class="sectnum">2.8</span> [Optional] Create thermal simulation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#winding-types"><span class="sectnum">3</span> Winding types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#femmt-class-and-function-documentation"><span class="sectnum">4</span> FEMMT class and function documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-magneticcomponent-class"><span class="sectnum">4.1</span> The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-core-class"><span class="sectnum">4.2</span> The <code class="docutils literal notranslate"><span class="pre">Core</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-airgaps-class"><span class="sectnum">4.3</span> The <code class="docutils literal notranslate"><span class="pre">AirGaps</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-insulation-class"><span class="sectnum">4.4</span> The <code class="docutils literal notranslate"><span class="pre">Insulation</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-conductor-class"><span class="sectnum">4.5</span> The <code class="docutils literal notranslate"><span class="pre">Conductor</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-windingwindow-class"><span class="sectnum">4.6</span> The <code class="docutils literal notranslate"><span class="pre">WindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-virtualwindingwindow-class"><span class="sectnum">4.7</span> The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-logparser-class"><span class="sectnum">4.8</span> The <code class="docutils literal notranslate"><span class="pre">LogParser</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#module-femmt.Enumerations"><span class="sectnum">4.9</span> <code class="docutils literal notranslate"><span class="pre">Enumerations</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#module-femmt.Functions"><span class="sectnum">4.10</span> Helper functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#developer-notes-for-femmt"><span class="sectnum">5</span> Developer Notes for FEMMT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#winding-creation"><span class="sectnum">5.1</span> Winding creation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Index</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/genindex" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#_"><strong>_</strong></a>
+ | <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
+ 
+</div>
+<h2 id="_">_</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.FEMMTLogParser.__init__">__init__() (femmt.FEMMTLogParser method)</a>
+
+      <ul>
+        <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.__init__">(femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+        <li><a href="intro.html#femmt.Model.AirGaps.__init__">(femmt.Model.AirGaps method)</a>
+</li>
+        <li><a href="intro.html#femmt.Model.Conductor.__init__">(femmt.Model.Conductor method)</a>
+</li>
+        <li><a href="intro.html#femmt.Model.Core.__init__">(femmt.Model.Core method)</a>
+</li>
+        <li><a href="intro.html#femmt.Model.Insulation.__init__">(femmt.Model.Insulation method)</a>
+</li>
+        <li><a href="intro.html#femmt.Model.VirtualWindingWindow.__init__">(femmt.Model.VirtualWindingWindow method)</a>
+</li>
+        <li><a href="intro.html#femmt.Model.WindingWindow.__init__">(femmt.Model.WindingWindow method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.WindingData.active_power">active_power (femmt.WindingData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.AirGaps.add_air_gap">add_air_gap() (femmt.Model.AirGaps method)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.Insulation.add_core_insulations">add_core_insulations() (femmt.Model.Insulation method)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.Insulation.add_winding_insulations">add_winding_insulations() (femmt.Model.Insulation method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.AirGapLegPosition">AirGapLegPosition (class in femmt.Enumerations)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.AirGapMethod">AirGapMethod (class in femmt.Enumerations)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.AirGaps">AirGaps (class in femmt.Model)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.Conductivity.Aluminium">Aluminium (femmt.Enumerations.Conductivity attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.WindingData.apparent_power">apparent_power (femmt.WindingData attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.InterleavedWindingScheme.Bifilar">Bifilar (femmt.Enumerations.InterleavedWindingScheme attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.AirGapMethod.Center">Center (femmt.Enumerations.AirGapMethod attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.AirGapLegPosition.CenterLeg">CenterLeg (femmt.Enumerations.AirGapLegPosition attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.WindingWindow.combine_vww">combine_vww() (femmt.Model.WindingWindow method)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ComponentType">ComponentType (class in femmt.Enumerations)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.Conductivity">Conductivity (class in femmt.Enumerations)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.Conductor">Conductor (class in femmt.Model)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ConductorArrangement">ConductorArrangement (class in femmt.Enumerations)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ConductorType">ConductorType (class in femmt.Enumerations)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.Conductivity.Copper">Copper (femmt.Enumerations.Conductivity attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.Core">Core (class in femmt.Model)</a>
+</li>
+      <li><a href="intro.html#femmt.Functions.core_database">core_database() (in module femmt.Functions)</a>
+</li>
+      <li><a href="intro.html#femmt.SweepData.core_eddy_losses">core_eddy_losses (femmt.SweepData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.SweepData.core_hyst_losses">core_hyst_losses (femmt.SweepData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.FileData.create_folders">create_folders() (femmt.FileData method)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.create_model">create_model() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.WindingData.current">current (femmt.WindingData attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.excitation_sweep">excitation_sweep() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.ExcitationMeshingType">ExcitationMeshingType (class in femmt.Enumerations)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.femm_reference">femm_reference() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.femm_thermal_validation">femm_thermal_validation() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li>
+    femmt.Enumerations
+
+      <ul>
+        <li><a href="intro.html#module-femmt.Enumerations">module</a>
+</li>
+      </ul></li>
+      <li>
+    femmt.Functions
+
+      <ul>
+        <li><a href="intro.html#module-femmt.Functions">module</a>
+</li>
+      </ul></li>
+      <li><a href="intro.html#femmt.FEMMTLogParser">FEMMTLogParser (class in femmt)</a>
+</li>
+      <li><a href="intro.html#femmt.FileData">FileData (class in femmt)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.PermeabilityType.FixedLossAngle">FixedLossAngle (femmt.Enumerations.PermeabilityType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WrapParaType.FixedThickness">FixedThickness (femmt.Enumerations.WrapParaType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.WindingData.flux">flux (femmt.WindingData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WindingScheme.FoilHorizontal">FoilHorizontal (femmt.Enumerations.WindingScheme attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WindingScheme.FoilVertical">FoilVertical (femmt.Enumerations.WindingScheme attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.SweepData.frequency">frequency (femmt.SweepData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.PermeabilityType.FromData">FromData (femmt.Enumerations.PermeabilityType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WindingScheme.Full">Full (femmt.Enumerations.WindingScheme attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.ConductorArrangement.Hexagonal">Hexagonal (femmt.Enumerations.ConductorArrangement attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.InterleavedWindingScheme.HorizontalAlternating">HorizontalAlternating (femmt.Enumerations.InterleavedWindingScheme attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.WindingWindowSplit.HorizontalAndVerticalSplit">HorizontalAndVerticalSplit (femmt.Enumerations.WindingWindowSplit attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WindingWindowSplit.HorizontalSplit">HorizontalSplit (femmt.Enumerations.WindingWindowSplit attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.ComponentType.Inductor">Inductor (femmt.Enumerations.ComponentType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.Insulation">Insulation (class in femmt.Model)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ComponentType.IntegratedTransformer">IntegratedTransformer (femmt.Enumerations.ComponentType attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.WindingType.Interleaved">Interleaved (femmt.Enumerations.WindingType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.InterleavedWindingScheme">InterleavedWindingScheme (class in femmt.Enumerations)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WrapParaType.Interpolate">Interpolate (femmt.Enumerations.WrapParaType attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.AirGapLegPosition.LeftLeg">LeftLeg (femmt.Enumerations.AirGapLegPosition attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Functions.litz_database">litz_database() (in module femmt.Functions)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.LossApproach.LossAngle">LossAngle (femmt.Enumerations.LossApproach attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.LossApproach">LossApproach (class in femmt.Enumerations)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.WindingData.magnetic_field_energy">magnetic_field_energy (femmt.WindingData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent">MagneticComponent (class in femmt.MagneticComponent)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.AirGapMethod.Manually">Manually (femmt.Enumerations.AirGapMethod attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.mesh">mesh() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ExcitationMeshingType.MeshEachFrequency">MeshEachFrequency (femmt.Enumerations.ExcitationMeshingType attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.ExcitationMeshingType.MeshOnlyHighestFrequency">MeshOnlyHighestFrequency (femmt.Enumerations.ExcitationMeshingType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ExcitationMeshingType.MeshOnlyLowestFrequency">MeshOnlyLowestFrequency (femmt.Enumerations.ExcitationMeshingType attribute)</a>
+</li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="intro.html#module-femmt.Enumerations">femmt.Enumerations</a>
+</li>
+        <li><a href="intro.html#module-femmt.Functions">femmt.Functions</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.WindingWindowSplit.NoSplit">NoSplit (femmt.Enumerations.WindingWindowSplit attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.AirGapMethod.Percent">Percent (femmt.Enumerations.AirGapMethod attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.PermeabilityType">PermeabilityType (class in femmt.Enumerations)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.FEMMTLogParser.plot_frequency_sweep_losses">plot_frequency_sweep_losses() (femmt.FEMMTLogParser method)</a>
+</li>
+      <li><a href="intro.html#femmt.FEMMTLogParser.plot_frequency_sweep_winding_params">plot_frequency_sweep_winding_params() (femmt.FEMMTLogParser method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.WindingData.reactive_power">reactive_power (femmt.WindingData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.PermeabilityType.RealValue">RealValue (femmt.Enumerations.PermeabilityType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ConductorType.RectangularSolid">RectangularSolid (femmt.Enumerations.ConductorType attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.AirGapLegPosition.RightLeg">RightLeg (femmt.Enumerations.AirGapLegPosition attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ConductorType.RoundLitz">RoundLitz (femmt.Enumerations.ConductorType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ConductorType.RoundSolid">RoundSolid (femmt.Enumerations.ConductorType attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.WindingData.self_inductance">self_inductance (femmt.WindingData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.set_air_gaps">set_air_gaps() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.set_core">set_core() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.set_insulation">set_insulation() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.VirtualWindingWindow.set_interleaved_winding">set_interleaved_winding() (femmt.Model.VirtualWindingWindow method)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.Conductor.set_litz_round_conductor">set_litz_round_conductor() (femmt.Model.Conductor method)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.set_stray_path">set_stray_path() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.VirtualWindingWindow.set_winding">set_winding() (femmt.Model.VirtualWindingWindow method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.set_winding_window">set_winding_window() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WindingType.Single">Single (femmt.Enumerations.WindingType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.single_simulation">single_simulation() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.WindingWindow.split_window">split_window() (femmt.Model.WindingWindow method)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ConductorArrangement.Square">Square (femmt.Enumerations.ConductorArrangement attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.ConductorArrangement.SquareFullWidth">SquareFullWidth (femmt.Enumerations.ConductorArrangement attribute)</a>
+
+      <ul>
+        <li><a href="intro.html#femmt.Enumerations.WindingScheme.SquareFullWidth">(femmt.Enumerations.WindingScheme attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="intro.html#femmt.Enumerations.LossApproach.Steinmetz">Steinmetz (femmt.Enumerations.LossApproach attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.SweepData">SweepData (class in femmt)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.MagneticComponent.MagneticComponent.thermal_simulation">thermal_simulation() (femmt.MagneticComponent.MagneticComponent method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.ComponentType.Transformer">Transformer (femmt.Enumerations.ComponentType attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.WindingData.turns">turns (femmt.WindingData attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.FileData.update_paths">update_paths() (femmt.FileData method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.InterleavedWindingScheme.VerticalAlternating">VerticalAlternating (femmt.Enumerations.InterleavedWindingScheme attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WindingWindowSplit.VerticalSplit">VerticalSplit (femmt.Enumerations.WindingWindowSplit attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.InterleavedWindingScheme.VerticalStacked">VerticalStacked (femmt.Enumerations.InterleavedWindingScheme attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.VirtualWindingWindow">VirtualWindingWindow (class in femmt.Model)</a>
+</li>
+      <li><a href="intro.html#femmt.WindingData.voltage">voltage (femmt.WindingData attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.SweepData.winding_losses">winding_losses (femmt.SweepData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.WindingData">WindingData (class in femmt)</a>
+</li>
+      <li><a href="intro.html#femmt.SweepData.windings">windings (femmt.SweepData attribute)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WindingScheme">WindingScheme (class in femmt.Enumerations)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="intro.html#femmt.Enumerations.WindingType">WindingType (class in femmt.Enumerations)</a>
+</li>
+      <li><a href="intro.html#femmt.Model.WindingWindow">WindingWindow (class in femmt.Model)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WindingWindowSplit">WindingWindowSplit (class in femmt.Enumerations)</a>
+</li>
+      <li><a href="intro.html#femmt.Functions.wire_material_database">wire_material_database() (in module femmt.Functions)</a>
+</li>
+      <li><a href="intro.html#femmt.Enumerations.WrapParaType">WrapParaType (class in femmt.Enumerations)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, LEA, Paderborn University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
