@@ -1,10 +1,6 @@
 import sys
-import matplotlib
 import re
 from mpl_toolkits.mplot3d import proj3d
-import pandas as pd
-import gmsh
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
@@ -20,10 +16,10 @@ import os
 from os import listdir
 from os.path import isfile, join
 import shutil
-from itertools import product
 import logging
 from typing import List, Union, Optional
 import PIL
+import webbrowser
 
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
@@ -134,6 +130,12 @@ class MainWindow(QMainWindow):
             "+-20": "+/- 20%",
             "excel": "MS Excel"
         }
+        "******** menu bar *********"
+
+        ### Actions for Help
+        self.action_contribute.triggered.connect(self.webbrowser_contribute)
+        self.action_documentation.triggered.connect(self.webbrowser_documentation)
+        self.action_report_bug.triggered.connect(self.webbrowser_bugreport)
 
         "******* Manual Design *********"
 
@@ -507,6 +509,18 @@ class MainWindow(QMainWindow):
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_dat_input)
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_meas_input)
 
+    #  **************************** Menu bar ************************************************************  #
+    ### Help actions ###
+    def webbrowser_contribute(self):
+        webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox')
+
+    def webbrowser_bugreport(self):
+        webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox/issues')
+
+    def webbrowser_documentation(self):
+        webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html')
+
+
     #  **************************** Automated design tab ************************************************************  #
 
     def plot_volume_loss(self, data_matrix, matplotlib_widget):
@@ -766,7 +780,7 @@ class MainWindow(QMainWindow):
                                      core_material=material_names,
                                      mult_air_gap_type=['center_distributed'],
                                      top_core_insulation=comma_str_to_point_float(
-                                         self.aut_isolation_core2cond_top_lineEdit.text()),
+                                     self.aut_isolation_core2cond_top_lineEdit.text()),
                                      bot_core_insulation=comma_str_to_point_float(
                                          self.aut_isolation_core2cond_bot_lineEdit.text()),
                                      left_core_insulation=comma_str_to_point_float(
