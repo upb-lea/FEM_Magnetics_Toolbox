@@ -88,9 +88,12 @@ if component == "inductor":
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
-
+    inductor_frequency = 200000
     core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
+                    material="N49", temperature=30, frequency=inductor_frequency,
+                    # permeability_datasource="manufacturer_datasheet",
+                    permeability_datasource="measurements", permeability_datatype="complex_permeability", permeability_measurement_setup="LEA_LK",
+                    permittivity_datasource="measurements", permittivity_datatype="complex_permittivity", permittivity_measurement_setup="LEA_LK")
                     # mu_rel=3000, phi_mu_deg=10,
                     # sigma=0.5)
     geo.set_core(core)
@@ -122,10 +125,10 @@ if component == "inductor":
     geo.set_winding_window(winding_window)
 
     # 8. create the model
-    geo.create_model(freq=100000, visualize_before=True, save_png=False)
+    geo.create_model(freq=inductor_frequency, visualize_before=False, save_png=False)
 
     # 6.a. start simulation
-    geo.single_simulation(freq=100000, current=[4.5], show_results=True)
+    geo.single_simulation(freq=inductor_frequency, current=[4.5], show_results=False)
 
     # 6.b. Excitation Sweep Example
     # Perform a sweep using more than one frequency

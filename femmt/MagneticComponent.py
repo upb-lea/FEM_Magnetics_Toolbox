@@ -1222,7 +1222,8 @@ class MagneticComponent:
         """
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase.get_material_property(material_name=self.core.material, property="initial_permeability")
+            complex_permeability = mu_0 * mdb.MaterialDatabase().get_material_property(material_name=self.core.material, property="initial_permeability")
+            print(f"{complex_permeability = }")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_rel * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
         if self.core.permeability_type == PermeabilityType.RealValue:
@@ -1238,6 +1239,15 @@ class MagneticComponent:
 
         # Not included in database yet; assume value:
         complex_permittivity = epsilon_0 * complex(50000, 20000)
+        epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase().get_permittivity(T=self.core.temperature, f=self.frequency,
+                                                                             material_name="N49", datasource=self.core.permittivity["datasource"],
+                                                                             datatype=self.core.permittivity["datatype"], measurement_setup=self.core.permittivity["measurement_setup"],
+                                                                             interpolation_type="linear")
+
+        complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
+        print(f"{complex_permittivity = }\n"
+              f"{epsilon_r = }\n"
+              f"{epsilon_phi_deg = }")
 
         ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
                                complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
@@ -1412,6 +1422,7 @@ class MagneticComponent:
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.material != 'custom':
             self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path)  # frequency update to core class
+            self.core.update_sigma(frequency)
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
