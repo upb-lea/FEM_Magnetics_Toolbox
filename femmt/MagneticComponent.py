@@ -1239,18 +1239,23 @@ class MagneticComponent:
 
         # Not included in database yet; assume value:
         complex_permittivity = epsilon_0 * complex(50000, 20000)
-        epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase().get_permittivity(T=self.core.temperature, f=self.frequency,
-                                                                             material_name="N49", datasource=self.core.permittivity["datasource"],
-                                                                             datatype=self.core.permittivity["datatype"], measurement_setup=self.core.permittivity["measurement_setup"],
-                                                                             interpolation_type="linear")
+        if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
+            epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase().get_permittivity(T=self.core.temperature, f=self.frequency,
+                                                                                 material_name="N49", datasource=self.core.permittivity["datasource"],
+                                                                                 datatype=self.core.permittivity["datatype"], measurement_setup=self.core.permittivity["measurement_setup"],
+                                                                                 interpolation_type="linear")
 
-        complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
-        print(f"{complex_permittivity = }\n"
-              f"{epsilon_r = }\n"
-              f"{epsilon_phi_deg = }")
+            complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
+            print(f"{complex_permittivity = }\n"
+                  f"{epsilon_r = }\n"
+                  f"{epsilon_phi_deg = }")
 
-        ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
-                               complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+            ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                                   complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+
+        else:
+            ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                                   complex_permittivity=0, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
