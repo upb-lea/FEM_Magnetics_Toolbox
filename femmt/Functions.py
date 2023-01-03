@@ -1370,10 +1370,10 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
     loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
 
-    print(inductance)
-    print(loss_core_eddy_current)
-    print(loss_core_hysteresis)
-    print(loss_winding_1)
+    femmt_print(inductance)
+    femmt_print(loss_core_eddy_current)
+    femmt_print(loss_core_hysteresis)
+    femmt_print(loss_winding_1)
 
     bar_width = 0.35
     plt.bar(0, loss_core_hysteresis, width=bar_width)

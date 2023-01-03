@@ -1222,7 +1222,7 @@ class MagneticComponent:
         """
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase().get_material_property(material_name=self.core.material, property="initial_permeability")
+            complex_permeability = mu_0 * mdb.MaterialDatabase(ff.silent).get_material_property(material_name=self.core.material, property="initial_permeability")
             ff.femmt_print(f"{complex_permeability = }")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_rel * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
@@ -1236,14 +1236,13 @@ class MagneticComponent:
         e.g.: Used to check the model for magneto-quasi-static condition.
         :return:
         """
-
-        # Not included in database yet; assume value:
-        complex_permittivity = epsilon_0 * complex(50000, 20000)
         if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
-            epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase().get_permittivity(T=self.core.temperature, f=self.frequency,
-                                                                                 material_name="N49", datasource=self.core.permittivity["datasource"],
-                                                                                 datatype=self.core.permittivity["datatype"], measurement_setup=self.core.permittivity["measurement_setup"],
-                                                                                 interpolation_type="linear")
+            epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(T=self.core.temperature, f=self.frequency,
+                                                                                          material_name="N49",
+                                                                                          datasource=self.core.permittivity["datasource"],
+                                                                                          datatype=self.core.permittivity["datatype"],
+                                                                                          measurement_setup=self.core.permittivity["measurement_setup"],
+                                                                                          interpolation_type="linear")
 
             complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
             ff.femmt_print(f"{complex_permittivity = }\n"
