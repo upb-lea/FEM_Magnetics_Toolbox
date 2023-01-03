@@ -12,7 +12,7 @@ The toolbox contains two parts, a reluctance module and a FEM module.
 Installation
 ---------------
 
-To run FEMMT python (version 3.8 or above) and onelab is needed.
+To run FEMMT, python (version 3.8 or above) and onelab is needed.
 
 ONELAB installation
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,7 +31,7 @@ Either a release version can be installed using pip or a developement version by
 FEMMT release version (recommended)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the stable release version.
+This installs the stable release version.
 
 ::
 
@@ -42,7 +42,7 @@ FEMMT development version (for developers only)
 
 This is the latest development version with the latest features. Note:
 You may need to install `git <https://git-scm.com/downloads>`__.
-Also have a look at the . `developers notes </developers_notes.md>`__.
+Also have a look at the `developers notes </developers_notes.md>`__.
 
 
 ::
@@ -93,8 +93,7 @@ The examples contain among other things:
 * air gaps definition, 
 * excitation with different frequencies, amplitudes and phases.
 
-The simulation results can be found in working_directory/results/result_log_electro_magnetic.json. Working directory
-can either be set by the user otherwise it located at /python-side-packages-path/femmt.
+The simulation results can be found in `working_directory/results/result_log_electro_magnetic.json`. Working directory can either be set by the user otherwise it located at `/python-side-packages-path/femmt`.
 In it you can find 
 
 * power loss in the core: hysteresis losses and eddy current losses, 

@@ -64,13 +64,14 @@ Now the core object can be created and added to the model (geo object)
 
 .. code:: python
 
-   core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"], material="95_100")
+   core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"], material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
    core.set_core(core)
 
 Material database
 ~~~~~~~~~~~~~~~~~
 
-TODO
+The `material database <https://github.com/upb-lea/materialdatabase>`_ was already introduced in the upper code example with the `material=` parameter. The temperature as well as the frequency are necessary to pick the corresponding data from the datasheet.
+
 
 Adding air gaps to the core
 ------------------------------
