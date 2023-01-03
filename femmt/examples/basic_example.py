@@ -92,8 +92,12 @@ if component == "inductor":
     core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
                     material="N49", temperature=45, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
-                    permeability_datasource="measurements", permeability_datatype="complex_permeability", permeability_measurement_setup="LEA_LK",
-                    permittivity_datasource="measurements", permittivity_datatype="complex_permittivity", permittivity_measurement_setup="LEA_LK")
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup="LEA_LK",
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup="LEA_LK")
                     # mu_rel=3000, phi_mu_deg=10,
                     # sigma=0.5)
     geo.set_core(core)

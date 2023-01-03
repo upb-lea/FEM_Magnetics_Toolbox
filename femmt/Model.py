@@ -199,7 +199,7 @@ class Core:
                  material: str = "custom", temperature: float = None,
 
                  loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000,
-                 permeability_datasource: str = None, permeability_datatype: str = None, permeability_measurement_setup: str = None,
+                 permeability_datasource: MaterialDataSource = None, permeability_datatype: MeasurementDataType = None, permeability_measurement_setup: str = None,
                  phi_mu_deg: float = None, non_linear: bool = False,
 
                  permittivity_datasource: str = None, permittivity_datatype: str = None, permittivity_measurement_setup: str = None,
