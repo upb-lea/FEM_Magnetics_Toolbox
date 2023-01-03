@@ -131,7 +131,8 @@ if component == "inductor":
     geo.create_model(freq=inductor_frequency, visualize_before=False, save_png=False)
 
     # 6.a. start simulation
-    geo.single_simulation(freq=inductor_frequency, current=[4.5], show_results=True)
+    geo.single_simulation(freq=inductor_frequency, current=[4.5],
+                          plot_interpolation=False, show_results=True)
 
     # 6.b. Excitation Sweep Example
     # Perform a sweep using more than one frequency

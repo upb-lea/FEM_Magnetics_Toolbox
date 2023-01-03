@@ -348,7 +348,7 @@ class Core:
         self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
         self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
 
-    def update_core_material_pro_file(self, frequency, electro_magnetic_folder):
+    def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to updated the pro file for the solver depending on the frequency of the
         # upcoming simulation
         ff.femmt_print(f"{self.permeability['datasource'] = }")
@@ -357,7 +357,8 @@ class Core:
                                                              datasource=self.permeability["datasource"],
                                                              datatype=self.permeability["datatype"],
                                                              measurement_setup=self.permeability["measurement_setup"],
-                                                             parent_directory=electro_magnetic_folder)
+                                                             parent_directory=electro_magnetic_folder,
+                                                             plot_interpolation=plot_interpolation)
 
     def to_dict(self):
         # TODO: mdb

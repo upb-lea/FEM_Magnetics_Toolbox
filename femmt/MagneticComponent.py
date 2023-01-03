@@ -1398,12 +1398,14 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # GetDP Interaction / Simulation / Excitation
-    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current', imposed_red_f=0):
+    def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current',
+                   plot_interpolation: bool = False, imposed_red_f=0):
         """
         - excitation of the electromagnetic problem
         - current, voltage or current density
         - frequency or reduced frequency
 
+        :param plot_interpolation:
         :param frequency: Frequency
         :type frequency: float
         :param amplitude_list: Current amplitudes according to windings
@@ -1425,7 +1427,7 @@ class MagneticComponent:
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.material != 'custom':
-            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path)  # frequency update to core class
+            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path, plot_interpolation)  # frequency update to core class
             self.core.update_sigma(frequency)
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
@@ -1534,10 +1536,12 @@ class MagneticComponent:
         # Write postprocessing parameters in .pro file
         self.write_electro_magnetic_post_pro()
 
-    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None, show_results = True):
+    def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
+                          plot_interpolation: bool = False, show_results = True):
         """
 
         Start a _single_ electromagnetic ONELAB simulation.
+        :param plot_interpolation:
         :param NL_core:
         :param freq: frequency to simulate
         :type freq: float
@@ -1550,7 +1554,7 @@ class MagneticComponent:
         phi_deg = phi_deg or []
 
         self.mesh.generate_electro_magnetic_mesh()
-        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg)  # frequency and current
+        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
         self.check_model()
         self.file_communication()
         self.pre_simulate()
