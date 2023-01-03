@@ -83,8 +83,7 @@ if component == "inductor":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=False)
-    print(geo)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]

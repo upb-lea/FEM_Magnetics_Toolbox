@@ -59,8 +59,8 @@ class MagneticComponent:
         ff.set_silent_status(silent)
 
         ff.femmt_print(f"\n"
-              f"Initialized a new Magnetic Component of type {component_type.name}\n"
-              f"--- --- --- ---")
+                       f"Initialized a new Magnetic Component of type {component_type.name}\n"
+                       f"--- --- --- ---")
 
         # Get caller filepath when no working_directory was set
         if working_directory is None:
@@ -1223,7 +1223,7 @@ class MagneticComponent:
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
             complex_permeability = mu_0 * mdb.MaterialDatabase().get_material_property(material_name=self.core.material, property="initial_permeability")
-            print(f"{complex_permeability = }")
+            ff.femmt_print(f"{complex_permeability = }")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_rel * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
         if self.core.permeability_type == PermeabilityType.RealValue:
@@ -1246,9 +1246,9 @@ class MagneticComponent:
                                                                                  interpolation_type="linear")
 
             complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
-            print(f"{complex_permittivity = }\n"
-                  f"{epsilon_r = }\n"
-                  f"{epsilon_phi_deg = }")
+            ff.femmt_print(f"{complex_permittivity = }\n"
+                           f"{epsilon_r = }\n"
+                           f"{epsilon_phi_deg = }")
 
             ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
                                    complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
