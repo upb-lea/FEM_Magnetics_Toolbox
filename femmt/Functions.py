@@ -1344,8 +1344,8 @@ def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
 
     coupling_factor = mutal_inductance / (np.sqrt(l_11 * l_22))
     n = mutal_inductance / l_22
-    l_s = (1 - coupling_factor ** 2) / l_11
-    l_h = mutal_inductance ** 2 / l_22
+    l_s = (1 - coupling_factor ** 2) * l_11
+    l_h = coupling_factor ** 2 * l_11
 
     return l_s, l_h, n
 
