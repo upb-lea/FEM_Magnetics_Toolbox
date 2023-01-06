@@ -83,6 +83,16 @@ def core_database() -> Dict:
     """
     Returns core geometry for defined core structures
 
+    All dimensions are nominal dimensions without consideration of tolerances.
+
+    For PQ core sizes (e.g. PQ 40/40), it has been found out that
+    core_dimension_x / core_dimension_y = 1.45, the error over all available shapes is maximum 7% (compared to datasheet value)
+    Derivation:
+    core_list: ['PQ 20/20', 'PQ 26/25', 'PQ 32/30', 'PQ 35/35', 'PQ 40/40', 'PQ 50/50']
+    factor core_dimension_x / core_dimension_y = [1.46, 1.39, 1.45, 1.35, 1.44, 1.56]
+    mean over the factors = 1.45
+    max derivation / mean = 1.07 (< 7% accuracy)
+
     :return: Dict including core_h, core_inner_diameter, window_h, window_w
     :rtype: Dict
     """
@@ -92,83 +102,109 @@ def core_database() -> Dict:
     # PQ Cores
     # -----------------------
 
-    core_dict["PQ 16/11.5"] = {
+    core_dict["PQ 16/11.6"] = {
         "core_h": 11.6e-3,
         "core_inner_diameter": 7e-3,
         "window_h": 6.7e-3,
         "window_w": 3.7e-3,
+        "core_dimension_x": 16.4e-3,
+        "core_dimension_y": 11.2e-3,
     }
     core_dict["PQ 20/16"] = {
         "core_h": 16.2e-3,
         "core_inner_diameter": 8.8e-3,
         "window_h": 10.3e-3,
         "window_w": 5.85e-3,
+        "core_dimension_x": 20.5e-3,
+        "core_dimension_y": 14.0e-3,
     }
     core_dict["PQ 20/20"] = {
         "core_h": 20.2e-3,
         "core_inner_diameter": 8.8e-3,
         "window_h": 14.3e-3,
         "window_w": 4.6e-3,
+        "core_dimension_x": 20.5e-3,
+        "core_dimension_y": 14.0e-3,
     }
     core_dict["PQ 26/20"] = {
         "core_h": 20.16e-3,
         "core_inner_diameter": 12e-3,
         "window_h": 11.5e-3,
         "window_w": 5.25e-3,
+        "core_dimension_x": 26.5e-3,
+        "core_dimension_y": 19.0e-3,
     }
     core_dict["PQ 26/25"] = {
         "core_h": 24.76e-3,
         "core_inner_diameter": 12e-3,
         "window_h": 16.1e-3,
         "window_w": (22.5-12)/2*1e-3,
+        "core_dimension_x": 26.5e-3,
+        "core_dimension_y": 19.0e-3,
     }
     core_dict["PQ 32/20"] = {
         "core_h": 20.5e-3,
         "core_inner_diameter": 13.45e-3,
         "window_h": 11.5e-3,
         "window_w": (27.5-13.45)/2 * 1e-3,
+        "core_dimension_x": 32.0e-3,
+        "core_dimension_y": 22.0e-3,
     }
     core_dict["PQ 32/30"] = {
         "core_h": 30.35e-3,
         "core_inner_diameter": 13.45e-3,
         "window_h": 21.3e-3,
         "window_w": (27.5-13.45)/2 * 1e-3,
+        "core_dimension_x": 32.0e-3,
+        "core_dimension_y": 22.0e-3,
     }
     core_dict["PQ 35/35"] = {
         "core_h": 34.8e-3,
         "core_inner_diameter": 14.35e-3,
         "window_h": 25e-3,
         "window_w": (32-14.35)/2 * 1e-3,
+        "core_dimension_x": 35.1e-3,
+        "core_dimension_y": 26.0e-3,
     }
     core_dict["PQ 40/30"] = {
         "core_h": 30.3e-3,
         "core_inner_diameter": 14.9e-3,
         "window_h": 20e-3,
         "window_w": (37-14.9)/2 * 1e-3,
+        "core_dimension_x": 40.5e-3,
+        "core_dimension_y": 28.0e-3,
     }
     core_dict["PQ 40/40"] = {
         "core_h": 39.8e-3,
         "core_inner_diameter": 14.9e-3,
         "window_h": 29.5e-3,
         "window_w": (37-14.9)/2 * 1e-3,
+        "core_dimension_x": 40.5e-3,
+        "core_dimension_y": 28.0e-3,
     }
     core_dict["PQ 50/40"] = {
         "core_h": 40e-3,
         "core_inner_diameter": 20e-3,
         "window_h": 26.1e-3,
         "window_w": (44-20)/2 * 1e-3,
+        "core_dimension_x": 50.0e-3,
+        "core_dimension_y": 32.0e-3,
     }
     core_dict["PQ 50/50"] = {
         "core_h": 50e-3,
         "core_inner_diameter": 20e-3,
         "window_h": 36.1e-3,
         "window_w": (44-20)/2 * 1e-3,
+        "core_dimension_x": 50.0e-3,
+        "core_dimension_y": 32.0e-3,
     }
     core_dict["PQ 65/60"] = {
         "core_h": 60e-3,
         "core_inner_diameter": 26e-3,
         "window_h": 21e-3,
         "window_w": (65-26)/2 * 1e-3,
+        "core_dimension_x": 65.0e-3,
+        "core_dimension_y": 45.0e-3,
     }
     # -----------------------
     # PM Cores
@@ -180,7 +216,6 @@ def core_database() -> Dict:
         "window_h": 63 * 1e-3,
         "window_w":  (88-43)/2 * 1e-3,
     }
-
     core_dict["PM 50/39"] = {
         "core_h": 39 * 1e-3,
         "core_inner_diameter": pm_core_inner_diameter_calculator(20e-3, 5.4e-3),
@@ -1017,16 +1052,19 @@ def sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight):
     return r_equivalent * mu0 * tablet_hight / air_gap_total_hight
 
 
-def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, r_outer):
+def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, core_inner_diameter, window_w):
     """
     Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
     This function calculates the air gap reluctance for a 2D-axisymmetric core.
 
-    :param tablet_hight: tablet hight
-    :param air_gap_total_hight: total air gap hight
-    :param r_outer: radius of outer core window
+    :param tablet_hight: tablet hight in m
+    :param air_gap_total_hight: total air gap hight in m
+    :param core_inner_diameter: core inner diameter in m
+    :param window_w: core window width in m
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
+
+    r_outer = core_inner_diameter / 2 + window_w
 
     # translate practical core dimensions to non-practial air-gap dimensions
     tablet_radius = r_outer - air_gap_total_hight
@@ -1046,39 +1084,52 @@ def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, r_outer):
     return r_air_gap
 
 
-def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, tablet_diameter, r_outer, real_core_width_no_2d_axi):
+def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, air_gap_total_length, core_inner_diameter, window_w):
     """
     Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
     Note:
     This function differes from r_air_gap_tablet_cyl (ideal 2D axisymmetric core). Here, the air gap reluctance for
     a non-2D-axisymmetric core is taken into account, as a real PQ core is open at the side. So, there is no air gap
-    taken into account for the side-sections. The new real_core_width_no_2d_axi parameter describes the width of the
+    taken into account for the side-sections. The new core_dimension_y parameter describes the width of the
     core when you are in a xy-coordinate system.
 
-    :param tablet_hight: tablet hight
-    :param tablet_diameter: tablet diameter
-    :param r_outer: radius of outer core window
-    :param real_core_width_no_2d_axi: core width for a real core (e.g. PQ-core) in xy-coordinate system.
+    :param tablet_hight: tablet hight in m
+    :param air_gap_total_length: air gap total length
+    :param core_inner_diameter: core inner diameter in m
+    :param window_w: core window width in m
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
 
-    if tablet_diameter / 2 >= r_outer:
-        raise Exception("tablet radius is greater than r_outer")
+    r_outer = core_inner_diameter / 2 + window_w
 
-    # translate practical core dimensions to non-practial air-gap dimensions
-    air_gap_total_hight = r_outer - tablet_diameter / 2
+    if air_gap_total_length >= window_w:
+        raise Exception("air_gap_total_hight is greater than window_w")
 
-    air_gap_basic_hight = air_gap_total_hight
-    r_basic = r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_diameter / 2)
+    air_gap_basic_hight = air_gap_total_length
+    r_basic = r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, (core_inner_diameter + 2 * window_w - 2 * air_gap_total_length) / 2)
 
     r_equivalent = r_basic / 2
-    sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
+    sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_length)
     if np.any(sigma) > 1:
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
-    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_width_no_2d_axi / 2 / r_outer)) / tablet_hight
+    # Note:
+    # the circumference of the air gap differs for open cores (e.g. PQ40/40) to closed ones (ideal rotationally symmetric)
+    # The circumference is no more (diameter * pi), but (2 * pi - 4 * alpha) * (core_inner_diameter/2 + window_w), with alpha = arccos(core_dimension_x / (core_inner_diameter + 2 * window_w))
+    # See: Dissertation Lukas Keuck
+    # For equal pq core sizes (e.g. PQ 40/40), it has been found out that
+    #     core_dimension_x / core_dimension_y = 1.45, the error over all available shapes is maximum 7% (compared to datasheet value)
+    # Now, the new and partly circumference of the stray-path air gap can be calculated
+    # First, the core dimension_y needs to be calculated.
+    # Formular 1: core_dimension_x / core_dimension_y = 1.45
+    # Formular 2: core_dimension_x * core_dimension_y - (core_inner_diameter / 2 + window_w) ** 2 * np.pi = (core_inner_diameter / 2 ) ** 2 * np.pi
+    # Formular 2 assumes that the outer core cross section of the core is equal to the inner core cross section
+    # Formular 1 & 2 needs to be solved to get core_dimension_y:
 
-    r_air_gap = sigma * r_air_gap_ideal
+    core_dimension_y = np.sqrt( ( core_inner_diameter ** 2 / 4 + (core_inner_diameter / 2 + window_w) ** 2  ) * np.pi / 1.45)
+    r_air_gap_ideal_partly = np.log(r_outer / (r_outer - air_gap_total_length)) / mu0 / (2 * np.pi - 4 * np.arccos(core_dimension_y / 2 / r_outer)) / tablet_hight
+
+    r_air_gap = sigma * r_air_gap_ideal_partly
 
     return r_air_gap
 
