@@ -465,10 +465,10 @@ class MagneticCircuit:
                                    self.air_gap_h[0:self.single_air_gap_len] / 2))
 
         self.reluctance[0:self.single_air_gap_len, 5] = np.where(h[:, 1] == 0,
-                                                                 single_round_inf(
+                                                                 ff.r_air_gap_round_inf(
                                                                      self.air_gap_h[0:self.single_air_gap_len],
                                                                      self.core_inner_diameter[0:self.single_air_gap_len], h[:, 0]),
-                                                                 single_round_round(
+                                                                 ff.r_air_gap_round_round(
                                                                      self.air_gap_h[0:self.single_air_gap_len],
                                                                      self.core_inner_diameter[0:self.single_air_gap_len], h[:, 0],
                                                                      h[:, 1]))
@@ -524,11 +524,8 @@ class MagneticCircuit:
         if self.n_air_gaps[0] != 0:
             if self.air_gap_method == 'Center':
                 self.section.append(6)  # round-round type airgap
-                temp1 = ff.r_basis([self.air_gap_h[0] / 2], [self.core_inner_diameter], [(self.window_h - self.air_gap_h[0]) / 2])
-                temp2 = ff.sigma([self.air_gap_h[0]], [self.core_inner_diameter / 2], 2 * temp1)
-                temp3 = ff.r_round_round([self.air_gap_h[0]], temp2, [self.core_inner_diameter / 2])
-                temp4 = self.air_gap_h[0] / (self.mu_0 * np.pi * (self.core_inner_diameter / 2) ** 2)  # classical reluctance formula
-                self.reluctance[:, 5] = temp3
+
+                self.reluctance[:, 5] = ff.r_air_gap_round_round([self.air_gap_h[0]], [self.core_inner_diameter], [(self.window_h - self.air_gap_h[0]) / 2])
 
             elif self.air_gap_method == 'Percent' or self.air_gap_method == 'Manually':
                 self.max_percent_position = ((self.window_h - self.air_gap_h[self.n_air_gaps - 1] / 2) / self.window_h) * 100
@@ -546,10 +543,7 @@ class MagneticCircuit:
                     else:
                         h = ((self.position[1] - self.air_gap_h[1] / 2) - self.air_gap_h[0]) / 2
 
-                    temp1 = ff.r_basis([self.air_gap_h[0]], [self.core_inner_diameter], [h])
-                    temp2 = ff.sigma([self.air_gap_h[0]], [self.core_inner_diameter / 2], temp1)
-                    temp3 = ff.r_round_inf([self.air_gap_h[0]], temp2, [self.core_inner_diameter / 2])
-                    self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+                    self.reluctance[:, 5] = self.reluctance[:, 5] + ff.r_air_gap_round_inf([self.air_gap_h[0]], [self.core_inner_diameter], [h])
                     print('air gap is at lower corner')
 
                 if self.percent_position_air_gap[self.n_air_gaps - 1] >= self.max_percent_position:
@@ -561,10 +555,7 @@ class MagneticCircuit:
                         h = (self.position[self.n_air_gaps - 1] - self.position[self.n_air_gaps - 2] - self.air_gap_h[
                             self.n_air_gaps - 1] / 2 - self.air_gap_h[self.n_air_gaps - 2] / 2) / 2
 
-                    temp1 = ff.r_basis([self.air_gap_h[self.n_air_gaps - 1]], [self.core_inner_diameter], [h])
-                    temp2 = ff.sigma([self.air_gap_h[self.n_air_gaps - 1]], [self.core_inner_diameter / 2], temp1)
-                    temp3 = ff.r_round_inf([self.air_gap_h[self.n_air_gaps - 1]], temp2, [self.core_inner_diameter / 2])
-                    self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+                    self.reluctance[:, 5] = self.reluctance[:, 5] + ff.r_air_gap_round_inf([self.air_gap_h[self.n_air_gaps - 1]], [self.core_inner_diameter], [h])
                     print('air gap is at upper corner')
 
                 for i in range(self.n_air_gaps[0]):
@@ -611,58 +602,12 @@ class MagneticCircuit:
                                 i] / 2) / 2
                             print('Both air gap detected')
 
-                        r_basis_1 = ff.r_basis([self.air_gap_h[i] / 2], [self.core_inner_diameter], [h1])
-                        r_basis_2 = ff.r_basis([self.air_gap_h[i] / 2], [self.core_inner_diameter], [h2])
-                        temp2 = ff.sigma([self.air_gap_h[i]], [self.core_inner_diameter / 2], r_basis_1 + r_basis_2)
-                        temp3 = ff.r_round_round([self.air_gap_h[i]], temp2, [self.core_inner_diameter / 2])
-                        self.reluctance[:, 5] = self.reluctance[:, 5] + temp3
+                        self.reluctance[:, 5] = self.reluctance[:, 5] + ff.r_air_gap_round_round([self.air_gap_h[i]], [self.core_inner_diameter], [h1], [h2])
 
     def calculate_inductance(self):
         # self.section, self.orientation = set_orientation(self.section, len(self.section))
         self.cal_inductance = (self.no_of_turns * self.no_of_turns) / np.sum(self.reluctance, axis=1)
         self.data_matrix[:, 9] = self.cal_inductance
-
-
-def single_round_inf(air_gap_h, core_inner_diameter, height_core_material):
-    """Returns reluctance of a single air-gap at the corner
-
-    :param air_gap_h: Air-gap height [in meter]
-    :type air_gap_h: list
-    :param core_inner_diameter: Diameter of center leg of the core [in meter]
-    :type core_inner_diameter: list
-    :param height_core_material: Core distance between air-gap and other end of the window-h [in meter]
-    :type height_core_material: list
-    :return: Reluctance of a single air-gap at the corner
-    :rtype: list"""
-
-    r_basis_round_inf = ff.r_basis(air_gap_h, core_inner_diameter, height_core_material)
-    sigma_round_inf = ff.sigma(air_gap_h, core_inner_diameter / 2, r_basis_round_inf)
-    reluctance_round_inf = ff.r_round_inf(air_gap_h, sigma_round_inf, core_inner_diameter / 2)
-
-    return reluctance_round_inf
-
-
-def single_round_round(air_gap_total_hight, core_inner_diameter, height_core_material_0, height_core_material_1):
-    """Returns reluctance of a single air-gap at position other than corner on the center leg
-
-    :param air_gap_total_hight: Air-gap total height [in meter]
-    :type air_gap_total_hight: list
-    :param core_inner_diameter: Diameter of center leg of the core [in meter]
-    :type core_inner_diameter: list
-    :param height_core_material_0: Distance between window_h and air_gap_position for a single air-gap [in meter]
-    :type height_core_material_0: list
-    :param height_core_material_1: Height of air-gap from the base of the core window [in meter]
-    :type height_core_material_1: list
-    :return: Reluctance of a single air-gap at position other than corner on the center leg
-    :rtype: list"""
-
-    r_basis_1 = ff.r_basis(air_gap_total_hight / 2, core_inner_diameter, height_core_material_0)
-    r_basis_2 = ff.r_basis(air_gap_total_hight / 2, core_inner_diameter, height_core_material_1)
-    sigma_round_round = ff.sigma(air_gap_total_hight, core_inner_diameter / 2, r_basis_1 + r_basis_2)
-    reluctance_round_round = ff.r_round_round(air_gap_total_hight, sigma_round_round, core_inner_diameter / 2)
-
-    return reluctance_round_round
-
 
 def distributed_type_1(air_gap_hight_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
     """Returns distributed air-gap reluctance of Type 1 (Where corner air-gaps are present)
@@ -681,19 +626,14 @@ def distributed_type_1(air_gap_hight_single_air_gap, core_inner_diameter, n_air_
     # ToDo: Raise Error for less than two air gaps
 
     # first part calculates the two outer air gaps (very top and very bottom)
-    r_basis = ff.r_basis(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple)
-    sigma_round_inf = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis)
-    reluctance_round_inf = ff.r_round_inf(air_gap_hight_single_air_gap, sigma_round_inf, core_inner_diameter / 2)
-    reluctance = (2 * reluctance_round_inf)
+    reluctance_round_inf = ff.r_air_gap_round_inf(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple)
+    reluctance_total = (2 * reluctance_round_inf)
 
     # second part calculates the inner air gaps between top and bottom air gaps (if available)
-    r_basis_1 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
-    r_basis_2 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
-    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_1 + r_basis_2)
-    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
-    reluctance = reluctance + ((n_air_gaps - 2) * reluctance_round_round)
+    reluctance_round_round = ff.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple, h_multiple)
+    reluctance_total = reluctance_total + ((n_air_gaps - 2) * reluctance_round_round)
 
-    return reluctance
+    return reluctance_total
 
 
 def distributed_type_2(air_gap_hight_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
@@ -713,17 +653,11 @@ def distributed_type_2(air_gap_hight_single_air_gap, core_inner_diameter, n_air_
     #ToDo: Raise Error for less than two air gaps
 
     # First part calculates two outer air gaps (very top and very bottom)
-    r_basis_airgap_airgap = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple)
-    r_basis_airgap_corner = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
-    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_airgap_airgap + r_basis_airgap_corner)
-    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
+    reluctance_round_round = ff.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple, h_multiple / 2)
     reluctance = (2 * reluctance_round_round)
 
     # second part calculates air gaps between the outer air gaps (if available)
-    r_basis_airgap_airgap_1 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
-    r_basis_airgap_airgap_2 = ff.r_basis(air_gap_hight_single_air_gap / 2, core_inner_diameter, h_multiple / 2)
-    sigma_round_round = ff.sigma(air_gap_hight_single_air_gap, core_inner_diameter / 2, r_basis_airgap_airgap_1 + r_basis_airgap_airgap_2)
-    reluctance_round_round = ff.r_round_round(air_gap_hight_single_air_gap, sigma_round_round, core_inner_diameter / 2)
+    reluctance_round_round = ff.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple / 2, h_multiple / 2)
     reluctance = reluctance + ((n_air_gaps - 2) * reluctance_round_round)
 
     return reluctance

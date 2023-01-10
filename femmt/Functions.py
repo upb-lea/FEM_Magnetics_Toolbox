@@ -885,184 +885,474 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 # Reluctance Model [with calculation]
 mu0 = 4e-7*np.pi
 
-
-def r_basis(basis_air_gap_length: list, basis_air_gap_diameter: list, basis_air_gap_height_core_material: list) -> list:
+def r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight):
     """
-    1-dim reluctance per-unit-of-length
-    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
+    Do not use this function directly!
+    Use it indirectly by using
+     - r_air_gap_round_round
+     - r_air_gap_round_inf
+    instead!
 
-    :param basis_air_gap_diameter: width of basis air gap
-    :type basis_air_gap_diameter: float
-    :param basis_air_gap_length: length of basis air gap
-    :type basis_air_gap_length: float
-    :param basis_air_gap_height_core_material: height of core material direct on the air gap
-    :type basis_air_gap_height_core_material: float
-
-    :return: basis air gap
-    :rtype: float
-
-    """
-
-    # for index in range(len(basis_air_gap_length)):
-    #     if basis_air_gap_length[index] <= 0:
-    #         basis_air_gap_length[index] = 0.0000001
-
-    basis_air_gap_length = np.array(basis_air_gap_length)
-    basis_air_gap_diameter = np.array(basis_air_gap_diameter)
-    basis_air_gap_height_core_material = np.array(basis_air_gap_height_core_material)
-
-    return 1 / (mu0 * (basis_air_gap_diameter / 2 / basis_air_gap_length + 2 / np.pi * (1 + np.log(np.pi *
-                                                                                                   basis_air_gap_height_core_material / 4 / basis_air_gap_length))))
-
-
-def sigma(air_gap_total_hight: list, air_gap_radius: list, r_equivalent: list) -> list:
-    """
-    1-dim fringing factor
+    This function calculates the r_basic for a round to infinite structure according to the following paper:
     [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
     :param air_gap_radius: air gap radius
-    :type air_gap_radius: list
-    :param air_gap_total_hight:
-    :type air_gap_total_hight: list
-    :param r_equivalent: equivalent air gap resistance what was calculated using series/parallel-connection of r_basis
-    :type r_equivalent: list
+    :param air_gap_basic_hight: air gap hight for the BASIC-AIR-GAP (e.g. if you use a round-round structure, this is half of the total air gap).
+    :param core_hight: core hight
+    :return: basic reluctance for round - infinite structure
+    """
+    conductance_basic = mu0 * (air_gap_radius * 2 / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * core_hight / 4 / air_gap_basic_hight)))
 
-    :return:
-    :rtype: list
+    return 1 / conductance_basic
 
+def sigma_round(r_equivalent, air_gap_radius, air_gap_total_hight):
+    """
+    Do not use this function directly!
+    Use it indirectly by using
+     - r_air_gap_round_round
+     - r_air_gap_round_inf
+    instead!
+
+    :param r_equivalent: this is a series/parallel connection of r_basic, depending on the air gap structure
+    :param air_gap_radius: air gap radius
+    :param air_gap_total_hight: air gap total hight (for the total air gap, also for round-round structures)
+    :return: fringing factor 'sigma'
+    """
+    return r_equivalent * mu0 * air_gap_radius / air_gap_total_hight
+
+def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_upper, core_hight_lower):
+    """
+    Returns the reluctance of a round-round air gap structure and includes finging effects.
+
+    :param air_gap_total_hight: total air gap hight of the air gap
+    :param core_inner_diameter: core inner diameter
+    :param core_hight_upper: core hight upper (needed for better calculating fringing effects)
+    :param core_hight_lower: core hight lower (needed for better calculating fringing effects)
+    :return: air gap reluctance for round-round structure including fringing effects
+    """
+    air_gap_total_hight = np.array(air_gap_total_hight)
+    core_inner_diameter = np.array(core_inner_diameter)
+    core_hight_upper = np.array(core_hight_upper)
+    core_hight_lower = np.array(core_hight_lower)
+    air_gap_radius = core_inner_diameter / 2
+
+    air_gap_basic_hight = air_gap_total_hight / 2
+    r_basic_upper = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_upper)
+    r_basic_lower = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_lower)
+
+    r_equivalent_round_round = r_basic_upper + r_basic_lower
+
+    sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_hight)
+    if np.any(sigma) > 1:
+        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
+
+    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
+    r_air_gap = sigma ** 2 * r_air_gap_ideal
+
+    return r_air_gap
+
+def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
+
+    print(f"air_gap_total_hight: {air_gap_total_hight}")
+    print(f"core_inner_diameter: {core_inner_diameter}")
+    print(f"core_hight: {core_hight}")
+
+    """
+    Returns the reluctance of a round-infinite air gap structure and includes fringing effects
+
+    :param air_gap_total_hight: total air gap hight of the air gap
+    :param core_inner_diameter: core inner diameter
+    :param core_hight: core hight (needed for better calculating fringing effects)
+    :return: air gap reluctance for round-inf structure including fringing effects
     """
 
     air_gap_total_hight = np.array(air_gap_total_hight)
-    air_gap_radius = np.array(air_gap_radius)
-    r_equivalent = np.array(r_equivalent)
+    core_inner_diameter = np.array(core_inner_diameter)
+    core_hight = np.array(core_hight)
 
-    return r_equivalent / (air_gap_total_hight / mu0 / air_gap_radius)
+    air_gap_radius = core_inner_diameter / 2
+    r_basic = r_basic_round_inf(air_gap_radius, air_gap_total_hight, core_hight)
+
+    r_equivalent_round_inf = r_basic
+    sigma = sigma_round(r_equivalent_round_inf, air_gap_radius, air_gap_total_hight)
+
+    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
+    r_air_gap = sigma ** 2 * r_air_gap_ideal
+
+    return r_air_gap
 
 
-def r_round_inf(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
+
+
+def r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_radius):
     """
-    3-dim reluctance for 2-dim axial-symmetric air gaps
-    Round to infinity structure
+    Do not use this function directly!
+    Use it indirectly by using
+     - r_air_gap_tablet_cyl
+    instead!
 
-    :param air_gap_sigma: fringing factor
-    :type air_gap_sigma: float
-    :param air_gap_radius: air gap radius
-    :type air_gap_radius: float
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
+    This function calculates the r_basic for a round to infinite structure according to the following paper:
+    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
-    :return: air gap reluctance
-    :rtype: float
+    Note: this is the same function as r_basic_round_inf, but with clear variable names for tablet-cylinder structure
 
+    :param tablet_hight: tablet hight = air gap width for tablet-cylinder structure
+    :param air_gap_basic_hight: air gap hight for the BASIC-AIR-GAP (e.g. if you use a round-round structure, this is half of the total air gap).
+    :param tablet_radius: tablet radius
+    :return: basic reluctance for tablet - cylinder structure
     """
-    air_gap_length = np.array(air_gap_length)
-    air_gap_sigma = np.array(air_gap_sigma)
-    air_gap_radius = np.array(air_gap_radius)
+    conductance_basic = mu0 * (tablet_hight / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * tablet_radius / 4 / air_gap_basic_hight)))
 
-    return air_gap_sigma ** 2 * air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
+    return 1 / conductance_basic
 
-
-def r_round_round(air_gap_length: list, air_gap_sigma: list, air_gap_radius: list) -> list:
+def sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight):
     """
-    3-dim reluctance for 2-dim axial-symmetric air gaps
-    Round to round structure
+    Do not use this function directly!
+    Use it indirectly by using
+     - r_air_gap_tablet_cyl
+    instead!
 
-    :param air_gap_sigma: fringing factor
-    :type air_gap_sigma: float
-    :param air_gap_radius: air gap radius
-    :type air_gap_radius: float
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
+    Note: this is the same function as sigma_round, but with clear variable names for tablet-cylinder structure
 
-    :return: air gap reluctance
-    :rtype: float
-
+    :param r_equivalent: this is a series/parallel connection of r_basic, depending on the air gap structure
+    :param tablet_hight: tablet hight
+    :param air_gap_total_hight: air gap total hight (for the total air gap)
+    :return: fringing factor 'sigma' for tablet - cylinder structure
     """
-    air_gap_length = np.array(air_gap_length)
-    air_gap_sigma = np.array(air_gap_sigma)
-    air_gap_radius = np.array(air_gap_radius)
-
-    r_air_gap_round_ideal = air_gap_length / mu0 / air_gap_radius ** 2 / np.pi
-
-    return air_gap_sigma ** 2 * r_air_gap_round_ideal
+    return r_equivalent * mu0 * tablet_hight / air_gap_total_hight
 
 
-def r_cyl_cyl(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer) -> float:
+def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, r_outer):
     """
-    Cylinder-cylinder air gap reluctance
+    Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
+    This function calculates the air gap reluctance for a 2D-axisymmetric core.
 
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
-    :param sigma: fringing factor
-    :type sigma: float
-    :param air_gap_width: air gap width
-    :type air_gap_width: float
-    :param radius_outer: outer cylinder radius
-    :type radius_outer: float
-
-    :return: air gap reluctance
-    :rtype: float
-
-    """
-    return sigma * np.log(radius_outer / (radius_outer - air_gap_length)) / 2 / mu0 / np.pi / air_gap_width
-
-
-def r_cyl_cyl_real(air_gap_length: float, sigma: float, air_gap_width: float, radius_outer: float,
-                   real_core_heigth: float) -> float:
+    :param tablet_hight: tablet hight
+    :param air_gap_total_hight: total air gap hight
+    :param r_outer: radius of outer core window
+    :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
 
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
-    :param sigma: fringing factor
-    :type sigma: float
-    :param air_gap_width: air gap width
-    :type air_gap_width: float
-    :param radius_outer: outer cylinder radius
-    :type radius_outer: float
+    # translate practical core dimensions to non-practial air-gap dimensions
+    tablet_radius = r_outer - air_gap_total_hight
 
-    :return: air gap reluctance
-    :rtype: float
+    air_gap_basic_hight = air_gap_total_hight
+    r_basic = r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_radius)
 
+    r_equivalent = r_basic / 2
+    sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
+    if np.any(sigma) > 1:
+        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
+
+    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu0 / np.pi / tablet_hight
+
+    r_air_gap = sigma * r_air_gap_ideal
+
+    return r_air_gap
+
+
+def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, tablet_diameter, r_outer, real_core_width_no_2d_axi):
     """
-    return sigma * np.log(radius_outer / (radius_outer - air_gap_length)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_heigth / 2 / radius_outer)) / air_gap_width
+    Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
+    Note:
+    This function differes from r_air_gap_tablet_cyl (ideal 2D axisymmetric core). Here, the air gap reluctance for
+    a non-2D-axisymmetric core is taken into account, as a real PQ core is open at the side. So, there is no air gap
+    taken into account for the side-sections. The new real_core_width_no_2d_axi parameter describes the width of the
+    core when you are in a xy-coordinate system.
 
-
-def r_cheap_cyl_cyl(radius_outer: float, air_gap_length: float, air_gap_width: float) -> float:
+    :param tablet_hight: tablet hight
+    :param tablet_diameter: tablet diameter
+    :param r_outer: radius of outer core window
+    :param real_core_width_no_2d_axi: core width for a real core (e.g. PQ-core) in xy-coordinate system.
+    :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
-    Simplified method to calculate cylinder-cylinder air gap reluctance
 
-    :param radius_outer: outer cylinder radius
-    :type radius_outer: float
-    :param air_gap_length: air gap length
-    :type air_gap_length: float
-    :param air_gap_width: air gap width
-    :type air_gap_width: float
+    if tablet_diameter / 2 >= r_outer:
+        raise Exception("tablet radius is greater than r_outer")
 
-    :return: air gap reluctance
-    :rtype: float
+    # translate practical core dimensions to non-practial air-gap dimensions
+    air_gap_total_hight = r_outer - tablet_diameter / 2
 
+    air_gap_basic_hight = air_gap_total_hight
+    r_basic = r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_diameter / 2)
+
+    r_equivalent = r_basic / 2
+    sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
+    if np.any(sigma) > 1:
+        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
+
+    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / mu0 / (2 * np.pi - 4 * np.arccos(real_core_width_no_2d_axi / 2 / r_outer)) / tablet_hight
+
+    r_air_gap = sigma * r_air_gap_ideal
+
+    return r_air_gap
+
+def r_core_tablet(tablet_hight, tablet_radius, mu_r, core_inner_diameter):
     """
-    r_i = radius_outer - air_gap_length
-    return (radius_outer - r_i) / mu0 / air_gap_width / np.pi / (radius_outer + r_i)
+    Calculates the magentic resistance of the core tablet
+
+    :param tablet_hight: tablet hight
+    :param tablet_radius: tablet radius
+    :param mu_r: relative permeability (mu_r) of the core material from datasheet
+    :param core_inner_diameter: core inner diameter. For idealized core material, this value can be 0.001.
+    """
+
+    return np.log(tablet_radius / (core_inner_diameter / 2)) / ( 2 * np.pi * mu0 * mu_r * tablet_hight)
 
 
-def calculate_reluctances(N, L):
+def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_top_bot_hight):
+    """
+    Calculates the top or bottom core material part
+
+    :param core_inner_diameter: core inner diameter
+    :param window_w: width of winding window
+    :param mu_r: relative permeability (mu_r) of the core material from datasheet
+    :param core_top_bot_hight: hight of the core material top / bottom of the winding window
+    """
+
+    return np.log( (core_inner_diameter + 2 * window_w) / core_inner_diameter) / ( 2 * np.pi * mu0 * mu_r * core_top_bot_hight)
+
+def r_core_round(core_inner_diameter, core_round_hight, mu_r):
+    """
+    Calculates the core reluctance for a round structure
+
+    :param core_round_hight: hight of the round core part section
+    :param core_inner_diameter: core inner diameter
+    :param mu_r: relative permeability (mu_r) of the core material from datasheet
+    """
+    return core_round_hight / ( mu0 * mu_r * (core_inner_diameter / 2) ** 2 * np.pi)
+
+
+def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, window_h, stray_path_air_gap_length, mu_r, start_index, position_air_gap_percent_list):
+
+    # core geometry calculations
+
+    middle_leg_top_total_hight = (100 - position_air_gap_percent_list[start_index + 1]) * 0.01 * window_h + air_gap_middle_leg_list[start_index + 1] / 2
+    middle_leg_bot_total_hight = position_air_gap_percent_list[start_index] * 0.01 * window_h + air_gap_middle_leg_list[start_index] / 2
+    tablet_hight = window_h - middle_leg_top_total_hight - middle_leg_bot_total_hight
+
+    start_index_air_gap_top = start_index + 1
+    stop_index_air_gap_top = len(air_gap_middle_leg_list) - 1
+    #start_index_air_gap_bot = 0
+    #stop_index_air_gap_bot = start_index
+
+    air_gap_middle_leg_bot_list = []
+    position_air_gap_percent_bot_list = []
+    for count, air_gap in enumerate(air_gap_middle_leg_list):
+        if count <= start_index:
+            air_gap_middle_leg_bot_list.append(air_gap)
+            position_air_gap_percent_bot_list.append(position_air_gap_percent_list[count])
+
+
+    # air gap geometry calculations
+    air_gap_total_length_top = 0.0
+    air_gap_middle_leg_top_list = []
+    air_gap_middle_leg_top_percent_list = []
+    for count in range(start_index + 1, len(air_gap_middle_leg_list)):
+        #print(f"{air_gap_middle_leg_list[count] = }")
+        air_gap_total_length_top += air_gap_middle_leg_list[count]
+
+    air_gap_total_length_bot = 0.0
+    for count in range(0, start_index + 1):
+        air_gap_total_length_bot += air_gap_middle_leg_list[count]
+    #print(f"{air_gap_total_length_top = }")
+    #print(f"{air_gap_total_length_bot = }")
+
+    # calculate r_top
+    core_round_hight_top = middle_leg_top_total_hight - air_gap_total_length_top
+
+    r_core_round_top = r_core_round(core_inner_diameter, core_round_hight_top, mu_r)
+    #ToDo: radiant calculation core hight is very simplified using core_inner_diameter/2
+    r_core_top_radiant = r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_inner_diameter/2)
+    r_core_outer_top = r_core_round_top
+    r_core_top = r_core_round_top + r_core_top_radiant + r_core_outer_top
+
+    # calculate r_air_gap_top
+    # sweep trough top air gap list
+    r_air_gap_top = 0
+    for count in range(start_index_air_gap_top, stop_index_air_gap_top+1):
+        # this routine sums up all air gaps inside the middle leg above the stray path
+        # there are three different types of caluclations
+        #  - first air gap is definitely a round_inf structure
+        #  - in cases of last air gap is >95% of window_h, last air gap is treated as round_inf structure
+        #  - other air gaps are treated as round_round structure
+        if count == start_index + 1:
+            # this is for the first air gap, what is definetly a round_inf air gap
+            if start_index_air_gap_top == stop_index_air_gap_top:
+                core_hight = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
+            else:
+                core_hight = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 *window_h / 2
+            r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
+            #print('### Case 1: first air gap for top')
+            #print(f"{core_hight = }")
+            #print(f"{r_air_gap_top = }")
+
+        elif position_air_gap_percent_list[count] > 95 and count != start_index_air_gap_top:
+            # this is for the last air gap in case of very close to the top core (95%), so there will be the assumption for a round-inf air gap
+            core_hight = (position_air_gap_percent_list[stop_index_air_gap_top] - position_air_gap_percent_list[stop_index_air_gap_top - 1]) * 0.01 * window_h / 2
+            r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
+            #print('### Case 2: last air gap for top')
+            #print(f"{core_hight = }")
+            #print(f"{r_air_gap_top = }")
+        else:
+            # air gap in the middle between tablet and top air gap
+            if count + 1 < stop_index_air_gap_top:
+                # this is for multiple air gaps in the top-section. Calculation of core hight is only to the next air gap
+                core_hight_upper = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 * window_h
+            else:
+                # this is for the last (upper) air gap in the top-section. Calculation of core_hight is until the end of the window
+                core_hight_upper = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
+            core_hight_lower = (position_air_gap_percent_list[count] - position_air_gap_percent_list[count - 1]) * 0.01 * window_h
+            r_air_gap_top += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
+            #print('### Case 3: middle air gap for top')
+            #print(f"{core_hight_upper = }")
+            #print(f"{core_hight_lower = }")
+            #print(f"{r_air_gap_top = }")
+
+
+    r_top = r_core_top + r_air_gap_top
+
+    # calculate r_bot
+    core_round_hight_bot = middle_leg_bot_total_hight - air_gap_total_length_bot
+
+    r_core_round_bot = r_core_round(core_inner_diameter, core_round_hight_bot, mu_r)
+    #ToDo: radiant calculation core hight is very simplified using core_inner_diameter/2
+    r_core_bot_radiant = r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r, core_inner_diameter/2)
+    r_core_outer_bot = r_core_round_bot
+    r_core_bot = r_core_round_bot + r_core_bot_radiant + r_core_outer_bot
+
+    #print('##########################################')
+    #print("#### bottom air gap  ####")
+    #print('##########################################')
+
+    # calculate r_air_gap_bot
+    # sweep trough bot air gap list
+    r_air_gap_bot = 0
+    for count, air_gap in enumerate(air_gap_middle_leg_bot_list):
+        #print(f"{air_gap = }")
+        # this routine sums up all air gaps inside the middle leg below the stray path
+        # there are three different types of caluclations
+        #  - last air gap is definitely a round_inf structure
+        #  - in cases of first air gap is <5% of window_h, first air gap is treated as round_inf structure
+        #  - other air gaps are treated as round_round structure
+        if count == position_air_gap_percent_bot_list.index(max(position_air_gap_percent_bot_list)):
+            # this is for the last air gap, what is definetly a round_inf air gap
+            # the check checks not for the last position in the list, but for the real highest percent value
+            if len(position_air_gap_percent_bot_list) == 1:
+                core_hight = (position_air_gap_percent_bot_list[count]) * 0.01 * window_h
+            else:
+                core_hight = (position_air_gap_percent_bot_list[count] - position_air_gap_percent_bot_list[count - 1]) * 0.01 * window_h / 2
+            r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
+            #print('### Case 1: first air gap for bot')
+            #print(f"{core_hight = }")
+            #print(f"{r_air_gap_bot = }")
+
+        elif position_air_gap_percent_list[count] < 5  and count == 0:
+            # this is for the first air gap in case of very close to the bot core (<5%), so there will be the assumption for a round-inf air gap
+            core_hight = (position_air_gap_percent_list[1] - position_air_gap_percent_list[0]) * 0.01 * window_h / 2
+            r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
+            #print('### Case 2: last air gap for bot')
+            #print(f"{core_hight = }")
+            #print(f"{r_air_gap_bot = }")
+        else:
+            # this is for multiple air gaps in the bot-section. Calculation of core hight is only to the next air gap
+            if count + 1 < len(position_air_gap_percent_bot_list):
+                core_hight_lower = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
+            else:
+                # this is for the first (lower) air gap in the bot-section. Calculation of core_hight is until the end of the window
+                core_hight_lower = (position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
+
+            core_hight_upper  = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
+            r_air_gap_bot += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
+            #print('### Case 3: middle air gap for bot')
+            #print(f"{core_hight_upper = }")
+            #print(f"{core_hight_lower = }")
+            #print(f"{r_air_gap_bot = }")
+
+    r_bot = r_core_bot + r_air_gap_bot
+
+
+    # calculate r_stray
+    r_stray_air_gap = r_air_gap_tablet_cyl(tablet_hight, stray_path_air_gap_length, core_inner_diameter / 2 + window_w)
+    r_stray_core = r_core_tablet(tablet_hight, core_inner_diameter / 2 + window_w - stray_path_air_gap_length, mu_r, core_inner_diameter)
+    r_stray = r_stray_air_gap + r_stray_core
+
+    return r_top, r_bot, r_stray
+
+def calculate_reluctances(winding_matrix, inductance_matrix):
     """
     Calculates the Reluctance Matrix.
     Everything must be numpy!
 
+    L. Keuck, "Entwurf eines einstufigen Ladewandlers auf Basis eines LLC-Resonanzwandlers", dissertation 2023
+
+    :param winding_matrix: winding matrix
+    :param inductance_matrix: inductance matrix
     :return: reluctance[-matrix]
+
+    inductance matrix e.g.
+    L = [ [L_11, M], [M, L_22] ]
+
+    winding matrix e.g.
+    N = [ [N_1a, N_2b], [N_1b, N_2b] ]
 
     """
 
     # Reluctance Matrix
-    if np.ndim(N) == 0:
-        L_invert = 1 / L
+    if np.ndim(winding_matrix) == 0:
+        L_invert = 1 / inductance_matrix
     else:
-        L_invert = np.linalg.inv(L)
+        L_invert = np.linalg.inv(inductance_matrix)
 
-    return np.matmul(np.matmul(N, L_invert), np.transpose(N))
+    return np.matmul(np.matmul(winding_matrix, L_invert), np.transpose(winding_matrix))
 
+def calculate_inductances(reluctance_matrix, winding_matrix):
+    """
+    Calculates the inductance matrix out of reluctance matrix and winding matrix.
+
+    :param reluctance_matrix: matrix of transformer reluctance
+    :param winding_matrix: matrix of transformer windings
+    :return: inductance matrix
+
+
+    reluctance matrix e.g.
+    r = [ [], [] ]
+
+    winding matrix e.g.
+    N = [ [N_1a, N_2b], [N_1b, N_2b] ]
+
+    returns inductance matrix e.g.
+    L = [ [L_11, M], [M, L_22] ]
+    """
+
+    if np.ndim(reluctance_matrix) == 0:
+        reluctance_matrix_invert = 1 / reluctance_matrix
+    else:
+        reluctance_matrix_invert = np.linalg.inv(reluctance_matrix)
+
+    return np.matmul(np.matmul(np.transpose(winding_matrix), reluctance_matrix_invert), winding_matrix)
+
+
+
+def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
+    """
+    Calculates the transformer primary concentrated circuit parameters from matrix
+    :param inductance_matrix: input reluctance matrix in form of [[L_11, M], [M, L_22]]
+    :return l_s: primary concentrated stray inductance
+    :return l_h: primary concentrated main inductance
+    :return n: ratio
+    """
+
+    l_11 = inductance_matrix[0, 0]
+    l_22 = inductance_matrix[1, 1]
+    mutal_inductance = inductance_matrix[1, 0]
+
+    coupling_factor = mutal_inductance / (np.sqrt(l_11 * l_22))
+    n = mutal_inductance / l_22
+    l_s = (1 - coupling_factor ** 2) / l_11
+    l_h = mutal_inductance ** 2 / l_22
+
+    return l_s, l_h, n
 
 def create_physical_group(dim, entities, name):
     tag = gmsh.model.addPhysicalGroup(dim, entities)
@@ -1075,7 +1365,7 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     with open(simulation_result_file_path, "r") as fd:
         loaded_results_dict = json.loads(fd.read())
 
-    inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductivity"][0]
+    inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductance"][0]
     loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
     loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
     loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]

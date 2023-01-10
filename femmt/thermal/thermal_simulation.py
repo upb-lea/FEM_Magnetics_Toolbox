@@ -342,7 +342,7 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
     create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses, tags_dict["air_gaps_tag"], 
         thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
     create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii, wire_distances, function_pro, group_pro)
-    create_insulation(tags_dict["insulations_tag"], thermal_conductivity_dict["insulation"], function_pro, group_pro)
+    create_insulation(tags_dict["insulations_tag"], thermal_conductivity_dict["isolation"], function_pro, group_pro)
     #create_post_operation(map_pos_file.replace("\\", "/"), influx_pos_file.replace("\\", "/"), material_pos_file.replace("\\", "/"), sensor_points_file, core_file,
     #    insulation_file, winding_file, tags_dict["winding_tags"], post_operation_pro)
     create_post_operation(map_pos_file, influx_pos_file, material_pos_file, sensor_points_file, core_file,

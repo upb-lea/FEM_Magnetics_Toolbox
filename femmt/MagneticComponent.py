@@ -1005,7 +1005,7 @@ class MagneticComponent:
                 if self.N.shape == (2, 2) and self.component.component_type == ComponentType.IntegratedTransformer:
 
                     # Calculate goal reluctance matrix
-                    R_matrix = ff.calculate_reluctances(N=self.N, L=self.L_goal)
+                    R_matrix = ff.calculate_reluctances(winding_matrix=self.N, inductance_matrix=self.L_goal)
 
                     # R_goal = [R_top, R_bot, R_stray]
                     R_goal = [R_matrix[0, 0] + R_matrix[0, 1], R_matrix[1, 1] + R_matrix[0, 1], -R_matrix[0, 1]]
