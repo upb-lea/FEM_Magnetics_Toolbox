@@ -490,7 +490,7 @@ PostProcessing {
       { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
       { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
       { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name mur_im ; Value { Term { [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name mur_im ; Value { Term { [ Norm [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
       { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_im / (mur_re^2 + mur_im^2)
 
@@ -533,18 +533,18 @@ PostProcessing {
 
       If(Freq==0.0)
           { Name j2F ; Value { Integral {
-             [ CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)]] ;
+             [ CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
              In DomainC ; Jacobian Vol ; Integration II ; } } }
           { Name j2F_density ; Value { Integral {
-             [ CoefGeo/ElementVol[]*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
+             [ CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;  // 0.5* added by Till
              In DomainC ; Jacobian Vol ; Integration II ; } } }
       Else
            { Name j2F ; Value { Integral {
-             [ 0.5*CoefGeo*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
+             [ 0.5*CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;  // 0.5* added by Till
              In DomainC ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2F_density ; Value { Integral {
-             [ 0.5*CoefGeo/ElementVol[]*sigma[]*SquNorm[(Dt[{a}]+{ur}/CoefGeo)] ] ;  // 0.5* added by Till
+             [ 0.5*CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;  // 0.5* added by Till
              In DomainC ; Jacobian Vol ; Integration II ; } } }
       EndIf
 
@@ -661,14 +661,18 @@ PostProcessing {
 
       // ------------------------------------------------------------------------------------------------
       // Voltage (Voltage_i = dFlux_Linkage_i / dt)
-
-      { Name Voltage_1 ; Value {
-        Integral { [ CoefGeo / AreaCell1 * (CompZ[Dt[{a}]]) + kkk[]*Norm[{ir}] / AreaCell1 ]; In DomainCond1; Jacobian Vol; Integration II; } } }  // for solid case kkk is zero
-        //Integral { [ CoefGeo / AreaCell1 * CompZ[-Conj[ Dt[{a}] ] ] ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+      // Distinguish between litz wire case and solid case
+      If(Flag_HomogenisedModel1)
+        { Name Voltage_1 ; Value { Integral { [ CoefGeo / AreaCell1 * (CompZ[Dt[{a}]] + kkk[]*CompZ[{ir}] / AreaCell1) ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+      Else
+        { Name Voltage_1 ; Value { Integral { [ CompZ[{ur}] / AreaCell1 ]; In DomainCond1; Jacobian Vol; Integration II; } } }
+      EndIf
       If(Flag_Transformer)
-        { Name Voltage_2 ; Value {
-          Integral { [ CoefGeo / AreaCell2 * (CompZ[Dt[{a}]] - kkk[]*Norm[{ir}] / AreaCell2) ]; In DomainCond2; Jacobian Vol; Integration II; } } }  // for solid case kkk is zero
-          // TODO: kkk and -kkk must be replace with a general implementation concerning the counting system
+        If(Flag_HomogenisedModel2)
+          { Name Voltage_2 ; Value { Integral { [ CoefGeo / AreaCell2 * (CompZ[Dt[{a}]] + kkk[]*CompZ[{ir}] / AreaCell2) ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+        Else
+          { Name Voltage_2 ; Value { Integral { [ CompZ[{ur}] / AreaCell2 ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+        EndIf
       EndIf
 
 

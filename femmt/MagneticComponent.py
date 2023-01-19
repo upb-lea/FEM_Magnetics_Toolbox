@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from scipy.optimize import brentq
 from scipy.integrate import quad
 from typing import List, Dict
-from datetime import datetime 
+from datetime import datetime
 
 # Third parry libraries
 from onelab import onelab
@@ -64,7 +64,7 @@ class MagneticComponent:
 
         # Get caller filepath when no working_directory was set
         if working_directory is None:
-            caller_filename = inspect.stack()[1].filename 
+            caller_filename = inspect.stack()[1].filename
             working_directory = os.path.join(os.path.dirname(caller_filename), "femmt")
 
         if not os.path.exists(working_directory):
@@ -197,7 +197,7 @@ class MagneticComponent:
             log_settings = content["simulation_settings"]
         del log_settings["working_directory"]
         del log_settings["date"]
-        
+
         if current_settings != log_settings:
             raise Exception(f"The settings from the log file {self.file_data.e_m_results_log_path} do not match the current simulation settings. \
                                 Please re-run the magnetic simulation.")
@@ -1426,8 +1426,9 @@ class MagneticComponent:
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
-        if self.core.material != 'custom':
+        if self.core.permeability["datasource"] != MaterialDataSource.Custom:
             self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path, plot_interpolation)  # frequency update to core class
+        if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
             self.core.update_sigma(frequency)
         # Has the user provided a list of phase angles?
         phase_deg_list = phase_deg_list or []
@@ -1511,7 +1512,7 @@ class MagneticComponent:
         # Run simulations as sub clients (non blocking??)
         mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
         self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
-    
+
     def pre_simulation(self):
         """
         - Complete "pre-simulation" call
@@ -1564,7 +1565,7 @@ class MagneticComponent:
             self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last: bool = False, return_results: bool = False, 
+                         show_last: bool = False, return_results: bool = False,
                          excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False, save_png: bool = False,
                          color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default) -> Dict:
         """
@@ -1634,7 +1635,7 @@ class MagneticComponent:
                 if self.valid:
                     self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
                     self.mesh.generate_electro_magnetic_mesh()
-                
+
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
                                     phase_deg_list=phi_deg_list_list[i])  # frequency and current
                 self.check_model()
@@ -2008,7 +2009,7 @@ class MagneticComponent:
     def write_electro_magnetic_post_pro(self):
         """
         """
-        text_file = open(os.path.join(self.file_data.electro_magnetic_folder_path, "postquantities.pro"), "w") 
+        text_file = open(os.path.join(self.file_data.electro_magnetic_folder_path, "postquantities.pro"), "w")
 
         # This is needed because the f string cant contain a \ in {}
         backslash = "\\"
@@ -2077,7 +2078,7 @@ class MagneticComponent:
                 winding_dict = {"turn_losses": [],
                                 "flux": [],
                                 "self_inductance": [],
-                                "mag_field_energy": [],
+                                # "mag_field_energy": [],
                                 "V": []}
 
                 # Number turns
@@ -2112,22 +2113,29 @@ class MagneticComponent:
                     for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
-                # Flux
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
-
-                # Inductance
-                winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Magnetic Field Energy
-                winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
-                winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
+                # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
+                # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Voltage
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
                 winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
                 complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
+
+                # Inductance
+                # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                # Inductance from voltage
+                winding_dict["self_inductance"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).real)
+                winding_dict["self_inductance"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).imag)
+
+                # Flux
+                # winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
+                # winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                # Flux from voltage
+                winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).real)  # (L*I).real
+                winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).imag)  # (L*I).imag
 
                 # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
@@ -2135,9 +2143,7 @@ class MagneticComponent:
                 winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
                 winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
 
-
                 sweep_dict[f"winding{winding+1}"] = winding_dict
-
 
             # Core losses TODO: Choose between Steinmetz or complex core losses
             sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run]
@@ -2147,7 +2153,6 @@ class MagneticComponent:
             sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(len(self.windings)))
 
             log_dict["single_sweeps"].append(sweep_dict)
-
 
         # Total losses of excitation sweep
         # Sum losses of all sweep runs. For core losses just use hyst_losses of the fundamental frequency.
@@ -2449,8 +2454,8 @@ class MagneticComponent:
         #         self.path + f"/Strands_Coefficients/coeff/pI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
         #         self.path + f"/Strands_Coefficients/coeff/qB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat",
         #         self.path + f"/Strands_Coefficients/coeff/qI_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"]
-        
-        coeff_folder = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "coeff") 
+
+        coeff_folder = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "coeff")
         if not os.path.isdir(coeff_folder):
             os.mkdir(coeff_folder)
 
@@ -2501,7 +2506,7 @@ class MagneticComponent:
                             'This command is only executable on Windows computers.')
 
 
-        self.create_folders(self.file_data.femm_folder_path)
+        self.file_data.create_folders(self.file_data.femm_folder_path)
 
         sign = sign or [1]
 
@@ -2532,19 +2537,21 @@ class MagneticComponent:
         else:
             femm.mi_addmaterial('Ferrite', self.core.mu_rel, self.core.mu_rel, 0, 0, self.core.sigma/1e6, 0, 0, 1, 0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
-        if self.windings[0].conductor_type == ConductorType.RoundLitz:
-            femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma/1e6, 0, 0, 1, 5, 0, 0, self.windings[0].n_strands,
-                                2 * 1000 * self.windings[0].strand_radius)  # type := 5. last argument
-            ff.femmt_print(f"Number of strands: {self.windings[0].n_strands}")
-            ff.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[0].strand_radius}")
-        if self.windings[0].conductor_type == ConductorType.RoundSolid:
-            femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[0].cond_sigma/1e6, 0, 0, 1, 0, 0, 0, 0, 0)
+
+        for i in range(0, len(self.windings)):
+            if self.windings[i].conductor_type == ConductorType.RoundLitz:
+                femm.mi_addmaterial('Litz', 1, 1, 0, 0, self.windings[i].cond_sigma/1e6, 0, 0, 1, 5, 0, 0, self.windings[i].n_strands, 2 * 1000 * self.windings[i].strand_radius)  # type := 5. last argument
+                ff.femmt_print(f"Number of strands: {self.windings[i].n_strands}")
+                ff.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
+            if self.windings[i].conductor_type == ConductorType.RoundSolid:
+                femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[i].cond_sigma/1e6, 0, 0, 1, 0, 0, 0, 0, 0)
 
         # == Circuit ==
         # coil as seen from the terminals.
         femm.mi_addcircprop('Primary', current[0] * sign[0], 1)
         if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
             femm.mi_addcircprop('Secondary', current[1] * sign[1], 1)
+
 
         # == Geometry ==
         # Add core
@@ -2664,10 +2671,17 @@ class MagneticComponent:
                                         self.two_d_axi.p_conductor[num][5 * i][1])
                     femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
                     if num == 0:
-                        femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 2, 1)
+                        if self.windings[num].conductor_type == ConductorType.RoundLitz:
+                            femm.mi_setblockprop('Litz', 1, 0, 'Primary', 0, 2, 1)
+                        else:
+                            femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 2, 1)
                     if num == 1:
                         # femm.mi_setblockprop('Copper', 0, 1e-4, 'Secondary', 0, 3, 1)
-                        femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 3, 1)
+                        if self.windings[num].conductor_type == ConductorType.RoundLitz:
+                            femm.mi_setblockprop('Litz', 1, 0, 'Secondary', 0, 3, 1)
+                        else:
+                            femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 3, 1)
+
                     femm.mi_clearselected()
 
         # Define an "open" boundary condition using the built-in function:
@@ -3137,16 +3151,16 @@ class MagneticComponent:
 
         if o.air_gaps is not None:
             content["air_gaps"] = o.air_gaps.to_dict()
-        
+
         if o.insulation is not None:
             content["insulation"] = o.insulation.to_dict()
 
         if o.stray_path is not None:
             content["stray_path"] = o.stray_path.__dict__
-        
+
         return content
 
-    @staticmethod    
+    @staticmethod
     def decode_settings_from_log(log_file_path: str, working_directory: str = None):
         """Reads the given log and returns the magnetic component from th elog.
 
@@ -3207,7 +3221,7 @@ class MagneticComponent:
                         conductor.set_solid_round_conductor(winding["conductor_radius"], ConductorArrangement[winding["conductor_arrangement"]])
                     else:
                         raise Exception(f"Unknown conductor type {conductor_type.name}")
-                    
+
                     conductors.append(conductor)
 
                 new_vww = VirtualWindingWindow(vww["bot_bound"], vww["top_bound"], vww["left_bound"], vww["right_bound"])

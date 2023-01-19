@@ -113,7 +113,7 @@ class Conductor:
         self.n_layers = ff.NbrLayers(number_strands)
         self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
-        ff.femmt_ff.femmt_print(f"Updated Litz Configuration: \n"
+        ff.femmt_print(f"Updated Litz Configuration: \n"
                        f" ff: {self.ff} \n"
                        f" Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
                        f" Strand radius: {self.strand_radius} \n"
@@ -304,10 +304,12 @@ class Core:
             #     self.t_fall = generalized_steinmetz_parameter[1]
 
         if loss_approach == LossApproach.LossAngle:
-            if self.material == "custom":
-                self.sigma = sigma  # ------sigma from user
 
-                # this is a service for the user:
+            if self.permittivity["datasource"] == MaterialDataSource.Custom:
+                self.sigma = sigma  # from user
+
+            if self.permeability["datasource"] == MaterialDataSource.Custom:
+                 # this is a service for the user:
                 # In case of not giving a fixed loss angle phi_mu_deg,
                 # the initial permeability from datasheet is used (RealValue)
                 if phi_mu_deg is not None and phi_mu_deg != 0:
@@ -316,7 +318,7 @@ class Core:
                     self.permeability_type = PermeabilityType.RealValue
 
 
-            elif self.material != "custom":
+            elif self.material != "custom":  # TODO: new condition here
                 self.permeability_type = PermeabilityType.FromData
                 self.mu_rel = self.material_database.get_material_property(material_name=self.material,
                                                                            property="initial_permeability")
@@ -339,17 +341,20 @@ class Core:
         :param frequency:
         :return:
         """
-        # TODO: distinguish between datasources
-        epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(T=self.temperature, f=frequency, material_name=self.material,
-                                                                             datasource=self.permittivity["datasource"],
-                                                                             measurement_setup=self.permittivity["measurement_setup"],
-                                                                             datatype=self.permittivity["datatype"])
+        if self.permittivity["datasource"] == MaterialDataSource.Measurement:
+            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(T=self.temperature, f=frequency, material_name=self.material,
+                                                                                 datasource=self.permittivity["datasource"],
+                                                                                 measurement_setup=self.permittivity["measurement_setup"],
+                                                                                 datatype=self.permittivity["datatype"])
+            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
+            self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
 
-        self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
-        self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
+        if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
+            self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
+
 
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
-        # This function is needed to updated the pro file for the solver depending on the frequency of the
+        # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
         ff.femmt_print(f"{self.permeability['datasource'] = }")
         self.material_database.permeability_data_to_pro_file(T=self.temperature, f=frequency,
