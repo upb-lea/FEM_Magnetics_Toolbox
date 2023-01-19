@@ -978,7 +978,7 @@ def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_
     r_equivalent_round_round = r_basic_upper + r_basic_lower
 
     sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_hight)
-    if np.any(sigma) > 1:
+    if np.any(sigma > 1):
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
     r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
@@ -1074,7 +1074,7 @@ def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, core_inner_diameter,
 
     r_equivalent = r_basic / 2
     sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
-    if np.any(sigma) > 1:
+    if np.any(sigma > 1):
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
     r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu0 / np.pi / tablet_hight
@@ -1102,7 +1102,7 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, air_gap_total_length, core_inne
 
     r_outer = core_inner_diameter / 2 + window_w
 
-    if air_gap_total_length >= window_w:
+    if np.any(air_gap_total_length >= window_w):
         raise Exception("air_gap_total_hight is greater than window_w")
 
     air_gap_basic_hight = air_gap_total_length
@@ -1110,7 +1110,7 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, air_gap_total_length, core_inne
 
     r_equivalent = r_basic / 2
     sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_length)
-    if np.any(sigma) > 1:
+    if np.any(sigma > 1):
         raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
 
     # Note:
