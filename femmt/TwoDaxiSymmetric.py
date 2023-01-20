@@ -695,6 +695,7 @@ class TwoDaxiSymmetric:
                                         winding_number1]
                     else:
                         raise Exception(f"Unknown conductor_arrangement {winding1.conductor_arrangement.name}")
+
             elif virtual_winding_window.winding_type == WindingType.Single:
                 # One winding in the virtual winding window
                 winding = virtual_winding_window.windings[0]
@@ -817,6 +818,7 @@ class TwoDaxiSymmetric:
                                     self.mesh_data.c_conductor[num]])      
                     else:
                         raise Exception(f"Winding scheme {winding_scheme.name} is not implemented.")
+
                 elif conductor_type == ConductorType.RoundSolid or conductor_type == ConductorType.RoundLitz:
                     # Since round conductors have no winding scheme check for each conductor_arrangement
                     conductor_arrangement = winding.conductor_arrangement
@@ -857,6 +859,7 @@ class TwoDaxiSymmetric:
                                 y += winding.conductor_radius * 2 + self.insulation.inner_winding_insulations[num]  # one step from left to right
                             x += winding.conductor_radius * 2 + self.insulation.inner_winding_insulations[num]  # from left to top
                             y = bot_bound + winding.conductor_radius
+
                     elif conductor_arrangement == ConductorArrangement.Hexagonal:
                         y = bot_bound + winding.conductor_radius
                         x = left_bound + winding.conductor_radius
@@ -909,6 +912,7 @@ class TwoDaxiSymmetric:
                                 y = bot_bound + 2 * winding.conductor_radius + \
                                     self.insulation.inner_winding_insulations[
                                         num] / 2
+
                     elif conductor_arrangement == ConductorArrangement.SquareFullWidth:
                         y = bot_bound + winding.conductor_radius
                         x = left_bound + winding.conductor_radius
@@ -951,8 +955,10 @@ class TwoDaxiSymmetric:
                                     self.insulation.inner_winding_insulations[
                                         num]  # one step from left to right
                             x = left_bound + winding.conductor_radius  # always the same
+
                     else:
                         raise Exception(f"Conductor arrangement {conductor_arrangement} is not implemented.")
+
                 else:
                     raise Exception(f"Conductor type {winding.conductor_type.name} is not implemented.")
             else:

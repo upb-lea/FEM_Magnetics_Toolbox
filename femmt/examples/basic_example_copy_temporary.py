@@ -72,8 +72,9 @@ if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
 # component = "inductor"
+component = "inductor_parallel"
 # component = "transformer-interleaved"
-component = "transformer"
+# component = "transformer"
 # component = "integrated_transformer"
 # component = "load_from_file"  # TODO: add material selection
 
@@ -139,6 +140,58 @@ if component == "inductor":
 
     geo.femm_reference(freq=inductor_frequency, current=[4500], sign=[1], non_visualize=0)
 
+# Create Object
+if component == "inductor_parallel":
+    # Working directory can be set arbitrarily
+    working_directory = os.path.join(example_results_folder, "inductor_parallel")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+    # 1. chose simulation type
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
+
+    # 2. set core parameters
+    core_db = fmt.core_database()["PQ 40/40"]
+    inductor_frequency = 2000
+    core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+                    material="N49", temperature=45, frequency=inductor_frequency,
+                    permeability_datasource=fmt.MaterialDataSource.Custom, mu_rel=3000, phi_mu_deg=10,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom, sigma=1 / 6)
+
+    geo.set_core(core)
+
+    # 3. set air gap parameters
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
+    geo.set_air_gaps(air_gaps)
+
+    # 4. set insulations
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+    insulation.add_winding_insulations([0.0005], 0.0001)
+    geo.set_insulation(insulation)
+
+    # 5. create winding window and virtual winding windows (vww)
+    winding_window = fmt.WindingWindow(core, insulation)
+    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+    # 6. create conductor and set parameters: use solid wires
+    winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+
+    # 7. add conductor to vww and add winding window to MagneticComponent
+    vww.set_winding(winding, 9, None)
+    geo.set_winding_window(winding_window)
+
+    # 8. create the model
+    geo.create_model(freq=inductor_frequency, visualize_before=False, save_png=False)
+
+    # 6.a. start simulation
+    geo.single_simulation(freq=inductor_frequency, current=[4500], phi_deg=[0],
+                          plot_interpolation=False, show_results=False)
+
+    geo.femm_reference(freq=inductor_frequency, current=[4500], sign=[1], non_visualize=0)
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(example_results_folder, "transformer-interleaved")
