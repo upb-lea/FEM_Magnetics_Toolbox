@@ -38,7 +38,6 @@ If(Flag_Transformer)
 EndIf
 
 
-
 // ----------------------
 // Groups
 // ----------------------
@@ -323,10 +322,10 @@ Constraint {
       //If(Val_EE_1!=0)
       If(1)
           If(Flag_Circuit==0 && Flag_HomogenisedModel1==0)
-            { Region Winding1 ; Value Val_EE_1/Parallel_1; TimeFunction Fct_Src1[] ; }
+            { Region Winding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
           EndIf
           If(Flag_Circuit==0 && Flag_HomogenisedModel1==1)
-            { Region StrandedWinding1 ; Value Val_EE_1/Parallel_1; TimeFunction Fct_Src1[] ; }
+            { Region StrandedWinding1 ; Value Val_EE_1; TimeFunction Fct_Src1[] ; }
           EndIf
       EndIf
       // Transformer
@@ -334,10 +333,10 @@ Constraint {
         //If(Val_EE_2!=0)
         If(1)
             If(Flag_Circuit==0 && Flag_HomogenisedModel2==0)
-              { Region Winding2 ; Value Val_EE_2/Parallel_2; TimeFunction Fct_Src2[] ; }
+              { Region Winding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
             EndIf
             If(Flag_Circuit==0 && Flag_HomogenisedModel2==1)
-              { Region StrandedWinding2 ; Value Val_EE_2/Parallel_2; TimeFunction Fct_Src2[] ; }
+              { Region StrandedWinding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
             EndIf
         EndIf
       EndIf

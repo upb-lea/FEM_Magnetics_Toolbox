@@ -321,8 +321,8 @@ class MagneticComponent:
         """
         self.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
-            self.mesh.generate_hybrid_mesh()
-            self.mesh.generate_electro_magnetic_mesh()
+            self.mesh.generate_hybrid_mesh()  # create the mesh itself with gmsh
+            self.mesh.generate_electro_magnetic_mesh()  # assign the physical entities/domains to the mesh
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Create Model
@@ -1927,7 +1927,10 @@ class MagneticComponent:
                 for index, winding in enumerate(vww.windings):
                     if winding.winding_number == num:
                         turns += vww.turns[index]
-            text_file.write(f"NbrCond{num + 1} = {turns};\n")
+            if self.windings[num].parallel:
+                text_file.write(f"NbrCond{num + 1} = 1;\n")
+            else:
+                text_file.write(f"NbrCond{num + 1} = {turns};\n")
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
@@ -1947,7 +1950,7 @@ class MagneticComponent:
             if self.flag_excitation_type == 'current':
                 text_file.write(f"Val_EE_{num + 1} = {abs(self.current[num])};\n")
                 text_file.write(f"Phase_{num + 1} = {np.deg2rad(self.phase_deg[num])};\n")
-                text_file.write(f"Parallel_{num + 1} = {self.windings[num].parallel};\n")
+                text_file.write(f"Parallel_{num + 1} = {int(self.windings[num].parallel==True)};\n")
 
             if self.flag_excitation_type == 'current_density':
                 text_file.write(f"Val_EE_{num + 1} = {self.current_density[num]};\n")

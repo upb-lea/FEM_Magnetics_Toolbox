@@ -32,14 +32,13 @@ class Conductor:
     n_layers: int
     a_cell: float
     cond_sigma: float
-    parallel: int = 1  # TODO What is this parameter?
 
     conductor_is_set: bool
 
     # Not used in femmt_classes. Only needed for to_dict()
     conductivity: Conductivity = None
 
-    def __init__(self, winding_number: int, conductivity: float):
+    def __init__(self, winding_number: int, conductivity: float, parallel: bool = False):
         """Creates an conductor object.
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
         The conductor with the lowest winding number (starting from 0) will be treated as primary, second lowest number as secondary and so on.
@@ -55,6 +54,7 @@ class Conductor:
         self.winding_number = winding_number
         self.conductivity = conductivity
         self.conductor_is_set = False
+        self.parallel = parallel
 
         dict_material_database = ff.wire_material_database()
         if conductivity.name in dict_material_database:

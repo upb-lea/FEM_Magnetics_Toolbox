@@ -148,7 +148,7 @@ if component == "inductor_parallel":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=False)
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
@@ -179,9 +179,10 @@ if component == "inductor_parallel":
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+    winding.parallel = True
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 9, None)
+    vww.set_winding(winding, 2, None)
     geo.set_winding_window(winding_window)
 
     # 8. create the model
@@ -189,9 +190,9 @@ if component == "inductor_parallel":
 
     # 6.a. start simulation
     geo.single_simulation(freq=inductor_frequency, current=[4500], phi_deg=[0],
-                          plot_interpolation=False, show_results=False)
+                          plot_interpolation=False, show_results=True)
 
-    geo.femm_reference(freq=inductor_frequency, current=[4500], sign=[1], non_visualize=0)
+    # geo.femm_reference(freq=inductor_frequency, current=[4500], sign=[1], non_visualize=0)
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(example_results_folder, "transformer-interleaved")
