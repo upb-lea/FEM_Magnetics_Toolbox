@@ -38,3 +38,17 @@ p_conductors[1] is a list containing the points for every turn of the conductor 
 
 Currently the magnetic solver only supports primary and secondary windings, therefore it is useless to create more conductors.
 However the implemented structure is capable of working with n windings.
+
+
+Pycharm code highlightning for pro-files
+--------------------------------------------
+|image_pycharm_configuration_pro_files|
+
+
+
+
+
+
+.. |image_pycharm_configuration_pro_files| image:: ../images/pycharm_configuration_pro_files.png
+
+
