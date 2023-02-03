@@ -1354,17 +1354,11 @@ def hyst_losses_core_half(core_inner_diameter, window_h_half, window_w, mu_r_ima
     volume_cylinder_inner = core_cross_section * window_h_half
     losses_cylinder_inner = power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_density_max, mu_r_abs, volume_cylinder_inner)
 
-    print(f"####################")
-    print(f"{flux_max = }")
-    print(f"{losses_cylinder_inner = }")
-
     cylinder_inner_radius = core_inner_diameter / 2
     cylinder_outer_radius = core_inner_diameter / 2 + window_w
     losses_cylinder_radial = power_losses_hysteresis_cylinder_radial_direction(flux_max, core_inner_diameter / 4,
                                                                                cylinder_inner_radius, cylinder_outer_radius,
                                                                                fundamental_frequency, mu_r_imag, mu_r_abs)
-    print(f"{losses_cylinder_radial = }")
-    print(f"####################")
     return 2 * losses_cylinder_inner + losses_cylinder_radial
 
 def calculate_reluctance_matrix(winding_matrix, inductance_matrix):
@@ -1532,7 +1526,17 @@ def power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_d
 
     return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu0 * (flux_densitiy_max / mu0 / mu_r_abs) ** 2
 
-def calcualte_cylinder_volume(cylinder_diameter, cylinder_hight):
+def calculate_cylinder_volume(cylinder_diameter: float, cylinder_hight: float):
+    """
+    Calculates the volume of an ideal cylinder. This function is uses e.g. to calculate the volume
+    of the inner core part.
+    :param cylinder_hight: hight of cylinder
+    :type cylinder_hight: float
+    :param cylinder_diameter: diameter of cylinder
+    :type cylinder_diameter: float
+    :returns: volume
+    :rtype: float
+    """
     return (cylinder_diameter / 2) ** 2 * np.pi * cylinder_hight
 
 def calculate_core_2daxi_total_volume(core_inner_diameter, window_h, window_w):
