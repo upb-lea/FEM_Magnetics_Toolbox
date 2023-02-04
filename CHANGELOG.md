@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+
+## [0.4.0] - 2022-12-19
 ### Added
+- updated and improved syntax
 - cost functions for core and wire material according to IEEE paper 'Component cost models for multi-objective optimizations of switched-mode power converters'
 - connect femmt to the new pip package for the material database
 - add optimization routine for automated design process
@@ -107,7 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/SolidComp.py
 - add femmt/CompRes.py
 
-[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.3.0...HEAD
+[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.4.0...HEAD
+[0.4.0]: https://github.com/upb-lea/transistordatabase/compare/0.4.0...0.3.0
 [0.3.0]: https://github.com/upb-lea/transistordatabase/compare/0.3.0...0.2.1
 [0.2.1]: https://github.com/upb-lea/transistordatabase/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/upb-lea/transistordatabase/compare/0.1.2...0.2.0

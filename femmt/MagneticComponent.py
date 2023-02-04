@@ -645,11 +645,11 @@ class MagneticComponent:
 
             # time domain
             Phi_top_nom, Phi_bot_nom, Phi_stray_nom = \
-                self.phi_from_time_currents(self.nom_current[0], self.nom_current[1], self.visualize_nom)
+                self.flux_from_time_currents(self.nom_current[0], self.nom_current[1], self.visualize_nom)
 
             # Peaks of time domain
             Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak = \
-                self.max_phi_from_time_phi(Phi_top_nom, Phi_bot_nom, Phi_stray_nom)
+                self.max_flux_from_flux_vec(Phi_top_nom, Phi_bot_nom, Phi_stray_nom)
 
             # Phases of time domain
             phase_top, phase_bot, phase_stray = self.phases_from_time_phi(Phi_top_nom, Phi_bot_nom, Phi_stray_nom)
@@ -659,7 +659,7 @@ class MagneticComponent:
 
             # Amplitudes of fundamental
             Phi_top_nom_1st_peak, Phi_bot_nom_1st_peak, Phi_stray_nom_1st_peak = \
-                self.max_phi_from_time_phi(Phi_top_nom_1st, Phi_bot_nom_1st, Phi_stray_nom_1st)
+                self.max_flux_from_flux_vec(Phi_top_nom_1st, Phi_bot_nom_1st, Phi_stray_nom_1st)
 
             p_top_1st, p_bot_1st, p_stray_1st = self.hysteresis_loss(Phi_top_nom_1st_peak, Phi_bot_nom_1st_peak, Phi_stray_nom_1st_peak)
             # ff.femmt_print(p_top_1st, p_bot_1st, p_stray_1st)
@@ -680,7 +680,7 @@ class MagneticComponent:
             Visualization of the fluxes used for the core loss calculation.
             """
             Phi_top_nom_peak, Phi_bot_nom_peak, Phi_stray_nom_peak = \
-                self.max_phi_from_time_phi(Phi_top_init, Phi_bot_init, Phi_stray_init)
+                self.max_flux_from_flux_vec(Phi_top_init, Phi_bot_init, Phi_stray_init)
 
             # time
             t = np.linspace(min(self.nom_current[0][0]), max(self.nom_current[0][0]), 500) / self.f_1st / 2 / np.pi
@@ -765,7 +765,7 @@ class MagneticComponent:
 
             return Phi_top, Phi_bot, Phi_stray
 
-        def hysteresis_loss(self, Phi_top, Phi_bot, Phi_stray):
+        def hysteresis_loss(self, flux_top_max, flux_bot_max, flux_stray_max):
             """
             Returns the hysteresis losses. Assumptions: homogeneous flux, sinusoidal excitation
             """
@@ -774,136 +774,133 @@ class MagneticComponent:
             ro = ri + self.component.core.window_w
 
             # Top Part
-            b_top = Phi_top / self.A_core
+            b_top = flux_top_max / self.A_core
             Vol_top = self.A_core * (100 - self.component.stray_path.midpoint) / 100 * self.component.core.window_h + \
                       self.A_core * ((100 - self.component.stray_path.midpoint) / 100 * self.component.core.window_h - \
                                      self.air_gap_lengths["R_top"])
 
             p_top = 0.5 * self.component.mu0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b_top) * Vol_top * 2 * np.pi * self.f_1st * \
                     (b_top / self.component.core.mu_rel / self.component.mu0) ** 2 + \
-                    self.p_loss_cyl(Phi_top, length_corner, ri, ro)[0]
+                    self.power_losses_cylinder(flux_top_max, length_corner, ri, ro)[0]
 
             # Bot Part
-            b_bot = Phi_bot / self.A_core
+            b_bot = flux_bot_max / self.A_core
             Vol_bot = self.A_core * self.component.stray_path.midpoint / 100 * self.component.core.window_h + \
                       self.A_core * (self.component.stray_path.midpoint / 100 * self.component.core.window_h + \
                                      self.air_gap_lengths["R_bot"])
             p_bot = 0.5 * self.component.mu0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b_bot) * Vol_bot * 2 * np.pi * self.f_1st * \
                     (b_bot / self.component.core.mu_rel / self.component.mu0) ** 2 + \
-                    self.p_loss_cyl(Phi_bot, length_corner, ri, ro)[0]
+                    self.power_losses_cylinder(flux_bot_max, length_corner, ri, ro)[0]
 
             # Stray Path
-            p_stray = self.p_loss_cyl(Phi_stray, self.component.stray_path.width, ri,
-                                      ro - self.air_gap_lengths["R_stray"])[0]
+            p_stray = self.power_losses_cylinder(flux_stray_max, self.component.stray_path.width, ri,
+                                                 ro - self.air_gap_lengths["R_stray"])[0]
 
             return p_top, p_bot, p_stray
 
-        def p_loss_cyl(self, Phi, w, ri, ro):
-            """TODO Doc
+        def power_losses_cylinder(self, flux, cylinder_hight, cylinder_inner_radius, cylinder_outer_radius):
+            """
+            Caclual
+
             """
 
-            def b(r, Phi, w):
-                return Phi / (2 * np.pi * r * w)
+            def flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight):
+                return flux / (2 * np.pi * cylinder_radius * cylinder_hight)
 
-            def p_loss_density(r, Phi, w):
-                return 2 * np.pi * r * w * \
+            def power_loss_density(cylinder_radius, flux, cylinder_hight):
+                return 2 * np.pi * cylinder_radius * cylinder_hight * \
                        np.pi * self.f_1st * \
-                       self.component.mu0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, b(r, Phi, w)) * \
-                       (b(r, Phi, w) / self.component.core.mu_rel / self.component.mu0) ** 2
+                       self.component.mu0 * AnalyticalCoreData.f_N95_mu_imag(self.f_1st, flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight)) * \
+                       (flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight) / self.component.core.mu_rel / self.component.mu0) ** 2
 
-            return quad(p_loss_density, ri, ro, args=(Phi, w), epsabs=1e-4)
+            return quad(power_loss_density, cylinder_inner_radius, cylinder_outer_radius, args=(flux, cylinder_hight), epsabs=1e-4)
 
         @staticmethod
-        def max_phi_from_time_phi(Phi_top, Phi_bot, Phi_stray):
-            """TODO Doc
-            :param Phi_stray:
-            :param Phi_bot:
-            :param Phi_top:
+        def max_flux_from_flux_vec(flux_top_vec, flux_bot_vec, flux_stray_vec):
             """
-            Phi_top_peak = max([abs(ele) for ele in Phi_top])
-            Phi_bot_peak = max([abs(ele) for ele in Phi_bot])
-            Phi_stray_peak = max([abs(ele) for ele in Phi_stray])
+            Gets the peak flux values from the flux vectors
 
-            # ff.femmt_print(f"{Phi_top_peak=}\n"
-            #       f"{Phi_bot_peak=}\n"
-            #       f"{Phi_stray_peak=}\n")
+            :param flux_stray_vec: flux vector in stray path
+            :param flux_bot_vec: flux vector in bot path
+            :param flux_top_vec: flux vector in top path
+            """
+            flux_top_peak = max([abs(flux_timestep) for flux_timestep in flux_top_vec])
+            flux_bot_peak = max([abs(flux_timestep) for flux_timestep in flux_bot_vec])
+            flux_stray_peak = max([abs(flux_timestep) for flux_timestep in flux_stray_vec])
 
-            return Phi_top_peak, Phi_bot_peak, Phi_stray_peak
+            return flux_top_peak, flux_bot_peak, flux_stray_peak
 
-        def phases_from_time_phi(self, Phi_top, Phi_bot, Phi_stray):
-            """TODO DOc
+        def phases_from_time_phi(self, flux_top_vec, flux_bot_vec, flux_stray_vec):
+            """
             Returns the phases of the peaks
-            :param Phi_stray:
-            :param Phi_bot:
-            :param Phi_top:
+
+            :param flux_stray_vec: flux stray path vector including time steps
+            :param flux_bot_vec: flux bot path vector including time steps
+            :param flux_top_vec: flux top path vector including time steps
             """
-            # ff.femmt_print(np.array(Phi_top))
-            # ff.femmt_print(np.array(Phi_top).argmax(axis=0))
-            # ff.femmt_print(self.nom_current[0][0])
 
-            phase_top = self.nom_current[0][0][np.array(Phi_top).argmax(axis=0)]
-            phase_bot = self.nom_current[0][0][np.array(Phi_bot).argmax(axis=0)]
-            phase_stray = self.nom_current[0][0][np.array(Phi_stray).argmax(axis=0)]
-
-            # ff.femmt_print(np.array(Phi_top).argmax(axis=0))
-            # ff.femmt_print(np.array(Phi_bot).argmax(axis=0))
-            # ff.femmt_print(np.array(Phi_stray).argmax(axis=0))
+            phase_top = self.nom_current[0][0][np.array(flux_top_vec).argmax(axis=0)]
+            phase_bot = self.nom_current[0][0][np.array(flux_bot_vec).argmax(axis=0)]
+            phase_stray = self.nom_current[0][0][np.array(flux_stray_vec).argmax(axis=0)]
 
             return phase_top, phase_bot, phase_stray
 
-        def phi_from_time_currents(self, time_current_1, time_current_2, visualize=False):
-            """TODO Doc
-            :param visualize:
-            :param time_current_2:
-            :param time_current_1:
+        def flux_from_time_currents(self, time_current_vec_1, time_current_vec_2, visualize=False):
             """
-            I1 = time_current_1[1]
-            I2 = time_current_2[1]
+            calculates the integrated transformer flux from current vectors
 
-            t = None
-            if time_current_1[0] == time_current_2[0]:
-                t = time_current_1[0]
+            :param visualize: True for plot
+            :type visualize: bool
+            :param time_current_vec_2: current vector e.g. [[time1, time2, ...], [current1, current2, ...]]
+            :type time_current_vec_2: np.array
+            :param time_current_vec_1: current vector e.g. [[time1, time2, ...], [current1, current2, ...]]
+            :type time_current_vec_1: np.array
+            """
+            current_vec_1 = time_current_vec_1[1]
+            current_vec_2 = time_current_vec_2[1]
+
+            time_vec = None
+            if time_current_vec_1[0] == time_current_vec_2[0]:
+                time_vec = time_current_vec_1[0]
             else:
-                warnings.warn("Time values do not match equally for both currents!")
+                raise Exception("Time values do not match equally for both currents!")
 
-            Phi_top = []
-            Phi_bot = []
-            Phi_stray = []
+            flux_top_vec = []
+            flux_bot_vec = []
+            flux_stray_vec = []
 
-            for i in range(0, len(I1)):
+            for count, value in enumerate(current_vec_1):
                 # Negative sign is placed here
-                CurrentVector = [I1[i], -I2[i]]
+                current_value_timestep = [current_vec_1[count], -current_vec_2[count]]
 
-                #     [Phi_top, Phi_bot] = np.matmul(np.matmul(np.linalg.inv(R), N), self.max_current)
-                [Phi_top_s, Phi_bot_s] = np.matmul(np.matmul(np.linalg.inv(np.transpose(self.N)), self.L_goal),
-                                                   np.transpose(CurrentVector))
-                Phi_stray_s = Phi_bot_s - Phi_top_s
+                #     [flux_top_vec, flux_bot_vec] = np.matmul(np.matmul(np.linalg.inv(R), N), self.max_current)
+                [flux_top_timestep, flux_bot_timestep] = np.matmul(np.matmul(np.linalg.inv(np.transpose(self.N)), self.L_goal),
+                                                   np.transpose(current_value_timestep))
+                flux_stray_timestep = flux_bot_timestep - flux_top_timestep
 
-                # Append to lists (for all time-steps)
-                Phi_top.append(Phi_top_s)
-                Phi_bot.append(Phi_bot_s)
-                Phi_stray.append(Phi_stray_s)
+                flux_top_vec.append(flux_top_timestep)
+                flux_bot_vec.append(flux_bot_timestep)
+                flux_stray_vec.append(flux_stray_timestep)
 
-            # Visualize
             if visualize:
-                self.visualize_current_and_flux(t, Phi_top, Phi_bot, Phi_stray, I1, I2)
+                self.visualize_current_and_flux(time_vec, flux_top_vec, flux_bot_vec, flux_stray_vec, current_vec_1, current_vec_2)
 
-            return Phi_top, Phi_bot, Phi_stray
+            return flux_top_vec, flux_bot_vec, flux_stray_vec
 
         @staticmethod
-        def visualize_current_and_flux(t, Phi_top, Phi_bot, Phi_stray, I1, I2):
+        def visualize_current_and_flux(t, flux_top_vec, flux_bot_vec, flux_stray_vec, current_1_vec, current_2_vec):
             figure, axis = plt.subplots(2, figsize=(4, 4))
 
             t = np.array(t) * 10 ** 6 / 200000 / 2 / np.pi
 
-            axis[0].plot(t, 1000 * np.array(Phi_top), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
-            axis[0].plot(t, 1000 * np.array(Phi_bot), label=r"$\mathcal{\phi}_{\mathrm{bot}}$")
-            axis[0].plot(t, 1000 * np.array(Phi_stray), label=r"$\mathcal{\phi}_{\mathrm{stray}}$")
+            axis[0].plot(t, 1000 * np.array(flux_top_vec), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
+            axis[0].plot(t, 1000 * np.array(flux_bot_vec), label=r"$\mathcal{\phi}_{\mathrm{bot}}$")
+            axis[0].plot(t, 1000 * np.array(flux_stray_vec), label=r"$\mathcal{\phi}_{\mathrm{stray}}$")
 
             axis[0].set_yticks([-0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03])
 
-            axis[1].plot(t, I1, label=r"$I_{\mathrm{in}}$")
-            axis[1].plot(t, -np.array(I2), label=r"$I_{\mathrm{out}}$")
+            axis[1].plot(t, current_1_vec, label=r"$I_{\mathrm{in}}$")
+            axis[1].plot(t, -np.array(current_2_vec), label=r"$I_{\mathrm{out}}$")
             # axis[1].plot(t, np.array(I2)/3.2 - np.array(I1), label=f"Im")
 
             axis[0].set_ylabel("Magnetic fluxes / mWb")
@@ -917,7 +914,7 @@ class MagneticComponent:
             axis[0].grid()
             axis[1].grid()
             #ToDo: general path
-            plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/{I1[0]}.pdf",
+            plt.savefig(f"C:/Users/tillp/sciebo/Exchange Till/04_Documentation/Reluctance_Model_Current_Shapes/{current_1_vec[0]}.pdf",
                         bbox_inches="tight")
 
             # plt.show()
@@ -931,12 +928,12 @@ class MagneticComponent:
             if np.linalg.cond(np.transpose(self.N)) < 1 / sys.float_info.epsilon:
 
                 # Get fluxes for max current
-                Phi_top_max, Phi_bot_max, Phi_stray_max = self.phi_from_time_currents(self.max_current[0],
-                                                                                      self.max_current[1],
-                                                                                      visualize=self.visualize_max)
+                Phi_top_max, Phi_bot_max, Phi_stray_max = self.flux_from_time_currents(self.max_current[0],
+                                                                                       self.max_current[1],
+                                                                                       visualize=self.visualize_max)
 
                 Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak = \
-                    self.max_phi_from_time_phi(Phi_top_max, Phi_bot_max, Phi_stray_max)
+                    self.max_flux_from_flux_vec(Phi_top_max, Phi_bot_max, Phi_stray_max)
 
                 # Store max peak fluxes in instance variable -> used for saturation check
                 self.max_phi = [Phi_top_max_peak, Phi_bot_max_peak, Phi_stray_max_peak]
@@ -1005,7 +1002,7 @@ class MagneticComponent:
                 if self.N.shape == (2, 2) and self.component.component_type == ComponentType.IntegratedTransformer:
 
                     # Calculate goal reluctance matrix
-                    R_matrix = ff.calculate_reluctances(winding_matrix=self.N, inductance_matrix=self.L_goal)
+                    R_matrix = ff.calculate_reluctance_matrix(winding_matrix=self.N, inductance_matrix=self.L_goal)
 
                     # R_goal = [R_top, R_bot, R_stray]
                     R_goal = [R_matrix[0, 0] + R_matrix[0, 1], R_matrix[1, 1] + R_matrix[0, 1], -R_matrix[0, 1]]

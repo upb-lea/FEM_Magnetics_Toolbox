@@ -59,6 +59,8 @@ def test_reluctance():
     core_inner_diameter = 0.045
     single_air_gap_total_hight = 0.0002
     core_hight = 0.01
+    tablet_hight = 0.01
+    window_w = 0.02
 
     r_gap_round_round = femmt.r_air_gap_round_round(single_air_gap_total_hight, core_inner_diameter, core_hight, core_hight)
     assert r_gap_round_round == pytest.approx(97100, rel=1e-3)
@@ -66,6 +68,15 @@ def test_reluctance():
     r_gap_round_inf = femmt.r_air_gap_round_inf(single_air_gap_total_hight, core_inner_diameter, core_hight)
     assert r_gap_round_inf == pytest.approx(94983, rel=1e-3)
 
-    r_gap_tablet_cylinder = femmt.r_air_gap_tablet_cyl(0.01, 0.0002, 0.03)
-    assert r_gap_tablet_cylinder == pytest.approx(73876, rel=1e-3)
+    r_gap_tablet_cylinder = femmt.r_air_gap_tablet_cyl(tablet_hight, single_air_gap_total_hight, core_inner_diameter, window_w)
+    assert r_gap_tablet_cylinder == pytest.approx(51694, rel=1e-3)
 
+    r_gap_tablet_cylinder_real = femmt.r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, single_air_gap_total_hight, core_inner_diameter, window_w)
+    assert r_gap_tablet_cylinder_real == pytest.approx(82517, rel=1e-3)
+
+
+def test_volume():
+    window_h = 0.03
+    window_w = 0.011
+    core_inner_diameter = 0.02
+    assert femmt.calculate_core_2daxi_total_volume(core_inner_diameter, window_h, window_w) == pytest.approx(6.798406502368311e-05, rel=1e-3)

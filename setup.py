@@ -46,6 +46,7 @@ setup(
                       'PyQt5>=5.15.6',
                       'mplcursors>=0.5.1', # TODO Is this necessary?
                       'deepdiff>=6.2.1', # comparing result dicts for pytests
+                      'materialdatabase==0.1.0',
 					  ],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
@@ -63,7 +64,7 @@ setup(
         "Documentation": "https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html",
         "Source Code": "https://github.com/upb-lea/FEM_Magnetics_Toolbox",
     },
-    version='0.3.0',
+    version='0.4.0',
     zip_safe=False,
     data_files=[('', ['CHANGELOG.md'])]
 )

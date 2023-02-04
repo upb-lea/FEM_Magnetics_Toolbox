@@ -1,10 +1,6 @@
 import sys
-import matplotlib
 import re
 from mpl_toolkits.mplot3d import proj3d
-import pandas as pd
-import gmsh
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
@@ -20,10 +16,10 @@ import os
 from os import listdir
 from os.path import isfile, join
 import shutil
-from itertools import product
 import logging
 from typing import List, Union, Optional
 import PIL
+import webbrowser
 
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
@@ -98,6 +94,10 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
 
+        self.default_gui_working_directory = os.path.join(os.path.dirname(__file__), "GUI_working_directory")
+        if not os.path.exists(self.default_gui_working_directory):
+            os.mkdir(self.default_gui_working_directory)
+
         super(MainWindow, self).__init__(parent)
         self.md_simulation_type_comboBox = None
         self.aut_simulation_type_comboBox = None
@@ -130,10 +130,21 @@ class MainWindow(QMainWindow):
             "+-20": "+/- 20%",
             "excel": "MS Excel"
         }
+        "******** menu bar *********"
+
+        ### Actions for Help
+        self.action_contribute.triggered.connect(self.webbrowser_contribute)
+        self.action_documentation.triggered.connect(self.webbrowser_documentation)
+        self.action_report_bug.triggered.connect(self.webbrowser_bugreport)
 
         "******* Manual Design *********"
 
         "Signals in Definition Tab"
+        # predefine working directory
+        self.md_working_directory_lineEdit.setText(self.default_gui_working_directory)
+        self.FEM_sim_working_dir_LineEdit.setText(self.default_gui_working_directory)
+        self.aut_load_design_directoryname_lineEdit.setText(self.default_gui_working_directory)
+
         # simulation
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.md_change_simulation_type)
         # core
@@ -498,6 +509,18 @@ class MainWindow(QMainWindow):
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_dat_input)
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_meas_input)
 
+    #  **************************** Menu bar ************************************************************  #
+    ### Help actions ###
+    def webbrowser_contribute(self):
+        webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox')
+
+    def webbrowser_bugreport(self):
+        webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox/issues')
+
+    def webbrowser_documentation(self):
+        webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html')
+
+
     #  **************************** Automated design tab ************************************************************  #
 
     def plot_volume_loss(self, data_matrix, matplotlib_widget):
@@ -757,7 +780,7 @@ class MainWindow(QMainWindow):
                                      core_material=material_names,
                                      mult_air_gap_type=['center_distributed'],
                                      top_core_insulation=comma_str_to_point_float(
-                                         self.aut_isolation_core2cond_top_lineEdit.text()),
+                                     self.aut_isolation_core2cond_top_lineEdit.text()),
                                      bot_core_insulation=comma_str_to_point_float(
                                          self.aut_isolation_core2cond_bot_lineEdit.text()),
                                      left_core_insulation=comma_str_to_point_float(
@@ -2746,8 +2769,8 @@ class MainWindow(QMainWindow):
                             core_w=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()))"""
-            working_directory = 'C:\LEA_Project\FEM_Magnetics_Toolbox'
-            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+
+            geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=self.md_working_directory_lineEdit.text(),
                                         silent=False)
 
             core_db = fmt.core_database()["PQ 40/40"]
@@ -2901,11 +2924,9 @@ class MainWindow(QMainWindow):
 
             self.md_simulation_QLabel.setText('simulation startet...')
 
-            working_directory = 'C:\LEA_Project\FEM_Magnetics_Toolbox'
-
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer,
-                                        working_directory=working_directory)
+                                        working_directory=self.md_working_directory_lineEdit.text())
 
             # -----------------------------------------------
             # Core
