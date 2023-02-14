@@ -1526,6 +1526,23 @@ def power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_d
 
     return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu0 * (flux_densitiy_max / mu0 / mu_r_abs) ** 2
 
+
+
+def power_loss_hysteresis_simple_volume_mu_r_imag(fundamental_frequency, flux_density_max, mu_r_abs, core_volume, flux_density_data_vec, mu_r_imag_data_vec):
+    """
+    Calculates the hysteresis losses depending on the input parameters.
+    The output are the losses for a certain volume of core.
+
+    :param fundamental_frequency: fundamental frequency in Hz
+    :param mu_r_imag: imaginary part of u_r
+    :param flux_density_max: maximum flux density
+    :param mu_r_abs: abs(mu_r)
+    :param core_volume: core volume
+    """
+    mu_r_imag = np.interp(flux_density_max, flux_density_data_vec, mu_r_imag_data_vec)
+
+    return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu0 * (flux_density_max / mu0 / mu_r_abs) ** 2
+
 def calculate_cylinder_volume(cylinder_diameter: float, cylinder_hight: float):
     """
     Calculates the volume of an ideal cylinder. This function is uses e.g. to calculate the volume
@@ -1604,6 +1621,88 @@ def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_hight, cyli
 
     return scipy.integrate.quad(power_loss_density_cylinder_envelope, cylinder_inner_radius, cylinder_outer_radius, args=(flux, cylinder_hight),
                 epsabs=1e-4)[0]
+
+
+
+
+
+
+def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux, cylinder_hight, cylinder_inner_radius, cylinder_outer_radius,
+                                                      fundamental_frequency, mu_r_abs, flux_density_data_vec, mu_r_imag_data_vec):
+    """
+    This function calculates the hysteresis losses inside a cylinder, where the flux flows in radial direction.
+
+    :param flux: flux
+    :param cylinder_hight: cylinder hight
+    :param cylinder_inner_radius: cylinder inner radius
+    :param cylinder_outer_radius: cylinder outer radius
+    :param fundamental_frequency: fundamental frequency
+    :param mu_r_imag: imaginary part of u_r
+    :param mu_r_abs: absolute value of mu_r: abs(mu_r)
+
+    """
+
+    def flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight):
+        """
+        This is a helper-function, what is used as a function to integrate by scipy.integrate.quad.
+        It calculates the flux density in a cylinder envelope. By using the integration function, the flux density
+        in a volume can be calculated, as done in the superordinate function.
+
+        :param cylinder_radius: cylinder radius
+        :param flux: flux trough cylinder envelope depending on its radius
+        :param cylinder_hight: cylinder hight
+        """
+        return flux / (2 * np.pi * cylinder_radius * cylinder_hight)
+
+    def power_loss_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight):
+        """
+        This is a helper-function, what is used as a function to integrate by scipy.integrate.quad
+        It calcuates the power losses in a cylinder envelope. Together with the integration function, the hysteresis
+        losses are calculated in a volumetric cylinder where the flux is orientated in radiant direction.
+
+        volume = cylinder_diameter * pi * cylinder_hight
+
+        Basic formula for hysteresis losses:
+        p_hyst = volume * 0.5 * omega * u_imag * (max(flux_density) / mu_0 / mu_r) ** 2
+        -> p_hyst = volume * pi * frequency * u_imag * (max(flux_density) / mu_0 / mu_r) ** 2
+
+        Note: The [0] in the return for only handling the result itself to the output, not the error.
+        """
+        mu_r_imag = np.interp(flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight), flux_density_data_vec, mu_r_imag_data_vec)
+
+        return 2 * np.pi * cylinder_radius * cylinder_hight * np.pi * fundamental_frequency * mu0 * mu_r_imag * (flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight) / mu_r_abs / mu0) ** 2
+
+    return scipy.integrate.quad(power_loss_density_cylinder_envelope, cylinder_inner_radius, cylinder_outer_radius, args=(flux, cylinder_hight),
+                epsabs=1e-4)[0]
+
+def hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_half, window_w, mu_r_abs, flux_max, fundamental_frequency, flux_density_data_vec, mu_r_imag_data_vec):
+    """
+    Caluclates the losses of a core cylinder half.
+    means: losses in inner cylinder + losses in outer cylinder + losses in ONE cylinder_radial e.g. for top or bot
+
+    Note: To calculate the hysteresis losses of an inductor, you need to run this function twice with each the half window_h
+
+    :param core_inner_diameter: core inner diameter
+    :param window_h_half: window hight of the core-half to consider
+    :param window_w: window width
+    :param mu_r_abs: (absolute) mu_r value from core material datasheet
+    :param mu_r_imag: imaginary part of mu_r
+    :param flux_max: maximum flux what appears in the core-half
+    :param fundamental_frequency: fundamental frequency of flux
+    """
+    core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
+    flux_density_max = flux_max / core_cross_section
+    volume_cylinder_inner = core_cross_section * window_h_half
+
+    losses_cylinder_inner = power_loss_hysteresis_simple_volume_mu_r_imag(fundamental_frequency, flux_density_max, mu_r_abs, volume_cylinder_inner,
+                                                      flux_density_data_vec, mu_r_imag_data_vec)
+
+    cylinder_inner_radius = core_inner_diameter / 2
+    cylinder_outer_radius = core_inner_diameter / 2 + window_w
+    losses_cylinder_radial = power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux_max, core_inner_diameter / 4,
+                                                                               cylinder_inner_radius, cylinder_outer_radius,
+                                                                               fundamental_frequency, mu_r_abs, flux_density_data_vec, mu_r_imag_data_vec)
+    return 2 * losses_cylinder_inner + losses_cylinder_radial
 
 
 def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
