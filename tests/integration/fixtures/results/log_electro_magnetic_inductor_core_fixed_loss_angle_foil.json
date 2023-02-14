@@ -11,20 +11,16 @@
           0.001046305817791602
         ],
         "flux": [
-          9.751869714586252e-10,
-          -1.506034425131979e-11
+          9.751856954566589e-10,
+          -1.5089044055137185e-11
         ],
         "self_inductance": [
-          3.250623238195443e-10,
-          -5.020114750439914e-12
-        ],
-        "mag_field_energy": [
-          2.654607369298962e-05,
-          -3.657108419266065e-07
+          3.2506189848555296e-10,
+          -5.029681351712394e-12
         ],
         "V": [
-          9.462693372095876e-06,
-          0.0006127280450821749
+          9.480725990662343e-06,
+          0.0006127272433464985
         ],
         "number_turns": 5,
         "I": [
@@ -32,9 +28,9 @@
           0.0
         ],
         "winding_losses": 0.1272279720822449,
-        "P": 1.4194040058143814e-05,
-        "Q": 0.0009190920676232623,
-        "S": 0.0009192016642397768
+        "P": 1.4221088985993514e-05,
+        "Q": 0.0009190908650197478,
+        "S": 0.000919200879859618
       },
       "core_eddy_losses": 0.009347773438878547,
       "core_hyst_losses": 0.3805547626042021,
@@ -58,9 +54,9 @@
     "core": 0.38990253604308067
   },
   "simulation_settings": {
-    "date": "2022-11-11 10:04:28",
+    "date": "2023-02-14 18:20:22",
     "component_type": "Inductor",
-    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/inductor_foil",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
       "core_inner_diameter": 0.0149,
       "window_w": 0.01105,
@@ -73,7 +69,12 @@
       "non_linear": false,
       "correct_outer_leg": false,
       "temperature": null,
-      "datasource": null
+      "permeability_datasource": "custom",
+      "permeability_measurement_setup": null,
+      "permeability_datatype": null,
+      "permittivity_datasource": "custom",
+      "permittivity_measurement_setup": null,
+      "permittivity_datatype": null
     },
     "virtual_winding_windows": [
       {

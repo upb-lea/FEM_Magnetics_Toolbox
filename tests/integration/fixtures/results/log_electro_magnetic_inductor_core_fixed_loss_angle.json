@@ -15,20 +15,16 @@
           0.083419716650155
         ],
         "flux": [
-          9.344608608478737e-05,
-          -8.000466748657256e-07
+          9.344594399572391e-05,
+          -8.156304685360528e-07
         ],
         "self_inductance": [
-          2.076579690773052e-05,
-          -1.777881499701614e-07
-        ],
-        "mag_field_energy": [
-          0.0001050292837784953,
-          -7.707751094121218e-07
+          2.0765765332383092e-05,
+          -1.8125121523023396e-07
         ],
         "V": [
-          0.5026841512574162,
-          58.71390751013737
+          0.5124757375993728,
+          58.7138182329459
         ],
         "number_turns": 9,
         "I": [
@@ -36,9 +32,9 @@
           0.0
         ],
         "winding_losses": 0.4712791144172009,
-        "P": 1.1310393403291863,
-        "Q": 132.1062918978091,
-        "S": 132.11113355421077
+        "P": 1.1530704095985889,
+        "Q": 132.10609102412826,
+        "S": 132.11112313898764
       },
       "core_eddy_losses": 0.01569120123820864,
       "core_hyst_losses": 0.667287949975635,
@@ -66,9 +62,9 @@
     "core": 0.6829791512138437
   },
   "simulation_settings": {
-    "date": "2022-10-27 08:00:39",
+    "date": "2023-02-14 18:13:48",
     "component_type": "Inductor",
-    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/integration_test",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
       "core_inner_diameter": 0.0149,
       "window_w": 0.01105,
@@ -81,7 +77,12 @@
       "non_linear": false,
       "correct_outer_leg": false,
       "temperature": null,
-      "datasource": null
+      "permeability_datasource": "custom",
+      "permeability_measurement_setup": null,
+      "permeability_datatype": null,
+      "permittivity_datasource": "custom",
+      "permittivity_measurement_setup": null,
+      "permittivity_datatype": null
     },
     "virtual_winding_windows": [
       {
