@@ -69,10 +69,10 @@ example_results_folder = os.path.join(os.path.dirname(__file__), "example_result
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-component = "inductor"
-# component = "transformer-interleaved"
-# component = "transformer"
-# component = "integrated_transformer"
+#component = "inductor"
+#component = "transformer-interleaved"
+#component = "transformer"
+component = "integrated_transformer"
 # component = "load_from_file"
 
 # Create Object
@@ -155,7 +155,8 @@ if component == "transformer-interleaved":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10)
+                    non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
+
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -208,7 +209,7 @@ if component == "transformer":
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
                     mu_rel=3100, phi_mu_deg=12,
-                    sigma=1.2)
+                    sigma=1.2, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -253,7 +254,7 @@ if component == "integrated_transformer":
     # 2. set core parameters
     core = fmt.Core(window_h=0.03, window_w=0.011, core_inner_diameter=0.02,
                     mu_rel=3100, phi_mu_deg=12,
-                    sigma=0.6)
+                    sigma=0.6, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 2.1 set stray path parameters
