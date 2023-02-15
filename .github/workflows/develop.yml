@@ -50,12 +50,11 @@ jobs:
         run: |
             pwd
             ls
-            wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/main.zip
+            wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/develop.zip
             unzip main.zip
             rm main.zip
             cd materialdatabase-main
             pip install -e .
-            git switch develop
             cd ..
             echo show folder path
             pwd
