@@ -51,9 +51,9 @@ jobs:
             pwd
             ls
             wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/develop.zip
-            unzip main.zip
-            rm main.zip
-            cd materialdatabase-main
+            unzip develop.zip
+            rm develop.zip
+            cd materialdatabase-develop
             pip install -e .
             cd ..
             echo show folder path
