@@ -13,8 +13,57 @@ from matplotlib import pyplot as plt
 # femmt imports
 import femmt.Functions as ff
 
-matplotlib.rc('xtick', labelsize=24)
-matplotlib.rc('ytick', labelsize=24)
+def plot_limitation():
+    length = 15
+    width = 100 * length
+    height = 101 - length
+
+    r_mx = 1 / (fmt.mu_0 * (width / 2 / length + 2 / np.pi * (
+                1 + np.log(np.pi * height / 4 / length))))
+    print(height)
+
+    # width_c = 100
+    # length_c = 0.5
+    # height1_c = np.linspace(50, 100, 1000)
+    # height2_c =100 - height1_c
+    # h_l = height2_c / length
+    #
+    # r_m1 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+    #         1 + np.log(np.pi * height1_c / 4 / length_c))))
+    #
+    # r_m2 = 1 / (fmt.mu0 * (width_c / 2 / length_c + 2 / np.pi * (
+    #         1 + np.log(np.pi * height2_c / 4 / length_c))))
+    #
+    # r_m = r_m1 + r_m2
+    # combined = np.vstack((h_l, r_m)).T
+    # print(combined)
+
+    width_c = 100
+    length_c = 0.5
+    height1_c = np.linspace(50, 100, 1000)
+    height2_c =100 - height1_c
+    h_l = height2_c / length
+    # print(h_l)
+    r_m1 = 1 / (fmt.mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
+            1 + np.log(np.pi * height1_c / 4 / length_c))))
+
+    r_m2 = 1 / (fmt.mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
+            1 + np.log(np.pi * height2_c / 4 / length_c))))
+
+    r_m = r_m1 + r_m2
+    ratio = r_mx / r_m
+    # print(ratio)
+    fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
+    fmt.plt.title("R_basic vs h/l")
+    fmt.plt.xlabel("h/l")
+    fmt.plt.ylabel("R_basic")
+
+    ax.plot(h_l, r_m)
+    # ax.hlines(y=r_m, xmin=0, xmax=50, linewidth=2, color='g')
+    ax.hlines(y=r_mx, xmin=-1, xmax=51, linewidth=2, color='r')
+    ax.invert_xaxis()
+    ax.grid()
+    plt.show()
 
 
 def plot_r_basic():
@@ -78,7 +127,7 @@ def plot_r_basic():
     fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
 
     for i, wid in enumerate(width):
-        r_m = 1 / (fmt.mu0 * (wid / 2 / length + 2 / np.pi * (
+        r_m = 1 / (fmt.mu_0 * (wid / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
 
         combined = np.vstack((h_l, r_m)).T

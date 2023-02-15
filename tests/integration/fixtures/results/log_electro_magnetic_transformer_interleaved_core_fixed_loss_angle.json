@@ -27,20 +27,16 @@
           0.03503967450319483
         ],
         "flux": [
-          1.180029904664333e-07,
-          8.322976047274332e-08
+          1.1801015935829883e-07,
+          6.30998625578489e-08
         ],
         "self_inductance": [
-          2.950074761660832e-08,
-          2.080744011818583e-08
-        ],
-        "mag_field_energy": [
-          8.899289996567843e-06,
-          -1.07399631294186e-06
+          2.9502539839574708e-08,
+          1.5774965639462226e-08
         ],
         "V": [
-          -0.1307370020305938,
-          0.1853586639754726
+          -0.09911703232713187,
+          0.1853699248444962
         ],
         "number_turns": 21,
         "I": [
@@ -48,9 +44,9 @@
           0.0
         ],
         "winding_losses": 4.042758229508833,
-        "P": -0.2614740040611876,
-        "Q": 0.3707173279509452,
-        "S": 0.4536518401184752
+        "P": -0.19823406465426374,
+        "Q": 0.3707398496889924,
+        "S": 0.42041025265419907
       },
       "winding2": {
         "turn_losses": [
@@ -63,20 +59,16 @@
           0.4217828393537453
         ],
         "flux": [
-          -3.263724717337706e-06,
-          6.293547962041835e-07
+          -3.2637197087897397e-06,
+          6.495551822345405e-07
         ],
         "self_inductance": [
-          2.719770597781402e-07,
-          -5.244623301701541e-08
-        ],
-        "mag_field_energy": [
-          8.899289996567843e-06,
-          -1.07399631294186e-06
+          2.71976642399145e-07,
+          -5.412959851954501e-08
         ],
         "V": [
-          -0.9885882021282824,
-          -5.126646797663796
+          -1.020318894304606,
+          -5.126638930255033
         ],
         "number_turns": 7,
         "I": [
@@ -84,9 +76,9 @@
           1.4695761589768238e-15
         ],
         "winding_losses": 1.879880359597863,
-        "P": 5.931529212769691,
-        "Q": 30.75988078598278,
-        "S": 31.326559095595112
+        "P": 6.121913365827632,
+        "Q": 30.759833581530195,
+        "S": 31.363118231804243
       },
       "core_eddy_losses": 0.0004501681491330847,
       "core_hyst_losses": 0.003936369071499363,
@@ -138,9 +130,9 @@
     "core": 0.0043865372206324475
   },
   "simulation_settings": {
-    "date": "2022-10-27 15:06:07",
+    "date": "2023-02-14 18:24:53",
     "component_type": "Transformer",
-    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/transformer-interleaved",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
       "core_inner_diameter": 0.015,
       "window_w": 0.012,
@@ -153,7 +145,12 @@
       "non_linear": false,
       "correct_outer_leg": false,
       "temperature": null,
-      "datasource": null
+      "permeability_datasource": "custom",
+      "permeability_measurement_setup": null,
+      "permeability_datatype": null,
+      "permittivity_datasource": "custom",
+      "permittivity_measurement_setup": null,
+      "permittivity_datatype": null
     },
     "virtual_winding_windows": [
       {

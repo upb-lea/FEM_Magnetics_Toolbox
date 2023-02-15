@@ -67,7 +67,7 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
         core_db = fmt.core_database()["PQ 40/40"]
 
         core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                        material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
+                        material="N95", temperature=25, frequency=100000, permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -156,7 +156,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
 
         core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
                         window_h=core_db["window_h"],
-                        mu_rel=3000, phi_mu_deg=10, sigma=0.5)
+                        mu_rel=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -211,7 +211,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
 
         core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
                         window_h=core_db["window_h"],
-                        mu_rel=3000, phi_mu_deg=10, sigma=0.5)
+                        mu_rel=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -269,7 +269,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil(temp_folder):
         core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
                         window_h=core_db["window_h"],
                         mu_rel=3100, phi_mu_deg=12,
-                        sigma=0.6)
+                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
@@ -327,7 +327,7 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
         # 2. set core parameters
         core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
                         mu_rel=3100, phi_mu_deg=12,
-                        sigma=1.2)
+                        sigma=1.2, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -387,7 +387,7 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
 
         # 2. set core parameters
         core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                        non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10)
+                        non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -450,7 +450,7 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
         # 2. set core parameters
         core = fmt.Core(window_h=0.03, window_w=0.011, core_inner_diameter=0.02,
                         mu_rel=3100, phi_mu_deg=12,
-                        sigma=0.6)
+                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         # 2.1 set stray path parameters

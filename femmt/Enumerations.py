@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 
 class WindingWindowSplit(IntEnum):
     """Determines how many virtual winding windowes are created by the winding window. Used in Winding window class.
@@ -148,3 +148,20 @@ class ExcitationMeshingType(IntEnum):
     MeshOnlyLowestFrequency = 1
     MeshOnlyHighestFrequency = 2
     MeshEachFrequency = 3
+
+
+# Following Enums must always be consistent with the materialdatabase
+class MaterialDataSource(str, Enum):
+    """Sets the source from where data is taken.
+    """
+    Custom = "custom"
+    Measurement = "measurements"
+    ManufacturerDatasheet = "manufacturer_datasheet"
+
+
+class MeasurementDataType(str, Enum):
+    """Sets the type of measurement data.
+    """
+    ComplexPermeability = "complex_permeability"
+    ComplexPermittivity = "complex_permittivity"
+    Steinmetz = "Steinmetz"

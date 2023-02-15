@@ -8,6 +8,7 @@ from typing import List, Tuple, Optional, Union
 # Local libraries
 import femmt.Functions as ff
 from femmt.Enumerations import *
+from femmt.constants import *
 import materialdatabase as mdb
 
 
@@ -31,14 +32,13 @@ class Conductor:
     n_layers: int
     a_cell: float
     cond_sigma: float
-    parallel: int = 1  # TODO What is this parameter?
 
     conductor_is_set: bool
 
     # Not used in femmt_classes. Only needed for to_dict()
     conductivity: Conductivity = None
 
-    def __init__(self, winding_number: int, conductivity: float):
+    def __init__(self, winding_number: int, conductivity: float, parallel: bool = False):
         """Creates an conductor object.
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
         The conductor with the lowest winding number (starting from 0) will be treated as primary, second lowest number as secondary and so on.
@@ -54,6 +54,7 @@ class Conductor:
         self.winding_number = winding_number
         self.conductivity = conductivity
         self.conductor_is_set = False
+        self.parallel = parallel
 
         dict_material_database = ff.wire_material_database()
         if conductivity.name in dict_material_database:
@@ -191,14 +192,21 @@ class Core:
     temperature: float  # temperature at which data is required
     material: str  # material to be accessed from data base
     datasource: str  # type of data to be accessed ( datasheet or measurement)
+
     file_path_to_solver_folder: str  # location to create temporary pro file
 
-    def __init__(self, core_inner_diameter: float, window_w: float, window_h: float, material: str = "custom",
-                 loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000, temperature: float = None,
-                 datasource: str = None,
+    def __init__(self, core_inner_diameter: float, window_w: float, window_h: float, correct_outer_leg: bool = False,
+                 material: str = "custom", temperature: float = None,
+
+                 loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000,
+                 permeability_datasource: MaterialDataSource = None, permeability_datatype: MeasurementDataType = None, permeability_measurement_setup: str = None,
+                 phi_mu_deg: float = None, non_linear: bool = False,
+
+                 permittivity_datasource: str = None, permittivity_datatype: str = None, permittivity_measurement_setup: str = None,
+                 sigma: float = None,
+
                  steinmetz_parameter: list = None, generalized_steinmetz_parameter: list = None,
-                 phi_mu_deg: float = None, sigma: float = None, non_linear: bool = False,
-                 correct_outer_leg: bool = False, **kwargs):
+                 **kwargs):
         """TODO Doc
 
         :param core_w: _description_
@@ -221,26 +229,15 @@ class Core:
         :type correct_outer_leg: bool, optional
         """
         # Set parameters
-        self.file_path_to_solver_folder = None
-        self.temperature = temperature
-        self.datasource = datasource
+
+        # Geometric Parameters
         self.core_inner_diameter = core_inner_diameter
         self.core_h = None  # TODO Set core_h to not none
         self.window_w = window_w
         self.window_h = window_h
         self.type = "axi_symmetric"
-        self.material = material
-        self.non_linear = non_linear
-        self.mu_rel = mu_rel
-        self.phi_mu_deg = phi_mu_deg
-        self.sigma = sigma
-        self.loss_approach = loss_approach
         self.number_core_windows = 2
         self.correct_outer_leg = correct_outer_leg
-
-        # Initialize database
-        self.material_database = mdb.MaterialDatabase(ff.silent)
-
         self.core_h = window_h + core_inner_diameter / 2
         self.r_inner = window_w + core_inner_diameter / 2
         if correct_outer_leg:
@@ -248,6 +245,28 @@ class Core:
             self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
         else:
             self.r_outer = np.sqrt((core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
+
+        # Material Parameters
+        # General
+        # Initialize database
+        self.material_database = mdb.MaterialDatabase(ff.silent)
+        self.material = material
+        self.file_path_to_solver_folder = None
+        self.temperature = temperature
+        # Permeability
+        self.permeability = {"datasource": permeability_datasource,
+                             "measurement_setup": permeability_measurement_setup,
+                             "datatype": permeability_datatype}
+        self.non_linear = non_linear
+        self.mu_rel = mu_rel
+        self.phi_mu_deg = phi_mu_deg
+        self.loss_approach = loss_approach
+        # Permittivity
+        self.complex_permittivity = None
+        self.permittivity = {"datasource": permittivity_datasource,
+                             "measurement_setup": permittivity_measurement_setup,
+                             "datatype": permittivity_datatype}
+        self.sigma = sigma
 
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
@@ -267,9 +286,7 @@ class Core:
                 self.ki = steinmetz_parameter[0]
                 self.alpha = steinmetz_parameter[1]
                 self.beta = steinmetz_parameter[2]
-                print(self.ki)
-                print(self.alpha)
-                print(self.beta)
+                ff.femmt_print(f"{self.ki, self.alpha, self.beta = }")
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
         # if loss_approach == LossApproach.Generalized_Steinmetz:
@@ -287,10 +304,12 @@ class Core:
             #     self.t_fall = generalized_steinmetz_parameter[1]
 
         if loss_approach == LossApproach.LossAngle:
-            if self.material == "custom":
-                self.sigma = sigma  # ------sigma from user
 
-                # this is a service for the user:
+            if self.permittivity["datasource"] == MaterialDataSource.Custom:
+                self.sigma = sigma  # from user
+
+            if self.permeability["datasource"] == MaterialDataSource.Custom:
+                 # this is a service for the user:
                 # In case of not giving a fixed loss angle phi_mu_deg,
                 # the initial permeability from datasheet is used (RealValue)
                 if phi_mu_deg is not None and phi_mu_deg != 0:
@@ -299,13 +318,12 @@ class Core:
                     self.permeability_type = PermeabilityType.RealValue
 
 
-            elif self.material != "custom":
+            elif self.material != "custom":  # TODO: new condition here
                 self.permeability_type = PermeabilityType.FromData
                 self.mu_rel = self.material_database.get_material_property(material_name=self.material,
                                                                            property="initial_permeability")
-                self.sigma = 1 / self.material_database.get_material_property(
-                    material_name=self.material,
-                    property="resistivity")  # get resistivity for material from database
+                self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
+
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
 
@@ -317,16 +335,38 @@ class Core:
         # Needed because of to_dict
         self.kwargs = kwargs
 
-    def update_core_material_pro_file(self, frequency, electro_magnetic_folder):
-        # This function is needed to updated the pro file for the solver depending on the frequency of the
+    def update_sigma(self, frequency):
+        """
+
+        :param frequency:
+        :return:
+        """
+        if self.permittivity["datasource"] == MaterialDataSource.Measurement:
+            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(T=self.temperature, f=frequency, material_name=self.material,
+                                                                                 datasource=self.permittivity["datasource"],
+                                                                                 measurement_setup=self.permittivity["measurement_setup"],
+                                                                                 datatype=self.permittivity["datatype"])
+            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
+            self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
+
+        if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
+            self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
+
+
+    def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
+        # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
+        ff.femmt_print(f"{self.permeability['datasource'] = }")
         self.material_database.permeability_data_to_pro_file(T=self.temperature, f=frequency,
                                                              material_name=self.material,
-                                                             datasource=self.datasource,
-                                                             pro=True,
-                                                             parent_directory=electro_magnetic_folder)
+                                                             datasource=self.permeability["datasource"],
+                                                             datatype=self.permeability["datatype"],
+                                                             measurement_setup=self.permeability["measurement_setup"],
+                                                             parent_directory=electro_magnetic_folder,
+                                                             plot_interpolation=plot_interpolation)
 
     def to_dict(self):
+        # TODO: mdb
         return {
             "core_inner_diameter": self.core_inner_diameter,
             "window_w": self.window_w,
@@ -339,8 +379,14 @@ class Core:
             "non_linear": self.non_linear,
             "correct_outer_leg": self.correct_outer_leg,
             "temperature": self.temperature,
-            "datasource": self.datasource
+            "permeability_datasource": self.permeability["datasource"],
+            "permeability_measurement_setup": self.permeability["measurement_setup"],
+            "permeability_datatype": self.permeability["datatype"],
+            "permittivity_datasource": self.permittivity["datasource"],
+            "permittivity_measurement_setup": self.permittivity["measurement_setup"],
+            "permittivity_datatype": self.permittivity["datatype"]
         }
+
 
 class AirGaps:
     """
