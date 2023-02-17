@@ -1151,7 +1151,7 @@ def r_core_tablet(tablet_hight, tablet_radius, mu_r_abs, core_inner_diameter):
     :param core_inner_diameter: core inner diameter. For idealized core material, this value can be 0.001.
     """
 
-    return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu0 * mu_r_abs * tablet_hight)
+    return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu_0 * mu_r_abs * tablet_hight)
 
 def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_top_bot_hight):
     """
@@ -1523,7 +1523,7 @@ def power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_d
     :param core_volume: core volume
     """
 
-    return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu0 * (flux_densitiy_max / mu0 / mu_r_abs) ** 2
+    return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu_0 * (flux_densitiy_max / mu_0 / mu_r_abs) ** 2
 
 
 
@@ -1540,7 +1540,7 @@ def power_loss_hysteresis_simple_volume_mu_r_imag(fundamental_frequency, flux_de
     """
     mu_r_imag = np.interp(flux_density_max, flux_density_data_vec, mu_r_imag_data_vec)
 
-    return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu0 * (flux_density_max / mu0 / mu_r_abs) ** 2
+    return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu_0 * (flux_density_max / mu_0 / mu_r_abs) ** 2
 
 def calculate_cylinder_volume(cylinder_diameter: float, cylinder_hight: float):
     """
@@ -1616,7 +1616,7 @@ def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_hight, cyli
         The [0] in the return for only handling the result itself to the output, not the error.
         """
 
-        return 2 * np.pi * cylinder_radius * cylinder_hight * np.pi * fundamental_frequency * mu0 * mu_r_imag * (flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight) / mu_r_abs / mu0) ** 2
+        return 2 * np.pi * cylinder_radius * cylinder_hight * np.pi * fundamental_frequency * mu_0 * mu_r_imag * (flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight) / mu_r_abs / mu_0) ** 2
 
     return scipy.integrate.quad(power_loss_density_cylinder_envelope, cylinder_inner_radius, cylinder_outer_radius, args=(flux, cylinder_hight),
                 epsabs=1e-4)[0]
@@ -1669,7 +1669,7 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux, cylinder_h
         """
         mu_r_imag = np.interp(flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight), flux_density_data_vec, mu_r_imag_data_vec)
 
-        return 2 * np.pi * cylinder_radius * cylinder_hight * np.pi * fundamental_frequency * mu0 * mu_r_imag * (flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight) / mu_r_abs / mu0) ** 2
+        return 2 * np.pi * cylinder_radius * cylinder_hight * np.pi * fundamental_frequency * mu_0 * mu_r_imag * (flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight) / mu_r_abs / mu_0) ** 2
 
     return scipy.integrate.quad(power_loss_density_cylinder_envelope, cylinder_inner_radius, cylinder_outer_radius, args=(flux, cylinder_hight),
                 epsabs=1e-4)[0]

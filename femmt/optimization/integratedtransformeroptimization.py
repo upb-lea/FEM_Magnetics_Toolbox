@@ -11,6 +11,7 @@ from scipy import optimize
 
 # femmt import
 import femmt.Functions as ff
+import femmt.optimization.functions_optimization as fof
 
 class IntegratedTransformerOptimization:
 
@@ -24,6 +25,7 @@ class IntegratedTransformerOptimization:
             caller_filename = inspect.stack()[1].filename
             working_directory = os.path.join(os.path.dirname(caller_filename), "integrated_transformer_optimization")
 
+        # generate new and empty working directory
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
 
@@ -181,10 +183,89 @@ class IntegratedTransformerOptimization:
 
 
     def load_reluctance_model_result_list(self):
-        pass
+        ff.femmt_print(f"Read results from {self.integrated_transformer_reluctance_model_results_directory}")
+
+        self.valid_design_list = []
+
+        for file in os.listdir(self.integrated_transformer_reluctance_model_results_directory):
+            if file.endswith(".json"):
+                json_file_path = os.path.join(self.integrated_transformer_reluctance_model_results_directory, file)
+                with open(json_file_path, "r") as fd:
+                    loaded_data_dict = json.loads(fd.read())
+
+                self.valid_design_list.append(loaded_data_dict)
 
     def plot_reluctance_model_result_list(self):
-        pass
+
+        volume_list = []
+        core_hyst_loss_list = []
+
+        for result in self.valid_design_list:
+            volume_list.append(result["core_2daxi_total_volume"])
+            core_hyst_loss_list.append(result["p_hyst"])
+
+        fof.plot_2d(volume_list, core_hyst_loss_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
+
+
+    def plot_pareto_result_list(self):
+
+        fof.plot_2d(self.pareto_volume_list, self.pareto_core_hyst_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
+
+
+    # Very slow for many datapo ints.  Fastest for many costs, most readable
+    @staticmethod
+    def is_pareto_efficient_dumb(costs):
+        """
+        Find the pareto-efficient points
+        :param costs: An (n_points, n_costs) array
+        :return: A (n_points, ) boolean array, indicating whether each point is Pareto efficient
+        """
+        is_efficient = np.ones(costs.shape[0], dtype=bool)
+        for i, c in enumerate(costs):
+            is_efficient[i] = np.all(np.any(costs[:i] > c, axis=1)) and np.all(np.any(costs[i + 1:] > c, axis=1))
+        return is_efficient
+
+
+    def pareto_front(self, x_vec, y_vec):
+
+        tuple_vec = np.array([])
+
+        for count_y, y in enumerate(y_vec):
+            tuple_vec = np.append(tuple_vec, (x_vec[count_y], y_vec[count_y]))
+
+        print(f"{tuple_vec = }")
+
+        pareto_tuple_vec = self.is_pareto_efficient_dumb(tuple_vec)
+
+        x_pareto_vec, y_pareto_vec = pareto_tuple_vec
+
+        return x_pareto_vec, y_pareto_vec
+
+
+
+    def filter_reluctance_model_list(self, factor_min_hyst_losses = 1.5):
+
+        # figure out minimum hysteresis losses
+        volume_list = []
+        core_hyst_loss_list = []
+
+        for result in self.valid_design_list:
+            volume_list.append(result["core_2daxi_total_volume"])
+            core_hyst_loss_list.append(result["p_hyst"])
+
+        min_hyst_losses = core_hyst_loss_list[np.argmin(core_hyst_loss_list)]
+
+        hyst_losses_filter = min_hyst_losses * factor_min_hyst_losses
+
+        # figure out pareto front
+        self.pareto_volume_list, self.pareto_core_hyst_list = self.pareto_front(volume_list, core_hyst_loss_list)
+
+
+
+
+
+
+
 
     def integrated_transformer_optimization(self):
         """
@@ -211,13 +292,10 @@ class IntegratedTransformerOptimization:
          * initialize progress reporting features
         """
 
-
         # 1. Extract fundamental frequency from current vectors
         time_extracted, current_extracted_1_vec = ff.time_vec_current_vec_from_time_current_vec(self.i_1_time_current_vec)
         time_extracted, current_extracted_2_vec = ff.time_vec_current_vec_from_time_current_vec(self.i_2_time_current_vec)
         self.fundamental_frequency = 1 / time_extracted[-1]
-
-
 
         # generate list of all parameter combinations
         t2_parameter_sweep = np.array(list(itertools.product(self.t1_window_w, self.t1_window_h_top,
