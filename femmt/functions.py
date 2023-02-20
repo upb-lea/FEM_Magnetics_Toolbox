@@ -1,6 +1,4 @@
 # Python standard libraries
-import numpy.typing as npt
-import numpy as np
 import json
 import random
 import string
@@ -8,20 +6,20 @@ import pkg_resources
 import subprocess
 import sys
 import os
-import pandas as pd
 import time
 import warnings
 from typing import Union, List, Tuple, Dict
-from matplotlib import pyplot as plt
-from femmt.enumerations import ConductorType
 
 # Third parry libraries
 import gmsh
-import scipy
+import pandas as pd
+from matplotlib import pyplot as plt
+import numpy.typing as npt
+import numpy as np
 
 # Local libraries
 from femmt.constants import *
-from femmt.enumerations import *
+from femmt.enumerations import ConductorType
 
 # Needed for femmt_print
 silent = False
@@ -304,8 +302,8 @@ def wire_material_database() -> Dict:
 def cost_material_database() -> Dict:
     """
     Returns costs for core and winding.
-    This is splitted in material and fabrication costs.
-    Both, material and fabrication costs have a euro_per_kilogram and a euro_per_unit (fixcosts) price.
+    This is split in material and fabrication costs.
+    Both, material and fabrication costs have a euro_per_kilogram and a euro_per_unit (fix costs) price.
 
     Source: R. Burkart and J. Kolar 'Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converter'
     2013.
@@ -339,14 +337,14 @@ def cost_material_database() -> Dict:
                                                   ConductorType.RoundLitz.name: 2}
 
     cost_database["winding_material_euro_per_kilogram_for_litz"] = {"sigma_numerator": 15,
-                                                                    "sigma_denumerator": 0.45}
+                                                                    "sigma_denominator": 0.45}
 
     cost_database["gross_margin"] = 0.25
 
 
     return cost_database
 
-def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter: float) -> float:
+def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter: float) -> np.array:
     """
     Calculates the effective inner core diameter without the hole
     Often used in PM-cores
@@ -356,7 +354,7 @@ def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter:
     :param hole_diameter: hole diameter
     :type hole_diameter: float
     :return: effective inner core diameter without hole
-    :rtype: float
+    :rtype: np.array
     """
     area_inner_core_inner_diameterithout_hole = (inner_core_diameter / 2) ** 2 * np.pi
     area_hole = (hole_diameter / 2) ** 2 * np.pi
@@ -368,7 +366,7 @@ def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter:
 def install_pyfemm_if_missing() -> None:
     """
     Windows users only.
-    Installs femm-software pip package in case of running on windows machine
+    Installs femm-software pip package in case of running on Windows machine
 
     :return: None
 
@@ -398,14 +396,14 @@ def inner_points(a, b, input_points):
     :return:
 
     """
-    [min, max] = [None, None]
+    [min_point, max_point] = [None, None]
     output = input_points
     dim = None
     # Find equal dimension
     for i in range(0, 3):
         if a[i] == b[i] and a[i] != 0:
             dim = i
-    if dim == None:
+    if dim is None:
         raise Exception("Given points do not have a common dimension")
     n = 0
     while n < output.shape[0]:
@@ -418,7 +416,7 @@ def inner_points(a, b, input_points):
     if output.shape[0] % 2 == 1:
         raise Exception("Odd number of input points")
     if dim == 2:
-        raise Exception("Not implemented Error: Only 2D is implemeted")
+        raise Exception("Not implemented Error: Only 2D is implemented")
     dim2 = (dim+1) % 2
     if output.shape[0] >= 2:
         argmax = np.argmax(output[:, dim2])
@@ -443,14 +441,14 @@ def min_max_inner_points(a, b, input_points):
 
     """
 
-    [min, max] = [None, None]
+    [min_point, max_point] = [None, None]
     buffer = input_points
     dim = None
     # Find equal dimension
     for i in range(0, 3):
         if a[i] == b[i] and a[i] != 0:
             dim = i
-    if dim == None:
+    if dim is None:
         raise Exception("Given points do not have a common dimension")
     n = 0
     while n < buffer.shape[0]:
@@ -463,21 +461,21 @@ def min_max_inner_points(a, b, input_points):
     if buffer.shape[0] % 2 == 1:
         raise Exception("Odd number of input points")
     if dim == 2:
-        raise Exception("Not implemented Error: Only 2D is implemeted")
+        raise Exception("Not implemented Error: Only 2D is implemented")
     dim2 = (dim+1) % 2
     if buffer.shape[0] >= 2:
         argmax = np.argmax(buffer[:, 1])
-        max = buffer[argmax]
+        max_point = buffer[argmax]
         argmin = np.argmin(buffer[:, 1])
-        min = buffer[argmin]
-    return [min, max]
+        min_point = buffer[argmin]
+    return [min_point, max_point]
     
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-def NbrStrands(n_layers: int) -> int:
+def litz_calculate_number_strands(n_layers: int) -> int:
     """
     Returns the number of strands in a hexagonal litz winding with a
     specified number of layers (n_layers). CAUTION: Zero number of
@@ -493,7 +491,7 @@ def NbrStrands(n_layers: int) -> int:
     return 3 * (n_layers + 1) ** 2 - 3 * (n_layers + 1) + 1
 
 
-def NbrLayers(n_strands: int) -> int:
+def litz_calculate_number_layers(n_strands: int) -> int:
     """
     Returns the number of layers in a hexagonal litz winding with a
     specified number of strands (n_strands).
@@ -510,12 +508,12 @@ def NbrLayers(n_strands: int) -> int:
     return np.sqrt(0.25+(n_strands-1)/3)-0.5
 
 
-def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', mode: str = 'rad',
+def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str = 'no', mode: str = 'rad',
         f0: Union[float, None] = None, title: str = 'ffT', filter_type: str = 'factor',
         filter_value_factor: float = 0.01, filter_value_harmonic: int = 100,
         figure_size: Tuple=None, figure_directory: str=None) -> npt.NDArray[list]:
     """
-    A fft for a input signal. Input signal is in vector format and should include one period.
+    A fft for an input signal. Input signal is in vector format and should include one period.
 
     Output vector includes only frequencies with amplitudes > 1% of input signal
 
@@ -529,7 +527,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
     :type period_vector_t_i: np.array
     :param sample_factor: f_sampling/f_period, defaults to 1000
-    :type sample_factor: float
+    :type sample_factor: int
     :param plot: insert anything else than "no" or 'False' to show a plot to visualize input and output
     :type plot: str
     :param mode: 'rad'[default]: full period is 2*pi, 'deg': full period is 360°, 'time': time domain.
@@ -548,7 +546,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :type filter_value_harmonic: int
     :param figure_directory: full path with file extension
     :type figure_directory: Tuple
-    :param figure_size: None for auto fit; fig_size for matplotlib (width, length)
+    :param figure_size: None for auto-fit; fig_size for matplotlib (width, length)
     :type figure_size: Tuple
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
@@ -570,13 +568,12 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     elif mode == 'deg':
         period_vector_t_i[0] = period_vector_t_i[0] / (360 * f0)
     elif mode != 'time':
-        raise ValueError("Mode not availabe. Choose: 'rad', 'deg', 'time'")
+        raise ValueError("Mode not available. Choose: 'rad', 'deg', 'time'")
 
     t = period_vector_t_i[0]
     i = period_vector_t_i[1]
 
     # fft-function works per default in time domain
-    # time domain
     t_interp = np.linspace(0, t[-1], sample_factor)
     i_interp = np.interp(t_interp, t, i)
 
@@ -710,6 +707,8 @@ def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: 
     :type mode: str
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :type f0: float
+    :param sample_factor: samle factor, defaults to 1000
+    :type sample_factor: float
 
     :return: plot
 
@@ -807,9 +806,9 @@ def get_dict_with_unique_keys(data, *keys):
     :return:
     """
     invalid_index = []
-    for n, dict in enumerate(data):
+    for n, dictionary in enumerate(data):
         for key in keys:
-            if not key in dict:
+            if not key in dictionary:
                 invalid_index.append(n)
                 break
     valid_data = np.delete(data, invalid_index)
@@ -920,180 +919,18 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 
 # Reluctance Model [with calculation]
 
-
-
-
-def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, window_h, stray_path_air_gap_length, mu_r_abs, start_index, position_air_gap_percent_list):
-
-    # core geometry calculations
-
-    middle_leg_top_total_hight = (100 - position_air_gap_percent_list[start_index + 1]) * 0.01 * window_h + air_gap_middle_leg_list[start_index + 1] / 2
-    middle_leg_bot_total_hight = position_air_gap_percent_list[start_index] * 0.01 * window_h + air_gap_middle_leg_list[start_index] / 2
-    tablet_hight = window_h - middle_leg_top_total_hight - middle_leg_bot_total_hight
-
-    start_index_air_gap_top = start_index + 1
-    stop_index_air_gap_top = len(air_gap_middle_leg_list) - 1
-    #start_index_air_gap_bot = 0
-    #stop_index_air_gap_bot = start_index
-
-    air_gap_middle_leg_bot_list = []
-    position_air_gap_percent_bot_list = []
-    for count, air_gap in enumerate(air_gap_middle_leg_list):
-        if count <= start_index:
-            air_gap_middle_leg_bot_list.append(air_gap)
-            position_air_gap_percent_bot_list.append(position_air_gap_percent_list[count])
-
-
-    # air gap geometry calculations
-    air_gap_total_length_top = 0.0
-    air_gap_middle_leg_top_list = []
-    air_gap_middle_leg_top_percent_list = []
-    for count in range(start_index + 1, len(air_gap_middle_leg_list)):
-        #print(f"{air_gap_middle_leg_list[count] = }")
-        air_gap_total_length_top += air_gap_middle_leg_list[count]
-
-    air_gap_total_length_bot = 0.0
-    for count in range(0, start_index + 1):
-        air_gap_total_length_bot += air_gap_middle_leg_list[count]
-    #print(f"{air_gap_total_length_top = }")
-    #print(f"{air_gap_total_length_bot = }")
-
-    # calculate r_top
-    core_round_hight_top = middle_leg_top_total_hight - air_gap_total_length_top
-
-    r_core_round_top = r_core_round(core_inner_diameter, core_round_hight_top, mu_r_abs)
-    #ToDo: radiant calculation core hight is very simplified using core_inner_diameter/2
-    r_core_top_radiant = r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_inner_diameter / 2)
-    r_core_outer_top = r_core_round_top
-    r_core_top = r_core_round_top + r_core_top_radiant + r_core_outer_top
-
-    # calculate r_air_gap_top
-    # sweep trough top air gap list
-    r_air_gap_top = 0
-    for count in range(start_index_air_gap_top, stop_index_air_gap_top+1):
-        # this routine sums up all air gaps inside the middle leg above the stray path
-        # there are three different types of caluclations
-        #  - first air gap is definitely a round_inf structure
-        #  - in cases of last air gap is >95% of window_h, last air gap is treated as round_inf structure
-        #  - other air gaps are treated as round_round structure
-        if count == start_index + 1:
-            # this is for the first air gap, what is definetly a round_inf air gap
-            if start_index_air_gap_top == stop_index_air_gap_top:
-                core_hight = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
-            else:
-                core_hight = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 *window_h / 2
-            r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            #print('### Case 1: first air gap for top')
-            #print(f"{core_hight = }")
-            #print(f"{r_air_gap_top = }")
-
-        elif position_air_gap_percent_list[count] > 95 and count != start_index_air_gap_top:
-            # this is for the last air gap in case of very close to the top core (95%), so there will be the assumption for a round-inf air gap
-            core_hight = (position_air_gap_percent_list[stop_index_air_gap_top] - position_air_gap_percent_list[stop_index_air_gap_top - 1]) * 0.01 * window_h / 2
-            r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            #print('### Case 2: last air gap for top')
-            #print(f"{core_hight = }")
-            #print(f"{r_air_gap_top = }")
-        else:
-            # air gap in the middle between tablet and top air gap
-            if count + 1 < stop_index_air_gap_top:
-                # this is for multiple air gaps in the top-section. Calculation of core hight is only to the next air gap
-                core_hight_upper = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 * window_h
-            else:
-                # this is for the last (upper) air gap in the top-section. Calculation of core_hight is until the end of the window
-                core_hight_upper = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
-            core_hight_lower = (position_air_gap_percent_list[count] - position_air_gap_percent_list[count - 1]) * 0.01 * window_h
-            r_air_gap_top += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
-            #print('### Case 3: middle air gap for top')
-            #print(f"{core_hight_upper = }")
-            #print(f"{core_hight_lower = }")
-            #print(f"{r_air_gap_top = }")
-
-
-    r_top = r_core_top + r_air_gap_top
-
-    # calculate r_bot
-    core_round_hight_bot = middle_leg_bot_total_hight - air_gap_total_length_bot
-
-    r_core_round_bot = r_core_round(core_inner_diameter, core_round_hight_bot, mu_r_abs)
-    #ToDo: radiant calculation core hight is very simplified using core_inner_diameter/2
-    r_core_bot_radiant = r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_inner_diameter / 2)
-    r_core_outer_bot = r_core_round_bot
-    r_core_bot = r_core_round_bot + r_core_bot_radiant + r_core_outer_bot
-
-    #print('##########################################')
-    #print("#### bottom air gap  ####")
-    #print('##########################################')
-
-    # calculate r_air_gap_bot
-    # sweep trough bot air gap list
-    r_air_gap_bot = 0
-    for count, air_gap in enumerate(air_gap_middle_leg_bot_list):
-        #print(f"{air_gap = }")
-        # this routine sums up all air gaps inside the middle leg below the stray path
-        # there are three different types of caluclations
-        #  - last air gap is definitely a round_inf structure
-        #  - in cases of first air gap is <5% of window_h, first air gap is treated as round_inf structure
-        #  - other air gaps are treated as round_round structure
-        if count == position_air_gap_percent_bot_list.index(max(position_air_gap_percent_bot_list)):
-            # this is for the last air gap, what is definetly a round_inf air gap
-            # the check checks not for the last position in the list, but for the real highest percent value
-            if len(position_air_gap_percent_bot_list) == 1:
-                core_hight = (position_air_gap_percent_bot_list[count]) * 0.01 * window_h
-            else:
-                core_hight = (position_air_gap_percent_bot_list[count] - position_air_gap_percent_bot_list[count - 1]) * 0.01 * window_h / 2
-            r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            #print('### Case 1: first air gap for bot')
-            #print(f"{core_hight = }")
-            #print(f"{r_air_gap_bot = }")
-
-        elif position_air_gap_percent_list[count] < 5  and count == 0:
-            # this is for the first air gap in case of very close to the bot core (<5%), so there will be the assumption for a round-inf air gap
-            core_hight = (position_air_gap_percent_list[1] - position_air_gap_percent_list[0]) * 0.01 * window_h / 2
-            r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            #print('### Case 2: last air gap for bot')
-            #print(f"{core_hight = }")
-            #print(f"{r_air_gap_bot = }")
-        else:
-            # this is for multiple air gaps in the bot-section. Calculation of core hight is only to the next air gap
-            if count + 1 < len(position_air_gap_percent_bot_list):
-                core_hight_lower = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
-            else:
-                # this is for the first (lower) air gap in the bot-section. Calculation of core_hight is until the end of the window
-                core_hight_lower = (position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
-
-            core_hight_upper  = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
-            r_air_gap_bot += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
-            #print('### Case 3: middle air gap for bot')
-            #print(f"{core_hight_upper = }")
-            #print(f"{core_hight_lower = }")
-            #print(f"{r_air_gap_bot = }")
-
-    r_bot = r_core_bot + r_air_gap_bot
-
-
-    # calculate r_stray
-    r_stray_air_gap = r_air_gap_tablet_cyl(tablet_hight, stray_path_air_gap_length, core_inner_diameter / 2 + window_w)
-    r_stray_core = r_core_tablet(tablet_hight, core_inner_diameter / 2 + window_w - stray_path_air_gap_length, mu_r_abs, core_inner_diameter)
-    r_stray = r_stray_air_gap + r_stray_core
-
-    return r_top, r_bot, r_stray
-
-
-
-
-def calculate_cylinder_volume(cylinder_diameter: float, cylinder_hight: float):
+def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
     """
     Calculates the volume of an ideal cylinder. This function is uses e.g. to calculate the volume
     of the inner core part.
-    :param cylinder_hight: hight of cylinder
-    :type cylinder_hight: float
+    :param cylinder_height: height of cylinder
+    :type cylinder_height: float
     :param cylinder_diameter: diameter of cylinder
     :type cylinder_diameter: float
     :returns: volume
     :rtype: float
     """
-    return (cylinder_diameter / 2) ** 2 * np.pi * cylinder_hight
+    return (cylinder_diameter / 2) ** 2 * np.pi * cylinder_height
 
 
 
@@ -1161,7 +998,7 @@ def set_silent_status(s: bool) -> None:
 
 def femmt_print(text: str, end:str='\n') -> None:
     """
-    Print-function for femmt. Uses a silent-Flag as global varialbe, to show terminal outputs or not.
+    Print-function for femmt. Uses a silent-Flag as global variable, to show terminal outputs or not.
     Using silent-mode increases speed of simulation significantly.
 
     :param text: text to print
@@ -1191,19 +1028,25 @@ def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     return sigma_core * core_weight
 
 
-def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str], single_strand_cross_section_list: List[float] = []):
+def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str], single_strand_cross_section_list: Union[List[float], None] = None):
     """
     Calculates single winding material and fabrication costs depending on winding-type and weight
+
+    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converters"
 
     :param wire_weight_list: winding weight in kg in list-form
     :type wire_weight_list: List[float]
     :param wire_type_list: winding type. Must fit to enum-names in ConductorType-Enum
     :type wire_type_list: List[str]
-    :param single_strand_cross_section_list: single strand cross section in list-form
+    :param single_strand_cross_section_list: single strand cross-section in list-form
     :type single_strand_cross_section_list: List[float]
     :return: winding cost of single winding
     :rtype: float
     """
+    if single_strand_cross_section_list is None:
+        single_strand_cross_section_list = []
+
+
     cost_database = cost_material_database()
     winding_cost_list = []
 
@@ -1212,7 +1055,7 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
         sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram"][wire_type_list[winding_count]]
         if sigma_material_winding_euro_per_kilogram == -1:
             # case for special litz wire calculation. Additional data is loaded from cost_database.
-            sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_numerator"] / (single_strand_cross_section_list[winding_count] * 1e6 + cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_denumerator"])
+            sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_numerator"] / (single_strand_cross_section_list[winding_count] * 1e6 + cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_denominator"])
 
         winding_material_euro_per_unit = cost_database["winding_material_euro_per_unit"][wire_type_list[winding_count]]
 
@@ -1231,10 +1074,12 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
 
 
 def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str],
-                        single_strand_cross_section_list: List[float] = []) -> float:
+                        single_strand_cross_section_list: Union[None, List[float]] = None) -> float:
     """
-    Calculates the total costs for a inductive element.
+    Calculates the total costs for an inductive element.
     This includes material costs for core and winding, fabrication costs for core and winding and manufacturer margin
+
+    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converters"
 
     :param core_weight: core weight in kg
     :type core_weight: float
@@ -1244,11 +1089,14 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
     :type wire_weight_list: float
     :param wire_type_list: winding type in list-form. Must fit to enum-names in ConductorType-Enum
     :type wire_type_list: List[str]
-    :param single_strand_cross_section_list: single strand cross section in list-form
+    :param single_strand_cross_section_list: single strand cross-section in list-form
     :type single_strand_cross_section_list: List[float]
     :return: total costs for inductive element
     :rtype: float
     """
+    if single_strand_cross_section_list is None:
+        single_strand_cross_section_list = []
+
     cost_database = cost_material_database()
 
     cost_core = cost_function_core(core_weight, core_type)
@@ -1299,7 +1147,7 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
         elif len(keyword_list) == 5:
             data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]][keyword_list[4]]
 
-        if value_min <= data_to_compare and data_to_compare <= value_max:
+        if value_min <= data_to_compare <= value_max:
             print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
 
 

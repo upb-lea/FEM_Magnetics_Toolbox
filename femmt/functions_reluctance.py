@@ -726,3 +726,4 @@ def i_rms(time_current_matrix: np.array) -> float:
 
     # return "mean" and "root" to finalize rms calculation
     return np.sqrt(square_integral_sum / time[-1])
+
