@@ -8,7 +8,7 @@ from typing import Dict, List
 import gmsh
 
 # Local libraries
-import femmt.Functions as ff
+import femmt.functions as ff
 from femmt.Enumerations import ComponentType, ConductorType, WindingType
 from femmt.Data import FileData
 from femmt.Model import Conductor, Core, StrayPath, AirGaps, Insulation

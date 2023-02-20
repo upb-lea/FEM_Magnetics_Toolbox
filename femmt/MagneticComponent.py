@@ -19,7 +19,7 @@ from onelab import onelab
 import materialdatabase as mdb
 
 # Local libraries
-import femmt.Functions as ff
+import femmt.functions as ff
 from femmt.constants import *
 from femmt.Mesh import Mesh
 from femmt.Model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
@@ -27,6 +27,7 @@ from femmt.Enumerations import *
 from femmt.Data import FileData, MeshData, AnalyticalCoreData
 from femmt.TwoDaxiSymmetric import TwoDaxiSymmetric
 from femmt.thermal import thermal_simulation
+import femmt.functions_reluctance as fr
 
 class MagneticComponent:
     """
@@ -548,18 +549,18 @@ class MagneticComponent:
                             #       self.component.stray_path.width)
 
                             def r_sct(length):
-                                return ff.r_round_inf(l=length,
+                                return fr.r_round_inf(l=length,
                                                    r=self.component.core.core_w / 2,
-                                                   sigma=ff.sigma(l=length,
+                                                   sigma=fr.sigma(l=length,
                                                                w=self.component.core.core_w / 2,
-                                                               R_equivalent=ff.r_basis(l=length,
+                                                               R_equivalent=fr.r_basis(l=length,
                                                                                     w=self.component.core.core_w,
                                                                                     h=h_basis))
                                                    ) - R_0
 
                             if self.visualize_airgaps:
                                 def r_sct_ideal(length):
-                                    return ff.r_round_inf(l=length,
+                                    return fr.r_round_inf(l=length,
                                                        r=self.component.core.core_w / 2,
                                                        sigma=1
                                                        ) - R_0
@@ -571,10 +572,10 @@ class MagneticComponent:
 
                         if self.air_gap_types[n_reluctance][n_distributed] == "cyl-cyl":
                             def r_sct(length):
-                                return ff.r_cyl_cyl(l=length,
-                                                 sigma=ff.sigma(l=length,
+                                return fr.r_cyl_cyl(l=length,
+                                                 sigma=fr.sigma(l=length,
                                                              w=self.component.stray_path.width,
-                                                             R_equivalent=ff.r_basis(l=length,
+                                                             R_equivalent=fr.r_basis(l=length,
                                                                                   w=self.component.stray_path.width,
                                                                                   h=self.component.core.window_w
                                                                                     - length) / 2),
@@ -583,10 +584,10 @@ class MagneticComponent:
                                                  ) - R_0
 
                             def r_sct_real(length):
-                                return ff.r_cyl_cyl_real(l=length,
-                                                      sigma=ff.sigma(l=length,
+                                return fr.r_cyl_cyl_real(l=length,
+                                                      sigma=fr.sigma(l=length,
                                                                   w=self.component.stray_path.width,
-                                                                  R_equivalent=ff.r_basis(l=length,
+                                                                  R_equivalent=fr.r_basis(l=length,
                                                                                        w=self.component.stray_path.width,
                                                                                        h=self.component.core.window_w
                                                                                          - length) / 2),
@@ -1006,7 +1007,7 @@ class MagneticComponent:
                 if self.N.shape == (2, 2) and self.component.component_type == ComponentType.IntegratedTransformer:
 
                     # Calculate goal reluctance matrix
-                    R_matrix = ff.calculate_reluctance_matrix(winding_matrix=self.N, inductance_matrix=self.L_goal)
+                    R_matrix = fr.calculate_reluctance_matrix(winding_matrix=self.N, inductance_matrix=self.L_goal)
 
                     # R_goal = [R_top, R_bot, R_stray]
                     R_goal = [R_matrix[0, 0] + R_matrix[0, 1], R_matrix[1, 1] + R_matrix[0, 1], -R_matrix[0, 1]]

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import List, Tuple, Optional, Union
 
 # Local libraries
-import femmt.Functions as ff
+import femmt.functions as ff
 from femmt.Enumerations import *
 from femmt.constants import *
 import materialdatabase as mdb

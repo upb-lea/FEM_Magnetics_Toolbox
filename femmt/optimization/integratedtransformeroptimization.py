@@ -3,6 +3,7 @@ import inspect
 import os
 import json
 import itertools
+import shutil
 
 # 3rd party library import
 import numpy as np
@@ -10,7 +11,8 @@ import materialdatabase as mdb
 from scipy import optimize
 
 # femmt import
-import femmt.Functions as ff
+import femmt.functions as ff
+import femmt.functions_reluctance as fr
 import femmt.optimization.functions_optimization as fof
 
 class IntegratedTransformerOptimization:
@@ -21,6 +23,17 @@ class IntegratedTransformerOptimization:
         # Variable to set silent mode
         ff.set_silent_status(silent)
 
+        self.set_up_folder_structure(working_directory)
+
+
+
+        self.material_db = mdb.MaterialDatabase(is_silent=silent)
+
+        ff.femmt_print(f"\n"
+              f"Start optimization \n"
+              f"--- --- --- ---")
+
+    def set_up_folder_structure(self, working_directory):
         if working_directory is None:
             caller_filename = inspect.stack()[1].filename
             working_directory = os.path.join(os.path.dirname(caller_filename), "integrated_transformer_optimization")
@@ -39,11 +52,7 @@ class IntegratedTransformerOptimization:
 
         self.create_folders(self.optimization_working_directory, self.integrated_transformer_reluctance_model_results_directory, self.integrated_transformer_fem_simulations_results_directory, self.femmt_working_directory)
 
-        self.material_db = mdb.MaterialDatabase(is_silent=silent)
 
-        ff.femmt_print(f"\n"
-              f"Start optimization \n"
-              f"--- --- --- ---")
 
     @staticmethod
     def create_folders(*args) -> None:
@@ -107,7 +116,7 @@ class IntegratedTransformerOptimization:
         self.factor_max_flux_density = input_parameters_dict["factor_max_flux_density"]
 
 
-    def save_reluctane_model_result_list(self):
+    def save_reluctance_model_result_list(self):
 
         # save optimization input parameters
         with open(self.integrated_transformer_optimization_input_parameters_file, "w+", encoding='utf-8') as outfile:
@@ -212,6 +221,10 @@ class IntegratedTransformerOptimization:
         fof.plot_2d(self.pareto_volume_list, self.pareto_core_hyst_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
 
 
+    def plot_filtered_pareto_result_list(self):
+        fof.plot_2d(self.filter_volume_list, self.filter_core_hyst_loss_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
+
+
     # Very slow for many datapo ints.  Fastest for many costs, most readable
     @staticmethod
     def is_pareto_efficient_dumb(costs):
@@ -226,24 +239,64 @@ class IntegratedTransformerOptimization:
         return is_efficient
 
 
+
+    @staticmethod
+    # Faster than is_pareto_efficient_simple, but less readable.
+    def is_pareto_efficient(costs, return_mask=True):
+        """
+        Find the pareto-efficient points
+        :param costs: An (n_points, n_costs) array
+        :param return_mask: True to return a mask
+        :return: An array of indices of pareto-efficient points.
+            If return_mask is True, this will be an (n_points, ) boolean array
+            Otherwise it will be a (n_efficient_points, ) integer array of indices.
+        """
+        is_efficient = np.arange(costs.shape[0])
+        n_points = costs.shape[0]
+        next_point_index = 0  # Next index in the is_efficient array to search for
+        while next_point_index < len(costs):
+            nondominated_point_mask = np.any(costs < costs[next_point_index], axis=1)
+            nondominated_point_mask[next_point_index] = True
+            is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
+            costs = costs[nondominated_point_mask]
+            next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
+        if return_mask:
+            is_efficient_mask = np.zeros(n_points, dtype=bool)
+            is_efficient_mask[is_efficient] = True
+            return is_efficient_mask
+        else:
+            return is_efficient
+
     def pareto_front(self, x_vec, y_vec):
 
-        tuple_vec = np.array([])
+
+        print(f"{len(x_vec) = }")
+        tuple_vec = []
 
         for count_y, y in enumerate(y_vec):
-            tuple_vec = np.append(tuple_vec, (x_vec[count_y], y_vec[count_y]))
+            tuple_vec.append((x_vec[count_y], y_vec[count_y]))
+
+        tuple_vec = np.array(tuple_vec)
 
         print(f"{tuple_vec = }")
 
-        pareto_tuple_vec = self.is_pareto_efficient_dumb(tuple_vec)
+        pareto_tuple_mask_vec = self.is_pareto_efficient(tuple_vec)
 
-        x_pareto_vec, y_pareto_vec = pareto_tuple_vec
+        x_pareto_vec = []
+        y_pareto_vec = []
 
-        return x_pareto_vec, y_pareto_vec
+        for count_mask, mask in enumerate(pareto_tuple_mask_vec):
+            if mask:
+                x_pareto_vec.append(x_vec[count_mask])
+                y_pareto_vec.append(y_vec[count_mask])
+
+        print(f"{len(x_pareto_vec) = }")
+
+        return np.array(x_pareto_vec), np.array(y_pareto_vec)
 
 
 
-    def filter_reluctance_model_list(self, factor_min_hyst_losses = 1.5):
+    def filter_reluctance_model_list(self, factor_min_hyst_losses = 1.2):
 
         # figure out minimum hysteresis losses
         volume_list = []
@@ -255,17 +308,27 @@ class IntegratedTransformerOptimization:
 
         min_hyst_losses = core_hyst_loss_list[np.argmin(core_hyst_loss_list)]
 
-        hyst_losses_filter = min_hyst_losses * factor_min_hyst_losses
-
         # figure out pareto front
         self.pareto_volume_list, self.pareto_core_hyst_list = self.pareto_front(volume_list, core_hyst_loss_list)
 
+        # set new limit for filter tool
+        reference_volume = self.pareto_volume_list
+
+        print(f"{self.pareto_volume_list = }")
+        print(f"{self.pareto_core_hyst_list = }")
 
 
+        reference_losses = self.pareto_core_hyst_list + (factor_min_hyst_losses - 1) * min_hyst_losses
 
+        print(f"{reference_losses = }")
 
-
-
+        self.filter_volume_list = []
+        self.filter_core_hyst_loss_list = []
+        for count, volume in enumerate(volume_list):
+            reference_index = np.where(volume == reference_volume)[0]
+            if [core_hyst_loss_list[count]] < reference_losses[reference_index]:
+                self.filter_volume_list.append(volume_list[count])
+                self.filter_core_hyst_loss_list.append(core_hyst_loss_list[count])
 
     def integrated_transformer_optimization(self):
         """
@@ -292,9 +355,14 @@ class IntegratedTransformerOptimization:
          * initialize progress reporting features
         """
 
+        # 0. Empty folder
+        if os.path.exists(self.optimization_working_directory):
+            shutil.rmtree(self.optimization_working_directory)
+            self.set_up_folder_structure(self.optimization_working_directory)
+
         # 1. Extract fundamental frequency from current vectors
-        time_extracted, current_extracted_1_vec = ff.time_vec_current_vec_from_time_current_vec(self.i_1_time_current_vec)
-        time_extracted, current_extracted_2_vec = ff.time_vec_current_vec_from_time_current_vec(self.i_2_time_current_vec)
+        time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(self.i_1_time_current_vec)
+        time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(self.i_2_time_current_vec)
         self.fundamental_frequency = 1 / time_extracted[-1]
 
         # generate list of all parameter combinations
@@ -370,7 +438,7 @@ class IntegratedTransformerOptimization:
                 n_s_top = t1d_core_geometry_material[6]
                 n_s_bot = t1d_core_geometry_material[7]
 
-                core_top_bot_hight = core_inner_diameter / 4
+                core_top_bot_height = core_inner_diameter / 4
                 core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
 
                 # generate winding matrix
@@ -384,14 +452,13 @@ class IntegratedTransformerOptimization:
 
                 if np.linalg.det(t2_reluctance_matrix) != 0 and np.linalg.det(np.transpose(t2_winding_matrix)) != 0 and np.linalg.det(t2_inductance_matrix) != 0:
                     # calculate the flux
-                    flux_top_vec, flux_bot_vec, flux_stray_vec = ff.flux_vec_from_current_vec(current_extracted_1_vec,
+                    flux_top_vec, flux_bot_vec, flux_stray_vec = fr.flux_vec_from_current_vec(current_extracted_1_vec,
                                                                                               current_extracted_2_vec,
                                                                                               t2_winding_matrix,
-                                                                                              t2_inductance_matrix,
-                                                                                              visualize=False)
+                                                                                              t2_inductance_matrix)
 
                     # calculate maximum values
-                    flux_top_max, flux_bot_max, flux_stray_max = ff.max_flux_from_flux_vec(flux_top_vec, flux_bot_vec,
+                    flux_top_max, flux_bot_max, flux_stray_max = fr.max_flux_from_flux_vec(flux_top_vec, flux_bot_vec,
                                                                                            flux_stray_vec)
 
                     flux_density_top_max = flux_top_max / core_cross_section
@@ -401,18 +468,18 @@ class IntegratedTransformerOptimization:
                     if (flux_density_top_max < dimensioning_max_flux_density) and (flux_density_bot_max < dimensioning_max_flux_density) and (flux_density_middle_max < dimensioning_max_flux_density):
 
                         # calculate target values for r_top and r_bot out of reluctance matrix
-                        r_core_middle_cylinder_radial = ff.r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_top_bot_hight)
+                        r_core_middle_cylinder_radial = fr.r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_top_bot_height)
 
                         r_middle_target = -t2_reluctance_matrix[0][1]
                         r_top_target = t2_reluctance_matrix[0][0] - r_middle_target
                         r_bot_target = t2_reluctance_matrix[1][1] - r_middle_target
 
                         # calculate the core reluctance of top and bottom and middle part
-                        r_core_top_cylinder_inner = ff.r_core_round(core_inner_diameter, window_h_top, mu_r_abs)
+                        r_core_top_cylinder_inner = fr.r_core_round(core_inner_diameter, window_h_top, mu_r_abs)
                         r_core_top = 2 * r_core_top_cylinder_inner + r_core_middle_cylinder_radial
                         r_air_gap_top_target = r_top_target - r_core_top
 
-                        r_core_bot_cylinder_inner = ff.r_core_round(core_inner_diameter, window_h_bot, mu_r_abs)
+                        r_core_bot_cylinder_inner = fr.r_core_round(core_inner_diameter, window_h_bot, mu_r_abs)
                         r_core_bot = 2 * r_core_bot_cylinder_inner + r_core_middle_cylinder_radial
                         r_air_gap_bot_target = r_bot_target - r_core_bot
 
@@ -422,19 +489,19 @@ class IntegratedTransformerOptimization:
                         minimum_air_gap_length = 0
                         maximum_air_gap_length = 1e-3
 
-                        l_top_air_gap = optimize.brentq(ff.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_top, r_air_gap_top_target))
-                        l_bot_air_gap = optimize.brentq(ff.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_bot / 2, window_h_bot / 2, r_air_gap_bot_target))
-                        l_middle_air_gap = optimize.brentq(ff.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, core_inner_diameter / 4, window_w, r_air_gap_middle_target))
+                        l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_top, r_air_gap_top_target))
+                        l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_bot / 2, window_h_bot / 2, r_air_gap_bot_target))
+                        l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, core_inner_diameter / 4, window_w, r_air_gap_middle_target))
 
 
                         if l_bot_air_gap > 0 and l_bot_air_gap > 0 and l_middle_air_gap > 0:
-                            p_hyst_top = ff.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_top, window_w, mu_r_abs, flux_top_max, self.fundamental_frequency, material_flux_density_vec, material_mu_r_imag_vec)
+                            p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_top, window_w, mu_r_abs, flux_top_max, self.fundamental_frequency, material_flux_density_vec, material_mu_r_imag_vec)
 
-                            p_hyst_middle = ff.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux_stray_max, core_inner_diameter/4,
+                            p_hyst_middle = fr.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux_stray_max, core_inner_diameter/4,
                                                                                         core_inner_diameter/2, core_inner_diameter/2 + window_w, self.fundamental_frequency,
                                                                                         mu_r_abs, material_flux_density_vec, material_mu_r_imag_vec)
 
-                            p_hyst_bot = ff.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_bot, window_w,
+                            p_hyst_bot = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_bot, window_w,
                                                                             mu_r_abs, flux_bot_max,
                                                                             self.fundamental_frequency,
                                                                             material_flux_density_vec,
@@ -442,7 +509,7 @@ class IntegratedTransformerOptimization:
 
                             p_hyst = p_hyst_top + p_hyst_bot + p_hyst_middle
 
-                            core_2daxi_total_volume = ff.calculate_core_2daxi_total_volume(core_inner_diameter, (window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
+                            core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(core_inner_diameter, (window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
 
 
                             valid_design_dict = {
