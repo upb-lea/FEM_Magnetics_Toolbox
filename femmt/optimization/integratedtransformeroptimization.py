@@ -4,6 +4,8 @@ import os
 import json
 import itertools
 import shutil
+from dataclasses import dataclass
+from typing import List
 
 # 3rd party library import
 import numpy as np
@@ -14,6 +16,56 @@ from scipy import optimize
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import femmt.optimization.functions_optimization as fof
+from femmt.optimization.integrated_transformer_dtos import *
+
+
+
+def config_file_dto_to_dict(config_file_dto: InputConfig):
+
+    config_file_dict = {
+        "l_s_target": config_file_dto.l_s_target,
+        "l_h_target": config_file_dto.l_h_target,
+        "n_target": config_file_dto.n_target,
+        "time_current_1_vec": config_file_dto.time_current_1_vec.tolist(),
+        "time_current_2_vec": config_file_dto.time_current_2_vec.tolist(),
+        "material_list": config_file_dto.material_list,
+        "core_inner_diameter_min_max_count_list": config_file_dto.core_inner_diameter_min_max_count_list,
+        "window_w_min_max_count_list": config_file_dto.window_w_min_max_count_list,
+        "window_h_top_min_max_count_list": config_file_dto.window_h_top_min_max_count_list,
+        "window_h_bot_min_max_count_list": config_file_dto.window_h_bot_min_max_count_list,
+        "factor_max_flux_density": config_file_dto.factor_max_flux_density,
+        "n_p_top_min_max_list": config_file_dto.n_p_top_min_max_list,
+        "n_p_bot_min_max_list": config_file_dto.n_p_bot_min_max_list,
+        "n_s_top_min_max_list": config_file_dto.n_s_top_min_max_list,
+        "n_s_bot_min_max_list": config_file_dto.n_s_bot_min_max_list
+    }
+    return config_file_dict
+
+
+
+
+
+
+def result_file_dto_to_dict(reluctance_model_result_dto):
+    result_file_dict = {
+        "air_gap_top": reluctance_model_result_dto.air_gap_top,
+        "air_gap_bot": reluctance_model_result_dto.air_gap_bot,
+        "n_p_top": reluctance_model_result_dto.n_p_top,
+        "n_p_bot": reluctance_model_result_dto.n_p_bot,
+        "n_s_top": reluctance_model_result_dto.n_s_top,
+        "n_s_bot": reluctance_model_result_dto.n_s_bot,
+        "window_h_top": reluctance_model_result_dto.window_h_top,
+        "window_h_bot": reluctance_model_result_dto.window_h_bot,
+        "window_w": reluctance_model_result_dto.window_w,
+        "mu_r_abs": reluctance_model_result_dto.mu_r_abs,
+        "core_inner_diameter": reluctance_model_result_dto.core_inner_diameter,
+        "flux_top_max": reluctance_model_result_dto.flux_top_max,
+        "flux_bot_max": reluctance_model_result_dto.flux_bot_max,
+        "flux_stray_max": reluctance_model_result_dto.flux_stray_max,
+        "p_hyst": reluctance_model_result_dto.p_hyst,
+        "core_2daxi_total_volume": reluctance_model_result_dto.core_2daxi_total_volume,
+    }
+    return result_file_dict
 
 class IntegratedTransformerOptimization:
 
@@ -24,9 +76,6 @@ class IntegratedTransformerOptimization:
         ff.set_silent_status(silent)
 
         self.set_up_folder_structure(working_directory)
-
-
-
         self.material_db = mdb.MaterialDatabase(is_silent=silent)
 
         ff.femmt_print(f"\n"
@@ -62,69 +111,56 @@ class IntegratedTransformerOptimization:
             if not os.path.exists(folder):
                 os.mkdir(folder)
 
-    def set_optimization_input_parameters(self, n_p_top_min_max_list, n_p_bot_min_max_list, n_s_top_min_max_list, n_s_bot_min_max_list,
-                                          window_h_top_min_max_count_list, window_h_bot_min_max_count_list,
-                                          window_w_min_max_count_list, material_list, core_inner_diameter_min_max_count_list,
-                                          l_s_target_value, l_h_target_value, n_target_value, i_1_time_current_vec, i_2_time_current_vec, factor_max_flux_density):
+    @staticmethod
+    def calculate_sweep_tensors(input_parameters_dto: InputConfig):
 
-        self.optimization_input_parameters = {
-            "n_p_top_min_max_list": n_p_top_min_max_list,
-            "n_p_bot_min_max_list": n_p_bot_min_max_list,
-            "n_s_top_min_max_list": n_s_top_min_max_list,
-            "n_s_bot_min_max_list": n_s_bot_min_max_list,
-            "window_h_top_min_max_count_list": window_h_top_min_max_count_list,
-            "window_h_bot_min_max_count_list": window_h_bot_min_max_count_list,
-            "window_w_min_max_count_list": window_w_min_max_count_list,
-            "material_list": material_list,
-            "core_inner_diameter_min_max_count_list": core_inner_diameter_min_max_count_list,
-            "l_s_target_value": l_s_target_value,
-            "l_h_target_value": l_h_target_value,
-            "n_target_value": n_target_value,
-            "i_1_time_current_vec": i_1_time_current_vec,
-            "i_2_time_current_vec": i_2_time_current_vec,
-            "factor_max_flux_density": factor_max_flux_density,
+        sweep_tensor = SweepTensor(
+            # tensors: windings
+            t1_n_p_top = np.arange(input_parameters_dto.n_p_top_min_max_list[0], input_parameters_dto.n_p_top_min_max_list[1] + 1),
+            t1_n_p_bot = np.arange(input_parameters_dto.n_p_bot_min_max_list[0], input_parameters_dto.n_p_bot_min_max_list[1] + 1),
+            t1_n_s_top = np.arange(input_parameters_dto.n_s_top_min_max_list[0], input_parameters_dto.n_s_top_min_max_list[1] + 1),
+            t1_n_s_bot = np.arange(input_parameters_dto.n_s_bot_min_max_list[0], input_parameters_dto.n_s_bot_min_max_list[1] + 1),
 
-        }
-        self.calculate_sweep_tensors(self.optimization_input_parameters)
-
-    def calculate_sweep_tensors(self, input_parameters_dict):
-        # tensors: windings
-        self.t1_n_p_top = np.arange(input_parameters_dict["n_p_top_min_max_list"][0], input_parameters_dict["n_p_top_min_max_list"][1] + 1)
-        self.t1_n_p_bot = np.arange(input_parameters_dict["n_p_bot_min_max_list"][0], input_parameters_dict["n_p_bot_min_max_list"][1] + 1)
-        self.t1_n_s_top = np.arange(input_parameters_dict["n_s_top_min_max_list"][0], input_parameters_dict["n_s_top_min_max_list"][1] + 1)
-        self.t1_n_s_bot = np.arange(input_parameters_dict["n_s_bot_min_max_list"][0], input_parameters_dict["n_s_bot_min_max_list"][1] + 1)
-
-        # tensors: outer core geometry and material
-        self.t1_window_h_top = np.linspace(input_parameters_dict["window_h_top_min_max_count_list"][0], input_parameters_dict["window_h_top_min_max_count_list"][1],
-                                           input_parameters_dict["window_h_top_min_max_count_list"][2])
-        self.t1_window_h_bot = np.linspace(input_parameters_dict["window_h_bot_min_max_count_list"][0], input_parameters_dict["window_h_bot_min_max_count_list"][1],
-                                           input_parameters_dict["window_h_bot_min_max_count_list"][2])
-        self.t1_window_w = np.linspace(input_parameters_dict["window_w_min_max_count_list"][0], input_parameters_dict["window_w_min_max_count_list"][1],
-                                       input_parameters_dict["window_w_min_max_count_list"][2])
-        self.t1_core_material = input_parameters_dict["material_list"]
-        self.t1_core_inner_diameter = np.linspace(input_parameters_dict["core_inner_diameter_min_max_count_list"][0],
-                                                  input_parameters_dict["core_inner_diameter_min_max_count_list"][1],
-                                                  input_parameters_dict["core_inner_diameter_min_max_count_list"][2])
+            # tensors: outer core geometry and material
+            t1_window_h_top = np.linspace(input_parameters_dto.window_h_top_min_max_count_list[0], input_parameters_dto.window_h_top_min_max_count_list[1],
+                                          input_parameters_dto.window_h_top_min_max_count_list[2]),
+            t1_window_h_bot = np.linspace(input_parameters_dto.window_h_bot_min_max_count_list[0], input_parameters_dto.window_h_bot_min_max_count_list[1],
+                                          input_parameters_dto.window_h_bot_min_max_count_list[2]),
+            t1_window_w = np.linspace(input_parameters_dto.window_w_min_max_count_list[0], input_parameters_dto.window_w_min_max_count_list[1],
+                                      input_parameters_dto.window_w_min_max_count_list[2]),
+            t1_core_material = input_parameters_dto.material_list,
+            t1_core_inner_diameter = np.linspace(input_parameters_dto.core_inner_diameter_min_max_count_list[0],
+                                                 input_parameters_dto.core_inner_diameter_min_max_count_list[1],
+                                                 input_parameters_dto.core_inner_diameter_min_max_count_list[2]),
 
 
-        self.i_1_time_current_vec = input_parameters_dict["i_1_time_current_vec"]
-        self.i_2_time_current_vec = input_parameters_dict["i_2_time_current_vec"]
+            time_current_1_vec = input_parameters_dto.time_current_1_vec,
+            time_current_2_vec = input_parameters_dto.time_current_2_vec,
 
-        self.l_s_target_value = input_parameters_dict["l_s_target_value"]
-        self.l_h_target_value = input_parameters_dict["l_h_target_value"]
-        self.n_target_value = input_parameters_dict["n_target_value"]
-        self.factor_max_flux_density = input_parameters_dict["factor_max_flux_density"]
+            l_s_target_value = input_parameters_dto.l_s_target,
+            l_h_target_value = input_parameters_dto.l_h_target,
+            n_target_value = input_parameters_dto.n_target,
+            factor_max_flux_density = input_parameters_dto.factor_max_flux_density
+        )
+        return sweep_tensor
 
 
-    def save_reluctance_model_result_list(self):
 
+
+
+    def save_reluctance_model_result_list(self, config_file: InputConfig, result_file_list: List[ResultFile]):
         # save optimization input parameters
+        config_dict = config_file_dto_to_dict(config_file)
+
+        print(config_dict)
+
         with open(self.integrated_transformer_optimization_input_parameters_file, "w+", encoding='utf-8') as outfile:
-            json.dump(self.optimization_input_parameters, outfile, indent=2, ensure_ascii=False)
+            json.dump(config_dict, outfile, indent=2, ensure_ascii=False)
 
         # save reluctance parameters winning candidates
-        for count, reluctance_model_result_dict in enumerate(self.valid_design_list):
+        for count, reluctance_model_result_dto in enumerate(result_file_list):
             file_name = os.path.join(self.integrated_transformer_reluctance_model_results_directory, f"valid_reluctance_design_{count}.json")
+            reluctance_model_result_dict = result_file_dto_to_dict(reluctance_model_result_dto)
             with open(file_name, "w+", encoding='utf-8') as outfile:
                 json.dump(reluctance_model_result_dict, outfile, indent=2, ensure_ascii=False)
 
@@ -330,49 +366,32 @@ class IntegratedTransformerOptimization:
                 self.filter_volume_list.append(volume_list[count])
                 self.filter_core_hyst_loss_list.append(core_hyst_loss_list[count])
 
-    def integrated_transformer_optimization(self):
-        """
-        Optimization routine to optimize the integrated transformer
+    def integrated_transformer_optimization(self, config_file: InputConfig):
 
-        Pre-Steps:
-         * PS1: Extract fundamental frequency from current vectors
-         * PS2:
-
-        Outer Core-Material loop
-         *
-
-        Main-Loop Steps:
-         * MS1:
-         * MS2:
-
-
-        """
-
-        """
-        Pre steps to initialize the simulation
-         * extract fundamental frequency from current vectors
-         * calculate all combinations to sweep
-         * initialize progress reporting features
-        """
 
         # 0. Empty folder
         if os.path.exists(self.optimization_working_directory):
             shutil.rmtree(self.optimization_working_directory)
             self.set_up_folder_structure(self.optimization_working_directory)
 
+
+        sweep_dto = self.calculate_sweep_tensors(config_file)
+
+
+
         # 1. Extract fundamental frequency from current vectors
-        time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(self.i_1_time_current_vec)
-        time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(self.i_2_time_current_vec)
+        time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(sweep_dto.time_current_1_vec)
+        time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(sweep_dto.time_current_2_vec)
         self.fundamental_frequency = 1 / time_extracted[-1]
 
         # generate list of all parameter combinations
-        t2_parameter_sweep = np.array(list(itertools.product(self.t1_window_w, self.t1_window_h_top,
-                                                             self.t1_window_h_bot, self.t1_core_inner_diameter,
-                                                             self.t1_n_p_top, self.t1_n_p_bot, self.t1_n_s_top,
-                                                             self.t1_n_s_bot)))
+        t2_parameter_sweep = np.array(list(itertools.product(sweep_dto.t1_window_w, sweep_dto.t1_window_h_top,
+                                                             sweep_dto.t1_window_h_bot, sweep_dto.t1_core_inner_diameter,
+                                                             sweep_dto.t1_n_p_top, sweep_dto.t1_n_p_bot, sweep_dto.t1_n_s_top,
+                                                             sweep_dto.t1_n_s_bot)))
 
         # report simulation progress
-        number_of_simulations = len(t2_parameter_sweep) * len(self.t1_core_material)
+        number_of_simulations = len(t2_parameter_sweep) * len(sweep_dto.t1_core_material)
         ff.femmt_print(f"Simulation count: {number_of_simulations}")
         simulations_per_percent = int(number_of_simulations / 99)
         ff.femmt_print(f"{simulations_per_percent = }")
@@ -382,11 +401,11 @@ class IntegratedTransformerOptimization:
 
         # initialize parameters staying same form simulation
         t2_inductance_matrix = [
-            [self.l_s_target_value + self.l_h_target_value, self.l_h_target_value / self.n_target_value],
-            [self.l_h_target_value / self.n_target_value, self.l_h_target_value / (self.n_target_value ** 2)]]
+            [sweep_dto.l_s_target_value + sweep_dto.l_h_target_value, sweep_dto.l_h_target_value / sweep_dto.n_target_value],
+            [sweep_dto.l_h_target_value / sweep_dto.n_target_value, sweep_dto.l_h_target_value / (sweep_dto.n_target_value ** 2)]]
 
 
-        for count_core_material, material_name in enumerate(self.t1_core_material):
+        for count_core_material, material_name in enumerate(sweep_dto.t1_core_material):
             """
             outer core material loop loads material properties from material database
              * mu_r_abs
@@ -398,7 +417,7 @@ class IntegratedTransformerOptimization:
             mu_r_abs = self.material_db.get_material_property(material_name=material_name, property="initial_permeability")
 
             saturation_flux_density = self.material_db.get_saturation_flux_density(material_name=material_name)
-            dimensioning_max_flux_density = saturation_flux_density * self.factor_max_flux_density
+            dimensioning_max_flux_density = saturation_flux_density * sweep_dto.factor_max_flux_density
 
             print(f"{saturation_flux_density = }")
             print(f"{dimensioning_max_flux_density = }")
@@ -511,29 +530,31 @@ class IntegratedTransformerOptimization:
 
                             core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(core_inner_diameter, (window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
 
+                            valid_design_dict = ResultFile(
+                                air_gap_top= l_top_air_gap,
+                                air_gap_bot= l_bot_air_gap,
+                                n_p_top= n_p_top,
+                                n_p_bot= n_p_bot,
+                                n_s_top= n_s_top,
+                                n_s_bot= n_s_bot,
+                                window_h_top= window_h_top,
+                                window_h_bot= window_h_bot,
+                                window_w= window_w,
+                                mu_r_abs= mu_r_abs,
+                                core_inner_diameter= core_inner_diameter,
+                                flux_top_max= flux_top_max,
+                                flux_bot_max= flux_bot_max,
+                                flux_stray_max= flux_stray_max,
+                                p_hyst= p_hyst,
+                                core_2daxi_total_volume= core_2daxi_total_volume,
+                            )
 
-                            valid_design_dict = {
-                                'air_gap_top': l_top_air_gap,
-                                'air_gap_bot': l_bot_air_gap,
-                                'n_p_top': n_p_top,
-                                'n_p_bot': n_p_bot,
-                                'n_s_top': n_s_top,
-                                'n_s_bot': n_s_bot,
-                                'window_h_top': window_h_top,
-                                'window_h_bot': window_h_bot,
-                                'window_w': window_w,
-                                'mu_r_abs': mu_r_abs,
-                                'core_inner_diameter': core_inner_diameter,
-                                'flux_top_max': flux_top_max,
-                                'flux_bot_max': flux_bot_max,
-                                'flux_stray_max': flux_stray_max,
-                                'p_hyst': p_hyst,
-                                'core_2daxi_total_volume': core_2daxi_total_volume,
-                            }
+
 
                             # Add dict to list of valid designs
                             self.valid_design_list.append(valid_design_dict)
 
         print(f"Number of valid designs: {len(self.valid_design_list)}")
+        return self.valid_design_list
 
 
