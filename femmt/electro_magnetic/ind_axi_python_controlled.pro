@@ -3,8 +3,6 @@
 // ----------------------
 Include "Parameter.pro";
 Include "postquantities.pro";
-Include "BH.pro";
-//Include "mu_imag.pro";
 Include "core_materials_temp.pro";
 ExtGmsh = ".pos";
 
