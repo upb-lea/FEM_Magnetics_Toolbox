@@ -364,7 +364,7 @@ class Core:
         # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
         ff.femmt_print(f"{self.permeability['datasource'] = }")
-        self.material_database.permeability_data_to_pro_file(T=self.temperature, f=frequency,
+        self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
                                                              datasource=self.permeability["datasource"],
                                                              datatype=self.permeability["datatype"],
