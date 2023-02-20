@@ -69,10 +69,10 @@ example_results_folder = os.path.join(os.path.dirname(__file__), "example_result
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-#component = "inductor"
+component = "inductor"
 #component = "transformer-interleaved"
 #component = "transformer"
-component = "integrated_transformer"
+#component = "integrated_transformer"
 # component = "load_from_file"
 
 # Create Object
@@ -208,7 +208,7 @@ if component == "transformer":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    mu_rel=3100, phi_mu_deg=12,
+                    mu_r_abs=3100, phi_mu_deg=12,
                     sigma=1.2, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
@@ -253,7 +253,7 @@ if component == "integrated_transformer":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.03, window_w=0.011, core_inner_diameter=0.02,
-                    mu_rel=3100, phi_mu_deg=12,
+                    mu_r_abs=3100, phi_mu_deg=12,
                     sigma=0.6, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 

@@ -71,7 +71,7 @@
       "window_h": 0.0295,
       "material": "N95",
       "loss_approach": "LossAngle",
-      "mu_rel": 3000,
+      "mu_r_abs": 3000,
       "phi_mu_deg": null,
       "sigma": 0.16666666666666666,
       "non_linear": false,

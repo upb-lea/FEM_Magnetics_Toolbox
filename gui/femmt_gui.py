@@ -2934,7 +2934,7 @@ class MainWindow(QMainWindow):
             core = fmt.Core(window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                             core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
-                            mu_rel=3100, phi_mu_deg=12,sigma=0.6)
+                            mu_r_abs=3100, phi_mu_deg=12, sigma=0.6)
             geo.set_core(core)
             """
             geo.core.update(window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text()),
@@ -3242,15 +3242,15 @@ class MainWindow(QMainWindow):
 
         if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
             mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h], window_w=[self.window_w], no_of_turns=[n_turns],
-                                      n_air_gaps=[air_gap_count],air_gap_h= air_gap_heigth_array, air_gap_position= air_gap_position_array,
-                                      mu_rel=mu_rel,mult_air_gap_type=[1, 2],air_gap_method='Percent',
+                                      n_air_gaps=[air_gap_count], air_gap_h= air_gap_heigth_array, air_gap_position= air_gap_position_array,
+                                      mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='Percent',
                                       component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')  # 0.0149
         elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['manually']:
             mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h], window_w=[self.window_w],
                                       no_of_turns=[n_turns],
                                       n_air_gaps=[air_gap_count], air_gap_h=air_gap_heigth_array,
                                       air_gap_position=air_gap_position_array,
-                                      mu_rel=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='manually',
+                                      mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='manually',
                                       component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')
 
 

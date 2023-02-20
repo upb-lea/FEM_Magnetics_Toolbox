@@ -23,7 +23,7 @@ if simulation == "lab_model":
     core_db = fmt.core_database()["PQ 40/40"]
     
     core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    mu_rel=3100, phi_mu_deg=12, sigma=0.6)
+                    mu_r_abs=3100, phi_mu_deg=12, sigma=0.6)
     geo.set_core(core)
 
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -106,7 +106,7 @@ if simulation == "pq4040_ansys_comparison":
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=cwd)
 
-    core = fmt.Core(core_h=0.04, core_inner_diameter=0.0149, window_h=0.0278, window_w=0.01105, mu_rel=3100, phi_mu_deg=12, sigma=0.6)
+    core = fmt.Core(core_h=0.04, core_inner_diameter=0.0149, window_h=0.0278, window_w=0.01105, mu_r_abs=3100, phi_mu_deg=12, sigma=0.6)
     geo.set_core(core)
 
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
@@ -191,7 +191,7 @@ if simulation == "pq4040axisymmetric":
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=cwd)
     
     core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    mu_rel=3100, phi_mu_deg=12,
+                    mu_r_abs=3100, phi_mu_deg=12,
                     sigma=0.)
     geo.set_core(core)
 

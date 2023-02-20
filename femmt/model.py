@@ -144,8 +144,8 @@ class Core:
     """
     This creates the core base for the model.
 
-    frequency = 0: mu_rel only used if non_linear == False
-    frequency > 0: mu_rel is used
+    frequency = 0: mu_r_abs only used if non_linear == False
+    frequency > 0: mu_r_abs is used
     """
     # TODO More documentation
 
@@ -157,10 +157,8 @@ class Core:
     # Permeability
     # TDK N95 as standard material:
     permeability_type: PermeabilityType
-    mu_rel: float  # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
-    phi_mu_deg: float  # mu_complex = mu_rel * exp(j*phi_mu_deg)
-    # re_mu_rel: float      # Real part of relative Core Permeability  [B-Field and frequency-dependent]
-    # im_mu_rel: float      # Imaginary part of relative Core Permeability
+    mu_r_abs: float  # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
+    phi_mu_deg: float  # mu_complex = mu_r_abs * exp(j*phi_mu_deg)
 
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
     sigma: float  # Imaginary part of complex equivalent permittivity [frequency-dependent]
@@ -181,9 +179,9 @@ class Core:
     # Needed for to_dict
     loss_approach: LossApproach = None
 
-    # TODO explanation
-    r_inner: float
-    r_outer: float
+
+    r_inner: float # radius of outer winding window: core_inner_diameter / 2 + window_w
+    r_outer: float # outer radius of full core
 
     correct_outer_leg: bool
 
@@ -196,32 +194,41 @@ class Core:
     file_path_to_solver_folder: str  # location to create temporary pro file
 
     def __init__(self, core_inner_diameter: float, window_w: float, window_h: float, correct_outer_leg: bool = False,
-                 material: str = "custom", temperature: float = None,
+                 material: str = "custom",
+                 temperature: float = None,
+                 loss_approach: LossApproach = LossApproach.LossAngle,
+                 mu_r_abs: float = 3000,
 
-                 loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000,
-                 permeability_datasource: MaterialDataSource = None, permeability_datatype: MeasurementDataType = None, permeability_measurement_setup: str = None,
-                 phi_mu_deg: float = None, non_linear: bool = False,
+                 # permeability
+                 permeability_datasource: MaterialDataSource = None,
+                 permeability_datatype: MeasurementDataType = None,
+                 permeability_measurement_setup: str = None,
+                 phi_mu_deg: float = None,
+                 non_linear: bool = False,
 
-                 permittivity_datasource: str = None, permittivity_datatype: str = None, permittivity_measurement_setup: str = None,
+                 # permittivity
+                 permittivity_datasource: str = None,
+                 permittivity_datatype: str = None,
+                 permittivity_measurement_setup: str = None,
                  sigma: float = None,
-
-                 steinmetz_parameter: list = None, generalized_steinmetz_parameter: list = None,
+                 steinmetz_parameter: list = None,
+                 generalized_steinmetz_parameter: list = None,
                  **kwargs):
         """TODO Doc
 
-        :param core_w: _description_
-        :type core_w: float
-        :param window_w: _description_
+        :param core_inner_diameter: diameter of the inner core
+        :type core_inner_diameter: float
+        :param window_w: width of the winding window
         :type window_w: float
-        :param window_h: _description_
+        :param window_h: height of the winding window
         :type window_h: float
-        :param material: _description_, defaults to "custom"
+        :param material: Material name, e.g. 'N95', defaults to "custom"mu_rel
         :type material: str, optional
-        :param mu_rel: _description_, defaults to 3000
-        :type mu_rel: float, optional
-        :param phi_mu_deg: _description_, defaults to None
+        :param mu_r_abs: absolute value of the permeability, defaults to 3000
+        :type mu_r_abs: float, optional
+        :param phi_mu_deg: loss angle of the material in degree, defaults to None
         :type phi_mu_deg: float, optional
-        :param sigma: _description_, defaults to None
+        :param sigma: core conductivity, defaults to None
         :type sigma: float, optional
         :param non_linear: _description_, defaults to False
         :type non_linear: bool, optional
@@ -258,7 +265,7 @@ class Core:
                              "measurement_setup": permeability_measurement_setup,
                              "datatype": permeability_datatype}
         self.non_linear = non_linear
-        self.mu_rel = mu_rel
+        self.mu_r_abs = mu_r_abs
         self.phi_mu_deg = phi_mu_deg
         self.loss_approach = loss_approach
         # Permittivity
@@ -273,8 +280,8 @@ class Core:
             self.sigma = 0
             if self.material != "custom":
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_rel = self.material_database.get_material_property(material_name=self.material,
-                                                                           property="initial_permeability")
+                self.mu_r_abs = self.material_database.get_material_property(material_name=self.material,
+                                                                             property="initial_permeability")
 
                 steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
                                                               datasource="measurements")
@@ -320,8 +327,8 @@ class Core:
 
             elif self.material != "custom":  # TODO: new condition here
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_rel = self.material_database.get_material_property(material_name=self.material,
-                                                                           property="initial_permeability")
+                self.mu_r_abs = self.material_database.get_material_property(material_name=self.material,
+                                                                             property="initial_permeability")
                 self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
 
         else:
@@ -373,7 +380,7 @@ class Core:
             "window_h": self.window_h,
             "material": self.material,
             "loss_approach": self.loss_approach.name,
-            "mu_rel": self.mu_rel,
+            "mu_r_abs": self.mu_r_abs,
             "phi_mu_deg": self.phi_mu_deg,
             "sigma": self.sigma,
             "non_linear": self.non_linear,

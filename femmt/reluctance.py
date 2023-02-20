@@ -144,7 +144,7 @@ class MagneticCircuit:
     mu_0 = 4 * np.pi * 1e-7
 
     def __init__(self, core_inner_diameter: list, window_h: list, window_w: list, no_of_turns: list, n_air_gaps: list,
-                 air_gap_h: list, air_gap_position: list, mu_rel: list, mult_air_gap_type: list = None,
+                 air_gap_h: list, air_gap_position: list, mu_r_abs: list, mult_air_gap_type: list = None,
                  air_gap_method: str = 'Percent', component_type: str = 'inductor', sim_type: str = 'single'):
         """
         :param core_inner_diameter: Diameter of center leg of the core in meter
@@ -161,8 +161,8 @@ class MagneticCircuit:
         :type air_gap_h: list
         :param air_gap_position: Position of the air-gap in the percentage with respect to window_h
         :type air_gap_position: list
-        :param mu_rel: Relative permeability of the core [in F/m]
-        :type mu_rel: list
+        :param mu_r_abs: Relative permeability of the core [in F/m]
+        :type mu_r_abs: list
         :param mult_air_gap_type: Two types of equally distributed air-gaps (used only for air-gaps more than 1)
             Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100] for 3 air-gaps)
             Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75] for 3 air-gaps)
@@ -184,7 +184,7 @@ class MagneticCircuit:
         self.n_air_gaps = n_air_gaps
         self.air_gap_h = air_gap_h
         self.air_gap_position = air_gap_position
-        self.mu_rel = mu_rel
+        self.mu_r_abs = mu_r_abs
         self.mult_air_gap_type = mult_air_gap_type
         self.air_gap_method = air_gap_method
         self.sim_type = sim_type
@@ -217,7 +217,7 @@ class MagneticCircuit:
         self.min_percent_position = None
 
         # Dictionary to store the column names of the data_matrix (2D array)
-        self.param_pos_dict = {"core_inner_diameter": 0, "window_h": 1, "window_w": 2, "mu_rel": 3, "no_of_turns": 4,
+        self.param_pos_dict = {"core_inner_diameter": 0, "window_h": 1, "window_w": 2, "mu_r_abs": 3, "no_of_turns": 4,
                                "n_air_gaps": 5, "air_gap_h": 6, "air_gap_position": 7, "mult_air_gap_type": 8,
                                "inductance": 9}
 
@@ -231,7 +231,7 @@ class MagneticCircuit:
                 self.n_air_gaps = np.array(self.n_air_gaps)
                 self.air_gap_h = np.array(self.air_gap_h)
                 self.air_gap_position = np.array(self.air_gap_position)
-                self.mu_rel = np.array(self.mu_rel)
+                self.mu_r_abs = np.array(self.mu_r_abs)
 
                 # Call to functions for single inductance calculation
                 self.core_reluctance()
@@ -241,14 +241,14 @@ class MagneticCircuit:
                 # Creates the data matrix with all the input parameter combinations for sim_type = 'sweep'
                 self.data_matrix, self.single_air_gap_len, self.data_matrix_len = \
                     create_data_matrix(self.core_inner_diameter, self.window_h, self.window_w, self.no_of_turns,
-                                       self.n_air_gaps, self.air_gap_h, self.air_gap_position, self.mu_rel,
+                                       self.n_air_gaps, self.air_gap_h, self.air_gap_position, self.mu_r_abs,
                                        self.mult_air_gap_type)
 
                 # Mapping variables to data_matrix columns
                 self.core_inner_diameter = self.data_matrix[:, 0]
                 self.window_h = self.data_matrix[:, 1]
                 self.window_w = self.data_matrix[:, 2]
-                self.mu_rel = self.data_matrix[:, 3]
+                self.mu_r_abs = self.data_matrix[:, 3]
                 self.no_of_turns = self.data_matrix[:, 4]
                 self.n_air_gaps = self.data_matrix[:, 5]
                 self.air_gap_h = self.data_matrix[:, 6]
@@ -273,7 +273,7 @@ class MagneticCircuit:
         The function is used to check the correctness of the inputs provided to class MagneticCircuit
         """
         if not (len(self.core_inner_diameter) and len(self.window_h) and len(self.window_w) and len(self.no_of_turns)
-                and len(self.n_air_gaps) and len(self.mu_rel)):
+                and len(self.n_air_gaps) and len(self.mu_r_abs)):
             raise Exception("one of the passed arguments are empty list")
         if not all(isinstance(item, int) for item in self.no_of_turns):
             raise Exception("no_of_turns list elements should be integer")
@@ -290,7 +290,7 @@ class MagneticCircuit:
         if self.sim_type == 'single':
             if not (len(self.core_inner_diameter) == 1 and len(self.window_h) == 1 and len(self.window_w) == 1 and len(
                     self.no_of_turns) == 1
-                    and len(self.n_air_gaps) == 1 and len(self.mu_rel) == 1):
+                    and len(self.n_air_gaps) == 1 and len(self.mu_r_abs) == 1):
                 raise Exception("single sim_type requires single list elements")
             if not (self.n_air_gaps[0] == len(self.air_gap_h) and self.n_air_gaps[0] == len(self.air_gap_position)):
                 raise Exception("No. of elements of air_gap_h and air_gap_position should match n_air_gaps")
@@ -359,12 +359,12 @@ class MagneticCircuit:
         self.area[:, 4] = np.pi * (self.r_outer ** 2 - self.r_inner ** 2)
 
         # Reluctance calculation
-        self.reluctance[:, 0] = self.length[:, 0] / (self.mu_0 * self.mu_rel * self.area[:, 0])
-        self.reluctance[:, 1] = self.length[:, 1] / (self.mu_0 * self.mu_rel * self.area[:, 1])
-        self.reluctance[:, 2] = ((self.mu_0 * self.mu_rel * 2 * np.pi * self.core_h_middle) ** -1) * \
+        self.reluctance[:, 0] = self.length[:, 0] / (self.mu_0 * self.mu_r_abs * self.area[:, 0])
+        self.reluctance[:, 1] = self.length[:, 1] / (self.mu_0 * self.mu_r_abs * self.area[:, 1])
+        self.reluctance[:, 2] = ((self.mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * \
                                 np.log((2 * self.r_inner) / self.core_inner_diameter)
-        self.reluctance[:, 3] = self.length[:, 3] / (self.mu_0 * self.mu_rel * self.area[:, 3])
-        self.reluctance[:, 4] = self.length[:, 4] / (self.mu_0 * self.mu_rel * self.area[:, 4])
+        self.reluctance[:, 3] = self.length[:, 3] / (self.mu_0 * self.mu_r_abs * self.area[:, 3])
+        self.reluctance[:, 4] = self.length[:, 4] / (self.mu_0 * self.mu_r_abs * self.area[:, 4])
 
         # Doubling the reluctance of section 1, 2, 3, to accommodate horizontal symmetry
         self.reluctance[:, 1:4] = 2 * self.reluctance[:, 1:4]
@@ -720,7 +720,7 @@ def distributed_type_2(air_gap_height_single_air_gap, core_inner_diameter, n_air
 
 def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list, no_of_turns: list,
                        n_air_gaps: list,
-                       air_gap_h: list, air_gap_position: list, mu_rel: list, mult_air_gap_type: list):
+                       air_gap_h: list, air_gap_position: list, mu_r_abs: list, mult_air_gap_type: list):
 
     """ Creates matrix consisting of input design parameters with all their combinations
 
@@ -738,38 +738,38 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
     :type air_gap_h: list
     :param air_gap_position: Position of the air-gap in the percentage with respect to window_h
     :type air_gap_position: list
-    :param mu_rel: Relative permeability of the core [in F/m]
-    :type mu_rel: list
+    :param mu_r_abs: Relative permeability of the core [in F/m]
+    :type mu_r_abs: list
     :param mult_air_gap_type: Two types of equally distributed air-gaps (used only for air-gaps more than 1)
         Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100] for 3 air-gaps)
         Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75] for 3 air-gaps)
     :type mult_air_gap_type: list
     """
 
-    # Structure: data_matrix = [core_inner_diameter, window_h, window_w, mu_rel, no_of_turns, n_air_gaps, air_gap_h,
+    # Structure: data_matrix = [core_inner_diameter, window_h, window_w, mu_r_abs, no_of_turns, n_air_gaps, air_gap_h,
     #                      air_gap_position, mult_air_gap_type, inductance]
     clone_n_air_gaps = n_air_gaps
     row_num = 0
 
     if 1 in clone_n_air_gaps:
-        data_matrix = np.zeros((len(core_inner_diameter) * len(no_of_turns) * len(air_gap_h) * len(mu_rel) * (
+        data_matrix = np.zeros((len(core_inner_diameter) * len(no_of_turns) * len(air_gap_h) * len(mu_r_abs) * (
                 len(air_gap_position) + (len(n_air_gaps) - 1) * len(mult_air_gap_type)), 10))
     else:
         data_matrix = np.zeros(
             (len(core_inner_diameter) * len(no_of_turns) * len(air_gap_h) * len(n_air_gaps) * len(
-                mu_rel) * len(mult_air_gap_type), 10))
+                mu_r_abs) * len(mult_air_gap_type), 10))
 
     if 1 in clone_n_air_gaps:
         clone_n_air_gaps.remove(1)
         for index_1 in range(len(core_inner_diameter)):
-            for index_2 in range(len(mu_rel)):
+            for index_2 in range(len(mu_r_abs)):
                 for index_3 in range(len(no_of_turns)):
                     for index_4 in range(len(air_gap_h)):
                         for index_5 in range(len(air_gap_position)):
                             data_matrix[row_num, 0] = core_inner_diameter[index_1]
                             data_matrix[row_num, 1] = window_h[index_1]
                             data_matrix[row_num, 2] = window_w[index_1]
-                            data_matrix[row_num, 3] = mu_rel[index_2]
+                            data_matrix[row_num, 3] = mu_r_abs[index_2]
                             data_matrix[row_num, 4] = no_of_turns[index_3]
                             data_matrix[row_num, 5] = 1
                             data_matrix[row_num, 6] = air_gap_h[index_4]
@@ -781,7 +781,7 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
 
     if len(clone_n_air_gaps) != 0:
         for index_1 in range(len(core_inner_diameter)):
-            for index_2 in range(len(mu_rel)):
+            for index_2 in range(len(mu_r_abs)):
                 for index_3 in range(len(no_of_turns)):
                     for index_4 in range(len(clone_n_air_gaps)):
                         for index_5 in range(len(air_gap_h)):
@@ -789,7 +789,7 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
                                 data_matrix[row_num, 0] = core_inner_diameter[index_1]
                                 data_matrix[row_num, 1] = window_h[index_1]
                                 data_matrix[row_num, 2] = window_w[index_1]
-                                data_matrix[row_num, 3] = mu_rel[index_2]
+                                data_matrix[row_num, 3] = mu_r_abs[index_2]
                                 data_matrix[row_num, 4] = no_of_turns[index_3]
                                 data_matrix[row_num, 5] = n_air_gaps[index_4]
                                 data_matrix[row_num, 6] = air_gap_h[index_5]
@@ -805,14 +805,14 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
 if __name__ == '__main__':
     mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[1],
                           n_air_gaps=[1],
-                          air_gap_h=[0.0005], air_gap_position=[50], mu_rel=[3000],
+                          air_gap_h=[0.0005], air_gap_position=[50], mu_r_abs=[3000],
                           mult_air_gap_type=[1, 2],
                           air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
 
 
     # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9],
     #                       n_air_gaps=[1, 3],
-    #                       air_gap_h=[0.0005], air_gap_position=[0, 50, 100], mu_rel=[3000],
+    #                       air_gap_h=[0.0005], air_gap_position=[0, 50, 100], mu_r_abs=[3000],
     #                       mult_air_gap_type=[1, 2],
     #                       air_gap_method='Percent', component_type='inductor', sim_type='sweep')  # 0.0149
     # plot_r_basic()

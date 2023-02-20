@@ -82,7 +82,7 @@ if component == "transformer_sweep":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    mu_rel=3100, phi_mu_deg=12,
+                    mu_r_abs=3100, phi_mu_deg=12,
                     sigma=1.2)
     geo.set_core(core)
 
