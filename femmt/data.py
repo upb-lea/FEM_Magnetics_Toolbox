@@ -6,6 +6,7 @@ from scipy.interpolate import interp1d
 
 # Local libraries
 from femmt.enumerations import ConductorType
+from femmt.model import Conductor
 
 class FileData:
     """Contains paths to every folder and file needed in femmt.

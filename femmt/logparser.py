@@ -9,7 +9,7 @@ class SweepTypes(Enum):
     SingleSweep = "single_sweeps"
 
 @dataclass
-class WindingData():
+class WindingData:
     flux: complex
     turns: int
     self_inductance: complex
@@ -21,7 +21,7 @@ class WindingData():
     apparent_power: float
 
 @dataclass
-class SweepData():
+class SweepData:
     frequency: int # should be float?
     core_eddy_losses: float
     core_hyst_losses: float
@@ -29,7 +29,7 @@ class SweepData():
     windings: List[WindingData]
 
 @dataclass
-class FileData():
+class FileData:
     file_path: str
     sweeps: List[SweepData]
     total_winding_losses: float
@@ -46,7 +46,7 @@ class FEMMTLogParser:
     # Contains the complete data
     data: Dict[str, FileData]
 
-    def __init__(self, file_paths_dict: List[str]):
+    def __init__(self, file_paths_dict: Dict):
         """Creates the data dict out of the given file_paths.
 
         :param file_paths_dict: List of paths to every log file that should be added to the data.
@@ -64,7 +64,7 @@ class FEMMTLogParser:
         """Example function for a possible sweep plot. Sweeps over the frequency of different simulations from one or multiple files.
 
         :param data_names: Name of the data (keys of data dict). If the list is empty every key will be taken.
-        :param loss_parameter: Name of the variable from SweepData as str which will be set on the y axis.
+        :param loss_parameter: Name of the variable from SweepData as str which will be set on the y-axis.
         :param plot_label: Title of the plot.
         """
         if len(data_names) == 0:
@@ -75,7 +75,7 @@ class FEMMTLogParser:
             for sweep in self.data[data_name].sweeps:
                 freq_data.append([sweep.frequency, getattr(sweep, loss_parameter)])
 
-            freq_data.sort(key=lambda x: x[0])
+            freq_data.sort(key=lambda x_vector: x_vector[0])
 
             x = [x[0] for x in freq_data]
             y = [y[1] for y in freq_data]
@@ -92,9 +92,16 @@ class FEMMTLogParser:
         """Example function for a possible sweep plot. Sweeps over the frequency of different simulations from one or multiple files.
 
         :param data_names: Name of the data (keys of data dict). If the list is empty every key will be taken.
-        :param winding_numbers: Number of winding which shall be compared.
-        :param loss_type: Name of the variable from WindingData as str which will be set on the y axis.
+        :type data_names: str
+        :param winding_number: Number of winding which shall be compared.
+        :type winding_number: int
         :param plot_label: Title of the plot.
+        :type plot_label: str
+        :param winding_parameter:
+        :type winding_parameter: str
+
+        :return: None
+        :rtype: None
         """
         if len(data_names) == 0:
             data_names = self.data.keys()
@@ -111,7 +118,7 @@ class FEMMTLogParser:
 
                 freq_data.append([sweep.frequency, data_value])
 
-            freq_data.sort(key=lambda x: x[0])
+            freq_data.sort(key=lambda x_vector: x_vector[0])
 
             x = [x[0] for x in freq_data]
             y = [y[1] for y in freq_data]
@@ -125,7 +132,7 @@ class FEMMTLogParser:
         plt.show()
 
     @staticmethod
-    def get_log_files_from_working_directories(working_directories: List[str]) -> List[str]:
+    def get_log_files_from_working_directories(working_directories: List[str]) -> Dict:
         """ Returns a dict containing the log files for each given working directory together with the name of the directory as key.
         For every working directory the local path to the log file is working_directory/results/log_electro_magnetic.json
 
@@ -168,7 +175,6 @@ class FEMMTLogParser:
         if not sweep_type == SweepTypes.SingleSweep:
             raise Exception("Currently only single sweep is supported")
 
-        full_data = None
         with open(file_path, "r") as fd:
             full_data = json.loads(fd.read())
 
@@ -179,7 +185,7 @@ class FEMMTLogParser:
             windings = []
 
             index = 1
-            while(f"winding{index}" in item):
+            while f"winding{index}" in item:
                 current_winding = item[f"winding{index}"]
                 winding_data = {
                     "flux": FEMMTLogParser.parse_complex(current_winding["flux"]),

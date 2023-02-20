@@ -1,5 +1,4 @@
 # Python standard libraries
-from logging import warning
 import numpy as np
 from typing import List
 
@@ -28,10 +27,10 @@ class TwoDaxiSymmetric:
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
-    p_outer: List[List[float]]
-    p_region_bound: List[List[float]] 
-    p_window: List[List[float]] 
-    p_air_gaps: List[List[float]]
+    p_outer: np.ndarray
+    p_region_bound: np.ndarray
+    p_window: np.ndarray
+    p_air_gaps: np.ndarray
     p_conductor: List[List[float]]
     p_iso_core: List[List[float]]
     p_iso_pri_sec: List[List[float]]
@@ -138,7 +137,7 @@ class TwoDaxiSymmetric:
     def draw_air_gaps(self):
         # Air gaps
         # "air_gaps" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
-        #   - position_tag: specifies the gapped "leg"
+        #   - position_tag: specifies the "leg" with air gaps
         #   - air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
         #   - air_gap_h: height/length of the air gap
         #   - c_air_gap: mesh accuracy factor

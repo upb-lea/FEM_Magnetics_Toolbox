@@ -1,7 +1,7 @@
 from enum import IntEnum, Enum
 
 class WindingWindowSplit(IntEnum):
-    """Determines how many virtual winding windowes are created by the winding window. Used in Winding window class.
+    """Determines how many virtual winding windows are created by the winding window. Used in Winding window class.
     """
     NoSplit = 1 
     """Virtual winding window same size as winding window
@@ -58,8 +58,7 @@ class WindingType(IntEnum):
     Single = 2
 
 class WindingScheme(IntEnum):
-    """Used when adding a single winding to the virtual winding window. Only used with an
-    rectangular solid conductor.
+    """Used when adding a single winding to the virtual winding window. Only used with a rectangular solid conductor.
     """
     Full = 1
     """The whole virtual winding window is filled with one conductor.
@@ -101,7 +100,7 @@ class ConductorArrangement(IntEnum):
     """
     Hexagonal = 3
     """Turns are drawn more compact. The turn of the next line slides in the empty space between two turns of the previous line.
-    Frist drawn in y-direction then x-direction.
+    First drawn in y-direction then x-direction.
     """
 
 class ConductorType(IntEnum):
@@ -136,7 +135,7 @@ class LossApproach(IntEnum):
     LossAngle = 2
 
 class PermeabilityType(IntEnum):
-    """Sets the way how permeability data is recieved.  
+    """Sets the way how permeability data is received.
     """
     FixedLossAngle = 1
     RealValue = 2

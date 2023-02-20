@@ -1,5 +1,5 @@
 # Python standard libraries
-import os
+
 
 import numpy as np
 from dataclasses import dataclass
@@ -38,7 +38,7 @@ class Conductor:
     # Not used in femmt_classes. Only needed for to_dict()
     conductivity: Conductivity = None
 
-    def __init__(self, winding_number: int, conductivity: float, parallel: bool = False):
+    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False):
         """Creates an conductor object.
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
         The conductor with the lowest winding number (starting from 0) will be treated as primary, second lowest number as secondary and so on.
@@ -99,7 +99,7 @@ class Conductor:
         self.ff = fill_factor
 
         if number_strands is None:
-            self.n_strands = conductor_radius ** 2 / strand_radius ** 2 * fill_factor
+            self.n_strands = int(conductor_radius ** 2 / strand_radius ** 2 * fill_factor)
         elif conductor_radius is None:
             self.conductor_radius = np.sqrt(number_strands * strand_radius ** 2 / fill_factor)
         elif fill_factor is None:
