@@ -21,11 +21,11 @@ import materialdatabase as mdb
 # Local libraries
 import femmt.functions as ff
 from femmt.constants import *
-from femmt.Mesh import Mesh
-from femmt.Model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
-from femmt.Enumerations import *
-from femmt.Data import FileData, MeshData, AnalyticalCoreData
-from femmt.TwoDaxiSymmetric import TwoDaxiSymmetric
+from femmt.mesh import Mesh
+from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
+from femmt.enumerations import *
+from femmt.data import FileData, MeshData, AnalyticalCoreData
+from femmt.drawing import TwoDaxiSymmetric
 from femmt.thermal import thermal_simulation
 import femmt.functions_reluctance as fr
 

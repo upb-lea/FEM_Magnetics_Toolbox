@@ -13,7 +13,7 @@ import time
 import warnings
 from typing import Union, List, Tuple, Dict
 from matplotlib import pyplot as plt
-from femmt.Enumerations import ConductorType
+from femmt.enumerations import ConductorType
 
 # Third parry libraries
 import gmsh
@@ -21,7 +21,7 @@ import scipy
 
 # Local libraries
 from femmt.constants import *
-from femmt.Enumerations import *
+from femmt.enumerations import *
 
 # Needed for femmt_print
 silent = False

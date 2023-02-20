@@ -5,7 +5,7 @@ from typing import List
 from scipy.interpolate import interp1d
 
 # Local libraries
-from femmt.Enumerations import ConductorType
+from femmt.enumerations import ConductorType
 
 class FileData:
     """Contains paths to every folder and file needed in femmt.

@@ -9,10 +9,10 @@ import gmsh
 
 # Local libraries
 import femmt.functions as ff
-from femmt.Enumerations import ComponentType, ConductorType, WindingType
-from femmt.Data import FileData
-from femmt.Model import Conductor, Core, StrayPath, AirGaps, Insulation
-from femmt.TwoDaxiSymmetric import TwoDaxiSymmetric
+from femmt.enumerations import ComponentType, ConductorType, WindingType
+from femmt.data import FileData
+from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation
+from femmt.drawing import TwoDaxiSymmetric
 
 
 class Mesh:

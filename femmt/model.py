@@ -7,7 +7,7 @@ from typing import List, Tuple, Optional, Union
 
 # Local libraries
 import femmt.functions as ff
-from femmt.Enumerations import *
+from femmt.enumerations import *
 from femmt.constants import *
 import materialdatabase as mdb
 
