@@ -120,7 +120,8 @@ if component == "inductor":
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
-    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
+    winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
+    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
@@ -133,6 +134,8 @@ if component == "inductor":
     # 6.a. start simulation
     geo.single_simulation(freq=inductor_frequency, current=[4.5],
                           plot_interpolation=False, show_results=True)
+
+    # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
     # 6.b. Excitation Sweep Example
     # Perform a sweep using more than one frequency
