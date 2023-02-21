@@ -3,6 +3,34 @@ Developer Notes for FEMMT
 
 This chapter contains some useful information when developing with femmt.
 
+
+Variable naming
+----------------
+
+|geometry_core_developer_notes|
+
+
+Geometry variables
+###################
+ * core_inner_diameter: core inner diameter
+ * window_w: width of winding window
+ * winding_h: height of winding window
+ * r_inner: 
+ * r_outer: 
+ 
+
+currents, temperature
+#####################
+ * temperature
+ * frequency
+
+Material variables
+###################
+ * mu_r_abs: absolute value of mu_r
+ * mu_r_real: real part of mu_r
+ * mu_r_imag: imaginary part of mu_r
+
+
 Winding creation
 -----------------
 
@@ -38,3 +66,6 @@ p_conductors[1] is a list containing the points for every turn of the conductor 
 
 Currently the magnetic solver only supports primary and secondary windings, therefore it is useless to create more conductors.
 However the implemented structure is capable of working with n windings.
+
+
+.. |geometry_core_developer_notes| image:: ../images/geometry_core_developer_notes.png
