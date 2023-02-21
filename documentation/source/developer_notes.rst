@@ -68,4 +68,10 @@ Currently the magnetic solver only supports primary and secondary windings, ther
 However the implemented structure is capable of working with n windings.
 
 
+Pycharm code highlightning for pro-files
+--------------------------------------------
+|image_pycharm_configuration_pro_files|
+
 .. |geometry_core_developer_notes| image:: ../images/geometry_core_developer_notes.png
+.. |image_pycharm_configuration_pro_files| image:: ../images/pycharm_configuration_pro_files.png
+
