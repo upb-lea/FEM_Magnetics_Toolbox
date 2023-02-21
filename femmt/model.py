@@ -349,7 +349,7 @@ class Core:
         :return:
         """
         if self.permittivity["datasource"] == MaterialDataSource.Measurement:
-            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(T=self.temperature, f=frequency, material_name=self.material,
+            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature, frequency=frequency, material_name=self.material,
                                                                                  datasource=self.permittivity["datasource"],
                                                                                  measurement_setup=self.permittivity["measurement_setup"],
                                                                                  datatype=self.permittivity["datatype"])

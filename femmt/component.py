@@ -459,7 +459,7 @@ class MagneticComponent:
         :return:
         """
         if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
-            epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(T=self.core.temperature, f=self.frequency,
+            epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
                                                                                           material_name="N49",
                                                                                           datasource=self.core.permittivity["datasource"],
                                                                                           datatype=self.core.permittivity["datatype"],
