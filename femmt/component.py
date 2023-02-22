@@ -1151,8 +1151,11 @@ class MagneticComponent:
                         turns += vww.turns[index]
             if self.windings[num].parallel:
                 text_file.write(f"NbrCond{num + 1} = 1;\n")
+                text_file.write(f"AreaCell{num + 1} = {self.windings[num].a_cell*turns};\n")
             else:
                 text_file.write(f"NbrCond{num + 1} = {turns};\n")
+                text_file.write(f"AreaCell{num + 1} = {self.windings[num].a_cell};\n")
+
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
@@ -1164,7 +1167,7 @@ class MagneticComponent:
                 # That's why here a hard-coded 4 is implemented
                 # text_file.write(f"NbrLayers{num+1} = {self.n_layers[num]};\n")
                 text_file.write(f"NbrLayers{num + 1} = 4;\n")
-            text_file.write(f"AreaCell{num + 1} = {self.windings[num].a_cell};\n")
+
             text_file.write(f"Rc{num + 1} = {self.windings[num].conductor_radius};\n")
 
             # -- Excitation --
@@ -1773,9 +1776,9 @@ class MagneticComponent:
 
         # == Circuit ==
         # coil as seen from the terminals.
-        femm.mi_addcircprop('Primary', current[0] * sign[0], 1)
+        femm.mi_addcircprop('Primary', current[0] * sign[0], int(not self.windings[0].parallel))
         if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
-            femm.mi_addcircprop('Secondary', current[1] * sign[1], 1)
+            femm.mi_addcircprop('Secondary', current[1] * sign[1], int(not self.windings[1].parallel))
 
 
         # == Geometry ==
