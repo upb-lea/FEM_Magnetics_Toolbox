@@ -658,9 +658,7 @@ class Mesh:
             else:
                 if winding.parallel:
                     tags = self.plane_surface_cond[winding_number]
-                    print(f"{tags = }")
                     physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=4000 + 1000 * winding_number)
-                    print(f"{physical_group_number = }")
                     for i in range(flattened_turns[winding_number]):
                         self.ps_cond[winding_number].append(physical_group_number)
                 else:
