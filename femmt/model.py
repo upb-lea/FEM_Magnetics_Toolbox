@@ -239,13 +239,12 @@ class Core:
 
         # Geometric Parameters
         self.core_inner_diameter = core_inner_diameter
-        self.core_h = None  # TODO Set core_h to not none
         self.window_w = window_w
         self.window_h = window_h
         self.type = "axi_symmetric"
         self.number_core_windows = 2
         self.correct_outer_leg = correct_outer_leg
-        self.core_h = window_h + core_inner_diameter / 2
+        self.core_h = window_h + core_inner_diameter / 2  # TODO: could also be done arbitrarily
         self.r_inner = window_w + core_inner_diameter / 2
         if correct_outer_leg:
             A_out = 200 * 10 ** -6
