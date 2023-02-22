@@ -183,7 +183,7 @@ class Core:
     r_inner: float # radius of outer winding window: core_inner_diameter / 2 + window_w
     r_outer: float # outer radius of full core
 
-    correct_outer_leg: bool
+    correct_outer_leg: bool # Outer leg is set, so cross-section is same as in inner cylinder (False). Setting this variable to True,
 
     # Database
     # material_database is variable to load in material_database
@@ -232,7 +232,7 @@ class Core:
         :type sigma: float, optional
         :param non_linear: _description_, defaults to False
         :type non_linear: bool, optional
-        :param correct_outer_leg: _description_, defaults to False
+        :param correct_outer_leg: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
         :type correct_outer_leg: bool, optional
         """
         # Set parameters
@@ -248,9 +248,14 @@ class Core:
         self.core_h = window_h + core_inner_diameter / 2
         self.r_inner = window_w + core_inner_diameter / 2
         if correct_outer_leg:
+            # hard-coded case for PQ 40/40-cores:
+            # the outer cross-section differs from inner cross-section and is corrected here.
+            # Note: for PQ 40/40 cores only!!
             A_out = 200 * 10 ** -6
             self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
         else:
+            # set r_outer, so cross-section of outer leg has same cross-section as inner leg
+            # this is the recommended default-case
             self.r_outer = np.sqrt((core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
 
         # Material Parameters
