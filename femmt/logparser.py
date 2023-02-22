@@ -13,7 +13,7 @@ class WindingData:
     flux: complex
     turns: int
     self_inductance: complex
-    magnetic_field_energy: complex
+    #magnetic_field_energy: complex # Was removed as the magnetic_field_energy is no more part of the result_log
     voltage: complex
     current: complex
     active_power: float
@@ -191,7 +191,7 @@ class FEMMTLogParser:
                     "flux": FEMMTLogParser.parse_complex(current_winding["flux"]),
                     "turns": current_winding["number_turns"],
                     "self_inductance": FEMMTLogParser.parse_complex(current_winding["self_inductance"]),
-                    "magnetic_field_energy": FEMMTLogParser.parse_complex(current_winding["mag_field_energy"]),
+#                    "magnetic_field_energy": FEMMTLogParser.parse_complex(current_winding["mag_field_energy"]), # Was removed as the magnetic_field_energy is no more part of the result_log
                     "voltage": FEMMTLogParser.parse_complex(current_winding["V"]),
                     "current": FEMMTLogParser.parse_complex(current_winding["I"]),
                     "active_power": current_winding["P"],
