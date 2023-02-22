@@ -35,8 +35,8 @@ class TwoDaxiSymmetric:
     p_iso_core: List[List[float]]
     p_iso_pri_sec: List[List[float]]
 
-    def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, virtual_winding_windows: List[VirtualWindingWindow], 
-                stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int):
+    def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, virtual_winding_windows: List[VirtualWindingWindow],
+                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int):
         self.core = core
         self.mesh_data = mesh_data
         self.virtual_winding_windows = virtual_winding_windows
