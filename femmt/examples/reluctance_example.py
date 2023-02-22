@@ -1,6 +1,6 @@
 import femmt as fmt
 import numpy as np
-from femmt.femmt_reluctance import MagneticCircuit
+from reluctance import MagneticCircuit
 
 
 # Set core-geometry from core database

@@ -28,7 +28,14 @@ if component == "inductor_sweep":
     core_db = fmt.core_database()["PQ 40/40"]
 
     core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
+                    material="N95", temperature=25, frequency=100000,
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup="LEA_LK",
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup="LEA_LK")
+
     # mu_rel=3000, phi_mu_deg=10,
     # sigma=0.5)
     geo.set_core(core)
