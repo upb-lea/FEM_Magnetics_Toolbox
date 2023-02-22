@@ -82,8 +82,9 @@ class Conductor:
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
 
-    def set_litz_round_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float,
-                                 fill_factor: float, conductor_arrangement: ConductorArrangement):
+    def set_litz_round_conductor(self, conductor_radius: Optional[float], number_strands: Optional[int],
+                                 strand_radius: Optional[float],
+                                 fill_factor: Optional[float], conductor_arrangement: ConductorArrangement):
         """
         Only 3 of the 4 parameters are needed. The other one needs to be none
         """

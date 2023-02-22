@@ -536,7 +536,8 @@ def thermal_simulation(temp_folder):
 
         core_db = fmt.core_database()["PQ 40/40"]
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, 
+                                    working_directory=working_directory, silent=True, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -656,7 +657,7 @@ def test_inductor_core_material_database(femmt_simulation_inductor_core_material
 
 def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_loss_angle):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_inductor_core_fixed_loss_angle
 
@@ -668,7 +669,7 @@ def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_los
 
 def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core_fixed_loss_angle_litz_wire):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_inductor_core_fixed_loss_angle_litz_wire
 
@@ -680,7 +681,7 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
 
 def test_inductor_core_fixed_loss_angle_foil(femmt_simulation_inductor_core_fixed_loss_angle_foil):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil
 
@@ -696,7 +697,7 @@ def test_inductor_core_fixed_loss_angle_foil(femmt_simulation_inductor_core_fixe
 
 def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fixed_loss_angle):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_transformer_core_fixed_loss_angle
 
@@ -708,7 +709,7 @@ def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fix
 
 def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transformer_interleaved_core_fixed_loss_angle):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_transformer_interleaved_core_fixed_loss_angle
 
@@ -720,7 +721,7 @@ def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transfor
 
 def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transformer_integrated_core_fixed_loss_angle):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_transformer_integrated_core_fixed_loss_angle
 
