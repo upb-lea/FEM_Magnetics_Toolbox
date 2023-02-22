@@ -40,10 +40,10 @@ class SweepTensor:
     t1_core_inner_diameter: np.ndarray
     time_current_1_vec: np.ndarray
     time_current_2_vec: np.ndarray
-    l_s_target_value: np.ndarray
-    l_h_target_value: np.ndarray
-    n_target_value: np.ndarray
-    factor_max_flux_density: np.ndarray
+    l_s_target_value: float
+    l_h_target_value: float
+    n_target_value: float
+    factor_max_flux_density: float
 @dataclass
 
 class ResultFile:
