@@ -7,28 +7,33 @@ This chapter contains some useful information when developing with femmt.
 Variable naming
 ----------------
 
-|geometry_core_developer_notes|
+The variable naming is defined as shown in this section. Note that the names should be as given here. No acronyms, like 'f' or 'freq' for 'frequency'.
 
+|geometry_core_developer_notes|
+|geometry_core_naming_convention|
 
 Geometry variables
 ###################
- * core_inner_diameter: core inner diameter
- * window_w: width of winding window
- * winding_h: height of winding window
- * r_inner: 
- * r_outer: 
+* core_inner_diameter: core inner diameter
+* window_w: width of winding window
+* winding_h: height of winding window
+* r_inner: core_inner_diameter / 2 + winding_w
+* r_outer: core outer radius, calculated by software for same cross-section as inner cylinder
  
+Additional variables for integrated transformer
+* window_h_top: height of top winding window
+* window_h_bot: height of bottom winding window
 
 currents, temperature
 #####################
- * temperature
- * frequency
+* temperature (not 'T', 'temp', ...)
+* frequency (not 'f', 'freq', ...)
 
 Material variables
 ###################
- * mu_r_abs: absolute value of mu_r
- * mu_r_real: real part of mu_r
- * mu_r_imag: imaginary part of mu_r
+* mu_r_abs: absolute value of mu_r
+* mu_r_real: real part of mu_r
+* mu_r_imag: imaginary part of mu_r
 
 
 Winding creation
@@ -73,5 +78,8 @@ Pycharm code highlightning for pro-files
 |image_pycharm_configuration_pro_files|
 
 .. |geometry_core_developer_notes| image:: ../images/geometry_core_developer_notes.png
+.. |geometry_core_naming_convention| image:: ../images/geometry_core_naming_convention.png
 .. |image_pycharm_configuration_pro_files| image:: ../images/pycharm_configuration_pro_files.png
+
+
 
