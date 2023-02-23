@@ -1,8 +1,9 @@
 # python libraries
+import dataclasses
 from dataclasses import dataclass
 
 # femmt libraries
-
+import femmt.functions as ff
 
 # 3rd party libraries
 import numpy as np
@@ -26,7 +27,6 @@ class InputConfig:
     n_s_top_min_max_list: list
     n_s_bot_min_max_list: list
 
-
 @dataclass
 class SweepTensor:
     t1_n_p_top: np.ndarray
@@ -47,8 +47,11 @@ class SweepTensor:
 @dataclass
 
 class ResultFile:
+    case: int
+    # geometry parameters
     air_gap_top: float
     air_gap_bot: float
+    air_gap_middle: float
     n_p_top: int
     n_p_bot: int
     n_s_top: int
@@ -58,8 +61,19 @@ class ResultFile:
     window_w: float
     mu_r_abs: float
     core_inner_diameter: float
+
+    # reluctance model results
     flux_top_max: float
     flux_bot_max: float
     flux_stray_max: float
     p_hyst: float
     core_2daxi_total_volume: float
+
+    # fem simulation results
+
+
+
+
+def print_result_file(result_file: ResultFile):
+    for field in dataclasses.fields(result_file):
+        ff.femmt_print(f"{field = }")
