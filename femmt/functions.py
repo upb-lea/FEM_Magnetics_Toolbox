@@ -1,6 +1,4 @@
 # Python standard libraries
-import numpy.typing as npt
-import numpy as np
 import json
 import random
 import string
@@ -8,19 +6,20 @@ import pkg_resources
 import subprocess
 import sys
 import os
-import pandas as pd
 import time
 import warnings
 from typing import Union, List, Tuple, Dict
-from matplotlib import pyplot as plt
-from femmt.Enumerations import ConductorType
 
 # Third parry libraries
 import gmsh
-import scipy
+import pandas as pd
+from matplotlib import pyplot as plt
+import numpy.typing as npt
+import numpy as np
 
 # Local libraries
-from femmt.Enumerations import *
+from femmt.constants import *
+from femmt.enumerations import ConductorType
 
 # Needed for femmt_print
 silent = False
@@ -303,8 +302,8 @@ def wire_material_database() -> Dict:
 def cost_material_database() -> Dict:
     """
     Returns costs for core and winding.
-    This is splitted in material and fabrication costs.
-    Both, material and fabrication costs have a euro_per_kilogram and a euro_per_unit (fixcosts) price.
+    This is split in material and fabrication costs.
+    Both, material and fabrication costs have a euro_per_kilogram and a euro_per_unit (fix costs) price.
 
     Source: R. Burkart and J. Kolar 'Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converter'
     2013.
@@ -338,14 +337,14 @@ def cost_material_database() -> Dict:
                                                   ConductorType.RoundLitz.name: 2}
 
     cost_database["winding_material_euro_per_kilogram_for_litz"] = {"sigma_numerator": 15,
-                                                                    "sigma_denumerator": 0.45}
+                                                                    "sigma_denominator": 0.45}
 
     cost_database["gross_margin"] = 0.25
 
 
     return cost_database
 
-def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter: float) -> float:
+def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter: float) -> np.array:
     """
     Calculates the effective inner core diameter without the hole
     Often used in PM-cores
@@ -355,7 +354,7 @@ def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter:
     :param hole_diameter: hole diameter
     :type hole_diameter: float
     :return: effective inner core diameter without hole
-    :rtype: float
+    :rtype: np.array
     """
     area_inner_core_inner_diameterithout_hole = (inner_core_diameter / 2) ** 2 * np.pi
     area_hole = (hole_diameter / 2) ** 2 * np.pi
@@ -367,7 +366,7 @@ def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter:
 def install_pyfemm_if_missing() -> None:
     """
     Windows users only.
-    Installs femm-software pip package in case of running on windows machine
+    Installs femm-software pip package in case of running on Windows machine
 
     :return: None
 
@@ -383,7 +382,6 @@ def install_pyfemm_if_missing() -> None:
         subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
         print("'pyfemm' is now installed!")
 
-
 def inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate as the two
@@ -398,14 +396,14 @@ def inner_points(a, b, input_points):
     :return:
 
     """
-    [min, max] = [None, None]
+    [min_point, max_point] = [None, None]
     output = input_points
     dim = None
     # Find equal dimension
     for i in range(0, 3):
         if a[i] == b[i] and a[i] != 0:
             dim = i
-    if dim == None:
+    if dim is None:
         raise Exception("Given points do not have a common dimension")
     n = 0
     while n < output.shape[0]:
@@ -418,7 +416,7 @@ def inner_points(a, b, input_points):
     if output.shape[0] % 2 == 1:
         raise Exception("Odd number of input points")
     if dim == 2:
-        raise Exception("Not implemented Error: Only 2D is implemeted")
+        raise Exception("Not implemented Error: Only 2D is implemented")
     dim2 = (dim+1) % 2
     if output.shape[0] >= 2:
         argmax = np.argmax(output[:, dim2])
@@ -443,14 +441,14 @@ def min_max_inner_points(a, b, input_points):
 
     """
 
-    [min, max] = [None, None]
+    [min_point, max_point] = [None, None]
     buffer = input_points
     dim = None
     # Find equal dimension
     for i in range(0, 3):
         if a[i] == b[i] and a[i] != 0:
             dim = i
-    if dim == None:
+    if dim is None:
         raise Exception("Given points do not have a common dimension")
     n = 0
     while n < buffer.shape[0]:
@@ -459,25 +457,25 @@ def min_max_inner_points(a, b, input_points):
         else:
             n += 1
     if buffer.shape[0] == 0:
-        print("No air gaps between interval borders")
+        femmt_print("No air gaps between interval borders")
     if buffer.shape[0] % 2 == 1:
         raise Exception("Odd number of input points")
     if dim == 2:
-        raise Exception("Not implemented Error: Only 2D is implemeted")
+        raise Exception("Not implemented Error: Only 2D is implemented")
     dim2 = (dim+1) % 2
     if buffer.shape[0] >= 2:
         argmax = np.argmax(buffer[:, 1])
-        max = buffer[argmax]
+        max_point = buffer[argmax]
         argmin = np.argmin(buffer[:, 1])
-        min = buffer[argmin]
-    return [min, max]
+        min_point = buffer[argmin]
+    return [min_point, max_point]
     
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-def NbrStrands(n_layers: int) -> int:
+def litz_calculate_number_strands(n_layers: int) -> int:
     """
     Returns the number of strands in a hexagonal litz winding with a
     specified number of layers (n_layers). CAUTION: Zero number of
@@ -493,7 +491,7 @@ def NbrStrands(n_layers: int) -> int:
     return 3 * (n_layers + 1) ** 2 - 3 * (n_layers + 1) + 1
 
 
-def NbrLayers(n_strands: int) -> int:
+def litz_calculate_number_layers(n_strands: int) -> int:
     """
     Returns the number of layers in a hexagonal litz winding with a
     specified number of strands (n_strands).
@@ -510,12 +508,12 @@ def NbrLayers(n_strands: int) -> int:
     return np.sqrt(0.25+(n_strands-1)/3)-0.5
 
 
-def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str = 'no', mode: str = 'rad',
+def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str = 'no', mode: str = 'rad',
         f0: Union[float, None] = None, title: str = 'ffT', filter_type: str = 'factor',
         filter_value_factor: float = 0.01, filter_value_harmonic: int = 100,
         figure_size: Tuple=None, figure_directory: str=None) -> npt.NDArray[list]:
     """
-    A fft for a input signal. Input signal is in vector format and should include one period.
+    A fft for an input signal. Input signal is in vector format and should include one period.
 
     Output vector includes only frequencies with amplitudes > 1% of input signal
 
@@ -529,7 +527,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :param period_vector_t_i: numpy-array [[time-vector[,[current-vector]]. One period only
     :type period_vector_t_i: np.array
     :param sample_factor: f_sampling/f_period, defaults to 1000
-    :type sample_factor: float
+    :type sample_factor: int
     :param plot: insert anything else than "no" or 'False' to show a plot to visualize input and output
     :type plot: str
     :param mode: 'rad'[default]: full period is 2*pi, 'deg': full period is 360°, 'time': time domain.
@@ -548,7 +546,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     :type filter_value_harmonic: int
     :param figure_directory: full path with file extension
     :type figure_directory: Tuple
-    :param figure_size: None for auto fit; fig_size for matplotlib (width, length)
+    :param figure_size: None for auto-fit; fig_size for matplotlib (width, length)
     :type figure_size: Tuple
 
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
@@ -570,13 +568,12 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: float = 1000, plot: str
     elif mode == 'deg':
         period_vector_t_i[0] = period_vector_t_i[0] / (360 * f0)
     elif mode != 'time':
-        raise ValueError("Mode not availabe. Choose: 'rad', 'deg', 'time'")
+        raise ValueError("Mode not available. Choose: 'rad', 'deg', 'time'")
 
     t = period_vector_t_i[0]
     i = period_vector_t_i[1]
 
     # fft-function works per default in time domain
-    # time domain
     t_interp = np.linspace(0, t[-1], sample_factor)
     i_interp = np.interp(t_interp, t, i)
 
@@ -710,6 +707,8 @@ def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: 
     :type mode: str
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :type f0: float
+    :param sample_factor: samle factor, defaults to 1000
+    :type sample_factor: float
 
     :return: plot
 
@@ -807,9 +806,9 @@ def get_dict_with_unique_keys(data, *keys):
     :return:
     """
     invalid_index = []
-    for n, dict in enumerate(data):
+    for n, dictionary in enumerate(data):
         for key in keys:
-            if not key in dict:
+            if not key in dictionary:
                 invalid_index.append(n)
                 break
     valid_data = np.delete(data, invalid_index)
@@ -919,708 +918,25 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 
 
 # Reluctance Model [with calculation]
-mu0 = 4e-7*np.pi
 
-def r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight):
+def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
     """
-    Do not use this function directly!
-    Use it indirectly by using
-     - r_air_gap_round_round
-     - r_air_gap_round_inf
-    instead!
-
-    This function calculates the r_basic for a round to infinite structure according to the following paper:
-    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
-
-    :param air_gap_radius: air gap radius
-    :param air_gap_basic_hight: air gap hight for the BASIC-AIR-GAP (e.g. if you use a round-round structure, this is half of the total air gap).
-    :param core_hight: core hight
-    :return: basic reluctance for round - infinite structure
+    Calculates the volume of an ideal cylinder. This function is uses e.g. to calculate the volume
+    of the inner core part.
+    :param cylinder_height: height of cylinder
+    :type cylinder_height: float
+    :param cylinder_diameter: diameter of cylinder
+    :type cylinder_diameter: float
+    :returns: volume
+    :rtype: float
     """
-    conductance_basic = mu0 * (air_gap_radius * 2 / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * core_hight / 4 / air_gap_basic_hight)))
+    return (cylinder_diameter / 2) ** 2 * np.pi * cylinder_height
 
-    return 1 / conductance_basic
 
-def sigma_round(r_equivalent, air_gap_radius, air_gap_total_hight):
-    """
-    Do not use this function directly!
-    Use it indirectly by using
-     - r_air_gap_round_round
-     - r_air_gap_round_inf
-    instead!
 
-    :param r_equivalent: this is a series/parallel connection of r_basic, depending on the air gap structure
-    :param air_gap_radius: air gap radius
-    :param air_gap_total_hight: air gap total hight (for the total air gap, also for round-round structures)
-    :return: fringing factor 'sigma'
-    """
-    return r_equivalent * mu0 * air_gap_radius / air_gap_total_hight
 
-def r_air_gap_round_round(air_gap_total_hight, core_inner_diameter, core_hight_upper, core_hight_lower):
-    """
-    Returns the reluctance of a round-round air gap structure and includes finging effects.
 
-    :param air_gap_total_hight: total air gap hight of the air gap
-    :param core_inner_diameter: core inner diameter
-    :param core_hight_upper: core hight upper (needed for better calculating fringing effects)
-    :param core_hight_lower: core hight lower (needed for better calculating fringing effects)
-    :return: air gap reluctance for round-round structure including fringing effects
-    """
-    air_gap_total_hight = np.array(air_gap_total_hight)
-    core_inner_diameter = np.array(core_inner_diameter)
-    core_hight_upper = np.array(core_hight_upper)
-    core_hight_lower = np.array(core_hight_lower)
-    air_gap_radius = core_inner_diameter / 2
 
-    air_gap_basic_hight = air_gap_total_hight / 2
-    r_basic_upper = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_upper)
-    r_basic_lower = r_basic_round_inf(air_gap_radius, air_gap_basic_hight, core_hight_lower)
-
-    r_equivalent_round_round = r_basic_upper + r_basic_lower
-
-    sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_hight)
-    if np.any(sigma > 1):
-        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
-
-    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
-    r_air_gap = sigma ** 2 * r_air_gap_ideal
-
-    return r_air_gap
-
-def r_air_gap_round_round_sct(air_gap_total_hight, core_inner_diameter , core_hight_upper, core_hight_lower, target_reluctance):
-    return r_air_gap_round_round(air_gap_total_hight, core_inner_diameter , core_hight_upper, core_hight_lower) - target_reluctance
-
-def r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight):
-    """
-    Returns the reluctance of a round-infinite air gap structure and includes fringing effects
-
-    :param air_gap_total_hight: total air gap hight of the air gap
-    :param core_inner_diameter: core inner diameter
-    :param core_hight: core hight (needed for better calculating fringing effects)
-    :return: air gap reluctance for round-inf structure including fringing effects
-    """
-
-    air_gap_total_hight = np.array(air_gap_total_hight)
-    core_inner_diameter = np.array(core_inner_diameter)
-    core_hight = np.array(core_hight)
-
-    air_gap_radius = core_inner_diameter / 2
-    r_basic = r_basic_round_inf(air_gap_radius, air_gap_total_hight, core_hight)
-
-    r_equivalent_round_inf = r_basic
-    sigma = sigma_round(r_equivalent_round_inf, air_gap_radius, air_gap_total_hight)
-
-    r_air_gap_ideal = air_gap_total_hight / mu0 / np.pi / (air_gap_radius ** 2)
-    r_air_gap = sigma ** 2 * r_air_gap_ideal
-
-    return r_air_gap
-
-def r_air_gap_round_inf_sct(air_gap_total_hight, core_inner_diameter, core_hight, target_reluctance):
-    return r_air_gap_round_inf(air_gap_total_hight, core_inner_diameter, core_hight) - target_reluctance
-
-
-
-def r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_radius):
-    """
-    Do not use this function directly!
-    Use it indirectly by using
-     - r_air_gap_tablet_cyl
-    instead!
-
-    This function calculates the r_basic for a round to infinite structure according to the following paper:
-    [according to "A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
-
-    Note: this is the same function as r_basic_round_inf, but with clear variable names for tablet-cylinder structure
-
-    :param tablet_hight: tablet hight = air gap width for tablet-cylinder structure
-    :param air_gap_basic_hight: air gap hight for the BASIC-AIR-GAP (e.g. if you use a round-round structure, this is half of the total air gap).
-    :param tablet_radius: tablet radius
-    :return: basic reluctance for tablet - cylinder structure
-    """
-    conductance_basic = mu0 * (tablet_hight / 2 / air_gap_basic_hight + 2 / np.pi * (1 + np.log(np.pi * tablet_radius / 4 / air_gap_basic_hight)))
-
-    return 1 / conductance_basic
-
-def sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight):
-    """
-    Do not use this function directly!
-    Use it indirectly by using
-     - r_air_gap_tablet_cyl
-    instead!
-
-    Note: this is the same function as sigma_round, but with clear variable names for tablet-cylinder structure
-
-    :param r_equivalent: this is a series/parallel connection of r_basic, depending on the air gap structure
-    :param tablet_hight: tablet hight
-    :param air_gap_total_hight: air gap total hight (for the total air gap)
-    :return: fringing factor 'sigma' for tablet - cylinder structure
-    """
-    return r_equivalent * mu0 * tablet_hight / air_gap_total_hight
-
-
-def r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, core_inner_diameter, window_w):
-    """
-    Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
-    This function calculates the air gap reluctance for a 2D-axisymmetric core.
-
-    :param tablet_hight: tablet hight in m
-    :param air_gap_total_hight: total air gap hight in m
-    :param core_inner_diameter: core inner diameter in m
-    :param window_w: core window width in m
-    :return: air gap reluctance for tablet - cylinder structure including air gap fringing
-    """
-
-    r_outer = core_inner_diameter / 2 + window_w
-
-    # translate practical core dimensions to non-practial air-gap dimensions
-    tablet_radius = r_outer - air_gap_total_hight
-
-    air_gap_basic_hight = air_gap_total_hight
-    r_basic = r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, tablet_radius)
-
-    r_equivalent = r_basic / 2
-    sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_hight)
-    if np.any(sigma > 1):
-        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
-
-    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_hight)) / 2 / mu0 / np.pi / tablet_hight
-
-    r_air_gap = sigma * r_air_gap_ideal
-
-    return r_air_gap
-
-def r_air_gap_tablet_cylinder_sct(air_gap_total_hight, core_inner_diameter, tablet_hight, window_w, target_reluctance):
-    return r_air_gap_tablet_cyl(tablet_hight, air_gap_total_hight, core_inner_diameter, window_w) - target_reluctance
-
-def r_air_gap_tablet_cyl_no_2d_axi(tablet_hight, air_gap_total_length, core_inner_diameter, window_w):
-    """
-    Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
-    Note:
-    This function differes from r_air_gap_tablet_cyl (ideal 2D axisymmetric core). Here, the air gap reluctance for
-    a non-2D-axisymmetric core is taken into account, as a real PQ core is open at the side. So, there is no air gap
-    taken into account for the side-sections. The new core_dimension_y parameter describes the width of the
-    core when you are in a xy-coordinate system.
-
-    :param tablet_hight: tablet hight in m
-    :param air_gap_total_length: air gap total length
-    :param core_inner_diameter: core inner diameter in m
-    :param window_w: core window width in m
-    :return: air gap reluctance for tablet - cylinder structure including air gap fringing
-    """
-
-    r_outer = core_inner_diameter / 2 + window_w
-
-    if np.any(air_gap_total_length >= window_w):
-        raise Exception("air_gap_total_hight is greater than window_w")
-
-    air_gap_basic_hight = air_gap_total_length
-    r_basic = r_basic_tablet_cyl(tablet_hight, air_gap_basic_hight, (core_inner_diameter + 2 * window_w - 2 * air_gap_total_length) / 2)
-
-    r_equivalent = r_basic / 2
-    sigma = sigma_tablet_cyl(r_equivalent, tablet_hight, air_gap_total_length)
-    if np.any(sigma > 1):
-        raise Exception("Failure in calculting reluctance. Sigma was calculated to >1. Check input parameters!")
-
-    # Note:
-    # the circumference of the air gap differs for open cores (e.g. PQ40/40) to closed ones (ideal rotationally symmetric)
-    # The circumference is no more (diameter * pi), but (2 * pi - 4 * alpha) * (core_inner_diameter/2 + window_w), with alpha = arccos(core_dimension_x / (core_inner_diameter + 2 * window_w))
-    # See: Dissertation Lukas Keuck
-    # For equal pq core sizes (e.g. PQ 40/40), it has been found out that
-    #     core_dimension_x / core_dimension_y = 1.45, the error over all available shapes is maximum 7% (compared to datasheet value)
-    # Now, the new and partly circumference of the stray-path air gap can be calculated
-    # First, the core dimension_y needs to be calculated.
-    # Formular 1: core_dimension_x / core_dimension_y = 1.45
-    # Formular 2: core_dimension_x * core_dimension_y - (core_inner_diameter / 2 + window_w) ** 2 * np.pi = (core_inner_diameter / 2 ) ** 2 * np.pi
-    # Formular 2 assumes that the outer core cross section of the core is equal to the inner core cross section
-    # Formular 1 & 2 needs to be solved to get core_dimension_y:
-
-    core_dimension_y = np.sqrt( ( core_inner_diameter ** 2 / 4 + (core_inner_diameter / 2 + window_w) ** 2  ) * np.pi / 1.45)
-    r_air_gap_ideal_partly = np.log(r_outer / (r_outer - air_gap_total_length)) / mu0 / (2 * np.pi - 4 * np.arccos(core_dimension_y / 2 / r_outer)) / tablet_hight
-
-    r_air_gap = sigma * r_air_gap_ideal_partly
-
-    return r_air_gap
-
-def r_core_tablet(tablet_hight, tablet_radius, mu_r_abs, core_inner_diameter):
-    """
-    Calculates the magentic resistance of the core tablet
-
-    :param tablet_hight: tablet hight
-    :param tablet_radius: tablet radius
-    :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
-    :param core_inner_diameter: core inner diameter. For idealized core material, this value can be 0.001.
-    """
-
-    return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu0 * mu_r_abs * tablet_hight)
-
-
-def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_top_bot_hight):
-    """
-    Calculates the top or bottom core material part
-
-    :param core_inner_diameter: core inner diameter
-    :param window_w: width of winding window
-    :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
-    :param core_top_bot_hight: hight of the core material top / bottom of the winding window
-    """
-
-    return np.log( (core_inner_diameter + 2 * window_w) / core_inner_diameter) / (2 * np.pi * mu0 * mu_r_abs * core_top_bot_hight)
-
-def r_core_round(core_inner_diameter, core_round_hight, mu_r_abs):
-    """
-    Calculates the core reluctance for a round structure
-
-    :param core_round_hight: hight of the round core part section
-    :param core_inner_diameter: core inner diameter
-    :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
-    """
-    return core_round_hight / (mu0 * mu_r_abs * (core_inner_diameter / 2) ** 2 * np.pi)
-
-
-def r_top_bot_stray(core_inner_diameter, air_gap_middle_leg_list, window_w, window_h, stray_path_air_gap_length, mu_r_abs, start_index, position_air_gap_percent_list):
-
-    # core geometry calculations
-
-    middle_leg_top_total_hight = (100 - position_air_gap_percent_list[start_index + 1]) * 0.01 * window_h + air_gap_middle_leg_list[start_index + 1] / 2
-    middle_leg_bot_total_hight = position_air_gap_percent_list[start_index] * 0.01 * window_h + air_gap_middle_leg_list[start_index] / 2
-    tablet_hight = window_h - middle_leg_top_total_hight - middle_leg_bot_total_hight
-
-    start_index_air_gap_top = start_index + 1
-    stop_index_air_gap_top = len(air_gap_middle_leg_list) - 1
-    #start_index_air_gap_bot = 0
-    #stop_index_air_gap_bot = start_index
-
-    air_gap_middle_leg_bot_list = []
-    position_air_gap_percent_bot_list = []
-    for count, air_gap in enumerate(air_gap_middle_leg_list):
-        if count <= start_index:
-            air_gap_middle_leg_bot_list.append(air_gap)
-            position_air_gap_percent_bot_list.append(position_air_gap_percent_list[count])
-
-
-    # air gap geometry calculations
-    air_gap_total_length_top = 0.0
-    air_gap_middle_leg_top_list = []
-    air_gap_middle_leg_top_percent_list = []
-    for count in range(start_index + 1, len(air_gap_middle_leg_list)):
-        #print(f"{air_gap_middle_leg_list[count] = }")
-        air_gap_total_length_top += air_gap_middle_leg_list[count]
-
-    air_gap_total_length_bot = 0.0
-    for count in range(0, start_index + 1):
-        air_gap_total_length_bot += air_gap_middle_leg_list[count]
-    #print(f"{air_gap_total_length_top = }")
-    #print(f"{air_gap_total_length_bot = }")
-
-    # calculate r_top
-    core_round_hight_top = middle_leg_top_total_hight - air_gap_total_length_top
-
-    r_core_round_top = r_core_round(core_inner_diameter, core_round_hight_top, mu_r_abs)
-    #ToDo: radiant calculation core hight is very simplified using core_inner_diameter/2
-    r_core_top_radiant = r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_inner_diameter / 2)
-    r_core_outer_top = r_core_round_top
-    r_core_top = r_core_round_top + r_core_top_radiant + r_core_outer_top
-
-    # calculate r_air_gap_top
-    # sweep trough top air gap list
-    r_air_gap_top = 0
-    for count in range(start_index_air_gap_top, stop_index_air_gap_top+1):
-        # this routine sums up all air gaps inside the middle leg above the stray path
-        # there are three different types of caluclations
-        #  - first air gap is definitely a round_inf structure
-        #  - in cases of last air gap is >95% of window_h, last air gap is treated as round_inf structure
-        #  - other air gaps are treated as round_round structure
-        if count == start_index + 1:
-            # this is for the first air gap, what is definetly a round_inf air gap
-            if start_index_air_gap_top == stop_index_air_gap_top:
-                core_hight = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
-            else:
-                core_hight = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 *window_h / 2
-            r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            #print('### Case 1: first air gap for top')
-            #print(f"{core_hight = }")
-            #print(f"{r_air_gap_top = }")
-
-        elif position_air_gap_percent_list[count] > 95 and count != start_index_air_gap_top:
-            # this is for the last air gap in case of very close to the top core (95%), so there will be the assumption for a round-inf air gap
-            core_hight = (position_air_gap_percent_list[stop_index_air_gap_top] - position_air_gap_percent_list[stop_index_air_gap_top - 1]) * 0.01 * window_h / 2
-            r_air_gap_top += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            #print('### Case 2: last air gap for top')
-            #print(f"{core_hight = }")
-            #print(f"{r_air_gap_top = }")
-        else:
-            # air gap in the middle between tablet and top air gap
-            if count + 1 < stop_index_air_gap_top:
-                # this is for multiple air gaps in the top-section. Calculation of core hight is only to the next air gap
-                core_hight_upper = (position_air_gap_percent_list[count + 1] - position_air_gap_percent_list[count]) * 0.01 * window_h
-            else:
-                # this is for the last (upper) air gap in the top-section. Calculation of core_hight is until the end of the window
-                core_hight_upper = (100 - position_air_gap_percent_list[count]) * 0.01 * window_h
-            core_hight_lower = (position_air_gap_percent_list[count] - position_air_gap_percent_list[count - 1]) * 0.01 * window_h
-            r_air_gap_top += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
-            #print('### Case 3: middle air gap for top')
-            #print(f"{core_hight_upper = }")
-            #print(f"{core_hight_lower = }")
-            #print(f"{r_air_gap_top = }")
-
-
-    r_top = r_core_top + r_air_gap_top
-
-    # calculate r_bot
-    core_round_hight_bot = middle_leg_bot_total_hight - air_gap_total_length_bot
-
-    r_core_round_bot = r_core_round(core_inner_diameter, core_round_hight_bot, mu_r_abs)
-    #ToDo: radiant calculation core hight is very simplified using core_inner_diameter/2
-    r_core_bot_radiant = r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_inner_diameter / 2)
-    r_core_outer_bot = r_core_round_bot
-    r_core_bot = r_core_round_bot + r_core_bot_radiant + r_core_outer_bot
-
-    #print('##########################################')
-    #print("#### bottom air gap  ####")
-    #print('##########################################')
-
-    # calculate r_air_gap_bot
-    # sweep trough bot air gap list
-    r_air_gap_bot = 0
-    for count, air_gap in enumerate(air_gap_middle_leg_bot_list):
-        #print(f"{air_gap = }")
-        # this routine sums up all air gaps inside the middle leg below the stray path
-        # there are three different types of caluclations
-        #  - last air gap is definitely a round_inf structure
-        #  - in cases of first air gap is <5% of window_h, first air gap is treated as round_inf structure
-        #  - other air gaps are treated as round_round structure
-        if count == position_air_gap_percent_bot_list.index(max(position_air_gap_percent_bot_list)):
-            # this is for the last air gap, what is definetly a round_inf air gap
-            # the check checks not for the last position in the list, but for the real highest percent value
-            if len(position_air_gap_percent_bot_list) == 1:
-                core_hight = (position_air_gap_percent_bot_list[count]) * 0.01 * window_h
-            else:
-                core_hight = (position_air_gap_percent_bot_list[count] - position_air_gap_percent_bot_list[count - 1]) * 0.01 * window_h / 2
-            r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            #print('### Case 1: first air gap for bot')
-            #print(f"{core_hight = }")
-            #print(f"{r_air_gap_bot = }")
-
-        elif position_air_gap_percent_list[count] < 5  and count == 0:
-            # this is for the first air gap in case of very close to the bot core (<5%), so there will be the assumption for a round-inf air gap
-            core_hight = (position_air_gap_percent_list[1] - position_air_gap_percent_list[0]) * 0.01 * window_h / 2
-            r_air_gap_bot += r_air_gap_round_inf(air_gap_middle_leg_list[count], core_inner_diameter, core_hight)
-            #print('### Case 2: last air gap for bot')
-            #print(f"{core_hight = }")
-            #print(f"{r_air_gap_bot = }")
-        else:
-            # this is for multiple air gaps in the bot-section. Calculation of core hight is only to the next air gap
-            if count + 1 < len(position_air_gap_percent_bot_list):
-                core_hight_lower = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
-            else:
-                # this is for the first (lower) air gap in the bot-section. Calculation of core_hight is until the end of the window
-                core_hight_lower = (position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
-
-            core_hight_upper  = (position_air_gap_percent_bot_list[count + 1] - position_air_gap_percent_bot_list[count]) * 0.01 * window_h / 2
-            r_air_gap_bot += r_air_gap_round_round(air_gap_middle_leg_list[count], core_inner_diameter, core_hight_upper, core_hight_lower)
-            #print('### Case 3: middle air gap for bot')
-            #print(f"{core_hight_upper = }")
-            #print(f"{core_hight_lower = }")
-            #print(f"{r_air_gap_bot = }")
-
-    r_bot = r_core_bot + r_air_gap_bot
-
-
-    # calculate r_stray
-    r_stray_air_gap = r_air_gap_tablet_cyl(tablet_hight, stray_path_air_gap_length, core_inner_diameter / 2 + window_w)
-    r_stray_core = r_core_tablet(tablet_hight, core_inner_diameter / 2 + window_w - stray_path_air_gap_length, mu_r_abs, core_inner_diameter)
-    r_stray = r_stray_air_gap + r_stray_core
-
-    return r_top, r_bot, r_stray
-
-
-def hyst_losses_core_half(core_inner_diameter, window_h_half, window_w, mu_r_imag, mu_r_abs, flux_max, fundamental_frequency):
-    """
-    Caluclates the losses of a core cylinder half.
-    means: losses in inner cylinder + losses in outer cylinder + losses in ONE cylinder_radial e.g. for top or bot
-
-    Note: To calculate the hysteresis losses of an inductor, you need to run this function twice with each the half window_h
-
-    :param core_inner_diameter: core inner diameter
-    :param window_h_half: window hight of the core-half to consider
-    :param window_w: window width
-    :param mu_r_abs: (absolute) mu_r value from core material datasheet
-    :param mu_r_imag: imaginary part of mu_r
-    :param flux_max: maximum flux what appears in the core-half
-    :param fundamental_frequency: fundamental frequency of flux
-    """
-    core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
-    flux_density_max = flux_max / core_cross_section
-    volume_cylinder_inner = core_cross_section * window_h_half
-    losses_cylinder_inner = power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_density_max, mu_r_abs, volume_cylinder_inner)
-
-    print(f"####################")
-    print(f"{flux_max = }")
-    print(f"{losses_cylinder_inner = }")
-
-    cylinder_inner_radius = core_inner_diameter / 2
-    cylinder_outer_radius = core_inner_diameter / 2 + window_w
-    losses_cylinder_radial = power_losses_hysteresis_cylinder_radial_direction(flux_max, core_inner_diameter / 4,
-                                                                               cylinder_inner_radius, cylinder_outer_radius,
-                                                                               fundamental_frequency, mu_r_imag, mu_r_abs)
-    print(f"{losses_cylinder_radial = }")
-    print(f"####################")
-    return 2 * losses_cylinder_inner + losses_cylinder_radial
-
-def calculate_reluctance_matrix(winding_matrix, inductance_matrix):
-    """
-    Calculates the Reluctance Matrix.
-    Everything must be numpy!
-
-    L. Keuck, "Entwurf eines einstufigen Ladewandlers auf Basis eines LLC-Resonanzwandlers", dissertation 2023
-
-    :param winding_matrix: winding matrix
-    :param inductance_matrix: inductance matrix
-    :return: reluctance[-matrix]
-
-    inductance matrix e.g.
-    L = [ [L_11, M], [M, L_22] ]
-
-    winding matrix e.g.
-    N = [ [N_1a, N_2b], [N_1b, N_2b] ]
-
-    """
-
-    # Reluctance Matrix
-    if np.ndim(winding_matrix) == 0:
-        L_invert = 1 / inductance_matrix
-    else:
-        L_invert = np.linalg.inv(inductance_matrix)
-
-    return np.matmul(np.matmul(winding_matrix, L_invert), np.transpose(winding_matrix))
-
-def calculate_inductance_matrix(reluctance_matrix, winding_matrix):
-    """
-    Calculates the inductance matrix out of reluctance matrix and winding matrix.
-
-    :param reluctance_matrix: matrix of transformer reluctance
-    :param winding_matrix: matrix of transformer windings
-    :return: inductance matrix
-
-
-    reluctance matrix e.g.
-    r = [ [], [] ]
-
-    winding matrix e.g.
-    N = [ [N_1a, N_2b], [N_1b, N_2b] ]
-
-    returns inductance matrix e.g.
-    L = [ [L_11, M], [M, L_22] ]
-    """
-
-    if np.ndim(reluctance_matrix) == 0:
-        reluctance_matrix_invert = 1 / reluctance_matrix
-    else:
-        reluctance_matrix_invert = np.linalg.inv(reluctance_matrix)
-
-    return np.matmul(np.matmul(np.transpose(winding_matrix), reluctance_matrix_invert), winding_matrix)
-
-def calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix):
-    """
-    calculates the flux for e.g. an integrated transformer
-
-    reluctance matrix e.g.
-    reluctance_matrix = [ [r1, r2], [r3, r4] ]
-
-    winding matrix e.g.
-    winding_matrix = [ [N_1a, N_2b], [N_1b, N_2b] ]
-
-    current matrix e.g.
-    current_matrix = [ [current_1], [current_2] ]
-
-    returns flux matrix e.g.
-    flux_matrix = [ [flux_1], [flux_2] ]
-    """
-
-
-    if np.ndim(reluctance_matrix) == 0:
-        reluctance_matrix_invert = 1 / reluctance_matrix
-    else:
-        reluctance_matrix_invert = np.linalg.inv(reluctance_matrix)
-
-    return np.matmul(np.matmul(reluctance_matrix_invert, winding_matrix), current_matrix)
-
-
-def time_vec_current_vec_from_time_current_vec(time_current_vec):
-    return time_current_vec[0], time_current_vec[1]
-
-
-def flux_vec_from_current_vec(current_vec_1, current_vec_2, winding_matrix, inductance_matrix, visualize=False):
-    """
-    calculates the integrated transformer flux from current vectors
-
-    :param visualize: True for plot
-    :type visualize: bool
-    :param current_vec_2: current vector e.g. [[time1, time2, ...], [current1, current2, ...]]
-    :type current_vec_2: np.array
-    :param current_vec_1: current vector e.g. [[time1, time2, ...], [current1, current2, ...]]
-    :type current_vec_1: np.array
-    """
-
-    flux_top_vec = []
-    flux_bot_vec = []
-    flux_stray_vec = []
-
-    for count, value in enumerate(current_vec_1):
-        # Negative sign is placed here
-        current_value_timestep = [current_vec_1[count], -current_vec_2[count]]
-
-        # simplified formula: flux = L * I / N
-        [flux_top_timestep, flux_bot_timestep] = np.matmul(np.matmul(np.linalg.inv(np.transpose(winding_matrix)), inductance_matrix),
-                                                           np.transpose(current_value_timestep))
-        flux_stray_timestep = flux_bot_timestep - flux_top_timestep
-
-        flux_top_vec.append(flux_top_timestep)
-        flux_bot_vec.append(flux_bot_timestep)
-        flux_stray_vec.append(flux_stray_timestep)
-
-    return flux_top_vec, flux_bot_vec, flux_stray_vec
-
-
-def visualize_current_and_flux(time, flux_top_vec, flux_bot_vec, flux_stray_vec, current_1_vec, current_2_vec):
-    figure, axis = plt.subplots(2, figsize=(4, 4))
-
-    axis[0].plot(time, current_1_vec, label=r"$I_{\mathrm{in}}$")
-    axis[0].plot(time, -np.array(current_2_vec), label=r"$I_{\mathrm{out}}$")
-
-    axis[1].plot(time, 1000 * np.array(flux_top_vec), label=r"$\mathcal{\phi}_{\mathrm{top}}$")
-    axis[1].plot(time, 1000 * np.array(flux_bot_vec), label=r"$\mathcal{\phi}_{\mathrm{bot}}$")
-    axis[1].plot(time, 1000 * np.array(flux_stray_vec), label=r"$\mathcal{\phi}_{\mathrm{stray}}$")
-
-    axis[1].set_ylabel("Magnetic fluxes / mWb")
-    axis[1].set_xlabel(r"$t$ / $\mathrm{\mu s}$")
-    axis[0].set_ylabel("Currents / A")
-    axis[0].set_xlabel(r"$t$ / $\mathrm{\mu s}$")
-
-    axis[0].legend()
-    axis[1].legend()
-    axis[0].grid()
-    axis[1].grid()
-    plt.show()
-
-
-def max_flux_from_flux_vec(flux_top_vec, flux_bot_vec, flux_stray_vec):
-    """
-    Gets the peak flux values from the flux vectors
-
-    :param flux_stray_vec: flux vector in stray path
-    :param flux_bot_vec: flux vector in bot path
-    :param flux_top_vec: flux vector in top path
-    """
-    flux_top_peak = max([abs(flux_timestep) for flux_timestep in flux_top_vec])
-    flux_bot_peak = max([abs(flux_timestep) for flux_timestep in flux_bot_vec])
-    flux_stray_peak = max([abs(flux_timestep) for flux_timestep in flux_stray_vec])
-
-    return flux_top_peak, flux_bot_peak, flux_stray_peak
-
-def power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_densitiy_max, mu_r_abs, core_volume):
-    """
-    Calculates the hysteresis losses depending on the input parameters.
-    The output are the losses for a certain volume of core.
-
-    :param fundamental_frequency: fundamental frequency in Hz
-    :param mu_r_imag: imaginary part of u_r
-    :param flux_densitiy_max: maximum flux density
-    :param mu_r_abs: abs(mu_r)
-    :param core_volume: core volume
-    """
-
-    return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu0 * (flux_densitiy_max / mu0 / mu_r_abs) ** 2
-
-def calcualte_cylinder_volume(cylinder_diameter, cylinder_hight):
-    return (cylinder_diameter / 2) ** 2 * np.pi * cylinder_hight
-
-def calculate_core_2daxi_total_volume(core_inner_diameter, window_h, window_w):
-    """
-    Calculates the full volume of a rotationally symmetric core.
-    Inside material (windings, air) also belong to this volume.
-    This is the total volume used by the magnetic itself.
-
-    :param core_inner_diameter: core inner diameter
-    :param window_h: winding window hight
-    :param window_w: winding window width
-    """
-    outer_core_radius = np.sqrt( core_inner_diameter ** 2 / 2 + core_inner_diameter * window_w + window_w ** 2)
-
-    return outer_core_radius ** 2 * np.pi * (window_h + core_inner_diameter / 2)
-
-def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_hight, cylinder_inner_radius, cylinder_outer_radius,
-                                                      fundamental_frequency, mu_r_imag, mu_r_abs):
-    """
-    This function calculates the hysteresis losses inside a cylinder, where the flux flows in radial direction.
-
-    :param flux: flux
-    :param cylinder_hight: cylinder hight
-    :param cylinder_inner_radius: cylinder inner radius
-    :param cylinder_outer_radius: cylinder outer radius
-    :param fundamental_frequency: fundamental frequency
-    :param mu_r_imag: imaginary part of u_r
-    :param mu_r_abs: absolute value of mu_r: abs(mu_r)
-
-    """
-
-    def flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight):
-        """
-        This is a helper-function, what is used as a function to integrate by scipy.integrate.quad.
-        It calculates the flux density in a cylinder envelope. By using the integration function, the flux density
-        in a volume can be calculated, as done in the superordinate function.
-
-        :param cylinder_radius: cylinder radius
-        :param flux: flux trough cylinder envelope depending on its radius
-        :param cylinder_hight: cylinder hight
-        """
-        return flux / (2 * np.pi * cylinder_radius * cylinder_hight)
-
-    def power_loss_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight):
-        """
-        This is a helper-function, what is used as a function to integrate by scipy.integrate.quad
-        It calcuates the power losses in a cylinder envelope. Together with the integration function, the hysteresis
-        losses are calculated in a volumetric cylinder where the flux is orientated in radiant direction.
-
-        volume = cylinder_diameter * pi * cylinder_hight
-
-        Basic formula for hysteresis losses:
-        p_hyst = volume * 0.5 * omega * u_imag * (max(flux_density) / mu_0 / mu_r) ** 2
-        -> p_hyst = volume * pi * frequency * u_imag * (max(flux_density) / mu_0 / mu_r) ** 2
-
-        Note: this is the simplified version to calculate the losses using a fixed mu_r_imag.
-        In case of using the u_r_imag in dependence of the different flux density, what varies inside the cylinder,
-        use this as a hint to modify the formula.
-        AnalyticalCoreData.f_N95_mu_imag(fundamental_frequency, flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight))
-
-        The [0] in the return for only handling the result itself to the output, not the error.
-        """
-
-        return 2 * np.pi * cylinder_radius * cylinder_hight * np.pi * fundamental_frequency * mu0 * mu_r_imag * (flux_density_cylinder_envelope(cylinder_radius, flux, cylinder_hight) / mu_r_abs / mu0) ** 2
-
-    return scipy.integrate.quad(power_loss_density_cylinder_envelope, cylinder_inner_radius, cylinder_outer_radius, args=(flux, cylinder_hight),
-                epsabs=1e-4)[0]
-
-
-def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
-    """
-    Calculates the transformer primary concentrated circuit parameters from matrix
-    :param inductance_matrix: input reluctance matrix in form of [[L_11, M], [M, L_22]]
-    :return l_s: primary concentrated stray inductance
-    :return l_h: primary concentrated main inductance
-    :return n: ratio
-    """
-
-    l_11 = inductance_matrix[0, 0]
-    l_22 = inductance_matrix[1, 1]
-    mutal_inductance = inductance_matrix[1, 0]
-
-    coupling_factor = mutal_inductance / (np.sqrt(l_11 * l_22))
-    n = mutal_inductance / l_22
-    l_s = (1 - coupling_factor ** 2) * l_11
-    l_h = coupling_factor ** 2 * l_11
-
-    return l_s, l_h, n
 
 def create_physical_group(dim, entities, name):
     tag = gmsh.model.addPhysicalGroup(dim, entities)
@@ -1638,10 +954,10 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
     loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
 
-    print(inductance)
-    print(loss_core_eddy_current)
-    print(loss_core_hysteresis)
-    print(loss_winding_1)
+    femmt_print(inductance)
+    femmt_print(loss_core_eddy_current)
+    femmt_print(loss_core_hysteresis)
+    femmt_print(loss_winding_1)
 
     bar_width = 0.35
     plt.bar(0, loss_core_hysteresis, width=bar_width)
@@ -1668,11 +984,30 @@ def point_is_in_rect(x, y, rect):
     
     return False
 
-def set_silent_status(s: bool):
+def set_silent_status(s: bool) -> None:
+    """
+    Variable to store the silent status to show terminal outputs or not.
+    Using silent-mode increases speed of simulation significantly.
+    :param s: status for silent mode True/False
+    :type s: bool
+    :return: None
+    :rtype: None
+    """
     global silent
     silent = s
 
-def femmt_print(text, end='\n'):
+def femmt_print(text: str, end:str='\n') -> None:
+    """
+    Print-function for femmt. Uses a silent-Flag as global variable, to show terminal outputs or not.
+    Using silent-mode increases speed of simulation significantly.
+
+    :param text: text to print
+    :type text: str
+    :param end: command text ends with, defaults to '\n'
+    :type: end: str
+    :return: None
+    :rtype: None
+    """
     if not silent:
         print(text, end)
 
@@ -1693,19 +1028,25 @@ def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     return sigma_core * core_weight
 
 
-def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str], single_strand_cross_section_list: List[float] = []):
+def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str], single_strand_cross_section_list: Union[List[float], None] = None):
     """
     Calculates single winding material and fabrication costs depending on winding-type and weight
+
+    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converters"
 
     :param wire_weight_list: winding weight in kg in list-form
     :type wire_weight_list: List[float]
     :param wire_type_list: winding type. Must fit to enum-names in ConductorType-Enum
     :type wire_type_list: List[str]
-    :param single_strand_cross_section_list: single strand cross section in list-form
+    :param single_strand_cross_section_list: single strand cross-section in list-form
     :type single_strand_cross_section_list: List[float]
     :return: winding cost of single winding
     :rtype: float
     """
+    if single_strand_cross_section_list is None:
+        single_strand_cross_section_list = []
+
+
     cost_database = cost_material_database()
     winding_cost_list = []
 
@@ -1714,7 +1055,7 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
         sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram"][wire_type_list[winding_count]]
         if sigma_material_winding_euro_per_kilogram == -1:
             # case for special litz wire calculation. Additional data is loaded from cost_database.
-            sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_numerator"] / (single_strand_cross_section_list[winding_count] * 1e6 + cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_denumerator"])
+            sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_numerator"] / (single_strand_cross_section_list[winding_count] * 1e6 + cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_denominator"])
 
         winding_material_euro_per_unit = cost_database["winding_material_euro_per_unit"][wire_type_list[winding_count]]
 
@@ -1733,10 +1074,12 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
 
 
 def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str],
-                        single_strand_cross_section_list: List[float] = []) -> float:
+                        single_strand_cross_section_list: Union[None, List[float]] = None) -> float:
     """
-    Calculates the total costs for a inductive element.
+    Calculates the total costs for an inductive element.
     This includes material costs for core and winding, fabrication costs for core and winding and manufacturer margin
+
+    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converters"
 
     :param core_weight: core weight in kg
     :type core_weight: float
@@ -1746,11 +1089,14 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
     :type wire_weight_list: float
     :param wire_type_list: winding type in list-form. Must fit to enum-names in ConductorType-Enum
     :type wire_type_list: List[str]
-    :param single_strand_cross_section_list: single strand cross section in list-form
+    :param single_strand_cross_section_list: single strand cross-section in list-form
     :type single_strand_cross_section_list: List[float]
     :return: total costs for inductive element
     :rtype: float
     """
+    if single_strand_cross_section_list is None:
+        single_strand_cross_section_list = []
+
     cost_database = cost_material_database()
 
     cost_core = cost_function_core(core_weight, core_type)
@@ -1801,9 +1147,30 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
         elif len(keyword_list) == 5:
             data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]][keyword_list[4]]
 
-        if value_min <= data_to_compare and data_to_compare <= value_max:
+        if value_min <= data_to_compare <= value_max:
             print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
 
+
+def wave_vector(f, complex_permeability, complex_permittivity, conductivity):
+    omega = 2*np.pi*f
+    j = complex(0, 1)
+    complex_equivalent_permittivity = complex_permittivity - j * conductivity / omega
+    return omega * np.sqrt(complex_permeability * complex_equivalent_permittivity)
+
+
+def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity):
+    k = wave_vector(f, complex_permeability, complex_permittivity, conductivity)
+    return 2 * np.pi / k.real
+
+
+def check_mqs_condition(radius, f, complex_permeability, complex_permittivity, conductivity, relative_margin_to_first_resonance=0.5):
+    axial_lambda = axial_wavelength(f, complex_permeability, complex_permittivity, conductivity)
+    diameter_to_wavelength_ratio_of_first_resonance = 0.7655
+    diameter_to_wavelength_ratio = 2 * radius / axial_lambda
+    if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
+        # raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
+        #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
+        femmt_print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
 
 if __name__ == '__main__':
     pass

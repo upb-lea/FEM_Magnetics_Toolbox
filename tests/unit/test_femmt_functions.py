@@ -80,3 +80,17 @@ def test_volume():
     window_w = 0.011
     core_inner_diameter = 0.02
     assert femmt.calculate_core_2daxi_total_volume(core_inner_diameter, window_h, window_w) == pytest.approx(6.798406502368311e-05, rel=1e-3)
+
+
+def test_rms_current_calculation():
+    time_current = [[0, 0.5e-6, 2.5e-6, 3e-6, 5e-6], [16.55, -10.55, -16.55, 10.55, 16.55]]
+    assert femmt.i_rms(time_current) == pytest.approx(12.779756127041967, rel=1e-3)
+
+def test_winding_resistance_calculation_solid():
+    core_inner_diameter = 20e-3
+    window_w = 0.05
+    turns_count = 20
+    conductor_radius = 1e-3
+    material = "Copper"
+
+    assert femmt.resistance_solid_wire(core_inner_diameter, window_w, turns_count, conductor_radius, material) == pytest.approx(0.02251034482758622, rel=1e-3)

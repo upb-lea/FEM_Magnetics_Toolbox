@@ -149,15 +149,15 @@ Formulation {
         In DomainC ; Jacobian Vol ; Integration II ; }
 
       // sigma Nabla PHI
-      Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {a} ] ;
+      Galerkin { [ -sigma[] * Dof{ur}/CoefGeo , {a} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
-      Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
+      Galerkin { [ -sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
 
       // -Je (imprinted current density)
       Galerkin { [ -1/AreaCell[] *  Dof{ir}, {a} ] ;
         In DomainS ; Jacobian Vol ; Integration II ; }
-      Galerkin { DtDof [ -1/AreaCell[] * Dof{a}, {ir} ] ;
+      Galerkin { DtDof [ 1/AreaCell[] * Dof{a}, {ir} ] ;
         In DomainS ; Jacobian Vol ; Integration II ; }
       //GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In DomainS ; }
 

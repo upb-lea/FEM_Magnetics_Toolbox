@@ -70,9 +70,9 @@ if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
 component = "inductor"
-# component = "transformer-interleaved"
-# component = "transformer"
-# component = "integrated_transformer"
+#component = "transformer-interleaved"
+#component = "transformer"
+#component = "integrated_transformer"
 # component = "load_from_file"
 
 # Create Object
@@ -83,14 +83,20 @@ if component == "inductor":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=False)
-    print(geo)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
-
+    inductor_frequency = 270000
     core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
+                    material="N49", temperature=45, frequency=inductor_frequency,
+                    # permeability_datasource="manufacturer_datasheet",
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup="LEA_LK",
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup="LEA_LK")
                     # mu_rel=3000, phi_mu_deg=10,
                     # sigma=0.5)
     geo.set_core(core)
@@ -114,7 +120,8 @@ if component == "inductor":
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
-    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
+    winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
+    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
@@ -122,10 +129,13 @@ if component == "inductor":
     geo.set_winding_window(winding_window)
 
     # 8. create the model
-    geo.create_model(freq=100000, visualize_before=True, save_png=False)
+    geo.create_model(freq=inductor_frequency, visualize_before=False, save_png=False)
 
     # 6.a. start simulation
-    geo.single_simulation(freq=100000, current=[4.5], show_results=True)
+    geo.single_simulation(freq=inductor_frequency, current=[4.5],
+                          plot_interpolation=False, show_results=True)
+
+    # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
     # 6.b. Excitation Sweep Example
     # Perform a sweep using more than one frequency
@@ -148,7 +158,8 @@ if component == "transformer-interleaved":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10)
+                    non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
+
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -200,8 +211,8 @@ if component == "transformer":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    mu_rel=3100, phi_mu_deg=12,
-                    sigma=1.2)
+                    mu_r_abs=3100, phi_mu_deg=12,
+                    sigma=1.2, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -245,8 +256,8 @@ if component == "integrated_transformer":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.03, window_w=0.011, core_inner_diameter=0.02,
-                    mu_rel=3100, phi_mu_deg=12,
-                    sigma=0.6)
+                    mu_r_abs=3100, phi_mu_deg=12,
+                    sigma=0.6, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 2.1 set stray path parameters

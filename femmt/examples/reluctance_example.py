@@ -26,7 +26,7 @@ mult_air_gap_type = [1, 2]
 # air_gap_length, air_gap_position, mu_rel, mult_air_gap_type)
 mc = fmt.MagneticCircuit(core_inner_diameter=core_width_list, window_h=core_window_h_list, window_w=core_window_w_list,
                          no_of_turns=no_of_turns, n_air_gaps=n_air_gaps, air_gap_h=air_gap_length,
-                         air_gap_position=air_gap_position, mu_rel=mu_rel, mult_air_gap_type=mult_air_gap_type,
+                         air_gap_position=air_gap_position, mu_r_abs=mu_rel, mult_air_gap_type=mult_air_gap_type,
                          air_gap_method='Percent', component_type='inductor', sim_type='sweep')
 
 # Calculate total reluctance and creates data_matrix to access all corresponding parameters and results

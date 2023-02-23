@@ -1,14 +1,22 @@
 # This is a basic workflow to help you get started with Actions
 
-name: main branch - Pytest on push and on pull requests
+#############################
+# Main difference between main and develop branch
+# 2023-02-15
+# Note: The push/pull test file on develop branch differs from main
+# * main test uses main branch of materialdatabase
+# * develop test uses develop branch of materialdatabase
+#############################
+
+name: develop_branch - Pytest on push and on pull requests
 
 # Controls when the workflow will run
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main]
+    branches: [ develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ develop ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -42,10 +50,10 @@ jobs:
         run: |
             pwd
             ls
-            wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/main.zip
-            unzip main.zip
-            rm main.zip
-            cd materialdatabase-main
+            wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/develop.zip
+            unzip develop.zip
+            rm develop.zip
+            cd materialdatabase-develop
             pip install -e .
             cd ..
             echo show folder path

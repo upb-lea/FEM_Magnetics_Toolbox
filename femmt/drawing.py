@@ -1,12 +1,11 @@
 # Python standard libraries
-from logging import warning
 import numpy as np
 from typing import List
 
 # Local libraries
-from femmt.Enumerations import *
-from femmt.Data import MeshData
-from femmt.Model import Core, VirtualWindingWindow, AirGaps, StrayPath, Insulation
+from femmt.enumerations import *
+from femmt.data import MeshData
+from femmt.model import Core, VirtualWindingWindow, AirGaps, StrayPath, Insulation
 
 class TwoDaxiSymmetric:
     """
@@ -28,10 +27,10 @@ class TwoDaxiSymmetric:
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
-    p_outer: List[List[float]]
-    p_region_bound: List[List[float]] 
-    p_window: List[List[float]] 
-    p_air_gaps: List[List[float]]
+    p_outer: np.ndarray
+    p_region_bound: np.ndarray
+    p_window: np.ndarray
+    p_air_gaps: np.ndarray
     p_conductor: List[List[float]]
     p_iso_core: List[List[float]]
     p_iso_pri_sec: List[List[float]]
@@ -138,7 +137,7 @@ class TwoDaxiSymmetric:
     def draw_air_gaps(self):
         # Air gaps
         # "air_gaps" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
-        #   - position_tag: specifies the gapped "leg"
+        #   - position_tag: specifies the "leg" with air gaps
         #   - air_gap_position: specifies the coordinate of the air gap's center point along the specified leg
         #   - air_gap_h: height/length of the air gap
         #   - c_air_gap: mesh accuracy factor
@@ -695,6 +694,7 @@ class TwoDaxiSymmetric:
                                         winding_number1]
                     else:
                         raise Exception(f"Unknown conductor_arrangement {winding1.conductor_arrangement.name}")
+
             elif virtual_winding_window.winding_type == WindingType.Single:
                 # One winding in the virtual winding window
                 winding = virtual_winding_window.windings[0]
@@ -817,6 +817,7 @@ class TwoDaxiSymmetric:
                                     self.mesh_data.c_conductor[num]])      
                     else:
                         raise Exception(f"Winding scheme {winding_scheme.name} is not implemented.")
+
                 elif conductor_type == ConductorType.RoundSolid or conductor_type == ConductorType.RoundLitz:
                     # Since round conductors have no winding scheme check for each conductor_arrangement
                     conductor_arrangement = winding.conductor_arrangement
@@ -857,6 +858,7 @@ class TwoDaxiSymmetric:
                                 y += winding.conductor_radius * 2 + self.insulation.inner_winding_insulations[num]  # one step from left to right
                             x += winding.conductor_radius * 2 + self.insulation.inner_winding_insulations[num]  # from left to top
                             y = bot_bound + winding.conductor_radius
+
                     elif conductor_arrangement == ConductorArrangement.Hexagonal:
                         y = bot_bound + winding.conductor_radius
                         x = left_bound + winding.conductor_radius
@@ -909,6 +911,7 @@ class TwoDaxiSymmetric:
                                 y = bot_bound + 2 * winding.conductor_radius + \
                                     self.insulation.inner_winding_insulations[
                                         num] / 2
+
                     elif conductor_arrangement == ConductorArrangement.SquareFullWidth:
                         y = bot_bound + winding.conductor_radius
                         x = left_bound + winding.conductor_radius
@@ -951,8 +954,10 @@ class TwoDaxiSymmetric:
                                     self.insulation.inner_winding_insulations[
                                         num]  # one step from left to right
                             x = left_bound + winding.conductor_radius  # always the same
+
                     else:
                         raise Exception(f"Conductor arrangement {conductor_arrangement} is not implemented.")
+
                 else:
                     raise Exception(f"Conductor type {winding.conductor_type.name} is not implemented.")
             else:

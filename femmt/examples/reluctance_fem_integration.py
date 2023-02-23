@@ -521,7 +521,7 @@ class AutomatedDesign:
         mc = fmt.MagneticCircuit(core_inner_diameter=self.core_inner_diameter_list, window_h=self.window_h_list, window_w=self.window_w_list,
                                  no_of_turns=self.no_of_turns, n_air_gaps=self.n_air_gaps,
                                  air_gap_h=self.air_gap_height, air_gap_position=self.air_gap_position,
-                                 mu_rel=self.mu_rel, mult_air_gap_type=self.mult_air_gap_type_list,
+                                 mu_r_abs=self.mu_rel, mult_air_gap_type=self.mult_air_gap_type_list,
                                  air_gap_method='Percent', component_type=self.magnetic_component, sim_type='sweep')
         self.param = mc.get_parameters_position_dict()
 

@@ -1,13 +1,14 @@
 # Python standard libraries
-import os
+
 
 import numpy as np
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Union
 
 # Local libraries
-import femmt.Functions as ff
-from femmt.Enumerations import *
+import femmt.functions as ff
+from femmt.enumerations import *
+from femmt.constants import *
 import materialdatabase as mdb
 
 
@@ -31,14 +32,13 @@ class Conductor:
     n_layers: int
     a_cell: float
     cond_sigma: float
-    parallel: int = 1  # TODO What is this parameter?
 
     conductor_is_set: bool
 
     # Not used in femmt_classes. Only needed for to_dict()
     conductivity: Conductivity = None
 
-    def __init__(self, winding_number: int, conductivity: float):
+    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False):
         """Creates an conductor object.
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
         The conductor with the lowest winding number (starting from 0) will be treated as primary, second lowest number as secondary and so on.
@@ -54,6 +54,7 @@ class Conductor:
         self.winding_number = winding_number
         self.conductivity = conductivity
         self.conductor_is_set = False
+        self.parallel = parallel
 
         dict_material_database = ff.wire_material_database()
         if conductivity.name in dict_material_database:
@@ -81,8 +82,9 @@ class Conductor:
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
 
-    def set_litz_round_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float,
-                                 fill_factor: float, conductor_arrangement: ConductorArrangement):
+    def set_litz_round_conductor(self, conductor_radius: Optional[float], number_strands: Optional[int],
+                                 strand_radius: Optional[float],
+                                 fill_factor: Optional[float], conductor_arrangement: ConductorArrangement):
         """
         Only 3 of the 4 parameters are needed. The other one needs to be none
         """
@@ -98,7 +100,7 @@ class Conductor:
         self.ff = fill_factor
 
         if number_strands is None:
-            self.n_strands = conductor_radius ** 2 / strand_radius ** 2 * fill_factor
+            self.n_strands = int(conductor_radius ** 2 / strand_radius ** 2 * fill_factor)
         elif conductor_radius is None:
             self.conductor_radius = np.sqrt(number_strands * strand_radius ** 2 / fill_factor)
         elif fill_factor is None:
@@ -109,7 +111,7 @@ class Conductor:
         else:
             raise Exception("1 of the 4 parameters need to be None.")
 
-        self.n_layers = ff.NbrLayers(number_strands)
+        self.n_layers = ff.litz_calculate_number_layers(number_strands)
         self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
         ff.femmt_print(f"Updated Litz Configuration: \n"
@@ -143,8 +145,8 @@ class Core:
     """
     This creates the core base for the model.
 
-    frequency = 0: mu_rel only used if non_linear == False
-    frequency > 0: mu_rel is used
+    frequency = 0: mu_r_abs only used if non_linear == False
+    frequency > 0: mu_r_abs is used
     """
     # TODO More documentation
 
@@ -156,10 +158,8 @@ class Core:
     # Permeability
     # TDK N95 as standard material:
     permeability_type: PermeabilityType
-    mu_rel: float  # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
-    phi_mu_deg: float  # mu_complex = mu_rel * exp(j*phi_mu_deg)
-    # re_mu_rel: float      # Real part of relative Core Permeability  [B-Field and frequency-dependent]
-    # im_mu_rel: float      # Imaginary part of relative Core Permeability
+    mu_r_abs: float  # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
+    phi_mu_deg: float  # mu_complex = mu_r_abs * exp(j*phi_mu_deg)
 
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
     sigma: float  # Imaginary part of complex equivalent permittivity [frequency-dependent]
@@ -180,82 +180,113 @@ class Core:
     # Needed for to_dict
     loss_approach: LossApproach = None
 
-    # TODO explanation
-    r_inner: float
-    r_outer: float
 
-    correct_outer_leg: bool
+    r_inner: float # radius of outer winding window: core_inner_diameter / 2 + window_w
+    r_outer: float # outer radius of full core
+
+    correct_outer_leg: bool # Outer leg is set, so cross-section is same as in inner cylinder (False). Setting this variable to True,
 
     # Database
     # material_database is variable to load in material_database
     temperature: float  # temperature at which data is required
     material: str  # material to be accessed from data base
     datasource: str  # type of data to be accessed ( datasheet or measurement)
+
     file_path_to_solver_folder: str  # location to create temporary pro file
 
-    def __init__(self, core_inner_diameter: float, window_w: float, window_h: float, material: str = "custom",
-                 loss_approach: LossApproach = LossApproach.LossAngle, mu_rel: float = 3000, temperature: float = None,
-                 datasource: str = None,
-                 steinmetz_parameter: list = None, generalized_steinmetz_parameter: list = None,
-                 phi_mu_deg: float = None, sigma: float = None, non_linear: bool = False,
-                 correct_outer_leg: bool = False, **kwargs):
+    def __init__(self, core_inner_diameter: float, window_w: float, window_h: float, correct_outer_leg: bool = False,
+                 material: str = "custom",
+                 temperature: float = None,
+                 loss_approach: LossApproach = LossApproach.LossAngle,
+                 mu_r_abs: float = 3000,
+
+                 # permeability
+                 permeability_datasource: MaterialDataSource = None,
+                 permeability_datatype: MeasurementDataType = None,
+                 permeability_measurement_setup: str = None,
+                 phi_mu_deg: float = None,
+                 non_linear: bool = False,
+
+                 # permittivity
+                 permittivity_datasource: str = None,
+                 permittivity_datatype: str = None,
+                 permittivity_measurement_setup: str = None,
+                 sigma: float = None,
+                 steinmetz_parameter: list = None,
+                 generalized_steinmetz_parameter: list = None,
+                 **kwargs):
         """TODO Doc
 
-        :param core_w: _description_
-        :type core_w: float
-        :param window_w: _description_
+        :param core_inner_diameter: diameter of the inner core
+        :type core_inner_diameter: float
+        :param window_w: width of the winding window
         :type window_w: float
-        :param window_h: _description_
+        :param window_h: height of the winding window
         :type window_h: float
-        :param material: _description_, defaults to "custom"
+        :param material: Material name, e.g. 'N95', defaults to "custom"mu_rel
         :type material: str, optional
-        :param mu_rel: _description_, defaults to 3000
-        :type mu_rel: float, optional
-        :param phi_mu_deg: _description_, defaults to None
+        :param mu_r_abs: absolute value of the permeability, defaults to 3000
+        :type mu_r_abs: float, optional
+        :param phi_mu_deg: loss angle of the material in degree, defaults to None
         :type phi_mu_deg: float, optional
-        :param sigma: _description_, defaults to None
+        :param sigma: core conductivity, defaults to None
         :type sigma: float, optional
         :param non_linear: _description_, defaults to False
         :type non_linear: bool, optional
-        :param correct_outer_leg: _description_, defaults to False
+        :param correct_outer_leg: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
         :type correct_outer_leg: bool, optional
         """
         # Set parameters
-        self.file_path_to_solver_folder = None
-        self.temperature = temperature
-        self.datasource = datasource
+
+        # Geometric Parameters
         self.core_inner_diameter = core_inner_diameter
-        self.core_h = None  # TODO Set core_h to not none
         self.window_w = window_w
         self.window_h = window_h
         self.type = "axi_symmetric"
-        self.material = material
-        self.non_linear = non_linear
-        self.mu_rel = mu_rel
-        self.phi_mu_deg = phi_mu_deg
-        self.sigma = sigma
-        self.loss_approach = loss_approach
         self.number_core_windows = 2
         self.correct_outer_leg = correct_outer_leg
-
-        # Initialize database
-        self.material_database = mdb.MaterialDatabase(ff.silent)
-
-        self.core_h = window_h + core_inner_diameter / 2
+        self.core_h = window_h + core_inner_diameter / 2  # TODO: could also be done arbitrarily
         self.r_inner = window_w + core_inner_diameter / 2
         if correct_outer_leg:
+            # hard-coded case for PQ 40/40-cores:
+            # the outer cross-section differs from inner cross-section and is corrected here.
+            # Note: for PQ 40/40 cores only!!
             A_out = 200 * 10 ** -6
             self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
         else:
+            # set r_outer, so cross-section of outer leg has same cross-section as inner leg
+            # this is the recommended default-case
             self.r_outer = np.sqrt((core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
+
+        # Material Parameters
+        # General
+        # Initialize database
+        self.material_database = mdb.MaterialDatabase(ff.silent)
+        self.material = material
+        self.file_path_to_solver_folder = None
+        self.temperature = temperature
+        # Permeability
+        self.permeability = {"datasource": permeability_datasource,
+                             "measurement_setup": permeability_measurement_setup,
+                             "datatype": permeability_datatype}
+        self.non_linear = non_linear
+        self.mu_r_abs = mu_r_abs
+        self.phi_mu_deg = phi_mu_deg
+        self.loss_approach = loss_approach
+        # Permittivity
+        self.complex_permittivity = None
+        self.permittivity = {"datasource": permittivity_datasource,
+                             "measurement_setup": permittivity_measurement_setup,
+                             "datatype": permittivity_datatype}
+        self.sigma = sigma
 
         # Check loss approach
         if loss_approach == LossApproach.Steinmetz:
             self.sigma = 0
             if self.material != "custom":
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_rel = self.material_database.get_material_property(material_name=self.material,
-                                                                           property="initial_permeability")
+                self.mu_r_abs = self.material_database.get_material_property(material_name=self.material,
+                                                                             property="initial_permeability")
 
                 steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
                                                               datasource="measurements")
@@ -267,9 +298,7 @@ class Core:
                 self.ki = steinmetz_parameter[0]
                 self.alpha = steinmetz_parameter[1]
                 self.beta = steinmetz_parameter[2]
-                print(self.ki)
-                print(self.alpha)
-                print(self.beta)
+                ff.femmt_print(f"{self.ki, self.alpha, self.beta = }")
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
         # if loss_approach == LossApproach.Generalized_Steinmetz:
@@ -287,10 +316,12 @@ class Core:
             #     self.t_fall = generalized_steinmetz_parameter[1]
 
         if loss_approach == LossApproach.LossAngle:
-            if self.material == "custom":
-                self.sigma = sigma  # ------sigma from user
 
-                # this is a service for the user:
+            if self.permittivity["datasource"] == MaterialDataSource.Custom:
+                self.sigma = sigma  # from user
+
+            if self.permeability["datasource"] == MaterialDataSource.Custom:
+                 # this is a service for the user:
                 # In case of not giving a fixed loss angle phi_mu_deg,
                 # the initial permeability from datasheet is used (RealValue)
                 if phi_mu_deg is not None and phi_mu_deg != 0:
@@ -299,13 +330,12 @@ class Core:
                     self.permeability_type = PermeabilityType.RealValue
 
 
-            elif self.material != "custom":
+            elif self.material != "custom":  # TODO: new condition here
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_rel = self.material_database.get_material_property(material_name=self.material,
-                                                                           property="initial_permeability")
-                self.sigma = 1 / self.material_database.get_material_property(
-                    material_name=self.material,
-                    property="resistivity")  # get resistivity for material from database
+                self.mu_r_abs = self.material_database.get_material_property(material_name=self.material,
+                                                                             property="initial_permeability")
+                self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
+
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
 
@@ -317,30 +347,58 @@ class Core:
         # Needed because of to_dict
         self.kwargs = kwargs
 
-    def update_core_material_pro_file(self, frequency, electro_magnetic_folder):
-        # This function is needed to updated the pro file for the solver depending on the frequency of the
+    def update_sigma(self, frequency):
+        """
+
+        :param frequency:
+        :return:
+        """
+        if self.permittivity["datasource"] == MaterialDataSource.Measurement:
+            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature, frequency=frequency, material_name=self.material,
+                                                                                 datasource=self.permittivity["datasource"],
+                                                                                 measurement_setup=self.permittivity["measurement_setup"],
+                                                                                 datatype=self.permittivity["datatype"])
+            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
+            self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
+
+        if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
+            self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
+
+
+    def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
+        # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
-        self.material_database.permeability_data_to_pro_file(T=self.temperature, f=frequency,
+        ff.femmt_print(f"{self.permeability['datasource'] = }")
+        self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
-                                                             datasource=self.datasource,
-                                                             pro=True,
-                                                             parent_directory=electro_magnetic_folder)
+                                                             datasource=self.permeability["datasource"],
+                                                             datatype=self.permeability["datatype"],
+                                                             measurement_setup=self.permeability["measurement_setup"],
+                                                             parent_directory=electro_magnetic_folder,
+                                                             plot_interpolation=plot_interpolation)
 
     def to_dict(self):
+        # TODO: mdb
         return {
             "core_inner_diameter": self.core_inner_diameter,
             "window_w": self.window_w,
             "window_h": self.window_h,
             "material": self.material,
             "loss_approach": self.loss_approach.name,
-            "mu_rel": self.mu_rel,
+            "mu_r_abs": self.mu_r_abs,
             "phi_mu_deg": self.phi_mu_deg,
             "sigma": self.sigma,
             "non_linear": self.non_linear,
             "correct_outer_leg": self.correct_outer_leg,
             "temperature": self.temperature,
-            "datasource": self.datasource
+            "permeability_datasource": self.permeability["datasource"],
+            "permeability_measurement_setup": self.permeability["measurement_setup"],
+            "permeability_datatype": self.permeability["datatype"],
+            "permittivity_datasource": self.permittivity["datasource"],
+            "permittivity_measurement_setup": self.permittivity["measurement_setup"],
+            "permittivity_datatype": self.permittivity["datatype"]
         }
+
 
 class AirGaps:
     """
