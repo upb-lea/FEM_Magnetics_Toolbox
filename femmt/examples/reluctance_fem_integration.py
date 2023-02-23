@@ -13,6 +13,7 @@ from itertools import product
 import logging
 from scipy.interpolate import interp1d
 import materialdatabase as mdb
+from timeit import default_timer as timer
 
 
 material_db = mdb.MaterialDatabase()
@@ -298,6 +299,25 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
 
 def filter_after_fem(inductance: list, total_loss: list, total_volume: list, total_cost: list,
                      annotation_list: list, goal_inductance: float, percent_tolerance: int):
+    """
+    The function filters the FEM simulated data based on the inductance tolerance
+
+    param inductance: Inductance read from FEM simulation cases[in Henry]
+    :type inductance: list
+    :param total_loss: total_loss (hysteresis + winding) read from FEM simulation cases[in Watt]
+    :type total_loss: list
+    :param total_volume: total_volume of core read from FEM simulation cases [in cubic meter]
+    :type total_volume: list
+    :param total_cost: total_cost (core material + winding material) read form FEM simulation cases [in Euro]
+    :type total_cost: list
+    :param annotation_list: String corresponding to the Case number which displays during plot
+    when mouse is hovered over the point
+    :type annotation_list: list
+    :param goal_inductance: Sets goal inductance for final design [in Henry]
+    :type goal_inductance: float
+    :param percent_tolerance: percent tolerance with respect to goal inductance [in percent]
+    :type percent_tolerance: int
+    """
     inductance = np.array(inductance)
     total_loss = np.array(total_loss)
     total_volume = np.array(total_volume)
@@ -497,8 +517,6 @@ class AutomatedDesign:
             self.litz_strand_r, self.litz_strand_n, self.litz_fill_factor, self.mu_rel, \
             self.mult_air_gap_type_list = self.input_pre_process()
 
-        # self.conductor_r_list = self.litz_conductor_r + self.solid_conductor_r
-
         # Call to Reluctance model (Class MagneticCircuit)
         mc = fmt.MagneticCircuit(core_inner_diameter=self.core_inner_diameter_list, window_h=self.window_h_list, window_w=self.window_w_list,
                                  no_of_turns=self.no_of_turns, n_air_gaps=self.n_air_gaps,
@@ -688,6 +706,7 @@ class AutomatedDesign:
         else:
             raise Exception("Please input at least one conductor type")
 
+        # Filter based on the geometry
         window_area = final_data_matrix[:, self.param["window_h"]] * final_data_matrix[:, self.param["window_w"]]
         insulation_area = ((self.left_core_insulation + self.right_core_insulation) *
                            final_data_matrix[:, self.param["window_h"]]) + \
@@ -710,12 +729,12 @@ class AutomatedDesign:
        :type data_matrix: ndarray
         """
         # Dictionary to store {initial_permeability: counter}
-        mu_imag_dict = {}
+        mu_r_imag_dict = {}
         counter = 0
         for material_name in self.core_material:
-            mu_imag_key = material_db.get_material_property(material_name=material_name,
+            mu_r_imag_key = material_db.get_material_property(material_name=material_name,
                                                             property="initial_permeability")
-            mu_imag_dict[mu_imag_key] = counter
+            mu_r_imag_dict[mu_r_imag_key] = counter
             counter = counter + 1
 
         material_data_list = [material_db.permeability_data_to_pro_file(self.temperature, self.frequency,
@@ -724,14 +743,17 @@ class AutomatedDesign:
         # print(material_data_list)
 
         # Creating interpolation function between mu_imaginary and magnetic flux density
-        mu_imag_interpol_func = [interp1d(material_data_list[i][0], material_data_list[i][1], kind="cubic") for i in
+        mu_r_imag_interpol_func = [interp1d(material_data_list[i][0], material_data_list[i][1], kind="cubic") for i in
                                  range(len(self.core_material))]
 
         # Creating mu_imag array corresponding to the material type
-        mu_imag = np.zeros(len(data_matrix))
+        mu_r_imag = np.zeros(len(data_matrix))
         for index in range(len(data_matrix)):
-            mu_imag[index] = mu_imag_interpol_func[mu_imag_dict[data_matrix[index, self.param["mu_rel"]]]] \
+            mu_r_imag[index] = mu_r_imag_interpol_func[mu_r_imag_dict[data_matrix[index, self.param["mu_rel"]]]] \
                 (data_matrix[index, self.param["b_max_center"]])
+
+        # get the start time
+        # st = timer()
 
         # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
         volume_center = (np.pi * (data_matrix[:, self.param["core_inner_diameter"]] / 2) ** 2) * \
@@ -740,18 +762,25 @@ class AutomatedDesign:
         volume_outer = (np.pi * ((data_matrix[:, self.param["r_outer"]] ** 2) -
                                  (data_matrix[:, self.param["r_inner"]] ** 2))) * \
                        (data_matrix[:, self.param["window_h"]] + data_matrix[:, self.param["core_h_middle"]])
+        # TODO: Confirm which volume to use
 
-        P_hyst_center = 0.5 * (2 * np.pi * self.frequency) * fmt.mu0 * mu_imag * (
+        # volume_center = (np.pi * (data_matrix[:, self.param["core_inner_diameter"]] / 2) ** 2) * \
+        #                 (data_matrix[:, self.param["window_h"]])
+        # volume_outer = (np.pi * ((data_matrix[:, self.param["r_outer"]] ** 2) -
+        #                          (data_matrix[:, self.param["r_inner"]] ** 2))) * \
+        #                (data_matrix[:, self.param["window_h"]])
+
+        P_hyst_center = 0.5 * (2 * np.pi * self.frequency) * fmt.mu0 * mu_r_imag * (
                     (data_matrix[:, self.param["b_max_center"]] /
                      (fmt.mu0 * data_matrix[:,
                                 self.param["mu_rel"]])) ** 2)
 
-        P_hyst_outer = 0.5 * (2 * np.pi * self.frequency) * mu_imag * fmt.mu0 * (
+        P_hyst_outer = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu0 * (
                     (data_matrix[:, self.param["b_max_outer"]] /
                      (fmt.mu0 * data_matrix[:, self.param["mu_rel"]])) ** 2)
 
         P_hyst_density_center = P_hyst_center * volume_center
-        P_hyst_density_middle = 0.5 * (2 * np.pi * self.frequency) * mu_imag * fmt.mu0 * \
+        P_hyst_density_middle = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu0 * \
                                 ((data_matrix[:, self.param["total_flux_max"]] / (
                                         fmt.mu0 * data_matrix[:, self.param["mu_rel"]])) ** 2) * \
                                 (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * \
@@ -759,6 +788,25 @@ class AutomatedDesign:
                                     (data_matrix[:, self.param["r_inner"]] * 2) / data_matrix[:, self.param["core_inner_diameter"]])
         P_hyst_density_outer = P_hyst_outer * volume_outer
         total_hyst_loss = P_hyst_density_center + (2 * P_hyst_density_middle) + P_hyst_density_outer
+
+        # # Function call to calculate hysteresis loss
+        # total_hyst_loss = np.zeros(len(data_matrix))
+        # for i in range(len(data_matrix)):
+        #     total_hyst_loss[i] = 2 * fmt.hyst_losses_core_half(data_matrix[i, self.param["core_inner_diameter"]],
+        #                                                         data_matrix[i, self.param["window_h"]] / 2,
+        #                                                         data_matrix[i, self.param["window_w"]],
+        #                                                         mu_r_imag[i],
+        #                                                         data_matrix[i, self.param["mu_rel"]],
+        #                                                         data_matrix[i, self.param["total_flux_max"]],
+        #                                                         self.frequency)
+
+        # # get the end time
+        # et = timer()
+        # # get the execution time
+        # elapsed_time = et - st
+        # print(f'start time:{st}')
+        # print(f'end time:{et}')
+        # print('Execution time of hystereis loss:', elapsed_time, 'seconds')
 
         # Winding loss (only DC loss)
         Resistance = (data_matrix[:, self.param["no_of_turns"]] * 2 * np.pi *
@@ -920,6 +968,9 @@ class AutomatedDesign:
         return data_matrix
 
     def write_data_matrix_fem_to_csv(self):
+        """
+            The function writes the data_matrix_fem to csv file for later review of the data.
+        """
         header = list(self.param.keys())
         header.insert(0, 'Case_no.')
         data = self.data_matrix_fem
@@ -936,6 +987,10 @@ class AutomatedDesign:
             writer.writerows(data)
 
     def automated_design_settings(self):
+        """
+            The function creates json file, writing all the settings that is used to run AutomatedDesign
+            in that particular project.
+        """
         dictionary = {
             "Working_directory": self.working_directory,
             "magnetic_component": self.magnetic_component,
@@ -979,7 +1034,7 @@ class AutomatedDesign:
 
 
 if __name__ == '__main__':
-    # Inpult parameters for the Automated Design
+    # Input parameters for the Automated Design
     ad = AutomatedDesign(working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-27_fem_simulation_data',
                          magnetic_component='inductor',
                          goal_inductance=120 * 1e-6,
