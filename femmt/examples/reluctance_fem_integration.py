@@ -13,6 +13,7 @@ from itertools import product
 import logging
 from scipy.interpolate import interp1d
 import materialdatabase as mdb
+from timeit import default_timer as timer
 
 
 material_db = mdb.MaterialDatabase()
@@ -751,43 +752,61 @@ class AutomatedDesign:
             mu_r_imag[index] = mu_r_imag_interpol_func[mu_r_imag_dict[data_matrix[index, self.param["mu_rel"]]]] \
                 (data_matrix[index, self.param["b_max_center"]])
 
-        # # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
+        # get the start time
+        # st = timer()
+
+        # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
+        volume_center = (np.pi * (data_matrix[:, self.param["core_inner_diameter"]] / 2) ** 2) * \
+                        (data_matrix[:, self.param["window_h"]] + data_matrix[:, self.param["core_h_middle"]] -
+                         (data_matrix[:, self.param["n_air_gaps"]] * data_matrix[:, self.param["air_gap_h"]]))
+        volume_outer = (np.pi * ((data_matrix[:, self.param["r_outer"]] ** 2) -
+                                 (data_matrix[:, self.param["r_inner"]] ** 2))) * \
+                       (data_matrix[:, self.param["window_h"]] + data_matrix[:, self.param["core_h_middle"]])
+        # TODO: Confirm which volume to use
+
         # volume_center = (np.pi * (data_matrix[:, self.param["core_inner_diameter"]] / 2) ** 2) * \
-        #                 (data_matrix[:, self.param["window_h"]] + data_matrix[:, self.param["core_h_middle"]] -
-        #                  (data_matrix[:, self.param["n_air_gaps"]] * data_matrix[:, self.param["air_gap_h"]]))
+        #                 (data_matrix[:, self.param["window_h"]])
         # volume_outer = (np.pi * ((data_matrix[:, self.param["r_outer"]] ** 2) -
         #                          (data_matrix[:, self.param["r_inner"]] ** 2))) * \
-        #                (data_matrix[:, self.param["window_h"]] + data_matrix[:, self.param["core_h_middle"]])
-        #
-        # P_hyst_center = 0.5 * (2 * np.pi * self.frequency) * fmt.mu0 * mu_r_imag * (
-        #             (data_matrix[:, self.param["b_max_center"]] /
-        #              (fmt.mu0 * data_matrix[:,
-        #                         self.param["mu_rel"]])) ** 2)
-        #
-        # P_hyst_outer = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu0 * (
-        #             (data_matrix[:, self.param["b_max_outer"]] /
-        #              (fmt.mu0 * data_matrix[:, self.param["mu_rel"]])) ** 2)
-        #
-        # P_hyst_density_center = P_hyst_center * volume_center
-        # P_hyst_density_middle = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu0 * \
-        #                         ((data_matrix[:, self.param["total_flux_max"]] / (
-        #                                 fmt.mu0 * data_matrix[:, self.param["mu_rel"]])) ** 2) * \
-        #                         (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * \
-        #                         np.log(
-        #                             (data_matrix[:, self.param["r_inner"]] * 2) / data_matrix[:, self.param["core_inner_diameter"]])
-        # P_hyst_density_outer = P_hyst_outer * volume_outer
-        # total_hyst_loss = P_hyst_density_center + (2 * P_hyst_density_middle) + P_hyst_density_outer
+        #                (data_matrix[:, self.param["window_h"]])
 
-        # Function call to calculate hysteresis loss
-        total_hyst_loss = np.zeros(len(data_matrix))
-        for i in range(len(data_matrix)):
-            total_hyst_loss[i] = 2 * fmt.hyst_losses_core_half(data_matrix[i, self.param["core_inner_diameter"]],
-                                                                data_matrix[i, self.param["window_h"]] / 2,
-                                                                data_matrix[i, self.param["window_w"]],
-                                                                mu_r_imag[i],
-                                                                data_matrix[i, self.param["mu_rel"]],
-                                                                data_matrix[i, self.param["total_flux_max"]],
-                                                                self.frequency)
+        P_hyst_center = 0.5 * (2 * np.pi * self.frequency) * fmt.mu0 * mu_r_imag * (
+                    (data_matrix[:, self.param["b_max_center"]] /
+                     (fmt.mu0 * data_matrix[:,
+                                self.param["mu_rel"]])) ** 2)
+
+        P_hyst_outer = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu0 * (
+                    (data_matrix[:, self.param["b_max_outer"]] /
+                     (fmt.mu0 * data_matrix[:, self.param["mu_rel"]])) ** 2)
+
+        P_hyst_density_center = P_hyst_center * volume_center
+        P_hyst_density_middle = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu0 * \
+                                ((data_matrix[:, self.param["total_flux_max"]] / (
+                                        fmt.mu0 * data_matrix[:, self.param["mu_rel"]])) ** 2) * \
+                                (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * \
+                                np.log(
+                                    (data_matrix[:, self.param["r_inner"]] * 2) / data_matrix[:, self.param["core_inner_diameter"]])
+        P_hyst_density_outer = P_hyst_outer * volume_outer
+        total_hyst_loss = P_hyst_density_center + (2 * P_hyst_density_middle) + P_hyst_density_outer
+
+        # # Function call to calculate hysteresis loss
+        # total_hyst_loss = np.zeros(len(data_matrix))
+        # for i in range(len(data_matrix)):
+        #     total_hyst_loss[i] = 2 * fmt.hyst_losses_core_half(data_matrix[i, self.param["core_inner_diameter"]],
+        #                                                         data_matrix[i, self.param["window_h"]] / 2,
+        #                                                         data_matrix[i, self.param["window_w"]],
+        #                                                         mu_r_imag[i],
+        #                                                         data_matrix[i, self.param["mu_rel"]],
+        #                                                         data_matrix[i, self.param["total_flux_max"]],
+        #                                                         self.frequency)
+
+        # # get the end time
+        # et = timer()
+        # # get the execution time
+        # elapsed_time = et - st
+        # print(f'start time:{st}')
+        # print(f'end time:{et}')
+        # print('Execution time of hystereis loss:', elapsed_time, 'seconds')
 
         # Winding loss (only DC loss)
         Resistance = (data_matrix[:, self.param["no_of_turns"]] * 2 * np.pi *
