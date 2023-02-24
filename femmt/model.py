@@ -689,17 +689,32 @@ class VirtualWindingWindow:
         return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
 
     def to_dict(self):
-        return {
-            "bot_bound": self.bot_bound,
-            "top_bound": self.top_bound,
-            "left_bound": self.left_bound,
-            "right_bound": self.right_bound,
-            "winding_type": self.winding_type.name,
-            "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
-            "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
-            "windings": [winding.to_dict() for winding in self.windings],
-            "turns": self.turns
-        }
+        if hasattr(self, 'winding_insulation'):
+            return {
+                "bot_bound": self.bot_bound,
+                "top_bound": self.top_bound,
+                "left_bound": self.left_bound,
+                "right_bound": self.right_bound,
+                "winding_type": self.winding_type.name,
+                "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+                "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
+                "windings": [winding.to_dict() for winding in self.windings],
+                "turns": self.turns,
+                "winding_insulation": self.winding_insulation
+            }
+
+        else:
+            return {
+                "bot_bound": self.bot_bound,
+                "top_bound": self.top_bound,
+                "left_bound": self.left_bound,
+                "right_bound": self.right_bound,
+                "winding_type": self.winding_type.name,
+                "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+                "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
+                "windings": [winding.to_dict() for winding in self.windings],
+                "turns": self.turns,
+            }
 
     # TODO Since in combine_vww it is necessary to compare vwws maybe a __eq__ and __ne__ 
     # function should be implemented.

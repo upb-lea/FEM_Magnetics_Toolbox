@@ -2362,11 +2362,11 @@ class MagneticComponent:
 
     @staticmethod
     def encode_settings(o) -> Dict:
-        """Encoes the magnetic component in a dictionary.
+        """Encodes the magnetic component in a dictionary.
 
         :param o: Magnetic component containing the model.
         :type o: MagneticComponent
-        :return: Model encodede as dictionary
+        :return: Model encodes as dictionary
         :rtype: Dict
         """
         content = {
@@ -2428,7 +2428,7 @@ class MagneticComponent:
                 geo.set_insulation(insulation)
 
             if "stray_path" in settings:
-                stray_path = StrayPath(*settings["stray_path"])
+                stray_path = StrayPath(**settings["stray_path"])
                 geo.set_stray_path(stray_path)
 
             virtual_winding_windows = settings["virtual_winding_windows"]

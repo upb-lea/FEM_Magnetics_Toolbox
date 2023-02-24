@@ -130,7 +130,7 @@
     "core": 0.0043865372206324475
   },
   "simulation_settings": {
-    "date": "2023-02-14 18:24:53",
+    "date": "2023-02-24 18:57:52",
     "component_type": "Transformer",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
@@ -188,7 +188,8 @@
         "turns": [
           21,
           7
-        ]
+        ],
+        "winding_insulation": 0.0005
       }
     ],
     "air_gaps": {
