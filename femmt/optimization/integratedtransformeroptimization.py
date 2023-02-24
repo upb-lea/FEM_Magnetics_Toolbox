@@ -18,56 +18,21 @@ import femmt.functions_reluctance as fr
 import femmt.optimization.functions_optimization as fof
 from femmt.optimization.integrated_transformer_dtos import *
 
+class MyJSONEncoder(json.JSONEncoder):
+    """
+    class to transform dicts with numpy arrays to json.
+    This class is used as cls=MyJSONEncoder by json.dump
 
-
-def config_file_dto_to_dict(config_file_dto: InputConfig):
-
-    config_file_dict = {
-        "l_s_target": config_file_dto.l_s_target,
-        "l_h_target": config_file_dto.l_h_target,
-        "n_target": config_file_dto.n_target,
-        "time_current_1_vec": config_file_dto.time_current_1_vec.tolist(),
-        "time_current_2_vec": config_file_dto.time_current_2_vec.tolist(),
-        "material_list": config_file_dto.material_list,
-        "core_inner_diameter_min_max_count_list": config_file_dto.core_inner_diameter_min_max_count_list,
-        "window_w_min_max_count_list": config_file_dto.window_w_min_max_count_list,
-        "window_h_top_min_max_count_list": config_file_dto.window_h_top_min_max_count_list,
-        "window_h_bot_min_max_count_list": config_file_dto.window_h_bot_min_max_count_list,
-        "factor_max_flux_density": config_file_dto.factor_max_flux_density,
-        "n_p_top_min_max_list": config_file_dto.n_p_top_min_max_list,
-        "n_p_bot_min_max_list": config_file_dto.n_p_bot_min_max_list,
-        "n_s_top_min_max_list": config_file_dto.n_s_top_min_max_list,
-        "n_s_bot_min_max_list": config_file_dto.n_s_bot_min_max_list
-    }
-    return config_file_dict
-
-
-
-
-
-
-def result_file_dto_to_dict(reluctance_model_result_dto):
-    result_file_dict = {
-        "case": reluctance_model_result_dto.case,
-        "air_gap_top": reluctance_model_result_dto.air_gap_top,
-        "air_gap_bot": reluctance_model_result_dto.air_gap_bot,
-        "air_gap_middle": reluctance_model_result_dto.air_gap_middle,
-        "n_p_top": reluctance_model_result_dto.n_p_top,
-        "n_p_bot": reluctance_model_result_dto.n_p_bot,
-        "n_s_top": reluctance_model_result_dto.n_s_top,
-        "n_s_bot": reluctance_model_result_dto.n_s_bot,
-        "window_h_top": reluctance_model_result_dto.window_h_top,
-        "window_h_bot": reluctance_model_result_dto.window_h_bot,
-        "window_w": reluctance_model_result_dto.window_w,
-        "mu_r_abs": reluctance_model_result_dto.mu_r_abs,
-        "core_inner_diameter": reluctance_model_result_dto.core_inner_diameter,
-        "flux_top_max": reluctance_model_result_dto.flux_top_max,
-        "flux_bot_max": reluctance_model_result_dto.flux_bot_max,
-        "flux_stray_max": reluctance_model_result_dto.flux_stray_max,
-        "p_hyst": reluctance_model_result_dto.p_hyst,
-        "core_2daxi_total_volume": reluctance_model_result_dto.core_2daxi_total_volume,
-    }
-    return result_file_dict
+    See also:
+    https://python-forum.io/thread-35245.html
+    """
+    def default(self, o):
+        try:
+            return o.tolist() # works with any object that has .tolist() method
+        except AttributeError:
+            pass
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, o)
 
 def result_file_dict_to_dto(result_file_dict):
     result_file_dto = ResultFile(
@@ -82,13 +47,18 @@ def result_file_dict_to_dto(result_file_dict):
         window_h_top=result_file_dict["window_h_top"],
         window_h_bot=result_file_dict["window_h_bot"],
         window_w=result_file_dict["window_w"],
-        mu_r_abs=result_file_dict["mu_r_abs"],
+        core_material=result_file_dict["core_material"],
         core_inner_diameter=result_file_dict["core_inner_diameter"],
         flux_top_max=result_file_dict["flux_top_max"],
         flux_bot_max=result_file_dict["flux_bot_max"],
         flux_stray_max=result_file_dict["flux_stray_max"],
-        p_hyst = result_file_dict["p_hyst"],
-        core_2daxi_total_volume=result_file_dict["core_2daxi_total_volume"]
+        p_hyst= result_file_dict["p_hyst"],
+        core_2daxi_total_volume=result_file_dict["core_2daxi_total_volume"],
+        primary_litz_wire=result_file_dict["primary_litz_wire"],
+        secondary_litz_wire=result_file_dict["secondary_litz_wire"],
+        primary_litz_wire_loss=result_file_dict["primary_litz_wire_loss"],
+        secondary_litz_wire_loss=result_file_dict["secondary_litz_wire_loss"],
+        total_loss=result_file_dict["total_loss"]
     )
     return result_file_dto
 
@@ -166,25 +136,27 @@ class IntegratedTransformerOptimization:
             l_s_target_value = input_parameters_dto.l_s_target,
             l_h_target_value = input_parameters_dto.l_h_target,
             n_target_value = input_parameters_dto.n_target,
-            factor_max_flux_density = input_parameters_dto.factor_max_flux_density
+            factor_max_flux_density = input_parameters_dto.factor_max_flux_density,
+            t1_primary_litz_wire_list=input_parameters_dto.primary_litz_wire_list,
+            t1_secondary_litz_wire_list=input_parameters_dto.secondary_litz_wire_list
         )
         return sweep_tensor
 
     def save_reluctance_model_result_list(self, config_file: InputConfig, result_file_list: List[ResultFile]):
         # save optimization input parameters
-        config_dict = config_file_dto_to_dict(config_file)
+        config_dict = dataclasses.asdict(config_file)
 
         print(config_dict)
 
         with open(self.integrated_transformer_optimization_input_parameters_file, "w+", encoding='utf-8') as outfile:
-            json.dump(config_dict, outfile, indent=2, ensure_ascii=False)
+            json.dump(config_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
 
         # save reluctance parameters winning candidates
         for count, reluctance_model_result_dto in enumerate(result_file_list):
             file_name = os.path.join(self.integrated_transformer_reluctance_model_results_directory, f"valid_reluctance_design_{count}.json")
-            reluctance_model_result_dict = result_file_dto_to_dict(reluctance_model_result_dto)
+            reluctance_model_result_dict = dataclasses.asdict(reluctance_model_result_dto)
             with open(file_name, "w+", encoding='utf-8') as outfile:
-                json.dump(reluctance_model_result_dict, outfile, indent=2, ensure_ascii=False)
+                json.dump(reluctance_model_result_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
 
 
     def load_optimization_input_parameters(self, filepath: str = None):
@@ -272,7 +244,7 @@ class IntegratedTransformerOptimization:
 
         for result in valid_design_list:
             volume_list.append(result.core_2daxi_total_volume)
-            core_hyst_loss_list.append(result.p_hyst)
+            core_hyst_loss_list.append(result.total_loss)
             annotation_list.append(result.case)
 
 
@@ -368,37 +340,37 @@ class IntegratedTransformerOptimization:
         #pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
         volume_list = np.array([])
-        min_hyst_losses_list = np.array([])
+        total_losses_list = np.array([])
         pareto_dto_list = []
         # figure out pareto front with minimum loss-per-volume approach
         for result_dto in valid_design_list:
             # new volume
             if result_dto.core_2daxi_total_volume not in volume_list:
                 volume_list = np.append(volume_list, result_dto.core_2daxi_total_volume)
-                min_hyst_losses_list = np.append(min_hyst_losses_list, result_dto.p_hyst)
+                total_losses_list = np.append(total_losses_list, result_dto.total_loss)
                 pareto_dto_list.append(result_dto)
             # existing volume but lower losses
-            elif np.shape(min_hyst_losses_list) == (1,) and np.isclose(result_dto.core_2daxi_total_volume, volume_list):
-                if result_dto.p_hyst < min_hyst_losses_list:
-                    min_hyst_losses_list = np.array([result_dto.p_hyst])
+            elif np.shape(total_losses_list) == (1,) and np.isclose(result_dto.core_2daxi_total_volume, volume_list):
+                if result_dto.total_loss < total_losses_list:
+                    total_losses_list = np.array([result_dto.total_loss])
                     pareto_dto_list = [result_dto]
             else:
                 reference_index = int(np.where(np.isclose(volume_list, result_dto.core_2daxi_total_volume))[0])
-                if result_dto.p_hyst < min_hyst_losses_list[reference_index]:
-                    min_hyst_losses_list[reference_index] = result_dto.p_hyst
+                if result_dto.total_loss < total_losses_list[reference_index]:
+                    total_losses_list[reference_index] = result_dto.total_loss
                     pareto_dto_list[reference_index] = result_dto
 
-        min_hyst_losses = min_hyst_losses_list[np.argmin(min_hyst_losses_list)]
+        min_hyst_losses = total_losses_list[np.argmin(total_losses_list)]
 
         print(f"{volume_list = }")
-        print(f"{min_hyst_losses_list = }")
+        print(f"{total_losses_list = }")
 
         loss_offset = factor_min_hyst_losses * min_hyst_losses
 
         filtered_design_dto_list = []
         for count, dto in enumerate(valid_design_list):
             reference_index = np.where(np.isclose(dto.core_2daxi_total_volume, volume_list))[0]
-            if dto.p_hyst < (min_hyst_losses_list[reference_index] + loss_offset):
+            if dto.total_loss < (total_losses_list[reference_index] + loss_offset):
                 filtered_design_dto_list.append(dto)
 
         return filtered_design_dto_list
@@ -424,7 +396,8 @@ class IntegratedTransformerOptimization:
 
         sweep_dto = self.calculate_sweep_tensors(config_file)
 
-
+        wire_database = ff.wire_material_database()
+        litz_database = ff.litz_database()
 
         # 1. Extract fundamental frequency from current vectors
         time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(sweep_dto.time_current_1_vec)
@@ -432,14 +405,19 @@ class IntegratedTransformerOptimization:
         fundamental_frequency = 1 / time_extracted[-1]
         print(f"{fundamental_frequency = }")
 
+        i_rms_1 = fr.i_rms(sweep_dto.time_current_1_vec)
+        i_rms_2 = fr.i_rms(sweep_dto.time_current_2_vec)
+
         # generate list of all parameter combinations
-        t2_parameter_sweep = np.array(list(itertools.product(sweep_dto.t1_window_w, sweep_dto.t1_window_h_top,
+        t2_core_geometry_sweep = np.array(list(itertools.product(sweep_dto.t1_window_w, sweep_dto.t1_window_h_top,
                                                              sweep_dto.t1_window_h_bot, sweep_dto.t1_core_inner_diameter,
                                                              sweep_dto.t1_n_p_top, sweep_dto.t1_n_p_bot, sweep_dto.t1_n_s_top,
                                                              sweep_dto.t1_n_s_bot)))
 
+        t2_litz_sweep = np.array(list(itertools.product(sweep_dto.t1_primary_litz_wire_list, sweep_dto.t1_secondary_litz_wire_list)))
+
         # report simulation progress
-        number_of_simulations = len(t2_parameter_sweep) * len(sweep_dto.t1_core_material)
+        number_of_simulations = len(t2_core_geometry_sweep) * len(sweep_dto.t1_core_material)
         ff.femmt_print(f"Simulation count: {number_of_simulations}")
         simulations_per_percent = int(number_of_simulations / 99)
         ff.femmt_print(f"{simulations_per_percent = }")
@@ -482,7 +460,7 @@ class IntegratedTransformerOptimization:
 
 
 
-            for count, t1d_core_geometry_material in enumerate(t2_parameter_sweep):
+            for count, t1d_core_geometry_material in enumerate(t2_core_geometry_sweep):
                 """
                 inner optimization loop
                  * report about simulation progress
@@ -579,26 +557,54 @@ class IntegratedTransformerOptimization:
 
                             core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(core_inner_diameter, (window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
 
-                            valid_design_dict = ResultFile(
-                                case= case_number,
-                                air_gap_top= l_top_air_gap,
-                                air_gap_bot= l_bot_air_gap,
-                                air_gap_middle = l_middle_air_gap,
-                                n_p_top= n_p_top,
-                                n_p_bot= n_p_bot,
-                                n_s_top= n_s_top,
-                                n_s_bot= n_s_bot,
-                                window_h_top= window_h_top,
-                                window_h_bot= window_h_bot,
-                                window_w= window_w,
-                                mu_r_abs= mu_r_abs,
-                                core_inner_diameter= core_inner_diameter,
-                                flux_top_max= flux_top_max,
-                                flux_bot_max= flux_bot_max,
-                                flux_stray_max= flux_stray_max,
-                                p_hyst= p_hyst,
-                                core_2daxi_total_volume= core_2daxi_total_volume,
-                            )
+                            for primary_litz, secondary_litz in t2_litz_sweep:
+
+
+                                primary_litz = litz_database[primary_litz]
+                                primary_effective_conductive_cross_section = primary_litz["strands_numbers"] * primary_litz["strand_radii"] ** 2 * np.pi
+                                primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
+                                primary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_p_top + n_p_bot,
+                                                         primary_effective_conductive_radius, material = 'Copper')
+                                primary_dc_loss = primary_resistance * i_rms_1 ** 2
+
+                                secondary_litz = litz_database[secondary_litz]
+                                secondary_effective_conductive_cross_section = secondary_litz["strands_numbers"] * secondary_litz["strand_radii"] ** 2 * np.pi
+                                secondary_effective_conductive_radius = np.sqrt(secondary_effective_conductive_cross_section / np.pi)
+                                secondary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_s_top + n_s_bot,
+                                                         secondary_effective_conductive_radius, material = 'Copper')
+                                secondary_dc_loss = secondary_resistance * i_rms_2 ** 2
+
+                                total_loss = p_hyst + primary_dc_loss + secondary_dc_loss
+
+
+
+                                valid_design_dict = ResultFile(
+                                    case= case_number,
+                                    air_gap_top= l_top_air_gap,
+                                    air_gap_bot= l_bot_air_gap,
+                                    air_gap_middle = l_middle_air_gap,
+                                    n_p_top= n_p_top,
+                                    n_p_bot= n_p_bot,
+                                    n_s_top= n_s_top,
+                                    n_s_bot= n_s_bot,
+                                    window_h_top= window_h_top,
+                                    window_h_bot= window_h_bot,
+                                    window_w= window_w,
+                                    core_material= material_name,
+                                    core_inner_diameter= core_inner_diameter,
+                                    primary_litz_wire=primary_litz,
+                                    secondary_litz_wire=secondary_litz,
+                                    # results
+                                    flux_top_max= flux_top_max,
+                                    flux_bot_max= flux_bot_max,
+                                    flux_stray_max= flux_stray_max,
+                                    p_hyst= p_hyst,
+                                    core_2daxi_total_volume= core_2daxi_total_volume,
+                                    primary_litz_wire_loss=primary_dc_loss,
+                                    secondary_litz_wire_loss=secondary_dc_loss,
+                                    total_loss=total_loss
+
+                                )
 
 
 
@@ -610,3 +616,41 @@ class IntegratedTransformerOptimization:
         return valid_design_list
 
 
+def config_file_dto_to_dict(result_file: InputConfig):
+    dictionary = dataclasses.asdict(result_file)
+
+
+
+
+if __name__ == '__main__':
+    core_database = ff.core_database()
+    pq4040 = core_database["PQ 40/40"]
+    pq5050 = core_database["PQ 50/50"]
+
+    i_prim = [[0.0, 3.265248131976911e-07, 2.5e-06, 2.8265248131976912e-06, 5e-06],
+              [-0.9996115022426437, 4.975792579275104, 0.9996115022426446, -4.975792579275103, -0.9996115022426437]]
+    i_sec = [[0.0, 3.265248131976911e-07, 2.5e-06, 2.8265248131976912e-06, 5e-06],
+             [0.9196195846583147, 19.598444313231134, -0.9196195846583122, -19.59844431323113, 0.9196195846583147]]
+
+    dab_transformer_config = InputConfig(
+        l_s_target=85e-6,
+        l_h_target=600e-6,
+        n_target=2.9,
+        time_current_1_vec=np.array(i_prim),
+        time_current_2_vec=np.array(i_sec),
+        material_list=["N95"],
+        core_inner_diameter_min_max_count_list=[pq4040["core_inner_diameter"], pq5050["core_inner_diameter"], 2],
+        window_w_min_max_count_list=[pq4040["window_w"], pq5050["window_w"], 2],
+        window_h_top_min_max_count_list=[5 / 6 * pq4040["window_h"], 5 / 6 * pq5050["window_h"], 1],
+        window_h_bot_min_max_count_list=[1 / 6 * pq4040["window_h"], 1 / 6 * pq5050["window_h"], 1],
+        factor_max_flux_density=1,
+        n_p_top_min_max_list=[20, 35],
+        n_p_bot_min_max_list=[0, 12],
+        n_s_top_min_max_list=[0, 9],
+        n_s_bot_min_max_list=[0, 9],
+        primary_litz_wire_list=["1.5x105x0.1", "1.4x200x0.071", "2.0x405x0.071", "2.0x800x0.05"],
+        secondary_litz_wire_list=["1.5x105x0.1", "1.4x200x0.071", "2.0x405x0.071", "2.0x800x0.05"]
+    )
+
+    dict = config_file_dto_to_dict(dab_transformer_config)
+    print(dict)
