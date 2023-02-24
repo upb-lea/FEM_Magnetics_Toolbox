@@ -76,24 +76,24 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         annot.xy = pos
         text = ""
         if z_label is None and inductance_value is None:
-            text = "case: {}\n{}: {}\n{}:{}".\
+            text = "case: {}\n{}: {}\n{}: {}".\
                 format(" ".join([names[n] for n in ind["ind"]]),
                        x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
                        y_label, " ".join([y_value_str[n] for n in ind["ind"]]))
         elif z_label is not None and inductance_value is None:
-            text = "case: {}\n{}: {}\n{}:{}\n{}:{}". \
+            text = "case: {}\n{}: {}\n{}: {}\n{}: {}". \
                 format(" ".join([names[n] for n in ind["ind"]]),
                        x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
                        y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
                        z_label, " ".join([z_value_str[n] for n in ind["ind"]]))
         elif z_label is None and inductance_value is not None:
-            text = "case: {}\n{}: {}\n{}:{}\n{}:{}". \
+            text = "case: {}\n{}: {}\n{}: {}\n{}: {}". \
                 format(" ".join([names[n] for n in ind["ind"]]),
                        x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
                        y_label, " ".join([y_value_str[n] for n in ind["ind"]]),
                        l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
         else:
-            text = "case: {}\n{}: {}\n{}:{}\n{}:{}\n{}:{}".\
+            text = "case: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}".\
                 format(" ".join([names[n] for n in ind["ind"]]),
                        x_label, " ".join([x_value_str[n] for n in ind["ind"]]),
                        y_label, " ".join([y_value_str[n] for n in ind["ind"]]),

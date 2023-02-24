@@ -248,7 +248,7 @@ class IntegratedTransformerOptimization:
             annotation_list.append(result.case)
 
 
-        fof.plot_2d(volume_list, core_hyst_loss_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram",
+        fof.plot_2d(volume_list, core_hyst_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
                     plot_color="red", annotations=annotation_list)
 
 
@@ -335,7 +335,7 @@ class IntegratedTransformerOptimization:
 
 
 
-    def filter_reluctance_model_list(self, valid_design_list: List[ResultFile], factor_min_hyst_losses: float = 1.2) -> List[ResultFile]:
+    def filter_reluctance_model_list(self, valid_design_list: List[ResultFile], factor_min_dc_losses: float = 1.2) -> List[ResultFile]:
         # figure out pareto front
         #pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
@@ -360,12 +360,12 @@ class IntegratedTransformerOptimization:
                     total_losses_list[reference_index] = result_dto.total_loss
                     pareto_dto_list[reference_index] = result_dto
 
-        min_hyst_losses = total_losses_list[np.argmin(total_losses_list)]
+        min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
 
         print(f"{volume_list = }")
         print(f"{total_losses_list = }")
 
-        loss_offset = factor_min_hyst_losses * min_hyst_losses
+        loss_offset = factor_min_dc_losses * min_total_dc_losses
 
         filtered_design_dto_list = []
         for count, dto in enumerate(valid_design_list):
@@ -557,54 +557,62 @@ class IntegratedTransformerOptimization:
 
                             core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(core_inner_diameter, (window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
 
-                            for primary_litz, secondary_litz in t2_litz_sweep:
+                            for primary_litz_wire, secondary_litz_wire in t2_litz_sweep:
+                                primary_litz = litz_database[primary_litz_wire]
+                                secondary_litz = litz_database[secondary_litz_wire]
+
+                                total_window_cross_section_top = window_h_top * window_w
+                                winding_cross_section_top = n_p_top * primary_litz["conductor_radii"] ** 2 * np.pi + n_s_top * secondary_litz["conductor_radii"] ** 2 * np.pi
+
+                                total_window_cross_section_bot = window_h_bot * window_w
+                                winding_cross_section_bot = n_p_bot * primary_litz["conductor_radii"] ** 2 * np.pi + n_s_bot * secondary_litz["conductor_radii"] ** 2 * np.pi
+
+                                if winding_cross_section_top < total_window_cross_section_top and winding_cross_section_bot < total_window_cross_section_bot:
+
+                                    primary_effective_conductive_cross_section = primary_litz["strands_numbers"] * primary_litz["strand_radii"] ** 2 * np.pi
+                                    primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
+                                    primary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_p_top + n_p_bot,
+                                                             primary_effective_conductive_radius, material = 'Copper')
+                                    primary_dc_loss = primary_resistance * i_rms_1 ** 2
 
 
-                                primary_litz = litz_database[primary_litz]
-                                primary_effective_conductive_cross_section = primary_litz["strands_numbers"] * primary_litz["strand_radii"] ** 2 * np.pi
-                                primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
-                                primary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_p_top + n_p_bot,
-                                                         primary_effective_conductive_radius, material = 'Copper')
-                                primary_dc_loss = primary_resistance * i_rms_1 ** 2
+                                    secondary_effective_conductive_cross_section = secondary_litz["strands_numbers"] * secondary_litz["strand_radii"] ** 2 * np.pi
+                                    secondary_effective_conductive_radius = np.sqrt(secondary_effective_conductive_cross_section / np.pi)
+                                    secondary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_s_top + n_s_bot,
+                                                             secondary_effective_conductive_radius, material = 'Copper')
+                                    secondary_dc_loss = secondary_resistance * i_rms_2 ** 2
 
-                                secondary_litz = litz_database[secondary_litz]
-                                secondary_effective_conductive_cross_section = secondary_litz["strands_numbers"] * secondary_litz["strand_radii"] ** 2 * np.pi
-                                secondary_effective_conductive_radius = np.sqrt(secondary_effective_conductive_cross_section / np.pi)
-                                secondary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_s_top + n_s_bot,
-                                                         secondary_effective_conductive_radius, material = 'Copper')
-                                secondary_dc_loss = secondary_resistance * i_rms_2 ** 2
-
-                                total_loss = p_hyst + primary_dc_loss + secondary_dc_loss
+                                    total_loss = p_hyst + primary_dc_loss + secondary_dc_loss
 
 
 
-                                valid_design_dict = ResultFile(
-                                    case= case_number,
-                                    air_gap_top= l_top_air_gap,
-                                    air_gap_bot= l_bot_air_gap,
-                                    air_gap_middle = l_middle_air_gap,
-                                    n_p_top= n_p_top,
-                                    n_p_bot= n_p_bot,
-                                    n_s_top= n_s_top,
-                                    n_s_bot= n_s_bot,
-                                    window_h_top= window_h_top,
-                                    window_h_bot= window_h_bot,
-                                    window_w= window_w,
-                                    core_material= material_name,
-                                    core_inner_diameter= core_inner_diameter,
-                                    primary_litz_wire=primary_litz,
-                                    secondary_litz_wire=secondary_litz,
-                                    # results
-                                    flux_top_max= flux_top_max,
-                                    flux_bot_max= flux_bot_max,
-                                    flux_stray_max= flux_stray_max,
-                                    p_hyst= p_hyst,
-                                    core_2daxi_total_volume= core_2daxi_total_volume,
-                                    primary_litz_wire_loss=primary_dc_loss,
-                                    secondary_litz_wire_loss=secondary_dc_loss,
-                                    total_loss=total_loss
+                                    valid_design_dict = ResultFile(
+                                        case= case_number,
+                                        air_gap_top= l_top_air_gap,
+                                        air_gap_bot= l_bot_air_gap,
+                                        air_gap_middle = l_middle_air_gap,
+                                        n_p_top= n_p_top,
+                                        n_p_bot= n_p_bot,
+                                        n_s_top= n_s_top,
+                                        n_s_bot= n_s_bot,
+                                        window_h_top= window_h_top,
+                                        window_h_bot= window_h_bot,
+                                        window_w= window_w,
+                                        core_material= material_name,
+                                        core_inner_diameter= core_inner_diameter,
+                                        primary_litz_wire=primary_litz_wire,
+                                        secondary_litz_wire=secondary_litz_wire,
+                                        # results
+                                        flux_top_max= flux_top_max,
+                                        flux_bot_max= flux_bot_max,
+                                        flux_stray_max= flux_stray_max,
+                                        p_hyst= p_hyst,
+                                        core_2daxi_total_volume= core_2daxi_total_volume,
+                                        primary_litz_wire_loss=primary_dc_loss,
+                                        secondary_litz_wire_loss=secondary_dc_loss,
+                                        total_loss=total_loss
 
-                                )
+                                    )
 
 
 
