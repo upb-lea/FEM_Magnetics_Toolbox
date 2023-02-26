@@ -355,20 +355,38 @@ def visualize_current_and_flux(time, flux_top_vec, flux_bot_vec, flux_stray_vec,
     axis[1].grid()
     plt.show()
 
-
-def max_flux_from_flux_vec(flux_top_vec, flux_bot_vec, flux_stray_vec):
+def max_value_from_value_vec(*args):
     """
-    Gets the peak flux values from the flux vectors
+    Returns the peak values from the vectors
 
-    :param flux_stray_vec: flux vector in stray path
-    :param flux_bot_vec: flux vector in bot path
-    :param flux_top_vec: flux vector in top path
+    :param args: vector
+    :return: peak_value_from_vector
     """
-    flux_top_peak = max([abs(flux_timestep) for flux_timestep in flux_top_vec])
-    flux_bot_peak = max([abs(flux_timestep) for flux_timestep in flux_bot_vec])
-    flux_stray_peak = max([abs(flux_timestep) for flux_timestep in flux_stray_vec])
+    peak_list = []
+    for vector in args:
+        peak = max([abs(timestep) for timestep in vector])
+        peak_list.append(peak)
 
-    return flux_top_peak, flux_bot_peak, flux_stray_peak
+    return tuple(peak_list)
+
+
+def phases_deg_from_time_current(time_vec, *args):
+    """
+    Returns the phases_deg of the peaks
+
+    :param time_vec: time vector with time steps
+    :param args: vectors of current
+    """
+    period = time_vec[-1]
+    phases_deg = []
+
+    for current_vec in args:
+        time_max = time_vec[np.array(current_vec).argmax(axis=0)]
+        phase = time_max / period * 360
+        phases_deg.append(phase)
+
+    return tuple(phases_deg)
+
 
 def power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_density_max, mu_r_abs, core_volume):
     """

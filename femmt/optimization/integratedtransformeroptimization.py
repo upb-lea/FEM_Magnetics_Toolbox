@@ -17,6 +17,7 @@ import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import femmt.optimization.functions_optimization as fof
 from femmt.optimization.integrated_transformer_dtos import *
+import femmt as fmt
 
 class MyJSONEncoder(json.JSONEncoder):
     """
@@ -503,7 +504,7 @@ class IntegratedTransformerOptimization:
                                                                                               t2_inductance_matrix)
 
                     # calculate maximum values
-                    flux_top_max, flux_bot_max, flux_stray_max = fr.max_flux_from_flux_vec(flux_top_vec, flux_bot_vec,
+                    flux_top_max, flux_bot_max, flux_stray_max = fr.max_value_from_value_vec(flux_top_vec, flux_bot_vec,
                                                                                            flux_stray_vec)
 
                     flux_density_top_max = flux_top_max / core_cross_section
@@ -561,13 +562,20 @@ class IntegratedTransformerOptimization:
                                 primary_litz = litz_database[primary_litz_wire]
                                 secondary_litz = litz_database[secondary_litz_wire]
 
-                                total_window_cross_section_top = window_h_top * window_w
-                                winding_cross_section_top = n_p_top * primary_litz["conductor_radii"] ** 2 * np.pi + n_s_top * secondary_litz["conductor_radii"] ** 2 * np.pi
+                                # cross-section comparison is according to a square for round wire.
+                                # this approximation is more realistic
+                                # insulation
+                                insulation_distance = 1e-3
+                                insulation_cross_section_top = 2 * insulation_distance * (window_w + window_h_top)
+                                insulation_cross_section_bot = 2 * insulation_distance * (window_w + window_h_bot)
 
-                                total_window_cross_section_bot = window_h_bot * window_w
-                                winding_cross_section_bot = n_p_bot * primary_litz["conductor_radii"] ** 2 * np.pi + n_s_bot * secondary_litz["conductor_radii"] ** 2 * np.pi
+                                total_available_window_cross_section_top = window_h_top * window_w - insulation_cross_section_top
+                                winding_cross_section_top = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_top * (2 * secondary_litz["conductor_radii"]) ** 2
 
-                                if winding_cross_section_top < total_window_cross_section_top and winding_cross_section_bot < total_window_cross_section_bot:
+                                total_available_window_cross_section_bot = window_h_bot * window_w - insulation_cross_section_bot
+                                winding_cross_section_bot = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_bot * (2 * secondary_litz["conductor_radii"]) ** 2
+
+                                if winding_cross_section_top < total_available_window_cross_section_top and winding_cross_section_bot < total_available_window_cross_section_bot:
 
                                     primary_effective_conductive_cross_section = primary_litz["strands_numbers"] * primary_litz["strand_radii"] ** 2 * np.pi
                                     primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
@@ -624,10 +632,165 @@ class IntegratedTransformerOptimization:
         return valid_design_list
 
 
-def config_file_dto_to_dict(result_file: InputConfig):
-    dictionary = dataclasses.asdict(result_file)
+    def fem_simulation(self, config_dto: InputConfig, simulation_dto_list: List[ResultFile]):
+
+        time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(config_dto.time_current_1_vec)
+        time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(config_dto.time_current_2_vec)
+        fundamental_frequency = int(1 / time_extracted[-1])
+        print(fundamental_frequency)
+
+        phase_deg_1, phase_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec, current_extracted_2_vec)
+        i_peak_1, i_peak_2 = fr.max_value_from_value_vec(current_extracted_1_vec, current_extracted_2_vec)
+
+        print(f"{i_peak_1 = }")
+        print(f"{i_peak_2 = }")
+        print(f"{phase_deg_1 = }")
+        print(f"{phase_deg_2 = }")
+
+        fem_result_dto_list = []
+        for dto in simulation_dto_list:
+            print(fundamental_frequency)
+            try:
+                # 1. chose simulation type
+                geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                            working_directory=self.femmt_working_directory,
+                                            silent=True)
+
+                window_h = dto.window_h_bot + dto.window_h_top + dto.core_inner_diameter/4
+
+                # 2. set core parameters
+                core = fmt.Core(window_h=window_h, window_w=dto.window_w, core_inner_diameter=dto.core_inner_diameter,
+                                material = dto.core_material,
+                                temperature = 100,
+                                frequency = fundamental_frequency,
+                                permeability_datasource = fmt.MaterialDataSource.ManufacturerDatasheet,
+                                permittivity_datasource = fmt.MaterialDataSource.ManufacturerDatasheet)
+
+                geo.set_core(core)
+
+                # 2.1 set stray path parameters
+                stray_path = fmt.StrayPath(start_index=0,
+                                           length=dto.core_inner_diameter / 2 + dto.window_w - dto.air_gap_middle)
+                geo.set_stray_path(stray_path)
+
+                # Note: bot air gap needs to be subtracted, top air gap needs to be added
+                air_gap_top_position_percent = (dto.window_h_bot + dto.core_inner_diameter / 4 + dto.air_gap_top / 2)/ window_h * 100
+                air_gap_bot_position_percent = (dto.window_h_bot - dto.air_gap_bot/2) / window_h * 100
+
+                # 3. set air gap parameters
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, dto.air_gap_bot, air_gap_bot_position_percent)
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, dto.air_gap_top, air_gap_top_position_percent)
+                geo.set_air_gaps(air_gaps)
+
+                # 4. set insulations
+                insulation = fmt.Insulation()
+                insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
+                insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+                geo.set_insulation(insulation)
+
+                # 5. create winding window and virtual winding windows (vww)
+                # For an integrated transformer it is not necessary to set horizontal and vertical split factors
+                # since this is determined by the stray_path
+                winding_window = fmt.WindingWindow(core, insulation, stray_path, air_gaps)
+                top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+
+                # 6. set conductor parameters
+                primary_litz = ff.litz_database()[dto.primary_litz_wire]
+                secondary_litz = ff.litz_database()[dto.secondary_litz_wire]
+
+                print(f"{dto.primary_litz_wire = }")
+                print(f"{primary_litz = }")
+
+                winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+                winding1.set_litz_round_conductor(primary_litz["conductor_radii"], primary_litz["strands_numbers"], primary_litz["strand_radii"], None, fmt.ConductorArrangement.Square)
+
+                winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+                winding2.set_litz_round_conductor(secondary_litz["conductor_radii"], secondary_litz["strands_numbers"], secondary_litz["strand_radii"], None, fmt.ConductorArrangement.Square)
+
+                # 7. add conductor to vww and add winding window to MagneticComponent
+                top.set_interleaved_winding(winding1, dto.n_p_top, winding2, dto.n_s_top, fmt.InterleavedWindingScheme.HorizontalAlternating,
+                                            0.0005)
+                bot.set_interleaved_winding(winding1, dto.n_p_bot, winding2, dto.n_s_bot, fmt.InterleavedWindingScheme.HorizontalAlternating,
+                                            0.0005)
+                geo.set_winding_window(winding_window)
+
+                # 8. start simulation with given frequency, currents and phases
+                geo.create_model(freq=fundamental_frequency, visualize_before=False)
+                geo.single_simulation(freq=fundamental_frequency,
+                                      current=[i_peak_1, i_peak_2],
+                                      phi_deg=[phase_deg_1, phase_deg_2],
+                                      show_results=False)
+                # working_directory = self.femmt_working_directory
+                # if not os.path.exists(working_directory):
+                #     os.mkdir(working_directory)
+                #
+                # # 1. chose simulation type
+                # geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                #                             working_directory=working_directory, silent=True)
+                #
+                # #window_h = dto.window_h_bot + dto.window_h_top + dto.core_inner_diameter/4
+                #
+                # # 2. set core parameters
+                # core = fmt.Core(window_h=0.03, window_w=0.04, core_inner_diameter=0.04,
+                #                 material = 'N95',
+                #                 temperature = 100,
+                #                 frequency = 100000,
+                #                 permeability_datasource = fmt.MaterialDataSource.ManufacturerDatasheet,
+                #                 permittivity_datasource = fmt.MaterialDataSource.ManufacturerDatasheet)
+                # geo.set_core(core)
+                #
+                # # 2.1 set stray path parameters
+                # stray_path = fmt.StrayPath(start_index=0,
+                #                            length=geo.core.core_inner_diameter / 2 + geo.core.window_w - 0.001)
+                # geo.set_stray_path(stray_path)
+                #
+                # # 3. set air gap parameters
+                # air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+                # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 30)
+                # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, 40)
+                # geo.set_air_gaps(air_gaps)
+                #
+                # # 4. set insulations
+                # insulation = fmt.Insulation()
+                # insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+                # insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+                # geo.set_insulation(insulation)
+                #
+                # # 5. create winding window and virtual winding windows (vww)
+                # # For an integrated transformer it is not necessary to set horizontal and vertical split factors
+                # # since this is determined by the stray_path
+                # winding_window = fmt.WindingWindow(core, insulation, stray_path, air_gaps)
+                # top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+                #
+                # # 6. set conductor parameters
+                # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+                # winding1.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+                #
+                # winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+                # winding2.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+                #
+                # # 7. add conductor to vww and add winding window to MagneticComponent
+                # top.set_interleaved_winding(winding1, 3, winding2, 6,
+                #                             fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
+                # bot.set_interleaved_winding(winding1, 1, winding2, 2,
+                #                             fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
+                # geo.set_winding_window(winding_window)
+                #
+                # # 8. start simulation with given frequency, currents and phases
+                # geo.create_model(freq=250000, visualize_before=True)
+                # geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 180], show_results=False)
 
 
+                source_json_file = os.path.join(self.femmt_working_directory, "results", "log_electro_magnetic.json")
+                desination_json_file = os.path.join(self.integrated_transformer_fem_simulations_results_directory, f'case_{dto.case}.json')
+
+                shutil.copy(source_json_file, desination_json_file)
+
+                del geo
+
+            except Exception as e:
+                print(f"Exception: {e}")
 
 
 if __name__ == '__main__':
@@ -660,5 +823,3 @@ if __name__ == '__main__':
         secondary_litz_wire_list=["1.5x105x0.1", "1.4x200x0.071", "2.0x405x0.071", "2.0x800x0.05"]
     )
 
-    dict = config_file_dto_to_dict(dab_transformer_config)
-    print(dict)
