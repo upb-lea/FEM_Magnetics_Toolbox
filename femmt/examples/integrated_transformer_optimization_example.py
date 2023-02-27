@@ -33,9 +33,9 @@ dab_transformer_config = fmt.InputConfig(
 )
 
 #task = 'simulation'
-#task = 'load_reluctance'
+task = 'load_reluctance_and_filter'
 #task = 'load_reluctance_filter_and_simulate_fem'
-task = 'load_fem_simulations'
+#task = 'load_fem_simulations'
 
 #task = "single_fem_simulation"
 
@@ -57,7 +57,7 @@ if task == 'simulation':
     valid_reluctance_model_designs = opt.integrated_transformer_optimization(dab_transformer_config)
     opt.save_reluctance_model_result_list(config_file=dab_transformer_config, result_file_list=valid_reluctance_model_designs)
 
-elif task == 'load_reluctance':
+elif task == 'load_reluctance_and_filter':
     valid_reluctance_model_designs = opt.load_reluctance_model_result_list()
     #opt.plot_reluctance_model_result_list(valid_reluctance_model_designs)
     print(f"{len(valid_reluctance_model_designs) = }")

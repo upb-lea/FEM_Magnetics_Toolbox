@@ -416,7 +416,7 @@ class MagneticCircuit:
         if not (len(self.core_inner_diameter) and len(self.window_h) and len(self.window_w) and len(self.no_of_turns)
                 and len(self.n_air_gaps) and len(self.mu_r_abs)):
             raise Exception("one of the passed arguments are empty list")
-        if not all(isinstance(item, (int, np.int64)) for item in self.no_of_turns):
+        if not all(isinstance(item, int) for item in self.no_of_turns):
             raise Exception("no_of_turns list elements should be integer")
         if not all(isinstance(item, int) for item in self.n_air_gaps):
             raise Exception("n_air_gaps list elements should be integer")

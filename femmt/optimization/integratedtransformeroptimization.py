@@ -15,7 +15,7 @@ from scipy import optimize
 # femmt import
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
-import femmt.optimization.functions_optimization as fof
+import femmt.optimization.functions_optimization as fo
 from femmt.optimization.integrated_transformer_dtos import *
 import femmt as fmt
 
@@ -260,8 +260,8 @@ class IntegratedTransformerOptimization:
             annotation_list.append(result.case)
 
 
-        fof.plot_2d(volume_list, core_hyst_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
-                    plot_color="red", annotations=annotation_list)
+        fo.plot_2d(volume_list, core_hyst_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
+                   plot_color="red", annotations=annotation_list)
 
     @staticmethod
     def plot_fem_simulation_result_list(filepath):
@@ -286,17 +286,17 @@ class IntegratedTransformerOptimization:
                 total_cost_list.append(loaded_data_dict["misc"]["total_cost_incl_margin"])
                 annotation_list.append(f"{file}".replace("case_","").replace(".json",""))
 
-        fof.plot_2d(volume_list, total_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
-                    plot_color="red", annotations=annotation_list)
+        fo.plot_2d(volume_list, total_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
+                   plot_color="red", annotations=annotation_list)
 
     def plot_pareto_result_list(self):
 
-        fof.plot_2d(self.pareto_volume_list, self.pareto_core_hyst_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
+        fo.plot_2d(self.pareto_volume_list, self.pareto_core_hyst_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
 
 
     @staticmethod
     def plot_filtered_pareto_result_list(filter_volume_list, filter_core_hyst_loss_list):
-        fof.plot_2d(filter_volume_list, filter_core_hyst_loss_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
+        fo.plot_2d(filter_volume_list, filter_core_hyst_loss_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
 
 
     # Very slow for many datapo ints.  Fastest for many costs, most readable
@@ -314,67 +314,17 @@ class IntegratedTransformerOptimization:
 
 
 
+
+
+
+
+
     @staticmethod
-    # Faster than is_pareto_efficient_simple, but less readable.
-    def is_pareto_efficient(costs, return_mask=True):
-        """
-        Find the pareto-efficient points
-        :param costs: An (n_points, n_costs) array
-        :param return_mask: True to return a mask
-        :return: An array of indices of pareto-efficient points.
-            If return_mask is True, this will be an (n_points, ) boolean array
-            Otherwise it will be a (n_efficient_points, ) integer array of indices.
-        """
-        is_efficient = np.arange(costs.shape[0])
-        n_points = costs.shape[0]
-        next_point_index = 0  # Next index in the is_efficient array to search for
-        while next_point_index < len(costs):
-            nondominated_point_mask = np.any(costs < costs[next_point_index], axis=1)
-            nondominated_point_mask[next_point_index] = True
-            is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
-            costs = costs[nondominated_point_mask]
-            next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
-        if return_mask:
-            is_efficient_mask = np.zeros(n_points, dtype=bool)
-            is_efficient_mask[is_efficient] = True
-            return is_efficient_mask
-        else:
-            return is_efficient
-
-    def pareto_front(self, dto_list):
-        x_vec = np.array([])
-        y_vec = np.array([])
-        tuple_vec = []
-
-        for dto in dto_list:
-            x_vec = np.append(x_vec, dto.core_2daxi_total_volume)
-            y_vec = np.append(y_vec, dto.total_loss)
-            tuple_vec.append((dto.core_2daxi_total_volume,dto.total_loss))
-
-        tuple_vec = np.array(tuple_vec)
-
-        pareto_tuple_mask_vec = self.is_pareto_efficient(tuple_vec)
-
-
-        x_pareto_vec = []
-        y_pareto_vec = []
-
-        for count_mask, mask in enumerate(pareto_tuple_mask_vec):
-            if mask:
-                x_pareto_vec.append(x_vec[count_mask])
-                y_pareto_vec.append(y_vec[count_mask])
-
-        print(f"{len(x_pareto_vec) = }")
-
-        return np.array(x_pareto_vec), np.array(y_pareto_vec)
-
-
-
-    def filter_reluctance_model_list(self, valid_design_list: List[ResultFile], factor_min_dc_losses: float = 1.2) -> List[ResultFile]:
+    def filter_reluctance_model_list(valid_design_list: List[ResultFile], factor_min_dc_losses: float = 1.2) -> List[ResultFile]:
         # figure out pareto front
         #pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
-        x_pareto_vec, y_pareto_vec = self.pareto_front(valid_design_list)
+        x_pareto_vec, y_pareto_vec = fo.pareto_front_from_dtos(valid_design_list)
 
         vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
 
@@ -397,46 +347,6 @@ class IntegratedTransformerOptimization:
             ref_loss = np.interp(dto.core_2daxi_total_volume, x_pareto_vec, y_pareto_vec) + loss_offset
             if dto.total_loss < ref_loss:
                 filtered_design_dto_list.append(dto)
-
-
-
-
-
-
-
-        # volume_list = np.array([])
-        # total_losses_list = np.array([])
-        # pareto_dto_list = []
-        # # figure out pareto front with minimum loss-per-volume approach
-        # for result_dto in valid_design_list:
-        #     # new volume
-        #     if result_dto.core_2daxi_total_volume not in volume_list:
-        #         volume_list = np.append(volume_list, result_dto.core_2daxi_total_volume)
-        #         total_losses_list = np.append(total_losses_list, result_dto.total_loss)
-        #         pareto_dto_list.append(result_dto)
-        #     # existing volume but lower losses
-        #     elif np.shape(total_losses_list) == (1,) and np.isclose(result_dto.core_2daxi_total_volume, volume_list):
-        #         if result_dto.total_loss < total_losses_list:
-        #             total_losses_list = np.array([result_dto.total_loss])
-        #             pareto_dto_list = [result_dto]
-        #     else:
-        #         reference_index = int(np.where(np.isclose(volume_list, result_dto.core_2daxi_total_volume))[0])
-        #         if result_dto.total_loss < total_losses_list[reference_index]:
-        #             total_losses_list[reference_index] = result_dto.total_loss
-        #             pareto_dto_list[reference_index] = result_dto
-        #
-        # min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
-        #
-        # print(f"{volume_list = }")
-        # print(f"{total_losses_list = }")
-        #
-        # loss_offset = factor_min_dc_losses * min_total_dc_losses
-        #
-        # filtered_design_dto_list = []
-        # for count, dto in enumerate(valid_design_list):
-        #     reference_index = np.where(np.isclose(dto.core_2daxi_total_volume, volume_list))[0]
-        #     if dto.total_loss < (total_losses_list[reference_index] + loss_offset):
-        #         filtered_design_dto_list.append(dto)
 
         return filtered_design_dto_list
 

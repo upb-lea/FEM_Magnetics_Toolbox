@@ -7,6 +7,7 @@ import shutil
 from itertools import product
 import logging
 import inspect
+import time
 
 # 3rd party libraries
 import numpy as np
@@ -924,6 +925,8 @@ class AutomatedDesign:
         FEM simulation of the design cases and saving the result in the given working directory for later analysis
         """
 
+        start_time = time.time()
+
         data_files = []
         file_names = []
         successful_sim_counter = 0
@@ -1013,6 +1016,15 @@ class AutomatedDesign:
                 file_names.append(f"case{count}")
                 print(f"Case {count} of {len(self.data_matrix_fem)} completed")
                 successful_sim_counter = successful_sim_counter + 1
+
+                end_time = time.time()
+
+                time_difference_seconds = end_time - start_time
+                time_difference_minutes = time_difference_seconds / 60
+                time_difference_hours = time_difference_minutes / 60
+                print(f"{time_difference_seconds = }")
+                print(f"{time_difference_minutes = }")
+                print(f"{time_difference_hours = }")
 
             except (Exception,) as e:
                 print("next iteration")
@@ -1119,10 +1131,12 @@ if __name__ == '__main__':
     max_core = pq6560
 
 
+
+
     ad = AutomatedDesign(working_directory=working_directory,
                          magnetic_component='inductor',
                          target_inductance=120 * 1e-6,
-                         frequency=100000,
+                         frequency=115000,
                          target_inductance_percent_tolerance=10,
                          winding_scheme='Square',
                          peak_current=8,
@@ -1131,21 +1145,21 @@ if __name__ == '__main__':
                          database_core_names=[],
                          database_litz_names=['1.5x105x0.1', "1.4x200x0.071", "2.0x405x0.071", "2.0x800x0.05"],
                          solid_conductor_r=[],  # 0.0013
-                         manual_core_inner_diameter=list(np.linspace(min_core['core_inner_diameter'], max_core['core_inner_diameter'], 10)),
-                         manual_window_h=list(np.linspace(min_core['window_h'], max_core['window_h'], 10)),
-                         manual_window_w=list(np.linspace(min_core['window_w'], max_core['window_w'], 10)),
-                         no_of_turns=np.arange(1,100),
+                         manual_core_inner_diameter=list(np.linspace(min_core['core_inner_diameter'], max_core['core_inner_diameter'], 3)),
+                         manual_window_h=list(np.linspace(min_core['window_h'], max_core['window_h'], 3)),
+                         manual_window_w=list(np.linspace(min_core['window_w'], max_core['window_w'], 3)),
+                         no_of_turns=np.arange(1,80).tolist(),
                          n_air_gaps=[1],
-                         air_gap_height=list(np.linspace(0.0001, 0.0005, 15)),
+                         air_gap_height=list(np.linspace(0.0001, 0.0005, 20)),
                          air_gap_position=[50],
                          core_material=['N95'],
                          mult_air_gap_type=['center_distributed'],
-                         top_core_insulation=0.001,
-                         bot_core_insulation=0.001,
-                         left_core_insulation=0.001,
+                         top_core_insulation=0.002,
+                         bot_core_insulation=0.002,
+                         left_core_insulation=0.0013,
                          right_core_insulation=0.001,
                          inner_winding_insulation=0.0005,
-                         temperature=100.0,
+                         temperature=60.0,
                          manual_litz_conductor_r=[],
                          manual_litz_strand_r=[],
                          manual_litz_strand_n=[],
