@@ -1,4 +1,4 @@
-import femmt as fmt
+# python imports
 
 # 3rd library imports
 import numpy as np
@@ -8,12 +8,13 @@ from matplotlib import pyplot as plt
 import femmt.functions_reluctance as fr
 from femmt.constants import mu_0
 
+
 def plot_limitation():
     length = 15
     width = 100 * length
     height = 101 - length
 
-    r_mx = 1 / (fmt.mu_0 * (width / 2 / length + 2 / np.pi * (
+    r_mx = 1 / (mu_0 * (width / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
     print(height)
 
@@ -39,19 +40,19 @@ def plot_limitation():
     height2_c =100 - height1_c
     h_l = height2_c / length
     # print(h_l)
-    r_m1 = 1 / (fmt.mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
+    r_m1 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
             1 + np.log(np.pi * height1_c / 4 / length_c))))
 
-    r_m2 = 1 / (fmt.mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
+    r_m2 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
             1 + np.log(np.pi * height2_c / 4 / length_c))))
 
     r_m = r_m1 + r_m2
     ratio = r_mx / r_m
     # print(ratio)
-    fig, ax = fmt.plt.subplots()  # Create a figure containing a single axes.
-    fmt.plt.title("R_basic vs h/l")
-    fmt.plt.xlabel("h/l")
-    fmt.plt.ylabel("R_basic")
+    fig, ax = plt.subplots()  # Create a figure containing a single axes.
+    plt.title("R_basic vs h/l")
+    plt.xlabel("h/l")
+    plt.ylabel("R_basic")
 
     ax.plot(h_l, r_m)
     # ax.hlines(y=r_m, xmin=0, xmax=50, linewidth=2, color='g')
@@ -116,13 +117,13 @@ def plot_r_basic():
     height = np.linspace(100, 0, 1000)
     h_l = height / length
     w_l = width / length
-    fig, ax = fmt.plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
+    fig, ax = plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
     # fmt.plt.title("$R_{basic}$ vs $\dfrac{h}{l}$", fontsize=20)
-    fmt.plt.xlabel("$\dfrac{h}{l}$", fontsize=24)
-    fmt.plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
+    plt.xlabel("$\dfrac{h}{l}$", fontsize=24)
+    plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
 
     for i, wid in enumerate(width):
-        r_m = 1 / (fmt.mu_0 * (wid / 2 / length + 2 / np.pi * (
+        r_m = 1 / (mu_0 * (wid / 2 / length + 2 / np.pi * (
                 1 + np.log(np.pi * height / 4 / length))))
 
         combined = np.vstack((h_l, r_m)).T
@@ -137,11 +138,11 @@ def plot_r_basic():
     plt.show()
 
 
-def distributed_type_1(air_gap_hight_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
+def distributed_type_1(air_gap_height_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
     """Returns distributed air-gap reluctance of Type 1 (Where corner air-gaps are present)
 
-    :param air_gap_hight_single_air_gap: Air-gap height [in meter]
-    :type air_gap_hight_single_air_gap: list
+    :param air_gap_height_single_air_gap: Air-gap height [in meter]
+    :type air_gap_height_single_air_gap: list
     :param core_inner_diameter: Diameter of center leg of the core [in meter]
     :type core_inner_diameter: list
     :param n_air_gaps: Number of air-gaps in the center leg of the core
@@ -154,22 +155,22 @@ def distributed_type_1(air_gap_hight_single_air_gap, core_inner_diameter, n_air_
     # ToDo: Raise Error for less than two air gaps
 
     # first part calculates the two outer air gaps (very top and very bottom)
-    reluctance_round_inf = fr.r_air_gap_round_inf(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple)
+    reluctance_round_inf = fr.r_air_gap_round_inf(air_gap_height_single_air_gap, core_inner_diameter, h_multiple)
     reluctance_total = (2 * reluctance_round_inf)
 
     # second part calculates the inner air gaps between top and bottom air gaps (if available)
-    reluctance_round_round = fr.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple,
+    reluctance_round_round = fr.r_air_gap_round_round(air_gap_height_single_air_gap, core_inner_diameter, h_multiple,
                                                       h_multiple)
     reluctance_total = reluctance_total + ((n_air_gaps - 2) * reluctance_round_round)
 
     return reluctance_total
 
 
-def distributed_type_2(air_gap_hight_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
+def distributed_type_2(air_gap_height_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
     """Returns distributed air-gap reluctance of Type 2 (Where corner air-gaps are absent)
 
-    :param air_gap_hight_single_air_gap: Air-gap height [in meter]
-    :type air_gap_hight_single_air_gap: list
+    :param air_gap_height_single_air_gap: Air-gap height [in meter]
+    :type air_gap_height_single_air_gap: list
     :param core_inner_diameter: Diameter of center leg of the core [in meter]
     :type core_inner_diameter: list
     :param n_air_gaps: Number of air-gaps in the center leg of the core
@@ -182,12 +183,12 @@ def distributed_type_2(air_gap_hight_single_air_gap, core_inner_diameter, n_air_
     # ToDo: Raise Error for less than two air gaps
 
     # First part calculates two outer air gaps (very top and very bottom)
-    reluctance_round_round = fr.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple,
+    reluctance_round_round = fr.r_air_gap_round_round(air_gap_height_single_air_gap, core_inner_diameter, h_multiple,
                                                       h_multiple / 2)
     reluctance = (2 * reluctance_round_round)
 
     # second part calculates air gaps between the outer air gaps (if available)
-    reluctance_round_round = fr.r_air_gap_round_round(air_gap_hight_single_air_gap, core_inner_diameter, h_multiple / 2,
+    reluctance_round_round = fr.r_air_gap_round_round(air_gap_height_single_air_gap, core_inner_diameter, h_multiple / 2,
                                                       h_multiple / 2)
     reluctance = reluctance + ((n_air_gaps - 2) * reluctance_round_round)
 
@@ -415,7 +416,7 @@ class MagneticCircuit:
         if not (len(self.core_inner_diameter) and len(self.window_h) and len(self.window_w) and len(self.no_of_turns)
                 and len(self.n_air_gaps) and len(self.mu_r_abs)):
             raise Exception("one of the passed arguments are empty list")
-        if not all(isinstance(item, int) for item in self.no_of_turns):
+        if not all(isinstance(item, (int, np.int64)) for item in self.no_of_turns):
             raise Exception("no_of_turns list elements should be integer")
         if not all(isinstance(item, int) for item in self.n_air_gaps):
             raise Exception("n_air_gaps list elements should be integer")
@@ -499,12 +500,12 @@ class MagneticCircuit:
         self.area[:, 4] = np.pi * (self.r_outer ** 2 - self.r_inner ** 2)
 
         # Reluctance calculation
-        self.reluctance[:, 0] = self.length[:, 0] / (fmt.mu_0 * self.mu_r_abs * self.area[:, 0])
-        self.reluctance[:, 1] = self.length[:, 1] / (fmt.mu_0 * self.mu_r_abs * self.area[:, 1])
-        self.reluctance[:, 2] = ((fmt.mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * \
+        self.reluctance[:, 0] = self.length[:, 0] / (mu_0 * self.mu_r_abs * self.area[:, 0])
+        self.reluctance[:, 1] = self.length[:, 1] / (mu_0 * self.mu_r_abs * self.area[:, 1])
+        self.reluctance[:, 2] = ((mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * \
                                 np.log((2 * self.r_inner) / self.core_inner_diameter)
-        self.reluctance[:, 3] = self.length[:, 3] / (fmt.mu_0 * self.mu_r_abs * self.area[:, 3])
-        self.reluctance[:, 4] = self.length[:, 4] / (fmt.mu_0 * self.mu_r_abs * self.area[:, 4])
+        self.reluctance[:, 3] = self.length[:, 3] / (mu_0 * self.mu_r_abs * self.area[:, 3])
+        self.reluctance[:, 4] = self.length[:, 4] / (mu_0 * self.mu_r_abs * self.area[:, 4])
 
         # Doubling the reluctance of section 1, 2, 3, to accommodate horizontal symmetry
         self.reluctance[:, 1:4] = 2 * self.reluctance[:, 1:4]
@@ -653,7 +654,7 @@ class MagneticCircuit:
         flag_2 = 0
         if self.n_air_gaps[0] != 0:
             if self.air_gap_method == 'Center':
-                self.section.append(6)  # round-round type airgap
+                self.section.append(6)  # round-round type air gap
 
                 self.reluctance[:, 5] = fr.r_air_gap_round_round([self.air_gap_h[0]], [self.core_inner_diameter],
                                                                  [(self.window_h - self.air_gap_h[0]) / 2],

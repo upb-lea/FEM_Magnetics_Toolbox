@@ -1,6 +1,13 @@
+# python libraries
+from typing import List
+
+# 3rd party libraries
 from matplotlib import pyplot as plt
 import numpy as np
+
+# femmt libraries
 import femmt.functions as ff
+from femmt.optimization.integrated_transformer_dtos import *
 
 def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, plot_color: str, z_value: list = None,
             z_label: str = None, inductance_value: list = None, annotations: list = None):
@@ -121,3 +128,61 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     fig.canvas.mpl_connect("motion_notify_event", hover)
     ax.grid()
     plt.show()
+
+
+
+# Faster than is_pareto_efficient_simple, but less readable.
+def is_pareto_efficient(costs, return_mask=True):
+    """
+    Find the pareto-efficient points
+    :param costs: An (n_points, n_costs) array
+    :param return_mask: True to return a mask
+    :return: An array of indices of pareto-efficient points.
+        If return_mask is True, this will be an (n_points, ) boolean array
+        Otherwise it will be a (n_efficient_points, ) integer array of indices.
+    """
+    is_efficient = np.arange(costs.shape[0])
+    n_points = costs.shape[0]
+    next_point_index = 0  # Next index in the is_efficient array to search for
+    while next_point_index < len(costs):
+        nondominated_point_mask = np.any(costs < costs[next_point_index], axis=1)
+        nondominated_point_mask[next_point_index] = True
+        is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
+        costs = costs[nondominated_point_mask]
+        next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
+    if return_mask:
+        is_efficient_mask = np.zeros(n_points, dtype=bool)
+        is_efficient_mask[is_efficient] = True
+        return is_efficient_mask
+    else:
+        return is_efficient
+
+
+
+
+def pareto_front_from_dtos(dto_list: List[ResultFile]):
+    x_vec = np.array([])
+    y_vec = np.array([])
+    tuple_vec = []
+
+    for dto in dto_list:
+        x_vec = np.append(x_vec, dto.core_2daxi_total_volume)
+        y_vec = np.append(y_vec, dto.total_loss)
+        tuple_vec.append((dto.core_2daxi_total_volume,dto.total_loss))
+
+    tuple_vec = np.array(tuple_vec)
+
+    pareto_tuple_mask_vec = is_pareto_efficient(tuple_vec)
+
+
+    x_pareto_vec = []
+    y_pareto_vec = []
+
+    for count_mask, mask in enumerate(pareto_tuple_mask_vec):
+        if mask:
+            x_pareto_vec.append(x_vec[count_mask])
+            y_pareto_vec.append(y_vec[count_mask])
+
+    print(f"{len(x_pareto_vec) = }")
+
+    return np.array(x_pareto_vec), np.array(y_pareto_vec)

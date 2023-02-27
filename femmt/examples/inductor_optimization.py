@@ -397,33 +397,55 @@ class AutomatedDesign:
     component_type_dict = {'inductor': fmt.ComponentType.Inductor,
                            'integrated_transformer': fmt.ComponentType.IntegratedTransformer}
 
-    def __init__(self, working_directory: str, magnetic_component: str, goal_inductance: float, frequency: float,
-                 goal_inductance_percent_tolerance: int, winding_scheme: str, peak_current: float, percent_of_b_sat: int,
-                 percent_of_total_loss: int, database_core_names: list, database_litz_names: list,
-                 solid_conductor_r: list, manual_core_inner_diameter: list, manual_window_h: list, manual_window_w: list,
-                 no_of_turns: list, n_air_gaps: list, air_gap_height: list, air_gap_position: list, core_material: list,
-                 mult_air_gap_type: list, top_core_insulation: float, bot_core_insulation: float,
-                 left_core_insulation: float, right_core_insulation: float, inner_winding_insulation: float,
-                 temperature: float, manual_litz_conductor_r: list, manual_litz_strand_r: list,
-                 manual_litz_strand_n: list, manual_litz_fill_factor: list):
+    def __init__(self, working_directory: str,
+                 magnetic_component: str,
+                 target_inductance: float,
+                 frequency: float,
+                 target_inductance_percent_tolerance: int,
+                 winding_scheme: str,
+                 peak_current: float,
+                 percent_of_flux_density_saturation: int,
+                 percent_of_total_loss: int,
+                 database_core_names: list,
+                 database_litz_names: list,
+                 solid_conductor_r: list,
+                 manual_core_inner_diameter: list,
+                 manual_window_h: list,
+                 manual_window_w: list,
+                 no_of_turns: list,
+                 n_air_gaps: list,
+                 air_gap_height: list,
+                 air_gap_position: list,
+                 core_material: list,
+                 mult_air_gap_type: list,
+                 top_core_insulation: float,
+                 bot_core_insulation: float,
+                 left_core_insulation: float,
+                 right_core_insulation: float,
+                 inner_winding_insulation: float,
+                 temperature: float,
+                 manual_litz_conductor_r: list,
+                 manual_litz_strand_r: list,
+                 manual_litz_strand_n: list,
+                 manual_litz_fill_factor: list):
 
         """
                 :param working_directory: Sets the working directory
                 :type working_directory: str
                 :param magnetic_component: Sets magnetic component: 'inductor', 'integrated transformer'
                 :type magnetic_component: str
-                :param goal_inductance: Sets goal inductance for design [in Henry]
-                :type goal_inductance: float
+                :param target_inductance: Sets goal inductance for design [in Henry]
+                :type target_inductance: float
                 :param frequency: Operating frequency [in Hz]
                 :type frequency: float
-                :param goal_inductance_percent_tolerance: percent tolerance with respect to goal inductance [in percent]
-                :type goal_inductance_percent_tolerance: float
+                :param target_inductance_percent_tolerance: percent tolerance with respect to goal inductance [in percent]
+                :type target_inductance_percent_tolerance: float
                 :param winding_scheme: Winding scheme: 'Square' or 'Hexagonal'
                 :type winding_scheme: str
                 :param peak_current: Max current amplitude with assumption of sinusoidal current waveform [in Ampere]
                 :type peak_current: float
-                :param percent_of_b_sat: percent of saturation of magnetic flux density [in percent]
-                :type percent_of_b_sat: int
+                :param percent_of_flux_density_saturation: percent of saturation of magnetic flux density [in percent]
+                :type percent_of_flux_density_saturation: int
                 :param percent_of_total_loss: percentage of the total loss [in percent]
                 :type percent_of_total_loss: int
                 :param database_core_names: list of core names from the database
@@ -471,10 +493,10 @@ class AutomatedDesign:
 
         self.magnetic_component = magnetic_component
 
-        self.goal_inductance = goal_inductance
-        self.goal_inductance_percent_tolerance = goal_inductance_percent_tolerance
+        self.goal_inductance = target_inductance
+        self.goal_inductance_percent_tolerance = target_inductance_percent_tolerance
         self.peak_current = peak_current
-        self.percent_of_b_sat = percent_of_b_sat
+        self.percent_of_b_sat = percent_of_flux_density_saturation
         self.percent_of_total_loss = percent_of_total_loss
         self.frequency = frequency
         self.temperature = temperature
@@ -530,11 +552,12 @@ class AutomatedDesign:
 
         # Filtration of the design cases which are not important
         self.data_matrix_0 = mc.data_matrix
-        self.data_matrix_1 = self.filter_goal_inductance(self.data_matrix_0)
-        self.data_matrix_2 = self.filter_flux_saturation(self.data_matrix_1)
-        self.data_matrix_3 = self.filter_geometry(self.data_matrix_2)
-        self.data_matrix_4 = self.filter_losses(self.data_matrix_3)
-        self.data_matrix_fem = self.data_matrix_4
+        self.data_matrix_1 = self.filter_reluctance_target_inductance(self.data_matrix_0)
+        self.data_matrix_2 = self.filter_reluctance_flux_saturation(self.data_matrix_1)
+        self.data_matrix_3 = self.filter_reluctance_winding_window(self.data_matrix_2)
+        self.data_matrix_4 = self.filter_reluctance_losses(self.data_matrix_3)
+        self.data_matrix_5 = self.filter_reluctance_pareto_front_tolerance(self.data_matrix_4)
+        self.data_matrix_fem = self.data_matrix_5
 
     def set_up_folder_structure(self, working_directory):
         if working_directory is None:
@@ -613,7 +636,7 @@ class AutomatedDesign:
         return core_inner_diameter_list, window_h_list, window_w_list, litz_conductor_r, litz_strand_r, litz_strand_n, \
                litz_fill_factor, mu_r_abs, mult_air_gap_type_list
 
-    def filter_goal_inductance(self, data_matrix):
+    def filter_reluctance_target_inductance(self, data_matrix):
         """
         Filter out design cases which are in between the given goal inductance tolerance band
 
@@ -628,7 +651,7 @@ class AutomatedDesign:
                                             self.goal_inductance))]
         return data_matrix
 
-    def filter_flux_saturation(self, data_matrix):
+    def filter_reluctance_flux_saturation(self, data_matrix):
         """
         Filter out design cases based on the maximum magnetic flux allowed in the magnetic core.
 
@@ -671,7 +694,7 @@ class AutomatedDesign:
 
         return data_matrix_temp
 
-    def filter_geometry(self, data_matrix):
+    def filter_reluctance_winding_window(self, data_matrix):
         """
         Filter out design cases which are not physical possible based on no_of_turns and winding area
 
@@ -749,7 +772,7 @@ class AutomatedDesign:
 
         return data_matrix
 
-    def filter_losses(self, data_matrix):
+    def filter_reluctance_losses(self, data_matrix):
         """
        Filter out design cases based on the calculated hysteresis and DC loss
 
@@ -846,6 +869,56 @@ class AutomatedDesign:
 
         return data_matrix
 
+    def pareto_front_from_data_matrix(self, data_matrix):
+        total_loss_vec = data_matrix[:, self.param["total_loss"]]
+        core_2daxi_total_volume_vec = data_matrix[:, self.param["total_volume"]]
+
+        tuple_list = np.array(list(zip(total_loss_vec, core_2daxi_total_volume_vec)))
+
+        pareto_tuple_mask_vec = fmt.is_pareto_efficient(tuple_list)
+
+        x_pareto_vec = []
+        y_pareto_vec = []
+
+        for count_mask, mask in enumerate(pareto_tuple_mask_vec):
+            if mask:
+                x_pareto_vec.append(core_2daxi_total_volume_vec[count_mask])
+                y_pareto_vec.append(total_loss_vec[count_mask])
+
+        print(f"{len(x_pareto_vec) = }")
+
+        vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
+
+        # sorting 2d array by 1st row
+        # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
+        sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
+        x_pareto_vec = sorted_vector[0]
+        y_pareto_vec = sorted_vector[1]
+
+        return np.array(x_pareto_vec), np.array(y_pareto_vec)
+
+    def filter_reluctance_pareto_front_tolerance(self, data_matrix, factor_min_dc_losses: float = 1):
+        total_loss_vec = data_matrix[:,self.param["total_loss"]]
+        total_volume_vec = data_matrix[:,self.param["total_volume"]]
+
+        min_total_loss = np.min(total_loss_vec)
+        print(f"{min_total_loss = }")
+
+        pareto_x_vec, pareto_y_vec = self.pareto_front_from_data_matrix(data_matrix)
+        print(f"{pareto_x_vec = }")
+        print(f"{pareto_y_vec = }")
+
+
+        loss_offset = factor_min_dc_losses * min_total_loss
+
+
+        ref_loss_vec = np.interp(total_volume_vec, pareto_x_vec, pareto_y_vec) + loss_offset
+
+        return_data_matrix = data_matrix[np.where(total_loss_vec < ref_loss_vec)]
+
+        return return_data_matrix
+
+
     def fem_simulation(self):
         """
         FEM simulation of the design cases and saving the result in the given working directory for later analysis
@@ -938,7 +1011,7 @@ class AutomatedDesign:
 
                 data_files.append(destination_json_file)
                 file_names.append(f"case{count}")
-                fmt.femmt_print(f"Case {count} of {len(self.data_matrix_fem)} completed")
+                print(f"Case {count} of {len(self.data_matrix_fem)} completed")
                 successful_sim_counter = successful_sim_counter + 1
 
             except (Exception,) as e:
@@ -1036,25 +1109,35 @@ if __name__ == '__main__':
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
+    core_database = fmt.core_database()
+    pq3230 = core_database["PQ 32/30"]
+    pq4040 = core_database["PQ 40/40"]
+    pq5050 = core_database["PQ 50/50"]
+    pq6560 = core_database["PQ 65/60"]
+
+    min_core = pq3230
+    max_core = pq6560
+
+
     ad = AutomatedDesign(working_directory=working_directory,
                          magnetic_component='inductor',
-                         goal_inductance=120 * 1e-6,
+                         target_inductance=120 * 1e-6,
                          frequency=100000,
-                         goal_inductance_percent_tolerance=10,
+                         target_inductance_percent_tolerance=10,
                          winding_scheme='Square',
                          peak_current=8,
-                         percent_of_b_sat=70,
+                         percent_of_flux_density_saturation=70,
                          percent_of_total_loss=30,
                          database_core_names=[],
-                         database_litz_names=['1.5x105x0.1', "1.4x200x0.071"],
+                         database_litz_names=['1.5x105x0.1', "1.4x200x0.071", "2.0x405x0.071", "2.0x800x0.05"],
                          solid_conductor_r=[],  # 0.0013
-                         manual_core_inner_diameter=list(np.linspace(0.005, 0.05, 10)),
-                         manual_window_h=list(np.linspace(0.01, 0.08, 5)),
-                         manual_window_w=list(np.linspace(0.005, 0.04, 10)),
-                         no_of_turns=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-                         n_air_gaps=[1, 2],
-                         air_gap_height=list(np.linspace(0.0001, 0.0005, 5)),
-                         air_gap_position=list(np.linspace(20, 80, 2)),
+                         manual_core_inner_diameter=list(np.linspace(min_core['core_inner_diameter'], max_core['core_inner_diameter'], 10)),
+                         manual_window_h=list(np.linspace(min_core['window_h'], max_core['window_h'], 10)),
+                         manual_window_w=list(np.linspace(min_core['window_w'], max_core['window_w'], 10)),
+                         no_of_turns=np.arange(1,100),
+                         n_air_gaps=[1],
+                         air_gap_height=list(np.linspace(0.0001, 0.0005, 15)),
+                         air_gap_position=[50],
                          core_material=['N95'],
                          mult_air_gap_type=['center_distributed'],
                          top_core_insulation=0.001,
