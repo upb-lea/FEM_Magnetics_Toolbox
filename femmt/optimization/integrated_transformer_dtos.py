@@ -79,10 +79,3 @@ class ResultFile:
     total_loss: float
 
     # fem simulation results
-
-
-
-
-def print_result_file(result_file: ResultFile):
-    for field in dataclasses.fields(result_file):
-        ff.femmt_print(f"{field = }")

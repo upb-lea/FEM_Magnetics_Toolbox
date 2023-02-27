@@ -33,8 +33,11 @@ dab_transformer_config = fmt.InputConfig(
 )
 
 #task = 'simulation'
-task = 'load_reluctance'
+#task = 'load_reluctance'
 #task = 'load_reluctance_filter_and_simulate_fem'
+task = 'load_fem_simulations'
+
+#task = "single_fem_simulation"
 
 example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
 if not os.path.exists(example_results_folder):
@@ -59,13 +62,15 @@ elif task == 'load_reluctance':
     #opt.plot_reluctance_model_result_list(valid_reluctance_model_designs)
     print(f"{len(valid_reluctance_model_designs) = }")
 
-    filtered_air_gaps_dto_list = opt.filter_air_gap(valid_reluctance_model_designs)
+    filtered_air_gaps_dto_list = opt.filter_min_air_gap_length(valid_reluctance_model_designs)
     #opt.plot_reluctance_model_result_list(filtered_air_gaps_dto_list)
     print(f"{len(filtered_air_gaps_dto_list) = }")
 
     pareto_dto_list = opt.filter_reluctance_model_list(filtered_air_gaps_dto_list, factor_min_dc_losses=0.5)
     print(f"{len(pareto_dto_list) = }")
     opt.plot_reluctance_model_result_list(pareto_dto_list)
+
+    opt.save_dto_list(pareto_dto_list, os.path.join(opt.optimization_working_directory, 'filtered_results'))
     #opt.plot_filtered_pareto_result_list(filter_volume_list, filter_core_hyst_loss_list)
 
 elif task == 'load_reluctance_filter_and_simulate_fem':
@@ -73,11 +78,11 @@ elif task == 'load_reluctance_filter_and_simulate_fem':
     #opt.plot_reluctance_model_result_list(valid_reluctance_model_designs)
     print(f"{len(valid_reluctance_model_designs) = }")
 
-    filtered_air_gaps_dto_list = opt.filter_air_gap(valid_reluctance_model_designs)
+    filtered_air_gaps_dto_list = opt.filter_min_air_gap_length(valid_reluctance_model_designs)
     #opt.plot_reluctance_model_result_list(filtered_air_gaps_dto_list)
     print(f"{len(filtered_air_gaps_dto_list) = }")
 
-    pareto_dto_list = opt.filter_reluctance_model_list(filtered_air_gaps_dto_list, factor_min_dc_losses=1)
+    pareto_dto_list = opt.filter_reluctance_model_list(filtered_air_gaps_dto_list, factor_min_dc_losses=0.5)
     print(f"{len(pareto_dto_list) = }")
     #opt.plot_reluctance_model_result_list(pareto_dto_list)
 
@@ -85,3 +90,11 @@ elif task == 'load_reluctance_filter_and_simulate_fem':
 
     #opt.plot_filtered_pareto_result_list(filter_volume_list, filter_core_hyst_loss_list)
 
+elif task == "single_fem_simulation":
+    pareto_dto_list = opt.load_result_list(os.path.join(opt.optimization_working_directory, 'filtered_results'))
+    single_dto = [pareto_dto_list[1]]
+    print(single_dto[0])
+    opt.fem_simulation(config_dto=dab_transformer_config, simulation_dto_list=single_dto)
+
+elif task == 'load_fem_simulations':
+    opt.plot_fem_simulation_result_list(os.path.join(opt.optimization_working_directory, 'fem_simulation_results'))
