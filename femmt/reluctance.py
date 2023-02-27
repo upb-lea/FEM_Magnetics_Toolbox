@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 
 # femmt imports
 import femmt.functions_reluctance as fr
+from femmt.constants import mu_0
 
 def plot_limitation():
     length = 15
@@ -281,8 +282,6 @@ class MagneticCircuit:
     """
     Class object for calculating the reluctance and inductance of 2D-axis symmetric inductor
     """
-    # Magnetic permeability of air/vacuum 
-    mu_0 = 4 * np.pi * 1e-7
 
     def __init__(self, core_inner_diameter: list, window_h: list, window_w: list, no_of_turns: list, n_air_gaps: list,
                  air_gap_h: list, air_gap_position: list, mu_r_abs: list, mult_air_gap_type: list = None,
@@ -500,12 +499,12 @@ class MagneticCircuit:
         self.area[:, 4] = np.pi * (self.r_outer ** 2 - self.r_inner ** 2)
 
         # Reluctance calculation
-        self.reluctance[:, 0] = self.length[:, 0] / (self.mu_0 * self.mu_r_abs * self.area[:, 0])
-        self.reluctance[:, 1] = self.length[:, 1] / (self.mu_0 * self.mu_r_abs * self.area[:, 1])
-        self.reluctance[:, 2] = ((self.mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * \
+        self.reluctance[:, 0] = self.length[:, 0] / (fmt.mu_0 * self.mu_r_abs * self.area[:, 0])
+        self.reluctance[:, 1] = self.length[:, 1] / (fmt.mu_0 * self.mu_r_abs * self.area[:, 1])
+        self.reluctance[:, 2] = ((fmt.mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * \
                                 np.log((2 * self.r_inner) / self.core_inner_diameter)
-        self.reluctance[:, 3] = self.length[:, 3] / (self.mu_0 * self.mu_r_abs * self.area[:, 3])
-        self.reluctance[:, 4] = self.length[:, 4] / (self.mu_0 * self.mu_r_abs * self.area[:, 4])
+        self.reluctance[:, 3] = self.length[:, 3] / (fmt.mu_0 * self.mu_r_abs * self.area[:, 3])
+        self.reluctance[:, 4] = self.length[:, 4] / (fmt.mu_0 * self.mu_r_abs * self.area[:, 4])
 
         # Doubling the reluctance of section 1, 2, 3, to accommodate horizontal symmetry
         self.reluctance[:, 1:4] = 2 * self.reluctance[:, 1:4]
