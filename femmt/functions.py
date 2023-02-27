@@ -252,23 +252,19 @@ def litz_database() -> Dict:
     """
     litz_dict = {}
 
-    litz_dict["1.5x105x0.1"] = {"implicit": "implicit_ff",
-                                "strands_numbers": 105,
+    litz_dict["1.5x105x0.1"] = {"strands_numbers": 105,
                                 "strand_radii": 0.1e-3 / 2,
                                 "conductor_radii": 1.5e-3 / 2,
                                 "ff": ""}
-    litz_dict["1.4x200x0.071"] = {"implicit": "implicit_ff",
-                                  "strands_numbers": 200,
+    litz_dict["1.4x200x0.071"] = {"strands_numbers": 200,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 1.4e-3 / 2,
                                   "ff": ""}
-    litz_dict["2.0x405x0.071"] = {"implicit": "implicit_ff",
-                                  "strands_numbers": 405,
+    litz_dict["2.0x405x0.071"] = {"strands_numbers": 405,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 2.0e-3 / 2,
                                   "ff": ""}
-    litz_dict["2.0x800x0.05"] = {"implicit": "implicit_ff",
-                                 "strands_numbers": 800,
+    litz_dict["2.0x800x0.05"] = {"strands_numbers": 800,
                                  "strand_radii": 0.05e-3 / 2,
                                  "conductor_radii": 2e-3 / 2,
                                  "ff": ""}
