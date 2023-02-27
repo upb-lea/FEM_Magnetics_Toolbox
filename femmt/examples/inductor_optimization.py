@@ -17,8 +17,6 @@ import materialdatabase as mdb
 
 # femmt libraries
 import femmt as fmt
-from timeit import default_timer as timer
-
 
 
 material_db = mdb.MaterialDatabase()
@@ -245,10 +243,10 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
         """Return distance between mouse position and given data point
 
         Args:
-            point (np.array): np.array of shape (3,), with x,y,z in data coords
+            point (np.array): np.array of shape (3,), with x,y,z in data coordinates
             event (MouseEvent): mouse event (which contains mouse position in .x and .xdata)
         Returns:
-            distance (np.float64): distance (in screen coords) between mouse pos and data point
+            distance (np.float64): distance (in screen coordinates) between mouse pos and data point
         """
         assert point.shape == (3,), "distance: point.shape is wrong: %s, must be (3,)" % point.shape
 
@@ -259,46 +257,46 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
 
         return np.sqrt((x3 - event.x) ** 2 + (y3 - event.y) ** 2)
 
-    def calcClosestDatapoint(X, event):
+    def calc_closest_datapoint(array_of_points, mouse_event):
         """Calculate which data point is closest to the mouse position.
 
         Args:
-            X (np.array) - array of points, of shape (numPoints, 3)
-            event (MouseEvent) - mouse event (containing mouse position)
+            array_of_points (np.array) - array of points, of shape (numPoints, 3)
+            mouse_event (MouseEvent) - mouse event (containing mouse position)
         Returns:
             smallestIndex (int) - the index (into the array of points X) of the element closest to the mouse position
         """
-        X_modified = X[np.all(~np.isnan(X), axis=1), 0:3]
-        distances = [distance(X_modified[i, 0:3], event) for i in range(X_modified.shape[0])]
+        X_modified = array_of_points[np.all(~np.isnan(array_of_points), axis=1), 0:3]
+        distances = [distance(X_modified[i, 0:3], mouse_event) for i in range(X_modified.shape[0])]
         return np.argmin(distances)
 
-    def annotatePlot(X, index):
+    def annotate_plot(array_of_points, index):
         """Create popover label in 3d chart
 
         Args:
-            X (np.array) - array of points, of shape (numPoints, 3)
+            array_of_points (np.array) - array of points, of shape (numPoints, 3)
             index (int) - index (into points array X) of item which should be printed
         Returns:
             None
         """
         # If we have previously displayed another label, remove it first
-        if hasattr(annotatePlot, 'label'):
-            annotatePlot.label.remove()
+        if hasattr(annotate_plot, 'label'):
+            annotate_plot.label.remove()
         # Get data point from array of points X, at position index
-        x2, y2, _ = proj3d.proj_transform(X[index, 0], X[index, 1], X[index, 2], ax.get_proj())
-        annotatePlot.label = plt.annotate(
+        x2, y2, _ = proj3d.proj_transform(array_of_points[index, 0], array_of_points[index, 1], array_of_points[index, 2], ax.get_proj())
+        annotate_plot.label = plt.annotate(
             f'case{index}\nVolume:{x_value_str[index]}\nLoss:{y_value_str[index]}\nCost:{z_value_str[index]}',
             xy=(x2, y2), xytext=(-20, 20), textcoords='offset points', ha='right', va='bottom',
             bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
             arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
         fig.canvas.draw()
 
-    def onMouseMotion(event):
+    def on_mouse_motion(event):
         """Event that is triggered when mouse is moved. Shows text annotation over data point closest to mouse."""
-        closestIndex = calcClosestDatapoint(X, event)
-        annotatePlot(X, closestIndex)
+        closestIndex = calc_closest_datapoint(X, event)
+        annotate_plot(X, closestIndex)
 
-    fig.canvas.mpl_connect('motion_notify_event', onMouseMotion)  # on mouse motion
+    fig.canvas.mpl_connect('motion_notify_event', on_mouse_motion)  # on mouse motion
     plt.show()
 
 
@@ -339,7 +337,7 @@ def filter_after_fem(inductance: list, total_loss: list, total_volume: list, tot
     return data_array
 
 
-def load_design(working_directory: str):
+def load_fem_simulation_results(working_directory: str):
     """
     Load FEM simulation results from given working directory
 
@@ -508,7 +506,7 @@ class AutomatedDesign:
         # Multiple air-gap type ('edge_distributed' and/or 'center_distributed')
         self.mult_air_gap_type = mult_air_gap_type
 
-        # Set windng and insulation data
+        # Set winding and insulation data
         self.winding_scheme = winding_scheme
         self.winding_factor = self.winding_scheme_dict[winding_scheme][0]
         self.top_core_insulation = top_core_insulation
@@ -801,47 +799,47 @@ class AutomatedDesign:
         #                          (data_matrix[:, self.param["r_inner"]] ** 2))) * \
         #                (data_matrix[:, self.param["window_h"]])
 
-        P_hyst_center = 0.5 * (2 * np.pi * self.frequency) * fmt.mu_0 * mu_r_imag * (
+        p_hyst_center = 0.5 * (2 * np.pi * self.frequency) * fmt.mu_0 * mu_r_imag * (
                     (data_matrix[:, self.param["b_max_center"]] /
                      (fmt.mu_0 * data_matrix[:,
                                 self.param["mu_r_abs"]])) ** 2)
 
-        P_hyst_outer = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu_0 * (
+        p_hyst_outer = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu_0 * (
                     (data_matrix[:, self.param["b_max_outer"]] /
                      (fmt.mu_0 * data_matrix[:, self.param["mu_r_abs"]])) ** 2)
 
-        P_hyst_density_center = P_hyst_center * volume_center
-        P_hyst_density_middle = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu_0 * \
+        p_hyst_density_center = p_hyst_center * volume_center
+        p_hyst_density_middle = 0.5 * (2 * np.pi * self.frequency) * mu_r_imag * fmt.mu_0 * \
                                 ((data_matrix[:, self.param["total_flux_max"]] / (
                                         fmt.mu_0 * data_matrix[:, self.param["mu_r_abs"]])) ** 2) * \
                                 (1 / (2 * np.pi * data_matrix[:, self.param["core_h_middle"]])) * \
                                 np.log(
                                     (data_matrix[:, self.param["r_inner"]] * 2) / data_matrix[:, self.param["core_inner_diameter"]])
-        P_hyst_density_outer = P_hyst_outer * volume_outer
-        total_hyst_loss = P_hyst_density_center + (2 * P_hyst_density_middle) + P_hyst_density_outer
+        p_hyst_density_outer = p_hyst_outer * volume_outer
+        total_hyst_loss = p_hyst_density_center + (2 * p_hyst_density_middle) + p_hyst_density_outer
 
         # Winding loss (only DC loss)
-        Resistance = (data_matrix[:, self.param["no_of_turns"]] * 2 * np.pi *
+        dc_resistance_wire = (data_matrix[:, self.param["no_of_turns"]] * 2 * np.pi *
                       (data_matrix[:, self.param["core_inner_diameter"]] / 2 + data_matrix[:, self.param["conductor_radius"]])) / \
                      (self.copper_conductivity * (np.pi * (data_matrix[:, self.param["conductor_radius"]] ** 2)))
 
-        # I^2 * R loss
-        DC_loss = ((self.peak_current ** 2) / 2) * Resistance       # Assuming sinusoidal current waveform
+        # I^2 * R loss. Calculation from PEAK current, so division by 2 is needed
+        dc_wire_loss = ((self.peak_current ** 2) / 2) * dc_resistance_wire       # Assuming sinusoidal current waveform
 
-        total_loss = DC_loss + total_hyst_loss
-        max_total_loss = max(total_loss)
-        normalized_total_loss = total_loss / max_total_loss
+        total_hyst_dc_loss = dc_wire_loss + total_hyst_loss
+        max_total_loss = max(total_hyst_dc_loss)
+        normalized_total_loss = total_hyst_dc_loss / max_total_loss
 
-        total_volume = np.pi * (data_matrix[:, self.param["r_outer"]] ** 2) * data_matrix[:, self.param["core_h"]]
-        max_volume = max(total_volume)
-        normalized_total_volume = total_volume / max_volume
+        core_2daxi_volume = np.pi * (data_matrix[:, self.param["r_outer"]] ** 2) * data_matrix[:, self.param["core_h"]]
+        max_core_2daxi_volume = max(core_2daxi_volume)
+        normalized_core_2daxi_volume = core_2daxi_volume / max_core_2daxi_volume
 
         data_matrix = self.add_column_to_data_matrix(data_matrix, total_hyst_loss, 'total_hyst_loss')               # 26
-        data_matrix = self.add_column_to_data_matrix(data_matrix, DC_loss, 'DC_loss')                               # 27
-        data_matrix = self.add_column_to_data_matrix(data_matrix, total_loss, 'total_loss')                         # 28
+        data_matrix = self.add_column_to_data_matrix(data_matrix, dc_wire_loss, 'dc_wire_loss')                               # 27
+        data_matrix = self.add_column_to_data_matrix(data_matrix, total_hyst_dc_loss, 'total_loss')                         # 28
         data_matrix = self.add_column_to_data_matrix(data_matrix, normalized_total_loss, 'normalized_total_loss')   # 29
-        data_matrix = self.add_column_to_data_matrix(data_matrix, total_volume, 'total_volume')                     # 30
-        data_matrix = self.add_column_to_data_matrix(data_matrix, normalized_total_volume, 'normalized_total_volume')   # 31
+        data_matrix = self.add_column_to_data_matrix(data_matrix, core_2daxi_volume, 'total_volume')                     # 30
+        data_matrix = self.add_column_to_data_matrix(data_matrix, normalized_core_2daxi_volume, 'normalized_total_volume')   # 31
 
         data_matrix = data_matrix[data_matrix[:, self.param["total_loss"]].argsort()]
         data_matrix = data_matrix[0:int((self.percent_of_total_loss / 100) * len(data_matrix)), :]
@@ -853,20 +851,19 @@ class AutomatedDesign:
         FEM simulation of the design cases and saving the result in the given working directory for later analysis
         """
 
-
         data_files = []
         file_names = []
         successful_sim_counter = 0
-        for i in range(len(self.data_matrix_fem)):
+        for count, _ in enumerate(self.data_matrix_fem):
 
             # MagneticComponent class object
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
                                         working_directory=self.femmt_working_directory, silent=True)
 
-            core = fmt.Core(core_inner_diameter=self.data_matrix_fem[i, self.param["core_inner_diameter"]],
-                            window_w=self.data_matrix_fem[i, self.param["window_w"]],
-                            window_h=self.data_matrix_fem[i, self.param["window_h"]],
-                            material=self.core_material_dict[self.data_matrix_fem[i, self.param["mu_r_abs"]]],
+            core = fmt.Core(core_inner_diameter=self.data_matrix_fem[count, self.param["core_inner_diameter"]],
+                            window_w=self.data_matrix_fem[count, self.param["window_w"]],
+                            window_h=self.data_matrix_fem[count, self.param["window_h"]],
+                            material=self.core_material_dict[self.data_matrix_fem[count, self.param["mu_r_abs"]]],
                             temperature=self.temperature, frequency=self.frequency,
                             permeability_datasource = fmt.MaterialDataSource.ManufacturerDatasheet,
                             permittivity_datasource = fmt.MaterialDataSource.ManufacturerDatasheet)
@@ -874,27 +871,27 @@ class AutomatedDesign:
 
             # 3. set air gap parameters
             air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-            if int(self.data_matrix_fem[i, self.param["n_air_gaps"]]) == 1:
+            if int(self.data_matrix_fem[count, self.param["n_air_gaps"]]) == 1:
                 air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg,
-                                     self.data_matrix_fem[i, self.param["air_gap_h"]],
-                                     self.data_matrix_fem[i, self.param["air_gap_position"]])
+                                     self.data_matrix_fem[count, self.param["air_gap_h"]],
+                                     self.data_matrix_fem[count, self.param["air_gap_position"]])
             else:
-                if int(self.data_matrix_fem[i, self.param["mult_air_gap_type"]]) == 1:
+                if int(self.data_matrix_fem[count, self.param["mult_air_gap_type"]]) == 1:
                     position_list = list(
-                        np.linspace(0, 100, int(self.data_matrix_fem[i, self.param["n_air_gaps"]])))
+                        np.linspace(0, 100, int(self.data_matrix_fem[count, self.param["n_air_gaps"]])))
                     for position in position_list:
                         air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg,
-                                             self.data_matrix_fem[i, self.param["air_gap_h"]],
+                                             self.data_matrix_fem[count, self.param["air_gap_h"]],
                                              position)
 
-                elif int(self.data_matrix_fem[i, self.param["mult_air_gap_type"]]) == 2:
+                elif int(self.data_matrix_fem[count, self.param["mult_air_gap_type"]]) == 2:
                     position_list = list(
-                        np.linspace(0, 100, int(self.data_matrix_fem[i, self.param["n_air_gaps"]]) + 2))
+                        np.linspace(0, 100, int(self.data_matrix_fem[count, self.param["n_air_gaps"]]) + 2))
                     position_list.remove(0.0)
                     position_list.remove(100.0)
                     for position in position_list:
                         air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg,
-                                             self.data_matrix_fem[i, self.param["air_gap_h"]],
+                                             self.data_matrix_fem[count, self.param["air_gap_h"]],
                                              position)
             geo.set_air_gaps(air_gaps)
 
@@ -911,18 +908,18 @@ class AutomatedDesign:
 
             # 6. create conductor and set parameters: use solid wires
             winding = fmt.Conductor(0, fmt.Conductivity.Copper)
-            if np.isnan(self.data_matrix_fem[i, self.param["solid_conductor_r"]]):
-                winding.set_litz_round_conductor(conductor_radius=None if np.isnan(self.data_matrix_fem[i, self.param["litz_conductor_r"]]) else self.data_matrix_fem[i, self.param["litz_conductor_r"]],
-                                                 number_strands=None if np.isnan(self.data_matrix_fem[i, self.param["litz_strand_n"]]) else self.data_matrix_fem[i, self.param["litz_strand_n"]],
-                                                 strand_radius=None if np.isnan(self.data_matrix_fem[i, self.param["litz_strand_r"]]) else self.data_matrix_fem[i, self.param["litz_strand_r"]],
-                                                 fill_factor=None if np.isnan(self.data_matrix_fem[i, self.param["litz_fill_factor"]]) else self.data_matrix_fem[i, self.param["litz_fill_factor"]],
+            if np.isnan(self.data_matrix_fem[count, self.param["solid_conductor_r"]]):
+                winding.set_litz_round_conductor(conductor_radius=None if np.isnan(self.data_matrix_fem[count, self.param["litz_conductor_r"]]) else self.data_matrix_fem[count, self.param["litz_conductor_r"]],
+                                                 number_strands=None if np.isnan(self.data_matrix_fem[count, self.param["litz_strand_n"]]) else self.data_matrix_fem[count, self.param["litz_strand_n"]],
+                                                 strand_radius=None if np.isnan(self.data_matrix_fem[count, self.param["litz_strand_r"]]) else self.data_matrix_fem[count, self.param["litz_strand_r"]],
+                                                 fill_factor=None if np.isnan(self.data_matrix_fem[count, self.param["litz_fill_factor"]]) else self.data_matrix_fem[count, self.param["litz_fill_factor"]],
                                                  conductor_arrangement=self.winding_scheme_dict[self.winding_scheme][1])
             else:
-                winding.set_solid_round_conductor(conductor_radius=self.data_matrix_fem[i, self.param["solid_conductor_r"]],
+                winding.set_solid_round_conductor(conductor_radius=self.data_matrix_fem[count, self.param["solid_conductor_r"]],
                                                   conductor_arrangement=self.winding_scheme_dict[self.winding_scheme][1])
 
             # 7. add conductor to vww and add winding window to MagneticComponent
-            vww.set_winding(winding, int(self.data_matrix_fem[i, self.param["no_of_turns"]]), None)
+            vww.set_winding(winding, int(self.data_matrix_fem[count, self.param["no_of_turns"]]), None)
             geo.set_winding_window(winding_window)
 
             try:
@@ -935,13 +932,13 @@ class AutomatedDesign:
 
 
                 source_json_file = os.path.join(self.femmt_working_directory, "results", "log_electro_magnetic.json")
-                desination_json_file = os.path.join(self.inductor_fem_simulations_results_directory, f'case_{i}.json')
+                destination_json_file = os.path.join(self.inductor_fem_simulations_results_directory, f'case_{count}.json')
 
-                shutil.copy(source_json_file, desination_json_file)
+                shutil.copy(source_json_file, destination_json_file)
 
-                data_files.append(desination_json_file)
-                file_names.append(f"case{i}")
-                fmt.femmt_print(f"Case {i} of {len(self.data_matrix_fem)} completed")
+                data_files.append(destination_json_file)
+                file_names.append(f"case{count}")
+                fmt.femmt_print(f"Case {count} of {len(self.data_matrix_fem)} completed")
                 successful_sim_counter = successful_sim_counter + 1
 
             except (Exception,) as e:
@@ -991,7 +988,7 @@ class AutomatedDesign:
             in that particular project.
         """
         dictionary = {
-            "Working_directory": self.working_directory,
+            "working_directory": self.working_directory,
             "magnetic_component": self.magnetic_component,
             "frequency": self.frequency,
             "temperature": self.temperature,
@@ -1092,10 +1089,8 @@ if __name__ == '__main__':
         # Run FEM simulation of "self.data_matrix_fem"
         ad.fem_simulation()
 
-
-
     # Load design and plot various plots for analysis
-    inductance, total_loss, total_volume, total_cost, annotation_list = load_design \
+    inductance, total_loss, total_volume, total_cost, annotation_list = load_fem_simulation_results \
         (working_directory=working_directory)
 
     plot_data = filter_after_fem(inductance=inductance, total_loss=total_loss, total_volume=total_volume, total_cost=total_cost,

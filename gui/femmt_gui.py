@@ -30,7 +30,7 @@ from gui.onelab_path_popup import OnelabPathDialog
 database = mdb.MaterialDatabase()
 
 from femmt.examples.inductor_optimization import AutomatedDesign
-from femmt.examples.inductor_optimization import load_design, plot_2d, filter_after_fem
+from femmt.examples.inductor_optimization import load_fem_simulation_results, plot_2d, filter_after_fem
 
 import mplcursors
 
@@ -825,7 +825,7 @@ class MainWindow(QMainWindow):
         # Save simulation settings in json file for later review
         self.ad.save_automated_design_settings()
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels = load_design(working_directory=design_directory)
+        real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(working_directory=design_directory)
 
         matplotlib_widget = MatplotlibWidget()
         matplotlib_widget.axis.clear()
@@ -864,7 +864,7 @@ class MainWindow(QMainWindow):
             pass
 
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels = load_design(
+        real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(
             working_directory=design_directory)
 
         plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
