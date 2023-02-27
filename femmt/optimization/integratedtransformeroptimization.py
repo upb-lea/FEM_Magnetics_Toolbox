@@ -96,17 +96,7 @@ class IntegratedTransformerOptimization:
         self.integrated_transformer_fem_simulations_results_directory = os.path.join(self.optimization_working_directory, "fem_simulation_results")
         self.integrated_transformer_optimization_input_parameters_file = os.path.join(self.optimization_working_directory, "optimization_input_parameters.json")
 
-        self.create_folders(self.optimization_working_directory, self.integrated_transformer_reluctance_model_results_directory, self.integrated_transformer_fem_simulations_results_directory, self.femmt_working_directory)
-
-
-
-    @staticmethod
-    def create_folders(*args) -> None:
-        """Creates folder for every given folder path (if it does not exist).
-        """
-        for folder in list(args):
-            if not os.path.exists(folder):
-                os.mkdir(folder)
+        ff.create_folders(self.optimization_working_directory, self.integrated_transformer_reluctance_model_results_directory, self.integrated_transformer_fem_simulations_results_directory, self.femmt_working_directory)
 
     @staticmethod
     def calculate_sweep_tensors(input_parameters_dto: InputConfig):

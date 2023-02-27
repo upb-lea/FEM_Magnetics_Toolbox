@@ -29,8 +29,8 @@ from gui.onelab_path_popup import OnelabPathDialog
 
 database = mdb.MaterialDatabase()
 
-from femmt.examples.reluctance_fem_integration import AutomatedDesign
-from femmt.examples.reluctance_fem_integration import load_design, plot_2d, filter_after_fem
+from femmt.examples.inductor_optimization import AutomatedDesign
+from femmt.examples.inductor_optimization import load_design, plot_2d, filter_after_fem
 
 import mplcursors
 
@@ -823,7 +823,7 @@ class MainWindow(QMainWindow):
         self.ad.fem_simulation()
 
         # Save simulation settings in json file for later review
-        self.ad.automated_design_settings()
+        self.ad.save_automated_design_settings()
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
         real_inductance, total_loss, total_volume, total_cost, labels = load_design(working_directory=design_directory)
 

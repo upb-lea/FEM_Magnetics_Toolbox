@@ -1,19 +1,24 @@
-import femmt as fmt
-import numpy as np
+# python libraries
 import json
 import csv
 import re
 import os
-from os import listdir
-from os.path import isfile, join
 import shutil
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import proj3d
 from itertools import product
 import logging
+import inspect
+
+# 3rd party libraries
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import proj3d
 from scipy.interpolate import interp1d
 import materialdatabase as mdb
+
+# femmt libraries
+import femmt as fmt
 from timeit import default_timer as timer
+
 
 
 material_db = mdb.MaterialDatabase()
@@ -343,11 +348,11 @@ def load_design(working_directory: str):
     """
     working_directories = []
     labels = []
-    working_directory = os.path.join(working_directory, 'fem_simulation_data')
+    working_directory = os.path.join(working_directory, 'fem_simulation_results')
     print("##########################")
     print(f"{working_directory =}")
     print("##########################")
-    file_names = [f for f in listdir(working_directory) if isfile(join(working_directory, f))]
+    file_names = [f for f in os.listdir(working_directory) if os.path.isfile(os.path.join(working_directory, f))]
 
     counter = 0
     for name in file_names:
@@ -464,8 +469,8 @@ class AutomatedDesign:
         """
 
         self.working_directory = working_directory
-        if not os.path.exists(self.working_directory):
-            os.mkdir(self.working_directory)
+        self.set_up_folder_structure(working_directory)
+
         self.magnetic_component = magnetic_component
 
         self.goal_inductance = goal_inductance
@@ -532,6 +537,31 @@ class AutomatedDesign:
         self.data_matrix_3 = self.filter_geometry(self.data_matrix_2)
         self.data_matrix_4 = self.filter_losses(self.data_matrix_3)
         self.data_matrix_fem = self.data_matrix_4
+
+    def set_up_folder_structure(self, working_directory):
+        if working_directory is None:
+            caller_filename = inspect.stack()[1].filename
+            working_directory = os.path.join(os.path.dirname(caller_filename),
+                                             "inductor_optimization")
+
+        # generate new and empty working directory
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # set up folders for optimization
+        self.optimization_working_directory = working_directory
+        self.femmt_working_directory = os.path.join(self.optimization_working_directory, "femmt_simulation")
+        self.inductor_reluctance_model_results_directory = os.path.join(
+            self.optimization_working_directory, "reluctance_model_results")
+        self.inductor_fem_simulations_results_directory = os.path.join(
+            self.optimization_working_directory, "fem_simulation_results")
+        self.inductor_optimization_input_parameters_file = os.path.join(
+            self.optimization_working_directory, "optimization_input_parameters.json")
+
+        fmt.create_folders(self.optimization_working_directory,
+                            self.inductor_reluctance_model_results_directory,
+                            self.inductor_fem_simulations_results_directory,
+                            self.femmt_working_directory)
 
     def input_pre_process(self):
         """ Pre-process the user input to prepare lists for reluctance model"""
@@ -822,19 +852,7 @@ class AutomatedDesign:
         """
         FEM simulation of the design cases and saving the result in the given working directory for later analysis
         """
-        example_results_folder = os.path.join(self.working_directory, "example_results")
-        if not os.path.exists(example_results_folder):
-            os.mkdir(example_results_folder)
 
-        working_directory = os.path.join(example_results_folder, "inductor")
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
-
-        data_folder = os.path.join(self.working_directory, 'fem_simulation_data')
-        if not os.path.exists(data_folder):
-            os.mkdir(data_folder)
-
-        src_path = os.path.join(self.working_directory, "example_results/inductor/results/log_electro_magnetic.json")
 
         data_files = []
         file_names = []
@@ -843,7 +861,7 @@ class AutomatedDesign:
 
             # MagneticComponent class object
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
-                                        working_directory=working_directory, silent=True)
+                                        working_directory=self.femmt_working_directory, silent=True)
 
             core = fmt.Core(core_inner_diameter=self.data_matrix_fem[i, self.param["core_inner_diameter"]],
                             window_w=self.data_matrix_fem[i, self.param["window_w"]],
@@ -914,11 +932,14 @@ class AutomatedDesign:
                 # 6. start simulation
                 geo.single_simulation(freq=self.frequency, current=[self.peak_current], show_results=False)
 
-                shutil.copy2(src_path, data_folder)
-                old_filename = os.path.join(data_folder, "log_electro_magnetic.json")
-                new_filename = os.path.join(data_folder, f"case{i}.json")
-                os.rename(old_filename, new_filename)
-                data_files.append(new_filename)
+
+
+                source_json_file = os.path.join(self.femmt_working_directory, "results", "log_electro_magnetic.json")
+                desination_json_file = os.path.join(self.inductor_fem_simulations_results_directory, f'case_{i}.json')
+
+                shutil.copy(source_json_file, desination_json_file)
+
+                data_files.append(desination_json_file)
                 file_names.append(f"case{i}")
                 fmt.femmt_print(f"Case {i} of {len(self.data_matrix_fem)} completed")
                 successful_sim_counter = successful_sim_counter + 1
@@ -964,7 +985,7 @@ class AutomatedDesign:
             # write multiple rows
             writer.writerows(data)
 
-    def automated_design_settings(self):
+    def save_automated_design_settings(self):
         """
             The function creates json file, writing all the settings that is used to run AutomatedDesign
             in that particular project.
@@ -1003,12 +1024,8 @@ class AutomatedDesign:
             "manual_litz_fill_factor": self.manual_litz_fill_factor
         }
 
-        # Serializing json
-        json_object = json.dumps(dictionary, indent=4)
-
-        # Writing to sample.json
-        with open(self.working_directory + "/automated_design_settings.json", "w") as outfile:
-            outfile.write(json_object)
+        with open(os.path.join(self.working_directory, "automated_design_settings.json"), "w+", encoding='utf-8') as outfile:
+            json.dump(dictionary, outfile, indent=2, ensure_ascii=False)
 
 
 if __name__ == '__main__':
@@ -1069,15 +1086,17 @@ if __name__ == '__main__':
                     "any other number to load previous design as per given directory:"))
 
     if choice == 1:
+        # Save simulation settings in json file for later review
+        ad.save_automated_design_settings()
+
         # Run FEM simulation of "self.data_matrix_fem"
         ad.fem_simulation()
 
-        # Save simulation settings in json file for later review
-        ad.automated_design_settings()
+
 
     # Load design and plot various plots for analysis
     inductance, total_loss, total_volume, total_cost, annotation_list = load_design \
-        (working_directory='D:/Personal_data/MS_Paderborn/Sem4/Project_2/2022-11-27_fem_simulation_data')
+        (working_directory=working_directory)
 
     plot_data = filter_after_fem(inductance=inductance, total_loss=total_loss, total_volume=total_volume, total_cost=total_cost,
                      annotation_list=annotation_list, goal_inductance=ad.goal_inductance, percent_tolerance=20)

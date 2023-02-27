@@ -295,6 +295,13 @@ def wire_material_database() -> Dict:
 
     return wire_material
 
+def create_folders(*args) -> None:
+    """Creates folder for every given folder path (if it does not exist).
+    """
+    for folder in list(args):
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+
 def cost_material_database() -> Dict:
     """
     Returns costs for core and winding.
