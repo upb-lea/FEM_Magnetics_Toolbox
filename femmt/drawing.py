@@ -31,7 +31,7 @@ class TwoDaxiSymmetric:
     p_region_bound: np.ndarray
     p_window: np.ndarray
     p_air_gaps: np.ndarray
-    p_conductor: List[List[float]]
+    # p_conductor: List[List[float]]
     p_iso_core: List[List[float]]
     p_iso_pri_sec: List[List[float]]
 
@@ -50,8 +50,12 @@ class TwoDaxiSymmetric:
         # TODO Is the zero initialization necessary?
         self.p_outer = np.zeros((4, 4))
         self.p_region_bound = np.zeros((4, 4))
-        self.p_window = np.zeros((4 * core.number_core_windows, 4))
-        self.p_air_gaps = np.zeros((4 * air_gaps.number, 4)) 
+        if self.core.core_type == CoreType.Single:
+            self.p_window = np.zeros((4 * core.number_core_windows, 4))  # TODO: why is this done for both sides?
+        if self.core.core_type == CoreType.Stacked:
+            self.p_window_top = np.zeros((4, 4))   # TODO: just for right side? make it the same as for single core geometry
+            self.p_window_bot = np.zeros((4, 4))   # TODO: just for right side? make it the same as for single core geometry
+        self.p_air_gaps = np.zeros((4 * air_gaps.number, 4))
         self.p_conductor = []
         self.p_iso_core = []
         self.p_iso_pri_sec = []
@@ -64,7 +68,7 @@ class TwoDaxiSymmetric:
 
     def draw_outer(self):
         """
-        Draws the outer points
+        Draws the outer points of the main core (single core).
 
         :return:
         """
@@ -90,7 +94,7 @@ class TwoDaxiSymmetric:
                             0,
                             self.mesh_data.c_core]
 
-    def draw_window(self):
+    def draw_single_window(self):
         # Window
         # At this point both windows (in a cut) are modeled
         # print(f"win: c_window: {self.component.mesh.c_window}")
@@ -133,6 +137,48 @@ class TwoDaxiSymmetric:
                             self.core.window_h / 2,
                             0,
                             self.mesh_data.c_window]
+
+    def draw_stacked_windows(self):
+        # Window
+        self.p_window_bot[0] = [self.core.core_inner_diameter / 2,
+                                -self.core.window_h_bot / 2,
+                                0,
+                                self.mesh_data.c_window]
+
+        self.p_window_bot[1] = [self.r_inner,
+                                -self.core.window_h_bot / 2,
+                                0,
+                                self.mesh_data.c_window]
+
+        self.p_window_bot[2] = [self.core.core_inner_diameter / 2,
+                                self.core.window_h_bot / 2,
+                                0,
+                                self.mesh_data.c_window]
+
+        self.p_window_bot[3] = [self.r_inner,
+                                self.core.window_h_bot / 2,
+                                0,
+                                self.mesh_data.c_window]
+
+        self.p_window_top[0] = [self.core.core_inner_diameter / 2,
+                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4,  # TODO: could also be done arbitrarily
+                                0,
+                                self.mesh_data.c_window]
+
+        self.p_window_top[1] = [self.r_inner,
+                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4,  # TODO: could also be done arbitrarily
+                                0,
+                                self.mesh_data.c_window]
+
+        self.p_window_top[2] = [self.core.core_inner_diameter / 2,
+                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + self.core.window_h_top,  # TODO: could also be done arbitrarily
+                                0,
+                                self.mesh_data.c_window]
+
+        self.p_window_top[3] = [self.r_inner,
+                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + self.core.window_h_top,  # TODO: could also be done arbitrarily
+                                0,
+                                self.mesh_data.c_window]
 
     def draw_air_gaps(self):
         # Air gaps
@@ -226,15 +272,15 @@ class TwoDaxiSymmetric:
         # In order to close the air gap when a stray_path is added, additional points need to be added
         if self.component_type == ComponentType.IntegratedTransformer:
             top_point = [self.core.core_inner_diameter / 2,
-                            self.air_gaps.midpoints[self.stray_path.start_index+1][1] -
-                            air_gap_height / 2,
-                            0,
-                            mesh_accuracy]
+                         self.air_gaps.midpoints[self.stray_path.start_index+1][1] -
+                         self.air_gaps.midpoints[self.stray_path.start_index+1][2] / 2,
+                         0,
+                         mesh_accuracy]
             bot_point = [self.core.core_inner_diameter / 2,
-                            self.air_gaps.midpoints[self.stray_path.start_index][1] +
-                            air_gap_height / 2,
-                            0,
-                            mesh_accuracy]
+                         self.air_gaps.midpoints[self.stray_path.start_index][1] +
+                         self.air_gaps.midpoints[self.stray_path.start_index][2] / 2,
+                         0,
+                         mesh_accuracy]
             self.p_close_air_gaps = [top_point, bot_point]
 
     def draw_conductors(self, draw_top_down = True):
@@ -359,17 +405,25 @@ class TwoDaxiSymmetric:
 
                                         N_completed[col_cond] += 1
 
-                                        y -= windings[col_cond].conductor_radius * 2 + self.insulation.inner_winding_insulations[col_cond]  # one from bot to top
+                                        y -= windings[col_cond].conductor_radius * 2 + self.insulation.inner_winding_insulations[col_cond]  # one from top to bot
 
-                                    x += windings[col_cond].conductor_radius + \
-                                            windings[(col_cond + 1) % 2].conductor_radius + \
-                                            virtual_winding_window.winding_insulation
+                                    # Check wheter one winding is "finished" and only the other winding must be placed...
+                                    if N_completed[(col_cond + 1) % 2] == turns[(col_cond + 1) % 2]:
+                                        x += windings[col_cond].conductor_radius + \
+                                                windings[col_cond].conductor_radius + \
+                                                virtual_winding_window.winding_insulation
+                                    else:
+                                        x += windings[col_cond].conductor_radius + \
+                                                windings[(col_cond + 1) % 2].conductor_radius + \
+                                                virtual_winding_window.winding_insulation
+                                        # TODO: only works for two windings
+                                        col_cond = (col_cond + 1) % 2
 
                                     # Reset y
-                                    col_cond = (col_cond + 1) % 2
                                     winding_number = winding_numbers[col_cond]
                                     y = top_bound - windings[col_cond].conductor_radius
                                     top_window_iso_counter += 1
+
                                 else:
                                     break
 
@@ -648,7 +702,7 @@ class TwoDaxiSymmetric:
                                     0,
                                     self.mesh_data.c_conductor[winding_number1]])
                                 self.p_conductor[winding_number1].append([
-                                    x, 
+                                    x,
                                     y + winding1.conductor_radius, 
                                     0,
                                     self.mesh_data.c_conductor[winding_number1]])
@@ -994,27 +1048,28 @@ class TwoDaxiSymmetric:
                         # TODO Tell the user which winding window
                         raise Exception(f"Too many turns that do not fit in the winding window {str(vww)}")
 
-                # Region for Boundary Condition
-                self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
-                                            -(self.core.window_h / 2 + self.core.core_inner_diameter / 4)
-                                            * self.mesh_data.padding,
-                                            0,
-                                            self.mesh_data.c_core * self.mesh_data.padding]
-                self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
-                                            -(self.core.window_h / 2 + self.core.core_inner_diameter / 4)
-                                            * self.mesh_data.padding,
-                                            0,
-                                            self.mesh_data.c_core * self.mesh_data.padding]
-                self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
-                                            (self.core.window_h / 2 + self.core.core_inner_diameter / 4)
-                                            * self.mesh_data.padding,
-                                            0,
-                                            self.mesh_data.c_core * self.mesh_data.padding]
-                self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
-                                            (self.core.window_h / 2 + self.core.core_inner_diameter / 4)
-                                            * self.mesh_data.padding,
-                                            0,
-                                            self.mesh_data.c_core * self.mesh_data.padding]
+    def draw_region_single(self):
+            # Region for Boundary Condition
+            self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
+                                        -(self.core.window_h / 2 + self.core.core_inner_diameter / 4)
+                                        * self.mesh_data.padding,
+                                        0,
+                                        self.mesh_data.c_core * self.mesh_data.padding]
+            self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
+                                        -(self.core.window_h / 2 + self.core.core_inner_diameter / 4)
+                                        * self.mesh_data.padding,
+                                        0,
+                                        self.mesh_data.c_core * self.mesh_data.padding]
+            self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
+                                        (self.core.window_h / 2 + self.core.core_inner_diameter / 4)
+                                        * self.mesh_data.padding,
+                                        0,
+                                        self.mesh_data.c_core * self.mesh_data.padding]
+            self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
+                                        (self.core.window_h / 2 + self.core.core_inner_diameter / 4)
+                                        * self.mesh_data.padding,
+                                        0,
+                                        self.mesh_data.c_core * self.mesh_data.padding]
 
     def draw_insulations(self):
         """
@@ -1024,29 +1079,30 @@ class TwoDaxiSymmetric:
         the "real" insulation to be slightly smaller than set by the user.
         """
 
-        window_h = self.core.window_h
-        iso = self.insulation
-        mesh_data = self.mesh_data
-
-        # Since there are many cases in which alternating conductors would lead to slightly different
-        # mesh densities a simplification is made: Just use the lowest mesh density to be safe all the time.
-        mesh_density_to_winding = min(mesh_data.c_conductor)
-
-        mesh_density_to_core = mesh_data.c_window
-
-        # Using the delta the lines and points from the insulation and the core/windings are not overlapping
-        # which makes creating the mesh more simpler
-        # Insulation between winding and core
-        insulation_delta = self.insulation.insulation_delta
-
-        self.p_iso_core = [] # Order: Left, Top, Right, Bot
-        self.p_iso_pri_sec = []
 
         if self.component_type == ComponentType.IntegratedTransformer:
-            # TODO implement for integrated_transformers
+            # TODO: insulations implement for integrated_transformers
             # TODO Change back to warnings?
             print("Insulations are not set because they are not implemented for integrated transformers.")
         else:
+            window_h = self.core.window_h
+            iso = self.insulation
+            mesh_data = self.mesh_data
+
+            # Since there are many cases in which alternating conductors would lead to slightly different
+            # mesh densities a simplification is made: Just use the lowest mesh density to be safe all the time.
+            mesh_density_to_winding = min(mesh_data.c_conductor)
+
+            mesh_density_to_core = mesh_data.c_window
+
+            # Using the delta the lines and points from the insulation and the core/windings are not overlapping
+            # which makes creating the mesh more simpler
+            # Insulation between winding and core
+            insulation_delta = self.insulation.insulation_delta
+
+            self.p_iso_core = []  # Order: Left, Top, Right, Bot
+            self.p_iso_pri_sec = []
+
             # Useful points for insulation creation
             left_x = self.core.core_inner_diameter / 2 + insulation_delta
             top_y = window_h / 2 - insulation_delta
@@ -1238,7 +1294,16 @@ class TwoDaxiSymmetric:
 
     def draw_model(self):
         self.draw_outer()
-        self.draw_window()
-        self.draw_air_gaps()
+        if self.core.core_type == CoreType.Single:
+            self.draw_single_window()
+            self.draw_air_gaps()
+        if self.core.core_type == CoreType.Stacked:
+            self.draw_stacked_windows()
         self.draw_conductors()
         self.draw_insulations()
+
+        # TODO: Region
+        # if self.core.core_type == CoreType.Single:
+        #     self.draw_region_single()
+        # if self.core.core_type == CoreType.Stacked:
+        #     self.draw_region_stacked()

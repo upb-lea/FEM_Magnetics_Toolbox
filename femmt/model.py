@@ -143,13 +143,11 @@ class Conductor:
 class Core:
     """
     This creates the core base for the model.
-
+    # TODO More documentation and get rid of double initializations
     frequency = 0: mu_r_abs only used if non_linear == False
     frequency > 0: mu_r_abs is used
     """
-    # TODO More documentation
 
-    type: str
 
     # Standard material data
     material: str
@@ -163,27 +161,11 @@ class Core:
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
     sigma: float  # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
-    # Dimensions
-    core_inner_diameter: float  # Axi symmetric case | core_w := 2x core radius
-    core_h: float
-    window_w: float  # Winding window width
-    window_h: float  # Winding window height
-    core_type: str = "EI"  # Basic shape of magnetic conductor
-
     steinmetz_loss: int = 0
     generalized_steinmetz_loss: int = 0
 
-    # TODO Does this represent the number of windows the EI core has?
-    number_core_windows: int
-
     # Needed for to_dict
     loss_approach: LossApproach = None
-
-
-    r_inner: float # radius of outer winding window: core_inner_diameter / 2 + window_w
-    r_outer: float # outer radius of full core
-
-    correct_outer_leg: bool # Outer leg is set, so cross-section is same as in inner cylinder (False). Setting this variable to True,
 
     # Database
     # material_database is variable to load in material_database
@@ -193,7 +175,13 @@ class Core:
 
     file_path_to_solver_folder: str  # location to create temporary pro file
 
-    def __init__(self, core_inner_diameter: float, window_w: float, window_h: float, correct_outer_leg: bool = False,
+    def __init__(self,
+                 # dimensions
+                 core_type: CoreType = CoreType.Single,
+                 core_dimensions=None,
+                 correct_outer_leg: bool = False,
+
+                 # material data
                  material: str = "custom",
                  temperature: float = None,
                  loss_approach: LossApproach = LossApproach.LossAngle,
@@ -236,16 +224,25 @@ class Core:
         :type correct_outer_leg: bool, optional
         """
         # Set parameters
+        self.core_type = core_type  # Basic shape of magnetic conductor
 
         # Geometric Parameters
-        self.core_inner_diameter = core_inner_diameter
-        self.window_w = window_w
-        self.window_h = window_h
-        self.type = "axi_symmetric"
-        self.number_core_windows = 2
+        self.core_inner_diameter = core_dimensions.core_inner_diameter
+        self.window_w = core_dimensions.window_w
         self.correct_outer_leg = correct_outer_leg
-        self.core_h = window_h + core_inner_diameter / 2  # TODO: could also be done arbitrarily
-        self.r_inner = window_w + core_inner_diameter / 2
+        self.r_inner = self.window_w + self.core_inner_diameter / 2
+
+        if self.core_type == CoreType.Single:
+            self.window_h = core_dimensions.window_h
+            self.number_core_windows = 2
+            self.core_h = self.window_h + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
+        if self.core_type == CoreType.Stacked:
+            self.window_h_bot = core_dimensions.window_h_bot
+            self.window_h_top = core_dimensions.window_h_top
+            # self.core_h = self.window_h_bot + self.window_h_top + self.core_inner_diameter * 3 / 4  # TODO: could also be done arbitrarily
+            self.core_h = self.window_h_bot + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
+            self.number_core_windows = 4
+
         if correct_outer_leg:
             # hard-coded case for PQ 40/40-cores:
             # the outer cross-section differs from inner cross-section and is corrected here.
@@ -255,7 +252,7 @@ class Core:
         else:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
             # this is the recommended default-case
-            self.r_outer = np.sqrt((core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
+            self.r_outer = np.sqrt((self.core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
 
         # Material Parameters
         # General
@@ -363,7 +360,6 @@ class Core:
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
             self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
 
-
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
@@ -378,25 +374,48 @@ class Core:
 
     def to_dict(self):
         # TODO: mdb
-        return {
-            "core_inner_diameter": self.core_inner_diameter,
-            "window_w": self.window_w,
-            "window_h": self.window_h,
-            "material": self.material,
-            "loss_approach": self.loss_approach.name,
-            "mu_r_abs": self.mu_r_abs,
-            "phi_mu_deg": self.phi_mu_deg,
-            "sigma": self.sigma,
-            "non_linear": self.non_linear,
-            "correct_outer_leg": self.correct_outer_leg,
-            "temperature": self.temperature,
-            "permeability_datasource": self.permeability["datasource"],
-            "permeability_measurement_setup": self.permeability["measurement_setup"],
-            "permeability_datatype": self.permeability["datatype"],
-            "permittivity_datasource": self.permittivity["datasource"],
-            "permittivity_measurement_setup": self.permittivity["measurement_setup"],
-            "permittivity_datatype": self.permittivity["datatype"]
-        }
+        if self.core_type == CoreType.Single:
+            return {
+                "core_inner_diameter": self.core_inner_diameter,
+                "window_w": self.window_w,
+                "window_h": self.window_h,
+                "material": self.material,
+                "loss_approach": self.loss_approach.name,
+                "mu_r_abs": self.mu_r_abs,
+                "phi_mu_deg": self.phi_mu_deg,
+                "sigma": self.sigma,
+                "non_linear": self.non_linear,
+                "correct_outer_leg": self.correct_outer_leg,
+                "temperature": self.temperature,
+                "permeability_datasource": self.permeability["datasource"],
+                "permeability_measurement_setup": self.permeability["measurement_setup"],
+                "permeability_datatype": self.permeability["datatype"],
+                "permittivity_datasource": self.permittivity["datasource"],
+                "permittivity_measurement_setup": self.permittivity["measurement_setup"],
+                "permittivity_datatype": self.permittivity["datatype"]
+            }
+
+        elif self.core_type == CoreType.Stacked:
+            return {
+                "core_inner_diameter": self.core_inner_diameter,
+                "window_w": self.window_w,
+                "window_h_bot": self.window_h_bot,
+                "window_h_top": self.window_h_top,
+                "material": self.material,
+                "loss_approach": self.loss_approach.name,
+                "mu_r_abs": self.mu_r_abs,
+                "phi_mu_deg": self.phi_mu_deg,
+                "sigma": self.sigma,
+                "non_linear": self.non_linear,
+                "correct_outer_leg": self.correct_outer_leg,
+                "temperature": self.temperature,
+                "permeability_datasource": self.permeability["datasource"],
+                "permeability_measurement_setup": self.permeability["measurement_setup"],
+                "permeability_datatype": self.permeability["datatype"],
+                "permittivity_datasource": self.permittivity["datasource"],
+                "permittivity_measurement_setup": self.permittivity["measurement_setup"],
+                "permittivity_datatype": self.permittivity["datatype"]
+            }
 
 
 class AirGaps:
@@ -428,7 +447,7 @@ class AirGaps:
         self.number = 0
         self.air_gap_settings = []
 
-    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0):
+    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0, stacked_position: StackedPosition = None):
         """
         Brings a single air gap to the core.
 
@@ -438,11 +457,14 @@ class AirGaps:
         :type position_value: float
         :param height: Air gap height in [m]
         :type height: float
+        :param stacked_position: Top, Bot
+        :type stacked_position: StackedPosition
         """
         self.air_gap_settings.append({
             "leg_position": leg_position.name,
             "position_value": position_value,
-            "height": height})
+            "height": height,
+            "stacked_position": stacked_position})
 
         for index, midpoint in enumerate(self.midpoints):
             if midpoint[0] == leg_position and midpoint[1] + midpoint[2] < position_value - height \
@@ -462,6 +484,7 @@ class AirGaps:
         elif self.method == AirGapMethod.Manually:
             self.midpoints.append([leg_position.value, position_value, height])
             self.number += 1
+
         elif self.method == AirGapMethod.Percent:
             if position_value > 100 or position_value < 0:
                 raise Exception("AirGap position values for the percent method need to be between 0 and 100.")
@@ -475,6 +498,20 @@ class AirGaps:
 
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
+
+        elif self.method == AirGapMethod.Stacked:
+            # set midpoints
+            # TODO: handle top and bot
+            if stacked_position == StackedPosition.Bot:
+                self.midpoints.append([0, 0, height])
+                self.number += 1
+            if stacked_position == StackedPosition.Top:
+                self.midpoints.append([0, self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + height / 2, height])  # TODO: could also be done arbitrarily
+                self.number += 1
+
+            # if position_value
+            print("Stacked")
+
         else:
             raise Exception(f"Method {self.method} is not supported.")
 
@@ -745,17 +782,25 @@ class WindingWindow:
         :param air_gaps: Air gaps path object. Only needed for integrated transformer, defaults to None
         :type air_gaps: AirGaps, optional
         """
-        self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[0]
-        self.max_top_bound = core.window_h / 2 - insulations.core_cond[1]
-        self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
-        self.max_right_bound = core.r_inner - insulations.core_cond[3]
+        self.core = core
+        self.stray_path = stray_path
+        self.air_gaps = air_gaps
+
+        if self.core.core_type == CoreType.Single:
+            self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[0]
+            self.max_top_bound = core.window_h / 2 - insulations.core_cond[1]
+            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+            self.max_right_bound = core.r_inner - insulations.core_cond[3]
+        elif self.core.core_type == CoreType.Stacked:  # TODO: !!! welches ist top, bot, left, right
+            self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[0]
+            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - insulations.core_cond[1]   # TODO: could also be done arbitrarily
+            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+            self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
         # Insulations between vwws
         self.vww_insulations = insulations.vww_insulation
         self.insulations = insulations
 
-        self.stray_path = stray_path
-        self.air_gaps = air_gaps
 
     def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5,
                      vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
@@ -793,17 +838,25 @@ class WindingWindow:
             air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
             max_pos = max(air_gap_2_position, air_gap_1_position)
             min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos
+            distance = max_pos - min_pos    # TODO: this is set in accordance to the midpoint of the air gap:
+                                            # TODO: should be changed to the core-cond isolation
             horizontal_split = min_pos + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             self.vww_insulations = distance
+        elif self.core.core_type == CoreType.Stacked:
+            max_pos = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4  # TODO: could also be done arbitrarily
+            min_pos = self.core.window_h_bot / 2
+            distance = max_pos - min_pos
+            horizontal_split = min_pos + distance / 2
+            vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
+            self.vww_insulations = distance + 2 * min(self.insulations.core_cond)  # TODO: enhance the insulations situation!!!
         else:
-            horizontal_split = self.max_top_bound - abs(
-                self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
+            horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
 
         # Check for every possible split type and return the corresponding VirtualWindingWindows
         if split_type == WindingWindowSplit.NoSplit:
+
             complete = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
                 top_bound=self.max_top_bound,
