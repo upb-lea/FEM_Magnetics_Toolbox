@@ -343,19 +343,19 @@ def load_fem_simulation_results(working_directory: str):
     Load FEM simulation results from given working directory
 
     param working_directory: Sets the working directory
-    :type working_directory: str
+    :type fem_simulation_results_directory: str
     """
     working_directories = []
     labels = []
-    working_directory = os.path.join(working_directory, 'fem_simulation_results')
+    fem_simulation_results_directory = os.path.join(working_directory, 'fem_simulation_results')
     print("##########################")
-    print(f"{working_directory =}")
+    print(f"{fem_simulation_results_directory =}")
     print("##########################")
-    file_names = [f for f in os.listdir(working_directory) if os.path.isfile(os.path.join(working_directory, f))]
+    file_names = [f for f in os.listdir(fem_simulation_results_directory) if os.path.isfile(os.path.join(fem_simulation_results_directory, f))]
 
     counter = 0
     for name in file_names:
-        temp_var = os.path.join(working_directory, name)
+        temp_var = os.path.join(fem_simulation_results_directory, name)
         working_directories.append(temp_var)
         labels.append(name.removesuffix('.json'))
         counter = counter + 1
@@ -382,7 +382,12 @@ def load_fem_simulation_results(working_directory: str):
     for i in range(len(total_loss)):
         real_inductance.append(inductivities[i].real)
 
-    return real_inductance, total_loss, total_volume, total_cost, labels
+    # read target values
+    automated_design_settings_file = os.path.join(working_directory, "automated_design_settings.json")
+    with open(automated_design_settings_file, "r") as fd:
+        automated_design_settings = json.loads(fd.read())
+
+    return real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings
 
 
 class AutomatedDesign:
@@ -1111,6 +1116,9 @@ class AutomatedDesign:
 
 
 if __name__ == '__main__':
+    #task = 'simulate'
+    task = 'load'
+
     # Input parameters for the Automated Design
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
@@ -1121,85 +1129,95 @@ if __name__ == '__main__':
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    core_database = fmt.core_database()
-    pq3230 = core_database["PQ 32/30"]
-    pq4040 = core_database["PQ 40/40"]
-    pq5050 = core_database["PQ 50/50"]
-    pq6560 = core_database["PQ 65/60"]
-
-    min_core = pq3230
-    max_core = pq6560
 
 
+    if task == 'simulate':
 
 
-    ad = AutomatedDesign(working_directory=working_directory,
-                         magnetic_component='inductor',
-                         target_inductance=120 * 1e-6,
-                         frequency=115000,
-                         target_inductance_percent_tolerance=10,
-                         winding_scheme='Square',
-                         peak_current=8,
-                         percent_of_flux_density_saturation=70,
-                         percent_of_total_loss=30,
-                         database_core_names=[],
-                         database_litz_names=['1.5x105x0.1', "1.4x200x0.071", "2.0x405x0.071", "2.0x800x0.05"],
-                         solid_conductor_r=[],  # 0.0013
-                         manual_core_inner_diameter=list(np.linspace(min_core['core_inner_diameter'], max_core['core_inner_diameter'], 3)),
-                         manual_window_h=list(np.linspace(min_core['window_h'], max_core['window_h'], 3)),
-                         manual_window_w=list(np.linspace(min_core['window_w'], max_core['window_w'], 3)),
-                         no_of_turns=np.arange(1,80).tolist(),
-                         n_air_gaps=[1],
-                         air_gap_height=list(np.linspace(0.0001, 0.0005, 20)),
-                         air_gap_position=[50],
-                         core_material=['N95'],
-                         mult_air_gap_type=['center_distributed'],
-                         top_core_insulation=0.002,
-                         bot_core_insulation=0.002,
-                         left_core_insulation=0.0013,
-                         right_core_insulation=0.001,
-                         inner_winding_insulation=0.0005,
-                         temperature=60.0,
-                         manual_litz_conductor_r=[],
-                         manual_litz_strand_r=[],
-                         manual_litz_strand_n=[],
-                         manual_litz_fill_factor=[])
+        core_database = fmt.core_database()
+        pq3230 = core_database["PQ 32/30"]
+        pq4040 = core_database["PQ 40/40"]
+        pq5050 = core_database["PQ 50/50"]
+        pq6560 = core_database["PQ 65/60"]
 
-    # Create csv file of data_matrix_fem which consist of all the fem simulation cases details
-    ad.write_data_matrix_fem_to_csv()
+        min_core = pq3230
+        max_core = pq6560
 
-    # Plot of volume vs loss calculated using Reluctance Model
-    plot_2d(x_value=ad.data_matrix_fem[:, ad.param["total_volume"]],
-            y_value=ad.data_matrix_fem[:, ad.param["total_loss"]],
-            x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', plot_color='blue')
 
-    print(f"Total number of cases to be simulated: {len(ad.data_matrix_fem)}")
-    print(f"Estimated time of completion of FEM simulations (5 sec/case): {5 * len(ad.data_matrix_fem) / 60 / 60} hours")
-    print("##########################################################################################################")
-    choice = int(input("Press 1 to run FEM simulations as per the given inputs or "
-                    "any other number to load previous design as per given directory:"))
 
-    if choice == 1:
-        # Save simulation settings in json file for later review
-        ad.save_automated_design_settings()
 
-        # Run FEM simulation of "self.data_matrix_fem"
-        ad.fem_simulation()
+        ad = AutomatedDesign(working_directory=working_directory,
+                             magnetic_component='inductor',
+                             target_inductance=120 * 1e-6,
+                             frequency=115000,
+                             target_inductance_percent_tolerance=10,
+                             winding_scheme='Square',
+                             peak_current=8,
+                             percent_of_flux_density_saturation=70,
+                             percent_of_total_loss=30,
+                             database_core_names=[],
+                             database_litz_names=['1.5x105x0.1', "1.4x200x0.071", "2.0x405x0.071", "2.0x800x0.05"],
+                             solid_conductor_r=[],  # 0.0013
+                             manual_core_inner_diameter=list(np.linspace(min_core['core_inner_diameter'], max_core['core_inner_diameter'], 3)),
+                             manual_window_h=list(np.linspace(min_core['window_h'], max_core['window_h'], 3)),
+                             manual_window_w=list(np.linspace(min_core['window_w'], max_core['window_w'], 3)),
+                             no_of_turns=np.arange(1,80).tolist(),
+                             n_air_gaps=[1],
+                             air_gap_height=list(np.linspace(0.0001, 0.001, 20)),
+                             air_gap_position=[50],
+                             core_material=['N95'],
+                             mult_air_gap_type=['center_distributed'],
+                             top_core_insulation=0.002,
+                             bot_core_insulation=0.002,
+                             left_core_insulation=0.0013,
+                             right_core_insulation=0.001,
+                             inner_winding_insulation=0.0005,
+                             temperature=60.0,
+                             manual_litz_conductor_r=[],
+                             manual_litz_strand_r=[],
+                             manual_litz_strand_n=[],
+                             manual_litz_fill_factor=[])
 
-    # Load design and plot various plots for analysis
-    inductance, total_loss, total_volume, total_cost, annotation_list = load_fem_simulation_results \
-        (working_directory=working_directory)
+        # Create csv file of data_matrix_fem which consist of all the fem simulation cases details
+        ad.write_data_matrix_fem_to_csv()
 
-    plot_data = filter_after_fem(inductance=inductance, total_loss=total_loss, total_volume=total_volume, total_cost=total_cost,
-                     annotation_list=annotation_list, goal_inductance=ad.goal_inductance, percent_tolerance=20)
+        # Plot of volume vs loss calculated using Reluctance Model
+        plot_2d(x_value=ad.data_matrix_fem[:, ad.param["total_volume"]],
+                y_value=ad.data_matrix_fem[:, ad.param["total_loss"]],
+                x_label='Volume / m\u00b3', y_label='Loss / W', title='Volume vs Loss', plot_color='blue')
 
-    plot_2d(x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-            x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
-            annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+        print(f"Total number of cases to be simulated: {len(ad.data_matrix_fem)}")
+        print(f"Estimated time of completion of FEM simulations (5 sec/case): {5 * len(ad.data_matrix_fem) / 60 / 60} hours")
+        print("##########################################################################################################")
+        choice = int(input("Press 1 to run FEM simulations as per the given inputs or "
+                        "any other number to load previous design as per given directory:"))
 
-    plot_2d(x_value=plot_data[:, 1], y_value=plot_data[:, 3], z_value=plot_data[:, 2],
-            x_label='Volume / m\u00b3', y_label='Cost / \u20ac', z_label='Loss / W', title='Volume vs Cost',
-            annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+        if choice == 1:
+            # Save simulation settings in json file for later review
+            ad.save_automated_design_settings()
+
+            # Run FEM simulation of "self.data_matrix_fem"
+            ad.fem_simulation()
+    elif task == 'load':
+
+        #working_directory = '/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/2023-02-28_inductor_optimization_N95_120u_8A_10mmgap_windowh_half'
+        #working_directory = '/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/2023-02-28_inductor_optimization_N95_120u_10mm_8A'
+        working_directory = '/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/2023-02-28_inductor_optimization_N95_360u_5A'
+
+        # Load design and plot various plots for analysis
+        inductance, total_loss, total_volume, total_cost, annotation_list, automated_design_settings = load_fem_simulation_results \
+            (working_directory=working_directory)
+
+        plot_data = filter_after_fem(inductance=inductance, total_loss=total_loss, total_volume=total_volume, total_cost=total_cost,
+                         annotation_list=annotation_list, goal_inductance=automated_design_settings["goal_inductance"], percent_tolerance=20)
+
+        plot_2d(x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
+                x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+
+        plot_2d(x_value=plot_data[:, 1], y_value=plot_data[:, 3], z_value=plot_data[:, 2],
+                x_label='Volume / m\u00b3', y_label='Cost / \u20ac', z_label='Loss / W', title='Volume vs Cost',
+                annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
 
     # plot_2d(x_value=data_array[:, 1], y_value=data_array[:, 3], z_value=data_array[:, 2], x_label='Volume / m\u00b3', y_label='Cost / \u20ac', z_label='Loss / W',

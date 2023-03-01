@@ -825,7 +825,8 @@ class MainWindow(QMainWindow):
         # Save simulation settings in json file for later review
         self.ad.save_automated_design_settings()
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(working_directory=design_directory)
+        real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(
+            fem_simulation_results_directory=design_directory)
 
         matplotlib_widget = MatplotlibWidget()
         matplotlib_widget.axis.clear()
@@ -865,7 +866,7 @@ class MainWindow(QMainWindow):
 
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
         real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(
-            working_directory=design_directory)
+            fem_simulation_results_directory=design_directory)
 
         plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
                                      total_cost=total_cost,
