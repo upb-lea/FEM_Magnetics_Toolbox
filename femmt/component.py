@@ -486,7 +486,11 @@ class MagneticComponent:
         :return: Volume of the core
         :rtype: float
         """
-        core_height = self.core.window_h + self.core.core_inner_diameter / 2
+        if self.core.core_type == CoreType.Single:
+            core_height = self.core.window_h + self.core.core_inner_diameter / 2
+        elif self.core.core_type == CoreType.Stacked:
+            core_height = self.core.window_h_bot + self.core.window_h_top + self.core.core_inner_diameter * 3 / 4  # TODO: could also be done arbitrarily
+
         core_width = self.core.r_outer
 
         return np.pi * core_width**2 * core_height
@@ -497,10 +501,15 @@ class MagneticComponent:
         :return: Volume of the core.
         :rtype: float
         """
-        core_height = self.core.window_h + self.core.core_inner_diameter / 2
+        if self.core.core_type == CoreType.Single:
+            core_height = self.core.window_h + self.core.core_inner_diameter / 2
+            winding_height = self.core.window_h
+        elif self.core.core_type == CoreType.Stacked:
+            core_height = self.core.window_h_bot + self.core.window_h_top + self.core.core_inner_diameter * 3 / 4  # TODO: could also be done arbitrarily
+            winding_height = self.core.window_h_bot + self.core.window_h_top  # TODO: could also be done arbitrarily
+
         core_width = self.core.r_outer
 
-        winding_height = self.core.window_h
         winding_width = self.core.window_w
 
         air_gap_volume = 0
@@ -782,7 +791,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        self.calculate_and_write_log()
+        self.calculate_and_write_log()  # TODO: reuse for stacked core
         if show_results:
             self.visualize()
 

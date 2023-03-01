@@ -9,3 +9,4 @@ from femmt.reluctance import *
 from femmt.optimization import *
 from femmt.functions_reluctance import *
 from femmt.constants import *
+from femmt.dtos import *
