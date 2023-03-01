@@ -62,6 +62,9 @@ class AirGapLegPosition(IntEnum):
 
 class StackedPosition(IntEnum):
     """For stacked cores: options to place air gaps.
+
+    1 to place air gap in the top winding window
+    2 to place air gap in the bot winding window
     """
     Top = 1
     Bot = 2
