@@ -941,9 +941,12 @@ class AutomatedDesign:
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
                                         working_directory=self.femmt_working_directory, silent=True)
 
-            core = fmt.Core(core_inner_diameter=self.data_matrix_fem[count, self.param["core_inner_diameter"]],
-                            window_w=self.data_matrix_fem[count, self.param["window_w"]],
-                            window_h=self.data_matrix_fem[count, self.param["window_h"]],
+            core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=self.data_matrix_fem[count, self.param["core_inner_diameter"]],
+                                                            window_w=self.data_matrix_fem[count, self.param["window_w"]],
+                                                            window_h=self.data_matrix_fem[count, self.param["window_h"]])
+
+            core = fmt.Core(core_type=fmt.CoreType.Single,
+                            core_dimensions=core_dimensions,
                             material=self.core_material_dict[self.data_matrix_fem[count, self.param["mu_r_abs"]]],
                             temperature=self.temperature, frequency=self.frequency,
                             permeability_datasource = fmt.MaterialDataSource.ManufacturerDatasheet,
@@ -1116,8 +1119,8 @@ class AutomatedDesign:
 
 
 if __name__ == '__main__':
-    #task = 'simulate'
-    task = 'load'
+    task = 'simulate'
+    #task = 'load'
 
     # Input parameters for the Automated Design
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -1163,7 +1166,7 @@ if __name__ == '__main__':
                              manual_window_w=list(np.linspace(min_core['window_w'], max_core['window_w'], 3)),
                              no_of_turns=np.arange(1,80).tolist(),
                              n_air_gaps=[1],
-                             air_gap_height=list(np.linspace(0.0001, 0.001, 20)),
+                             air_gap_height=list(np.linspace(0.0001, 0.0005, 20)),
                              air_gap_position=[50],
                              core_material=['N95'],
                              mult_air_gap_type=['center_distributed'],
