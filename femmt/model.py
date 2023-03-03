@@ -1,12 +1,13 @@
 # Python standard libraries
-
-
-import numpy as np
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Union
 
+# 3rd party libraries
+import numpy as np
+
 # Local libraries
 import femmt.functions as ff
+import femmt.functions_reluctance as fr
 from femmt.enumerations import *
 from femmt.constants import *
 import materialdatabase as mdb
@@ -39,9 +40,9 @@ class Conductor:
     conductivity: Conductivity = None
 
     def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False):
-        """Creates an conductor object.
+        """Creates a conductor object.
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
-        The conductor with the lowest winding number (starting from 0) will be treated as primary, second lowest number as secondary and so on.
+        The conductor with the lowest winding number (starting from 0) will be treated as primary, second-lowest number as secondary and so on.
 
         :param winding_number: Unique number for the winding
         :type winding_number: int
@@ -253,7 +254,7 @@ class Core:
         else:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
             # this is the recommended default-case
-            self.r_outer = np.sqrt((self.core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
+            self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
 
         # Material Parameters
         # General
@@ -437,7 +438,7 @@ class AirGaps:
         """Creates an AirGaps object. An AirGapMethod needs to be set. This determines the way the air gap will be added to the model.
         In order to calculate the air gap positions the core object needs to be given.
 
-        :param method: The method determines the waay the air gap position is set.
+        :param method: The method determines the way the air gap position is set.
         :type method: AirGapMethod
         :param core: The core object
         :type core: Core
@@ -452,9 +453,9 @@ class AirGaps:
         """
         Brings a single air gap to the core.
 
-        :param leg_posistion: CenterLeg, OuterLeg
+        :param leg_position: CenterLeg, OuterLeg
         :type leg_position: AirGapLegPosition
-        :param position_value: if AirGapMethod == Percent: 0...100, elif AirGapMethod == Manually: position hight in [m]
+        :param position_value: if AirGapMethod == Percent: 0...100, elif AirGapMethod == Manually: position height in [m]
         :type position_value: float
         :param height: Air gap height in [m]
         :type height: float
@@ -473,7 +474,7 @@ class AirGaps:
                 raise Exception(f"Air gaps {index} and {len(self.midpoints)} are overlapping")
 
         if leg_position == AirGapLegPosition.LeftLeg or leg_position == AirGapLegPosition.RightLeg:
-            raise Exception("Currently the legpositions LeftLeg and RightLeg are not supported")
+            raise Exception("Currently the leg positions LeftLeg and RightLeg are not supported")
 
         if self.method == AirGapMethod.Center:
             if self.number >= 1:
@@ -535,13 +536,13 @@ class Insulation:
     """
     This class defines insulation for the model.
     An insulation between the winding window and the core can always be set.
-    When having a inductor only the primary2primary insulation is necessary.
+    When having an inductor only the primary2primary insulation is necessary.
     When having a (integrated) transformer secondary2secondary and primary2secondary insulations can be set as well.
 
     Only the isolation between winding window and core is drawn as a "physical" isolation (4 rectangles). All other isolations
     are only describing a set distance between the object.
 
-    In general it is not necessary to add an insulation object at all when no insulation is needed.
+    In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
     inner_winding_insulations: List[float]
     vww_insulation: float
@@ -554,7 +555,7 @@ class Insulation:
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
         are not exactly drawn at the specified position. They are slightly smaller and the offset can be changed with the insulation_delta variable.
-        In general it is not recommended to change this value.
+        In general, it is not recommended to change this value.
         """
         # Default value for all insulations
         # If the gaps between insulations and core (or windings) are to big/small just change this value
@@ -566,7 +567,7 @@ class Insulation:
         """Adds insulations between turns of one winding and insulation between virtual winding windows.
         Insulation between virtual winding windows is not always needed.
 
-        :param inner_winding_insulations: List of floats which represent the insulations between turns of the same winding. This does not correspond to the order conductors are added to the winding! Instead the winding number is important. The conductors are sorted by ascending winding number. The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
+        :param inner_winding_insulations: List of floats which represent the insulations between turns of the same winding. This does not correspond to the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number. The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
         :type inner_winding_insulations: List[float]
         :param virtual_winding_window_insulation: Sets the distance between two winding windows, defaults to None
         :type virtual_winding_window_insulation: float, optional
@@ -618,8 +619,8 @@ class StrayPath:
     """
     This class is needed when an integrated transformer shall be created.
     A start_index and a length can be given. The start_index sets the position of the tablet.
-    start_index=0 will create the tablet between the lowest and second lowest air gaps. start_index=1 will create the tablet
-    between the second lowest and third lowest air gap. Therefore it is necessary for the user to make sure that enough air gaps exist!
+    start_index=0 will create the tablet between the lowest and second-lowest air gaps. start_index=1 will create the tablet
+    between the second lowest and third-lowest air gap. Therefore, it is necessary for the user to make sure that enough air gaps exist!
     The length parameter sets the length of the tablet starting at the y-axis (not the right side of the center core). It therefore
     determines the air gap between the tablet and the outer core leg.
     """
@@ -654,7 +655,7 @@ class VirtualWindingWindow:
     winding_insulation: float
 
     def __init__(self, bot_bound: float, top_bound: float, left_bound: float, right_bound: float):
-        """Creates a virtual winding window with given bounds. By default a virtual winding window is created by the WindingWindow class.
+        """Creates a virtual winding window with given bounds. By default, a virtual winding window is created by the WindingWindow class.
         The parameter values are given in metres and depend on the axisymmetric coordinate system.
 
         :param bot_bound: Bottom bound
@@ -821,7 +822,7 @@ class WindingWindow:
     def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5,
                      vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
         """Creates up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
-        The split factors are values beteen 0 and 1 and determine a horizontal and vertical line at which the window is split.
+        The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
         Not every value is needed for every split type:
         - NoSplit: No factor is needed
         - HorizontalSplit: Horizontal split factor needed

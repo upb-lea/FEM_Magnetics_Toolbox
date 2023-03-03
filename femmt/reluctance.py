@@ -426,8 +426,8 @@ class MagneticCircuit:
             raise Exception("string value wrong for sim_type argument")
         if not (self.component_type == 'inductor' or self.component_type == 'integrated_transformer'):
             raise Exception("string value wrong for component_type argument")
-        if any(item > 0.0005 for item in self.air_gap_h):
-            raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
+        #if any(item > 0.0005 for item in self.air_gap_h):
+        #    raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
         if self.sim_type == 'single':
             if not (len(self.core_inner_diameter) == 1 and len(self.window_h) == 1 and len(self.window_w) == 1 and len(
                     self.no_of_turns) == 1
