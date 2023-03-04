@@ -28,6 +28,7 @@ from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
 from femmt.thermal import thermal_simulation
 import femmt.functions_reluctance as fr
+from femmt.dtos import *
 
 class MagneticComponent:
     """
@@ -2421,7 +2422,11 @@ class MagneticComponent:
             geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
-            core = Core(**settings["core"])
+            core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
+                                                            window_w=settings["core"]["window_w"],
+                                                            window_h=settings["core"]["window_h"])
+
+            core = Core(core_dimensions=core_dimensions, **settings["core"])
             geo.set_core(core)
 
             if "air_gaps" in settings:
