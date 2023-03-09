@@ -210,8 +210,8 @@ if component == "transformer":
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
 
     # 2. set core parameters
-    core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    mu_r_abs=3100, phi_mu_deg=12,
+    core = fmt.Core(window_h=0.06, window_w=0.03, core_inner_diameter=0.015,
+                    mu_rel=3100, phi_mu_deg=12,
                     sigma=1.2, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
@@ -223,29 +223,52 @@ if component == "transformer":
     # 4. set insulation
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002], 0.0005)
+    insulation.add_winding_insulations([0.0002, 0.0002, 0.0002], 0.0005)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
-
+    top_left, top_right, bot_left, bot_right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalAndVerticalSplit, horizontal_split_factor=0.4)
+    top_left = winding_window.combine_vww(top_left, bot_left)
+    #top_right = winding_window.combine_vww(bot_right, top_right)
+    #top_right = winding_window.combine_vww(top_right, bot_right)
     # 6. create conductors and set parameters
+
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+
+    #winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    #winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+
+    #winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    #winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
+    #winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    #winding3.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+
+    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+
+    #winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+    #winding4.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Hexagonal)
+    #winding4.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.SquareFullWidth)
+
     # 7. add conductor to vww and add winding window to MagneticComponent
-    left.set_winding(winding1, 10, None)
-    right.set_winding(winding2, 10, None)
+    top_left.set_winding(winding1, 8, fmt.WindingType.Single)
+    top_right.set_winding(winding2, 6, fmt.WindingType.Single)
+    bot_right.set_winding(winding3, 12, fmt.WindingType.Single)
+    #bot_left.set_winding(winding4,10,fmt.InterleavedWindingScheme.HorizontalAlternating)
     geo.set_winding_window(winding_window)
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
-    geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 180])
+    geo.single_simulation(freq=250000, current=[4, 4, 4], phi_deg=[0, 180, 0])
 
+    # Reference simulation using FEMM
+    geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")
     if not os.path.exists(working_directory):

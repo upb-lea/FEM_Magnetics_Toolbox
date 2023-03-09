@@ -53,6 +53,7 @@ transformer_combinations = [
         "WindingType": fmt.WindingType.Interleaved,
         "ConductorType": fmt.ConductorType.RoundSolid,
         "WindingScheme": fmt.InterleavedWindingScheme.HorizontalAlternating,
+        "ConductorArrangement": fmt.ConductorArrangement.Square
     },
     {
         "Name": "Interleaved RoundLitz VerticalStacked (square)",

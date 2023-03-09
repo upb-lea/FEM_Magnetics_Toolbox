@@ -72,7 +72,9 @@ class Mesh:
         # This is only needed for the surfaces since they are the only global variables
         # Plane Surfaces
         self.plane_surface_core = []
-        self.plane_surface_cond = [[], []]
+        self.plane_surface_cond = []
+        for num in range(len(self.windings)):
+            self.plane_surface_cond.append([])
         self.plane_surface_air = []
         self.plane_surface_outer_air = []
         self.plane_surface_air_gaps = []
@@ -101,7 +103,9 @@ class Mesh:
         # Add empty lists
         p_core = []
         p_island = []
-        p_cond = [[], []]
+        p_cond = []
+        for num in range(len(self.windings)):
+            p_cond.append([])
         p_region = []
         p_iso_core = []
 
@@ -109,13 +113,17 @@ class Mesh:
         l_bound_core = []
         l_bound_air = []
         l_core_air = []
-        l_cond = [[], []]
+        l_cond = []
+        for num in range(len(self.windings)):
+            l_cond.append([])
         l_region = []
         l_air_gaps_air = []
         l_iso_core = []
 
         # Curve Loops
-        curve_loop_cond = [[], []]
+        curve_loop_cond = []
+        for num in range(len(self.windings)):
+            curve_loop_cond.append([])
         curve_loop_island = []
         curve_loop_air = []
         curve_loop_air_gaps = []
@@ -636,11 +644,13 @@ class Mesh:
         # Define physical Surfaces and Curves
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
-        self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=2000)
+        self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=120000)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
-        self.ps_cond = [[], []]
+        self.ps_cond = []
+        for num in range(len(self.windings)):
+            self.ps_cond.append([])
 
         # Since the turns are saved for each vww all turns per winding must be collected
         flattened_turns = [0] * len(self.windings)
@@ -653,28 +663,28 @@ class Mesh:
             if winding.conductor_type == ConductorType.RoundLitz:
                 for i in range(flattened_turns[winding_number]):
                     self.ps_cond[winding_number].append(
-                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=6000 + 1000 * winding_number + i))
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=140000 + 1000 * winding_number + i))
 
             else:
                 if winding.parallel:
                     tags = self.plane_surface_cond[winding_number]
-                    physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=4000 + 1000 * winding_number)
+                    physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=130000 + 1000 * winding_number)
                     for i in range(flattened_turns[winding_number]):
                         self.ps_cond[winding_number].append(physical_group_number)
                 else:
                     for i in range(flattened_turns[winding_number]):
                         self.ps_cond[winding_number].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=4000 + 1000 * winding_number + i))
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air, air_gaps and iso (since insulation is handled as air, as well as the air gaps)
         air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
-        self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=1000)
+        self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=110000)
         # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
-        self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=1111)
+        self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=111111)
         # print(f"Physical Conductor Surfaces: {ps_cond}")
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -811,11 +821,13 @@ class Mesh:
         # Define physical Surfaces and Curves
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
-        self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=2000)
+        self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=120000)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
-        self.ps_cond = [[], []]
+        self.ps_cond = []
+        for num in range(len(self.windings)):
+            self.ps_cond.append([])
 
         # Since the turns are saved for each vww all turns per winding must be collected
         flattened_turns = [0] * len(self.windings)
@@ -828,19 +840,19 @@ class Mesh:
             if winding.conductor_type == ConductorType.RoundLitz:
                 for i in range(flattened_turns[winding_number]):
                     self.ps_cond[winding_number].append(
-                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=6000 + 1000 * winding_number + i))
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=140000 + 1000 * winding_number + i))
             else:
                 for i in range(flattened_turns[winding_number]):
                     self.ps_cond[winding_number].append(
-                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=4000 + 1000 * winding_number + i))
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air
-        self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=1000)
+        self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=110000)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air gaps
-        self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=1001)
+        self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # insulations
