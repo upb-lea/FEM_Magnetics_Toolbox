@@ -10,3 +10,4 @@ from femmt.optimization import *
 from femmt.functions_reluctance import *
 from femmt.constants import *
 from femmt.dtos import *
+from femmt.functions_drawing import *

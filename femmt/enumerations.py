@@ -1,9 +1,18 @@
 from enum import IntEnum, Enum
 
+
+class WindingTag(IntEnum):
+    """Names of windings
+    """
+    Primary = 1
+    Secondary = 2
+    Tertiary = 3
+
+
 class WindingWindowSplit(IntEnum):
     """Determines how many virtual winding windows are created by the winding window. Used in Winding window class.
     """
-    NoSplit = 1 
+    NoSplit = 1
     """Virtual winding window same size as winding window
     """
     HorizontalSplit = 2
@@ -16,6 +25,7 @@ class WindingWindowSplit(IntEnum):
     """Splits winding window in four virtual winding windows separated by a horizontal and vertical line
     """
 
+
 class ComponentType(IntEnum):
     """Sets the component type for the whole simulation. Needs to be given to the MagneticComponent on creation.
     """
@@ -23,11 +33,13 @@ class ComponentType(IntEnum):
     Transformer = 2
     IntegratedTransformer = 3
 
+
 class CoreType(IntEnum):
     """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation.
     """
     Single = 1  # one axisymmetric core
     Stacked = 2  # one and a half cores
+
 
 class AirGapMethod(IntEnum):
     """Sets the method how the air gap position (vertical) is set.
@@ -46,6 +58,7 @@ class AirGapMethod(IntEnum):
     """Two air gaps can be defined with "bot" (center of lower core) and "top" (between backside of upper core and stacked core).
     """
 
+
 class AirGapLegPosition(IntEnum):
     """Sets the core at which the air gap will be added. Currently only CenterLeg is supported.
     Used when adding an air gap to the model.
@@ -60,17 +73,20 @@ class AirGapLegPosition(IntEnum):
     """Air gap in right leg.
     """
 
+
 class StackedPosition(IntEnum):
     """For stacked cores: options to place air gaps.
     """
     Top = 1
     Bot = 2
 
+
 class WindingType(IntEnum):
     """Internally used in VirtualWindingWindow class. 
     """
     Interleaved = 1
     Single = 2
+
 
 class WindingScheme(IntEnum):
     """Used when adding a single winding to the virtual winding window. Only used with a rectangular solid conductor.
@@ -88,6 +104,7 @@ class WindingScheme(IntEnum):
     """Foils are very wide (x-axis) and drawn along y-axis.
     """
 
+
 class InterleavedWindingScheme(IntEnum):
     """Used when adding an interleaved winding to the virtual winding window.
     """
@@ -104,6 +121,7 @@ class InterleavedWindingScheme(IntEnum):
     """First winding is drawn bottom to top. Second winding is drawn top to bottom.
     """
 
+
 class ConductorArrangement(IntEnum):
     """Set for round conductors when having a single conductor in the virtual winding window.
     """
@@ -118,12 +136,14 @@ class ConductorArrangement(IntEnum):
     First drawn in y-direction then x-direction.
     """
 
+
 class ConductorType(IntEnum):
     """Sets the type of the conductor.
     """
     RoundSolid = 1
     RoundLitz = 2
     RectangularSolid = 3
+
 
 class WrapParaType(IntEnum):
     """Sets the wrap para type. Only necessary for a single conductor in a virtual winding window and a FoilVertical winding scheme.
@@ -137,11 +157,13 @@ class WrapParaType(IntEnum):
     The thickness parameter when creating the conductor is irrelevant.
     """
 
+
 class Conductivity(IntEnum):
     """Sets the conductivity of the conductor.
     """
     Copper = 1
     Aluminium = 2
+
 
 class LossApproach(IntEnum):
     """Sets the way how losses will be calculated.
@@ -149,12 +171,14 @@ class LossApproach(IntEnum):
     Steinmetz = 1
     LossAngle = 2
 
+
 class PermeabilityType(IntEnum):
     """Sets the way how permeability data is received.
     """
     FixedLossAngle = 1
     RealValue = 2
     FromData = 3
+
 
 class ExcitationMeshingType(IntEnum):
     """When running an excitation it is possible to not mesh at every frequency.
