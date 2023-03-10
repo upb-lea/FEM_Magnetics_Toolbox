@@ -1,8 +1,9 @@
 # python libraries
+import dataclasses
 from dataclasses import dataclass
 
 # femmt libraries
-
+import femmt.functions as ff
 
 # 3rd party libraries
 import numpy as np
@@ -25,7 +26,8 @@ class InputConfig:
     n_p_bot_min_max_list: list
     n_s_top_min_max_list: list
     n_s_bot_min_max_list: list
-
+    primary_litz_wire_list: list
+    secondary_litz_wire_list: list
 
 @dataclass
 class SweepTensor:
@@ -38,6 +40,8 @@ class SweepTensor:
     t1_window_w: np.ndarray
     t1_core_material: list
     t1_core_inner_diameter: np.ndarray
+    t1_primary_litz_wire_list: list
+    t1_secondary_litz_wire_list: list
     time_current_1_vec: np.ndarray
     time_current_2_vec: np.ndarray
     l_s_target_value: float
@@ -47,8 +51,11 @@ class SweepTensor:
 @dataclass
 
 class ResultFile:
+    case: int
+    # geometry parameters
     air_gap_top: float
     air_gap_bot: float
+    air_gap_middle: float
     n_p_top: int
     n_p_bot: int
     n_s_top: int
@@ -56,10 +63,19 @@ class ResultFile:
     window_h_top: float
     window_h_bot: float
     window_w: float
-    mu_r_abs: float
+    core_material: str
     core_inner_diameter: float
+    primary_litz_wire: str
+    secondary_litz_wire: str
+
+    # reluctance model results
     flux_top_max: float
     flux_bot_max: float
     flux_stray_max: float
     p_hyst: float
+    primary_litz_wire_loss: float
+    secondary_litz_wire_loss: float
     core_2daxi_total_volume: float
+    total_loss: float
+
+    # fem simulation results

@@ -24,16 +24,22 @@ CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
 // ----------------------
 // Physical numbers
 // ----------------------
-OUTBND              = 1111;
-AIR                 = 1000;
-AIR_EXT             = 1001;
-IRON                = 2000;
-iCOND1              = 4000;
-istrandedCOND1      = 6000;
+OUTBND              = 111111;
+AIR                 = 110000;
+AIR_EXT             = 110001;
+IRON                = 120000;
+iCOND1              = 130000;
+istrandedCOND1      = 140000;
 If(Flag_Transformer)
-  iCOND2            = 5000;
-  istrandedCOND2    = 7000;
+  iCOND2            = 131000;
+  istrandedCOND2    = 141000;
 EndIf
+If(Flag_Three_Transformer)
+  iCOND3            = 132000;
+  istrandedCOND3    = 142000;
+EndIf
+
+
 
 
 // ----------------------
@@ -59,8 +65,10 @@ Group{
   // Current Conducting Domains
   Winding1 =  Region[{}] ;
   Winding2 =  Region[{}] ;
+  Winding3 =  Region[{}] ;
   StrandedWinding1 =  Region[{}] ;
   StrandedWinding2 =  Region[{}] ;
+  StrandedWinding3 =  Region[{}] ;
 
 
   // Primary (Inductor + Transformer)
@@ -88,20 +96,33 @@ Group{
     EndFor
   EndIf
 
+  // Tertiary(Transformer)
+  If(Flag_Three_Transformer)
+    nbturns3 = NbrCond3/SymFactor;
+    For iF In {1:nbturns3}
+        Turn3~{iF} = Region[{(iCOND3+iF-1)}] ;
+        Winding3  += Region[{(iCOND3+iF-1)}] ;
+    EndFor
+    For isF In {1:nbturns3}
+        TurnStrand3~{isF} = Region[{(istrandedCOND3+isF-1)}] ;
+        StrandedWinding3  += Region[{(istrandedCOND3+isF-1)}] ;
+    EndFor
+  EndIf
 
-  DomainC           = Region[{Winding1, Winding2}] ;
+
+  DomainC           = Region[{Winding1, Winding2, Winding3}] ;
   If(Flag_Conducting_Core)
     DomainC         += Region[{Iron}] ;
   EndIf
-  DomainS           = Region[{StrandedWinding1, StrandedWinding2}] ;
+  DomainS           = Region[{StrandedWinding1, StrandedWinding2, StrandedWinding3}] ;
   DomainCC          += Region[{DomainS}] ;
 
   If(Flag_NL)
-    Domain_Lin      = Region[{Air, Winding1, Winding2, StrandedWinding1, StrandedWinding2}];
+    Domain_Lin      = Region[{Air, Winding1, Winding2, Winding3, StrandedWinding1, StrandedWinding2, StrandedWinding3}];
     Domain_Lin_NoJs = Region[{Air}];
     Domain_NonLin   = Region[{Iron}];
   Else
-    Domain_Lin      = Region[{Air, Iron, Winding1, Winding2, StrandedWinding1, StrandedWinding2}];
+    Domain_Lin      = Region[{Air, Iron, Winding1, Winding2, Winding3, StrandedWinding1, StrandedWinding2, StrandedWinding3}];
     Domain_Lin_NoJs = Region[{Air, Iron}];
     Domain_NonLin   = Region[{}];
   EndIf
@@ -109,6 +130,7 @@ Group{
   Domain = Region[{DomainC, DomainCC}] ;
   DomainCond1 = Region[{Winding1, StrandedWinding1}];
   DomainCond2 = Region[{Winding2, StrandedWinding2}];
+  DomainCond3 = Region[{Winding3, StrandedWinding3}];
 
   // Dummy region number for postpro with functions
   DomainDummy = Region[ 12345 ] ;
@@ -136,7 +158,9 @@ Group{
   Inductance_Cir  = Region[{}];
   Capacitance1_Cir = Region[ {} ] ;
   Capacitance2_Cir = Region[ {} ] ;
-  Capacitance_Cir = Region[ {Capacitance1_Cir, Capacitance2_Cir} ] ;
+  Capacitance3_Cir = Region[ {} ] ;
+
+  Capacitance_Cir = Region[ {Capacitance1_Cir, Capacitance2_Cir, Capacitance3_Cir} ] ;
 
   SourceV_Cir = Region[ {Input} ] ;
   SourceI_Cir = Region[ {} ] ;
@@ -158,8 +182,11 @@ Function {
   If(Flag_Transformer)
     AreaCell[#{StrandedWinding2}] = AreaCell2;
   EndIf
+  If(Flag_Three_Transformer)
+    AreaCell[#{StrandedWinding3}] = AreaCell3;
+  EndIf
   // in non-stranded domains, def. AreaCell to 1 (neutral element of mutiplication)
-  AreaCell[#{Air, Iron, Winding1, Winding2}] = 1.;
+  AreaCell[#{Air, Iron, Winding1, Winding2, Winding3}] = 1.;
 
 
   // Material Properties
@@ -169,6 +196,9 @@ Function {
   sigma[#{Winding1}] = sigma_winding_1 ;
   If(Flag_Transformer)
     sigma[#{Winding2}] = sigma_winding_2 ;
+  EndIf
+  If(Flag_Three_Transformer)
+    sigma[#{Winding3}] = sigma_winding_3 ;
   EndIf
   If(Flag_Conducting_Core)
     sigma[#{Iron}] = sigma_core;
@@ -182,7 +212,7 @@ Function {
   // nu = 1/mu
   nu[#{Air}] = Complex[nu0, 0];
   mu[#{Air}] = Complex[mu0, 0];
-  nu[#{Winding1, Winding2}] = Complex[nu0, 0];
+  nu[#{Winding1, Winding2, Winding3}] = Complex[nu0, 0];
 
   // Hysteresis Loss
   // Imaginary Part Of Permeability
@@ -227,14 +257,20 @@ Function {
     Sign2 = (Phase_2==Pi) ? -1 : 1;  //TODO: Inductance Calc
   EndIf
 
+  If(Flag_Three_Transformer)
+    FSinusoidal3[] = F_Cos_wt_p[]{2*Pi*Freq, Phase_3}; //Complex_MH[1, 0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
+    Fct_Src3[] = FSinusoidal3[];
+    Sign3 = (Phase_3==Pi) ? -1 : 1;  //TODO: Inductance Calc
+  EndIf
+
   // Auxiliary functions for post-processing
   nuOm[#{Air}] = nu[]*Complex[0.,1.];
   nuOm[#{Iron}] = -nu[$1]*Complex[0.,1.];
-  //nuOm[#{Winding1, Winding2}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
+  //nuOm[#{Winding1, Winding2, Winding3}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
 
 
   // Resistive/Skin Coefficient - will be multiplied with current "ir", which is zero except in windings
-  kkk[#{Iron, Air, Winding1, Winding2}] =  0 ; // choose arbitrary value
+  kkk[#{Iron, Air, Winding1, Winding2, Winding3}] =  0 ; // choose arbitrary value
 
   If(Flag_HomogenisedModel1)
     // Homogenization coefficients
@@ -280,6 +316,29 @@ Function {
     EndIf
   EndIf
 
+  If(Flag_Three_Transformer)
+    If(Flag_HomogenisedModel3)
+      // Tertiary
+      file_ZSkinRe_3  = Sprintf("Strands_Coefficients/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill3, NbrLayers3);
+      file_ZSkinIm_3  = Sprintf("Strands_Coefficients/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill3, NbrLayers3);
+      file_NuProxRe_3= Sprintf("Strands_Coefficients/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill3, NbrLayers3);
+      file_NuProxIm_3 = Sprintf("Strands_Coefficients/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill3, NbrLayers3);
+      skin_rhor_list_3() = ListFromFile[ file_ZSkinRe_3 ];
+      skin_rhoi_list_3() = ListFromFile[ file_ZSkinIm_3 ];
+      prox_nur_list_3()  = ListFromFile[ file_NuProxRe_3 ];
+      prox_nui_list_3()  = ListFromFile[ file_NuProxIm_3 ];
+      skin_rhor_3[] = InterpolationLinear[$1]{ skin_rhor_list_3() };
+      skin_rhoi_3[] = InterpolationLinear[$1]{ skin_rhoi_list_3() };
+      prox_nur_3[]  = InterpolationLinear[$1]{ prox_nur_list_3() } ;
+      prox_nui_3[]  = InterpolationLinear[$1]{ prox_nui_list_3() } ;
+      // Formula from Paper:
+      nu[#{StrandedWinding3}] = nu0*Complex[prox_nur_3[Rr3], prox_nui_3[Rr3]*Fill3*Rr3^2/2];
+      nuOm[#{StrandedWinding3}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
+      kkk[#{StrandedWinding3}] =  SymFactor * skin_rhor_3[Rr3] / sigma_winding_3 / Fill3 ;
+      sigma[#{StrandedWinding3}] = SymFactor * skin_rhor_3[Rr3] / sigma_winding_3 / Fill3 ;
+    EndIf
+  EndIf
+
   DefineFunction[
     Resistance, Inductance, Capacitance
   ];
@@ -296,6 +355,12 @@ Function {
     // Secondary
     N2_1() = {1:nbturns2};   // Node 1 for each turn
     N2_2() = {2:nbturns2+1}; // Node 2 for each turn
+  EndIf
+
+  If(Flag_Three_Transformer)
+    // Tertiary
+    N3_1() = {1:nbturns3};   // Node 1 for each turn
+    N3_2() = {2:nbturns3+1}; // Node 2 for each turn
   EndIf
 
 }
@@ -335,6 +400,18 @@ Constraint {
             EndIf
             If(Flag_Circuit==0 && Flag_HomogenisedModel2==1)
               { Region StrandedWinding2 ; Value Val_EE_2; TimeFunction Fct_Src2[] ; }
+            EndIf
+        EndIf
+      EndIf
+
+      If(Flag_Three_Transformer)
+        //If(Val_EE_3!=0)
+        If(1)
+            If(Flag_Circuit==0 && Flag_HomogenisedModel3==0)
+              { Region Winding3 ; Value Val_EE_3; TimeFunction Fct_Src3[] ; }
+            EndIf
+            If(Flag_Circuit==0 && Flag_HomogenisedModel3==1)
+              { Region StrandedWinding3 ; Value Val_EE_3; TimeFunction Fct_Src3[] ; }
             EndIf
         EndIf
       EndIf
@@ -409,6 +486,7 @@ Resolution {
     Operation {
       CreateDir[DirResValsPrimary];
       CreateDir[DirResValsSecondary];
+      CreateDir[DirResValsTertiary];
 
       If(!Flag_NL)
           Generate[A] ; Solve[A] ;
@@ -672,6 +750,14 @@ PostProcessing {
         EndIf
       EndIf
 
+      If(Flag_Three_Transformer)
+        If(Flag_HomogenisedModel3)
+          { Name Voltage_3 ; Value { Integral { [ CoefGeo / AreaCell3 * (CompZ[Dt[{a}]] + kkk[]*CompZ[{ir}] / AreaCell3) ]; In DomainCond3; Jacobian Vol; Integration II; } } }
+        Else
+          { Name Voltage_3 ; Value { Integral { [ CompZ[{ur}] / AreaCell3 ]; In DomainCond3; Jacobian Vol; Integration II; } } }
+        EndIf
+      EndIf
+
 
 
       // ------------------------------------------------------------------------------------------------
@@ -682,6 +768,11 @@ PostProcessing {
       If(Flag_Transformer)
         { Name Flux_Linkage_2 ; Value {
           Integral { [ CoefGeo / AreaCell2 * CompZ[{a}] ]; In DomainCond2; Jacobian Vol; Integration II; } } }
+      EndIf
+
+      If(Flag_Three_Transformer)
+        { Name Flux_Linkage_3 ; Value {
+          Integral { [ CoefGeo / AreaCell3 * CompZ[{a}] ]; In DomainCond3; Jacobian Vol; Integration II; } } }
       EndIf
 
 
@@ -700,6 +791,15 @@ PostProcessing {
             [ Sign2 * CoefGeo / AreaCell2 * CompZ[{a}] / Val_EE_2 ]; In DomainCond2; Jacobian Vol; Integration II; } } }
           { Name L_22_from_MagEnergy ; Value { Integral {
             [ 2 * CoefGeo*nu[{d a}, Freq]*({d a}*{d a}) / (Val_EE_2*Val_EE_2) ]; In Domain; Jacobian Vol; Integration II; } } }
+        EndIf
+      EndIf
+
+      If(Flag_Three_Transformer)
+        If(Val_EE_3!=0)
+          { Name L_33 ; Value { Integral {
+            [ Sign3 * CoefGeo / AreaCell3 * CompZ[{a}] / Val_EE_3 ]; In DomainCond3; Jacobian Vol; Integration II; } } }
+          { Name L_33_from_MagEnergy ; Value { Integral {
+            [ 2 * CoefGeo*nu[{d a}, Freq]*({d a}*{d a}) / (Val_EE_3*Val_EE_3) ]; In Domain; Jacobian Vol; Integration II; } } }
         EndIf
       EndIf
 

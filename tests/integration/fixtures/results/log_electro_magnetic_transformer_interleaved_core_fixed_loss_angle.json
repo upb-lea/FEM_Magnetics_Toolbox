@@ -188,7 +188,8 @@
         "turns": [
           21,
           7
-        ]
+        ],
+        "winding_insulation": 0.0005
       }
     ],
     "air_gaps": {

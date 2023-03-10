@@ -156,7 +156,8 @@
         "turns": [
           3,
           6
-        ]
+        ],
+        "winding_insulation": 0.0005
       },
       {
         "bot_bound": -0.013999999999999999,
@@ -193,7 +194,8 @@
         "turns": [
           1,
           2
-        ]
+        ],
+        "winding_insulation": 0.0005
       }
     ],
     "air_gaps": {

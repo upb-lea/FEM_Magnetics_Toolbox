@@ -697,7 +697,10 @@ class MagneticComponent:
         self.frequency = frequency  # in Hz
 
         # Define reduced frequency (used for homogenization technique)
-        self.red_freq = np.empty(2)
+        # self.red_freq = np.empty(2)
+        self.red_freq = []
+        for num in range(len(self.windings)):
+            self.red_freq.append([])
 
         if self.frequency != 0:
             self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * mu_0))  # TODO: distinguish between material conductivities
@@ -1107,10 +1110,19 @@ class MagneticComponent:
         # Magnetic Component Type
         if self.component_type == ComponentType.Inductor:
             text_file.write(f"Flag_Transformer = 0;\n")
+            text_file.write(f"Flag_Three_Transformer = 0;\n")
         if self.component_type == ComponentType.Transformer:
             text_file.write(f"Flag_Transformer = 1;\n")
+            if len(self.windings) == 3:
+                text_file.write(f"Flag_Three_Transformer = 1;\n")
+            else:
+                text_file.write(f"Flag_Three_Transformer = 0;\n")
         if self.component_type == ComponentType.IntegratedTransformer:
             text_file.write(f"Flag_Transformer = 1;\n")
+            if len(self.windings) == 3:
+                text_file.write(f"Flag_Three_Transformer = 1;\n")
+            else:
+                text_file.write(f"Flag_Three_Transformer = 0;\n")
 
         # Frequency
         text_file.write("Freq = %s;\n" % self.frequency)
@@ -1256,6 +1268,7 @@ class MagneticComponent:
         text_file.write(f"DirResVals = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"DirResValsPrimary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Primary/\";\n")
         text_file.write(f"DirResValsSecondary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
+        text_file.write(f"DirResValsTertiary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Tertiary/\";\n")
         text_file.write(f"DirResCirc = \"{self.file_data.e_m_circuit_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"OptionPos = \"{self.file_data.results_folder_path.replace(backslash, '/')}/option.pos\";\n")
 
@@ -1788,6 +1801,8 @@ class MagneticComponent:
         femm.mi_addcircprop('Primary', current[0] * sign[0], int(not self.windings[0].parallel))
         if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
             femm.mi_addcircprop('Secondary', current[1] * sign[1], int(not self.windings[1].parallel))
+            if len(self.windings) == 3:
+                femm.mi_addcircprop('Tertiary', current[2] * sign[2], 1)
 
 
         # == Geometry ==
@@ -1918,6 +1933,11 @@ class MagneticComponent:
                             femm.mi_setblockprop('Litz', 1, 0, 'Secondary', 0, 3, 1)
                         else:
                             femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 3, 1)
+                    if num == 2:
+                        if self.windings[num].conductor_type == ConductorType.RoundLitz:
+                            femm.mi_setblockprop('Litz', 1, 0, 'Tertiary', 0, 4, 1)
+                        else:
+                            femm.mi_setblockprop('Copper', 1, 0, 'Tertiary', 0, 4, 1)
 
                     femm.mi_clearselected()
 
@@ -2065,6 +2085,24 @@ class MagneticComponent:
             femm.mo_groupselectblock(3)
             log["Secondary Winding Losses"] = femm.mo_blockintegral(6).real
             femm.mo_clearblock()
+
+            if len(self.windings) == 3:
+                circuit_properties_tertiary = femm.mo_getcircuitproperties('Tertiary')
+                log["Tertiary Current"] = circuit_properties_tertiary[0]
+                log["Tertiary Voltage"] = [circuit_properties_tertiary[1].real, circuit_properties_tertiary[1].imag]
+                log["Tertiary Flux"] = [circuit_properties_tertiary[2].real, circuit_properties_tertiary[2].imag]
+                log["Tertiary Self Inductance"] = [
+                    circuit_properties_tertiary[2].real / circuit_properties_tertiary[0],
+                    circuit_properties_tertiary[2].imag / circuit_properties_tertiary[0]]
+                log["Tertiary Mean Power"] = [
+                    0.5 * circuit_properties_tertiary[1].real * circuit_properties_tertiary[0],
+                    0.5 * circuit_properties_tertiary[1].imag * circuit_properties_tertiary[0]]
+
+                # tertiary Winding Losses (with group n=2) by field intergation
+                femm.mo_groupselectblock(3)
+                log["Tertiary Winding Losses"] = femm.mo_blockintegral(6).real
+                femm.mo_clearblock()
+
 
 
         json.dump(log, file, indent=2, ensure_ascii=False)
@@ -2371,11 +2409,11 @@ class MagneticComponent:
 
     @staticmethod
     def encode_settings(o) -> Dict:
-        """Encoes the magnetic component in a dictionary.
+        """Encodes the magnetic component in a dictionary.
 
         :param o: Magnetic component containing the model.
         :type o: MagneticComponent
-        :return: Model encodede as dictionary
+        :return: Model encodes as dictionary
         :rtype: Dict
         """
         content = {
@@ -2437,7 +2475,7 @@ class MagneticComponent:
                 geo.set_insulation(insulation)
 
             if "stray_path" in settings:
-                stray_path = StrayPath(*settings["stray_path"])
+                stray_path = StrayPath(**settings["stray_path"])
                 geo.set_stray_path(stray_path)
 
             virtual_winding_windows = settings["virtual_winding_windows"]

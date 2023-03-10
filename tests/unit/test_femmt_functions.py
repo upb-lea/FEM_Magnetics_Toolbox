@@ -45,6 +45,29 @@ def test_cost_function_core():
     assert femmt.cost_function_core(1.25, "ferrite") == 6.875
     assert femmt.cost_function_core(1.25, "nanocristalline") == 28.75
 
+
+
+def test_phases_deg_from_time_current():
+    time_vec = [0, 1, 2, 3, 4]
+    current_1 = [0, 1, 3, 2, 1]
+    current_2 = [0, 2, 1, 3, 2]
+
+    phase_deg_1, phase_deg_2 = femmt.phases_deg_from_time_current(time_vec, current_1, current_2)
+
+    assert phase_deg_1 == 180
+    assert phase_deg_2 == 270
+
+def test_max_value_from_value_vec():
+    current_1 = [0, 1, 3, 2, 1]
+    current_2 = [0, 2, 1, 3, 2]
+
+    max_1, max_2 = femmt.max_value_from_value_vec(current_1, current_2)
+
+    assert max_1 == 3
+    assert max_2 == 3
+
+
+
 def test_cost_function_winding():
     assert femmt.cost_function_winding([0.1], [femmt.ConductorType.RoundSolid.name]) == [4.7]
     assert femmt.cost_function_winding([0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == [4.7, 35.1]

@@ -10,6 +10,7 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // TODO: Complex power
   Print[ j2F[ Winding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_1.dat"]] ;
   Print[ j2F[ Winding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_2.dat"]] ;
+  Print[ j2F[ Winding3 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2F_3.dat"]] ;
   // Stranded
   //Print[ SoH[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"SH_1.dat"] ] ;  // TODO: Complex power
   //Print[ SoH[ DomainS ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"SH.dat"] ] ;
@@ -17,6 +18,7 @@ PostOperation Get_global UsingPost MagDyn_a {
   Print[ j2H[ StrandedWinding1 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_1.dat"] ] ;
   //Print[ j2H[ StrandedWinding1 ], OnGlobal, Format Table];
   Print[ j2H[ StrandedWinding2 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_2.dat"] ] ;
+  Print[ j2H[ StrandedWinding3 ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"j2H_3.dat"] ] ;
   //Print[ j2H[ StrandedWinding2 ], OnGlobal, Format Table];
   //Print[ j2Hskin[StrandedWinding1],   OnGlobal , Format Table];
   //Print[ j2Hprox[StrandedWinding1],   OnGlobal , Format Table];
@@ -43,6 +45,18 @@ PostOperation Get_global UsingPost MagDyn_a {
     Else
       For isF In {1:nbturns2}
         Print[ j2F[ Turn2~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsSecondary,"Losses_turn_%g.dat"], isF] ] ;
+      EndFor
+    EndIf
+  EndIf
+
+  If(Flag_Three_Transformer)
+    If(Flag_HomogenisedModel3) // Differentiate fine und hom
+      For isF In {1:nbturns3}
+        Print[ j2H[ TurnStrand3~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsTertiary,"Losses_turn_%g.dat"], isF] ] ;
+      EndFor
+    Else
+      For isF In {1:nbturns3}
+        Print[ j2F[ Turn3~{isF} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResValsTertiary,"Losses_turn_%g.dat"], isF] ] ;
       EndFor
     EndIf
   EndIf
@@ -82,6 +96,11 @@ PostOperation Get_global UsingPost MagDyn_a {
     // Print[ Flux_Linkage_2[DomainCond2], OnGlobal, Format Table];
   EndIf
 
+  If(Flag_Three_Transformer)
+    Print[ Flux_Linkage_3[DomainCond3], OnGlobal, Format Table, File > StrCat[DirResVals,"Flux_Linkage_3.dat"]];
+    // Print[ Flux_Linkage_3[DomainCond3], OnGlobal, Format Table];
+  EndIf
+
   // Inductances
   If(Val_EE_1!=0)
     Print[ L_11[DomainCond1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_11.dat"]] ;
@@ -94,10 +113,21 @@ PostOperation Get_global UsingPost MagDyn_a {
       EndIf
   EndIf
 
+  If(Flag_Three_Transformer)
+      If(Val_EE_3!=0)
+        Print[ L_33[DomainCond3], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_33.dat"]] ;
+        Print[ L_33_from_MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"L_33_from_MagEnergy.dat"]] ;
+      EndIf
+  EndIf
+
   // Voltage
   Print[ Voltage_1[DomainCond1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Voltage_1.dat"]];
   If(Flag_Transformer)
     Print[ Voltage_2[DomainCond2], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Voltage_2.dat"]];
+  EndIf
+
+  If(Flag_Three_Transformer)
+    Print[ Voltage_3[DomainCond3], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Voltage_3.dat"]];
   EndIf
 
   // Circuit Quantities
@@ -111,12 +141,22 @@ PostOperation Get_global UsingPost MagDyn_a {
     EndIf
 
     If(Flag_Transformer)
-      If(!Flag_HomogenisedModel1)
+      If(!Flag_HomogenisedModel2)
         Print[ I, OnRegion Winding2, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_2_f%g.dat"], Freq] , LastTimeStepOnly];
         Print[ U, OnRegion Winding2, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_2_f%g.dat"], Freq] , LastTimeStepOnly];
       Else
         Print[ I, OnRegion StrandedWinding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_2_f%g.dat"], Freq] , LastTimeStepOnly];
         Print[ U, OnRegion StrandedWinding1, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_2_f%g.dat"], Freq] , LastTimeStepOnly];
+      EndIf
+    EndIf
+
+    If(Flag_Three_Transformer)
+      If(!Flag_HomogenisedModel3)
+        Print[ I, OnRegion Winding3, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_3_f%g.dat"], Freq] , LastTimeStepOnly];
+        Print[ U, OnRegion Winding3, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_3_f%g.dat"], Freq] , LastTimeStepOnly];
+      Else
+        Print[ I, OnRegion StrandedWinding3, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"I_3_f%g.dat"], Freq] , LastTimeStepOnly];
+        Print[ U, OnRegion StrandedWinding3, Format TimeTable, File > Sprintf[StrCat[DirResCirc,"U_3_f%g.dat"], Freq] , LastTimeStepOnly];
       EndIf
     EndIf
 

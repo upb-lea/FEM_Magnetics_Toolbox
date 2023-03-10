@@ -5,7 +5,7 @@ import json
 import itertools
 import shutil
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 
 # 3rd party library import
 import numpy as np
@@ -15,57 +15,55 @@ from scipy import optimize
 # femmt import
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
-import femmt.optimization.functions_optimization as fof
+import femmt.optimization.functions_optimization as fo
 from femmt.optimization.integrated_transformer_dtos import *
+import femmt as fmt
+
+class MyJSONEncoder(json.JSONEncoder):
+    """
+    class to transform dicts with numpy arrays to json.
+    This class is used as cls=MyJSONEncoder by json.dump
+
+    See also:
+    https://python-forum.io/thread-35245.html
+    """
+    def default(self, o):
+        try:
+            return o.tolist() # works with any object that has .tolist() method
+        except AttributeError:
+            pass
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, o)
+
+def result_file_dict_to_dto(result_file_dict):
+    result_file_dto = ResultFile(
+        case = result_file_dict["case"],
+        air_gap_top = result_file_dict["air_gap_top"],
+        air_gap_bot= result_file_dict["air_gap_bot"],
+        air_gap_middle=result_file_dict["air_gap_middle"],
+        n_p_top=int(result_file_dict["n_p_top"]),
+        n_p_bot=int(result_file_dict["n_p_bot"]),
+        n_s_top=int(result_file_dict["n_s_top"]),
+        n_s_bot=int(result_file_dict["n_s_bot"]),
+        window_h_top=result_file_dict["window_h_top"],
+        window_h_bot=result_file_dict["window_h_bot"],
+        window_w=result_file_dict["window_w"],
+        core_material=result_file_dict["core_material"],
+        core_inner_diameter=result_file_dict["core_inner_diameter"],
+        flux_top_max=result_file_dict["flux_top_max"],
+        flux_bot_max=result_file_dict["flux_bot_max"],
+        flux_stray_max=result_file_dict["flux_stray_max"],
+        p_hyst= result_file_dict["p_hyst"],
+        core_2daxi_total_volume=result_file_dict["core_2daxi_total_volume"],
+        primary_litz_wire=result_file_dict["primary_litz_wire"],
+        secondary_litz_wire=result_file_dict["secondary_litz_wire"],
+        primary_litz_wire_loss=result_file_dict["primary_litz_wire_loss"],
+        secondary_litz_wire_loss=result_file_dict["secondary_litz_wire_loss"],
+        total_loss=result_file_dict["total_loss"]
+    )
+    return result_file_dto
 
 
-
-def config_file_dto_to_dict(config_file_dto: InputConfig):
-
-    config_file_dict = {
-        "l_s_target": config_file_dto.l_s_target,
-        "l_h_target": config_file_dto.l_h_target,
-        "n_target": config_file_dto.n_target,
-        "time_current_1_vec": config_file_dto.time_current_1_vec.tolist(),
-        "time_current_2_vec": config_file_dto.time_current_2_vec.tolist(),
-        "material_list": config_file_dto.material_list,
-        "core_inner_diameter_min_max_count_list": config_file_dto.core_inner_diameter_min_max_count_list,
-        "window_w_min_max_count_list": config_file_dto.window_w_min_max_count_list,
-        "window_h_top_min_max_count_list": config_file_dto.window_h_top_min_max_count_list,
-        "window_h_bot_min_max_count_list": config_file_dto.window_h_bot_min_max_count_list,
-        "factor_max_flux_density": config_file_dto.factor_max_flux_density,
-        "n_p_top_min_max_list": config_file_dto.n_p_top_min_max_list,
-        "n_p_bot_min_max_list": config_file_dto.n_p_bot_min_max_list,
-        "n_s_top_min_max_list": config_file_dto.n_s_top_min_max_list,
-        "n_s_bot_min_max_list": config_file_dto.n_s_bot_min_max_list
-    }
-    return config_file_dict
-
-
-
-
-
-
-def result_file_dto_to_dict(reluctance_model_result_dto):
-    result_file_dict = {
-        "air_gap_top": reluctance_model_result_dto.air_gap_top,
-        "air_gap_bot": reluctance_model_result_dto.air_gap_bot,
-        "n_p_top": reluctance_model_result_dto.n_p_top,
-        "n_p_bot": reluctance_model_result_dto.n_p_bot,
-        "n_s_top": reluctance_model_result_dto.n_s_top,
-        "n_s_bot": reluctance_model_result_dto.n_s_bot,
-        "window_h_top": reluctance_model_result_dto.window_h_top,
-        "window_h_bot": reluctance_model_result_dto.window_h_bot,
-        "window_w": reluctance_model_result_dto.window_w,
-        "mu_r_abs": reluctance_model_result_dto.mu_r_abs,
-        "core_inner_diameter": reluctance_model_result_dto.core_inner_diameter,
-        "flux_top_max": reluctance_model_result_dto.flux_top_max,
-        "flux_bot_max": reluctance_model_result_dto.flux_bot_max,
-        "flux_stray_max": reluctance_model_result_dto.flux_stray_max,
-        "p_hyst": reluctance_model_result_dto.p_hyst,
-        "core_2daxi_total_volume": reluctance_model_result_dto.core_2daxi_total_volume,
-    }
-    return result_file_dict
 
 class IntegratedTransformerOptimization:
 
@@ -91,7 +89,6 @@ class IntegratedTransformerOptimization:
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
 
-
         # set up folders for optimization
         self.optimization_working_directory = working_directory
         self.femmt_working_directory = os.path.join(self.optimization_working_directory, "femmt_simulation")
@@ -99,17 +96,7 @@ class IntegratedTransformerOptimization:
         self.integrated_transformer_fem_simulations_results_directory = os.path.join(self.optimization_working_directory, "fem_simulation_results")
         self.integrated_transformer_optimization_input_parameters_file = os.path.join(self.optimization_working_directory, "optimization_input_parameters.json")
 
-        self.create_folders(self.optimization_working_directory, self.integrated_transformer_reluctance_model_results_directory, self.integrated_transformer_fem_simulations_results_directory, self.femmt_working_directory)
-
-
-
-    @staticmethod
-    def create_folders(*args) -> None:
-        """Creates folder for every given folder path (if it does not exist).
-        """
-        for folder in list(args):
-            if not os.path.exists(folder):
-                os.mkdir(folder)
+        ff.create_folders(self.optimization_working_directory, self.integrated_transformer_reluctance_model_results_directory, self.integrated_transformer_fem_simulations_results_directory, self.femmt_working_directory)
 
     @staticmethod
     def calculate_sweep_tensors(input_parameters_dto: InputConfig):
@@ -140,29 +127,43 @@ class IntegratedTransformerOptimization:
             l_s_target_value = input_parameters_dto.l_s_target,
             l_h_target_value = input_parameters_dto.l_h_target,
             n_target_value = input_parameters_dto.n_target,
-            factor_max_flux_density = input_parameters_dto.factor_max_flux_density
+            factor_max_flux_density = input_parameters_dto.factor_max_flux_density,
+            t1_primary_litz_wire_list=input_parameters_dto.primary_litz_wire_list,
+            t1_secondary_litz_wire_list=input_parameters_dto.secondary_litz_wire_list
         )
         return sweep_tensor
 
+    @staticmethod
+    def save_dto_list(result_dto_list, filepath):
+        if not os.path.exists(filepath):
+            os.mkdir(filepath)
 
+        for count, dto in enumerate(result_dto_list):
+            file_name = os.path.join(filepath, f"case_{dto.case}.json")
+            result_dict = dataclasses.asdict(dto)
+            with open(file_name, "w+", encoding='utf-8') as outfile:
+                json.dump(result_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
 
 
 
     def save_reluctance_model_result_list(self, config_file: InputConfig, result_file_list: List[ResultFile]):
         # save optimization input parameters
-        config_dict = config_file_dto_to_dict(config_file)
+        config_dict = dataclasses.asdict(config_file)
 
         print(config_dict)
 
         with open(self.integrated_transformer_optimization_input_parameters_file, "w+", encoding='utf-8') as outfile:
-            json.dump(config_dict, outfile, indent=2, ensure_ascii=False)
+            json.dump(config_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
 
         # save reluctance parameters winning candidates
-        for count, reluctance_model_result_dto in enumerate(result_file_list):
-            file_name = os.path.join(self.integrated_transformer_reluctance_model_results_directory, f"valid_reluctance_design_{count}.json")
-            reluctance_model_result_dict = result_file_dto_to_dict(reluctance_model_result_dto)
-            with open(file_name, "w+", encoding='utf-8') as outfile:
-                json.dump(reluctance_model_result_dict, outfile, indent=2, ensure_ascii=False)
+        self.save_dto_list(result_file_list, self.integrated_transformer_reluctance_model_results_directory)
+
+        #
+        # for count, reluctance_model_result_dto in enumerate(result_file_list):
+        #     file_name = os.path.join(self.integrated_transformer_reluctance_model_results_directory, f"valid_reluctance_design_{count}.json")
+        #     reluctance_model_result_dict = dataclasses.asdict(reluctance_model_result_dto)
+        #     with open(file_name, "w+", encoding='utf-8') as outfile:
+        #         json.dump(reluctance_model_result_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
 
 
     def load_optimization_input_parameters(self, filepath: str = None):
@@ -226,39 +227,76 @@ class IntegratedTransformerOptimization:
 
         return einsum_multiplication_part_2
 
-
-    def load_reluctance_model_result_list(self):
-        ff.femmt_print(f"Read results from {self.integrated_transformer_reluctance_model_results_directory}")
-
-        self.valid_design_list = []
-
-        for file in os.listdir(self.integrated_transformer_reluctance_model_results_directory):
+    def load_result_list(self, filepath):
+        valid_design_list = []
+        for file in os.listdir(filepath):
             if file.endswith(".json"):
-                json_file_path = os.path.join(self.integrated_transformer_reluctance_model_results_directory, file)
+                json_file_path = os.path.join(filepath, file)
                 with open(json_file_path, "r") as fd:
                     loaded_data_dict = json.loads(fd.read())
 
-                self.valid_design_list.append(loaded_data_dict)
+                valid_design_list.append(result_file_dict_to_dto(loaded_data_dict))
+        return valid_design_list
 
-    def plot_reluctance_model_result_list(self):
+
+    def load_reluctance_model_result_list(self) -> List[ResultFile]:
+        ff.femmt_print(f"Read results from {self.integrated_transformer_reluctance_model_results_directory}")
+        return self.load_result_list(self.integrated_transformer_reluctance_model_results_directory)
+
+
+
+
+
+    @staticmethod
+    def plot_reluctance_model_result_list(valid_design_list: List[ResultFile]):
 
         volume_list = []
         core_hyst_loss_list = []
+        annotation_list = []
 
-        for result in self.valid_design_list:
-            volume_list.append(result["core_2daxi_total_volume"])
-            core_hyst_loss_list.append(result["p_hyst"])
+        for result in valid_design_list:
+            volume_list.append(result.core_2daxi_total_volume)
+            core_hyst_loss_list.append(result.total_loss)
+            annotation_list.append(result.case)
 
-        fof.plot_2d(volume_list, core_hyst_loss_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
 
+        fo.plot_2d(volume_list, core_hyst_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
+                   plot_color="red", annotations=annotation_list)
+
+    @staticmethod
+    def plot_fem_simulation_result_list(filepath):
+
+
+        valid_design_list = []
+
+        volume_list = []
+        total_loss_list = []
+        total_cost_list = []
+        annotation_list = []
+
+        for file in os.listdir(filepath):
+            if file.endswith(".json"):
+                json_file_path = os.path.join(filepath, file)
+                with open(json_file_path, "r") as fd:
+                    loaded_data_dict = json.loads(fd.read())
+
+                valid_design_list.append(loaded_data_dict)
+                volume_list.append(loaded_data_dict["misc"]["core_2daxi_total_volume"])
+                total_loss_list.append(loaded_data_dict["total_losses"]["all_windings"] + loaded_data_dict["total_losses"]["core"])
+                total_cost_list.append(loaded_data_dict["misc"]["total_cost_incl_margin"])
+                annotation_list.append(f"{file}".replace("case_","").replace(".json",""))
+
+        fo.plot_2d(volume_list, total_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
+                   plot_color="red", annotations=annotation_list)
 
     def plot_pareto_result_list(self):
 
-        fof.plot_2d(self.pareto_volume_list, self.pareto_core_hyst_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
+        fo.plot_2d(self.pareto_volume_list, self.pareto_core_hyst_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
 
 
-    def plot_filtered_pareto_result_list(self):
-        fof.plot_2d(self.filter_volume_list, self.filter_core_hyst_loss_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
+    @staticmethod
+    def plot_filtered_pareto_result_list(filter_volume_list, filter_core_hyst_loss_list):
+        fo.plot_2d(filter_volume_list, filter_core_hyst_loss_list, "volume in m³", "core hysteresis losses in W", "Pareto Diagram", plot_color="red")
 
 
     # Very slow for many datapo ints.  Fastest for many costs, most readable
@@ -276,98 +314,61 @@ class IntegratedTransformerOptimization:
 
 
 
+
+
+
+
+
     @staticmethod
-    # Faster than is_pareto_efficient_simple, but less readable.
-    def is_pareto_efficient(costs, return_mask=True):
-        """
-        Find the pareto-efficient points
-        :param costs: An (n_points, n_costs) array
-        :param return_mask: True to return a mask
-        :return: An array of indices of pareto-efficient points.
-            If return_mask is True, this will be an (n_points, ) boolean array
-            Otherwise it will be a (n_efficient_points, ) integer array of indices.
-        """
-        is_efficient = np.arange(costs.shape[0])
-        n_points = costs.shape[0]
-        next_point_index = 0  # Next index in the is_efficient array to search for
-        while next_point_index < len(costs):
-            nondominated_point_mask = np.any(costs < costs[next_point_index], axis=1)
-            nondominated_point_mask[next_point_index] = True
-            is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
-            costs = costs[nondominated_point_mask]
-            next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
-        if return_mask:
-            is_efficient_mask = np.zeros(n_points, dtype=bool)
-            is_efficient_mask[is_efficient] = True
-            return is_efficient_mask
-        else:
-            return is_efficient
-
-    def pareto_front(self, x_vec, y_vec):
-
-
-        print(f"{len(x_vec) = }")
-        tuple_vec = []
-
-        for count_y, y in enumerate(y_vec):
-            tuple_vec.append((x_vec[count_y], y_vec[count_y]))
-
-        tuple_vec = np.array(tuple_vec)
-
-        print(f"{tuple_vec = }")
-
-        pareto_tuple_mask_vec = self.is_pareto_efficient(tuple_vec)
-
-        x_pareto_vec = []
-        y_pareto_vec = []
-
-        for count_mask, mask in enumerate(pareto_tuple_mask_vec):
-            if mask:
-                x_pareto_vec.append(x_vec[count_mask])
-                y_pareto_vec.append(y_vec[count_mask])
-
-        print(f"{len(x_pareto_vec) = }")
-
-        return np.array(x_pareto_vec), np.array(y_pareto_vec)
-
-
-
-    def filter_reluctance_model_list(self, factor_min_hyst_losses = 1.2):
-
-        # figure out minimum hysteresis losses
-        volume_list = []
-        core_hyst_loss_list = []
-
-        for result in self.valid_design_list:
-            volume_list.append(result["core_2daxi_total_volume"])
-            core_hyst_loss_list.append(result["p_hyst"])
-
-        min_hyst_losses = core_hyst_loss_list[np.argmin(core_hyst_loss_list)]
-
+    def filter_reluctance_model_list(valid_design_list: List[ResultFile], factor_min_dc_losses: float = 1.2) -> List[ResultFile]:
         # figure out pareto front
-        self.pareto_volume_list, self.pareto_core_hyst_list = self.pareto_front(volume_list, core_hyst_loss_list)
+        #pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
-        # set new limit for filter tool
-        reference_volume = self.pareto_volume_list
+        x_pareto_vec, y_pareto_vec = fo.pareto_front_from_dtos(valid_design_list)
 
-        print(f"{self.pareto_volume_list = }")
-        print(f"{self.pareto_core_hyst_list = }")
+        vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
 
+        # sorting 2d array by 1st row
+        # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
+        sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
+        x_pareto_vec = sorted_vector[0]
+        y_pareto_vec = sorted_vector[1]
 
-        reference_losses = self.pareto_core_hyst_list + (factor_min_hyst_losses - 1) * min_hyst_losses
+        total_losses_list = []
+        filtered_design_dto_list =[]
 
-        print(f"{reference_losses = }")
+        for dto in valid_design_list:
+            total_losses_list.append(dto.total_loss)
 
-        self.filter_volume_list = []
-        self.filter_core_hyst_loss_list = []
-        for count, volume in enumerate(volume_list):
-            reference_index = np.where(volume == reference_volume)[0]
-            if [core_hyst_loss_list[count]] < reference_losses[reference_index]:
-                self.filter_volume_list.append(volume_list[count])
-                self.filter_core_hyst_loss_list.append(core_hyst_loss_list[count])
+        min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
+        loss_offset = factor_min_dc_losses * min_total_dc_losses
+
+        for dto in valid_design_list:
+            ref_loss = np.interp(dto.core_2daxi_total_volume, x_pareto_vec, y_pareto_vec) + loss_offset
+            if dto.total_loss < ref_loss:
+                filtered_design_dto_list.append(dto)
+
+        return filtered_design_dto_list
+
+    @staticmethod
+    def filter_max_air_gap_length(dto_list_to_filter: List[ResultFile], max_air_gap_length = 1e-6) -> List[ResultFile]:
+        filtered_dtos = []
+        for dto in dto_list_to_filter:
+            if dto.air_gap_middle < max_air_gap_length and dto.air_gap_top < max_air_gap_length and dto.air_gap_bot < max_air_gap_length:
+                filtered_dtos.append(dto)
+        return filtered_dtos
+
+    @staticmethod
+    def filter_min_air_gap_length(dto_list_to_filter: List[ResultFile], min_air_gap_length = 1e-6) -> List[ResultFile]:
+        filtered_dtos = []
+        for dto in dto_list_to_filter:
+            if dto.air_gap_middle > min_air_gap_length and dto.air_gap_top > min_air_gap_length and dto.air_gap_bot > min_air_gap_length:
+                filtered_dtos.append(dto)
+        return filtered_dtos
+
 
     def integrated_transformer_optimization(self, config_file: InputConfig):
-
+        case_number = 0
 
         # 0. Empty folder
         if os.path.exists(self.optimization_working_directory):
@@ -377,27 +378,34 @@ class IntegratedTransformerOptimization:
 
         sweep_dto = self.calculate_sweep_tensors(config_file)
 
-
+        wire_database = ff.wire_material_database()
+        litz_database = ff.litz_database()
 
         # 1. Extract fundamental frequency from current vectors
         time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(sweep_dto.time_current_1_vec)
         time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(sweep_dto.time_current_2_vec)
-        self.fundamental_frequency = 1 / time_extracted[-1]
+        fundamental_frequency = 1 / time_extracted[-1]
+        print(f"{fundamental_frequency = }")
+
+        i_rms_1 = fr.i_rms(sweep_dto.time_current_1_vec)
+        i_rms_2 = fr.i_rms(sweep_dto.time_current_2_vec)
 
         # generate list of all parameter combinations
-        t2_parameter_sweep = np.array(list(itertools.product(sweep_dto.t1_window_w, sweep_dto.t1_window_h_top,
+        t2_core_geometry_sweep = np.array(list(itertools.product(sweep_dto.t1_window_w, sweep_dto.t1_window_h_top,
                                                              sweep_dto.t1_window_h_bot, sweep_dto.t1_core_inner_diameter,
                                                              sweep_dto.t1_n_p_top, sweep_dto.t1_n_p_bot, sweep_dto.t1_n_s_top,
                                                              sweep_dto.t1_n_s_bot)))
 
+        t2_litz_sweep = np.array(list(itertools.product(sweep_dto.t1_primary_litz_wire_list, sweep_dto.t1_secondary_litz_wire_list)))
+
         # report simulation progress
-        number_of_simulations = len(t2_parameter_sweep) * len(sweep_dto.t1_core_material)
+        number_of_simulations = len(t2_core_geometry_sweep) * len(sweep_dto.t1_core_material)
         ff.femmt_print(f"Simulation count: {number_of_simulations}")
         simulations_per_percent = int(number_of_simulations / 99)
         ff.femmt_print(f"{simulations_per_percent = }")
         simulation_progress_percent = 0
 
-        self.valid_design_list = []
+        valid_design_list = []
 
         # initialize parameters staying same form simulation
         t2_inductance_matrix = [
@@ -425,7 +433,7 @@ class IntegratedTransformerOptimization:
             # get material properties, especially mu_r_imag
             temperature = 100
             material_flux_density_vec, material_mu_r_imag_vec, material_mu_r_real_vec = self.material_db.permeability_data_to_pro_file(temperature,
-                                                                                                            self.fundamental_frequency,
+                                                                                                            fundamental_frequency,
                                                                                                             material_name,
                                                                                                             datasource=mdb.MaterialDataSource.ManufacturerDatasheet,
                                                                                                             datatype='permeability_data',
@@ -434,7 +442,7 @@ class IntegratedTransformerOptimization:
 
 
 
-            for count, t1d_core_geometry_material in enumerate(t2_parameter_sweep):
+            for count, t1d_core_geometry_material in enumerate(t2_core_geometry_sweep):
                 """
                 inner optimization loop
                  * report about simulation progress
@@ -477,7 +485,7 @@ class IntegratedTransformerOptimization:
                                                                                               t2_inductance_matrix)
 
                     # calculate maximum values
-                    flux_top_max, flux_bot_max, flux_stray_max = fr.max_flux_from_flux_vec(flux_top_vec, flux_bot_vec,
+                    flux_top_max, flux_bot_max, flux_stray_max = fr.max_value_from_value_vec(flux_top_vec, flux_bot_vec,
                                                                                            flux_stray_vec)
 
                     flux_density_top_max = flux_top_max / core_cross_section
@@ -514,15 +522,16 @@ class IntegratedTransformerOptimization:
 
 
                         if l_bot_air_gap > 0 and l_bot_air_gap > 0 and l_middle_air_gap > 0:
-                            p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_top, window_w, mu_r_abs, flux_top_max, self.fundamental_frequency, material_flux_density_vec, material_mu_r_imag_vec)
+
+                            p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_top, window_w, mu_r_abs, flux_top_max, fundamental_frequency, material_flux_density_vec, material_mu_r_imag_vec)
 
                             p_hyst_middle = fr.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux_stray_max, core_inner_diameter/4,
-                                                                                        core_inner_diameter/2, core_inner_diameter/2 + window_w, self.fundamental_frequency,
+                                                                                        core_inner_diameter/2, core_inner_diameter/2 + window_w, fundamental_frequency,
                                                                                         mu_r_abs, material_flux_density_vec, material_mu_r_imag_vec)
 
                             p_hyst_bot = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_bot, window_w,
                                                                             mu_r_abs, flux_bot_max,
-                                                                            self.fundamental_frequency,
+                                                                            fundamental_frequency,
                                                                             material_flux_density_vec,
                                                                             material_mu_r_imag_vec)
 
@@ -530,31 +539,173 @@ class IntegratedTransformerOptimization:
 
                             core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(core_inner_diameter, (window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
 
-                            valid_design_dict = ResultFile(
-                                air_gap_top= l_top_air_gap,
-                                air_gap_bot= l_bot_air_gap,
-                                n_p_top= n_p_top,
-                                n_p_bot= n_p_bot,
-                                n_s_top= n_s_top,
-                                n_s_bot= n_s_bot,
-                                window_h_top= window_h_top,
-                                window_h_bot= window_h_bot,
-                                window_w= window_w,
-                                mu_r_abs= mu_r_abs,
-                                core_inner_diameter= core_inner_diameter,
-                                flux_top_max= flux_top_max,
-                                flux_bot_max= flux_bot_max,
-                                flux_stray_max= flux_stray_max,
-                                p_hyst= p_hyst,
-                                core_2daxi_total_volume= core_2daxi_total_volume,
-                            )
+                            for primary_litz_wire, secondary_litz_wire in t2_litz_sweep:
+                                primary_litz = litz_database[primary_litz_wire]
+                                secondary_litz = litz_database[secondary_litz_wire]
+
+                                # cross-section comparison is according to a square for round wire.
+                                # this approximation is more realistic
+                                # insulation
+                                insulation_distance = 1e-3
+                                insulation_cross_section_top = 2 * insulation_distance * (window_w + window_h_top)
+                                insulation_cross_section_bot = 2 * insulation_distance * (window_w + window_h_bot)
+
+                                total_available_window_cross_section_top = window_h_top * window_w - insulation_cross_section_top
+                                winding_cross_section_top = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_top * (2 * secondary_litz["conductor_radii"]) ** 2
+
+                                total_available_window_cross_section_bot = window_h_bot * window_w - insulation_cross_section_bot
+                                winding_cross_section_bot = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_bot * (2 * secondary_litz["conductor_radii"]) ** 2
+
+                                if winding_cross_section_top < total_available_window_cross_section_top and winding_cross_section_bot < total_available_window_cross_section_bot:
+
+                                    primary_effective_conductive_cross_section = primary_litz["strands_numbers"] * primary_litz["strand_radii"] ** 2 * np.pi
+                                    primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
+                                    primary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_p_top + n_p_bot,
+                                                             primary_effective_conductive_radius, material = 'Copper')
+                                    primary_dc_loss = primary_resistance * i_rms_1 ** 2
+
+
+                                    secondary_effective_conductive_cross_section = secondary_litz["strands_numbers"] * secondary_litz["strand_radii"] ** 2 * np.pi
+                                    secondary_effective_conductive_radius = np.sqrt(secondary_effective_conductive_cross_section / np.pi)
+                                    secondary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_s_top + n_s_bot,
+                                                             secondary_effective_conductive_radius, material = 'Copper')
+                                    secondary_dc_loss = secondary_resistance * i_rms_2 ** 2
+
+                                    total_loss = p_hyst + primary_dc_loss + secondary_dc_loss
+
+
+
+                                    valid_design_dict = ResultFile(
+                                        case= case_number,
+                                        air_gap_top= l_top_air_gap,
+                                        air_gap_bot= l_bot_air_gap,
+                                        air_gap_middle = l_middle_air_gap,
+                                        n_p_top= n_p_top,
+                                        n_p_bot= n_p_bot,
+                                        n_s_top= n_s_top,
+                                        n_s_bot= n_s_bot,
+                                        window_h_top= window_h_top,
+                                        window_h_bot= window_h_bot,
+                                        window_w= window_w,
+                                        core_material= material_name,
+                                        core_inner_diameter= core_inner_diameter,
+                                        primary_litz_wire=primary_litz_wire,
+                                        secondary_litz_wire=secondary_litz_wire,
+                                        # results
+                                        flux_top_max= flux_top_max,
+                                        flux_bot_max= flux_bot_max,
+                                        flux_stray_max= flux_stray_max,
+                                        p_hyst= p_hyst,
+                                        core_2daxi_total_volume= core_2daxi_total_volume,
+                                        primary_litz_wire_loss=primary_dc_loss,
+                                        secondary_litz_wire_loss=secondary_dc_loss,
+                                        total_loss=total_loss
+
+                                    )
 
 
 
                             # Add dict to list of valid designs
-                            self.valid_design_list.append(valid_design_dict)
+                            valid_design_list.append(valid_design_dict)
+                            case_number += 1
 
-        print(f"Number of valid designs: {len(self.valid_design_list)}")
-        return self.valid_design_list
+        print(f"Number of valid designs: {len(valid_design_list)}")
+        return valid_design_list
+
+
+    def fem_simulation(self, config_dto: InputConfig, simulation_dto_list: List[ResultFile]):
+
+        time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(config_dto.time_current_1_vec)
+        time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(config_dto.time_current_2_vec)
+        fundamental_frequency = int(1 / time_extracted[-1])
+
+        phase_deg_1, phase_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec, current_extracted_2_vec)
+        i_peak_1, i_peak_2 = fr.max_value_from_value_vec(current_extracted_1_vec, current_extracted_2_vec)
+
+        print(f"{i_peak_1 = }")
+        print(f"{i_peak_2 = }")
+        print(f"{phase_deg_1 = }")
+        print(f"{phase_deg_2 = }")
+
+        fem_result_dto_list = []
+        for dto in simulation_dto_list:
+            try:
+                # 1. chose simulation type
+                geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                            working_directory=self.femmt_working_directory,
+                                            silent=True)
+
+                window_h = dto.window_h_bot + dto.window_h_top + dto.core_inner_diameter/4
+
+                # 2. set core parameters
+                core = fmt.Core(window_h=window_h, window_w=dto.window_w, core_inner_diameter=dto.core_inner_diameter,
+                                material = dto.core_material,
+                                temperature = 100,
+                                frequency = fundamental_frequency,
+                                permeability_datasource = fmt.MaterialDataSource.ManufacturerDatasheet,
+                                permittivity_datasource = fmt.MaterialDataSource.ManufacturerDatasheet)
+
+                geo.set_core(core)
+
+                # 2.1 set stray path parameters
+                stray_path = fmt.StrayPath(start_index=0,
+                                           length=dto.core_inner_diameter / 2 + dto.window_w - dto.air_gap_middle)
+                geo.set_stray_path(stray_path)
+
+                # Note: bot air gap needs to be subtracted, top air gap needs to be added
+                air_gap_top_position_percent = (dto.window_h_bot + dto.core_inner_diameter / 4 + dto.air_gap_top / 2)/ window_h * 100
+                air_gap_bot_position_percent = (dto.window_h_bot - dto.air_gap_bot/2) / window_h * 100
+
+                # 3. set air gap parameters
+                air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, dto.air_gap_bot, air_gap_bot_position_percent)
+                air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, dto.air_gap_top, air_gap_top_position_percent)
+                geo.set_air_gaps(air_gaps)
+
+                # 4. set insulations
+                insulation = fmt.Insulation()
+                insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
+                insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+                geo.set_insulation(insulation)
+
+                # 5. create winding window and virtual winding windows (vww)
+                # For an integrated transformer it is not necessary to set horizontal and vertical split factors
+                # since this is determined by the stray_path
+                winding_window = fmt.WindingWindow(core, insulation, stray_path, air_gaps)
+                top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+
+                # 6. set conductor parameters
+                primary_litz = ff.litz_database()[dto.primary_litz_wire]
+                secondary_litz = ff.litz_database()[dto.secondary_litz_wire]
+
+                winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+                winding1.set_litz_round_conductor(primary_litz["conductor_radii"], primary_litz["strands_numbers"], primary_litz["strand_radii"], None, fmt.ConductorArrangement.Square)
+
+                winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+                winding2.set_litz_round_conductor(secondary_litz["conductor_radii"], secondary_litz["strands_numbers"], secondary_litz["strand_radii"], None, fmt.ConductorArrangement.Square)
+
+                # 7. add conductor to vww and add winding window to MagneticComponent
+                top.set_interleaved_winding(winding1, dto.n_p_top, winding2, dto.n_s_top, fmt.InterleavedWindingScheme.HorizontalAlternating,
+                                            0.0005)
+                bot.set_interleaved_winding(winding1, dto.n_p_bot, winding2, dto.n_s_bot, fmt.InterleavedWindingScheme.HorizontalAlternating,
+                                            0.0005)
+                geo.set_winding_window(winding_window)
+
+                # 8. start simulation with given frequency, currents and phases
+                geo.create_model(freq=fundamental_frequency, visualize_before=False)
+                geo.single_simulation(freq=fundamental_frequency,
+                                      current=[i_peak_1, -i_peak_2],
+                                      phi_deg=[phase_deg_1, phase_deg_2],
+                                      show_results=False)
+
+                source_json_file = os.path.join(self.femmt_working_directory, "results", "log_electro_magnetic.json")
+                desination_json_file = os.path.join(self.integrated_transformer_fem_simulations_results_directory, f'case_{dto.case}.json')
+
+                shutil.copy(source_json_file, desination_json_file)
+
+                del geo
+
+            except Exception as e:
+                print(f"Exception: {e}")
 
 

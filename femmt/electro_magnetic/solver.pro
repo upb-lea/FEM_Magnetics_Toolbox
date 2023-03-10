@@ -181,6 +181,14 @@ Formulation {
         EndIf
       EndIf
 
+       If(Flag_Three_Transformer)
+        If(!Flag_HomogenisedModel3)
+          If(Val_EE_3!=0)
+            GlobalTerm { [ Dof{I}, {U} ] ; In Winding3 ; }
+          EndIf
+        EndIf
+      EndIf
+
 
       /*
       If(!Flag_HomogenisedModel1)

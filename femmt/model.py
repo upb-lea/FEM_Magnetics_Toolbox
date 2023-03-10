@@ -82,8 +82,9 @@ class Conductor:
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
 
-    def set_litz_round_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float,
-                                 fill_factor: float, conductor_arrangement: ConductorArrangement):
+    def set_litz_round_conductor(self, conductor_radius: Optional[float], number_strands: Optional[int],
+                                 strand_radius: Optional[float],
+                                 fill_factor: Optional[float], conductor_arrangement: ConductorArrangement):
         """
         Only 3 of the 4 parameters are needed. The other one needs to be none
         """
@@ -725,17 +726,32 @@ class VirtualWindingWindow:
         return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
 
     def to_dict(self):
-        return {
-            "bot_bound": self.bot_bound,
-            "top_bound": self.top_bound,
-            "left_bound": self.left_bound,
-            "right_bound": self.right_bound,
-            "winding_type": self.winding_type.name,
-            "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
-            "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
-            "windings": [winding.to_dict() for winding in self.windings],
-            "turns": self.turns
-        }
+        if hasattr(self, 'winding_insulation'):
+            return {
+                "bot_bound": self.bot_bound,
+                "top_bound": self.top_bound,
+                "left_bound": self.left_bound,
+                "right_bound": self.right_bound,
+                "winding_type": self.winding_type.name,
+                "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+                "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
+                "windings": [winding.to_dict() for winding in self.windings],
+                "turns": self.turns,
+                "winding_insulation": self.winding_insulation
+            }
+
+        else:
+            return {
+                "bot_bound": self.bot_bound,
+                "top_bound": self.top_bound,
+                "left_bound": self.left_bound,
+                "right_bound": self.right_bound,
+                "winding_type": self.winding_type.name,
+                "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+                "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
+                "windings": [winding.to_dict() for winding in self.windings],
+                "turns": self.turns,
+            }
 
     # TODO Since in combine_vww it is necessary to compare vwws maybe a __eq__ and __ne__ 
     # function should be implemented.
