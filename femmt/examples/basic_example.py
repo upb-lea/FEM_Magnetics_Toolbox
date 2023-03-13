@@ -73,9 +73,11 @@ if not os.path.exists(example_results_folder):
 # component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
-component = "three-winding-transformer"
+# component = "three-winding-transformer"
 # component = "integrated_transformer"
 # component = "stacked-transformer"
+component = "center-tapped-transformer"
+# component = "load_from_file"
 # component = "load_from_file"
 
 
@@ -260,7 +262,7 @@ if component == "transformer":
 
 if component == "three-winding-transformer":
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "transformer")
+    working_directory = os.path.join(example_results_folder, "three-winding-transformer")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
@@ -327,6 +329,167 @@ if component == "three-winding-transformer":
 
     # Reference simulation using FEMM
     geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
+
+if component == "center-tapped-transformer":
+    working_directory = os.path.join(example_results_folder, "center-tapped-transformer")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+    # 1. chose simulation type
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
+
+    # 2. set core parameters
+    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015)
+    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+    geo.set_core(core)
+
+    # 3. set air gap parameters
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    geo.set_air_gaps(air_gaps)
+
+
+    # ------------------ Problem Definition ------------------
+    # TODO: sum following code in a function Center Tapped
+    # following quantities may be refractored later
+    winding_isolations = fmt.define_center_tapped_insulation(primary_to_primary=2e-4,
+                                                             secondary_to_secondary=2e-4,
+                                                             primary_to_secondary=5e-4)
+    # Primary winding (round)
+    n_prim = 12
+    radius_prim = 1.1e-3
+    cond_type_prim = fmt.ConductorType.RoundLitz
+    primary_winding_tag = fmt.WindingTag.Primary
+
+    # Secondary winding
+    n_sec_parallel = 3
+    thickness_foil = 1e-3
+    cond_type_sec = fmt.ConductorType.RectangularSolid
+    secondary_winding_tag = fmt.WindingTag.Secondary
+    # ---------------------------------------------------
+
+    # 4. set insulation
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+    insulation.add_winding_insulations([winding_isolations.primary_to_primary,
+                                        winding_isolations.secondary_to_secondary,
+                                        winding_isolations.primary_to_secondary], 0.0005)
+    geo.set_insulation(insulation)
+
+    # 5.a Define Windings
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1.set_litz_round_conductor(radius_prim, 50, 0.00011, None, conductor_arrangement=fmt.ConductorArrangement.SquareFullWidth)
+
+    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2.set_rectangular_conductor(thickness=thickness_foil)
+    winding2.parallel = True
+
+    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3.set_rectangular_conductor(thickness=thickness_foil)
+    winding3.parallel = True
+
+    # 5.b Define Stacking of the windings
+    primary_row = fmt.single_row(number_of_conds_per_winding=n_prim,
+                             window_width=core_dimensions.window_w-insulation.core_cond[2]-insulation.core_cond[3],
+                             winding_tag=primary_winding_tag,
+                             conductor_type=fmt.ConductorType.RoundLitz,
+                             radius=radius_prim,
+                             cond_cond_isolation=winding_isolations.primary_to_primary)
+
+    secondary_row = fmt.single_row(number_of_conds_per_winding=n_sec_parallel,
+                               window_width=core_dimensions.window_w-insulation.core_cond[2]-insulation.core_cond[3],
+                               winding_tag=secondary_winding_tag,
+                               conductor_type=fmt.ConductorType.RectangularSolid,
+                               thickness=thickness_foil)
+    import copy
+    tertiary_row = copy.deepcopy(secondary_row)
+    tertiary_row.winding_tag = fmt.WindingTag.Tertiary
+
+    stack = fmt.stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row,
+                                                window_height=core_dimensions.window_h, isolations=winding_isolations)
+    print(stack)
+
+
+    # 6. create winding window
+    winding_window = fmt.WindingWindow(core, insulation)
+
+    # 7. split winding window in virtual winding windows
+    vwws, winding_scheme_type = winding_window.split_with_stack(stack)
+    print(winding_scheme_type)
+    # . add conductor to vww and add winding window to MagneticComponent
+    set_winding_counter = 0
+    primary_turns_in_groups, secondary_turns_in_groups = fmt.get_number_of_turns_in_groups(stack)
+    print(primary_turns_in_groups, secondary_turns_in_groups)
+    primary_conductors_to_be_placed = n_prim - primary_turns_in_groups
+    for row_element in stack.order:
+        if type(row_element) == fmt.StackIsolation:
+            pass
+        else:
+            if type(row_element) == fmt.ConductorRow:
+                # TODO: kann man sicher viel eleganter lösen ...
+                if row_element.winding_tag == fmt.WindingTag.Primary:
+                    primary_conductors_to_be_placed -= row_element.number_of_conds_per_row
+                    if primary_conductors_to_be_placed >= 0:
+                        vwws[set_winding_counter].set_winding(winding1,
+                                                              row_element.number_of_conds_per_row,
+                                                              winding_scheme_type[set_winding_counter])
+                    elif primary_conductors_to_be_placed < 0:
+                        # In the last row,only th rest shall be placed
+                        vwws[set_winding_counter].set_winding(winding1,
+                                                              row_element.number_of_conds_per_row + primary_conductors_to_be_placed,
+                                                              winding_scheme_type[set_winding_counter])
+                        primary_conductors_to_be_placed = 0
+                elif row_element.winding_tag == fmt.WindingTag.Secondary:
+                    vwws[set_winding_counter].set_winding(winding2,
+                                                          row_element.number_of_conds_per_row,
+                                                          winding_scheme_type[set_winding_counter])
+                elif row_element.winding_tag == fmt.WindingTag.Tertiary:
+                    vwws[set_winding_counter].set_winding(winding3,
+                                                          row_element.number_of_conds_per_row,
+                                                          winding_scheme_type[set_winding_counter])
+
+            elif type(row_element) == fmt.CenterTappedGroup:
+                if primary_conductors_to_be_placed < 0:
+                    turns1 = primary_conductors_to_be_placed
+                    primary_conductors_to_be_placed = 0
+                else:
+                    turns1 = 0
+                turns2 = 0
+
+                for row in row_element.stack:
+                    if type(row) == fmt.StackIsolation:
+                        pass
+                    elif type(row) == fmt.ConductorRow:
+                        if row.winding_tag == fmt.WindingTag.Primary:
+                            turns1 += row.number_of_conds_per_row
+                        elif row.winding_tag == fmt.WindingTag.Secondary:
+                            turns2 += row.number_of_conds_per_row
+
+                vwws[set_winding_counter].set_center_tapped_winding(conductor1=winding1, turns1=turns1,
+                                                                    conductor2=winding2, turns2=turns2,
+                                                                    conductor3=winding3, turns3=turns2,
+                                                                    isolation_primary_to_primary=winding_isolations.primary_to_primary,
+                                                                    isolation_secondary_to_secondary=winding_isolations.secondary_to_secondary,
+                                                                    isolation_primary_to_secondary=winding_isolations.primary_to_secondary)
+
+            set_winding_counter += 1
+
+
+    # vwws = set_center_tapped_winding ...
+    #
+    # top_left.set_winding(winding1, 8, fmt.WindingType.Single)
+    # top_right.set_winding(winding2, 6, fmt.WindingType.Single)
+    # bot_right.set_winding(winding3, 12, fmt.WindingType.Single)
+
+    geo.set_winding_window(winding_window)
+
+    # 8. start simulation with given frequency, currents and phases
+    geo.create_model(freq=250000, visualize_before=True)
+    geo.single_simulation(freq=250000, current=[4, 4, 4], phi_deg=[0, 180, 0])
+
+    # Reference simulation using FEMM
+    # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
 
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")

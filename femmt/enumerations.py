@@ -24,6 +24,9 @@ class WindingWindowSplit(IntEnum):
     HorizontalAndVerticalSplit = 4
     """Splits winding window in four virtual winding windows separated by a horizontal and vertical line
     """
+    VerticalStack = 5
+    """Based on a vertical stack, the winding window is split into several virtual winding windows
+    """
 
 
 class ComponentType(IntEnum):
@@ -88,7 +91,14 @@ class WindingType(IntEnum):
     """Internally used in VirtualWindingWindow class. 
     """
     Interleaved = 1
+    """only two winding (transformer) interleaving
+    """
     Single = 2
+    """only one winding (with n turns) in the virtual winding window
+    """
+    CenterTappedGroup = 3
+    """special 3 winding topology with typical center gapped winding schemes
+    """
 
 
 class WindingScheme(IntEnum):

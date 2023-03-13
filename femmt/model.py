@@ -7,8 +7,10 @@ from typing import List, Tuple, Optional, Union
 
 # Local libraries
 import femmt.functions as ff
+from femmt.functions_model import *
 from femmt.enumerations import *
 from femmt.constants import *
+from femmt.functions_drawing import *
 import materialdatabase as mdb
 
 
@@ -722,6 +724,26 @@ class VirtualWindingWindow:
         self.winding_insulation = winding_insulation
         self.wrap_para = None
 
+
+    def set_center_tapped_winding(self,
+                                  conductor1: Conductor, turns1: int,
+                                  conductor2: Conductor, turns2: int,
+                                  conductor3: Conductor, turns3: int,
+                                  isolation_primary_to_primary: float,
+                                  isolation_secondary_to_secondary: float,
+                                  isolation_primary_to_secondary: float):
+        # TODO: centertapped is following line allowed to set winding insulation this way?
+        self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
+                                                                  secondary_to_secondary=2e-4,
+                                                                  primary_to_secondary=5e-4)
+        self.winding_type = WindingType.CenterTappedGroup
+        self.winding_scheme = None  # TODO: centertapped maybe add vertical or sth. like this
+        self.windings = [conductor1, conductor2, conductor3]
+        self.turns = [turns1, turns2, turns3]
+        # TODO: centertapped is also a deepcopy needed somewhere: tertiary...?
+        self.winding_is_set = True
+
+
     def __repr__(self):
         return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
 
@@ -940,6 +962,42 @@ class WindingWindow:
             return top_left, top_right, bot_left, bot_right
         else:
             raise Exception(f"Winding window split type {split_type} not found")
+
+    def split_with_stack(self, stack: ConductorStack):
+        """
+        The winding window is splitted according to a ConductorStack dataclass.
+        :param stack:
+        :return:
+        """
+        bottom_up = True
+        vertical_space_used = 0  # initialize the counter with zero
+        self.virtual_winding_windows = []
+        winding_scheme_type = []
+        if bottom_up:
+            for i, row_element in enumerate(stack.order):
+                vertical_space_used_last = vertical_space_used
+                if type(row_element) == StackIsolation:
+                    vertical_space_used += row_element.thickness
+                else:
+                    if type(row_element) == ConductorRow:
+                        vertical_space_used += row_element.row_height
+                        if row_element.winding_tag == WindingTag.Primary:
+                            winding_scheme_type.append(WindingType.Single)
+                        elif row_element.winding_tag == WindingTag.Secondary or row_element.winding_tag == WindingTag.Tertiary:
+                            winding_scheme_type.append(WindingScheme.FoilHorizontal)
+
+                    elif type(row_element) == CenterTappedGroup:
+                        vertical_space_used += get_height_of_group(group=row_element)
+                        winding_scheme_type.append(WindingType.CenterTappedGroup)
+
+                    self.virtual_winding_windows.append(
+                        VirtualWindingWindow(
+                            bot_bound=self.max_bot_bound + vertical_space_used_last,
+                            top_bound=self.max_bot_bound + vertical_space_used,
+                            left_bound=self.max_left_bound,
+                            right_bound=self.max_right_bound))
+
+        return self.virtual_winding_windows, winding_scheme_type
 
     def combine_vww(self, vww1: VirtualWindingWindow, vww2: VirtualWindingWindow) -> VirtualWindingWindow:
         """Combines the borders of two virtual winding windows.

@@ -377,6 +377,8 @@ class MagneticComponent:
                 if winding not in windings:
                     windings.append(winding)
 
+        print(f"{winding_window.virtual_winding_windows = }")
+        print(f"{windings = }")
         self.windings = sorted(windings, key = lambda x: x.winding_number)
 
         # Set excitation parameter lists
@@ -794,7 +796,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        self.calculate_and_write_log()  # TODO: reuse for stacked core
+        # self.calculate_and_write_log()  # TODO: reuse center tapped
         if show_results:
             self.visualize()
 

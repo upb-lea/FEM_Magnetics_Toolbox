@@ -287,6 +287,7 @@ class TwoDaxiSymmetric:
         # Draw every conductor type based on the virtual_winding_window bounds
 
         for virtual_winding_window in self.virtual_winding_windows:
+            print(virtual_winding_window)  # TODO: remove print
             # Get bounds from virtual winding window
             bot_bound = virtual_winding_window.bot_bound
             top_bound = virtual_winding_window.top_bound
@@ -752,8 +753,11 @@ class TwoDaxiSymmetric:
             elif virtual_winding_window.winding_type == WindingType.Single:
                 # One winding in the virtual winding window
                 winding = virtual_winding_window.windings[0]
+                print(winding)  # TODO: remove print
                 turns = virtual_winding_window.turns[0]
+                print(turns)  # TODO: remove print
                 conductor_type = winding.conductor_type
+                print(conductor_type)  # TODO: remove print
                 winding_scheme = virtual_winding_window.winding_scheme
 
                 num = winding.winding_number
@@ -971,7 +975,9 @@ class TwoDaxiSymmetric:
                         x = left_bound + winding.conductor_radius
                         i = 0
                         # Case n_conductors higher that "allowed" is missing
-                        while y < top_bound - winding.conductor_radius \
+                        statement = y <= top_bound - winding.conductor_radius
+                        print(statement)
+                        while statement \
                                 and i < turns:
                             while x < right_bound - winding.conductor_radius \
                                     and i < turns:
@@ -1014,6 +1020,138 @@ class TwoDaxiSymmetric:
 
                 else:
                     raise Exception(f"Conductor type {winding.conductor_type.name} is not implemented.")
+
+            elif virtual_winding_window.winding_type == WindingType.CenterTappedGroup:
+                # rows_in_group = []  # TODO: centertapped fill with rows of group
+                # print(rows_in_group)
+                # for row in rows_in_group:
+                #     winding_number = row.winding_number   # TODO: centertapped
+                #     print(winding_number)
+                #
+                #     # TODO: centertapped check "if rectangular or round" row
+                #     self.p_conductor[winding_number].append([
+                #     x,
+                #     y,
+                #     0,
+                #     self.mesh_data.c_center_conductor[winding_number]])
+                #     # TODO: centertapped continue
+
+                # Primary Winding
+                winding = virtual_winding_window.windings[0]
+                turns = virtual_winding_window.turns[0]
+                num = 0
+
+                y = bot_bound + winding.conductor_radius
+                x = left_bound + winding.conductor_radius
+                i = 0
+                # Case n_conductors higher that "allowed" is missing
+                while y < top_bound - winding.conductor_radius and i < turns:
+                    while x < right_bound - winding.conductor_radius and i < turns:
+                        self.p_conductor[num].append([
+                            x,
+                            y,
+                            0,
+                            self.mesh_data.c_center_conductor[num]])
+                        self.p_conductor[num].append([
+                            x - winding.conductor_radius,
+                            y,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            x,
+                            y + winding.conductor_radius,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            x + winding.conductor_radius,
+                            y,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            x,
+                            y - winding.conductor_radius,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        i += 1
+                        x += winding.conductor_radius * 2 + self.insulation.inner_winding_insulations[num]  # from left to top
+                    y += winding.conductor_radius * 2 + self.insulation.inner_winding_insulations[num]  # one step from left to right
+                    x = left_bound + winding.conductor_radius  # always the same
+
+                # use y for next winding in stack
+                bot_bound = y - winding.conductor_radius - self.insulation.inner_winding_insulations[0] + self.insulation.inner_winding_insulations[2]
+
+
+                # Secondary Winding
+                winding = virtual_winding_window.windings[1]
+                turns = virtual_winding_window.turns[1]
+                num = 1
+                for i in range(turns):
+                    # CHECK if top bound is reached
+                    # statement = (bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num]) <= top_bound
+                    # print(statement)
+                    if True:
+                        low = bot_bound + i * winding.thickness + i * self.insulation.inner_winding_insulations[num]
+                        high = bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num]
+                        # stacking from the ground
+                        self.p_conductor[num].append([
+                            left_bound,
+                            low,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            right_bound,
+                            low,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            left_bound,
+                            high,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            right_bound,
+                            high,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+
+                # use y for next winding in stack
+                bot_bound = high + self.insulation.inner_winding_insulations[1]
+
+                # Secondary Winding
+                winding = virtual_winding_window.windings[2]
+                turns = virtual_winding_window.turns[2]
+                num = 2
+                for i in range(turns):
+                    # CHECK if top bound is reached
+                    # statement = (bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num]) <= top_bound
+                    # print(statement)
+                    if True:
+                        low = bot_bound + i * winding.thickness + i * self.insulation.inner_winding_insulations[num]
+                        high = bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num]
+                        # stacking from the ground
+                        self.p_conductor[num].append([
+                            left_bound,
+                            low,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            right_bound,
+                            low,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            left_bound,
+                            high,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+                        self.p_conductor[num].append([
+                            right_bound,
+                            high,
+                            0,
+                            self.mesh_data.c_conductor[num]])
+
+
+
             else:
                 raise Exception(f"Unknown winding type {virtual_winding_window.winding_type.name}")
 

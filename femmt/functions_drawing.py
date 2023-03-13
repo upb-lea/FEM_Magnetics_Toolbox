@@ -1,24 +1,6 @@
 from femmt import *
-
-
-def define_center_tapped_insulation(primary_to_primary, secondary_to_secondary, primary_to_secondary):
-    """
-    This function defines the ThreeWindingIsolation dto for the special case of a center-tapped
-    transformer. It's assumed, that the secondary windings are isolated symmetrically
-    :param primary_to_primary:
-    :param secondary_to_secondary:
-    :param primary_to_secondary:
-    :return:
-    """
-    return ThreeWindingIsolation(primary_to_primary=primary_to_primary,
-                                 primary_to_secondary=primary_to_secondary,
-                                 primary_to_tertiary=primary_to_secondary,
-                                 secondary_to_primary=primary_to_secondary,
-                                 secondary_to_secondary=secondary_to_secondary,
-                                 secondary_to_tertiary=secondary_to_secondary,
-                                 tertiary_to_primary=primary_to_secondary,
-                                 tertiary_to_secondary=secondary_to_secondary,
-                                 tertiary_to_tertiary=secondary_to_secondary)
+from femmt.enumerations import *
+from femmt.dtos import *
 
 
 def number_of_rows(row: ConductorRow):
@@ -131,14 +113,14 @@ def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
     # TODO: make positioning of conductor rows more flexible
     # TODO: make insertion of inner insulations also flexible and in a dedicated function
     stack = []
-    for i in range(0, primary_number_of_rows):
+    for i in range(0, group.primary_number_of_rows):
         stack.append(primary_row)
-        if i < primary_number_of_rows - 1:
+        if i < group.primary_number_of_rows - 1:
             stack.append(StackIsolation(thickness=isolations.primary_to_primary))
-        elif i == primary_number_of_rows - 1:
+        elif i == group.primary_number_of_rows - 1:
             stack.append(StackIsolation(thickness=isolations.primary_to_secondary))
 
-    for i in range(0, secondary_number_of_rows):
+    for i in range(0, group.secondary_number_of_rows):
         stack.append(secondary_row)
         stack.append(StackIsolation(thickness=isolations.secondary_to_tertiary))
         stack.append(tertiary_row)
@@ -152,6 +134,18 @@ def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
     return group
 
 
+def get_height_of_group(group: CenterTappedGroup):
+    """returns the total height of thr conductors and insulation
+    """
+    total_height = 0
+    for row_element in group.stack:
+        if type(row_element) == ConductorRow:
+            total_height += row_element.row_height
+        elif type(row_element) == StackIsolation:
+            total_height += row_element.thickness
+    return total_height
+
+
 def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_be_added):
     secondary_tags = []
     number_of_added_tertiaries = 0
@@ -162,6 +156,33 @@ def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_
                 number_of_added_tertiaries += 1
     for tag in secondary_tags:
         stack_order_without_tertiary.insert(tag, tertiary_row_to_be_added)
+
+
+# Insert insulations into the stack_order
+def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
+    # Which insulation is needed depends on the bot and top row neighbours
+    # TODO: insert insulations into the stack depending on isolation matrix
+    # if type(top_row
+
+    # TODO: remove following fix insertation
+    insulation_positions = []
+    insulation_tags = []
+    number_of_added_insulations = 0
+    # here: zero index means bot_row
+    for i, bot_row in enumerate(stack_order[0:-1]):
+        top_row = stack_order[i + 1]
+        print(f"{bot_row = }")
+        print(f"{top_row = }\n")
+        insulation_positions.append(i + 1 + number_of_added_insulations)
+        number_of_added_insulations += 1
+
+        # if type(bot_row) == ConductorRow:  # TODO: so ähnlich nach group oder row fragen und dann die infos über die isolation rausszierehn bei bot row und top row
+        #         if obj.winding_tag == WindingTag.Secondary:
+        insulation_tags.append(StackIsolation(thickness=isolations.secondary_to_secondary))
+
+    # Fill in the isolations
+    for i, position in enumerate(insulation_positions):
+        stack_order.insert(position, insulation_tags[i])
 
 
 def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow,
@@ -202,40 +223,39 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         elif len(single_secondary_rows_to_be_placed) != 0:
             stack_order = mix_x_and_I(single_secondary_rows_to_be_placed, groups_to_be_placed)
             number_of_single_rows = len(single_secondary_rows_to_be_placed)
+        else:
+            stack_order = mix_x_and_I(single_secondary_rows_to_be_placed, groups_to_be_placed)
 
         # Add the tertiary winding to the stack_order
         add_tertiary_winding_to_stack(stack_order, tertiary_row)
 
-        # Insert insulations into the stack_order
-        def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
-            # Which insulation is needed depends on the bot and top row neighbours
-            # TODO: insert insulations into the stack depending on isolation matrix
-            # if type(top_row
-
-            # TODO: remove following fix insertation
-            insulation_positions = []
-            insulation_tags = []
-            number_of_added_insulations = 0
-            # here: zero index means bot_row
-            for i, bot_row in enumerate(stack_order[0:-1]):
-                top_row = stack_order[i + 1]
-                print(f"{bot_row = }")
-                print(f"{top_row = }\n")
-                insulation_positions.append(i + 1 + number_of_added_insulations)
-                number_of_added_insulations += 1
-
-                # if type(bot_row) == ConductorRow:  # TODO: so ähnlich nach group oder row fragen und dann die infos über die isolation rausszierehn bei bot row und top row
-                #         if obj.winding_tag == WindingTag.Secondary:
-                insulation_tags.append(StackIsolation(thickness=isolations.secondary_to_secondary))
-
-            # Fill in the isolations
-            for i, position in enumerate(insulation_positions):
-                stack_order.insert(position, insulation_tags[i])
 
         insert_insulations_to_stack(stack_order, isolations)
 
         # Create the complete ConductorStack from the stack_order
         return ConductorStack(number_of_groups=number_of_groups, number_of_single_rows=number_of_single_rows, order=stack_order)
+
+
+def get_number_of_turns_in_groups(stack):
+    turns1 = 0
+    turns2 = 0
+
+    for row_element in stack.order:
+        if type(row_element) == StackIsolation:
+            pass
+        else:
+            if type(row_element) == ConductorRow:
+                pass
+            elif type(row_element) == CenterTappedGroup:
+               for row in row_element.stack:
+                    if type(row) == StackIsolation:
+                        pass
+                    elif type(row) == ConductorRow:
+                        if row.winding_tag == WindingTag.Primary:
+                            turns1 += row.number_of_conds_per_row
+                        elif row.winding_tag == WindingTag.Secondary:
+                            turns2 += row.number_of_conds_per_row
+    return turns1, turns2
 
 
 def is_even(x: int):
