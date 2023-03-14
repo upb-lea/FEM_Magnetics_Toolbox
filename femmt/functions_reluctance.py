@@ -33,6 +33,20 @@ def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
     return l_s, l_h, n
 
 
+def calculate_inductance_matrix_from_ls_lh_n(l_s_target_value, l_h_target_value, n_target_value):
+    """
+    Calculates the inductance matrix from ls, lh, n parameters
+
+    :param l_s_target_value: serial inductance
+    :param l_h_target_value: mutal inductance
+    :param n_target_value: transfer ratio
+    :return: inductance matrix
+    """
+    inductance_matrix = [
+        [l_s_target_value + l_h_target_value, l_h_target_value / n_target_value],
+        [l_h_target_value / n_target_value, l_h_target_value / (n_target_value ** 2)]]
+    return inductance_matrix
+
 
 def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux, cylinder_height, cylinder_inner_radius, cylinder_outer_radius,
                                                                 fundamental_frequency, mu_r_abs, flux_density_data_vec, mu_r_imag_data_vec):
@@ -334,8 +348,7 @@ def flux_vec_from_current_vec(current_vec_1, current_vec_2, winding_matrix, indu
     flux_stray_vec = []
 
     for count, value in enumerate(current_vec_1):
-        # Negative sign is placed here
-        current_value_timestep = [current_vec_1[count], -current_vec_2[count]]
+        current_value_timestep = [current_vec_1[count], current_vec_2[count]]
 
         # simplified formula: flux = L * I / N
         [flux_top_timestep, flux_bot_timestep] = np.matmul(np.matmul(np.linalg.inv(np.transpose(winding_matrix)), inductance_matrix),

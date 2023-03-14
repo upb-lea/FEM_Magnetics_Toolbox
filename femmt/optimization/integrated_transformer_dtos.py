@@ -17,10 +17,10 @@ class InputConfig:
     time_current_1_vec: np.ndarray
     time_current_2_vec: np.ndarray
     material_list: list
-    core_inner_diameter_min_max_count_list: list
-    window_w_min_max_count_list: list
-    window_h_top_min_max_count_list: list
-    window_h_bot_min_max_count_list: list
+    core_inner_diameter_min_max_list: list
+    window_w_min_max_list: list
+    window_h_top_min_max_list: list
+    window_h_bot_min_max_list: list
     factor_max_flux_density: float
     n_p_top_min_max_list: list
     n_p_bot_min_max_list: list
@@ -28,6 +28,36 @@ class InputConfig:
     n_s_bot_min_max_list: list
     primary_litz_wire_list: list
     secondary_litz_wire_list: list
+    temperature: float
+
+@dataclass
+class MaterialCurve:
+    material_name: str
+    material_mu_r_abs: float
+    material_flux_density_vec: np.ndarray
+    material_mu_r_imag_vec: np.ndarray
+    material_mu_r_real_vec: np.ndarray
+    saturation_flux_density: float
+
+@dataclass
+class StudyParameterDTO:
+    t1_n_p_top: np.ndarray
+    t1_n_p_bot: np.ndarray
+    t1_n_s_top: np.ndarray
+    t1_n_s_bot: np.ndarray
+    t1_window_h_top: np.ndarray
+    t1_window_h_bot: np.ndarray
+    t1_window_w: np.ndarray
+    t1_core_material: list
+    t1_core_inner_diameter: np.ndarray
+    t1_primary_litz_wire_list: list
+    t1_secondary_litz_wire_list: list
+    time_current_1_vec: np.ndarray
+    time_current_2_vec: np.ndarray
+    l_s_target_value: float
+    l_h_target_value: float
+    n_target_value: float
+    factor_max_flux_density: float
 
 @dataclass
 class SweepTensor:
@@ -49,7 +79,6 @@ class SweepTensor:
     n_target_value: float
     factor_max_flux_density: float
 @dataclass
-
 class ResultFile:
     case: int
     # geometry parameters
@@ -72,6 +101,9 @@ class ResultFile:
     flux_top_max: float
     flux_bot_max: float
     flux_stray_max: float
+    flux_density_top_max: float
+    flux_density_bot_max: float
+    flux_density_stray_max: float
     p_hyst: float
     primary_litz_wire_loss: float
     secondary_litz_wire_loss: float

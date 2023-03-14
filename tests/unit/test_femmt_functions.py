@@ -117,3 +117,13 @@ def test_winding_resistance_calculation_solid():
     material = "Copper"
 
     assert femmt.resistance_solid_wire(core_inner_diameter, window_w, turns_count, conductor_radius, material) == pytest.approx(0.02251034482758622, rel=1e-3)
+
+def test_calculate_inductance_matrix():
+    l_s_target_value = 85e-6
+    l_h_target_value = 850e-6
+    n_target_value = 3.1
+
+    inductance_matrix = femmt.calculate_inductance_matrix_from_ls_lh_n(l_s_target_value, l_h_target_value, n_target_value)
+
+    assert inductance_matrix[0] == pytest.approx([0.000935, 0.00027419354838709674], rel=1e-3)
+    assert inductance_matrix[1] == pytest.approx([0.00027419354838709674, 8.844953173777314e-05], rel=1e-3)

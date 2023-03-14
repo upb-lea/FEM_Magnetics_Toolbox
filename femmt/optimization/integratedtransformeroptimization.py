@@ -6,6 +6,7 @@ import itertools
 import shutil
 from dataclasses import dataclass
 from typing import List, Dict
+import time
 
 # 3rd party library import
 import numpy as np
@@ -53,6 +54,9 @@ def result_file_dict_to_dto(result_file_dict):
         flux_top_max=result_file_dict["flux_top_max"],
         flux_bot_max=result_file_dict["flux_bot_max"],
         flux_stray_max=result_file_dict["flux_stray_max"],
+        flux_density_top_max=result_file_dict["flux_density_top_max"],
+        flux_density_bot_max=result_file_dict["flux_density_bot_max"],
+        flux_density_stray_max=result_file_dict["flux_density_stray_max"],
         p_hyst= result_file_dict["p_hyst"],
         core_2daxi_total_volume=result_file_dict["core_2daxi_total_volume"],
         primary_litz_wire=result_file_dict["primary_litz_wire"],
@@ -109,16 +113,16 @@ class IntegratedTransformerOptimization:
             t1_n_s_bot = np.arange(input_parameters_dto.n_s_bot_min_max_list[0], input_parameters_dto.n_s_bot_min_max_list[1] + 1),
 
             # tensors: outer core geometry and material
-            t1_window_h_top = np.linspace(input_parameters_dto.window_h_top_min_max_count_list[0], input_parameters_dto.window_h_top_min_max_count_list[1],
-                                          input_parameters_dto.window_h_top_min_max_count_list[2]),
-            t1_window_h_bot = np.linspace(input_parameters_dto.window_h_bot_min_max_count_list[0], input_parameters_dto.window_h_bot_min_max_count_list[1],
-                                          input_parameters_dto.window_h_bot_min_max_count_list[2]),
-            t1_window_w = np.linspace(input_parameters_dto.window_w_min_max_count_list[0], input_parameters_dto.window_w_min_max_count_list[1],
-                                      input_parameters_dto.window_w_min_max_count_list[2]),
+            t1_window_h_top = np.linspace(input_parameters_dto.window_h_top_min_max_list[0], input_parameters_dto.window_h_top_min_max_list[1],
+                                          input_parameters_dto.window_h_top_min_max_list[2]),
+            t1_window_h_bot = np.linspace(input_parameters_dto.window_h_bot_min_max_list[0], input_parameters_dto.window_h_bot_min_max_list[1],
+                                          input_parameters_dto.window_h_bot_min_max_list[2]),
+            t1_window_w = np.linspace(input_parameters_dto.window_w_min_max_list[0], input_parameters_dto.window_w_min_max_list[1],
+                                      input_parameters_dto.window_w_min_max_list[2]),
             t1_core_material = input_parameters_dto.material_list,
-            t1_core_inner_diameter = np.linspace(input_parameters_dto.core_inner_diameter_min_max_count_list[0],
-                                                 input_parameters_dto.core_inner_diameter_min_max_count_list[1],
-                                                 input_parameters_dto.core_inner_diameter_min_max_count_list[2]),
+            t1_core_inner_diameter = np.linspace(input_parameters_dto.core_inner_diameter_min_max_list[0],
+                                                 input_parameters_dto.core_inner_diameter_min_max_list[1],
+                                                 input_parameters_dto.core_inner_diameter_min_max_list[2]),
 
 
             time_current_1_vec = input_parameters_dto.time_current_1_vec,
@@ -140,6 +144,7 @@ class IntegratedTransformerOptimization:
 
         for count, dto in enumerate(result_dto_list):
             file_name = os.path.join(filepath, f"case_{dto.case}.json")
+
             result_dict = dataclasses.asdict(dto)
             with open(file_name, "w+", encoding='utf-8') as outfile:
                 json.dump(result_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
@@ -150,11 +155,10 @@ class IntegratedTransformerOptimization:
         # save optimization input parameters
         config_dict = dataclasses.asdict(config_file)
 
-        print(config_dict)
-
         with open(self.integrated_transformer_optimization_input_parameters_file, "w+", encoding='utf-8') as outfile:
             json.dump(config_dict, outfile, indent=2, ensure_ascii=False, cls=MyJSONEncoder)
 
+        #time.sleep(1)
         # save reluctance parameters winning candidates
         self.save_dto_list(result_file_list, self.integrated_transformer_reluctance_model_results_directory)
 
@@ -227,7 +231,8 @@ class IntegratedTransformerOptimization:
 
         return einsum_multiplication_part_2
 
-    def load_result_list(self, filepath):
+    @staticmethod
+    def load_reluctance_model_list(filepath):
         valid_design_list = []
         for file in os.listdir(filepath):
             if file.endswith(".json"):
@@ -236,12 +241,15 @@ class IntegratedTransformerOptimization:
                     loaded_data_dict = json.loads(fd.read())
 
                 valid_design_list.append(result_file_dict_to_dto(loaded_data_dict))
+        if len(valid_design_list) == 0:
+            raise ValueError("Specified file path is empty")
+
         return valid_design_list
 
 
     def load_reluctance_model_result_list(self) -> List[ResultFile]:
         ff.femmt_print(f"Read results from {self.integrated_transformer_reluctance_model_results_directory}")
-        return self.load_result_list(self.integrated_transformer_reluctance_model_results_directory)
+        return self.load_reluctance_model_list(self.integrated_transformer_reluctance_model_results_directory)
 
 
 
@@ -431,8 +439,7 @@ class IntegratedTransformerOptimization:
             print(f"{dimensioning_max_flux_density = }")
 
             # get material properties, especially mu_r_imag
-            temperature = 100
-            material_flux_density_vec, material_mu_r_imag_vec, material_mu_r_real_vec = self.material_db.permeability_data_to_pro_file(temperature,
+            material_flux_density_vec, material_mu_r_imag_vec, material_mu_r_real_vec = self.material_db.permeability_data_to_pro_file(config_file.temperature,
                                                                                                             fundamental_frequency,
                                                                                                             material_name,
                                                                                                             datasource=mdb.MaterialDataSource.ManufacturerDatasheet,
@@ -515,14 +522,14 @@ class IntegratedTransformerOptimization:
 
                         minimum_air_gap_length = 0
                         maximum_air_gap_length = 1e-3
+                        minimum_sort_out_air_gap_length = 100e-6
 
                         l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_top, r_air_gap_top_target))
                         l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_bot / 2, window_h_bot / 2, r_air_gap_bot_target))
                         l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, core_inner_diameter / 4, window_w, r_air_gap_middle_target))
 
 
-                        if l_bot_air_gap > 0 and l_bot_air_gap > 0 and l_middle_air_gap > 0:
-
+                        if l_top_air_gap > minimum_sort_out_air_gap_length and l_bot_air_gap > minimum_sort_out_air_gap_length and l_middle_air_gap > minimum_sort_out_air_gap_length:
                             p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_top, window_w, mu_r_abs, flux_top_max, fundamental_frequency, material_flux_density_vec, material_mu_r_imag_vec)
 
                             p_hyst_middle = fr.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux_stray_max, core_inner_diameter/4,
@@ -557,7 +564,6 @@ class IntegratedTransformerOptimization:
                                 winding_cross_section_bot = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_bot * (2 * secondary_litz["conductor_radii"]) ** 2
 
                                 if winding_cross_section_top < total_available_window_cross_section_top and winding_cross_section_bot < total_available_window_cross_section_bot:
-
                                     primary_effective_conductive_cross_section = primary_litz["strands_numbers"] * primary_litz["strand_radii"] ** 2 * np.pi
                                     primary_effective_conductive_radius = np.sqrt(primary_effective_conductive_cross_section / np.pi)
                                     primary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w, n_p_top + n_p_bot,
@@ -595,6 +601,9 @@ class IntegratedTransformerOptimization:
                                         flux_top_max= flux_top_max,
                                         flux_bot_max= flux_bot_max,
                                         flux_stray_max= flux_stray_max,
+                                        flux_density_top_max = flux_density_top_max,
+                                        flux_density_bot_max= flux_density_bot_max,
+                                        flux_density_stray_max=flux_density_middle_max,
                                         p_hyst= p_hyst,
                                         core_2daxi_total_volume= core_2daxi_total_volume,
                                         primary_litz_wire_loss=primary_dc_loss,
@@ -613,7 +622,7 @@ class IntegratedTransformerOptimization:
         return valid_design_list
 
 
-    def fem_simulation(self, config_dto: InputConfig, simulation_dto_list: List[ResultFile]):
+    def fem_simulation(self, config_dto: InputConfig, simulation_dto_list: List[ResultFile], visualize: bool = False):
 
         time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(config_dto.time_current_1_vec)
         time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(config_dto.time_current_2_vec)
@@ -637,19 +646,24 @@ class IntegratedTransformerOptimization:
 
                 window_h = dto.window_h_bot + dto.window_h_top + dto.core_inner_diameter/4
 
-                # 2. set core parameters
-                core = fmt.Core(window_h=window_h, window_w=dto.window_w, core_inner_diameter=dto.core_inner_diameter,
+                core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=dto.core_inner_diameter,
+                                                                window_w=dto.window_w,
+                                                                window_h=window_h)
+
+                core = fmt.Core(core_type=fmt.CoreType.Single,
+                                core_dimensions=core_dimensions,
                                 material = dto.core_material,
-                                temperature = 100,
+                                temperature = config_dto.temperature,
                                 frequency = fundamental_frequency,
                                 permeability_datasource = fmt.MaterialDataSource.ManufacturerDatasheet,
                                 permittivity_datasource = fmt.MaterialDataSource.ManufacturerDatasheet)
 
                 geo.set_core(core)
 
+                table_length = dto.core_inner_diameter / 2 + dto.window_w - dto.air_gap_middle
                 # 2.1 set stray path parameters
                 stray_path = fmt.StrayPath(start_index=0,
-                                           length=dto.core_inner_diameter / 2 + dto.window_w - dto.air_gap_middle)
+                                           length=table_length)
                 geo.set_stray_path(stray_path)
 
                 # Note: bot air gap needs to be subtracted, top air gap needs to be added
@@ -692,11 +706,11 @@ class IntegratedTransformerOptimization:
                 geo.set_winding_window(winding_window)
 
                 # 8. start simulation with given frequency, currents and phases
-                geo.create_model(freq=fundamental_frequency, visualize_before=False)
+                geo.create_model(freq=fundamental_frequency, visualize_before=visualize)
                 geo.single_simulation(freq=fundamental_frequency,
-                                      current=[i_peak_1, -i_peak_2],
+                                      current=[i_peak_1, i_peak_2],
                                       phi_deg=[phase_deg_1, phase_deg_2],
-                                      show_results=False)
+                                      show_results=visualize)
 
                 source_json_file = os.path.join(self.femmt_working_directory, "results", "log_electro_magnetic.json")
                 desination_json_file = os.path.join(self.integrated_transformer_fem_simulations_results_directory, f'case_{dto.case}.json')
