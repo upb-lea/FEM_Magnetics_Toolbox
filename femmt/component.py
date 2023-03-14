@@ -87,7 +87,7 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
-        self.core = None                        # Contains all informations about the cores
+        self.core = None                        # Contains all information about the core
         self.air_gaps = None                    # Contains every air gap
         self.windings = None                    # List of the different winding objects which the following structure: windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
         self.insulation = None                   # Contains information about the needed insulations
@@ -158,7 +158,7 @@ class MagneticComponent:
 
         :param thermal_conductivity_dict: Contains the thermal conductivities for every region
         :type thermal_conductivity_dict: Dict
-        :param boundary_temperatures_dict: Contains the tmperatures at each boundary line
+        :param boundary_temperatures_dict: Contains the temperature at each boundary line
         :type boundary_temperatures_dict: Dict
         :param boundary_flags_dict: Sets the boundary type (dirichlet or von neumann) for each boundary line
         :type boundary_flags_dict: Dict
@@ -292,7 +292,7 @@ class MagneticComponent:
     def high_level_geo_gen(self, frequency: float = None, skin_mesh_factor: float = None):
         """ Updates the mesh data and creates the model and mesh objects
 
-        :param frequency: Frequency used in the mesh denisty, defaults to None
+        :param frequency: Frequency used in the mesh density, defaults to None
         :type frequency: float, optional
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
@@ -314,7 +314,7 @@ class MagneticComponent:
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
         """Generates model and mesh.
 
-        :param frequency: Frequency used in the mesh denisty, defaults to None
+        :param frequency: Frequency used in the mesh density, defaults to None
         :type frequency: float, optional
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
@@ -416,7 +416,7 @@ class MagneticComponent:
         :type do_meshing: bool
         :param save_png: True to save a png-figure, false for no figure
         :type save_png: bool
-        :param color_scheme: colorfile (definition for red, green, blue, ...)
+        :param color_scheme: color-file (definition for red, green, blue, ...)
         :type color_scheme: Dict
         :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
         :type colors_geometry: Dict
@@ -520,17 +520,17 @@ class MagneticComponent:
 
             if leg_position == AirGapLegPosition.LeftLeg.value:
                 # left leg
-                # TODO this is wrong since the airgap is not centered on the y axis 
+                # TODO this is wrong since the air gap is not centered on the y axis
                 width = core_width - self.core.r_inner
             elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
             elif leg_position == AirGapLegPosition.RightLeg.value:
                 # right leg
-                # TODO this is wrong since the airgap is not centered on the y axis
+                # TODO this is wrong since the air gap is not centered on the y axis
                 width = core_width - self.core.r_inner
             else:
-                raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
+                raise Exception(f"Invalid leg position tag {leg_position} used for an air gap.")
 
             air_gap_volume += np.pi * width**2 * height
 
@@ -580,7 +580,7 @@ class MagneticComponent:
         for index, winding in enumerate(self.windings):
             cross_section_area = 0
             if winding.conductor_type == ConductorType.RoundLitz or winding.conductor_type == ConductorType.RoundSolid:
-                # For round wire its always the same
+                # For round wire it is always the same
                 cross_section_area = np.pi * winding.conductor_radius ** 2
             elif winding.conductor_type == ConductorType.RectangularSolid:
                 # Since the foil sizes also depends on the winding scheme, conductor_arrangement and wrap_para_type
@@ -649,6 +649,14 @@ class MagneticComponent:
         :param imposed_red_f:
         :type imposed_red_f:
         """
+
+        # negative currents are not allowed and lead to wrong simulation results. Check for this.
+        # this message appears after meshing but before simulation
+        for amplitude in amplitude_list:
+            if amplitude < 0:
+                raise ValueError(
+                    "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
+
         ff.femmt_print(f"\n---\n"
               f"Excitation: \n"
               f"Frequency: {frequency}\n"
@@ -770,20 +778,31 @@ class MagneticComponent:
         self.write_electro_magnetic_post_pro()
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          plot_interpolation: bool = False, show_results = True):
+                          plot_interpolation: bool = False, show_results: bool = True):
         """
-
         Start a _single_ electromagnetic ONELAB simulation.
-        :param plot_interpolation:
-        :param NL_core:
-        :param freq: frequency to simulate
+
+        :param plot_interpolation: Plot material database interpolation of given material data. E.g. plot the interpolated material data for 115kHz if only 110kHz and 200kHz data is given in datasheet
+        :type plot_interpolation: bool
+        :param freq: Frequency in Hz
         :type freq: float
-        :param current: current to simulate
-        :param skin_mesh_factor:
-        :type skin_mesh_factor: float
-        :param phi_deg: phase angle in degree
+        :param current: Current amplitude as a list of currents, e.g. [current_amplitude_1, current_amplitude_2]
+        :type current: List[float]
+        :param phi_deg: Phase angle of currents in degree as a list of angles, e.g. [phase_angle_deg_1, phase_angle_deg_2]
         :type phi_deg: List[float]
+        :param show_results: True to show results in ONELAB GUI, False to not show the results
+        :type show_results: bool
+
         """
+        # negative currents are not allowed and lead to wrong simulation results. Check for this.
+        # this message appears before meshing and before simulation
+        # there is another ValueError rising inside excitation()-method for safety (but after meshing).
+        for current_value in current:
+            if current_value < 0:
+                raise ValueError(
+                    "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
+
+
         phi_deg = phi_deg or []
 
         self.mesh.generate_electro_magnetic_mesh()
@@ -808,17 +827,17 @@ class MagneticComponent:
 
         >>> import femmt as fmt
         >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
-        >>> amplitue_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+        >>> amplitude_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
         >>> phase_list_list = [[0], [10], [20], [30], [40], [50]]
-        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitude_list_list, phi_deg_list_list=phase_list_list)
 
         :Example Code for Transformer with 2 windings:
 
         >>> import femmt as fmt
         >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
-        >>> amplitue_list_list = [[10, 2], [2, 1], [1, 0.5], [0.5, 0.25], [0.2, 0.1], [0.1, 0.05]]
+        >>> amplitude_list_list = [[10, 2], [2, 1], [1, 0.5], [0.5, 0.25], [0.2, 0.1], [0.1, 0.05]]
         >>> phase_list_list = [[0, 170], [10, 180], [20, 190], [30, 200], [40, 210], [50, 220]]
-        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitude_list_list, phi_deg_list_list=phase_list_list)
 
         :param frequency_list: Frequency in a list
         :type frequency_list: List
@@ -843,6 +862,20 @@ class MagneticComponent:
         :return: Results in a dictionary
         :rtype: Dict
         """
+        # negative currents are not allowed and lead to wrong simulation results. Check for this.
+        # this message appears before meshing and before simulation
+        # there is another ValueError rising inside excitation()-method for safety (but after meshing).
+        for current_list in current_list_list:
+            for current in current_list:
+                if current < 0:
+                    raise ValueError(
+                        "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
+
+
+
+
+
+
         # frequencies = frequencies or []
         # currents = currents or []
         # phi = phi or []
@@ -852,7 +885,7 @@ class MagneticComponent:
             self.plot_fields = False
 
         # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
-        # In case of litz wire, only the lowest frequency is meshed (frequency indepent due to litz-approximation)
+        # In case of litz wire, only the lowest frequency is meshed (frequency independent due to litz-approximation)
         if excitation_meshing_type is None:
             for winding in self.windings:
                 if winding.conductor_type == ConductorType.RoundSolid:
@@ -1029,7 +1062,7 @@ class MagneticComponent:
             L_h = self.M * n
             ff.femmt_print(f"\n"
                   f"T-ECD (primary side transformed):\n"
-                  f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+                  f"[under-determined System: 'Transformation Ratio' := 'Turns Ratio']\n"
                   f"    - Transformation Ratio: n\n"
                   f"    - Primary Side Stray Inductance: L_s1\n"
                   f"    - Secondary Side Stray Inductance: L_s2\n"
@@ -1047,7 +1080,7 @@ class MagneticComponent:
 
             ff.femmt_print(f"\n"
                   f"T-ECD (primary side concentrated):\n"
-                  f"[Underdetermined System: n := M / L_22  -->  L_s2 = L_22 - M / n = 0]\n"
+                  f"[under-determined System: n := M / L_22  -->  L_s2 = L_22 - M / n = 0]\n"
                   f"    - Transformation Ratio: n\n"
                   f"    - (Primary) Stray Inductance: L_s1\n"
                   f"    - Primary Side Main Inductance: L_h\n"
@@ -1335,7 +1368,7 @@ class MagneticComponent:
                     # single_simulation -> get current from instance variable
                     complex_current_phasor = self.current[winding]
 
-                # Store complex value as list in json (because json isnt natively capable of complex values)
+                # Store complex value as list in json (because json is not natively capable of complex values)
                 winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
 
 
@@ -1417,7 +1450,7 @@ class MagneticComponent:
 
         # Core
         log_dict["total_losses"]["eddy_core"] = sum(log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
-        # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frquency is at [0]
+        # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frequency is at [0]
         # => just an approximation for excitation sweeps!
         log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
 
@@ -2036,7 +2069,7 @@ class MagneticComponent:
         log["Hysteresis Losses"] = femm.mo_blockintegral(3)
         femm.mo_clearblock()
 
-        # Primary Winding Ciruit Properties
+        # Primary Winding circuit Properties
         circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
         log["Primary Current"] = circuit_properties_primary[0]
         log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
@@ -2052,7 +2085,7 @@ class MagneticComponent:
         femm.mo_clearblock()
 
         if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
-            # secondary Winding Ciruit Properties
+            # secondary winding circuit properties
             circuit_properties_secondary = femm.mo_getcircuitproperties('Secondary')
             log["Secondary Current"] = circuit_properties_secondary[0]
             log["Secondary Voltage"] = [circuit_properties_secondary[1].real, circuit_properties_secondary[1].imag]
@@ -2062,7 +2095,7 @@ class MagneticComponent:
             log["Secondary Mean Power"] = [0.5 * circuit_properties_secondary[1].real * circuit_properties_secondary[0],
                                         0.5 * circuit_properties_secondary[1].imag * circuit_properties_secondary[0]]
 
-            # secondary Winding Losses (with group n=2) by field intergation
+            # secondary Winding Losses (with group n=2) by field integration
             femm.mo_groupselectblock(3)
             log["Secondary Winding Losses"] = femm.mo_blockintegral(6).real
             femm.mo_clearblock()
@@ -2105,7 +2138,7 @@ class MagneticComponent:
         :type case_gap_bot: float
         """
         # Optional usage of FEMM tool by David Meeker
-        # 2D Mesh and FEM interfaces (only for windows machines)
+        # 2D Mesh and FEM interfaces (only for Windows machines)
         if os.name == 'nt':
             ff.install_pyfemm_if_missing()
             if not self.femm_is_imported:
@@ -2150,7 +2183,7 @@ class MagneticComponent:
         c_wire = 0
 
         # Case
-        k_case = thermal_conductivity_dict["case"]["top"] # Does not matter when the regions all have the same thermal coductivity.
+        k_case = thermal_conductivity_dict["case"]["top"] # Does not matter when the regions all have the same thermal conductivity.
         q_vol_case = 0
         # c_case = 0.01
         c_case = 0
@@ -2273,7 +2306,7 @@ class MagneticComponent:
             # In order for the simulation to work the air_gap must be closed:
             femm.hi_drawline(0, self.two_d_axi.p_air_gaps[0, 1], 0, self.two_d_axi.p_air_gaps[2, 1])
 
-            # Close air gap to seperate from air
+            # Close air gap to separate from air
             femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
                                 self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
         else:
@@ -2404,7 +2437,7 @@ class MagneticComponent:
 
         :param log_file_path: Path to the log file
         :type log_file_path: str
-        :param working_directory: If the working directory shall be a different than from the log file enter a new one here, defaults to None
+        :param working_directory: If the working directory shall be a different from the log file enter a new one here, defaults to None
         :type working_directory: str, optional
         :return: Magnetic component containing the model
         :rtype: MagneticComponent

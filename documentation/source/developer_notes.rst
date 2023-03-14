@@ -73,6 +73,16 @@ Currently the magnetic solver only supports primary and secondary windings, ther
 However the implemented structure is capable of working with n windings.
 
 
+General file overview
+---------------------
+
+* ``.pro``: solver files for communication between python and the solver
+* ``.pos``: field results
+* ``.dat``: integrated field results
+* ``.msh``: mesh files
+
+
+
 Pycharm code highlightning for pro-files
 --------------------------------------------
 |image_pycharm_configuration_pro_files|

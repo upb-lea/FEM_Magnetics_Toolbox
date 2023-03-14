@@ -19,25 +19,26 @@ dab_transformer_config = fmt.InputConfig(
     time_current_1_vec = np.array(i_prim),
     time_current_2_vec = np.array(i_sec),
     material_list = ["N95"],
-    core_inner_diameter_min_max_count_list = [pq4040["core_inner_diameter"], pq6560["core_inner_diameter"], 3],
-    window_w_min_max_count_list = [pq4040["window_w"], pq6560["window_w"], 3],
-    window_h_top_min_max_count_list = [5/6 * pq4040["window_h"], 5/6 * pq6560["window_h"], 3],
-    window_h_bot_min_max_count_list = [1/6 * pq4040["window_h"], 1/6 * pq6560["window_h"], 3],
+    core_inner_diameter_min_max_list= [pq4040["core_inner_diameter"], pq4040["core_inner_diameter"], 1],
+    window_w_min_max_list= [pq4040["window_w"], pq4040["window_w"], 1],
+    window_h_top_min_max_list= [5 / 6 * pq4040["window_h"], 5 / 6 * pq4040["window_h"], 1],
+    window_h_bot_min_max_list= [1 / 6 * pq4040["window_h"], 1 / 6 * pq4040["window_h"], 1],
     factor_max_flux_density = 1,
-    n_p_top_min_max_list = [20, 35],
-    n_p_bot_min_max_list = [0,12],
-    n_s_top_min_max_list = [0,9],
-    n_s_bot_min_max_list = [0,9],
-    primary_litz_wire_list= ["1.5x105x0.1","1.4x200x0.071"],
-    secondary_litz_wire_list= ["1.5x105x0.1","1.4x200x0.071"]
+    n_p_top_min_max_list = [23, 24],
+    n_p_bot_min_max_list = [3,3],
+    n_s_top_min_max_list = [7,7],
+    n_s_bot_min_max_list = [5,5],
+    primary_litz_wire_list= ["1.4x200x0.071"],
+    secondary_litz_wire_list= ["1.4x200x0.071"]
 )
 
 #task = 'simulation'
-task = 'load_reluctance_and_filter'
+#task = 'load_reluctance_and_filter'
 #task = 'load_reluctance_filter_and_simulate_fem'
 #task = 'load_fem_simulations'
-
 #task = "single_fem_simulation"
+task = 'fem_without_filter'
+task = 'visualize_case_geometry'
 
 example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
 if not os.path.exists(example_results_folder):
@@ -55,11 +56,17 @@ opt = fmt.optimization.IntegratedTransformerOptimization(working_directory=worki
 if task == 'simulation':
     # reluctance model calculation
     valid_reluctance_model_designs = opt.integrated_transformer_optimization(dab_transformer_config)
+
+    print(valid_reluctance_model_designs)
     opt.save_reluctance_model_result_list(config_file=dab_transformer_config, result_file_list=valid_reluctance_model_designs)
+
+elif task == 'fem_without_filter':
+    valid_reluctance_model_designs = opt.load_reluctance_model_result_list()
+    opt.fem_simulation(config_dto=dab_transformer_config, simulation_dto_list=valid_reluctance_model_designs)
 
 elif task == 'load_reluctance_and_filter':
     valid_reluctance_model_designs = opt.load_reluctance_model_result_list()
-    #opt.plot_reluctance_model_result_list(valid_reluctance_model_designs)
+    opt.plot_reluctance_model_result_list(valid_reluctance_model_designs)
     print(f"{len(valid_reluctance_model_designs) = }")
 
     filtered_air_gaps_dto_list = opt.filter_min_air_gap_length(valid_reluctance_model_designs)
@@ -91,10 +98,22 @@ elif task == 'load_reluctance_filter_and_simulate_fem':
     #opt.plot_filtered_pareto_result_list(filter_volume_list, filter_core_hyst_loss_list)
 
 elif task == "single_fem_simulation":
-    pareto_dto_list = opt.load_result_list(os.path.join(opt.optimization_working_directory, 'filtered_results'))
-    single_dto = [pareto_dto_list[1]]
+    pareto_dto_list = opt.load_result_list(os.path.join(opt.optimization_working_directory, 'fem_simulation_results'))
+    print(len(pareto_dto_list))
+
+    single_dto = pareto_dto_list[0]
     print(single_dto[0])
     opt.fem_simulation(config_dto=dab_transformer_config, simulation_dto_list=single_dto)
 
 elif task == 'load_fem_simulations':
     opt.plot_fem_simulation_result_list(os.path.join(opt.optimization_working_directory, 'fem_simulation_results'))
+
+elif task == 'visualize_case_geometry':
+
+    file = os.path.join(opt.integrated_transformer_fem_simulations_results_directory, "case_0.json")
+
+    geo = fmt.MagneticComponent.decode_settings_from_log(file, opt.femmt_working_directory)
+
+    geo.create_model(freq=100000, visualize_before=True, save_png=False)
+
+    #geo.single_simulation(freq=100000, current=[4.5], show_results=True)
