@@ -244,7 +244,7 @@ if component == "transformer":
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
-    geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 180])
+    geo.single_simulation(freq=250000, current=[4, 0], phi_deg=[0, 180])
 
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")

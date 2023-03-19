@@ -234,11 +234,11 @@ if component == "transformer":
     #top_right = winding_window.combine_vww(top_right, bot_right)
     # 6. create conductors and set parameters
 
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
-
     #winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    #winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    #winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     #winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     #winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
@@ -265,10 +265,10 @@ if component == "transformer":
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
-    geo.single_simulation(freq=250000, current=[4, 4, 4], phi_deg=[0, 180, 0])
+    geo.single_simulation(freq=250000, current=[4, 0, 0], phi_deg=[0, 180, 0])
 
     # Reference simulation using FEMM
-    geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
+    geo.femm_reference(freq=250000, current=[4, 0, 0], sign=[1, -1, 1], non_visualize=0)
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")
     if not os.path.exists(working_directory):
