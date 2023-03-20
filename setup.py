@@ -47,6 +47,7 @@ setup(
                       'mplcursors>=0.5.1', # TODO Is this necessary?
                       'deepdiff>=6.2.1', # comparing result dicts for pytests
                       'materialdatabase==0.1.0',
+                      'optuna',
 					  ],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,

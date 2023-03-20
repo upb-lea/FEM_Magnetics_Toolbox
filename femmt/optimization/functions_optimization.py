@@ -160,7 +160,7 @@ def is_pareto_efficient(costs, return_mask=True):
 
 
 
-def pareto_front_from_dtos(dto_list: List[ResultFile]):
+def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]):
     x_vec = np.array([])
     y_vec = np.array([])
     tuple_vec = []

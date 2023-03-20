@@ -1,16 +1,13 @@
 # python libraries
-import dataclasses
 from dataclasses import dataclass
-
-# femmt libraries
-import femmt.functions as ff
+from typing import List
 
 # 3rd party libraries
 import numpy as np
 
 
 @dataclass
-class InputConfig:
+class ItoSingleInputConfig:
     l_s_target: float
     l_h_target: float
     n_target: float
@@ -29,6 +26,7 @@ class InputConfig:
     primary_litz_wire_list: list
     secondary_litz_wire_list: list
     temperature: float
+    working_directory: str
 
 @dataclass
 class MaterialCurve:
@@ -39,25 +37,20 @@ class MaterialCurve:
     material_mu_r_real_vec: np.ndarray
     saturation_flux_density: float
 
+
 @dataclass
-class StudyParameterDTO:
-    t1_n_p_top: np.ndarray
-    t1_n_p_bot: np.ndarray
-    t1_n_s_top: np.ndarray
-    t1_n_s_bot: np.ndarray
-    t1_window_h_top: np.ndarray
-    t1_window_h_bot: np.ndarray
-    t1_window_w: np.ndarray
-    t1_core_material: list
-    t1_core_inner_diameter: np.ndarray
-    t1_primary_litz_wire_list: list
-    t1_secondary_litz_wire_list: list
-    time_current_1_vec: np.ndarray
-    time_current_2_vec: np.ndarray
-    l_s_target_value: float
-    l_h_target_value: float
-    n_target_value: float
-    factor_max_flux_density: float
+class ItoTargetAndFixedParameters:
+    i_rms_1: float
+    i_rms_2: float
+    material_dto_curve_list: List[MaterialCurve]
+    time_extracted_vec: List
+    current_extracted_1_vec: List
+    current_extracted_2_vec: List
+    fundamental_frequency: float
+    target_inductance_matrix: np.ndarray
+    fem_working_directory: str
+    fem_simulation_results_directory: str
+    reluctance_model_results_directory: str
 
 @dataclass
 class SweepTensor:
@@ -79,7 +72,7 @@ class SweepTensor:
     n_target_value: float
     factor_max_flux_density: float
 @dataclass
-class ResultFile:
+class ItoSingleResultFile:
     case: int
     # geometry parameters
     air_gap_top: float

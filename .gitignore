@@ -6,13 +6,15 @@
 *.pyc
 *.pdf
 *.msh
-*.dat
 *.json
 *.anh
 *.FEH
 *.pre
 *.pos
 *.res
+*.geo_unrolled
+*.db
+*.sqlite3
 
 # Folders
 femmt/femm
@@ -42,9 +44,6 @@ femmt/electro_magnetic/Parameter.pro
 femmt/electro_magnetic/postquantities.pro
 femmt/electro_magnetic/Strands_Coefficients/PreParameter.pro
 femmt/electro_magnetic/core_materials_temp.pro
-*.geo_unrolled
-*.msh
-*.db
 
 # FEMMT: GUI generated files
 femmt/md_winding_1.png

@@ -4,7 +4,7 @@ import os
 import json
 import itertools
 import shutil
-from dataclasses import dataclass
+import dataclasses
 from typing import List, Dict
 import time
 
@@ -37,7 +37,7 @@ class MyJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 def result_file_dict_to_dto(result_file_dict):
-    result_file_dto = ResultFile(
+    result_file_dto = ItoSingleResultFile(
         case = result_file_dict["case"],
         air_gap_top = result_file_dict["air_gap_top"],
         air_gap_bot= result_file_dict["air_gap_bot"],
@@ -103,7 +103,7 @@ class IntegratedTransformerOptimization:
         ff.create_folders(self.optimization_working_directory, self.integrated_transformer_reluctance_model_results_directory, self.integrated_transformer_fem_simulations_results_directory, self.femmt_working_directory)
 
     @staticmethod
-    def calculate_sweep_tensors(input_parameters_dto: InputConfig):
+    def calculate_sweep_tensors(input_parameters_dto: ItoSingleInputConfig):
 
         sweep_tensor = SweepTensor(
             # tensors: windings
@@ -151,7 +151,7 @@ class IntegratedTransformerOptimization:
 
 
 
-    def save_reluctance_model_result_list(self, config_file: InputConfig, result_file_list: List[ResultFile]):
+    def save_reluctance_model_result_list(self, config_file: ItoSingleInputConfig, result_file_list: List[ItoSingleResultFile]):
         # save optimization input parameters
         config_dict = dataclasses.asdict(config_file)
 
@@ -247,7 +247,7 @@ class IntegratedTransformerOptimization:
         return valid_design_list
 
 
-    def load_reluctance_model_result_list(self) -> List[ResultFile]:
+    def load_reluctance_model_result_list(self) -> List[ItoSingleResultFile]:
         ff.femmt_print(f"Read results from {self.integrated_transformer_reluctance_model_results_directory}")
         return self.load_reluctance_model_list(self.integrated_transformer_reluctance_model_results_directory)
 
@@ -256,7 +256,7 @@ class IntegratedTransformerOptimization:
 
 
     @staticmethod
-    def plot_reluctance_model_result_list(valid_design_list: List[ResultFile]):
+    def plot_reluctance_model_result_list(valid_design_list: List[ItoSingleResultFile]):
 
         volume_list = []
         core_hyst_loss_list = []
@@ -328,7 +328,7 @@ class IntegratedTransformerOptimization:
 
 
     @staticmethod
-    def filter_reluctance_model_list(valid_design_list: List[ResultFile], factor_min_dc_losses: float = 1.2) -> List[ResultFile]:
+    def filter_reluctance_model_list(valid_design_list: List[ItoSingleResultFile], factor_min_dc_losses: float = 1.2) -> List[ItoSingleResultFile]:
         # figure out pareto front
         #pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
@@ -359,7 +359,7 @@ class IntegratedTransformerOptimization:
         return filtered_design_dto_list
 
     @staticmethod
-    def filter_max_air_gap_length(dto_list_to_filter: List[ResultFile], max_air_gap_length = 1e-6) -> List[ResultFile]:
+    def filter_max_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], max_air_gap_length = 1e-6) -> List[ItoSingleResultFile]:
         filtered_dtos = []
         for dto in dto_list_to_filter:
             if dto.air_gap_middle < max_air_gap_length and dto.air_gap_top < max_air_gap_length and dto.air_gap_bot < max_air_gap_length:
@@ -367,7 +367,7 @@ class IntegratedTransformerOptimization:
         return filtered_dtos
 
     @staticmethod
-    def filter_min_air_gap_length(dto_list_to_filter: List[ResultFile], min_air_gap_length = 1e-6) -> List[ResultFile]:
+    def filter_min_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], min_air_gap_length = 1e-6) -> List[ItoSingleResultFile]:
         filtered_dtos = []
         for dto in dto_list_to_filter:
             if dto.air_gap_middle > min_air_gap_length and dto.air_gap_top > min_air_gap_length and dto.air_gap_bot > min_air_gap_length:
@@ -375,7 +375,7 @@ class IntegratedTransformerOptimization:
         return filtered_dtos
 
 
-    def integrated_transformer_optimization(self, config_file: InputConfig):
+    def integrated_transformer_optimization(self, config_file: ItoSingleInputConfig):
         case_number = 0
 
         # 0. Empty folder
@@ -520,13 +520,18 @@ class IntegratedTransformerOptimization:
                         r_air_gap_middle_target = r_middle_target - r_core_middle_cylinder_radial
 
 
-                        minimum_air_gap_length = 0
+                        minimum_air_gap_length = 1e-6
                         maximum_air_gap_length = 1e-3
                         minimum_sort_out_air_gap_length = 100e-6
 
-                        l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_top, r_air_gap_top_target))
-                        l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_bot / 2, window_h_bot / 2, r_air_gap_bot_target))
-                        l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, core_inner_diameter / 4, window_w, r_air_gap_middle_target))
+                        try:
+                            l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_top, r_air_gap_top_target))
+                            l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, window_h_bot / 2, window_h_bot / 2, r_air_gap_bot_target))
+                            l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length, maximum_air_gap_length, args=(core_inner_diameter, core_inner_diameter / 4, window_w, r_air_gap_middle_target))
+                        except:
+                            l_top_air_gap = 0
+                            l_bot_air_gap = 0
+                            l_middle_air_gap = 0
 
 
                         if l_top_air_gap > minimum_sort_out_air_gap_length and l_bot_air_gap > minimum_sort_out_air_gap_length and l_middle_air_gap > minimum_sort_out_air_gap_length:
@@ -581,7 +586,7 @@ class IntegratedTransformerOptimization:
 
 
 
-                                    valid_design_dict = ResultFile(
+                                    valid_design_dict = ItoSingleResultFile(
                                         case= case_number,
                                         air_gap_top= l_top_air_gap,
                                         air_gap_bot= l_bot_air_gap,
@@ -614,15 +619,15 @@ class IntegratedTransformerOptimization:
 
 
 
-                            # Add dict to list of valid designs
-                            valid_design_list.append(valid_design_dict)
-                            case_number += 1
+                                    # Add dict to list of valid designs
+                                    valid_design_list.append(valid_design_dict)
+                                    case_number += 1
 
         print(f"Number of valid designs: {len(valid_design_list)}")
         return valid_design_list
 
 
-    def fem_simulation(self, config_dto: InputConfig, simulation_dto_list: List[ResultFile], visualize: bool = False):
+    def fem_simulation(self, config_dto: ItoSingleInputConfig, simulation_dto_list: List[ItoSingleResultFile], visualize: bool = False):
 
         time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(config_dto.time_current_1_vec)
         time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(config_dto.time_current_2_vec)
