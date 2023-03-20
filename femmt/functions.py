@@ -201,7 +201,7 @@ def core_database() -> Dict:
     core_dict["PQ 65/60"] = {
         "core_h": 60e-3,
         "core_inner_diameter": 26e-3,
-        "window_h": 21e-3,
+        "window_h": 42e-3,
         "window_w": (65-26)/2 * 1e-3,
         "core_dimension_x": 65.0e-3,
         "core_dimension_y": 45.0e-3,
