@@ -19,3 +19,5 @@ def define_center_tapped_insulation(primary_to_primary, secondary_to_secondary, 
                                  tertiary_to_primary=primary_to_secondary,
                                  tertiary_to_secondary=secondary_to_secondary,
                                  tertiary_to_tertiary=secondary_to_secondary)
+
+

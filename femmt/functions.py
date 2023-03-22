@@ -937,10 +937,6 @@ def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
 
 
 
-
-
-
-
 def create_physical_group(dim, entities, name):
     tag = gmsh.model.addPhysicalGroup(dim, entities)
     gmsh.model.setPhysicalName(dim, tag, name)

@@ -377,8 +377,8 @@ class MagneticComponent:
                 if winding not in windings:
                     windings.append(winding)
 
-        print(f"{winding_window.virtual_winding_windows = }")
-        print(f"{windings = }")
+        # print(f"{winding_window.virtual_winding_windows = }")
+        # print(f"{windings = }")
         self.windings = sorted(windings, key = lambda x: x.winding_number)
 
         # Set excitation parameter lists
@@ -609,6 +609,8 @@ class MagneticComponent:
                             elif winding_type == WindingType.Interleaved:
                                 # Since interleaved winding type currently only supports round conductors this can be left empty.
                                 pass
+                            elif winding_type == WindingType.CenterTappedGroup:
+                                cross_section_area = self.core.window_w * winding.thickness
                             else:
                                 raise Exception(f"Unknown winding type {winding_type}")
             else:
@@ -796,7 +798,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        # self.calculate_and_write_log()  # TODO: reuse center tapped
+        self.calculate_and_write_log()  # TODO: reuse center tapped
         if show_results:
             self.visualize()
 
@@ -1469,7 +1471,6 @@ class MagneticComponent:
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
-
         # ====== save data as JSON ======
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
@@ -2109,7 +2110,6 @@ class MagneticComponent:
 
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
-
 
     @staticmethod
     def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> List[float]:

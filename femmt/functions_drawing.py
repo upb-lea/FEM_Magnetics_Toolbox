@@ -171,8 +171,8 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     # here: zero index means bot_row
     for i, bot_row in enumerate(stack_order[0:-1]):
         top_row = stack_order[i + 1]
-        print(f"{bot_row = }")
-        print(f"{top_row = }\n")
+        # print(f"{bot_row = }")
+        # print(f"{top_row = }\n")
         insulation_positions.append(i + 1 + number_of_added_insulations)
         number_of_added_insulations += 1
 

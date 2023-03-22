@@ -513,7 +513,7 @@ class AirGaps:
                 self.number += 1
 
             # if position_value
-            print("Stacked")
+            ff.femmt_print("Stacked")
 
         else:
             raise Exception(f"Method {self.method} is not supported.")
@@ -733,15 +733,17 @@ class VirtualWindingWindow:
                                   isolation_secondary_to_secondary: float,
                                   isolation_primary_to_secondary: float):
         # TODO: centertapped is following line allowed to set winding insulation this way?
-        self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
-                                                                  secondary_to_secondary=2e-4,
-                                                                  primary_to_secondary=5e-4)
+        # self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
+        #                                                           secondary_to_secondary=2e-4,
+        #                                                           primary_to_secondary=5e-4)
+        self.winding_insulation = [isolation_primary_to_primary, isolation_secondary_to_secondary, isolation_primary_to_secondary]
         self.winding_type = WindingType.CenterTappedGroup
         self.winding_scheme = None  # TODO: centertapped maybe add vertical or sth. like this
         self.windings = [conductor1, conductor2, conductor3]
         self.turns = [turns1, turns2, turns3]
         # TODO: centertapped is also a deepcopy needed somewhere: tertiary...?
         self.winding_is_set = True
+        self.wrap_para = None
 
 
     def __repr__(self):

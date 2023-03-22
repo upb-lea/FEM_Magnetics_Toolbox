@@ -287,7 +287,6 @@ class TwoDaxiSymmetric:
         # Draw every conductor type based on the virtual_winding_window bounds
 
         for virtual_winding_window in self.virtual_winding_windows:
-            print(virtual_winding_window)  # TODO: remove print
             # Get bounds from virtual winding window
             bot_bound = virtual_winding_window.bot_bound
             top_bound = virtual_winding_window.top_bound
@@ -753,11 +752,8 @@ class TwoDaxiSymmetric:
             elif virtual_winding_window.winding_type == WindingType.Single:
                 # One winding in the virtual winding window
                 winding = virtual_winding_window.windings[0]
-                print(winding)  # TODO: remove print
                 turns = virtual_winding_window.turns[0]
-                print(turns)  # TODO: remove print
                 conductor_type = winding.conductor_type
-                print(conductor_type)  # TODO: remove print
                 winding_scheme = virtual_winding_window.winding_scheme
 
                 num = winding.winding_number
