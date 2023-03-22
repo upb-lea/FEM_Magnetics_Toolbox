@@ -1,6 +1,7 @@
 # python libraries
 import shutil
 import os
+from typing import List, Tuple
 
 # 3rd party libraries
 
@@ -9,6 +10,31 @@ from femmt.optimization.integrated_transformer_dtos import *
 import femmt.functions_reluctance as fr
 import femmt.functions as ff
 import femmt as fmt
+
+def dto_list_to_vec(dto_list: List[ItoSingleResultFile]) -> Tuple:
+    """
+    Brings a list of dto-objects to two lists
+
+    Use case is to bring the pareto-front into two vectors for further calculations
+
+    :param dto_list: list of ItoSingleResultFile-DTOs
+    :type dto_list: List[ItoSingleResultFile]
+
+    """
+
+    for dto in dto_list:
+        x_pareto_vec = dto.core_2daxi_total_volume
+        y_pareto_vec = dto.total_loss
+
+    vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
+
+    # sorting 2d array by 1st row
+    # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
+    sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
+    x_pareto_vec = sorted_vector[0]
+    y_pareto_vec = sorted_vector[1]
+
+    return x_pareto_vec, y_pareto_vec
 
 def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingleInputConfig,
                                                             simulation_dto_list: List[ItoSingleResultFile],

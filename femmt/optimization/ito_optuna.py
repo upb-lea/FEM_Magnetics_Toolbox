@@ -103,6 +103,11 @@ class ItoOptuna:
         primary_litz_wire = trial.suggest_categorical("primary_litz_wire", config.primary_litz_wire_list)
         secondary_litz_wire = trial.suggest_categorical("secondary_litz_wire", config.secondary_litz_wire_list)
 
+        thousand_simulations = trial.number / 1000
+
+        if thousand_simulations.is_integer():
+            print(f"simulation count: {trial.number}")
+
         litz_database = ff.litz_database()
 
 
@@ -170,7 +175,7 @@ class ItoOptuna:
 
                     minimum_air_gap_length = 0
                     maximum_air_gap_length = 10e-3
-                    minimum_sort_out_air_gap_length = 0
+                    minimum_sort_out_air_gap_length = 1e-15
                     try:
                         l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct, minimum_air_gap_length,
                                                         maximum_air_gap_length,
@@ -272,8 +277,10 @@ class ItoOptuna:
                             trial.set_user_attr("primary_litz_wire_loss", primary_dc_loss)
                             trial.set_user_attr("secondary_litz_wire_loss", secondary_dc_loss)
 
+                            print(f"succesfully calculated trial {trial.number}")
+
                             valid_design_dict = ItoSingleResultFile(
-                                case=0,
+                                case=trial.number,
                                 air_gap_top=l_top_air_gap,
                                 air_gap_bot=l_bot_air_gap,
                                 air_gap_middle=l_middle_air_gap,
@@ -324,30 +331,33 @@ class ItoOptuna:
         func = lambda trial: self.objective(trial, config, target_and_fixed_parameters)
 
         if storage == 'sqlite':
-            storage= f"sqlite:///db_study_{study_name}.sqlite3"
+            storage= f"sqlite:///study_{study_name}.sqlite3"
         elif storage == 'mysql':
             storage= "mysql://monty@localhost/mydb",
 
 
         # Pass func to Optuna studies
-        study = optuna.create_study(directions=["minimize", "minimize"],
+        study_in_memory = optuna.create_study(directions=["minimize", "minimize"],
                                     sampler=optuna.samplers.NSGAIISampler(),
-                                    storage=storage,
-                                    study_name=study_name,
                                     )
 
         # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
         # .INFO: all messages (default)
         # .WARNING: fails and warnings
         # .ERROR: only errors
-        optuna.logging.set_verbosity(optuna.logging.WARNING)
+        optuna.logging.set_verbosity(optuna.logging.ERROR)
 
 
-        print(f"Sampler is {study.sampler.__class__.__name__}")
-        study.optimize(func, n_trials=number_trials)
+        print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+        study_in_memory.optimize(func, n_trials=number_trials, n_jobs=-1)
 
-        fig = optuna.visualization.plot_pareto_front(study, target_names=["volume", "losses"])
+        # in-memory calculation is shown before saving the data to database
+        fig = optuna.visualization.plot_pareto_front(study_in_memory, target_names=["volume", "losses"])
         fig.show()
+
+        study_in_storage = optuna.create_study(directions=["minimize", "minimize"], study_name=study_name,
+                                           storage=storage)
+        study_in_storage.add_trials(study_in_memory.trials)
 
     def proceed_study(self, study_name: str, config: ItoSingleInputConfig, number_trials: int):
         target_and_fixed_parameters = self.calculate_fix_parameters(config)
@@ -355,12 +365,12 @@ class ItoOptuna:
         # Wrap the objective inside a lambda and call objective inside it
         func = lambda trial: self.objective(trial, config, target_and_fixed_parameters)
 
-        study = optuna.create_study(study_name=study_name, storage=f"sqlite:///db_study_{study_name}.sqlite3", load_if_exists=True)
+        study = optuna.create_study(study_name=study_name, storage=f"sqlite:///study_{study_name}.sqlite3", load_if_exists=True)
         study.optimize(func, n_trials=number_trials)
 
     @staticmethod
     def show_study_results(study_name):
-        study = optuna.create_study(study_name=study_name, storage=f"sqlite:///db_study_{study_name}.sqlite3",
+        study = optuna.create_study(study_name=study_name, storage=f"sqlite:///study_{study_name}.sqlite3",
                                     load_if_exists=True)
 
         fig = optuna.visualization.plot_pareto_front(study, target_names=["volume", "losses"])
@@ -368,7 +378,7 @@ class ItoOptuna:
 
     @staticmethod
     def load_study_best_trials(study_name):
-        study = optuna.create_study(study_name=study_name, storage=f"sqlite:///db_study_{study_name}.sqlite3",
+        study = optuna.create_study(study_name=study_name, storage=f"sqlite:///study_{study_name}.sqlite3",
                                     load_if_exists=True)
 
         print(f"{len(study.trials) = }")
@@ -376,6 +386,34 @@ class ItoOptuna:
         dto_list = [op.OptunaFemmtParser.parse(frozen_object) for frozen_object in study.best_trials]
 
         return dto_list
+
+    @staticmethod
+    def load_study_pareto_area(study_name, loss_offset) -> List[ItoSingleResultFile]:
+        """
+        Load an optuna study and return the pareto front including an offset in losses for further calculations (e.g. FEM simulations)
+
+        :param study_name: name of study to load
+        :type study_name: str
+        :param loss_offset: loss-offset to be added to the pareto-front losses
+        :type loss_offset: float
+        """
+        study = optuna.create_study(study_name=study_name, storage=f"sqlite:///study_{study_name}.sqlite3", load_if_exists=True)
+        full_dto_list = [op.OptunaFemmtParser.parse(frozen_object) for frozen_object in study.trials]
+
+        pareto_dto_list = [op.OptunaFemmtParser.parse(frozen_object) for frozen_object in study.best_trials]
+
+        x_pareto_vec, y_pareto_vec = itof.dto_list_to_vec(pareto_dto_list)
+
+        filtered_design_dto_list = []
+        for dto in full_dto_list:
+            ref_loss = np.interp(dto.core_2daxi_total_volume, x_pareto_vec, y_pareto_vec) + loss_offset
+            if dto.total_loss < ref_loss:
+                filtered_design_dto_list.append(dto)
+
+        return filtered_design_dto_list
+
+
+
 
     @classmethod
     def simulate_fem(cls, config_dto: ItoSingleInputConfig,
