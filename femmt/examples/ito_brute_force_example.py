@@ -19,29 +19,29 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
     time_current_1_vec = np.array(i_1),
     time_current_2_vec = np.array(i_2),
     material_list = ["N95"],
-    core_inner_diameter_min_max_list= [pq4040["core_inner_diameter"], pq4040["core_inner_diameter"], 1],
-    window_w_min_max_list= [pq4040["window_w"], pq4040["window_w"], 1],
-    window_h_top_min_max_list= [5 / 6 * pq4040["window_h"], 5 / 6 * pq4040["window_h"], 1],
-    window_h_bot_min_max_list= [1 / 6 * pq4040["window_h"], 1 / 6 * pq4040["window_h"], 1],
+    core_inner_diameter_min_max_list= [pq3230["core_inner_diameter"], pq6560["core_inner_diameter"], 3],
+    window_w_min_max_list= [pq3230["window_w"], pq6560["window_w"], 3],
+    window_h_top_min_max_list= [5 / 6 * pq3230["window_h"], 5 / 6 * pq6560["window_h"], 3],
+    window_h_bot_min_max_list= [1 / 6 * pq3230["window_h"], 1 / 6 * pq6560["window_h"], 3],
     factor_max_flux_density = 1,
-    n_p_top_min_max_list = [2, 50],
-    n_p_bot_min_max_list = [1,20],
-    n_s_top_min_max_list = [7,30],
-    n_s_bot_min_max_list = [5,30],
-    primary_litz_wire_list= ["1.4x200x0.071"],
-    secondary_litz_wire_list= ["1.4x200x0.071"],
+    n_p_top_min_max_list = [15,30],
+    n_p_bot_min_max_list = [0,8],
+    n_s_top_min_max_list = [0,7],
+    n_s_bot_min_max_list = [0,7],
+    primary_litz_wire_list= ["1.4x200x0.071", "1.1x60x0.1", "1.35x200x0.071", "1.8x512x0.05"],
+    secondary_litz_wire_list= ["1.4x200x0.071", "1.35x200x0.071"],
     temperature=100,
     working_directory=''
 )
 
 #task = 'simulation_reluctance'
-#task = 'load_reluctance_and_filter'
+task = 'load_reluctance_and_filter'
 #task = 'load_reluctance_filter_and_simulate_fem'
 #task = 'load_fem_simulations'
 #task = "single_fem_simulation_from_reluctance_result"
 #task = 'fem_without_filter'
 #task = 'visualize_case_geometry'
-task = 'load_reluctance_simulations'
+#task = 'load_reluctance_simulations'
 
 example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
 if not os.path.exists(example_results_folder):
