@@ -690,7 +690,8 @@ class VirtualWindingWindow:
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
         self.windings = [conductor]
-        self.turns = [turns]
+        self.turns = [0] * (conductor.winding_number + 1)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
+        self.turns.insert(conductor.winding_number, turns)
         self.winding_is_set = True
         self.wrap_para = wrap_para_type
 
@@ -744,7 +745,6 @@ class VirtualWindingWindow:
         # TODO: centertapped is also a deepcopy needed somewhere: tertiary...?
         self.winding_is_set = True
         self.wrap_para = None
-
 
     def __repr__(self):
         return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
@@ -841,6 +841,15 @@ class WindingWindow:
         self.vww_insulations = insulations.vww_insulation
         self.insulations = insulations
 
+    def to_dict(self):
+        return {
+            "max_bot_bound": self.max_bot_bound,
+            "max_top_bound": self.max_top_bound,
+            "max_left_bound": self.max_left_bound,
+            "max_right_bound": self.max_right_bound,
+            "vww_insulations": self.vww_insulations if self.vww_insulations is not None else None,
+            "virtual_winding_windows": [virtual_winding_window.to_dict() for virtual_winding_window in self.virtual_winding_windows],
+        }
 
     def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5,
                      vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
@@ -883,13 +892,13 @@ class WindingWindow:
             horizontal_split = min_pos + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             self.vww_insulations = distance
-        elif self.core.core_type == CoreType.Stacked:
-            max_pos = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4  # TODO: could also be done arbitrarily
-            min_pos = self.core.window_h_bot / 2
-            distance = max_pos - min_pos
-            horizontal_split = min_pos + distance / 2
-            vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
-            self.vww_insulations = distance + 2 * min(self.insulations.core_cond)  # TODO: enhance the insulations situation!!!
+        # elif self.core.core_type == CoreType.Stacked:
+        #     max_pos = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4  # TODO: could also be done arbitrarily
+        #     min_pos = self.core.window_h_bot / 2
+        #     distance = max_pos - min_pos
+        #     horizontal_split = min_pos + distance / 2
+        #     vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
+        #     self.vww_insulations = distance + 2 * min(self.insulations.core_cond)  # TODO: enhance the insulations situation!!!
         else:
             horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor

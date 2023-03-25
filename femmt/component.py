@@ -89,8 +89,8 @@ class MagneticComponent:
         self.core = None                        # Contains all informations about the cores
         self.air_gaps = None                    # Contains every air gap
         self.windings = None                    # List of the different winding objects which the following structure: windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
-        self.insulation = None                   # Contains information about the needed insulations
-        self.virtual_winding_windows = None     # Contains a list of every virtual_winding_window which was created
+        self.insulation = None                  # Contains information about the needed insulations
+        self.winding_windows = None             # Contains a list of every winding_window which was created containing a list of virtual_winding_windows
         self.stray_path = None                  # Contains information about the stray_path (only for integrated transformers)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -303,7 +303,7 @@ class MagneticComponent:
         self.mesh_data.update_data(frequency, skin_mesh_factor)
 
         # Create model
-        self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.virtual_winding_windows, self.stray_path,
+        self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.winding_windows, self.stray_path,
                                             self.insulation, self.component_type, len(self.windings))
         self.two_d_axi.draw_model()
 
@@ -358,24 +358,23 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_winding_window(self, winding_window: WindingWindow):
-        """Adds the virtual winding windows to the model. Creates the windings list, which contains the conductors
+    def set_winding_windows(self, winding_windows: list[WindingWindow]):
+        """Adds the winding windows to the model. Creates the windings list, which contains the conductors
         from the virtual winding windows but sorted by the winding_number (ascending).
         Sets empty lists for excitation parameters
 
         :param winding_window: WindingWindow object
         :type winding_window: WindingWindow
         """
-        self.virtual_winding_windows = winding_window.virtual_winding_windows
-
+        self.winding_windows = winding_windows
         windings = []
-
-        for vww in winding_window.virtual_winding_windows:
-            if not vww.winding_is_set:
-                raise Exception("Each virtual winding window needs to have a winding")
-            for winding in vww.windings:
-                if winding not in windings:
-                    windings.append(winding)
+        for ww in winding_windows:
+            for vww in ww.virtual_winding_windows:
+                if not vww.winding_is_set:
+                    raise Exception("Each virtual winding window needs to have a winding")
+                for winding in vww.windings:
+                    if winding not in windings:
+                        windings.append(winding)
 
         # print(f"{winding_window.virtual_winding_windows = }")
         # print(f"{windings = }")
@@ -429,8 +428,8 @@ class MagneticComponent:
             ff.femmt_print("No air gaps are added")
         if self.insulation is None:
             raise Exception("An insulation class need to be added to the magnetic component")
-        if self.virtual_winding_windows is None:
-            raise Exception("Virtual winding windows are not set properly. Please check the winding creation")
+        if self.winding_windows is None:
+            raise Exception("Winding windows are not set properly. Please check the winding creation")
 
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
         if self.valid:
@@ -586,33 +585,34 @@ class MagneticComponent:
             elif winding.conductor_type == ConductorType.RectangularSolid:
                 # Since the foil sizes also depends on the winding scheme, conductor_arrangement and wrap_para_type
                 # the volume calculation is different.
-                for vww_index, vww in enumerate(self.virtual_winding_windows):
-                    winding_type = vww.winding_type
-                    winding_scheme = vww.winding_scheme
-                    wrap_para_type = vww.wrap_para
-                    for vww_winding in vww.windings:
-                        if vww_winding.winding_number == index:
-                            if winding_type == WindingType.Single:
-                                if winding_scheme == WindingScheme.Full:
-                                    cross_section_area = self.core.window_h * self.core.window_w
-                                elif winding_scheme == WindingScheme.FoilHorizontal:
-                                    cross_section_area = self.core.window_w * winding.thickness
-                                elif winding_scheme == WindingScheme.FoilVertical:
-                                    if wrap_para_type == WrapParaType.FixedThickness:
-                                        cross_section_area = self.core.window_h * winding.thickness
-                                    elif wrap_para_type == WrapParaType.Interpolate:
-                                        cross_section_area = self.core.window_h * self.core.window_w / vww.turns[vww_index]
+                for ww in self.winding_windows:
+                    for vww_index, vww in enumerate(ww.virtual_winding_windows):
+                        winding_type = vww.winding_type
+                        winding_scheme = vww.winding_scheme
+                        wrap_para_type = vww.wrap_para
+                        for vww_winding in vww.windings:
+                            if vww_winding.winding_number == index:
+                                if winding_type == WindingType.Single:
+                                    if winding_scheme == WindingScheme.Full:
+                                        cross_section_area = self.core.window_h * self.core.window_w
+                                    elif winding_scheme == WindingScheme.FoilHorizontal:
+                                        cross_section_area = self.core.window_w * winding.thickness
+                                    elif winding_scheme == WindingScheme.FoilVertical:
+                                        if wrap_para_type == WrapParaType.FixedThickness:
+                                            cross_section_area = self.core.window_h * winding.thickness
+                                        elif wrap_para_type == WrapParaType.Interpolate:
+                                            cross_section_area = self.core.window_h * self.core.window_w / vww.turns[vww_index]
+                                        else:
+                                            raise Exception(f"Unknown wrap para type {wrap_para_type}")
                                     else:
-                                        raise Exception(f"Unknown wrap para type {wrap_para_type}")
+                                        raise Exception(f"Unknown winding scheme {winding_scheme}")
+                                elif winding_type == WindingType.Interleaved:
+                                    # Since interleaved winding type currently only supports round conductors this can be left empty.
+                                    pass
+                                elif winding_type == WindingType.CenterTappedGroup:
+                                    cross_section_area = self.core.window_w * winding.thickness
                                 else:
-                                    raise Exception(f"Unknown winding scheme {winding_scheme}")
-                            elif winding_type == WindingType.Interleaved:
-                                # Since interleaved winding type currently only supports round conductors this can be left empty.
-                                pass
-                            elif winding_type == WindingType.CenterTappedGroup:
-                                cross_section_area = self.core.window_w * winding.thickness
-                            else:
-                                raise Exception(f"Unknown winding type {winding_type}")
+                                    raise Exception(f"Unknown winding type {winding_type}")
             else:
                 raise Exception(f"Unknown conductor type {winding.conductor_type}")
 
@@ -798,7 +798,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        self.calculate_and_write_log()  # TODO: reuse center tapped
+        # self.calculate_and_write_log()  # TODO: reuse center tapped
         if show_results:
             self.visualize()
 
@@ -1170,10 +1170,11 @@ class MagneticComponent:
             # -- Geometry --
             # Number of turns per conductor
             turns = 0
-            for vww in self.virtual_winding_windows:
-                for index, winding in enumerate(vww.windings):
-                    if winding.winding_number == num:
-                        turns += vww.turns[index]
+            for ww in self.winding_windows:
+                for vww in ww.virtual_winding_windows:
+                    for index, winding in enumerate(vww.windings):
+                        if winding.winding_number == num:
+                            turns += vww.turns[index]
             if self.windings[num].parallel:
                 text_file.write(f"NbrCond{num + 1} = 1;\n")
                 text_file.write(f"AreaCell{num + 1} = {self.windings[num].a_cell*turns};\n")
@@ -1337,10 +1338,11 @@ class MagneticComponent:
 
                 # Number turns
                 turns = 0
-                for vww in self.virtual_winding_windows:
-                    for index, conductor in enumerate(vww.windings):
-                        if conductor.winding_number == winding:
-                            turns += vww.turns[index]
+                for ww in self.winding_windows:
+                    for vww in ww.virtual_winding_windows:
+                        for index, conductor in enumerate(vww.windings):
+                            if conductor.winding_number == winding:
+                                turns += vww.turns[index]
                 winding_dict["number_turns"] = turns
 
                 # Currents
@@ -1416,10 +1418,11 @@ class MagneticComponent:
         for winding in range(len(self.windings)):
             # Number of turns per conductor
             turns = 0
-            for vww in self.virtual_winding_windows:
-                for index, conductor in enumerate(vww.windings):
-                    if conductor.winding_number == winding:
-                        turns += vww.turns[index]
+            for ww in self.winding_windows:
+                for vww in ww.virtual_winding_windows:
+                    for index, conductor in enumerate(vww.windings):
+                        if conductor.winding_number == winding:
+                            turns += vww.turns[index]
 
             log_dict["total_losses"][f"winding{winding + 1}"] = {
                 "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
@@ -2423,7 +2426,7 @@ class MagneticComponent:
             "component_type": o.component_type.name,
             "working_directory": o.file_data.working_directory,
             "core": o.core.to_dict(),
-            "virtual_winding_windows": [vww.to_dict() for vww in o.virtual_winding_windows],
+            "winding_windows": [ww.to_dict() for ww in o.winding_windows],
         }
 
         if o.air_gaps is not None:

@@ -75,8 +75,9 @@ if not os.path.exists(example_results_folder):
 # component = "transformer"
 # component = "three-winding-transformer"
 # component = "integrated_transformer"
+# component = "center-tapped-transformer"
 # component = "stacked-transformer"
-component = "center-tapped-transformer"
+component = "stacked-center-tapped-transformer"
 # component = "load_from_file"
 # component = "load_from_file"
 
@@ -138,7 +139,7 @@ if component == "inductor":
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     vww.set_winding(winding, 9, None)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
     # 8. create the model
     geo.create_model(freq=inductor_frequency, visualize_before=True, save_png=False)
@@ -199,7 +200,7 @@ if component == "transformer-interleaved":
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     vww.set_interleaved_winding(winding1, 21, winding2, 7, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
@@ -254,7 +255,7 @@ if component == "transformer":
     # 7. add conductor to vww and add winding window to MagneticComponent
     left.set_winding(winding1, 10, None)
     right.set_winding(winding2, 10, None)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=200000, visualize_before=True)
@@ -330,36 +331,6 @@ if component == "three-winding-transformer":
     # Reference simulation using FEMM
     geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
 
-if component == "center-tapped-transformer":
-    working_directory = os.path.join(example_results_folder, "center-tapped-transformer")
-    if not os.path.exists(working_directory):
-        os.mkdir(working_directory)
-
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=True)
-
-    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015)
-    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
-    geo.set_core(core)
-
-    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
-    geo.set_air_gaps(air_gaps)
-
-    # set_center_tapped_windings() automatically places the condu
-    insulation, winding_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
-                                                                                     primary_turns=12, primary_radius=1.1e-3,
-                                                                                     secondary_parallel_turns=3, secondary_thickness_foil=1e-3)
-
-    geo.set_insulation(insulation)
-    geo.set_winding_window(winding_window)
-
-    geo.create_model(freq=200000, visualize_before=True)
-    geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180])
-
-    # Reference simulation using FEMM
-    # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
-
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")
     if not os.path.exists(working_directory):
@@ -407,7 +378,7 @@ if component == "integrated_transformer":
     # 7. add conductor to vww and add winding window to MagneticComponent
     top.set_interleaved_winding(winding1, 3, winding2, 6, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
     bot.set_interleaved_winding(winding1, 1, winding2, 2, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
@@ -416,6 +387,36 @@ if component == "integrated_transformer":
     # other simulation options:
     # -------------------------
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+
+if component == "center-tapped-transformer":
+    working_directory = os.path.join(example_results_folder, "center-tapped-transformer")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=True)
+
+    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015)
+    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+    geo.set_core(core)
+
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    geo.set_air_gaps(air_gaps)
+
+    # set_center_tapped_windings() automatically places the condu
+    insulation, winding_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
+                                                                                     primary_turns=12, primary_radius=1.1e-3,
+                                                                                     secondary_parallel_turns=3, secondary_thickness_foil=1e-3)
+
+    geo.set_insulation(insulation)
+    geo.set_winding_windows([winding_window])
+
+    geo.create_model(freq=200000, visualize_before=True)
+    geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180])
+
+    # Reference simulation using FEMM
+    # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
 
 if component == "stacked-transformer":
     working_directory = os.path.join(example_results_folder, "stacked-transformer")
@@ -444,11 +445,11 @@ if component == "stacked-transformer":
     insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
     geo.set_insulation(insulation)
 
-    # 5. create winding window and virtual winding windows (vww)
-    # For an integrated transformer such as "stacked-transformer" it is not necessary to set horizontal and vertical split factors
-    # since this is determined by the topology itsself
-    winding_window = fmt.WindingWindow(core, insulation)
-    top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+    winding_window_top, winding_window_bot = fmt.create_stacked_winding_windows(core, insulation)
+
+    vww_top = winding_window_top.split_window(fmt.WindingWindowSplit.NoSplit)
+    vww_bot = winding_window_bot.split_window(fmt.WindingWindowSplit.NoSplit)
+
 
     # 6. set conductor parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -460,21 +461,51 @@ if component == "stacked-transformer":
 
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    top.set_interleaved_winding(winding1, 16, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
-    bot.set_interleaved_winding(winding1, 40, winding2, 20, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
+    vww_top.set_interleaved_winding(winding1, 16, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
+    vww_bot.set_interleaved_winding(winding1, 40, winding2, 20, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
 
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window_top, winding_window_bot])
 
-
-    print(f"{geo.virtual_winding_windows = }")
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=False)
-    geo.single_simulation(freq=250000, current=[2.0, 4.0], phi_deg=[0, 180], )
+    geo.single_simulation(freq=250000, current=[2.0, 4.0], phi_deg=[0, 180])
 
     # other simulation options:
     # -------------------------
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+
+if component == "stacked-center-tapped-transformer":
+    working_directory = os.path.join(example_results_folder, "stacked-center-tapped-transformer")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=True)
+
+    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.005, window_h_bot=0.015)
+    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+    geo.set_core(core)
+
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.002, stacked_position=fmt.StackedPosition.Top)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, stacked_position=fmt.StackedPosition.Bot)
+    geo.set_air_gaps(air_gaps)
+
+    # set_center_tapped_windings() automatically places the condu
+    insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
+                                                                                                      primary_turns=14, primary_radius=1.1e-3,
+                                                                                                      secondary_parallel_turns=3, secondary_thickness_foil=1e-3,
+                                                                                                      primary_coil_turns=7)
+
+    geo.set_insulation(insulation)
+    geo.set_winding_windows([coil_window, transformer_window])
+
+    geo.create_model(freq=200000, visualize_before=True)
+    geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_results=True)
+
+    # Reference simulation using FEMM
+    # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
 
 if component == "load_from_file":
     working_directory = os.path.join(example_results_folder, "from-file")

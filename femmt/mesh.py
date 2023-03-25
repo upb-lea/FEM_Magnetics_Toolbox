@@ -681,8 +681,7 @@ class Mesh:
 
         # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
         # The other curve loops represent holes in the surface -> For each conductor as well as each insulation
-        self.plane_surface_air.append(
-            gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
+        self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
 
     def air_stacked(self, l_core_air: list, l_bound_air, curve_loop_cond: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -701,26 +700,67 @@ class Mesh:
         self.curve_loop_air.append(gmsh.model.geo.addCurveLoop(l_air_tmp))
         """
         # TODO: Split conductors in top and bottom winding window
-        primary_in_top = curve_loop_cond[0][0:self.model.virtual_winding_windows[0].turns[0]]
-        secondary_in_top = curve_loop_cond[1][0:self.model.virtual_winding_windows[0].turns[1]]
-        primary_in_bot = curve_loop_cond[0][self.model.virtual_winding_windows[0].turns[0]:self.model.virtual_winding_windows[0].turns[0]+self.model.virtual_winding_windows[1].turns[0]]
-        secondary_in_bot = curve_loop_cond[1][self.model.virtual_winding_windows[0].turns[1]:self.model.virtual_winding_windows[0].turns[1]+self.model.virtual_winding_windows[1].turns[1]]
+        n_primary_in_top, n_secondary_in_top, n_tertiary_in_top, n_primary_in_bot, n_secondary_in_bot, n_tertiary_in_bot = 0, 0, 0, 0, 0, 0
+        try:
+            n_primary_in_top = sum([vww.turns[0] for vww in self.model.winding_windows[0].virtual_winding_windows])
+        except IndexError:
+            pass
+        try:
+            n_secondary_in_top = sum([vww.turns[1] for vww in self.model.winding_windows[0].virtual_winding_windows])
+        except IndexError:
+            pass
+        try:
+            n_tertiary_in_top = sum([vww.turns[2] for vww in self.model.winding_windows[0].virtual_winding_windows])
+        except IndexError:
+            pass
+        try:
+            n_primary_in_bot = sum([vww.turns[0] for vww in self.model.winding_windows[1].virtual_winding_windows])
+        except IndexError:
+            pass
+        try:
+            n_secondary_in_bot = sum([vww.turns[1] for vww in self.model.winding_windows[1].virtual_winding_windows])
+        except IndexError:
+            pass
+        try:
+            n_tertiary_in_bot = sum([vww.turns[2] for vww in self.model.winding_windows[1].virtual_winding_windows])
+        except IndexError:
+            pass
+
+        primary_in_top = curve_loop_cond[0][0:n_primary_in_top]
+        secondary_in_top = curve_loop_cond[1][0:n_secondary_in_top]
+        tertiary_in_top = curve_loop_cond[2][0:n_tertiary_in_top]
+        primary_in_bot = curve_loop_cond[0][n_primary_in_top:n_primary_in_top+n_primary_in_bot]
+        secondary_in_bot = curve_loop_cond[1][n_secondary_in_top:n_secondary_in_top+n_secondary_in_bot]
+        tertiary_in_bot = curve_loop_cond[2][n_tertiary_in_top:n_tertiary_in_top+n_tertiary_in_bot]
+
+        # for vww in self.model.winding_windows[0].virtual_winding_windows:
+        #     primary_in_top = curve_loop_cond[0][0:vww.turns[0]]
+        #     secondary_in_top = curve_loop_cond[1][0:vww.turns[1]]
 
         # top window
         l_air_top = l_core_air[0:5] + [l_bound_air[0]]
         curve_loop_air_top = [gmsh.model.geo.addCurveLoop(l_air_top, -1, True)]
-        flatten_curve_loop_cond_top = primary_in_top + secondary_in_top
+        flatten_curve_loop_cond_top = primary_in_top + secondary_in_top + tertiary_in_top
         curve_loop_iso_core_top = []  # TODO: insulations
-        self.plane_surface_air_top.append(
-            gmsh.model.geo.addPlaneSurface(curve_loop_air_top + flatten_curve_loop_cond_top + curve_loop_iso_core_top))
+        self.plane_surface_air_top.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_top + flatten_curve_loop_cond_top + curve_loop_iso_core_top))
 
         # bot window
         l_air_bot = l_core_air[5:12] + [l_bound_air[1]]
         curve_loop_air_bot = [gmsh.model.geo.addCurveLoop(l_air_bot, -1, True)]
-        flatten_curve_loop_cond_bot = primary_in_bot + secondary_in_bot
+        flatten_curve_loop_cond_bot = primary_in_bot + secondary_in_bot + tertiary_in_bot
         curve_loop_iso_core_bot = []  # TODO: insulations
-        self.plane_surface_air_bot.append(
-            gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
+        self.plane_surface_air_bot.append(gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
+
+        # TODO: How to select the conductors which are in the top and which are in the bot vww? -> Need to be cut out of the air...
+        # l_air_top = l_core_air[0:5] + [l_bound_air[0]]
+        # curve_loop_air_top = [gmsh.model.geo.addCurveLoop(l_air_top, -1, True)]
+        # l_air_bot = l_core_air[5:12] + [l_bound_air[1]]
+        # curve_loop_air_bot = [gmsh.model.geo.addCurveLoop(l_air_bot, -1, True)]
+        #
+        # flatten_curve_loop_cond = [j for sub in curve_loop_cond for j in sub]
+        # curve_loop_iso_core_bot = []  # TODO: insulations
+        # self.plane_surface_air_bot.append(
+        #     gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
 
     def boundary(self, p_core: list, p_region: list, l_bound_core: list, l_bound_air: list, l_region: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -921,9 +961,10 @@ class Mesh:
 
         # Since the turns are saved for each vww all turns per winding must be collected
         flattened_turns = [0] * len(self.windings)
-        for vww in self.model.virtual_winding_windows:
-            for index, winding in enumerate(vww.windings):
-                flattened_turns[winding.winding_number] += vww.turns[index]
+        for ww in self.model.winding_windows:
+            for vww in ww.virtual_winding_windows:
+                for index, winding in enumerate(vww.windings):
+                    flattened_turns[winding.winding_number] += vww.turns[index]
 
         for winding in self.windings:
             winding_number = winding.winding_number
@@ -1203,38 +1244,39 @@ class Mesh:
 
     def inter_conductor_meshing(self, p_cond):
         p_inter = None
-        for vww in self.model.virtual_winding_windows:
-            if vww.winding_type != WindingType.Interleaved:
-                for index, winding in enumerate(vww.windings):
-                    num = winding.winding_number
-                    p_inter = []
-                    x_inter = []
-                    y_inter = []
-                    j = 0
+        for ww in self.model.winding_windows:
+            for vww in ww.virtual_winding_windows:
+                if vww.winding_type != WindingType.Interleaved:
+                    for index, winding in enumerate(vww.windings):
+                        num = winding.winding_number
+                        p_inter = []
+                        x_inter = []
+                        y_inter = []
+                        j = 0
 
-                    if winding.conductor_type == ConductorType.RoundSolid and \
-                            vww.turns[index] > 1:
-                        while self.model.p_conductor[num][5 * j][1] == \
-                                self.model.p_conductor[num][5 * j + 5][1]:
-                            x_inter.append(
-                                0.5 * (self.model.p_conductor[num][5 * j][0] +
-                                       self.model.p_conductor[num][5 * j + 5][0]))
-                            j += 1
-                            if j == vww.turns[index] - 1:
-                                break
-                        j += 1
-                        if int(vww.turns[index] / j) > 1:
-                            for i in range(0, int(vww.turns[index] / j)):
-                                if 5 * j * i + 5 * j >= len(self.model.p_conductor[num][:]):
+                        if winding.conductor_type == ConductorType.RoundSolid and \
+                                vww.turns[index] > 1:
+                            while self.model.p_conductor[num][5 * j][1] == \
+                                    self.model.p_conductor[num][5 * j + 5][1]:
+                                x_inter.append(
+                                    0.5 * (self.model.p_conductor[num][5 * j][0] +
+                                           self.model.p_conductor[num][5 * j + 5][0]))
+                                j += 1
+                                if j == vww.turns[index] - 1:
                                     break
-                                y_inter.append(0.5 * (self.model.p_conductor[num][5 * j * i][1] +
-                                                      self.model.p_conductor[num][5 * j * i + 5 * j][1]))
-                            for x in x_inter:
-                                for y in y_inter:
-                                    p_inter.append(gmsh.model.geo.addPoint(x,
-                                                                           y,
-                                                                           0,
-                                                                           self.mesh_data.c_center_conductor[num]))
+                            j += 1
+                            if int(vww.turns[index] / j) > 1:
+                                for i in range(0, int(vww.turns[index] / j)):
+                                    if 5 * j * i + 5 * j >= len(self.model.p_conductor[num][:]):
+                                        break
+                                    y_inter.append(0.5 * (self.model.p_conductor[num][5 * j * i][1] +
+                                                          self.model.p_conductor[num][5 * j * i + 5 * j][1]))
+                                for x in x_inter:
+                                    for y in y_inter:
+                                        p_inter.append(gmsh.model.geo.addPoint(x,
+                                                                               y,
+                                                                               0,
+                                                                               self.mesh_data.c_center_conductor[num]))
 
         # TODO: Inter conductor meshing!
         if all(winding.conductor_type == ConductorType.RoundSolid for winding in self.windings):
@@ -1245,9 +1287,10 @@ class Mesh:
 
             # Embed points for mesh refinement
             # Inter Conductors
-            for vww in self.model.virtual_winding_windows:
-                if vww.winding_type != WindingType.Interleaved:
-                    gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
+            for ww in self.model.winding_windows:
+                for vww in ww.virtual_winding_windows:
+                    if vww.winding_type != WindingType.Interleaved:
+                        gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
             # Stray path
             # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
 
@@ -1265,7 +1308,7 @@ class Mesh:
 
         # min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.insulation.inner_winding_insulations)
         # min_distance = max(self.insulation.inner_winding_insulations)
-        min_distance = 0
+        min_distance = 0  # TODO: MA Project?
 
         left_bound = self.core.core_inner_diameter / 2
         right_bound = self.model.r_inner
