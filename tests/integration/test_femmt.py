@@ -35,8 +35,6 @@ def compare_result_logs(first_log_filepath, second_log_filepath, significant_dig
     #return first_content == second_content
 
 def compare_thermal_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
-    first_content = None
-    second_content = None
 
     with open(first_log_filepath, "r") as fd:
         first_content = json.loads(fd.read())
@@ -770,12 +768,13 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
 def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
                     femmt_simulation_inductor_core_fixed_loss_angle,
                     femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
+                    femmt_simulation_inductor_core_fixed_loss_angle_foil,
                     femmt_simulation_transformer_core_fixed_loss_angle,
                     femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
                     femmt_simulation_transformer_integrated_core_fixed_loss_angle
                     ):
     """
-    This functin tests if simulations can be set up from a simulation file.
+    This function tests if simulations can be set up from a simulation file.
     There is no complete function check, there is just an error-check if the load will fail or not.
 
     Note: Fixtures are used, to make sure that the latest self-generated log-files can be read.
@@ -783,28 +782,38 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
     """
     temp_folder_path, onelab_folder = temp_folder
 
-    # Create new temp folder, build model and simulate
-    try:
-        working_directory = temp_folder_path
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
+    working_directory = temp_folder_path
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
 
         result_log_filepath_list = [femmt_simulation_inductor_core_material_database,
                                     femmt_simulation_inductor_core_fixed_loss_angle,
                                     femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
+                                    femmt_simulation_inductor_core_fixed_loss_angle_foil,
                                     femmt_simulation_transformer_core_fixed_loss_angle,
                                     femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
                                     femmt_simulation_transformer_integrated_core_fixed_loss_angle
                                     ]
 
-        for file in result_log_filepath_list:
-            geo = fmt.MagneticComponent.decode_settings_from_log(file, working_directory)
+        result_log_filepath_direction = os.path.join(os.path.dirname(__file__), "fixtures", "results")
 
-    except Exception as e:
-        print("An error occurred while creating the femmt mesh files:", e)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt..")
+        # femmt_simulation_inductor_core_material_database = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_material.json")
+        # femmt_simulation_inductor_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
+        # femmt_simulation_inductor_core_fixed_loss_angle_litz_wire = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
+        # femmt_simulation_transformer_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
+        # femmt_simulation_transformer_interleaved_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
+        # femmt_simulation_transformer_integrated_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
+        #
+        #
+        # fixture_log_filepath_list = []
 
+        for count, filepath in enumerate(result_log_filepath_list):
+            test_result_log = fmt.MagneticComponent.decode_settings_from_log(filepath, working_directory)
+
+            assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+            #compare_result_logs(test_result_log, fixture_result_log)
 
 def test_thermal_simulation(thermal_simulation):
     electromagnetoquasistatic_result_log, thermal_result_log = thermal_simulation
