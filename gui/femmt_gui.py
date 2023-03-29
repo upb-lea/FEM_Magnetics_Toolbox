@@ -29,8 +29,8 @@ from gui.onelab_path_popup import OnelabPathDialog
 
 database = mdb.MaterialDatabase()
 
-from femmt.examples.reluctance_fem_integration import AutomatedDesign
-from femmt.examples.reluctance_fem_integration import load_design, plot_2d, filter_after_fem
+from femmt.examples.inductor_optimization import AutomatedDesign
+from femmt.examples.inductor_optimization import load_fem_simulation_results, plot_2d, filter_after_fem
 
 import mplcursors
 
@@ -768,12 +768,12 @@ class MainWindow(QMainWindow):
         if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
             self.ad = AutomatedDesign(working_directory=fem_directory,
                                       magnetic_component='inductor',
-                                      goal_inductance=goal_inductance,
+                                      target_inductance=goal_inductance,
                                       frequency=self.freq,
-                                      goal_inductance_percent_tolerance=L_tolerance_percent,
+                                      target_inductance_percent_tolerance=L_tolerance_percent,
                                       winding_scheme=winding_scheme,
                                       peak_current=self.i_max,
-                                      percent_of_b_sat=percent_of_B_sat,
+                                      percent_of_flux_density_saturation=percent_of_B_sat,
                                       percent_of_total_loss=percent_of_total_loss,
                                       database_core_names=db_core_names,
                                       database_litz_names=litz_names,
@@ -835,9 +835,10 @@ class MainWindow(QMainWindow):
         self.ad.fem_simulation()
 
         # Save simulation settings in json file for later review
-        self.ad.automated_design_settings()
+        self.ad.save_automated_design_settings()
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels = load_design(working_directory=design_directory)
+        real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(
+            fem_simulation_results_directory=design_directory)
 
         matplotlib_widget = MatplotlibWidget()
         matplotlib_widget.axis.clear()
@@ -876,8 +877,8 @@ class MainWindow(QMainWindow):
             pass
 
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels = load_design(
-            working_directory=design_directory)
+        real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(
+            fem_simulation_results_directory=design_directory)
 
         plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
                                      total_cost=total_cost,

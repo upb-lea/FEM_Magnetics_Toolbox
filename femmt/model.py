@@ -1,12 +1,13 @@
 # Python standard libraries
-
-
-import numpy as np
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Union
 
+# 3rd party libraries
+import numpy as np
+
 # Local libraries
 import femmt.functions as ff
+import femmt.functions_reluctance as fr
 from femmt.enumerations import *
 from femmt.constants import *
 import materialdatabase as mdb
@@ -39,9 +40,9 @@ class Conductor:
     conductivity: Conductivity = None
 
     def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False):
-        """Creates an conductor object.
+        """Creates a conductor object.
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
-        The conductor with the lowest winding number (starting from 0) will be treated as primary, second lowest number as secondary and so on.
+        The conductor with the lowest winding number (starting from 0) will be treated as primary, second-lowest number as secondary and so on.
 
         :param winding_number: Unique number for the winding
         :type winding_number: int
@@ -82,8 +83,9 @@ class Conductor:
         self.conductor_radius = conductor_radius
         self.a_cell = np.pi * conductor_radius ** 2
 
-    def set_litz_round_conductor(self, conductor_radius: float, number_strands: int, strand_radius: float,
-                                 fill_factor: float, conductor_arrangement: ConductorArrangement):
+    def set_litz_round_conductor(self, conductor_radius: Optional[float], number_strands: Optional[int],
+                                 strand_radius: Optional[float],
+                                 fill_factor: Optional[float], conductor_arrangement: ConductorArrangement):
         """
         Only 3 of the 4 parameters are needed. The other one needs to be none
         """
@@ -143,13 +145,11 @@ class Conductor:
 class Core:
     """
     This creates the core base for the model.
-
+    # TODO More documentation and get rid of double initializations
     frequency = 0: mu_r_abs only used if non_linear == False
     frequency > 0: mu_r_abs is used
     """
-    # TODO More documentation
 
-    type: str
 
     # Standard material data
     material: str
@@ -163,27 +163,11 @@ class Core:
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
     sigma: float  # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
-    # Dimensions
-    core_inner_diameter: float  # Axi symmetric case | core_w := 2x core radius
-    core_h: float
-    window_w: float  # Winding window width
-    window_h: float  # Winding window height
-    core_type: str = "EI"  # Basic shape of magnetic conductor
-
     steinmetz_loss: int = 0
     generalized_steinmetz_loss: int = 0
 
-    # TODO Does this represent the number of windows the EI core has?
-    number_core_windows: int
-
     # Needed for to_dict
     loss_approach: LossApproach = None
-
-
-    r_inner: float # radius of outer winding window: core_inner_diameter / 2 + window_w
-    r_outer: float # outer radius of full core
-
-    correct_outer_leg: bool # Outer leg is set, so cross-section is same as in inner cylinder (False). Setting this variable to True,
 
     # Database
     # material_database is variable to load in material_database
@@ -193,7 +177,13 @@ class Core:
 
     file_path_to_solver_folder: str  # location to create temporary pro file
 
-    def __init__(self, core_inner_diameter: float, window_w: float, window_h: float, correct_outer_leg: bool = False,
+    def __init__(self,
+                 # dimensions
+                 core_type: CoreType = CoreType.Single,
+                 core_dimensions=None,
+                 correct_outer_leg: bool = False,
+
+                 # material data
                  material: str = "custom",
                  temperature: float = None,
                  loss_approach: LossApproach = LossApproach.LossAngle,
@@ -236,16 +226,25 @@ class Core:
         :type correct_outer_leg: bool, optional
         """
         # Set parameters
+        self.core_type = core_type  # Basic shape of magnetic conductor
 
         # Geometric Parameters
-        self.core_inner_diameter = core_inner_diameter
-        self.window_w = window_w
-        self.window_h = window_h
-        self.type = "axi_symmetric"
-        self.number_core_windows = 2
+        self.core_inner_diameter = core_dimensions.core_inner_diameter
+        self.window_w = core_dimensions.window_w
         self.correct_outer_leg = correct_outer_leg
-        self.core_h = window_h + core_inner_diameter / 2  # TODO: could also be done arbitrarily
-        self.r_inner = window_w + core_inner_diameter / 2
+        self.r_inner = self.window_w + self.core_inner_diameter / 2
+
+        if self.core_type == CoreType.Single:
+            self.window_h = core_dimensions.window_h
+            self.number_core_windows = 2
+            self.core_h = self.window_h + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
+        if self.core_type == CoreType.Stacked:
+            self.window_h_bot = core_dimensions.window_h_bot
+            self.window_h_top = core_dimensions.window_h_top
+            # self.core_h = self.window_h_bot + self.window_h_top + self.core_inner_diameter * 3 / 4  # TODO: could also be done arbitrarily
+            self.core_h = self.window_h_bot + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
+            self.number_core_windows = 4
+
         if correct_outer_leg:
             # hard-coded case for PQ 40/40-cores:
             # the outer cross-section differs from inner cross-section and is corrected here.
@@ -255,7 +254,7 @@ class Core:
         else:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
             # this is the recommended default-case
-            self.r_outer = np.sqrt((core_inner_diameter / 2) ** 2 + self.r_inner ** 2)
+            self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
 
         # Material Parameters
         # General
@@ -363,7 +362,6 @@ class Core:
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
             self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
 
-
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
@@ -378,25 +376,48 @@ class Core:
 
     def to_dict(self):
         # TODO: mdb
-        return {
-            "core_inner_diameter": self.core_inner_diameter,
-            "window_w": self.window_w,
-            "window_h": self.window_h,
-            "material": self.material,
-            "loss_approach": self.loss_approach.name,
-            "mu_r_abs": self.mu_r_abs,
-            "phi_mu_deg": self.phi_mu_deg,
-            "sigma": self.sigma,
-            "non_linear": self.non_linear,
-            "correct_outer_leg": self.correct_outer_leg,
-            "temperature": self.temperature,
-            "permeability_datasource": self.permeability["datasource"],
-            "permeability_measurement_setup": self.permeability["measurement_setup"],
-            "permeability_datatype": self.permeability["datatype"],
-            "permittivity_datasource": self.permittivity["datasource"],
-            "permittivity_measurement_setup": self.permittivity["measurement_setup"],
-            "permittivity_datatype": self.permittivity["datatype"]
-        }
+        if self.core_type == CoreType.Single:
+            return {
+                "core_inner_diameter": self.core_inner_diameter,
+                "window_w": self.window_w,
+                "window_h": self.window_h,
+                "material": self.material,
+                "loss_approach": self.loss_approach.name,
+                "mu_r_abs": self.mu_r_abs,
+                "phi_mu_deg": self.phi_mu_deg,
+                "sigma": self.sigma,
+                "non_linear": self.non_linear,
+                "correct_outer_leg": self.correct_outer_leg,
+                "temperature": self.temperature,
+                "permeability_datasource": self.permeability["datasource"],
+                "permeability_measurement_setup": self.permeability["measurement_setup"],
+                "permeability_datatype": self.permeability["datatype"],
+                "permittivity_datasource": self.permittivity["datasource"],
+                "permittivity_measurement_setup": self.permittivity["measurement_setup"],
+                "permittivity_datatype": self.permittivity["datatype"]
+            }
+
+        elif self.core_type == CoreType.Stacked:
+            return {
+                "core_inner_diameter": self.core_inner_diameter,
+                "window_w": self.window_w,
+                "window_h_bot": self.window_h_bot,
+                "window_h_top": self.window_h_top,
+                "material": self.material,
+                "loss_approach": self.loss_approach.name,
+                "mu_r_abs": self.mu_r_abs,
+                "phi_mu_deg": self.phi_mu_deg,
+                "sigma": self.sigma,
+                "non_linear": self.non_linear,
+                "correct_outer_leg": self.correct_outer_leg,
+                "temperature": self.temperature,
+                "permeability_datasource": self.permeability["datasource"],
+                "permeability_measurement_setup": self.permeability["measurement_setup"],
+                "permeability_datatype": self.permeability["datatype"],
+                "permittivity_datasource": self.permittivity["datasource"],
+                "permittivity_measurement_setup": self.permittivity["measurement_setup"],
+                "permittivity_datatype": self.permittivity["datatype"]
+            }
 
 
 class AirGaps:
@@ -417,7 +438,7 @@ class AirGaps:
         """Creates an AirGaps object. An AirGapMethod needs to be set. This determines the way the air gap will be added to the model.
         In order to calculate the air gap positions the core object needs to be given.
 
-        :param method: The method determines the waay the air gap position is set.
+        :param method: The method determines the way the air gap position is set.
         :type method: AirGapMethod
         :param core: The core object
         :type core: Core
@@ -428,21 +449,24 @@ class AirGaps:
         self.number = 0
         self.air_gap_settings = []
 
-    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0):
+    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0, stacked_position: StackedPosition = None):
         """
         Brings a single air gap to the core.
 
-        :param leg_posistion: CenterLeg, OuterLeg
+        :param leg_position: CenterLeg, OuterLeg
         :type leg_position: AirGapLegPosition
-        :param position_value: if AirGapMethod == Percent: 0...100, elif AirGapMethod == Manually: position hight in [m]
+        :param position_value: if AirGapMethod == Percent: 0...100, elif AirGapMethod == Manually: position height in [m]
         :type position_value: float
         :param height: Air gap height in [m]
         :type height: float
+        :param stacked_position: Top, Bot
+        :type stacked_position: StackedPosition
         """
         self.air_gap_settings.append({
             "leg_position": leg_position.name,
             "position_value": position_value,
-            "height": height})
+            "height": height,
+            "stacked_position": stacked_position})
 
         for index, midpoint in enumerate(self.midpoints):
             if midpoint[0] == leg_position and midpoint[1] + midpoint[2] < position_value - height \
@@ -450,7 +474,7 @@ class AirGaps:
                 raise Exception(f"Air gaps {index} and {len(self.midpoints)} are overlapping")
 
         if leg_position == AirGapLegPosition.LeftLeg or leg_position == AirGapLegPosition.RightLeg:
-            raise Exception("Currently the legpositions LeftLeg and RightLeg are not supported")
+            raise Exception("Currently the leg positions LeftLeg and RightLeg are not supported")
 
         if self.method == AirGapMethod.Center:
             if self.number >= 1:
@@ -462,6 +486,7 @@ class AirGaps:
         elif self.method == AirGapMethod.Manually:
             self.midpoints.append([leg_position.value, position_value, height])
             self.number += 1
+
         elif self.method == AirGapMethod.Percent:
             if position_value > 100 or position_value < 0:
                 raise Exception("AirGap position values for the percent method need to be between 0 and 100.")
@@ -475,6 +500,20 @@ class AirGaps:
 
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
+
+        elif self.method == AirGapMethod.Stacked:
+            # set midpoints
+            # TODO: handle top and bot
+            if stacked_position == StackedPosition.Bot:
+                self.midpoints.append([0, 0, height])
+                self.number += 1
+            if stacked_position == StackedPosition.Top:
+                self.midpoints.append([0, self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + height / 2, height])  # TODO: could also be done arbitrarily
+                self.number += 1
+
+            # if position_value
+            print("Stacked")
+
         else:
             raise Exception(f"Method {self.method} is not supported.")
 
@@ -497,13 +536,13 @@ class Insulation:
     """
     This class defines insulation for the model.
     An insulation between the winding window and the core can always be set.
-    When having a inductor only the primary2primary insulation is necessary.
+    When having an inductor only the primary2primary insulation is necessary.
     When having a (integrated) transformer secondary2secondary and primary2secondary insulations can be set as well.
 
     Only the isolation between winding window and core is drawn as a "physical" isolation (4 rectangles). All other isolations
     are only describing a set distance between the object.
 
-    In general it is not necessary to add an insulation object at all when no insulation is needed.
+    In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
     inner_winding_insulations: List[float]
     vww_insulation: float
@@ -516,7 +555,7 @@ class Insulation:
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
         are not exactly drawn at the specified position. They are slightly smaller and the offset can be changed with the insulation_delta variable.
-        In general it is not recommended to change this value.
+        In general, it is not recommended to change this value.
         """
         # Default value for all insulations
         # If the gaps between insulations and core (or windings) are to big/small just change this value
@@ -528,7 +567,7 @@ class Insulation:
         """Adds insulations between turns of one winding and insulation between virtual winding windows.
         Insulation between virtual winding windows is not always needed.
 
-        :param inner_winding_insulations: List of floats which represent the insulations between turns of the same winding. This does not correspond to the order conductors are added to the winding! Instead the winding number is important. The conductors are sorted by ascending winding number. The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
+        :param inner_winding_insulations: List of floats which represent the insulations between turns of the same winding. This does not correspond to the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number. The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
         :type inner_winding_insulations: List[float]
         :param virtual_winding_window_insulation: Sets the distance between two winding windows, defaults to None
         :type virtual_winding_window_insulation: float, optional
@@ -580,8 +619,8 @@ class StrayPath:
     """
     This class is needed when an integrated transformer shall be created.
     A start_index and a length can be given. The start_index sets the position of the tablet.
-    start_index=0 will create the tablet between the lowest and second lowest air gaps. start_index=1 will create the tablet
-    between the second lowest and third lowest air gap. Therefore it is necessary for the user to make sure that enough air gaps exist!
+    start_index=0 will create the tablet between the lowest and second-lowest air gaps. start_index=1 will create the tablet
+    between the second lowest and third-lowest air gap. Therefore, it is necessary for the user to make sure that enough air gaps exist!
     The length parameter sets the length of the tablet starting at the y-axis (not the right side of the center core). It therefore
     determines the air gap between the tablet and the outer core leg.
     """
@@ -616,7 +655,7 @@ class VirtualWindingWindow:
     winding_insulation: float
 
     def __init__(self, bot_bound: float, top_bound: float, left_bound: float, right_bound: float):
-        """Creates a virtual winding window with given bounds. By default a virtual winding window is created by the WindingWindow class.
+        """Creates a virtual winding window with given bounds. By default, a virtual winding window is created by the WindingWindow class.
         The parameter values are given in metres and depend on the axisymmetric coordinate system.
 
         :param bot_bound: Bottom bound
@@ -688,17 +727,32 @@ class VirtualWindingWindow:
         return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
 
     def to_dict(self):
-        return {
-            "bot_bound": self.bot_bound,
-            "top_bound": self.top_bound,
-            "left_bound": self.left_bound,
-            "right_bound": self.right_bound,
-            "winding_type": self.winding_type.name,
-            "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
-            "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
-            "windings": [winding.to_dict() for winding in self.windings],
-            "turns": self.turns
-        }
+        if hasattr(self, 'winding_insulation'):
+            return {
+                "bot_bound": self.bot_bound,
+                "top_bound": self.top_bound,
+                "left_bound": self.left_bound,
+                "right_bound": self.right_bound,
+                "winding_type": self.winding_type.name,
+                "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+                "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
+                "windings": [winding.to_dict() for winding in self.windings],
+                "turns": self.turns,
+                "winding_insulation": self.winding_insulation
+            }
+
+        else:
+            return {
+                "bot_bound": self.bot_bound,
+                "top_bound": self.top_bound,
+                "left_bound": self.left_bound,
+                "right_bound": self.right_bound,
+                "winding_type": self.winding_type.name,
+                "winding_scheme": self.winding_scheme.name if self.winding_scheme is not None else None,
+                "wrap_para": self.wrap_para.name if self.wrap_para is not None else None,
+                "windings": [winding.to_dict() for winding in self.windings],
+                "turns": self.turns,
+            }
 
     # TODO Since in combine_vww it is necessary to compare vwws maybe a __eq__ and __ne__ 
     # function should be implemented.
@@ -745,22 +799,30 @@ class WindingWindow:
         :param air_gaps: Air gaps path object. Only needed for integrated transformer, defaults to None
         :type air_gaps: AirGaps, optional
         """
-        self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[0]
-        self.max_top_bound = core.window_h / 2 - insulations.core_cond[1]
-        self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
-        self.max_right_bound = core.r_inner - insulations.core_cond[3]
+        self.core = core
+        self.stray_path = stray_path
+        self.air_gaps = air_gaps
+
+        if self.core.core_type == CoreType.Single:
+            self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[0]
+            self.max_top_bound = core.window_h / 2 - insulations.core_cond[1]
+            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+            self.max_right_bound = core.r_inner - insulations.core_cond[3]
+        elif self.core.core_type == CoreType.Stacked:  # TODO: !!! welches ist top, bot, left, right
+            self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[0]
+            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - insulations.core_cond[1]   # TODO: could also be done arbitrarily
+            self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
+            self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
         # Insulations between vwws
         self.vww_insulations = insulations.vww_insulation
         self.insulations = insulations
 
-        self.stray_path = stray_path
-        self.air_gaps = air_gaps
 
     def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5,
                      vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
         """Creates up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
-        The split factors are values beteen 0 and 1 and determine a horizontal and vertical line at which the window is split.
+        The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
         Not every value is needed for every split type:
         - NoSplit: No factor is needed
         - HorizontalSplit: Horizontal split factor needed
@@ -793,17 +855,25 @@ class WindingWindow:
             air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
             max_pos = max(air_gap_2_position, air_gap_1_position)
             min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos
+            distance = max_pos - min_pos    # TODO: this is set in accordance to the midpoint of the air gap:
+                                            # TODO: should be changed to the core-cond isolation
             horizontal_split = min_pos + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             self.vww_insulations = distance
+        elif self.core.core_type == CoreType.Stacked:
+            max_pos = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4  # TODO: could also be done arbitrarily
+            min_pos = self.core.window_h_bot / 2
+            distance = max_pos - min_pos
+            horizontal_split = min_pos + distance / 2
+            vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
+            self.vww_insulations = distance + 2 * min(self.insulations.core_cond)  # TODO: enhance the insulations situation!!!
         else:
-            horizontal_split = self.max_top_bound - abs(
-                self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
+            horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
 
         # Check for every possible split type and return the corresponding VirtualWindingWindows
         if split_type == WindingWindowSplit.NoSplit:
+
             complete = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
                 top_bound=self.max_top_bound,

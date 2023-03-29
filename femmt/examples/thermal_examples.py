@@ -21,8 +21,9 @@ if simulation == "lab_model":
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
-    
-    core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"])
+    core = fmt.Core(core_dimensions=core_dimensions,
                     mu_r_abs=3100, phi_mu_deg=12, sigma=0.6,
                     non_linear=False,
                     permeability_datasource = fmt.MaterialDataSource.Custom,
@@ -109,7 +110,8 @@ if simulation == "pq4040_ansys_comparison":
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=cwd)
 
-    core = fmt.Core(core_h=0.04, core_inner_diameter=0.0149, window_h=0.0278, window_w=0.01105, mu_r_abs=3100, phi_mu_deg=12, sigma=0.6,
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.0149, window_w=0.01105, window_h=0.0278)
+    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=0.6,
                     non_linear=False,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom
@@ -197,7 +199,8 @@ if simulation == "pq4040axisymmetric":
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=cwd)
     
-    core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"])
+    core = fmt.Core(core_dimensions=core_dimensions,
                     mu_r_abs=3100, phi_mu_deg=12,
                     sigma=0.,
                     non_linear=False,

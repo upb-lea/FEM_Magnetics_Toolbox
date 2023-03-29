@@ -34,6 +34,28 @@ def compare_result_logs(first_log_filepath, second_log_filepath, significant_dig
 
     #return first_content == second_content
 
+def compare_thermal_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
+
+    with open(first_log_filepath, "r") as fd:
+        first_content = json.loads(fd.read())
+
+    with open(second_log_filepath, "r") as fd:
+        second_content = json.loads(fd.read())
+
+    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=significant_digits)
+    print(f"{difference = }")
+
+
+    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=significant_digits)
+    # made several tests with the deepdiff command:
+    # tried adding not existing keys in one of the dicts: results as expected in an error
+    # changed values in very nested dict: results as expected in an error
+    # So this command is valid to compare the dicts.
+
+    #return first_content == second_content
+
+
+
 @pytest.fixture
 def temp_folder():
     # Setup temp folder
@@ -63,11 +85,16 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
-        
-        core_db = fmt.core_database()["PQ 40/40"]
 
-        core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                        material="N95", temperature=25, frequency=100000, permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
+        core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"])
+
+        core = fmt.Core(core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions, material="N95", temperature=25, frequency=100000,
+                        permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
+                        permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -153,9 +180,12 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
         geo.file_data.onelab_folder_path = onelab_folder
 
         core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"])
 
-        core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
-                        window_h=core_db["window_h"],
+        core = fmt.Core(core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
                         mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
@@ -208,9 +238,11 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
         geo.file_data.onelab_folder_path = onelab_folder
 
         core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"])
 
-        core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
-                        window_h=core_db["window_h"],
+        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
@@ -265,9 +297,11 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil(temp_folder):
         geo.file_data.onelab_folder_path = onelab_folder
 
         core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"])
 
-        core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
-                        window_h=core_db["window_h"],
+        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
                         sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
@@ -324,8 +358,15 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
+
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
+                                                        window_w=0.012,
+                                                        window_h=0.0295)
+
+
+
         # 2. set core parameters
-        core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
+        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
                         sigma=1.2, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
@@ -385,8 +426,14 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
+                                                        window_w=0.012,
+                                                        window_h=0.0295)
+
+
+
         # 2. set core parameters
-        core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
+        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
@@ -447,8 +494,15 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
+
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02,
+                                                        window_w=0.011,
+                                                        window_h=0.03)
+
+
+
         # 2. set core parameters
-        core = fmt.Core(window_h=0.03, window_w=0.011, core_inner_diameter=0.02,
+        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
                         sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
@@ -500,6 +554,122 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
     return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
 
+@pytest.fixture
+def thermal_simulation(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, 
+                                    working_directory=working_directory, silent=True, is_gui=True)
+
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        core_db = fmt.core_database()["PQ 40/40"]
+
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"])
+
+        core = fmt.Core(core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        mu_r_abs=3100, phi_mu_deg=12,
+                        sigma=0.,
+                        non_linear=False,
+                        permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom
+                        )
+        geo.set_core(core)
+
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005)
+        geo.set_air_gaps(air_gaps)
+
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+        insulation.add_winding_insulations([0.0001])
+        geo.set_insulation(insulation)
+
+        winding_window = fmt.WindingWindow(core, insulation)
+        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding.set_solid_round_conductor(conductor_radius=0.0015,
+                                          conductor_arrangement=fmt.ConductorArrangement.Square)
+
+        vww.set_winding(winding, 8, None)
+        geo.set_winding_window(winding_window)
+
+        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+        geo.single_simulation(freq=100000, current=[3], show_results=False)
+
+        thermal_conductivity_dict = {
+            "air": 1.57,  # potting epoxy resign
+            "case": {
+                "top": 1.57,
+                "top_right": 1.57,
+                "right": 1.57,
+                "bot_right": 1.57,
+                "bot": 1.57
+            },
+            "core": 5,  # ferrite
+            "winding": 400,  # copper
+            "air_gaps": 1.57,
+            "insulation": 1.57
+        }
+
+        case_gap_top = 0.002
+        case_gap_right = 0.0025
+        case_gap_bot = 0.002
+
+        boundary_temperatures = {
+            "value_boundary_top": 20,
+            "value_boundary_top_right": 20,
+            "value_boundary_right_top": 20,
+            "value_boundary_right": 20,
+            "value_boundary_right_bottom": 20,
+            "value_boundary_bottom_right": 20,
+            "value_boundary_bottom": 20
+        }
+
+        boundary_flags = {
+            "flag_boundary_top": 1,
+            "flag_boundary_top_right": 1,
+            "flag_boundary_right_top": 1,
+            "flag_boundary_right": 1,
+            "flag_boundary_right_bottom": 1,
+            "flag_boundary_bottom_right": 1,
+            "flag_boundary_bottom": 1
+        }
+
+        # color_scheme = fmt.colors_ba_jonas
+        # colors_geometry = fmt.colors_geometry_ba_jonas
+        color_scheme = fmt.colors_ba_jonas
+        colors_geometry = fmt.colors_geometry_draw_only_lines
+
+        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                               case_gap_right,
+                               case_gap_bot, show_results=False, visualize_before=False, color_scheme=color_scheme,
+                               colors_geometry=colors_geometry)
+
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+    thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+
+    return electromagnetoquasistatic_result, thermal_result
+
+
+
 def test_inductor_core_material_database(femmt_simulation_inductor_core_material_database):
     """
     The first idea was to compare the simulated meshes with test meshes simulated manually.
@@ -521,7 +691,7 @@ def test_inductor_core_material_database(femmt_simulation_inductor_core_material
 
 def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_loss_angle):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_inductor_core_fixed_loss_angle
 
@@ -533,7 +703,7 @@ def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_los
 
 def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core_fixed_loss_angle_litz_wire):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_inductor_core_fixed_loss_angle_litz_wire
 
@@ -545,7 +715,7 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
 
 def test_inductor_core_fixed_loss_angle_foil(femmt_simulation_inductor_core_fixed_loss_angle_foil):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil
 
@@ -561,7 +731,7 @@ def test_inductor_core_fixed_loss_angle_foil(femmt_simulation_inductor_core_fixe
 
 def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fixed_loss_angle):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_transformer_core_fixed_loss_angle
 
@@ -573,7 +743,7 @@ def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fix
 
 def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transformer_interleaved_core_fixed_loss_angle):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_transformer_interleaved_core_fixed_loss_angle
 
@@ -585,7 +755,7 @@ def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transfor
 
 def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transformer_integrated_core_fixed_loss_angle):
     """
-    Check the result log for fixed core loss anlge
+    Check the result log for fixed core loss angle
     """
     test_result_log = femmt_simulation_transformer_integrated_core_fixed_loss_angle
 
@@ -598,12 +768,13 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
 def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
                     femmt_simulation_inductor_core_fixed_loss_angle,
                     femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
+                    femmt_simulation_inductor_core_fixed_loss_angle_foil,
                     femmt_simulation_transformer_core_fixed_loss_angle,
                     femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
                     femmt_simulation_transformer_integrated_core_fixed_loss_angle
                     ):
     """
-    This functin tests if simulations can be set up from a simulation file.
+    This function tests if simulations can be set up from a simulation file.
     There is no complete function check, there is just an error-check if the load will fail or not.
 
     Note: Fixtures are used, to make sure that the latest self-generated log-files can be read.
@@ -611,24 +782,48 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
     """
     temp_folder_path, onelab_folder = temp_folder
 
-    # Create new temp folder, build model and simulate
-    try:
-        working_directory = temp_folder_path
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
+    working_directory = temp_folder_path
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
 
         result_log_filepath_list = [femmt_simulation_inductor_core_material_database,
                                     femmt_simulation_inductor_core_fixed_loss_angle,
                                     femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
+                                    femmt_simulation_inductor_core_fixed_loss_angle_foil,
                                     femmt_simulation_transformer_core_fixed_loss_angle,
                                     femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
                                     femmt_simulation_transformer_integrated_core_fixed_loss_angle
                                     ]
 
-        for file in result_log_filepath_list:
-            geo = fmt.MagneticComponent.decode_settings_from_log(file, working_directory)
+        result_log_filepath_direction = os.path.join(os.path.dirname(__file__), "fixtures", "results")
 
-    except Exception as e:
-        print("An error occurred while creating the femmt mesh files:", e)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt..")
+        # femmt_simulation_inductor_core_material_database = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_material.json")
+        # femmt_simulation_inductor_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
+        # femmt_simulation_inductor_core_fixed_loss_angle_litz_wire = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
+        # femmt_simulation_transformer_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
+        # femmt_simulation_transformer_interleaved_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
+        # femmt_simulation_transformer_integrated_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
+        #
+        #
+        # fixture_log_filepath_list = []
+
+        for count, filepath in enumerate(result_log_filepath_list):
+            test_result_log = fmt.MagneticComponent.decode_settings_from_log(filepath, working_directory)
+
+            assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+            #compare_result_logs(test_result_log, fixture_result_log)
+
+def test_thermal_simulation(thermal_simulation):
+    electromagnetoquasistatic_result_log, thermal_result_log = thermal_simulation
+
+    # check magnetoquasistatic simulation results
+    assert os.path.exists(electromagnetoquasistatic_result_log), "Electro magnetic simulation did not work!"
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_thermal.json")
+    compare_result_logs(electromagnetoquasistatic_result_log, fixture_result_log)
+
+    # check thermal simulation results
+    assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "results_thermal.json")
+    # compare_thermal_result_logs(thermal_result_log, fixture_result_log)

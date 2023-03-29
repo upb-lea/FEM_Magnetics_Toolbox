@@ -13,7 +13,9 @@ geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_d
 
 core_db = fmt.core_database()["PQ 40/40"]
 
-core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                window_w=core_db["window_w"], window_h=core_db["window_h"])
+core = fmt.Core(core_dimensions=core_dimensions,
 non_linear=False, sigma=0.6, mu_r_abs=3200, phi_mu_deg=12,
                 permeability_datasource = fmt.MaterialDataSource.Custom,
                 permittivity_datasource = fmt.MaterialDataSource.Custom)

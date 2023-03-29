@@ -33,6 +33,20 @@ def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
     return l_s, l_h, n
 
 
+def calculate_inductance_matrix_from_ls_lh_n(l_s_target_value, l_h_target_value, n_target_value):
+    """
+    Calculates the inductance matrix from ls, lh, n parameters
+
+    :param l_s_target_value: serial inductance
+    :param l_h_target_value: mutal inductance
+    :param n_target_value: transfer ratio
+    :return: inductance matrix
+    """
+    inductance_matrix = [
+        [l_s_target_value + l_h_target_value, l_h_target_value / n_target_value],
+        [l_h_target_value / n_target_value, l_h_target_value / (n_target_value ** 2)]]
+    return inductance_matrix
+
 
 def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(flux, cylinder_height, cylinder_inner_radius, cylinder_outer_radius,
                                                                 fundamental_frequency, mu_r_abs, flux_density_data_vec, mu_r_imag_data_vec):
@@ -129,9 +143,24 @@ def calculate_core_2daxi_total_volume(core_inner_diameter, window_h, window_w):
     :param window_h: winding window height
     :param window_w: winding window width
     """
-    outer_core_radius = np.sqrt( core_inner_diameter ** 2 / 2 + core_inner_diameter * window_w + window_w ** 2)
+    outer_core_radius = calculate_r_outer(core_inner_diameter, window_w)
 
-    return outer_core_radius ** 2 * np.pi * (window_h + core_inner_diameter / 2)
+    core_2daxi_total_volume = outer_core_radius ** 2 * np.pi * (window_h + core_inner_diameter / 2)
+
+    return core_2daxi_total_volume
+
+def calculate_r_outer(core_inner_diameter, window_w):
+    """
+    calculate outer core radius.
+
+    Assumption: outer core cross-section is same as inner core cross-section.
+
+    :param core_inner_diameter: core inner diameter
+    :param window_w: width of core window
+    """
+    outer_core_radius = np.sqrt(core_inner_diameter ** 2 / 2 + core_inner_diameter * window_w + window_w ** 2)
+    return outer_core_radius
+
 
 def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_height, cylinder_inner_radius, cylinder_outer_radius,
                                                       fundamental_frequency, mu_r_imag, mu_r_abs):
@@ -319,8 +348,7 @@ def flux_vec_from_current_vec(current_vec_1, current_vec_2, winding_matrix, indu
     flux_stray_vec = []
 
     for count, value in enumerate(current_vec_1):
-        # Negative sign is placed here
-        current_value_timestep = [current_vec_1[count], -current_vec_2[count]]
+        current_value_timestep = [current_vec_1[count], current_vec_2[count]]
 
         # simplified formula: flux = L * I / N
         [flux_top_timestep, flux_bot_timestep] = np.matmul(np.matmul(np.linalg.inv(np.transpose(winding_matrix)), inductance_matrix),
@@ -355,20 +383,38 @@ def visualize_current_and_flux(time, flux_top_vec, flux_bot_vec, flux_stray_vec,
     axis[1].grid()
     plt.show()
 
-
-def max_flux_from_flux_vec(flux_top_vec, flux_bot_vec, flux_stray_vec):
+def max_value_from_value_vec(*args):
     """
-    Gets the peak flux values from the flux vectors
+    Returns the peak values from the vectors
 
-    :param flux_stray_vec: flux vector in stray path
-    :param flux_bot_vec: flux vector in bot path
-    :param flux_top_vec: flux vector in top path
+    :param args: vector
+    :return: peak_value_from_vector
     """
-    flux_top_peak = max([abs(flux_timestep) for flux_timestep in flux_top_vec])
-    flux_bot_peak = max([abs(flux_timestep) for flux_timestep in flux_bot_vec])
-    flux_stray_peak = max([abs(flux_timestep) for flux_timestep in flux_stray_vec])
+    peak_list = []
+    for vector in args:
+        peak = max([abs(timestep) for timestep in vector])
+        peak_list.append(peak)
 
-    return flux_top_peak, flux_bot_peak, flux_stray_peak
+    return tuple(peak_list)
+
+
+def phases_deg_from_time_current(time_vec, *args):
+    """
+    Returns the phases_deg of the peaks
+
+    :param time_vec: time vector with time steps
+    :param args: vectors of current
+    """
+    period = time_vec[-1]
+    phases_deg = []
+
+    for current_vec in args:
+        time_max = time_vec[np.array(current_vec).argmax(axis=0)]
+        phase = time_max / period * 360
+        phases_deg.append(phase)
+
+    return tuple(phases_deg)
+
 
 def power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_density_max, mu_r_abs, core_volume):
     """
@@ -552,10 +598,10 @@ def r_air_gap_tablet_cyl(tablet_height, air_gap_total_height, core_inner_diamete
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
 
-    r_outer = core_inner_diameter / 2 + window_w
+    r_inner = core_inner_diameter / 2 + window_w
 
     # translate practical core dimensions to non-practical air-gap dimensions
-    tablet_radius = r_outer - air_gap_total_height
+    tablet_radius = r_inner - air_gap_total_height
 
     air_gap_basic_height = air_gap_total_height
     r_basic = r_basic_tablet_cyl(tablet_height, air_gap_basic_height, tablet_radius)
@@ -565,7 +611,7 @@ def r_air_gap_tablet_cyl(tablet_height, air_gap_total_height, core_inner_diamete
     if np.any(sigma > 1):
         raise Exception("Failure in calculating reluctance. Sigma was calculated to >1. Check input parameters!")
 
-    r_air_gap_ideal = np.log(r_outer / (r_outer - air_gap_total_height)) / 2 / mu_0 / np.pi / tablet_height
+    r_air_gap_ideal = np.log(r_inner / (r_inner - air_gap_total_height)) / 2 / mu_0 / np.pi / tablet_height
 
     r_air_gap = sigma * r_air_gap_ideal
 
@@ -590,7 +636,7 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_height, air_gap_total_length, core_inn
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
 
-    r_outer = core_inner_diameter / 2 + window_w
+    r_inner = core_inner_diameter / 2 + window_w
 
     if np.any(air_gap_total_length >= window_w):
         raise Exception("air_gap_total_height is greater than window_w")
@@ -617,7 +663,7 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_height, air_gap_total_length, core_inn
     # Formular 1 & 2 needs to be solved to get core_dimension_y:
 
     core_dimension_y = np.sqrt( ( core_inner_diameter ** 2 / 4 + (core_inner_diameter / 2 + window_w) ** 2  ) * np.pi / 1.45)
-    r_air_gap_ideal_partly = np.log(r_outer / (r_outer - air_gap_total_length)) / mu_0 / (2 * np.pi - 4 * np.arccos(core_dimension_y / 2 / r_outer)) / tablet_height
+    r_air_gap_ideal_partly = np.log(r_inner / (r_inner - air_gap_total_length)) / mu_0 / (2 * np.pi - 4 * np.arccos(core_dimension_y / 2 / r_inner)) / tablet_height
 
     r_air_gap = sigma * r_air_gap_ideal_partly
 
@@ -625,7 +671,7 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_height, air_gap_total_length, core_inn
 
 def r_core_tablet(tablet_height, tablet_radius, mu_r_abs, core_inner_diameter):
     """
-    Calculates the magentic resistance of the core tablet
+    Calculates the magnetic resistance of the core tablet
 
     :param tablet_height: tablet height
     :param tablet_radius: tablet radius

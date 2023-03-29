@@ -201,7 +201,7 @@ def core_database() -> Dict:
     core_dict["PQ 65/60"] = {
         "core_h": 60e-3,
         "core_inner_diameter": 26e-3,
-        "window_h": 21e-3,
+        "window_h": 42e-3,
         "window_w": (65-26)/2 * 1e-3,
         "core_dimension_x": 65.0e-3,
         "core_dimension_y": 45.0e-3,
@@ -252,26 +252,122 @@ def litz_database() -> Dict:
     """
     litz_dict = {}
 
-    litz_dict["1.5x105x0.1"] = {"implicit": "implicit_ff",
-                                "strands_numbers": 105,
+    litz_dict["1.5x105x0.1"] = {"strands_numbers": 105,
                                 "strand_radii": 0.1e-3 / 2,
                                 "conductor_radii": 1.5e-3 / 2,
-                                "ff": ""}
-    litz_dict["1.4x200x0.071"] = {"implicit": "implicit_ff",
-                                  "strands_numbers": 200,
+                                "ff": "",
+                                "manufacturer": "PACK",
+                                "material_number": "",
+                                "litz": "RUPALIT V155",
+                                "insulation": "textile"}
+    litz_dict["1.4x200x0.071"] = {"strands_numbers": 200,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 1.4e-3 / 2,
-                                  "ff": ""}
-    litz_dict["2.0x405x0.071"] = {"implicit": "implicit_ff",
-                                  "strands_numbers": 405,
+                                  "ff": "",
+                                  "manufacturer": "PACK",
+                                  "material_number": "",
+                                  "litz": "RUPALIT V155",
+                                  "insulation": "textile"}
+    litz_dict["2.0x405x0.071"] = {"strands_numbers": 405,
                                   "strand_radii": 0.071e-3 / 2,
                                   "conductor_radii": 2.0e-3 / 2,
-                                  "ff": ""}
-    litz_dict["2.0x800x0.05"] = {"implicit": "implicit_ff",
-                                 "strands_numbers": 800,
+                                  "ff": "",
+                                  "manufacturer": "",
+                                  "material_number": "",
+                                  "litz": "",
+                                  "insulation": "unknown blue plastic"}
+    litz_dict["2.0x800x0.05"] = {"strands_numbers": 800,
                                  "strand_radii": 0.05e-3 / 2,
                                  "conductor_radii": 2e-3 / 2,
-                                 "ff": ""}
+                                 "ff": "",
+                                 "manufacturer": "Elektrisola",
+                                 "material_number": "12104184",
+                                 "litz": "",
+                                 "insulation": ""
+                                 }
+    litz_dict["1.1x60x0.1"] = {"strands_numbers": 60,
+                               "strand_radii": 0.1e-3 / 2,
+                               "conductor_radii": 1.1e-3 / 2,
+                               "ff": "",
+                               "manufacturer": "PACK",
+                               "material_number": "",
+                               "litz": "RUPALIT V155",
+                               "insulation": "textile"
+                               }
+    litz_dict["1.35x200x0.071"] = {"strands_numbers": 200,
+                                  "strand_radii": 0.071e-3 / 2,
+                                  "conductor_radii": 1.35e-3 / 2,
+                                  "ff": "",
+                                  "manufacturer": "PACK",
+                                  "material_number": "",
+                                  "litz": "RUPALIT V155",
+                                   "insulation": "textile"}
+
+    litz_dict["3.2x2100x0.05"] = {"strands_numbers": 2100,
+                                  "strand_radii": 0.05e-3 / 2,
+                                  "conductor_radii": 3.2e-3 / 2,
+                                  "ff": "",
+                                  "manufacturer": "PACK",
+                                  "material_number": "AB21220373",
+                                  "litz": "RUPALIT V155",
+                                  "insulation": "textile"
+                                  }
+
+    litz_dict["4.6x2160x0.071"] = {"strands_numbers": 2160,
+                                   "strand_radii": 0.071e-3 / 2,
+                                   "conductor_radii": 4.6e-3 / 2,
+                                   "ff": "",
+                                   "manufacturer": "PACK",
+                                   "material_number": "AB21225497",
+                                   "litz": "RUPALIT V155",
+                                   "insulation": "textile"
+                                   }
+
+    litz_dict["2.9x1200x0.06"] = {"strands_numbers": 1200,
+                                  "strand_radii": 0.06e-3 / 2,
+                                  "conductor_radii": 2.9e-3 / 2,
+                                  "ff": "",
+                                  "manufacturer": "Elektrisola",
+                                  "material_number": "",
+                                  "litz": "",
+                                  "insulation": "unknown plastic"}
+
+    litz_dict["2.6x1000x0.06"] = {"strands_numbers": 1000,
+                                  "strand_radii": 0.06e-3 / 2,
+                                  "conductor_radii": 2.6e-3 / 2,
+                                  "ff": "",
+                                  "manufacturer": "Elektrisola",
+                                  "material_number": "",
+                                  "litz": "",
+                                  "insulation": "unknown plastic"}
+
+    litz_dict["1.8x512x0.05"] = {"strands_numbers": 512,
+                                 "strand_radii": 0.05e-3 / 2,
+                                 "conductor_radii": 1.8e-3 / 2,
+                                 "ff": "",
+                                 "manufacturer": "PACK",
+                                 "material_number": "AB21217207",
+                                 "litz": "RUPALIT Safety VB155",
+                                 "insulation": "3 layers Mylar"}
+
+    litz_dict["2.3x600x0.071"] = {"strands_numbers": 600,
+                                  "strand_radii": 0.071e-3 / 2,
+                                  "conductor_radii": 2.3e-3 / 2,
+                                  "ff": "",
+                                  "manufacturer": "PACK",
+                                  "material_number": "AB21220522",
+                                  "litz": "RUPALIT Safety Profil V155",
+                                  "insulation": "3 layers Mylar"}
+
+    litz_dict["2.8x400x0.1"] = {"strands_numbers": 400,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 2.8e-3 / 2,
+                                "ff": "",
+                                "manufacturer": "PACK",
+                                "material_number": "AB21222210",
+                                "litz": "RUPALIT Safety V155",
+                                "insulation": "3 layers Mylar"}
+
 
     return litz_dict
 
@@ -298,6 +394,13 @@ def wire_material_database() -> Dict:
     }
 
     return wire_material
+
+def create_folders(*args) -> None:
+    """Creates folder for every given folder path (if it does not exist).
+    """
+    for folder in list(args):
+        if not os.path.exists(folder):
+            os.mkdir(folder)
 
 def cost_material_database() -> Dict:
     """

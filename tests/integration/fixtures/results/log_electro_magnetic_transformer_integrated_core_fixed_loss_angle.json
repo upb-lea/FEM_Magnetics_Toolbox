@@ -98,7 +98,7 @@
     "core": 0.008597741297967922
   },
   "simulation_settings": {
-    "date": "2023-02-14 18:27:09",
+    "date": "2023-03-01 20:11:29",
     "component_type": "IntegratedTransformer",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
@@ -156,7 +156,8 @@
         "turns": [
           3,
           6
-        ]
+        ],
+        "winding_insulation": 0.0005
       },
       {
         "bot_bound": -0.013999999999999999,
@@ -193,7 +194,8 @@
         "turns": [
           1,
           2
-        ]
+        ],
+        "winding_insulation": 0.0005
       }
     ],
     "air_gaps": {
@@ -203,12 +205,14 @@
         {
           "leg_position": "CenterLeg",
           "position_value": 30,
-          "height": 0.001
+          "height": 0.001,
+          "stacked_position": null
         },
         {
           "leg_position": "CenterLeg",
           "position_value": 40,
-          "height": 0.001
+          "height": 0.001,
+          "stacked_position": null
         }
       ]
     },

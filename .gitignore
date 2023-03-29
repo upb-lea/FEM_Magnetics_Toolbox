@@ -6,13 +6,15 @@
 *.pyc
 *.pdf
 *.msh
-*.dat
 *.json
 *.anh
 *.FEH
 *.pre
 *.pos
 *.res
+*.geo_unrolled
+*.db
+*.sqlite3
 
 # Folders
 femmt/femm
@@ -35,15 +37,13 @@ femmt.egg-info/
 .eggs/
 onelab/
 */working_directory/
+tests/integration/temp/
 
 # FEMMT: generated files
 femmt/electro_magnetic/Parameter.pro
 femmt/electro_magnetic/postquantities.pro
 femmt/electro_magnetic/Strands_Coefficients/PreParameter.pro
 femmt/electro_magnetic/core_materials_temp.pro
-*.geo_unrolled
-*.msh
-*.db
 
 # FEMMT: GUI generated files
 femmt/md_winding_1.png
@@ -65,6 +65,8 @@ femmt/thermal/solver/PostOperation.pro
 !tests/integration/fixtures/results/log_electro_magnetic_transformer_core_fixed_loss_angle.json
 !tests/integration/fixtures/results/log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json
 !tests/integration/fixtures/results/log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json
+!tests/integration/fixtures/results/log_electro_magnetic_thermal.json
+!tests/integration/fixtures/results/results_thermal.json
 
 # Example files
 femmt/examples/paper_thermal_validation.py

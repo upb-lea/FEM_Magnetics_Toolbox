@@ -23,6 +23,12 @@ class ComponentType(IntEnum):
     Transformer = 2
     IntegratedTransformer = 3
 
+class CoreType(IntEnum):
+    """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation.
+    """
+    Single = 1  # one axisymmetric core
+    Stacked = 2  # one and a half cores
+
 class AirGapMethod(IntEnum):
     """Sets the method how the air gap position (vertical) is set.
     Used in AirGaps class.
@@ -35,6 +41,9 @@ class AirGapMethod(IntEnum):
     """
     Manually = 3
     """The vertical position needs to be given manually. In metres.
+    """
+    Stacked = 4
+    """Two air gaps can be defined with "bot" (center of lower core) and "top" (between backside of upper core and stacked core).
     """
 
 class AirGapLegPosition(IntEnum):
@@ -50,6 +59,15 @@ class AirGapLegPosition(IntEnum):
     RightLeg = 1
     """Air gap in right leg.
     """
+
+class StackedPosition(IntEnum):
+    """For stacked cores: options to place air gaps.
+
+    1 to place air gap in the top winding window
+    2 to place air gap in the bot winding window
+    """
+    Top = 1
+    Bot = 2
 
 class WindingType(IntEnum):
     """Internally used in VirtualWindingWindow class. 
