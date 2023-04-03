@@ -1520,7 +1520,7 @@ class MagneticComponent:
 
         if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
             # Ohmic losses (weighted effective value of current density)
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F.pos"))
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
@@ -1535,7 +1535,7 @@ class MagneticComponent:
 
         if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
             # Ohmic losses (weighted effective value of current density)
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "jH.pos"))
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "jH_density.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)

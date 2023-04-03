@@ -611,15 +611,15 @@ PostProcessing {
              [ CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
              In DomainC ; Jacobian Vol ; Integration II ; } } }
           { Name j2F_density ; Value { Integral {
-             [ CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;  // 0.5* added by Till
+             [ CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
              In DomainC ; Jacobian Vol ; Integration II ; } } }
       Else
            { Name j2F ; Value { Integral {
-             [ 0.5*CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;  // 0.5* added by Till
+             [ 0.5*CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;// 0.5 for frequency domain
              In DomainC ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2F_density ; Value { Integral {
-             [ 0.5*CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;  // 0.5* added by Till
+             [ 0.5*CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;// 0.5 for frequency domain
              In DomainC ; Jacobian Vol ; Integration II ; } } }
       EndIf
 
@@ -632,19 +632,19 @@ PostProcessing {
              In DomainS ; Jacobian Vol ; Integration II ; } } }
       Else
            { Name j2H ; Value { Integral {
-             [ 0.5*CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added
+             [ 0.5*CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
              In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2H_density ; Value { Integral {
-             [ 0.5*CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 added
+             [ 0.5*CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
              In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2Hprox ; Value { Integral {
-            [ 0.5*CoefGeo*Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] ] ;// 0.5 added by Till
+            [ 0.5*CoefGeo*Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] ] ;// 0.5 for frequency domain
             In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2Hskin ; Value { Integral {
-            [ 0.5*CoefGeo*kkk[]*SquNorm[-1/AreaCell[]*{ir}] ] ;// 0.5 added by Till
+            [ 0.5*CoefGeo*kkk[]*SquNorm[-1/AreaCell[]*{ir}] ] ;// 0.5 for frequency domain
             In DomainS ; Jacobian Vol ; Integration II ; } } }
       EndIf
 

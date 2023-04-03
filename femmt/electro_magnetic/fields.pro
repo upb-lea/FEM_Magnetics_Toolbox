@@ -61,13 +61,13 @@ PostOperation Map_local UsingPost MagDyn_a {
 
   // Ohmic Loss
   If(Flag_show_standard_fields)
-    Print[ j2F, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current losses / W", File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
+    //Print[ j2F, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current losses / W", File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
+    Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
   EndIf
-  //Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
   If(Flag_show_standard_fields)
-    Print[ j2H,   OnElementsOf DomainS, Name "Litz wire losses / W" , File StrCat[DirResFields,"jH",ExtGmsh] ] ;
+    //Print[ j2H, OnElementsOf DomainS, Name "Litz wire losses / W" , File StrCat[DirResFields,"jH",ExtGmsh] ] ;
+    Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
   EndIf
-  //Print[ j2H_density,   OnElementsOf DomainS, File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
   //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
   //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
 
