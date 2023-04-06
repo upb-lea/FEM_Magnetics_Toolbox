@@ -54,13 +54,16 @@ class ItoOptuna:
             material_data_list.append(MaterialCurve(material_name, material_mu_r_initial, material_flux_density_vec, material_mu_r_imag_vec, material_mu_r_real_vec, saturation_flux_density))
 
         # working directories
-        fem_working_directory = os.path.join(config.working_directory, 'femmt_simulation')
-        fem_simulation_results_directory = os.path.join(config.working_directory, "fem_simulation_results")
-        reluctance_model_results_directory = os.path.join(config.working_directory, "reluctance_model_results")
+        fem_working_directory = os.path.join(config.working_directory, '00_femmt_simulation')
+        reluctance_model_results_directory = os.path.join(config.working_directory, "01_reluctance_model_results")
+        fem_simulation_results_directory = os.path.join(config.working_directory, "02_fem_simulation_results")
+        fem_thermal_simulation_results_directory = os.path.join(config.working_directory, "03_fem_thermal_simulation_results")
+
 
         os.makedirs(fem_working_directory, exist_ok=True)
         os.makedirs(fem_simulation_results_directory, exist_ok=True)
         os.makedirs(reluctance_model_results_directory, exist_ok=True)
+        os.makedirs(fem_thermal_simulation_results_directory, exist_ok=True)
 
         # finalize data to dto
         target_and_fix_parameters = ItoTargetAndFixedParameters(
@@ -74,7 +77,8 @@ class ItoOptuna:
             target_inductance_matrix=target_inductance_matrix,
             fem_working_directory=fem_working_directory,
             fem_simulation_results_directory=fem_simulation_results_directory,
-            reluctance_model_results_directory=reluctance_model_results_directory
+            reluctance_model_results_directory=reluctance_model_results_directory,
+            fem_thermal_simulation_results_directory=fem_thermal_simulation_results_directory,
         )
 
         return target_and_fix_parameters
