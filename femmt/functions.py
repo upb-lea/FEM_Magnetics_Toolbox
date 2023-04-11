@@ -39,7 +39,7 @@ colors_femmt_default = {"blue": (28, 113, 216),
 colors_geometry_femmt_default = {
                     "core": "black",
                     "air_gap": "yellow",
-                    "winding": ["orange", "brown", "yellow", "green"],
+                    "winding": ["orange", "brown", "yellow", "green", "red", "black", "grey"],
                     "insulation": "blue",
                     "potting_inner": "grey",
                     "potting_outer": "grey",

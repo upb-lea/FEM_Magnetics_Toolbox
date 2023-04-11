@@ -43,7 +43,7 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ Mag_b_real,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_b_real", ExtGmsh],  LastTimeStepOnly] ;
   //Print[ Mag_b_imag,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_b_imag", ExtGmsh],  LastTimeStepOnly] ;
   If(Flag_show_standard_fields)
-    Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh]];
+     Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh]];
   EndIf
   //  , StoreInVariable $Magb maybe use this for Core Loss
 
@@ -61,7 +61,7 @@ PostOperation Map_local UsingPost MagDyn_a {
 
   // Ohmic Loss
   If(Flag_show_standard_fields)
-    Print[ j2F, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current losses / W", File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
+     Print[ j2F, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current losses / W", File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
   EndIf
   //Print[ j2F_density, OnElementsOf Region[{DomainC}], File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
   If(Flag_show_standard_fields)
