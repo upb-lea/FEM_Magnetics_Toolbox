@@ -1146,8 +1146,6 @@ class TwoDaxiSymmetric:
                                 0,
                                 self.mesh_data.c_conductor[num]])
 
-
-
                 else:
                     raise Exception(f"Unknown winding type {virtual_winding_window.winding_type.name}")
 

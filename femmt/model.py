@@ -691,6 +691,7 @@ class VirtualWindingWindow:
         self.winding_scheme = winding_scheme
         self.windings = [conductor]
         self.turns = [0] * (conductor.winding_number + 1)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
+        # self.turns = [0] * (3)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
         self.turns.insert(conductor.winding_number, turns)
         self.winding_is_set = True
         self.wrap_para = wrap_para_type

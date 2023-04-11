@@ -79,7 +79,6 @@ if not os.path.exists(example_results_folder):
 # component = "stacked-transformer"
 component = "stacked-center-tapped-transformer"
 # component = "load_from_file"
-# component = "load_from_file"
 
 
 # Create Object
@@ -242,7 +241,7 @@ if component == "transformer":
 
     # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+    bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
 
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -253,8 +252,8 @@ if component == "transformer":
     winding2.parallel = False
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    left.set_winding(winding1, 10, None)
-    right.set_winding(winding2, 10, None)
+    bot.set_winding(winding2, 10, None)
+    top.set_winding(winding1, 10, None)
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
@@ -322,7 +321,7 @@ if component == "three-winding-transformer":
     top_right.set_winding(winding2, 6, fmt.WindingType.Single)
     bot_right.set_winding(winding3, 12, fmt.WindingType.Single)
     #bot_left.set_winding(winding4,10,fmt.InterleavedWindingScheme.HorizontalAlternating)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
@@ -480,9 +479,9 @@ if component == "stacked-center-tapped-transformer":
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=False)
 
-    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.005, window_h_bot=0.015)
+    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005, window_h_bot=0.02)
     core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
@@ -496,7 +495,7 @@ if component == "stacked-center-tapped-transformer":
     insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
                                                                                                       primary_turns=14, primary_radius=1.1e-3,
                                                                                                       secondary_parallel_turns=3, secondary_thickness_foil=1e-3,
-                                                                                                      primary_coil_turns=7)
+                                                                                                      primary_coil_turns=3)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])

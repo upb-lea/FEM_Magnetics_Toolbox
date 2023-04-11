@@ -186,7 +186,7 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
 
 
 def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow,
-                                    window_height, isolations: ThreeWindingIsolation):
+                                    window_height, isolations: ThreeWindingIsolation, interleaving_type: CenterTappedInterleavingType):
     """Defines the vertical stacking of previously defined ConductorRows.
     IMPORTANT DEFINITION: the rows are calculated without taking into account
     any vertical insulation. Only the horizontal insulation from conductors
@@ -196,7 +196,8 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
     if not check_secondary_and_tertiary_are_the_same(secondary_row, tertiary_row):
         print("Secondary and tertiary winding are not defined similar. "
               "That is not a nice center-tapped transformer :(")
-    else:
+
+    elif interleaving_type == CenterTappedInterleavingType.TypeA:
         # Usually for center-tapped it is the secondary/=tertiary winding number
         # But for parallel windings this can also differ -> a general approach is implemented
         # what is the smallest number of rows?
@@ -234,6 +235,13 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
 
         # Create the complete ConductorStack from the stack_order
         return ConductorStack(number_of_groups=number_of_groups, number_of_single_rows=number_of_single_rows, order=stack_order)
+
+    elif interleaving_type == CenterTappedInterleavingType.TypeB:
+
+        number_of_single_rows = None
+        stack_order = None
+        # Create the complete ConductorStack from the stack_order
+        return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
 
 
 def get_number_of_turns_in_groups(stack):
@@ -301,3 +309,4 @@ def mix_x_and_I(input_x, input_I):
             # print(f"{I = }")
             input_list = [input_x[0], input_I[0]]
             return [input_list[i] for i in I]
+

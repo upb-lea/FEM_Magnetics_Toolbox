@@ -1172,9 +1172,14 @@ class MagneticComponent:
             turns = 0
             for ww in self.winding_windows:
                 for vww in ww.virtual_winding_windows:
-                    for index, winding in enumerate(vww.windings):
+                    for index, winding in enumerate(self.windings):
                         if winding.winding_number == num:
-                            turns += vww.turns[index]
+                            # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
+                            try:
+                                turns += vww.turns[index]
+                            except:
+                                pass
+
             if self.windings[num].parallel:
                 text_file.write(f"NbrCond{num + 1} = 1;\n")
                 text_file.write(f"AreaCell{num + 1} = {self.windings[num].a_cell*turns};\n")

@@ -150,6 +150,13 @@ class ConductorArrangement(IntEnum):
     """
 
 
+class CenterTappedInterleavingType(IntEnum):
+    """
+    """
+    TypeA = 1
+    TypeB = 2
+
+
 class ConductorType(IntEnum):
     """Sets the type of the conductor.
     """
