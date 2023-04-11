@@ -935,7 +935,7 @@ class Mesh:
         # have a high runtime. Check if thats true and when it does try to reduce the number of synchronize() calls by adding all points first and
         # embed them later together:
         # This is added here therefore the additional points are not seen in the pictures and views
-        # self.forward_meshing(p_cond)
+        self.forward_meshing(p_cond)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # No mesh is generated here, because generating a mesh, saving it as *.msh, loading it, appending more geometry data
@@ -1306,9 +1306,7 @@ class Mesh:
         """In this function multiple techniques in order to raise the mesh density at certain points are applied.
         :return:
         """
-        if self.core.core_type == CoreType.Single:
-            # Inter Conductors
-            self.inter_conductor_meshing(p_cond)
+        def rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound):
 
             # Winding window rasterization:
             # In order adjust the mesh density in empty parts of the winding window a grid of possible points
@@ -1318,344 +1316,138 @@ class Mesh:
             # min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.insulation.inner_winding_insulations)
             # min_distance = max(self.insulation.inner_winding_insulations)
             min_distance = 0  # TODO: MA Project?
+
+            width = right_bound - left_bound
+            height = top_bound - bot_bound
+
+            number_cols = 20  # Can be changed. More points equal higher raster density
+            number_rows = int(number_cols * height / width)  # Assumption: number_cols/number_rows = width/height
+
+            cell_width = width / (number_cols + 1)
+            cell_height = height / (number_rows + 1)
+
+            # Get all possible points
+            possible_points = []
+            x = left_bound + cell_width / 2
+            y = bot_bound + cell_height / 2
+            for i in range(number_cols + 1):
+                for j in range(number_rows + 1):
+                    possible_points.append([x + i * cell_width, y + j * cell_height])
+
+            fixed_points = []
+            conductors = self.model.p_conductor
+            for winding in range(len(self.windings)):
+                for i in range(len(conductors[winding]) // 5):
+                    point = conductors[winding][i * 5]
+                    fixed_points.append([point[0], point[1]])
+
+            # Because the points need to be embed into the right surface. The points now will be split between different insulations and the air in the winding window.
+            # TODO Currently primary secondary insulation is not considered
+            left_iso = []
+            right_iso = []
+            top_iso = []
+            bot_iso = []
+            air = []
+
+            # insulations are currently not implemented for integrated transformers
+            if self.component_type != ComponentType.IntegratedTransformer:
+                iso_core_left = self.model.p_iso_core[0]
+                iso_core_top = self.model.p_iso_core[1]
+                iso_core_right = self.model.p_iso_core[2]
+                iso_core_bot = self.model.p_iso_core[3]
+
+            # Extract all free_points
+            for i in range(len(possible_points)):
+                x = possible_points[i][0]
+                y = possible_points[i][1]
+
+                # Check collision with fixed points
+                valid = True
+                for fixed_point in fixed_points:
+                    dist = np.sqrt((fixed_point[0] - x) ** 2 + (fixed_point[1] - y) ** 2)
+                    if dist < min_distance:
+                        valid = False
+                        break
+
+                if not valid:
+                    continue
+
+                # Check if point is in stray_path
+                if self.component_type == ComponentType.IntegratedTransformer and self.core.core_type == CoreType.Single:
+                    start_index = self.stray_path.start_index
+                    stray_path_top_bound = self.air_gaps.midpoints[start_index + 1][1] - self.air_gaps.midpoints[start_index + 1][2] / 2
+                    stray_path_bot_bound = self.air_gaps.midpoints[start_index][1] + self.air_gaps.midpoints[start_index][2] / 2
+                    stray_path_right_bound = self.stray_path.length
+                    stray_path_left_bound = left_bound
+
+                    if x > stray_path_left_bound and x < stray_path_right_bound and y > stray_path_bot_bound and y < stray_path_top_bound:
+                        continue
+
+                # Point seems to be valid. Now find out in which surface the point belongs
+                point = gmsh.model.geo.addPoint(x, y, 0, 1 * self.mesh_data.c_window)
+
+                if self.component_type != ComponentType.IntegratedTransformer:
+                    if ff.point_is_in_rect(x, y, iso_core_left):
+                        # Left iso
+                        left_iso.append(point)
+                    elif ff.point_is_in_rect(x, y, iso_core_top):
+                        # Top iso
+                        top_iso.append(point)
+                    elif ff.point_is_in_rect(x, y, iso_core_right):
+                        # Right iso
+                        right_iso.append(point)
+                    elif ff.point_is_in_rect(x, y, iso_core_bot):
+                        # Bot iso
+                        bot_iso.append(point)
+                    else:
+                        # Air
+                        air.append(point)
+                else:
+                    air.append(point)
+            # Call synchronize so the points will be added to the model
+            gmsh.model.geo.synchronize()
+
+            # Embed points into surfaces
+            # if self.component_type != ComponentType.IntegratedTransformer:
+            #     gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
+            #     gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
+            #     gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
+            #     gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
+            return air
+
+        if self.core.core_type == CoreType.Single:
+            # Inter Conductors
+            self.inter_conductor_meshing(p_cond)
 
             left_bound = self.core.core_inner_diameter / 2
             right_bound = self.model.r_inner
             top_bound = self.core.window_h / 2
             bot_bound = -self.core.window_h / 2
 
-            width = right_bound - left_bound
-            height = top_bound - bot_bound
-
-            number_cols = 20  # Can be changed. More points equal higher raster density
-            number_rows = int(number_cols * height / width)  # Assumption: number_cols/number_rows = width/height
-
-            cell_width = width / (number_cols + 1)
-            cell_height = height / (number_rows + 1)
-
-            # Get all possible points
-            possible_points = []
-            x = left_bound + cell_width / 2
-            y = bot_bound + cell_height / 2
-            for i in range(number_cols + 1):
-                for j in range(number_rows + 1):
-                    possible_points.append([x + i * cell_width, y + j * cell_height])
-
-            fixed_points = []
-            conductors = self.model.p_conductor
-            for winding in range(len(self.windings)):
-                for i in range(len(conductors[winding]) // 5):
-                    point = conductors[winding][i * 5]
-                    fixed_points.append([point[0], point[1]])
-
-            # Because the points need to be embed into the right surface. The points now will be split between different insulations and the air in the winding window.
-            # TODO Currently primary secondary insulation is not considered
-            left_iso = []
-            right_iso = []
-            top_iso = []
-            bot_iso = []
-            air = []
-
-            # insulations are currently not implemented for integrated transformers
-            if self.component_type != ComponentType.IntegratedTransformer:
-                iso_core_left = self.model.p_iso_core[0]
-                iso_core_top = self.model.p_iso_core[1]
-                iso_core_right = self.model.p_iso_core[2]
-                iso_core_bot = self.model.p_iso_core[3]
-
-            # Extract all free_points
-            for i in range(len(possible_points)):
-                x = possible_points[i][0]
-                y = possible_points[i][1]
-
-                # Check collision with fixed points
-                valid = True
-                for fixed_point in fixed_points:
-                    dist = np.sqrt((fixed_point[0] - x) ** 2 + (fixed_point[1] - y) ** 2)
-                    if dist < min_distance:
-                        valid = False
-                        break
-
-                if not valid:
-                    continue
-
-                # Check if point is in stray_path
-                if self.component_type == ComponentType.IntegratedTransformer and self.core.core_type == CoreType.Single:
-                    start_index = self.stray_path.start_index
-                    stray_path_top_bound = self.air_gaps.midpoints[start_index + 1][1] - self.air_gaps.midpoints[start_index + 1][2] / 2
-                    stray_path_bot_bound = self.air_gaps.midpoints[start_index][1] + self.air_gaps.midpoints[start_index][2] / 2
-                    stray_path_right_bound = self.stray_path.length
-                    stray_path_left_bound = left_bound
-
-                    if x > stray_path_left_bound and x < stray_path_right_bound and y > stray_path_bot_bound and y < stray_path_top_bound:
-                        continue
-
-                # Point seems to be valid. Now find out in which surface the point belongs
-                point = gmsh.model.geo.addPoint(x, y, 0, 1 * self.mesh_data.c_window)
-
-                if self.component_type != ComponentType.IntegratedTransformer:
-                    if ff.point_is_in_rect(x, y, iso_core_left):
-                        # Left iso
-                        left_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_top):
-                        # Top iso
-                        top_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_right):
-                        # Right iso
-                        right_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_bot):
-                        # Bot iso
-                        bot_iso.append(point)
-                    else:
-                        # Air
-                        air.append(point)
-                else:
-                    air.append(point)
-            # Call synchronize so the points will be added to the model
-            gmsh.model.geo.synchronize()
-
-            # Embed points into surfaces
-            # if self.component_type != ComponentType.IntegratedTransformer:
-            #     gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
-            #     gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
-            #     gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
-            #     gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
-
-            gmsh.model.mesh.embed(0, air, 2, self.plane_surface_air[0])
-
+            air_tags = rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound)
+            gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air[0])
 
         if self.core.core_type == CoreType.Stacked:
             # Inter Conductors
             self.inter_conductor_meshing(p_cond)
 
-            # Winding window rasterization:
-            # In order adjust the mesh density in empty parts of the winding window a grid of possible points
-            # is put on the winding window. Every point that is too close to the conductors is removed.
-            # Every remaining point is added to the mesh with a higher mesh density
-
-            # min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.insulation.inner_winding_insulations)
-            # min_distance = max(self.insulation.inner_winding_insulations)
-            min_distance = 0  # TODO: MA Project?
-
-
-
             # Top Window
             top_bound = self.model.p_window_top[2][1]  # y component of top window
             bot_bound = self.model.p_window_top[0][1]  # y component of bot window
-
             left_bound = self.core.core_inner_diameter / 2
             right_bound = self.model.r_inner
 
-            width = right_bound - left_bound
-            height = top_bound - bot_bound
-
-            number_cols = 20  # Can be changed. More points equal higher raster density
-            number_rows = int(number_cols * height / width)  # Assumption: number_cols/number_rows = width/height
-
-            cell_width = width / (number_cols + 1)
-            cell_height = height / (number_rows + 1)
-
-
-            # Get all possible points
-            possible_points = []
-            x = left_bound + cell_width / 2
-            y = bot_bound + cell_height / 2
-            for i in range(number_cols + 1):
-                for j in range(number_rows + 1):
-                    possible_points.append([x + i * cell_width, y + j * cell_height])
-
-            fixed_points = []
-            conductors = self.model.p_conductor
-            for winding in range(len(self.windings)):
-                for i in range(len(conductors[winding]) // 5):
-                    point = conductors[winding][i * 5]
-                    fixed_points.append([point[0], point[1]])
-
-            # Because the points need to be embed into the right surface. The points now will be split between different insulations and the air in the winding window.
-            # TODO Currently primary secondary insulation is not considered
-            left_iso = []
-            right_iso = []
-            top_iso = []
-            bot_iso = []
-            air = []
-
-            # insulations are currently not implemented for integrated transformers
-            if self.component_type != ComponentType.IntegratedTransformer:
-                iso_core_left = self.model.p_iso_core[0]
-                iso_core_top = self.model.p_iso_core[1]
-                iso_core_right = self.model.p_iso_core[2]
-                iso_core_bot = self.model.p_iso_core[3]
-
-            # Extract all free_points
-            for i in range(len(possible_points)):
-                x = possible_points[i][0]
-                y = possible_points[i][1]
-
-                # Check collision with fixed points
-                valid = True
-                for fixed_point in fixed_points:
-                    dist = np.sqrt((fixed_point[0] - x) ** 2 + (fixed_point[1] - y) ** 2)
-                    if dist < min_distance:
-                        valid = False
-                        break
-
-                if not valid:
-                    continue
-
-                # Check if point is in stray_path
-                if self.component_type == ComponentType.IntegratedTransformer and self.core.core_type == CoreType.Single:
-                    start_index = self.stray_path.start_index
-                    stray_path_top_bound = self.air_gaps.midpoints[start_index + 1][1] - self.air_gaps.midpoints[start_index + 1][2] / 2
-                    stray_path_bot_bound = self.air_gaps.midpoints[start_index][1] + self.air_gaps.midpoints[start_index][2] / 2
-                    stray_path_right_bound = self.stray_path.length
-                    stray_path_left_bound = left_bound
-
-                    if x > stray_path_left_bound and x < stray_path_right_bound and y > stray_path_bot_bound and y < stray_path_top_bound:
-                        continue
-
-                # Point seems to be valid. Now find out in which surface the point belongs
-                point = gmsh.model.geo.addPoint(x, y, 0, 1 * self.mesh_data.c_window)
-
-                if self.component_type != ComponentType.IntegratedTransformer:
-                    if ff.point_is_in_rect(x, y, iso_core_left):
-                        # Left iso
-                        left_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_top):
-                        # Top iso
-                        top_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_right):
-                        # Right iso
-                        right_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_bot):
-                        # Bot iso
-                        bot_iso.append(point)
-                    else:
-                        # Air
-                        air.append(point)
-                else:
-                    air.append(point)
-            # Call synchronize so the points will be added to the model
-            gmsh.model.geo.synchronize()
-
-            # Embed points into surfaces
-            # if self.component_type != ComponentType.IntegratedTransformer:
-            #     gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
-            #     gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
-            #     gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
-            #     gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
-
-
-            gmsh.model.mesh.embed(0, air, 2, self.plane_surface_air_top[0])
+            air_tags = rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound)
+            gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_top[0])
 
             # Bot Window
             top_bound = self.model.p_window_bot[2][1]  # y component of top window
             bot_bound = self.model.p_window_bot[0][1]  # y component of bot window
-
             left_bound = self.core.core_inner_diameter / 2
             right_bound = self.model.r_inner
 
-            width = right_bound - left_bound
-            height = top_bound - bot_bound
-
-            number_cols = 17  # Can be changed. More points equal higher raster density
-            number_rows = int(number_cols * height / width)  # Assumption: number_cols/number_rows = width/height
-
-            cell_width = width / (number_cols + 1)
-            cell_height = height / (number_rows + 1)
-
-
-            # Get all possible points
-            possible_points = []
-            x = left_bound + cell_width / 2
-            y = bot_bound + cell_height / 2
-            for i in range(number_cols + 1):
-                for j in range(number_rows + 1):
-                    possible_points.append([x + i * cell_width, y + j * cell_height])
-
-            fixed_points = []
-            conductors = self.model.p_conductor
-            for winding in range(len(self.windings)):
-                for i in range(len(conductors[winding]) // 5):
-                    point = conductors[winding][i * 5]
-                    fixed_points.append([point[0], point[1]])
-
-            # Because the points need to be embed into the right surface. The points now will be split between different insulations and the air in the winding window.
-            # TODO Currently primary secondary insulation is not considered
-            left_iso = []
-            right_iso = []
-            top_iso = []
-            bot_iso = []
-            air = []
-
-            # insulations are currently not implemented for integrated transformers
-            if self.component_type != ComponentType.IntegratedTransformer:
-                iso_core_left = self.model.p_iso_core[0]
-                iso_core_top = self.model.p_iso_core[1]
-                iso_core_right = self.model.p_iso_core[2]
-                iso_core_bot = self.model.p_iso_core[3]
-
-            # Extract all free_points
-            for i in range(len(possible_points)):
-                x = possible_points[i][0]
-                y = possible_points[i][1]
-
-                # Check collision with fixed points
-                valid = True
-                for fixed_point in fixed_points:
-                    dist = np.sqrt((fixed_point[0] - x) ** 2 + (fixed_point[1] - y) ** 2)
-                    if dist < min_distance:
-                        valid = False
-                        break
-
-                if not valid:
-                    continue
-
-                # Check if point is in stray_path
-                if self.component_type == ComponentType.IntegratedTransformer and self.core.core_type == CoreType.Single:
-                    start_index = self.stray_path.start_index
-                    stray_path_top_bound = self.air_gaps.midpoints[start_index + 1][1] - self.air_gaps.midpoints[start_index + 1][2] / 2
-                    stray_path_bot_bound = self.air_gaps.midpoints[start_index][1] + self.air_gaps.midpoints[start_index][2] / 2
-                    stray_path_right_bound = self.stray_path.length
-                    stray_path_left_bound = left_bound
-
-                    if x > stray_path_left_bound and x < stray_path_right_bound and y > stray_path_bot_bound and y < stray_path_top_bound:
-                        continue
-
-                # Point seems to be valid. Now find out in which surface the point belongs
-                point = gmsh.model.geo.addPoint(x, y, 0, 1 * self.mesh_data.c_window)
-
-                if self.component_type != ComponentType.IntegratedTransformer:
-                    if ff.point_is_in_rect(x, y, iso_core_left):
-                        # Left iso
-                        left_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_top):
-                        # Top iso
-                        top_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_right):
-                        # Right iso
-                        right_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_bot):
-                        # Bot iso
-                        bot_iso.append(point)
-                    else:
-                        # Air
-                        air.append(point)
-                else:
-                    air.append(point)
-            # Call synchronize so the points will be added to the model
-            gmsh.model.geo.synchronize()
-
-            # Embed points into surfaces
-            # if self.component_type != ComponentType.IntegratedTransformer:
-            #     gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
-            #     gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
-            #     gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
-            #     gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
-
-
-            gmsh.model.mesh.embed(0, air, 2, self.plane_surface_air_bot[0])
-
-
+            air_tags = rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound)
+            gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_bot[0])
 
         self.visualize(visualize_before=True, save_png=False)
 
