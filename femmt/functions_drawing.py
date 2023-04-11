@@ -1,5 +1,4 @@
 from femmt import *
-from femmt.enumerations import *
 from femmt.dtos import *
 
 

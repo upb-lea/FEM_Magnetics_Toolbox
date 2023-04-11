@@ -503,9 +503,6 @@ if component == "stacked-center-tapped-transformer":
     geo.create_model(freq=200000, visualize_before=True)
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_results=True)
 
-    # Reference simulation using FEMM
-    # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
-
 if component == "load_from_file":
     working_directory = os.path.join(example_results_folder, "from-file")
     if not os.path.exists(working_directory):

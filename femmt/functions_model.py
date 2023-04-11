@@ -1,5 +1,5 @@
-from femmt import *
 from femmt.dtos import *
+
 
 def define_center_tapped_insulation(primary_to_primary, secondary_to_secondary, primary_to_secondary):
     """

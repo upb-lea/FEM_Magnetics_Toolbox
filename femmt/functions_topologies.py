@@ -213,8 +213,8 @@ def set_center_tapped_windings(core, primary_turns, primary_radius, secondary_pa
         ww_bot = WindingWindow(core, insulation)
         ww_bot_height = core.window_h
     elif core.core_type == CoreType.Stacked:
-        ww_top, ww_bot = fmt.create_stacked_winding_windows(core, insulation)
-        vww_top = ww_top.split_window(fmt.WindingWindowSplit.NoSplit)
+        ww_top, ww_bot = create_stacked_winding_windows(core, insulation)
+        vww_top = ww_top.split_window(WindingWindowSplit.NoSplit)
         ww_bot_height = core.window_h_bot
 
     # Define the transformer winding stack and split the transformer winding window
