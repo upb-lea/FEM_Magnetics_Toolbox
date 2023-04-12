@@ -493,8 +493,10 @@ if component == "stacked-center-tapped-transformer":
 
     # set_center_tapped_windings() automatically places the condu
     insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
-                                                                                                      primary_turns=14, primary_radius=1.1e-3,
+                                                                                                      primary_turns=14, primary_radius=1.1e-3, primary_number_strands=50, primary_strand_radius=0.00011,
                                                                                                       secondary_parallel_turns=3, secondary_thickness_foil=1e-3,
+                                                                                                      iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
+                                                                                                      iso_primary_to_primary=2e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
                                                                                                       primary_coil_turns=3)
 
     geo.set_insulation(insulation)

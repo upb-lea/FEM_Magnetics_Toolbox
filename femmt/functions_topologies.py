@@ -158,9 +158,22 @@ def place_windings_B(vwws, winding_scheme_type, transformer_stack, primary_turns
     return vwws
 
 
-def set_center_tapped_windings(core, primary_turns, primary_radius, secondary_parallel_turns, secondary_thickness_foil, primary_coil_turns=None):
+def set_center_tapped_windings(core,
+                               primary_turns, primary_radius, primary_number_strands, primary_strand_radius,
+                               secondary_parallel_turns, secondary_thickness_foil,
+                               iso_top_core, iso_bot_core, iso_left_core, iso_right_core,
+                               iso_primary_to_primary, iso_secondary_to_secondary, iso_primary_to_secondary,
+                               primary_coil_turns=None):
     """
-
+    :param primary_strand_radius:
+    :param primary_number_strands:
+    :param iso_primary_to_secondary:
+    :param iso_secondary_to_secondary:
+    :param iso_primary_to_primary:
+    :param iso_right_core:
+    :param iso_left_core:
+    :param iso_bot_core:
+    :param iso_top_core:
     :param core:
     :param primary_turns:
     :param primary_radius:
@@ -171,17 +184,17 @@ def set_center_tapped_windings(core, primary_turns, primary_radius, secondary_pa
     """
     # Define the insulation
     insulation = model.Insulation()
-    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    winding_isolations = define_center_tapped_insulation(primary_to_primary=2e-4,
-                                                         secondary_to_secondary=2e-4,
-                                                         primary_to_secondary=5e-4)
+    insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
+    winding_isolations = define_center_tapped_insulation(primary_to_primary=iso_primary_to_primary,
+                                                         secondary_to_secondary=iso_secondary_to_secondary,
+                                                         primary_to_secondary=iso_primary_to_secondary)
     insulation.add_winding_insulations([winding_isolations.primary_to_primary,
                                         winding_isolations.secondary_to_secondary,
                                         winding_isolations.primary_to_secondary], 0.0005)
 
     # Define windings
     winding1 = Conductor(0, Conductivity.Copper)
-    winding1.set_litz_round_conductor(primary_radius, 50, 0.00011, None, conductor_arrangement=ConductorArrangement.SquareFullWidth)
+    winding1.set_litz_round_conductor(primary_radius, primary_number_strands, primary_strand_radius, None, conductor_arrangement=ConductorArrangement.SquareFullWidth)
 
     winding2 = Conductor(1, Conductivity.Copper)
     winding2.set_rectangular_conductor(thickness=secondary_thickness_foil)
