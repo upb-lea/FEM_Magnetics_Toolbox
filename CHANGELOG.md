@@ -6,7 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- unit tests for materialdatabase
+- three winding transformer
+- center-tapped transformer drawing schemes
+- parallel connection of solid turns
 
+### Updated
+- materialdatabase: material loading and interpolation of operation point
 
 ## [0.4.0] - 2022-12-19
 ### Added
