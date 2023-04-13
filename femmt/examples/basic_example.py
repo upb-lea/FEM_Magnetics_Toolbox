@@ -479,7 +479,7 @@ if component == "stacked-center-tapped-transformer":
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=False)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=True)
 
     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005, window_h_bot=0.02)
     core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
@@ -502,7 +502,7 @@ if component == "stacked-center-tapped-transformer":
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
 
-    geo.create_model(freq=200000, visualize_before=True)
+    geo.create_model(freq=200000, visualize_before=False)
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_results=True)
 
 if component == "load_from_file":

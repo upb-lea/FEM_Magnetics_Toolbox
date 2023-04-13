@@ -1205,7 +1205,7 @@ class TwoDaxiSymmetric:
         if self.component_type == ComponentType.IntegratedTransformer:
             # TODO: insulations implement for integrated_transformers
             # TODO Change back to warnings?
-            print("Insulations are not set because they are not implemented for integrated transformers.")
+            ff.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
         else:
             window_h = self.core.window_h
             iso = self.insulation

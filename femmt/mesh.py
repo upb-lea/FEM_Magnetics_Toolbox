@@ -1449,7 +1449,7 @@ class Mesh:
             air_tags = rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound)
             gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_bot[0])
 
-        self.visualize(visualize_before=True, save_png=False)
+        # self.visualize(visualize_before=True, save_png=False)
 
         # Synchronize again
         gmsh.model.geo.synchronize()
