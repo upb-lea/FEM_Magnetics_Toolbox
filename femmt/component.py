@@ -1347,11 +1347,14 @@ class MagneticComponent:
                     for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
-                # Case litz: Load homogenized results
+                # Case Solid: Load results, (pitfall for parallel windings results are only stored in one turn!)
                 else:
                     winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
-                    for turn in range(0, winding_dict["number_turns"]):
-                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+                    if self.windings[winding].parallel:
+                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{1}", last_n=sweep_number)[sweep_run])
+                    else:
+                        for turn in range(0, winding_dict["number_turns"]):
+                            winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
 
                 # Magnetic Field Energy
@@ -1412,8 +1415,13 @@ class MagneticComponent:
                 "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
                 "turns": []
             }
-            for turn in range(0, turns):
-                log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
+            if self.windings[winding].parallel:
+                log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(
+                    sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][0] for d in range(len(log_dict["single_sweeps"]))))
+            else:
+                for turn in range(0, turns):
+                    log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(
+                        sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
 
         # Winding (all windings)
         log_dict["total_losses"]["all_windings"] = sum(log_dict["single_sweeps"][d]["all_winding_losses"] for d in range(len(log_dict["single_sweeps"])))

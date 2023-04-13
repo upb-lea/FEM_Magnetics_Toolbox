@@ -512,9 +512,6 @@ class AirGaps:
                 self.midpoints.append([0, self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + height / 2, height])  # TODO: could also be done arbitrarily
                 self.number += 1
 
-            # if position_value
-            ff.femmt_print("Stacked")
-
         else:
             raise Exception(f"Method {self.method} is not supported.")
 
