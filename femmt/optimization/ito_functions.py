@@ -143,7 +143,7 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
 
 
     for count, dto in enumerate(simulation_dto_list):
-        fmt.femmt_print(f"FEM simulation {count} of {len(simulation_dto_list)}")
+        print(f"FEM simulation {count} of {len(simulation_dto_list)}")
         try:
             geo = integrated_transformer_fem_simulation_from_result_dto(config_dto = config_dto,
                                                                         dto=dto,
