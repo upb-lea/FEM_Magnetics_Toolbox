@@ -496,8 +496,8 @@ if component == "stacked-center-tapped-transformer":
                                                                                                       primary_turns=14, primary_radius=1.1e-3, primary_number_strands=50, primary_strand_radius=0.00011,
                                                                                                       secondary_parallel_turns=3, secondary_thickness_foil=1e-3,
                                                                                                       iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
-                                                                                                      iso_primary_to_primary=2e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
-                                                                                                      primary_coil_turns=3)
+                                                                                                      iso_primary_to_primary=1e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
+                                                                                                      primary_coil_turns=4)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])

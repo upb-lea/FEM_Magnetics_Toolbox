@@ -50,21 +50,21 @@ inductor_combinations = [
 transformer_combinations = [
     {
         "Name": "Interleaved RoundSolid HorizontalAlternating",
-        "WindingType": fmt.WindingType.Interleaved,
+        "WindingType": fmt.WindingType.TwoInterleaved,
         "ConductorType": fmt.ConductorType.RoundSolid,
         "WindingScheme": fmt.InterleavedWindingScheme.HorizontalAlternating,
         "ConductorArrangement": fmt.ConductorArrangement.Square
     },
     {
         "Name": "Interleaved RoundLitz VerticalStacked (square)",
-        "WindingType": fmt.WindingType.Interleaved,
+        "WindingType": fmt.WindingType.TwoInterleaved,
         "ConductorType": fmt.ConductorType.RoundLitz,
         "WindingScheme": fmt.InterleavedWindingScheme.VerticalStacked,
         "ConductorArrangement": fmt.ConductorArrangement.Square
     },
     {
         "Name": "Interleaved RoundLitz VerticalStacked (hexagonal)",
-        "WindingType": fmt.WindingType.Interleaved,
+        "WindingType": fmt.WindingType.TwoInterleaved,
         "ConductorType": fmt.ConductorType.RoundLitz,
         "WindingScheme": fmt.InterleavedWindingScheme.VerticalStacked,
         "ConductorArrangement": fmt.ConductorArrangement.Hexagonal
@@ -158,7 +158,7 @@ def run_transformer_simulations(working_directory, combinations):
             conductor2.set_rectangular_conductor(0.0013)
 
         winding_window = fmt.WindingWindow(core, insulation)
-        if combination["WindingType"] == fmt.WindingType.Interleaved:
+        if combination["WindingType"] == fmt.WindingType.TwoInterleaved:
             complete = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
             complete.set_interleaved_winding(conductor1, 10, conductor2, 10, combination["WindingScheme"], 0.0005)
         else:

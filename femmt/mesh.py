@@ -1254,7 +1254,7 @@ class Mesh:
         p_inter = None
         for ww in self.model.winding_windows:
             for vww in ww.virtual_winding_windows:
-                if vww.winding_type != WindingType.Interleaved:
+                if vww.winding_type != WindingType.TwoInterleaved:
                     for index, winding in enumerate(vww.windings):    #TODO: proof
                         num = winding.winding_number
                         p_inter = []
@@ -1297,7 +1297,7 @@ class Mesh:
             # Inter Conductors
             for ww in self.model.winding_windows:
                 for vww in ww.virtual_winding_windows:
-                    if vww.winding_type != WindingType.Interleaved:
+                    if vww.winding_type != WindingType.TwoInterleaved:
                         gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
             # Stray path
             # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
@@ -1320,7 +1320,7 @@ class Mesh:
             width = right_bound - left_bound
             height = top_bound - bot_bound
 
-            number_cols = 20  # Can be changed. More points equal higher raster density
+            number_cols = 17  # Can be changed. More points equal higher raster density
             number_rows = int(number_cols * height / width)  # Assumption: number_cols/number_rows = width/height
 
             cell_width = width / (number_cols + 1)

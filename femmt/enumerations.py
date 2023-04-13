@@ -90,7 +90,7 @@ class StackedPosition(IntEnum):
 class WindingType(IntEnum):
     """Internally used in VirtualWindingWindow class. 
     """
-    Interleaved = 1
+    TwoInterleaved = 1
     """only two winding (transformer) interleaving
     """
     Single = 2

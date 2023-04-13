@@ -74,9 +74,6 @@ class MagneticComponent:
         # Create file paths class in order to handle all paths
         self.file_data = FileData(working_directory)
 
-        # Breaking variable. This is set to False when the created model is not drawable (not valid). 
-        self.valid = True
-
         # To make sure femm is only imported once
         self.femm_is_imported = False
 
@@ -296,9 +293,6 @@ class MagneticComponent:
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
         """
-        # Always reset to valid
-        self.valid = True
-
         # Update mesh data
         self.mesh_data.update_data(frequency, skin_mesh_factor)
 
@@ -319,9 +313,8 @@ class MagneticComponent:
         :type skin_mesh_factor: float, optional
         """
         self.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
-        if self.valid:
-            self.mesh.generate_hybrid_mesh()  # create the mesh itself with gmsh
-            self.mesh.generate_electro_magnetic_mesh()  # assign the physical entities/domains to the mesh
+        self.mesh.generate_hybrid_mesh()  # create the mesh itself with gmsh
+        self.mesh.generate_electro_magnetic_mesh()  # assign the physical entities/domains to the mesh
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Create Model
@@ -432,10 +425,7 @@ class MagneticComponent:
             raise Exception("Winding windows are not set properly. Please check the winding creation")
 
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
-        if self.valid:
-            self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
-        else:
-            raise Exception("The model is not valid. The simulation won't start.")
+        self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
 
     def get_single_complex_permeability(self):
         """
@@ -606,7 +596,7 @@ class MagneticComponent:
                                             raise Exception(f"Unknown wrap para type {wrap_para_type}")
                                     else:
                                         raise Exception(f"Unknown winding scheme {winding_scheme}")
-                                elif winding_type == WindingType.Interleaved:
+                                elif winding_type == WindingType.TwoInterleaved:
                                     # Since interleaved winding type currently only supports round conductors this can be left empty.
                                     pass
                                 elif winding_type == WindingType.CenterTappedGroup:
@@ -798,7 +788,7 @@ class MagneticComponent:
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        # self.calculate_and_write_log()  # TODO: reuse center tapped
+        self.calculate_and_write_log()  # TODO: reuse center tapped
         if show_results:
             self.visualize()
 
@@ -870,9 +860,8 @@ class MagneticComponent:
         if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
             for i in range(0, len(frequency_list)):
                 self.high_level_geo_gen(frequency=frequency_list[i], skin_mesh_factor=skin_mesh_factor)
-                if self.valid:
-                    self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
-                    self.mesh.generate_electro_magnetic_mesh()
+                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+                self.mesh.generate_electro_magnetic_mesh()
 
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
                                     phase_deg_list=phi_deg_list_list[i])  # frequency and current
@@ -887,9 +876,8 @@ class MagneticComponent:
                 self.high_level_geo_gen(frequency=min(frequency_list), skin_mesh_factor=skin_mesh_factor)
             else:
                 raise Exception(f"Unknown excitation meshing type {excitation_meshing_type}")
-            if self.valid:
-                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
-                self.mesh.generate_electro_magnetic_mesh()
+            self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+            self.mesh.generate_electro_magnetic_mesh()
 
             for i in range(0, len(frequency_list)):
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
@@ -900,22 +888,17 @@ class MagneticComponent:
                 self.simulate()
                 # self.visualize()
 
-        if self.valid:
-            self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
+        self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
-            if show_last:
-                self.visualize()
+        if show_last:
+            self.visualize()
 
-            if return_results:
-                # Return a Dictionary with the results
-                results = {"j2F": self.load_result("j2F", len(frequency_list), "real"),
-                           "j2H": self.load_result("j2H", len(frequency_list), "real"),
-                           "p_hyst": self.load_result("p_hyst", len(frequency_list), "real")}
-                return results
-
-        else:
-            if return_results:
-                return {"FEM_results": "invalid"}
+        if return_results:
+            # Return a Dictionary with the results
+            results = {"j2F": self.load_result("j2F", len(frequency_list), "real"),
+                       "j2H": self.load_result("j2H", len(frequency_list), "real"),
+                       "p_hyst": self.load_result("p_hyst", len(frequency_list), "real")}
+            return results
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
@@ -941,130 +924,126 @@ class MagneticComponent:
         # self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
         # self.mesh.generate_mesh()
 
-        if self.valid:
-            frequencies = [op_frequency] * 2
-            currents = [[I0, 0], [0, I0]]
-            phases = [[0, 180], [0, 180]]
+        frequencies = [op_frequency] * 2
+        currents = [[I0, 0], [0, I0]]
+        phases = [[0, 180], [0, 180]]
 
-            # self.excitation_sweep(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize, meshing=False)
-            self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
+        # self.excitation_sweep(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize, meshing=False)
+        self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
 
-            ff.femmt_print(f"\n"
-                  f"                             == Inductances ==                             \n")
+        ff.femmt_print(f"\n"
+              f"                             == Inductances ==                             \n")
 
-            # Read the logged Flux_Linkages
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_1.dat")) as fd:
-                line = fd.readlines()[-2:]
-                # Fluxes induced in Winding 1
-                Phi_11 = float(line[0].split(sep=' ')[2])
-                Phi_12 = float(line[1].split(sep=' ')[2])
+        # Read the logged Flux_Linkages
+        with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_1.dat")) as fd:
+            line = fd.readlines()[-2:]
+            # Fluxes induced in Winding 1
+            Phi_11 = float(line[0].split(sep=' ')[2])
+            Phi_12 = float(line[1].split(sep=' ')[2])
 
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_2.dat")) as fd:
-                line = fd.readlines()[-2:]
-                # Fluxes induced in Winding 2
-                Phi_21 = float(line[0].split(sep=' ')[2])
-                Phi_22 = float(line[1].split(sep=' ')[2])
+        with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_2.dat")) as fd:
+            line = fd.readlines()[-2:]
+            # Fluxes induced in Winding 2
+            Phi_21 = float(line[0].split(sep=' ')[2])
+            Phi_22 = float(line[1].split(sep=' ')[2])
 
-            ff.femmt_print(f"\n"
-                  f"Fluxes: \n"
-                  f"Phi_11 = {Phi_11}     Induced by I_1 in Winding1 \n"
-                  f"Phi_21 = {Phi_21}     Induced by I_1 in Winding2 \n"
-                  f"Phi_12 = {Phi_12}     Induced by I_2 in Winding1 \n"
-                  f"Phi_22 = {Phi_22}     Induced by I_2 in Winding2 \n")
+        ff.femmt_print(f"\n"
+              f"Fluxes: \n"
+              f"Phi_11 = {Phi_11}     Induced by I_1 in Winding1 \n"
+              f"Phi_21 = {Phi_21}     Induced by I_1 in Winding2 \n"
+              f"Phi_12 = {Phi_12}     Induced by I_2 in Winding1 \n"
+              f"Phi_22 = {Phi_22}     Induced by I_2 in Winding2 \n")
 
-            """
-            # Old way
-            # Calculation of inductance matrix
-            L_s1 = 0.5*(L_11-sum(self.turns[0])**2/sum(self.turns)[1]**2*L_22+L_k1)
-            L_m1 = L_11 - L_s1
-            L_m = sum(self.turns[1])/sum(self.turns[0])*L_m1
-            L_m2 = sum(self.turns[1])/sum(self.turns[0])*L_m
-            L_s2 = L_22 - L_m2
-            """
+        """
+        # Old way
+        # Calculation of inductance matrix
+        L_s1 = 0.5*(L_11-sum(self.turns[0])**2/sum(self.turns)[1]**2*L_22+L_k1)
+        L_m1 = L_11 - L_s1
+        L_m = sum(self.turns[1])/sum(self.turns[0])*L_m1
+        L_m2 = sum(self.turns[1])/sum(self.turns[0])*L_m
+        L_s2 = L_22 - L_m2
+        """
 
-            # Turns Ratio n=N1/N2 with relative winding sense
-            if phases[0][0] != phases[0][1]:
-                n = -1 * sum(self.windings[0].turns) / sum(self.windings[1].turns)
-            else:
-                n = sum(self.windings[0].turns) / sum(self.windings[1].turns)
-
-            ff.femmt_print(f"\n"
-                  f"Turns Ratio:\n"
-                  f"n = {n}\n"
-                  )
-
-            # Coupling Factors
-            K_21 = Phi_21 / Phi_11
-            K_12 = Phi_12 / Phi_22
-            k = n / np.abs(n) * (K_21 * K_12) ** 0.5
-            ff.femmt_print(f"Coupling Factors:\n"
-                  f"K_12 = Phi_12 / Phi_22 = {K_12}\n"
-                  f"K_21 = Phi_21 / Phi_11 = {K_21}\n"
-                  f"k = Sqrt(K_12 * K_21) = M / Sqrt(L_11 * L_22) = {k}\n"
-                  )
-
-            # Read the logged inductance values
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_11.dat")) as fd:
-                line = fd.readlines()[-1]
-                words = line.split(sep=' ')
-                self.L_11 = float(words[2])
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_22.dat")) as fd:
-                line = fd.readlines()[-1]
-                words = line.split(sep=' ')
-                self.L_22 = float(words[2])
-            ff.femmt_print(f"\n"
-                  f"Self Inductances:\n"
-                  f"L_11 = {self.L_11}\n"
-                  f"L_22 = {self.L_22}\n"
-                  )
-
-            # Main/Counter Inductance
-            self.M = k * (self.L_11 * self.L_22) ** 0.5
-            M_ = self.L_11 * K_21  # Only to proof correctness - ideally: M = M_ = M__
-            M__ = self.L_22 * K_12  # Only to proof correctness - ideally: M = M_ = M__
-            ff.femmt_print(f"\n"
-                  f"Main/Counter Inductance:\n"
-                  f"M = k * Sqrt(L_11 * L_22) = {self.M}\n"
-                  f"M_ = L_11 * K_21 = {M_}\n"
-                  f"M__ = L_22 * K_12 = {M__}\n"
-                  )
-
-            # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n
-            L_s1 = self.L_11 - self.M * n
-            L_s2 = self.L_22 - self.M / n
-            L_h = self.M * n
-            ff.femmt_print(f"\n"
-                  f"T-ECD (primary side transformed):\n"
-                  f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
-                  f"    - Transformation Ratio: n\n"
-                  f"    - Primary Side Stray Inductance: L_s1\n"
-                  f"    - Secondary Side Stray Inductance: L_s2\n"
-                  f"    - Primary Side Main Inductance: L_h\n"
-                  f"n := n = {n}\n"
-                  f"L_s1 = L_11 - M * n = {L_s1}\n"
-                  f"L_s2 = L_22 - M / n = {L_s2}\n"
-                  f"L_h = M * n = {L_h}\n"
-                  )
-
-            # Stray Inductance concentrated on Primary Side
-            self.n_conc = self.M / self.L_22
-            self.L_s_conc = (1 - k ** 2) * self.L_11
-            self.L_h_conc = self.M ** 2 / self.L_22
-
-            ff.femmt_print(f"\n"
-                  f"T-ECD (primary side concentrated):\n"
-                  f"[Underdetermined System: n := M / L_22  -->  L_s2 = L_22 - M / n = 0]\n"
-                  f"    - Transformation Ratio: n\n"
-                  f"    - (Primary) Stray Inductance: L_s1\n"
-                  f"    - Primary Side Main Inductance: L_h\n"
-                  f"n := M / L_22 = k * Sqrt(L_11 / L_22) = {self.n_conc}\n"
-                  f"L_s1 = (1 - k^2) * L_11 = {self.L_s_conc}\n"
-                  f"L_h = M^2 / L_22 = k^2 * L_11 = {self.L_h_conc}\n"
-                  )
-            self.visualize()
-
+        # Turns Ratio n=N1/N2 with relative winding sense
+        if phases[0][0] != phases[0][1]:
+            n = -1 * sum(self.windings[0].turns) / sum(self.windings[1].turns)
         else:
-            ff.femmt_print(f"Invalid Geometry Data!")
+            n = sum(self.windings[0].turns) / sum(self.windings[1].turns)
+
+        ff.femmt_print(f"\n"
+              f"Turns Ratio:\n"
+              f"n = {n}\n"
+              )
+
+        # Coupling Factors
+        K_21 = Phi_21 / Phi_11
+        K_12 = Phi_12 / Phi_22
+        k = n / np.abs(n) * (K_21 * K_12) ** 0.5
+        ff.femmt_print(f"Coupling Factors:\n"
+              f"K_12 = Phi_12 / Phi_22 = {K_12}\n"
+              f"K_21 = Phi_21 / Phi_11 = {K_21}\n"
+              f"k = Sqrt(K_12 * K_21) = M / Sqrt(L_11 * L_22) = {k}\n"
+              )
+
+        # Read the logged inductance values
+        with open(os.path.join(self.file_data.e_m_values_folder_path, "L_11.dat")) as fd:
+            line = fd.readlines()[-1]
+            words = line.split(sep=' ')
+            self.L_11 = float(words[2])
+        with open(os.path.join(self.file_data.e_m_values_folder_path, "L_22.dat")) as fd:
+            line = fd.readlines()[-1]
+            words = line.split(sep=' ')
+            self.L_22 = float(words[2])
+        ff.femmt_print(f"\n"
+              f"Self Inductances:\n"
+              f"L_11 = {self.L_11}\n"
+              f"L_22 = {self.L_22}\n"
+              )
+
+        # Main/Counter Inductance
+        self.M = k * (self.L_11 * self.L_22) ** 0.5
+        M_ = self.L_11 * K_21  # Only to proof correctness - ideally: M = M_ = M__
+        M__ = self.L_22 * K_12  # Only to proof correctness - ideally: M = M_ = M__
+        ff.femmt_print(f"\n"
+              f"Main/Counter Inductance:\n"
+              f"M = k * Sqrt(L_11 * L_22) = {self.M}\n"
+              f"M_ = L_11 * K_21 = {M_}\n"
+              f"M__ = L_22 * K_12 = {M__}\n"
+              )
+
+        # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n
+        L_s1 = self.L_11 - self.M * n
+        L_s2 = self.L_22 - self.M / n
+        L_h = self.M * n
+        ff.femmt_print(f"\n"
+              f"T-ECD (primary side transformed):\n"
+              f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+              f"    - Transformation Ratio: n\n"
+              f"    - Primary Side Stray Inductance: L_s1\n"
+              f"    - Secondary Side Stray Inductance: L_s2\n"
+              f"    - Primary Side Main Inductance: L_h\n"
+              f"n := n = {n}\n"
+              f"L_s1 = L_11 - M * n = {L_s1}\n"
+              f"L_s2 = L_22 - M / n = {L_s2}\n"
+              f"L_h = M * n = {L_h}\n"
+              )
+
+        # Stray Inductance concentrated on Primary Side
+        self.n_conc = self.M / self.L_22
+        self.L_s_conc = (1 - k ** 2) * self.L_11
+        self.L_h_conc = self.M ** 2 / self.L_22
+
+        ff.femmt_print(f"\n"
+              f"T-ECD (primary side concentrated):\n"
+              f"[Underdetermined System: n := M / L_22  -->  L_s2 = L_22 - M / n = 0]\n"
+              f"    - Transformation Ratio: n\n"
+              f"    - (Primary) Stray Inductance: L_s1\n"
+              f"    - Primary Side Main Inductance: L_h\n"
+              f"n := M / L_22 = k * Sqrt(L_11 / L_22) = {self.n_conc}\n"
+              f"L_s1 = (1 - k^2) * L_11 = {self.L_s_conc}\n"
+              f"L_h = M^2 / L_22 = k^2 * L_11 = {self.L_h_conc}\n"
+              )
+        self.visualize()
 
     def get_steinmetz_loss(self, Ipeak: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2, t_rise: float = 3e-6, t_fall: float = 3e-6,
                             f_switch: float = 100000, skin_mesh_factor: float = 0.5):
@@ -2515,7 +2494,7 @@ class MagneticComponent:
                     winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] is not None else None
                     wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
                     new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
-                elif winding_type == WindingType.Interleaved:
+                elif winding_type == WindingType.TwoInterleaved:
                     new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1], InterleavedWindingScheme[vww["winding_scheme"]], vww["winding_insulation"])
                 else:
                     raise Exception(f"Winding type {winding_type} is not implemented")

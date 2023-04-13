@@ -718,7 +718,7 @@ class VirtualWindingWindow:
         :param winding_insulation: Isolation between the conductor 1 and conductor 2
         :type winding_insulation: float
         """
-        self.winding_type = WindingType.Interleaved
+        self.winding_type = WindingType.TwoInterleaved
         self.winding_scheme = winding_scheme
         self.windings = [conductor1, conductor2]
         self.turns = [turns1, turns2]
@@ -834,7 +834,7 @@ class WindingWindow:
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - insulations.core_cond[0] 
+            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - insulations.core_cond[0]
             self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
