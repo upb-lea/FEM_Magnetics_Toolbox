@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .enumerations import *
+from femmt.enumerations import *
 
 
 @dataclass

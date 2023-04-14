@@ -888,7 +888,7 @@ class MagneticComponent:
                 self.simulate()
                 # self.visualize()
 
-        self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
+        # self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
         if show_last:
             self.visualize()
@@ -902,7 +902,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
-    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1, visualize: bool = False):
+    def get_inductances_old(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1, visualize: bool = False):
         """
 
         :param visualize:
@@ -1044,6 +1044,375 @@ class MagneticComponent:
               f"L_h = M^2 / L_22 = k^2 * L_11 = {self.L_h_conc}\n"
               )
         self.visualize()
+
+    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1, visualize: bool = False):
+        """
+               :param visualize:
+               :param skin_mesh_factor:
+               :param I0:
+               :param op_frequency:
+
+        """
+        if len(self.windings) == 2:
+            # Remove "old" Inductance Logs
+            try:
+                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat"))
+                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat"))
+            except:
+                # TODO: Find better way for exception
+                pass
+
+            # -- Inductance Estimation --
+            self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
+            # self.mesh.mesh(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
+            # self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
+            # self.mesh.generate_mesh()
+
+            frequencies = [op_frequency] * 2
+            currents = [[I0, 0], [0, I0]]
+            phases = [[0, 180], [0, 180]]
+
+            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last=visualize)
+            # self.excitation_sweep(frequencies=op_frequency, currents=currents, phi=phases, show_last=visualize, meshing=False)
+            # self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
+
+            ff.femmt_print(f"\n"
+                           f"                             == Inductances ==                             \n")
+
+            # Read the logged Flux_Linkages
+            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_1.dat")) as fd:
+                line = fd.readlines()[-2:]
+                # Fluxes induced in Winding 1
+                Phi_11 = float(line[0].split(sep=' ')[2])
+                Phi_12 = float(line[1].split(sep=' ')[2])
+
+            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_2.dat")) as fd:
+                line = fd.readlines()[-2:]
+                # Fluxes induced in Winding 2
+                Phi_21 = float(line[0].split(sep=' ')[2])
+                Phi_22 = float(line[1].split(sep=' ')[2])
+
+            ff.femmt_print(f"\n"
+                           f"Fluxes: \n"
+                           f"Phi_11 = {Phi_11}     Induced by I_1 in Winding1 \n"
+                           f"Phi_21 = {Phi_21}     Induced by I_1 in Winding2 \n"
+                           f"Phi_12 = {Phi_12}     Induced by I_2 in Winding1 \n"
+                           f"Phi_22 = {Phi_22}     Induced by I_2 in Winding2 \n")
+
+            """
+            # Old way
+            # Calculation of inductance matrix
+            L_s1 = 0.5*(L_1_1-sum(self.turns[0])**2/sum(self.turns)[1]**2*L_2_2+L_k1)
+            L_m1 = L_1_1 - L_s1
+            L_m = sum(self.turns[1])/sum(self.turns[0])*L_m1
+            L_m2 = sum(self.turns[1])/sum(self.turns[0])*L_m
+            L_s2 = L_2_2 - L_m2
+            """
+            # Turns Ratio n=N1/N2 with relative winding sense
+            if phases[0][0] == phases[0][1]:
+                n = sum(self.windings[0].turns) / sum(self.windings[1].turns)
+            else:
+                # n = -1 * sum(self.windings[0].turns) / sum(self.windings[1].turns)
+                n = -1 * 5 / 4
+
+            ff.femmt_print(f"\n"
+                           f"Turns Ratio:\n"
+                           f"n = {n}\n"
+                           )
+
+            # Coupling Factors
+            K_21 = Phi_21 / Phi_11
+            K_12 = Phi_12 / Phi_22
+            k = n / np.abs(n) * (K_21 * K_12) ** 0.5
+            ff.femmt_print(f"Coupling Factors:\n"
+                           f"K_12 = Phi_12 / Phi_22 = {K_12}\n"
+                           f"K_21 = Phi_21 / Phi_11 = {K_21}\n"
+                           f"k = Sqrt(K_12 * K_21) = M / Sqrt(L_1_1 * L_2_2) = {k}\n"
+                           )
+
+            # Read the logged inductance values
+            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_11.dat")) as fd:
+                line = fd.readlines()[-1]
+                words = line.split(sep=' ')
+                self.L_1_1 = float(words[2])
+            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_22.dat")) as fd:
+                line = fd.readlines()[-1]
+                words = line.split(sep=' ')
+                self.L_2_2 = float(words[2])
+            ff.femmt_print(f"\n"
+                           f"Self Inductances:\n"
+                           f"L_1_1 = {self.L_1_1}\n"
+                           f"L_2_2 = {self.L_2_2}\n"
+                           )
+
+            # Main/Counter Inductance
+            self.M = k * (self.L_1_1 * self.L_2_2) ** 0.5
+            M_ = self.L_1_1 * K_21  # Only to proof correctness - ideally: M = M_ = M__
+            M__ = self.L_2_2 * K_12  # Only to proof correctness - ideally: M = M_ = M__
+            ff.femmt_print(f"\n"
+                           f"Main/Counter Inductance:\n"
+                           f"M = k * Sqrt(L_1_1 * L_2_2) = {self.M}\n"
+                           f"M_ = L_1_1 * K_21 = {M_}\n"
+                           f"M__ = L_2_2 * K_12 = {M__}\n"
+                           )
+
+            # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n
+            l_s1 = self.L_1_1 - self.M * n
+            l_s2 = self.L_2_2 - self.M / n
+            l_h = self.M * n
+            ff.femmt_print(f"\n"
+                           f"T-ECD (primary side transformed):\n"
+                           f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+                           f"    - Transformation Ratio: n\n"
+                           f"    - Primary Side Stray Inductance: L_s1\n"
+                           f"    - Secondary Side Stray Inductance: L_s2\n"
+                           f"    - Primary Side Main Inductance: L_h\n"
+                           f"n := n = {n}\n"
+                           f"L_s1 = L_1_1 - M * n = {l_s1}\n"
+                           f"L_s2 = L_2_2 - M / n = {l_s2}\n"
+                           f"L_h = M * n = {l_h}\n"
+                           )
+
+            # Stray Inductance concentrated on Primary Side
+            self.n_conc = self.M / self.L_2_2
+            self.L_s_conc = (1 - k ** 2) * self.L_1_1
+            self.L_h_conc = self.M ** 2 / self.L_2_2
+
+            ff.femmt_print(f"\n"
+                           f"T-ECD (primary side concentrated):\n"
+                           f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                           f"    - Transformation Ratio: n\n"
+                           f"    - (Primary) Stray Inductance: L_s1\n"
+                           f"    - Primary Side Main Inductance: L_h\n"
+                           f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
+                           f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
+                           f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
+                           )
+            self.visualize()
+
+
+        if len(self.windings) == 3:
+
+            """
+
+            :param visualize:
+            :param skin_mesh_factor:
+            :param I0:
+            :param op_frequency:
+            """
+
+            # Remove "old" Inductance Logs
+
+            try:
+                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat"))
+                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat"))
+                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_3_3.dat"))
+            except:
+                # TODO: Find better way for exception
+                pass
+
+            # -- Inductance Estimation --
+            self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
+            # self.mesh.mesh(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
+            # self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
+            # self.mesh.generate_mesh()
+
+            if self.valid:
+                frequencies = [op_frequency] * 3
+                currents = [[I0, 0, 0], [0, I0, 0], [0, 0, I0]]
+                phases = [[0, 180, 180], [0, 180, 180], [0, 180, 180]]
+
+                self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last=visualize)
+                # self.excitation_sweep(frequencies=op_frequency, currents=currents, phi=phases, show_last=visualize, meshing=False)
+                # self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
+
+                ff.femmt_print(f"\n"
+                               f"                             == Inductances ==                             \n")
+
+                # Read the logged Flux_Linkages
+                with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_1.dat")) as fd:
+                    line = fd.readlines()[-3:]
+                    # Fluxes induced in Winding 1
+                    Phi_11 = float(line[0].split(sep=' ')[2])
+                    Phi_12 = float(line[1].split(sep=' ')[2])
+                    Phi_13 = float(line[2].split(sep=' ')[2])
+
+                with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_2.dat")) as fd:
+                    line = fd.readlines()[-3:]
+                    # Fluxes induced in Winding 2
+                    Phi_21 = float(line[0].split(sep=' ')[2])
+                    Phi_22 = float(line[1].split(sep=' ')[2])
+                    Phi_23 = float(line[2].split(sep=' ')[2])
+
+                with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_3.dat")) as fd:
+                    line = fd.readlines()[-3:]
+                    # Fluxes induced in Winding 3
+                    Phi_31 = float(line[0].split(sep=' ')[2])
+                    Phi_32 = float(line[1].split(sep=' ')[2])
+                    Phi_33 = float(line[2].split(sep=' ')[2])
+                ff.femmt_print(f"\n"
+                               f"Fluxes: \n"
+                               f"Phi_11 = {Phi_11}     Induced by I_1 in Winding1 \n"
+                               f"Phi_21 = {Phi_21}     Induced by I_1 in Winding2 \n"
+                               f"Phi_31 = {Phi_31}     Induced by I_1 in Winding3 \n"
+                               f"Phi_12 = {Phi_12}     Induced by I_2 in Winding1 \n"
+                               f"Phi_22 = {Phi_22}     Induced by I_2 in Winding2 \n"
+                               f"Phi_13 = {Phi_32}     Induced by I_2 in Winding3 \n"
+                               f"Phi_13 = {Phi_13}     Induced by I_3 in Winding1 \n"
+                               f"Phi_23 = {Phi_23}     Induced by I_3 in Winding2 \n"
+                               f"Phi_33 = {Phi_33}     Induced by I_3 in Winding3 \n")
+                """
+                #Old way
+                #Calculation of inductance matrix
+                L_s1 = 0.5*(L_1_1-sum(self.turns[0])**2/sum(self.turns)[1]**2*L_2_2+L_k1)
+                L_m1 = L_1_1 - L_s1
+                L_m = sum(self.turns[1])/sum(self.turns[0])*L_m1
+                L_m2 = sum(self.turns[1])/sum(self.turns[0])*L_m
+                L_s2 = L_2_2 - L_m2
+                """
+
+                # Turns Ratio n2=N1/N2 with relative winding sense and n3=N1/N3
+
+                # if phases[0][0] != phases[0][1]:
+                # n_2 = -1 * sum(self.windings[0].turns) / sum(self.windings[1].turns)
+                # else:
+                # n_2 = sum(self.windings[0].turns) / sum(self.windings[1].turns)
+
+                # if phases[0][0] != phases[0][2]:
+                # n_3 = -1 * sum(self.windings[0].turns) / sum(self.windings[2].turns)
+                # n_3 = sum(self.windings[0].turns) / sum(self.windings[2].turns)
+
+                # another try
+
+                # if phases[0][0] != phases[0][1]:
+                # n_2 = -1 * sum(self.turns[0]) / sum(self.turns[1])
+                # else:
+                # n_2 = sum(self.turns[0]) / sum(self.turns[1])
+
+                # if phases[0][0] != phases[0][2]:
+                # n_3 = -1 * sum(self.turns[0]) / sum(self.turns[2])
+                # else:
+                # n_3 = sum(self.turns[0]) / sum(self.turns[2])
+
+                # ff.femmt_print(f"\n"
+                # f"Turns Ratio:\n"
+                # f"n2 = {n_2}\n"
+                # f"n3 = {n_3}\n"
+                # )
+
+                # Coupling Factors
+                K_21 = Phi_21 / Phi_11
+                K_31 = Phi_31 / Phi_11
+                K_12 = Phi_12 / Phi_22
+                K_32 = Phi_32 / Phi_22
+                K_13 = Phi_13 / Phi_33
+                K_23 = Phi_23 / Phi_33
+                # k_1 = float(self.M_12 or 0) / (K_21 * K_12) ** 0.5
+                k_1 = (K_21 * K_12) ** 0.5
+                # k_2 = float(self.M_13 or 0) / (K_31 * K_13) ** 0.5
+                k_2 = (K_31 * K_13) ** 0.5
+                # k_3 = float(self.M_23 or 0) / (K_23 * K_32) ** 0.5
+                k_3 = (K_23 * K_32) ** 0.5
+                # k_1 = n_2 / np.abs(n_2) * (K_21 * K_12) ** 0.5
+                # k_2 = n_3 / np.abs(n_3) * (K_31 * K_13) ** 0.5
+                # k_3 = n_3 / np.abs(n_3) * (K_23 * K_32) ** 0.5
+                ff.femmt_print(f"Coupling Factors:\n"
+                               f"K_21 = Phi_21 / Phi_11 = {K_21}\n"
+                               f"K_31 = Phi_31 / Phi_11 = {K_31}\n"
+                               f"K_12 = Phi_12 / Phi_22 = {K_12}\n"
+                               f"K_32 = Phi_32 / Phi_22 = {K_32}\n"
+                               f"K_13 = Phi_13 / Phi_33 = {K_13}\n"
+                               f"K_23 = Phi_23 / Phi_33 = {K_23}\n"
+                               f"k_1 = Sqrt(K_12 * K_21) = M_12 / Sqrt(L_1_1 * L_2_2) = {k_1}\n"
+                               f"k_2 = Sqrt(K_31 * K_13) = M_13 / Sqrt(L_1_1 * L_3_3) = {k_2}\n"
+                               f"k_3 = Sqrt(K_23 * K_32) = M_23 / Sqrt(L_2_2 * L_3_3) = {k_3}\n"
+
+                               )
+
+                # Read the logged inductance values
+                with open(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat")) as fd:
+                    line = fd.readlines()[-1]
+                    words = line.split(sep=' ')
+                    self.L_1_1 = float(words[2])
+                with open(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat")) as fd:
+                    line = fd.readlines()[-1]
+                    words = line.split(sep=' ')
+                    self.L_2_2 = float(words[2])
+                with open(os.path.join(self.file_data.e_m_values_folder_path, "L_3_3.dat")) as fd:
+                    line = fd.readlines()[-1]
+                    words = line.split(sep=' ')
+                    self.L_3_3 = float(words[2])
+                ff.femmt_print(f"\n"
+                               f"Self Inductances:\n"
+                               f"L_1_1 = {self.L_1_1}\n"
+                               f"L_2_2 = {self.L_2_2}\n"
+                               f"L_3_3 = {self.L_3_3}\n"
+                               )
+
+                # Main/Counter Inductance
+                self.M_12 = k_1 * (self.L_1_1 * self.L_2_2) ** 0.5
+                self.M_13 = k_2 * (self.L_1_1 * self.L_3_3) ** 0.5
+                self.M_23 = k_3 * (self.L_2_2 * self.L_3_3) ** 0.5
+                M_12 = self.L_1_1 * K_21  # Only to proof correctness - ideally: M_12 = M_21
+                M_21 = self.L_2_2 * K_12  # Only to proof correctness - ideally: M_21 = M_12
+                M_13 = self.L_1_1 * K_31  # Only to proof correctness - ideally: M_13 = M_31
+                M_31 = self.L_3_3 * K_13  # Only to proof correctness - ideally: M_31 = M_13
+                M_23 = self.L_2_2 * K_32  # Only to proof correctness - ideally: M_23 = M_32
+                M_32 = self.L_3_3 * K_23  # Only to proof correctness - ideally: M_32 = M_23
+                ff.femmt_print(f"\n"
+                               f"Main/Counter Inductance:\n"
+                               f"M = k * Sqrt(L_1_1 * L_2_2) = {self.M}\n"
+                               f"M_12 = L_1_1 * K_21 = {M_12}\n"
+                               f"M_21 = L_2_2 * K_21 = {M_21}\n"
+                               f"M_13 = L_1_1 * K_31 = {M_13}\n"
+                               f"M_31 = L_3_3 * K_13 = {M_31}\n"
+                               f"M_23 = L_2_2 * K_32 = {M_23}\n"
+                               f"M_32 = L_3_3 * K_23 = {M_32}\n"
+                               )
+
+                # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n2 and n3
+                L_s1 = self.L_1_1 - (self.M_12 * self.M_13) / self.M_23
+                L_s2 = self.L_2_2 - (self.M_12 * self.M_23) / self.M_13
+                L_s3 = self.L_3_3 - (self.M_13 * self.M_23) / self.M_12
+                L_h = (self.M_12 * self.M_13) / self.M_23
+                # n_2 = self.M_13 / self.M_23
+                # n_3 = self.M_12 / self.M_23
+                ff.femmt_print(f"\n"
+                               f"T-ECD (primary side transformed):\n"
+                               f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+                               f"    - Transformation Ratio with respect to the primary and the Secondary: n2\n"
+                               f"    - Transformation Ratio with respect to the primary and the Tertiary: n3\n"
+                               f"    - Primary Side Stray Inductance: L_s1\n"
+                               f"    - Secondary Side Stray Inductance: L_s2\n"
+                               f"    - Tertiary Side Stray Inductance: L_s3\n"
+                               f"    - Primary Side Main Inductance: L_h\n"
+                               # f"n := n2 = {n_2}\n"
+                               # f"n := n3 = {n_3}\n"        
+                               f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {L_s1}\n"
+                               f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {L_s2}\n"
+                               f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {L_s3}\n"
+                               f"L_h = M_12 * M_13 / M_23 = {L_h}\n"
+                               )
+                """
+                # Stray Inductance concentrated on Primary Side
+                self.n_conc = self.M / self.L_2_2
+                self.L_s_conc = (1 - k ** 2) * self.L_1_1
+                self.L_h_conc = self.M ** 2 / self.L_2_2
+
+                ff.femmt_print(f"\n"
+                    f"T-ECD (primary side concentrated):\n"
+                    f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                    f"    - Transformation Ratio: n\n"
+                    f"    - (Primary) Stray Inductance: L_s1\n"
+                    f"    - Primary Side Main Inductance: L_h\n"
+                    f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
+                    f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
+                    f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
+                    )
+                """
+                self.visualize()
+            else:
+                ff.femmt_print(f"Invalid Geometry Data!")
 
     def get_steinmetz_loss(self, Ipeak: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2, t_rise: float = 3e-6, t_fall: float = 3e-6,
                             f_switch: float = 100000, skin_mesh_factor: float = 0.5):

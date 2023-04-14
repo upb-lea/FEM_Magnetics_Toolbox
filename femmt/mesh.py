@@ -730,8 +730,13 @@ class Mesh:
         except IndexError:
             pass
         try:
-            n_tertiary_in_bot = sum([vww.turns[2] for vww in self.model.winding_windows[1].virtual_winding_windows])
+            print(f"{self.model.winding_windows[1].virtual_winding_windows = }")
+            # n_tertiary_in_bot = sum([vww.turns[2] for vww in self.model.winding_windows[1].virtual_winding_windows])
+            print(f"{n_tertiary_in_bot = }")
+            n_tertiary_in_bot = 3
             tertiary_in_bot = curve_loop_cond[2][n_tertiary_in_top:n_tertiary_in_top + n_tertiary_in_bot]
+            print(f"{tertiary_in_bot = }")
+
         except IndexError:
             pass
 

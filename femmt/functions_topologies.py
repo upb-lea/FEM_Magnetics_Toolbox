@@ -1,4 +1,7 @@
-from femmt import *
+from femmt.dtos import *
+from femmt.model import WindingWindow, Conductor, Insulation
+from femmt.functions_drawing import *
+from femmt.functions_model import define_center_tapped_insulation
 import copy
 
 
@@ -130,7 +133,7 @@ def set_center_tapped_windings(core,
     :return:
     """
     def define_isolations():
-        insulation = model.Insulation()
+        insulation = Insulation()
         insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
         insulation.add_winding_insulations([iso_primary_to_primary,
                                             iso_secondary_to_secondary,
@@ -183,10 +186,12 @@ def set_center_tapped_windings(core,
         ww_top, ww_bot = create_stacked_winding_windows(core, insulation)
         vww_top = ww_top.split_window(WindingWindowSplit.NoSplit)
         ww_bot_height = core.window_h_bot
+    else:
+        raise Exception(f"Unknown core type {core.core_type}")
 
     # Define the transformer winding stack
-    # interleaving_type = CenterTappedInterleavingType.TypeA
-    interleaving_type = CenterTappedInterleavingType.TypeB
+    interleaving_type = CenterTappedInterleavingType.TypeA
+    # interleaving_type = CenterTappedInterleavingType.TypeB
     transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row, window_height=ww_bot_height, isolations=winding_isolations,
                                                         interleaving_type=interleaving_type)
 

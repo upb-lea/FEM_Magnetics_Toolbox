@@ -71,13 +71,13 @@ if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
 # component = "inductor"
-# component = "transformer-interleaved"
+component = "transformer-interleaved"
 # component = "transformer"
 # component = "three-winding-transformer"
 # component = "integrated_transformer"
 # component = "center-tapped-transformer"
 # component = "stacked-transformer"
-component = "stacked-center-tapped-transformer"
+# component = "stacked-center-tapped-transformer"
 # component = "load_from_file"
 
 
@@ -169,7 +169,11 @@ if component == "transformer-interleaved":
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
+    core_db = fmt.core_database()["PQ 40/40"]
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                    window_w=core_db["window_w"],
+                                                    window_h=core_db["window_h"])
+
     core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
                     permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
 
@@ -192,23 +196,23 @@ if component == "transformer-interleaved":
 
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    winding1.set_solid_round_conductor(0.0011, None)
+    winding1.set_litz_round_conductor(0.0011, 500, None, 0.5, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-    winding2.set_solid_round_conductor(0.0011, None)
+    winding2.set_litz_round_conductor(0.0011, 500, None, 0.5, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_interleaved_winding(winding1, 21, winding2, 7, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
+    vww.set_interleaved_winding(winding1, 5, winding2, 4, fmt.InterleavedWindingScheme.HorizontalAlternating, 0.0005)
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=250000, visualize_before=True)
-    geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_results=True)
+    geo.create_model(freq=1.2e6, visualize_before=True)
+    # geo.single_simulation(freq=1.2e6, current=[13, 13*1.25], phi_deg=[0, 180], show_results=True)
 
     # other simulation options:
     # ------------------------
     # read inductances
-    # geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5)
+    geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5)
 
     # 9. start thermal simulation
     #example_thermal_simulation()
@@ -502,7 +506,7 @@ if component == "stacked-center-tapped-transformer":
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
 
-    geo.create_model(freq=200000, visualize_before=False)
+    geo.create_model(freq=200000, visualize_before=True)
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_results=True)
 
 if component == "load_from_file":
