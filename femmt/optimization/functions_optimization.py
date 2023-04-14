@@ -1,5 +1,5 @@
 # python libraries
-from typing import List
+from typing import List, Dict
 
 # 3rd party libraries
 from matplotlib import pyplot as plt
@@ -160,7 +160,15 @@ def is_pareto_efficient(costs, return_mask=True):
 
 
 
-def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]):
+def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]) -> tuple:
+    """
+    Calculates the Pareto front from a list of ItoSingleResultFiles.
+
+    :param dto_list: List of ItoSingleResultFiles
+    :type dto_list: List[ItoSingleResultFiles]
+    :return: x-Pareto vector, y-Pareto vector
+    :rtype: tuple
+    """
     x_vec = np.array([])
     y_vec = np.array([])
     tuple_vec = []
@@ -174,6 +182,41 @@ def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]):
 
     pareto_tuple_mask_vec = is_pareto_efficient(tuple_vec)
 
+
+    x_pareto_vec = []
+    y_pareto_vec = []
+
+    for count_mask, mask in enumerate(pareto_tuple_mask_vec):
+        if mask:
+            x_pareto_vec.append(x_vec[count_mask])
+            y_pareto_vec.append(y_vec[count_mask])
+
+    print(f"{len(x_pareto_vec) = }")
+
+    return np.array(x_pareto_vec), np.array(y_pareto_vec)
+
+
+def pareto_front_from_result_dicts(result_dict_list: List[Dict]) -> tuple:
+    """
+    Calculates the Pareto front from a list of result log dictionaries.
+
+    :param result_dict_list: List of result log dictionaries
+    :type result_dict_list: List[Dict]
+    :return: x-Pareto vector, y-Pareto vector
+    :rtype: tuple
+    """
+    x_vec = np.array([])
+    y_vec = np.array([])
+    tuple_vec = []
+
+    for result_dict in result_dict_list:
+        x_vec = np.append(x_vec, result_dict["misc"]["core_2daxi_total_volume"])
+        y_vec = np.append(y_vec, result_dict["total_losses"]["all_windings"] + result_dict["total_losses"]["core"])
+        tuple_vec.append((result_dict["misc"]["core_2daxi_total_volume"], result_dict["total_losses"]["all_windings"] + result_dict["total_losses"]["core"]))
+
+    tuple_vec = np.array(tuple_vec)
+
+    pareto_tuple_mask_vec = is_pareto_efficient(tuple_vec)
 
     x_pareto_vec = []
     y_pareto_vec = []

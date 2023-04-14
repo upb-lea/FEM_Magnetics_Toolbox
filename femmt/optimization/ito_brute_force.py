@@ -93,17 +93,17 @@ class IntegratedTransformerOptimization:
         fem_working_directory = os.path.join(working_directory, '00_femmt_simulation')
         reluctance_model_results_directory = os.path.join(working_directory, "01_reluctance_model_results")
         fem_simulation_results_directory = os.path.join(working_directory, "02_fem_simulation_results")
+        fem_simulation_filtered_results_directory = os.path.join(working_directory, "02_fem_simulation_results_filtered")
         fem_thermal_simulation_results_directory = os.path.join(working_directory, "03_fem_thermal_simulation_results")
+        fem_thermal_filtered_simulation_results_directory = os.path.join(working_directory, "03_fem_thermal_simulation_results_filtered")
 
         os.makedirs(fem_working_directory, exist_ok=True)
         os.makedirs(fem_simulation_results_directory, exist_ok=True)
+        os.makedirs(fem_simulation_filtered_results_directory, exist_ok=True)
         os.makedirs(reluctance_model_results_directory, exist_ok=True)
         os.makedirs(fem_thermal_simulation_results_directory, exist_ok=True)
+        os.makedirs(fem_thermal_filtered_simulation_results_directory, exist_ok=True)
 
-
-        # integrated_transformer_optimization_input_parameters_file = os.path.join(optimization_working_directory, "optimization_input_parameters.json")
-
-        #ff.create_folders(working_directory, integrated_transformer_reluctance_model_results_directory, integrated_transformer_fem_simulations_results_directory, femmt_working_directory)
 
     @staticmethod
     def plot_reluctance_model_result_list(valid_design_list: List[ItoSingleResultFile]) -> None:
@@ -751,12 +751,45 @@ class IntegratedTransformerOptimization:
             return fem_simulations_dict_list
 
         @staticmethod
-        def plot_unfiltered_results(working_directory: str) -> None:
+        def filter_loss_list(fem_simulations_dict_list: List[Dict], factor_min_dc_losses: float = 0.5) -> List[Dict]:
+            # figure out pareto front
+            # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
+
+            x_pareto_vec, y_pareto_vec = fo.pareto_front_from_result_dicts(fem_simulations_dict_list)
+
+            vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
+
+            # sorting 2d array by 1st row
+            # https://stackoverflow.com/questions/49374253/sort-a-numpy-2d-array-by-1st-row-maintaining-columns
+            sorted_vector = vector_to_sort[:, vector_to_sort[0].argsort()]
+            x_pareto_vec = sorted_vector[0]
+            y_pareto_vec = sorted_vector[1]
+
+            total_losses_list = []
+            filtered_design_dto_list = []
+
+            for result_dict in fem_simulations_dict_list:
+                total_loss = result_dict["total_losses"]["all_windings"] + result_dict["total_losses"]["core"]
+                total_losses_list.append(total_loss)
+
+            min_total_dc_losses = total_losses_list[np.argmin(total_losses_list)]
+            loss_offset = factor_min_dc_losses * min_total_dc_losses
+
+            for result_dict in fem_simulations_dict_list:
+                ref_loss = np.interp(result_dict["misc"]["core_2daxi_total_volume"], x_pareto_vec, y_pareto_vec) + loss_offset
+                total_loss = result_dict["total_losses"]["all_windings"] + result_dict["total_losses"]["core"]
+                if total_loss < ref_loss:
+                    filtered_design_dto_list.append(result_dict)
+
+            return filtered_design_dto_list
+
+        @staticmethod
+        def plot(result_log_dict_list: List[Dict]) -> None:
             """
             Plots the pareto diagram out of the fem simulation results.
 
-            :param working_directory: filepath to fem simulation results
-            :type working_directory: str
+            :param result_log_dict_list: list of result_log dicts
+            :type result_log_dict_list: str
             :return: Plot
             :rtype: None
             """
@@ -768,38 +801,36 @@ class IntegratedTransformerOptimization:
             total_cost_list = []
             annotation_list = []
 
-            filepath = os.path.join(working_directory, "02_fem_simulation_results")
 
-            for file in os.listdir(filepath):
-                if file.endswith(".json"):
-                    json_file_path = os.path.join(filepath, file)
-                    with open(json_file_path, "r") as fd:
-                        loaded_data_dict = json.loads(fd.read())
 
-                    data_dict_list.append(loaded_data_dict)
-                    volume_list.append(loaded_data_dict["misc"]["core_2daxi_total_volume"])
-                    total_loss_list.append(loaded_data_dict["total_losses"]["all_windings"] + loaded_data_dict["total_losses"]["core"])
-                    total_cost_list.append(loaded_data_dict["misc"]["total_cost_incl_margin"])
-                    annotation_list.append(f"{file}".replace("case_","").replace(".json",""))
+            for result_log_dict in result_log_dict_list:
+
+                data_dict_list.append(result_log_dict)
+                volume_list.append(result_log_dict["misc"]["core_2daxi_total_volume"])
+                total_loss_list.append(result_log_dict["total_losses"]["all_windings"] + result_log_dict["total_losses"]["core"])
+                total_cost_list.append(result_log_dict["misc"]["total_cost_incl_margin"])
+                annotation_list.append(result_log_dict["case"])
 
             fo.plot_2d(volume_list, total_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
                        plot_color="red", annotations=annotation_list)
+
 
         #############################
         # save and load
         #############################
 
         @staticmethod
-        def load_unfiltered_results(filepath: str) -> List[Dict]:
+        def load(filepath: str) -> List[Dict]:
             """
-            loads the fem simulations results as a dict into a list.
+            Load FEM simulations results from a directory.
 
-            :param filepath: file path
-            :type filepath: str
-            :return:
+            This function appends the case number to the dictionary-list.
+
+            :param filepath: filepath to FEM simulations
+            :type: str
+            :return: List of result-log dictionaries
             :rtype: List[Dict]
             """
-
             data_dict_list = []
 
             for file in os.listdir(filepath):
@@ -808,12 +839,71 @@ class IntegratedTransformerOptimization:
                     with open(json_file_path, "r") as fd:
                         loaded_data_dict = json.loads(fd.read())
 
+                    case_number = file.replace("case_", "").replace(".json", "")
+
+                    loaded_data_dict["case"] = f"{case_number}"
+
                     data_dict_list.append(loaded_data_dict)
             return data_dict_list
 
+        @staticmethod
+        def load_unfiltered_results(working_directory: str) -> List[Dict]:
+            """
+            loads the fem simulations results as a dict into a list.
+
+            :param working_directory: file path
+            :type working_directory: str
+            :return:
+            :rtype: List[Dict]
+            """
+
+            filepath = os.path.join(working_directory, "02_fem_simulation_results")
+            return femmt.IntegratedTransformerOptimization.FemSimulation.load(filepath)
+
+        @staticmethod
+        def load_filtered_results(working_directory: str) -> List[Dict]:
+            """
+            loads the fem simulations results as a dict into a list.
+
+            :param working_directory: file path
+            :type working_directory: str
+            :return:
+            :rtype: List[Dict]
+            """
+
+            filepath = os.path.join(working_directory, "02_fem_simulation_results_filtered")
+            return femmt.IntegratedTransformerOptimization.FemSimulation.load(filepath)
+
+        @staticmethod
+        def save_filtered_results(filtered_dict_list: List[Dict], working_directory: str):
+
+            for count, result_log in enumerate(filtered_dict_list):
+                json_filepath = os.path.join(working_directory, "02_fem_simulation_results_filtered", f"case_{result_log['case']}.json")
+
+                with open(json_filepath, "w") as outfile:
+                    json.dump(result_log, outfile)
 
     class ThermalSimulation:
         @staticmethod
-        def simulation(config_dto: ItoSingleInputConfig, simulation_dto_list: List[ItoSingleResultFile], visualize: bool = False):
+        def simulation(config_dto: ItoSingleInputConfig, result_log_dict_list: List[Dict], visualize: bool = False):
+            all_filtered_reluctance_dtos = femmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(
+                config_dto.working_directory)
+
+            simulation_dto_list = []
+            for result_log in result_log_dict_list:
+
+                case = int(result_log["case"])
+
+                for dto in all_filtered_reluctance_dtos:
+                    if case == dto.case:
+                        simulation_dto_list.append(dto)
+
             femmt.integrated_transformer_fem_thermal_simulations_from_result_dtos(config_dto, simulation_dto_list, visualize)
+
+        @staticmethod
+        def load_unfiltered_simulations(working_directory: str):
+
+            filepath = os.path.join(working_directory, "03_fem_thermal_simulation_results")
+
+            return femmt.IntegratedTransformerOptimization.FemSimulation.load(filepath)
 
