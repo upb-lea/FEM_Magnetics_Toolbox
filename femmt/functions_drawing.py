@@ -196,7 +196,7 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         print("Secondary and tertiary winding are not defined similar. "
               "That is not a nice center-tapped transformer :(")
 
-    elif interleaving_type == CenterTappedInterleavingType.TypeA:
+    else:# interleaving_type == CenterTappedInterleavingType.TypeA:
         # Usually for center-tapped it is the secondary/=tertiary winding number
         # But for parallel windings this can also differ -> a general approach is implemented
         # what is the smallest number of rows?
@@ -235,12 +235,12 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         # Create the complete ConductorStack from the stack_order
         return ConductorStack(number_of_groups=number_of_groups, number_of_single_rows=number_of_single_rows, order=stack_order)
 
-    elif interleaving_type == CenterTappedInterleavingType.TypeB:
-
-        number_of_single_rows = None
-        stack_order = None
-        # Create the complete ConductorStack from the stack_order
-        return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
+    # elif interleaving_type == CenterTappedInterleavingType.TypeB:
+    #
+    #     number_of_single_rows = None
+    #     stack_order = None
+    #     # Create the complete ConductorStack from the stack_order
+    #     return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
 
 
 def get_number_of_turns_in_groups(stack):
