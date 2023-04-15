@@ -40,7 +40,7 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
     primary_litz_wire_list= ["1.4x200x0.071"],
     secondary_litz_wire_list= ["1.4x200x0.071"],
     temperature=100,
-    working_directory='/home/nikolasf/Downloads/trial/abc/'
+    working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_integrated_transformer_optimization")
 )
 
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     object1 = fmt.ItoOptuna()
 
     if task == 'start_study':
-        object1.start_study(study_name, dab_transformer_config, 20000, storage='sqlite')
+        object1.start_study(study_name, dab_transformer_config, 1000, storage='sqlite')
 
     elif task == 'fem_simulation_best_trials':
         reluctance_result_list = object1.load_study_best_trials(study_name)
