@@ -58,7 +58,6 @@ def place_windings(vwws, winding_scheme_type, transformer_stack, primary_turns,
 
     # Iterate over the rows and place them
     for row_element in transformer_stack.order:
-        print(f"{row_element = }")
 
         if type(row_element) == StackIsolation:
             pass
@@ -190,8 +189,8 @@ def set_center_tapped_windings(core,
         raise Exception(f"Unknown core type {core.core_type}")
 
     # Define the transformer winding stack
-    interleaving_type = CenterTappedInterleavingType.TypeA
-    # interleaving_type = CenterTappedInterleavingType.TypeB
+    # interleaving_type = CenterTappedInterleavingType.TypeA
+    interleaving_type = CenterTappedInterleavingType.TypeB
     transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row, window_height=ww_bot_height, isolations=winding_isolations,
                                                         interleaving_type=interleaving_type)
 

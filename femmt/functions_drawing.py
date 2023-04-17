@@ -236,8 +236,26 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         return ConductorStack(number_of_groups=number_of_groups, number_of_single_rows=number_of_single_rows, order=stack_order)
 
     elif interleaving_type == CenterTappedInterleavingType.TypeB:
-        # TODO: 1) schreibe eine stackdefinition, die nur aus Reihen besteht!
-        # TODO: 2) baue damit den Delta Trafo nach
+        number_of_single_rows = None
+        stack_order = []
+
+        stack_order.append(tertiary_row)
+        stack_order.append(primary_row)
+        stack_order.append(secondary_row)
+        stack_order.append(tertiary_row)
+        stack_order.append(primary_row)
+        stack_order.append(secondary_row)
+        stack_order.append(tertiary_row)
+        stack_order.append(primary_row)
+        stack_order.append(secondary_row)
+
+        insert_insulations_to_stack(stack_order, isolations)
+
+
+        # Create the complete ConductorStack from the stack_order
+        return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
+
+    elif interleaving_type == CenterTappedInterleavingType.TypeC:
         number_of_single_rows = None
         stack_order = []
         for i in range(0, primary_row.number_of_rows):

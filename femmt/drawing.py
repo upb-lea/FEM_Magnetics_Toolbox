@@ -856,8 +856,7 @@ class TwoDaxiSymmetric:
                                 # Stack defined number of turns and chosen thickness
                                 for i in range(turns):
                                     # CHECK if top bound is reached
-                                    if (bot_bound + (i + 1) * winding.thickness +
-                                        i * self.insulation.inner_winding_insulations[num]) <= top_bound:
+                                    if round(bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num], 6) <= round(top_bound, 6):
                                         # stacking from the ground
                                         self.p_conductor[num].append([
                                             left_bound,
@@ -981,10 +980,8 @@ class TwoDaxiSymmetric:
                                 x = left_bound + winding.conductor_radius
                                 i = 0
                                 # Case n_conductors higher that "allowed" is missing
-
-                                while y <= top_bound - winding.conductor_radius and i < turns:
-                                    while x < right_bound - winding.conductor_radius \
-                                            and i < turns:
+                                while round(y, 6) <= round(top_bound - winding.conductor_radius, 6) and i < turns:
+                                    while x <= right_bound - winding.conductor_radius and i < turns:
                                         self.p_conductor[num].append([
                                             x,
                                             y,

@@ -701,48 +701,61 @@ class Mesh:
         """
         # TODO: Split conductors in top and bottom winding window
         primary_in_top, secondary_in_top, tertiary_in_top, primary_in_bot, secondary_in_bot, tertiary_in_bot = [], [], [], [], [], []
-
-
         n_primary_in_top, n_secondary_in_top, n_tertiary_in_top, n_primary_in_bot, n_secondary_in_bot, n_tertiary_in_bot = 0, 0, 0, 0, 0, 0
+
+        for i, ww in enumerate(self.model.winding_windows):
+            for vww in ww.virtual_winding_windows:
+                if i == 0:
+                    try:
+                        n_primary_in_top += vww.turns[0]
+                    except IndexError:
+                        pass
+                    try:
+                        n_secondary_in_top += vww.turns[1]
+                    except IndexError:
+                        pass
+                    try:
+                        n_tertiary_in_top += vww.turns[2]
+                    except IndexError:
+                        pass
+                elif i == 1:
+                    try:
+                        n_primary_in_bot += vww.turns[0]
+                    except IndexError:
+                        pass
+                    try:
+                        n_secondary_in_bot += vww.turns[1]
+                    except IndexError:
+                        pass
+                    try:
+                        n_tertiary_in_bot += vww.turns[2]
+                    except IndexError:
+                        pass
+
         try:
-            n_primary_in_top = sum([vww.turns[0] for vww in self.model.winding_windows[0].virtual_winding_windows])
             primary_in_top = curve_loop_cond[0][0:n_primary_in_top]
         except IndexError:
             pass
         try:
-            n_secondary_in_top = sum([vww.turns[1] for vww in self.model.winding_windows[0].virtual_winding_windows])
             secondary_in_top = curve_loop_cond[1][0:n_secondary_in_top]
         except IndexError:
             pass
         try:
-            n_tertiary_in_top = sum([vww.turns[2] for vww in self.model.winding_windows[0].virtual_winding_windows])
             tertiary_in_top = curve_loop_cond[2][0:n_tertiary_in_top]
         except IndexError:
             pass
         try:
-            n_primary_in_bot = sum([vww.turns[0] for vww in self.model.winding_windows[1].virtual_winding_windows])
             primary_in_bot = curve_loop_cond[0][n_primary_in_top:n_primary_in_top + n_primary_in_bot]
         except IndexError:
             pass
         try:
-            n_secondary_in_bot = sum([vww.turns[1] for vww in self.model.winding_windows[1].virtual_winding_windows])
             secondary_in_bot = curve_loop_cond[1][n_secondary_in_top:n_secondary_in_top + n_secondary_in_bot]
         except IndexError:
             pass
         try:
-            print(f"{self.model.winding_windows[1].virtual_winding_windows = }")
-            # n_tertiary_in_bot = sum([vww.turns[2] for vww in self.model.winding_windows[1].virtual_winding_windows])
-            print(f"{n_tertiary_in_bot = }")
-            n_tertiary_in_bot = 3
             tertiary_in_bot = curve_loop_cond[2][n_tertiary_in_top:n_tertiary_in_top + n_tertiary_in_bot]
-            print(f"{tertiary_in_bot = }")
-
         except IndexError:
             pass
-
-        # for vww in self.model.winding_windows[0].virtual_winding_windows:
-        #     primary_in_top = curve_loop_cond[0][0:vww.turns[0]]
-        #     secondary_in_top = curve_loop_cond[1][0:vww.turns[1]]
 
         # top window
         l_air_top = l_core_air[0:5] + [l_bound_air[0]]
