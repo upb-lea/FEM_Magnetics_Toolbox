@@ -349,126 +349,128 @@ class IntegratedTransformerOptimization:
                                                 r_air_gap_bot_target = r_bot_target - r_core_bot
 
                                                 r_air_gap_middle_target = r_middle_target - r_core_middle_cylinder_radial
+                                                
+                                                if r_air_gap_top_target > 0 and r_air_gap_bot_target > 0 and r_air_gap_middle_target > 0:
 
-                                                minimum_air_gap_length = 1e-6
-                                                maximum_air_gap_length = 1e-3
-                                                minimum_sort_out_air_gap_length = 100e-6
+                                                    minimum_air_gap_length = 1e-6
+                                                    maximum_air_gap_length = 1e-3
+                                                    minimum_sort_out_air_gap_length = 100e-6
 
-                                                try:
-                                                    l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct,
-                                                                                    minimum_air_gap_length,
-                                                                                    maximum_air_gap_length, args=(
-                                                            core_inner_diameter, window_h_top, r_air_gap_top_target))
-                                                    l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct,
-                                                                                    minimum_air_gap_length,
-                                                                                    maximum_air_gap_length, args=(
-                                                            core_inner_diameter, window_h_bot / 2, window_h_bot / 2,
-                                                            r_air_gap_bot_target))
-                                                    l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct,
-                                                                                       minimum_air_gap_length,
-                                                                                       maximum_air_gap_length, args=(
-                                                            core_inner_diameter, core_inner_diameter / 4, window_w,
-                                                            r_air_gap_middle_target))
-                                                except:
-                                                    l_top_air_gap = 0
-                                                    l_bot_air_gap = 0
-                                                    l_middle_air_gap = 0
+                                                    try:
+                                                        l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct,
+                                                                                        minimum_air_gap_length,
+                                                                                        maximum_air_gap_length, args=(
+                                                                core_inner_diameter, window_h_top, r_air_gap_top_target))
+                                                        l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct,
+                                                                                        minimum_air_gap_length,
+                                                                                        maximum_air_gap_length, args=(
+                                                                core_inner_diameter, window_h_bot / 2, window_h_bot / 2,
+                                                                r_air_gap_bot_target))
+                                                        l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct,
+                                                                                           minimum_air_gap_length,
+                                                                                           maximum_air_gap_length, args=(
+                                                                core_inner_diameter, core_inner_diameter / 4, window_w,
+                                                                r_air_gap_middle_target))
+                                                    except:
+                                                        l_top_air_gap = 0
+                                                        l_bot_air_gap = 0
+                                                        l_middle_air_gap = 0
 
-                                                if l_top_air_gap > minimum_sort_out_air_gap_length and l_bot_air_gap > minimum_sort_out_air_gap_length and l_middle_air_gap > minimum_sort_out_air_gap_length:
-                                                    p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter,
-                                                                                                    window_h_top,
-                                                                                                    window_w,
-                                                                                                    mu_r_abs,
-                                                                                                    flux_top_max,
-                                                                                                    fundamental_frequency,
-                                                                                                    material_flux_density_vec,
-                                                                                                    material_mu_r_imag_vec)
+                                                    if l_top_air_gap > minimum_sort_out_air_gap_length and l_bot_air_gap > minimum_sort_out_air_gap_length and l_middle_air_gap > minimum_sort_out_air_gap_length:
+                                                        p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter,
+                                                                                                        window_h_top,
+                                                                                                        window_w,
+                                                                                                        mu_r_abs,
+                                                                                                        flux_top_max,
+                                                                                                        fundamental_frequency,
+                                                                                                        material_flux_density_vec,
+                                                                                                        material_mu_r_imag_vec)
 
-                                                    p_hyst_middle = fr.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
-                                                        flux_stray_max, core_inner_diameter / 4,
-                                                                        core_inner_diameter / 2,
-                                                                        core_inner_diameter / 2 + window_w,
-                                                        fundamental_frequency,
-                                                        mu_r_abs, material_flux_density_vec, material_mu_r_imag_vec)
+                                                        p_hyst_middle = fr.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
+                                                            flux_stray_max, core_inner_diameter / 4,
+                                                                            core_inner_diameter / 2,
+                                                                            core_inner_diameter / 2 + window_w,
+                                                            fundamental_frequency,
+                                                            mu_r_abs, material_flux_density_vec, material_mu_r_imag_vec)
 
-                                                    p_hyst_bot = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter,
-                                                                                                    window_h_bot,
-                                                                                                    window_w,
-                                                                                                    mu_r_abs,
-                                                                                                    flux_bot_max,
-                                                                                                    fundamental_frequency,
-                                                                                                    material_flux_density_vec,
-                                                                                                    material_mu_r_imag_vec)
+                                                        p_hyst_bot = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter,
+                                                                                                        window_h_bot,
+                                                                                                        window_w,
+                                                                                                        mu_r_abs,
+                                                                                                        flux_bot_max,
+                                                                                                        fundamental_frequency,
+                                                                                                        material_flux_density_vec,
+                                                                                                        material_mu_r_imag_vec)
 
-                                                    p_hyst = p_hyst_top + p_hyst_bot + p_hyst_middle
+                                                        p_hyst = p_hyst_top + p_hyst_bot + p_hyst_middle
 
-                                                    core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(
-                                                        core_inner_diameter,
-                                                        (window_h_bot + window_h_top + core_inner_diameter / 4),
-                                                        window_w)
+                                                        core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(
+                                                            core_inner_diameter,
+                                                            (window_h_bot + window_h_top + core_inner_diameter / 4),
+                                                            window_w)
 
-                                                    primary_effective_conductive_cross_section = primary_litz[
-                                                                                                     "strands_numbers"] * \
-                                                                                                 primary_litz[
-                                                                                                     "strand_radii"] ** 2 * np.pi
-                                                    primary_effective_conductive_radius = np.sqrt(
-                                                        primary_effective_conductive_cross_section / np.pi)
-                                                    primary_resistance = fr.resistance_solid_wire(
-                                                        core_inner_diameter, window_w,
-                                                        n_p_top + n_p_bot,
-                                                        primary_effective_conductive_radius,
-                                                        material='Copper')
-                                                    primary_dc_loss = primary_resistance * i_rms_1 ** 2
+                                                        primary_effective_conductive_cross_section = primary_litz[
+                                                                                                         "strands_numbers"] * \
+                                                                                                     primary_litz[
+                                                                                                         "strand_radii"] ** 2 * np.pi
+                                                        primary_effective_conductive_radius = np.sqrt(
+                                                            primary_effective_conductive_cross_section / np.pi)
+                                                        primary_resistance = fr.resistance_solid_wire(
+                                                            core_inner_diameter, window_w,
+                                                            n_p_top + n_p_bot,
+                                                            primary_effective_conductive_radius,
+                                                            material='Copper')
+                                                        primary_dc_loss = primary_resistance * i_rms_1 ** 2
 
-                                                    secondary_effective_conductive_cross_section = secondary_litz[
-                                                                                                       "strands_numbers"] * \
-                                                                                                   secondary_litz[
-                                                                                                       "strand_radii"] ** 2 * np.pi
-                                                    secondary_effective_conductive_radius = np.sqrt(
-                                                        secondary_effective_conductive_cross_section / np.pi)
-                                                    secondary_resistance = fr.resistance_solid_wire(
-                                                        core_inner_diameter, window_w,
-                                                        n_s_top + n_s_bot,
-                                                        secondary_effective_conductive_radius,
-                                                        material='Copper')
-                                                    secondary_dc_loss = secondary_resistance * i_rms_2 ** 2
+                                                        secondary_effective_conductive_cross_section = secondary_litz[
+                                                                                                           "strands_numbers"] * \
+                                                                                                       secondary_litz[
+                                                                                                           "strand_radii"] ** 2 * np.pi
+                                                        secondary_effective_conductive_radius = np.sqrt(
+                                                            secondary_effective_conductive_cross_section / np.pi)
+                                                        secondary_resistance = fr.resistance_solid_wire(
+                                                            core_inner_diameter, window_w,
+                                                            n_s_top + n_s_bot,
+                                                            secondary_effective_conductive_radius,
+                                                            material='Copper')
+                                                        secondary_dc_loss = secondary_resistance * i_rms_2 ** 2
 
-                                                    total_loss = p_hyst + primary_dc_loss + secondary_dc_loss
+                                                        total_loss = p_hyst + primary_dc_loss + secondary_dc_loss
 
-                                                    valid_design_dict = ItoSingleResultFile(
-                                                        case=case_number,
-                                                        air_gap_top=l_top_air_gap,
-                                                        air_gap_bot=l_bot_air_gap,
-                                                        air_gap_middle=l_middle_air_gap,
-                                                        n_p_top=n_p_top,
-                                                        n_p_bot=n_p_bot,
-                                                        n_s_top=n_s_top,
-                                                        n_s_bot=n_s_bot,
-                                                        window_h_top=window_h_top,
-                                                        window_h_bot=window_h_bot,
-                                                        window_w=window_w,
-                                                        core_material=material_name,
-                                                        core_inner_diameter=core_inner_diameter,
-                                                        primary_litz_wire=primary_litz_wire,
-                                                        secondary_litz_wire=secondary_litz_wire,
-                                                        # results
-                                                        flux_top_max=flux_top_max,
-                                                        flux_bot_max=flux_bot_max,
-                                                        flux_stray_max=flux_stray_max,
-                                                        flux_density_top_max=flux_density_top_max,
-                                                        flux_density_bot_max=flux_density_bot_max,
-                                                        flux_density_stray_max=flux_density_middle_max,
-                                                        p_hyst=p_hyst,
-                                                        core_2daxi_total_volume=core_2daxi_total_volume,
-                                                        primary_litz_wire_loss=primary_dc_loss,
-                                                        secondary_litz_wire_loss=secondary_dc_loss,
-                                                        total_loss=total_loss
+                                                        valid_design_dict = ItoSingleResultFile(
+                                                            case=case_number,
+                                                            air_gap_top=l_top_air_gap,
+                                                            air_gap_bot=l_bot_air_gap,
+                                                            air_gap_middle=l_middle_air_gap,
+                                                            n_p_top=n_p_top,
+                                                            n_p_bot=n_p_bot,
+                                                            n_s_top=n_s_top,
+                                                            n_s_bot=n_s_bot,
+                                                            window_h_top=window_h_top,
+                                                            window_h_bot=window_h_bot,
+                                                            window_w=window_w,
+                                                            core_material=material_name,
+                                                            core_inner_diameter=core_inner_diameter,
+                                                            primary_litz_wire=primary_litz_wire,
+                                                            secondary_litz_wire=secondary_litz_wire,
+                                                            # results
+                                                            flux_top_max=flux_top_max,
+                                                            flux_bot_max=flux_bot_max,
+                                                            flux_stray_max=flux_stray_max,
+                                                            flux_density_top_max=flux_density_top_max,
+                                                            flux_density_bot_max=flux_density_bot_max,
+                                                            flux_density_stray_max=flux_density_middle_max,
+                                                            p_hyst=p_hyst,
+                                                            core_2daxi_total_volume=core_2daxi_total_volume,
+                                                            primary_litz_wire_loss=primary_dc_loss,
+                                                            secondary_litz_wire_loss=secondary_dc_loss,
+                                                            total_loss=total_loss
 
-                                                    )
+                                                        )
 
-                                                    # Add dict to list of valid designs
-                                                    valid_design_list.append(valid_design_dict)
-                                                    case_number += 1
+                                                        # Add dict to list of valid designs
+                                                        valid_design_list.append(valid_design_dict)
+                                                        case_number += 1
 
             print(f"Number of valid designs: {len(valid_design_list)}")
             return valid_design_list
@@ -901,9 +903,53 @@ class IntegratedTransformerOptimization:
             femmt.integrated_transformer_fem_thermal_simulations_from_result_dtos(config_dto, simulation_dto_list, visualize)
 
         @staticmethod
-        def load_unfiltered_simulations(working_directory: str):
+        def load_unfiltered_simulations(working_directory: str) -> List[Dict]:
 
             filepath = os.path.join(working_directory, "03_fem_thermal_simulation_results")
 
             return femmt.IntegratedTransformerOptimization.FemSimulation.load(filepath)
+
+        @staticmethod
+        def filter_max_temperature(thermal_result_log_list: List[Dict], max_core_temperature: float, max_winding_temperature: float) -> List[Dict]:
+            """
+            Filters out designs with too high core and winding temperatures.
+
+            :param thermal_result_log_list: list of thermal result logs
+            :type thermal_result_log_list: List[Dict]
+            :param max_core_temperature: maximum core temperature
+            :type max_core_temperature: float
+            :param max_winding_temperature: maximum winding temperature
+            :type max_winding_temperature: float
+            """
+            filtered_thermal_result_log_list = []
+
+            for thermal_result_log in thermal_result_log_list:
+                if thermal_result_log["core"]["max"] < max_core_temperature and thermal_result_log["windings"]["total"]["max"] < max_winding_temperature:
+                    filtered_thermal_result_log_list.append(thermal_result_log)
+
+            return filtered_thermal_result_log_list
+
+        @staticmethod
+        def find_common_cases(fem_results_list: List[Dict], thermal_fem_results_list: List[Dict]) -> List[Dict]:
+            """
+            Find out common cases in FEM simulation list and thermal FEM simulation list.
+
+            :param fem_results_list: List of FEM result-logs
+            :type fem_results_list: List[Dict]
+            :param thermal_fem_results_list: List of thermal FEM result-logs
+            :type thermal_fem_results_list: List[Dict]
+            :return: List of FEM result-logs
+            :rtype: List[Dict]
+            """
+
+            common_case_list = []
+            for thermal_fem_result in thermal_fem_results_list:
+                for fem_result in fem_results_list:
+                    if thermal_fem_result["case"] == fem_result["case"]:
+                        common_case_list.append(fem_result)
+                        break
+
+            return common_case_list
+
+
 

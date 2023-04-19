@@ -247,7 +247,7 @@ def integrated_transformer_fem_thermal_simulations_from_result_dtos(config_dto: 
             source_json_file = os.path.join(ito_target_and_fixed_parameters_dto.fem_working_directory, "results",
                                             "results_thermal.json")
             destination_json_file = os.path.join(ito_target_and_fixed_parameters_dto.fem_thermal_simulation_results_directory,
-                                                 f'case_thermal_{dto.case}.json')
+                                                 f'case_{dto.case}.json')
 
             shutil.copy(source_json_file, destination_json_file)
         except:
