@@ -479,9 +479,9 @@ if component == "stacked-center-tapped-transformer":
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=False)
 
-    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005, window_h_bot=0.02)
+    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005, window_h_bot=0.017)
     core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
@@ -493,17 +493,21 @@ if component == "stacked-center-tapped-transformer":
 
     # set_center_tapped_windings() automatically places the condu
     insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
-                                                                                                      primary_turns=15, primary_radius=1.1e-3, primary_number_strands=50, primary_strand_radius=0.00011,
-                                                                                                      secondary_parallel_turns=3, secondary_thickness_foil=1e-3,
+                                                                                                      primary_turns=14, primary_radius=1.1e-3, primary_number_strands=50, primary_strand_radius=0.00011,
+                                                                                                      secondary_parallel_turns=2, secondary_thickness_foil=1e-3,
                                                                                                       iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
                                                                                                       iso_primary_to_primary=1e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
-                                                                                                      primary_coil_turns=4)
+                                                                                                      interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
+                                                                                                      primary_coil_turns=3)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
 
     geo.create_model(freq=200000, visualize_before=True)
+
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_results=True)
+
+    # geo.get_inductances(I0=1, op_frequency=200000)
 
 if component == "load_from_file":
     working_directory = os.path.join(example_results_folder, "from-file")

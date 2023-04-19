@@ -854,6 +854,7 @@ class TwoDaxiSymmetric:
                             elif winding_scheme == WindingScheme.FoilHorizontal:
                                 # Foil conductors where each conductor is very long and the conductors are expanding the y-direction
                                 # Stack defined number of turns and chosen thickness
+                                winding.a_cell = winding.thickness * (right_bound-left_bound)
                                 for i in range(turns):
                                     # CHECK if top bound is reached
                                     if round(bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num], 6) <= round(top_bound, 6):

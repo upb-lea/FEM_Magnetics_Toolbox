@@ -71,7 +71,7 @@ class Conductor:
         self.conductor_is_set = True
         self.conductor_type = ConductorType.RectangularSolid
         self.thickness = thickness
-        self.a_cell = 1  # TODO Surface size needed?
+        self.a_cell = None  # can only be set after the width is determined
         self.conductor_radius = 1  # Revisit
 
     def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: ConductorArrangement):

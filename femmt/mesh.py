@@ -705,7 +705,7 @@ class Mesh:
 
         for i, ww in enumerate(self.model.winding_windows):
             for vww in ww.virtual_winding_windows:
-                if i == 0:
+                if i == 0:  # top window
                     try:
                         n_primary_in_top += vww.turns[0]
                     except IndexError:
@@ -718,7 +718,7 @@ class Mesh:
                         n_tertiary_in_top += vww.turns[2]
                     except IndexError:
                         pass
-                elif i == 1:
+                elif i == 1:  # bot window
                     try:
                         n_primary_in_bot += vww.turns[0]
                     except IndexError:
@@ -953,7 +953,7 @@ class Mesh:
         # have a high runtime. Check if thats true and when it does try to reduce the number of synchronize() calls by adding all points first and
         # embed them later together:
         # This is added here therefore the additional points are not seen in the pictures and views
-        self.forward_meshing(p_cond)
+        # self.forward_meshing(p_cond)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # No mesh is generated here, because generating a mesh, saving it as *.msh, loading it, appending more geometry data

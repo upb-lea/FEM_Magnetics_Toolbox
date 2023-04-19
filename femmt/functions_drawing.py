@@ -1,6 +1,6 @@
 from femmt import *
 from femmt.dtos import *
-
+import copy
 
 def number_of_rows(row: ConductorRow):
     """
@@ -258,6 +258,34 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
     elif interleaving_type == CenterTappedInterleavingType.TypeC:
         number_of_single_rows = None
         stack_order = []
+
+        rowA = copy.deepcopy(primary_row)
+        rowA.number_of_conds_per_row = 4
+        rowB = copy.deepcopy(primary_row)
+        rowB.number_of_conds_per_row = 3
+
+
+        stack_order.append(tertiary_row)
+
+        stack_order.append(rowA)
+        stack_order.append(rowB)
+
+        stack_order.append(secondary_row)
+        stack_order.append(tertiary_row)
+
+        stack_order.append(rowA)
+        stack_order.append(rowB)
+
+        stack_order.append(secondary_row)
+
+        insert_insulations_to_stack(stack_order, isolations)
+
+        # Create the complete ConductorStack from the stack_order
+        return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
+
+    elif interleaving_type == CenterTappedInterleavingType.TypeD:
+        number_of_single_rows = None
+        stack_order = []
         for i in range(0, primary_row.number_of_rows):
             stack_order.append(primary_row)
         for i in range(0, secondary_row.number_of_rows):
@@ -266,7 +294,6 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
             stack_order.append(tertiary_row)
 
         insert_insulations_to_stack(stack_order, isolations)
-
 
         # Create the complete ConductorStack from the stack_order
         return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)

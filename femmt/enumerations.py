@@ -156,6 +156,7 @@ class CenterTappedInterleavingType(IntEnum):
     custom = 1
     TypeA = 2
     TypeB = 3
+    TypeC = 4
 
 
 class ConductorType(IntEnum):

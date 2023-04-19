@@ -112,8 +112,10 @@ def set_center_tapped_windings(core,
                                secondary_parallel_turns, secondary_thickness_foil,
                                iso_top_core, iso_bot_core, iso_left_core, iso_right_core,
                                iso_primary_to_primary, iso_secondary_to_secondary, iso_primary_to_secondary,
+                               interleaving_type: CenterTappedInterleavingType,
                                primary_coil_turns=None):
     """
+    :param interleaving_type:
     :param primary_strand_radius:
     :param primary_number_strands:
     :param iso_primary_to_secondary:
@@ -189,8 +191,6 @@ def set_center_tapped_windings(core,
         raise Exception(f"Unknown core type {core.core_type}")
 
     # Define the transformer winding stack
-    # interleaving_type = CenterTappedInterleavingType.TypeA
-    interleaving_type = CenterTappedInterleavingType.TypeB
     transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row, window_height=ww_bot_height, isolations=winding_isolations,
                                                         interleaving_type=interleaving_type)
 
