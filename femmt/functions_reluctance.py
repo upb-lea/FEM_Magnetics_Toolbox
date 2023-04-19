@@ -494,6 +494,9 @@ def r_air_gap_round_round(air_gap_total_height, core_inner_diameter, core_height
     :param core_height_lower: core height lower (needed for better calculating fringing effects)
     :return: air gap reluctance for round-round structure including fringing effects
     """
+    if np.any(air_gap_total_height == 0):
+        raise Exception(f"'air_gap_total_height' can not be Zero!")
+
     air_gap_total_height = np.array(air_gap_total_height)
     core_inner_diameter = np.array(core_inner_diameter)
     core_height_upper = np.array(core_height_upper)

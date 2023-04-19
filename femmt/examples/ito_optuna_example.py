@@ -49,9 +49,7 @@ task = 'start_study'
 #task = 'fem_simulation_best_trials_offset'
 #task = 'plot_study_results'
 
-
-study_name = "workflow_2023-03-22"
-#study_name = "test_workflow11"
+study_name = "workflow_2023-04-15"
 
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
@@ -59,30 +57,30 @@ if __name__ == '__main__':
     object1 = fmt.ItoOptuna()
 
     if task == 'start_study':
-        object1.start_study(study_name, dab_transformer_config, 1000, storage='sqlite')
+        object1.ReluctanceModel.start_study(study_name, dab_transformer_config, 20000, storage='sqlite')
 
     elif task == 'fem_simulation_best_trials':
-        reluctance_result_list = object1.load_study_best_trials(study_name)
+        reluctance_result_list = object1.ReluctanceModel.load_study_best_trials(study_name)
 
-        pareto_reluctance_result_list = object1.load_study_pareto_area(study_name, 5)
+        pareto_reluctance_result_list = object1.ReluctanceModel.load_study_pareto_area(study_name, 5)
 
 
-        fmt.ItoOptuna.simulate_fem(dab_transformer_config,
-                         reluctance_result_list,
-                         visualize = False)
+        fmt.ItoOptuna.FemSimulation.simulate(dab_transformer_config,
+                                             reluctance_result_list,
+                                             visualize = False)
 
     elif task == 'fem_simulation_best_trials_offset':
-        reluctance_result_list = object1.load_study_pareto_area(study_name, 10)
+        reluctance_result_list = object1.ReluctanceModel.load_study_pareto_area(study_name, 10)
 
-        pareto_reluctance_result_list = object1.load_study_pareto_area(study_name, 1)
+        pareto_reluctance_result_list = object1.ReluctanceModel.load_study_pareto_area(study_name, 1)
 
 
-        fmt.ItoOptuna.simulate_fem(dab_transformer_config,
-                         reluctance_result_list,
-                         visualize = True)
+        fmt.ItoOptuna.FemSimulation.simulate(dab_transformer_config,
+                                             reluctance_result_list,
+                                             visualize = True)
 
     elif task == 'plot_study_results':
-        fmt.ItoOptuna.show_study_results(study_name)
+        fmt.ItoOptuna.ReluctanceModel.show_study_results(study_name)
 
 
     time_stop = datetime.datetime.now()
