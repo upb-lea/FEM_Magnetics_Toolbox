@@ -25,10 +25,6 @@ class ItoSingleInputConfig:
     window_h_top_min_max_list: list
     window_h_bot_min_max_list: list
     factor_max_flux_density: float
-    n_p_top_min_max_list: list
-    n_p_bot_min_max_list: list
-    n_s_top_min_max_list: list
-    n_s_bot_min_max_list: list
     primary_litz_wire_list: list
     secondary_litz_wire_list: list
     temperature: float
@@ -51,6 +47,18 @@ class MaterialCurve:
 
 
 @dataclass
+class WorkingDirectories:
+    """
+    Working directories for an integrated transformer optimization
+    """
+    fem_working_directory: str
+    reluctance_model_results_directory: str
+    fem_simulation_results_directory: str
+    fem_simulation_filtered_results_directory: str
+    fem_thermal_simulation_results_directory: str
+    fem_thermal_filtered_simulation_results_directory: str
+
+@dataclass
 class ItoTargetAndFixedParameters:
     """
     Integrated-transformer optimization target and fixed parameters.
@@ -64,10 +72,7 @@ class ItoTargetAndFixedParameters:
     current_extracted_2_vec: List
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
-    fem_working_directory: str
-    fem_simulation_results_directory: str
-    reluctance_model_results_directory: str
-    fem_thermal_simulation_results_directory: str
+    working_directories: WorkingDirectories
 
 @dataclass
 class SweepTensor:
@@ -78,10 +83,6 @@ class SweepTensor:
     ItoSingleInputConfig: core_inner_diameter = [10e-3, 30e-3, 5]
     ->> SweepTensor: t1_core_inner_diameter = [10e-3, 15e-3, 20e-3, 25e-3, 30e-3]
     """
-    t1_n_p_top: np.ndarray
-    t1_n_p_bot: np.ndarray
-    t1_n_s_top: np.ndarray
-    t1_n_s_bot: np.ndarray
     t1_window_h_top: np.ndarray
     t1_window_h_bot: np.ndarray
     t1_window_w: np.ndarray
@@ -132,3 +133,4 @@ class ItoSingleResultFile:
     secondary_litz_wire_loss: float
     core_2daxi_total_volume: float
     total_loss: float
+

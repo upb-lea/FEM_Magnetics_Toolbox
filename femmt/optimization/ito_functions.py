@@ -2,6 +2,7 @@
 import shutil
 import os
 from typing import List, Tuple
+import inspect
 
 # 3rd party libraries
 
@@ -35,6 +36,42 @@ def dto_list_to_vec(dto_list: List[ItoSingleResultFile]) -> Tuple:
     y_pareto_vec = sorted_vector[1]
 
     return x_pareto_vec, y_pareto_vec
+
+
+def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
+    """
+    Set up the folder structure for the integrated transformer optimization.
+
+    :param working_directory: working directory
+    :type working_directory: str
+    :return: working directories as a DTO
+    :rtype: WorkingDirectories
+    """
+    if working_directory is None:
+        caller_filename = inspect.stack()[1].filename
+        working_directory = os.path.join(os.path.dirname(caller_filename), "integrated_transformer_optimization")
+
+    # generate new and empty working directory
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+    working_directories = WorkingDirectories(
+        fem_working_directory=os.path.join(working_directory, '00_femmt_simulation'),
+        reluctance_model_results_directory = os.path.join(working_directory, "01_reluctance_model_results"),
+        fem_simulation_results_directory = os.path.join(working_directory, "02_fem_simulation_results"),
+        fem_simulation_filtered_results_directory = os.path.join(working_directory, "02_fem_simulation_results_filtered"),
+        fem_thermal_simulation_results_directory = os.path.join(working_directory, "03_fem_thermal_simulation_results"),
+        fem_thermal_filtered_simulation_results_directory = os.path.join(working_directory, "03_fem_thermal_simulation_results_filtered"),
+    )
+
+    os.makedirs(working_directories.fem_working_directory, exist_ok=True)
+    os.makedirs(working_directories.fem_simulation_results_directory, exist_ok=True)
+    os.makedirs(working_directories.fem_simulation_filtered_results_directory, exist_ok=True)
+    os.makedirs(working_directories.reluctance_model_results_directory, exist_ok=True)
+    os.makedirs(working_directories.fem_thermal_simulation_results_directory, exist_ok=True)
+    os.makedirs(working_directories.fem_thermal_filtered_simulation_results_directory, exist_ok=True)
+
+    return working_directories
 
 def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleInputConfig,
                                                           dto: ItoSingleResultFile,
@@ -129,7 +166,7 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
                                                             simulation_dto_list: List[ItoSingleResultFile],
                                                             visualize: bool = False,
                                                             ):
-    ito_target_and_fixed_parameters_dto = fmt.optimization.ito_optuna.ItoOptuna.calculate_fix_parameters(config_dto)
+    ito_target_and_fixed_parameters_dto = fmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(config_dto)
 
     time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec \
         (config_dto.time_current_1_vec)
@@ -147,7 +184,7 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
         try:
             geo = integrated_transformer_fem_simulation_from_result_dto(config_dto = config_dto,
                                                                         dto=dto,
-                                                                        fem_working_directory = ito_target_and_fixed_parameters_dto.fem_working_directory,
+                                                                        fem_working_directory = ito_target_and_fixed_parameters_dto.working_directories.fem_working_directory,
                                                                         fundamental_frequency = fundamental_frequency,
                                                                         i_peak_1=i_peak_1,
                                                                         i_peak_2=i_peak_2,
@@ -155,8 +192,8 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
                                                                         phase_deg_2 = phase_deg_2,
                                                                         visualize= visualize)
 
-            source_json_file = os.path.join(ito_target_and_fixed_parameters_dto.fem_working_directory, "results", "log_electro_magnetic.json")
-            destination_json_file = os.path.join(ito_target_and_fixed_parameters_dto.fem_simulation_results_directory,
+            source_json_file = os.path.join(ito_target_and_fixed_parameters_dto.working_directories.fem_working_directory, "results", "log_electro_magnetic.json")
+            destination_json_file = os.path.join(ito_target_and_fixed_parameters_dto.working_directories.fem_simulation_results_directory,
                                                 f'case_{dto.case}.json')
 
             shutil.copy(source_json_file, destination_json_file)

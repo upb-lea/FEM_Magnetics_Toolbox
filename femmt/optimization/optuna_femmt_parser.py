@@ -8,11 +8,8 @@ from femmt.optimization.integrated_transformer_dtos import *
 
 
 class OptunaFemmtParser:
-    def __init__(self):
-        pass
-
-    @classmethod
-    def parse(cls, frozen_trial: optuna.trial.FrozenTrial) -> ItoSingleResultFile:
+    @staticmethod
+    def parse(frozen_trial: optuna.trial.FrozenTrial) -> ItoSingleResultFile:
 
          return ItoSingleResultFile(
             case=frozen_trial.number,

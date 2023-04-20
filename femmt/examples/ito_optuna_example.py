@@ -33,10 +33,6 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
     window_h_top_min_max_list= [5 / 6 * pq3230["window_h"], 5 / 6 * pq5050["window_h"]],
     window_h_bot_min_max_list= [1 / 6 * pq3230["window_h"], 1 / 6 * pq5050["window_h"]],
     factor_max_flux_density = 1,
-    n_p_top_min_max_list = [1, 100],
-    n_p_bot_min_max_list = [0,30],
-    n_s_top_min_max_list = [0,70],
-    n_s_bot_min_max_list = [0,80],
     primary_litz_wire_list= ["1.4x200x0.071"],
     secondary_litz_wire_list= ["1.4x200x0.071"],
     temperature=100,
@@ -44,9 +40,9 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
 )
 
 
-task = 'start_study'
-#task = 'fem_simulation_best_trials'
-#task = 'fem_simulation_best_trials_offset'
+#task = 'start_study'
+#task = 'filter_reluctance_model'
+task = 'fem_simulation_from_filtered_reluctance_model_results'
 #task = 'plot_study_results'
 
 study_name = "workflow_2023-04-15"
@@ -54,33 +50,42 @@ study_name = "workflow_2023-04-15"
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    object1 = fmt.ItoOptuna()
 
     if task == 'start_study':
-        object1.ReluctanceModel.start_study(study_name, dab_transformer_config, 20000, storage='sqlite')
+        fmt.IntegratedTransformerOptimization.ReluctanceModel.NSGAII.start_study(study_name, dab_transformer_config, 1000, storage='sqlite')
 
-    elif task == 'fem_simulation_best_trials':
-        reluctance_result_list = object1.ReluctanceModel.load_study_best_trials(study_name)
+    elif task == 'filter_reluctance_model':
+        # load trials from reluctance model
+        reluctance_result_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.NSGAII.load_study_to_dto(study_name, dab_transformer_config)
+        print(f"{len(reluctance_result_list) = }")
 
-        pareto_reluctance_result_list = object1.ReluctanceModel.load_study_pareto_area(study_name, 5)
+        # filter air gaps
+        filtered_air_gaps_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.filter_min_air_gap_length(reluctance_result_list)
+        print(f"{len(filtered_air_gaps_dto_list) = }")
 
+        # filter for Pareto front
+        pareto_reluctance_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.filter_loss_list(
+            filtered_air_gaps_dto_list, factor_min_dc_losses=0.5)
+        print(f"{len(pareto_reluctance_dto_list) = }")
 
-        fmt.ItoOptuna.FemSimulation.simulate(dab_transformer_config,
-                                             reluctance_result_list,
-                                             visualize = False)
+        fmt.IntegratedTransformerOptimization.plot(reluctance_result_list)
+        fmt.IntegratedTransformerOptimization.plot(pareto_reluctance_dto_list)
 
-    elif task == 'fem_simulation_best_trials_offset':
-        reluctance_result_list = object1.ReluctanceModel.load_study_pareto_area(study_name, 10)
+        # save results
+        fmt.IntegratedTransformerOptimization.ReluctanceModel.save_dto_list(pareto_reluctance_dto_list, os.path.join(dab_transformer_config.working_directory, '01_reluctance_model_results_filtered'))
 
-        pareto_reluctance_result_list = object1.ReluctanceModel.load_study_pareto_area(study_name, 1)
+    elif task == 'fem_simulation_from_filtered_reluctance_model_results':
+        # load filtered reluctance models
+        pareto_reluctance_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(dab_transformer_config.working_directory)
+        print(f"{len(pareto_reluctance_dto_list) = }")
 
+        # start FEM simulation
+        fmt.IntegratedTransformerOptimization.FemSimulation.simulate(config_dto=dab_transformer_config,
+                                                                simulation_dto_list=pareto_reluctance_dto_list)
 
-        fmt.ItoOptuna.FemSimulation.simulate(dab_transformer_config,
-                                             reluctance_result_list,
-                                             visualize = True)
 
     elif task == 'plot_study_results':
-        fmt.ItoOptuna.ReluctanceModel.show_study_results(study_name)
+        fmt.IntegratedTransformerOptimization.ReluctanceModel.NSGAII.show_study_results(study_name, dab_transformer_config)
 
 
     time_stop = datetime.datetime.now()
