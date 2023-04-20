@@ -207,7 +207,7 @@ if component == "transformer":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=False)
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.06, window_w=0.03, core_inner_diameter=0.015,
@@ -223,7 +223,7 @@ if component == "transformer":
     # 4. set insulation
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002, 0.0002, 0.0002, 0.0002], 0.0005)
+    insulation.add_winding_insulations([0.0002, 0.0002, 0.0002, 0.0002], 0.0005)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -252,10 +252,10 @@ if component == "transformer":
     winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
     winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
-    winding4.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Hexagonal)
     #winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
-    #winding4.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+    #winding4.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Hexagonal)
+    winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+    winding4.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     #winding5 = fmt.Conductor(4, fmt.Conductivity.Copper)
     #winding5.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Hexagonal)
@@ -275,13 +275,13 @@ if component == "transformer":
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, visualize_before=True)
-    geo.single_simulation(freq=250000, current=[4, 4, 4, 4, 4], phi_deg=[0, 180, 180, 180, 180])
+    geo.single_simulation(freq=250000, current=[4, 4, 4, 4], phi_deg=[0, 180, 180, 180])
 
     # read inductances
     #geo.get_inductances(I0=4, op_frequency=250000, skin_mesh_factor=0.5, visualize=False)
 
     # Reference simulation using FEMM
-    #geo.femm_reference(freq=250000, current=[4, 0, 0], sign=[1, -1, -1], non_visualize=0)
+    geo.femm_reference(freq=250000, current=[4, 4, 4, 4], sign=[1, -1, -1, -1], non_visualize=0)
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")
     if not os.path.exists(working_directory):

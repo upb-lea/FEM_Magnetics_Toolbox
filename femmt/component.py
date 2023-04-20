@@ -1337,7 +1337,7 @@ class MagneticComponent:
 
         # Magnetic Component Type
         if self.component_type == ComponentType.Inductor:
-            text_file.write(f"Flag_Transformer = 0;\n")
+            #text_file.write(f"Flag_Transformer = 0;\n")
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
             #text_file.write(f"Flag_Three_Transformer = 0;\n")
         #if self.component_type == ComponentType.Transformer:
@@ -1355,7 +1355,7 @@ class MagneticComponent:
             #text_file.write(f"Flag_{num_windings}_Transformer = 1;\n")
 
         if self.component_type == ComponentType.Transformer:
-            text_file.write(f"Flag_Transformer = 1;\n")
+            #text_file.write(f"Flag_Transformer = 1;\n")
             #for i in range(1, len(self.windings) + 1):
 
             #if len(self.windings) == 3:
@@ -1367,7 +1367,7 @@ class MagneticComponent:
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
 
         if self.component_type == ComponentType.IntegratedTransformer:
-            text_file.write(f"Flag_Transformer = 1;\n")
+            #text_file.write(f"Flag_Transformer = 1;\n")
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
             #if len(self.windings) == 3:
                 #text_file.write(f"Flag_Three_Transformer = 1;\n")
@@ -2054,11 +2054,8 @@ class MagneticComponent:
 
         # == Circuit ==
         # coil as seen from the terminals.
-        femm.mi_addcircprop('Primary', current[0] * sign[0], int(not self.windings[0].parallel))
-        if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
-            femm.mi_addcircprop('Secondary', current[1] * sign[1], int(not self.windings[1].parallel))
-            if len(self.windings) == 3:
-                femm.mi_addcircprop('Tertiary', current[2] * sign[2], 1)
+        for i in range(len(self.windings)):
+            femm.mi_addcircprop('Winding' + str(i + 1), current[i] * sign[i], int(not self.windings[i].parallel))
 
 
         # == Geometry ==
@@ -2178,24 +2175,16 @@ class MagneticComponent:
                     femm.mi_addblocklabel(self.two_d_axi.p_conductor[num][5 * i][0],
                                         self.two_d_axi.p_conductor[num][5 * i][1])
                     femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
-                    if num == 0:
-                        if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                            femm.mi_setblockprop('Litz', 1, 0, 'Primary', 0, 2, 1)
-                        else:
-                            femm.mi_setblockprop('Copper', 1, 0, 'Primary', 0, 2, 1)
-                    if num == 1:
-                        # femm.mi_setblockprop('Copper', 0, 1e-4, 'Secondary', 0, 3, 1)
-                        if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                            femm.mi_setblockprop('Litz', 1, 0, 'Secondary', 0, 3, 1)
-                        else:
-                            femm.mi_setblockprop('Copper', 1, 0, 'Secondary', 0, 3, 1)
-                    if num == 2:
-                        if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                            femm.mi_setblockprop('Litz', 1, 0, 'Tertiary', 0, 4, 1)
-                        else:
-                            femm.mi_setblockprop('Copper', 1, 0, 'Tertiary', 0, 4, 1)
+
+
+                    winding_name = 'Winding' + str(num + 1)
+                    if self.windings[num].conductor_type == ConductorType.RoundLitz:
+                       femm.mi_setblockprop('Litz', 1, 0, winding_name, 0, num + 2, 1)
+                    else:
+                       femm.mi_setblockprop('Copper', 1, 0, winding_name, 0, num + 2, 1)
 
                     femm.mi_clearselected()
+
 
         # Define an "open" boundary condition using the built-in function:
         femm.mi_makeABC()
@@ -2314,62 +2303,25 @@ class MagneticComponent:
         femm.mo_clearblock()
 
         # Primary Winding Ciruit Properties
-        circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
-        log["Primary Current"] = circuit_properties_primary[0]
-        log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
-        log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
-        if circuit_properties_primary != 0: #added by Othman
-            log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
-                                        circuit_properties_primary[2].imag / circuit_properties_primary[0]]
-        else:
-            log["Primary Self Inductance"] = [0, 0]
-        log["Primary Mean Power"] = [0.5*circuit_properties_primary[1].real*circuit_properties_primary[0],
-                                    0.5*circuit_properties_primary[1].imag*circuit_properties_primary[0]]
+        # Obtain circuit properties for each winding
 
-        # Primary Winding Losses (with group n=2) by field intergation
-        femm.mo_groupselectblock(2)
-        log["Primary Winding Losses"] = femm.mo_blockintegral(6).real
-        femm.mo_clearblock()
-
-        if self.component_type == (ComponentType.Transformer or ComponentType.IntegratedTransformer):
-            # secondary Winding Ciruit Properties
-            circuit_properties_secondary = femm.mo_getcircuitproperties('Secondary')
-            log["Secondary Current"] = circuit_properties_secondary[0]
-            log["Secondary Voltage"] = [circuit_properties_secondary[1].real, circuit_properties_secondary[1].imag]
-            log["Secondary Flux"] = [circuit_properties_secondary[2].real, circuit_properties_secondary[2].imag]
-            if circuit_properties_secondary[0] != 0: #added by Othman
-                log["Secondary Self Inductance"] = [circuit_properties_secondary[2].real / circuit_properties_secondary[0],
-                                            circuit_properties_secondary[2].imag / circuit_properties_secondary[0]]
+        for i in range(len(self.windings)):
+            circuit_properties = femm.mo_getcircuitproperties('Winding' + str(i + 1))
+            log["Winding" + str(i + 1) + " Current"] = circuit_properties[0]
+            log["Winding" + str(i + 1) + " Voltage"] = [circuit_properties[1].real, circuit_properties[1].imag]
+            log["Winding" + str(i + 1) + " Flux"] = [circuit_properties[2].real, circuit_properties[2].imag]
+            if circuit_properties[0] != 0:  # added by Othman
+                log["Winding" + str(i + 1) + " Self Inductance"] = [circuit_properties[2].real / circuit_properties[0],
+                                                                    circuit_properties[2].imag / circuit_properties[0]]
             else:
-                log["Secondary Self Inductance"] = [0, 0]
-            log["Secondary Mean Power"] = [0.5 * circuit_properties_secondary[1].real * circuit_properties_secondary[0],
-                                        0.5 * circuit_properties_secondary[1].imag * circuit_properties_secondary[0]]
+                log["Winding" + str(i + 1) + " Self Inductance"] = [0, 0]
+            log["Winding" + str(i + 1) + " Mean Power"] = [0.5 * circuit_properties[1].real * circuit_properties[0],
+                                                           0.5 * circuit_properties[1].imag * circuit_properties[0]]
 
-            # secondary Winding Losses (with group n=2) by field intergation
-            femm.mo_groupselectblock(3)
-            log["Secondary Winding Losses"] = femm.mo_blockintegral(6).real
+            # Obtain winding losses for each winding
+            femm.mo_groupselectblock(i + 2)
+            log["Winding" + str(i + 1) + " Losses"] = femm.mo_blockintegral(6).real
             femm.mo_clearblock()
-
-            if len(self.windings) == 3:
-                circuit_properties_tertiary = femm.mo_getcircuitproperties('Tertiary')
-                log["Tertiary Current"] = circuit_properties_tertiary[0]
-                log["Tertiary Voltage"] = [circuit_properties_tertiary[1].real, circuit_properties_tertiary[1].imag]
-                log["Tertiary Flux"] = [circuit_properties_tertiary[2].real, circuit_properties_tertiary[2].imag]
-                if circuit_properties_tertiary[0] != 0: #added by Othman
-                    log["Tertiary Self Inductance"] = [
-                    circuit_properties_tertiary[2].real / circuit_properties_tertiary[0],
-                    circuit_properties_tertiary[2].imag / circuit_properties_tertiary[0]]
-                else:
-                    log["Tertiary Self Inductance"] = [0, 0]
-                log["Tertiary Mean Power"] = [
-                    0.5 * circuit_properties_tertiary[1].real * circuit_properties_tertiary[0],
-                    0.5 * circuit_properties_tertiary[1].imag * circuit_properties_tertiary[0]]
-
-                # tertiary Winding Losses (with group n=2) by field intergation
-                femm.mo_groupselectblock(3)
-                log["Tertiary Winding Losses"] = femm.mo_blockintegral(6).real
-                femm.mo_clearblock()
-
 
 
         json.dump(log, file, indent=2, ensure_ascii=False)
@@ -2466,7 +2418,7 @@ class MagneticComponent:
 
         # Setup winding list
         winding_losses_list = []
-        for i in range(1, 3):
+        for i in range(1, 10):
             key = f"winding{i}"
             inner_winding_list = []
             if key in losses:

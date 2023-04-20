@@ -119,10 +119,10 @@ if component == "inductor":
 
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
-    #winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+    winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
-    winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
-    fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
+    #fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     vww.set_winding(winding, 9, None)
@@ -231,11 +231,11 @@ if component == "transformer":
     left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
 
     # 6. create conductors and set parameters
-    #winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    #winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+    winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+
+    #winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    #winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     #winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     #winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)

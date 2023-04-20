@@ -168,76 +168,25 @@ Formulation {
       */
 
       // GlobalTerms are used for the current imprinting
-      /*
       For n In {1:n_windings}
-          If(Flag_HomogenisedModel~{n})
+          If(!Flag_HomogenisedModel~{n})
             If(Val_EE~{n}!=0)
               GlobalTerm { [ Dof{I}, {U} ] ; In Winding~{n} ; }
             EndIf
+          //Else
+          //  GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding~{n} ; }
           EndIf
       EndFor
-      */
-      If(!Flag_HomogenisedModel~{1})
-        If(Val_EE~{1}!=0)
-          GlobalTerm { [ Dof{I}, {U} ] ; In Winding~{1} ; }
-        EndIf
-      EndIf
-      If(Flag_Transformer)
-        If(!Flag_HomogenisedModel~{2})
-          If(Val_EE~{2}!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding~{2} ; }
-          EndIf
-        EndIf
-        For n In {3:n_windings}
-           If(Flag_HomogenisedModel~{n})
-             If(Val_EE~{n}!=0)
-                GlobalTerm { [ Dof{I}, {U} ] ; In Winding~{n} ; }
-             EndIf
-           EndIf
-        EndFor
-      EndIf
 
 
 
 
-      /*
-      If(Flag_Transformer)
-        If(!Flag_HomogenisedModel2)
-          If(Val_EE_2!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
-          EndIf
-        EndIf
-      EndIf
-
-       If(Flag_Three_Transformer)
-        If(!Flag_HomogenisedModel3)
-          If(Val_EE_3!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding3 ; }
-          EndIf
-        EndIf
-      EndIf
-      */
 
 
-      /*
-      If(!Flag_HomogenisedModel1)
-        If(Val_EE_1!=0)
-          GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
-        EndIf
-      Else
-        GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding1 ; }
-      EndIf
 
-      If(Flag_Transformer)
-        If(!Flag_HomogenisedModel2)
-          If(Val_EE_2!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
-          EndIf
-        Else
-          GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding2 ; }
-        EndIf
-      EndIf
-      */
+
+
+
 
       //Galerkin { [ -Ns[]/Sc[] * Dof{ir}, {a} ] ;
       //  In DomainS ; Jacobian Vol ; Integration II ; }
