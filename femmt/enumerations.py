@@ -15,6 +15,7 @@ class WindingWindowSplit(IntEnum):
     HorizontalAndVerticalSplit = 4
     """Splits winding window in four virtual winding windows separated by a horizontal and vertical line
     """
+    TenCells_Split = 5
 
 class ComponentType(IntEnum):
     """Sets the component type for the whole simulation. Needs to be given to the MagneticComponent on creation.

@@ -1143,37 +1143,6 @@ class MagneticComponent:
                 L_s2 = L_2_2 - L_m2
                 """
 
-           
-                # Turns Ratio n2=N1/N2 with relative winding sense and n3=N1/N3
-
-                #if phases[0][0] != phases[0][1]:
-                    #n_2 = -1 * sum(self.windings[0].turns) / sum(self.windings[1].turns)
-                #else:
-                #n_2 = sum(self.windings[0].turns) / sum(self.windings[1].turns)
-
-                #if phases[0][0] != phases[0][2]:
-                    #n_3 = -1 * sum(self.windings[0].turns) / sum(self.windings[2].turns)
-                #n_3 = sum(self.windings[0].turns) / sum(self.windings[2].turns)
-
-              # another try
-
-                #if phases[0][0] != phases[0][1]:
-                    #n_2 = -1 * sum(self.turns[0]) / sum(self.turns[1])
-              #else:
-                    #n_2 = sum(self.turns[0]) / sum(self.turns[1])
-
-                #if phases[0][0] != phases[0][2]:
-                    #n_3 = -1 * sum(self.turns[0]) / sum(self.turns[2])
-                #else:
-                    #n_3 = sum(self.turns[0]) / sum(self.turns[2])
-
-
-
-                #ff.femmt_print(f"\n"
-                  #f"Turns Ratio:\n"
-                  #f"n2 = {n_2}\n"
-                  #f"n3 = {n_3}\n"
-                  #)
 
                 # Coupling Factors
                 K_21 = Phi_21 / Phi_11
@@ -1182,15 +1151,10 @@ class MagneticComponent:
                 K_32 = Phi_32 / Phi_22
                 K_13 = Phi_13 / Phi_33
                 K_23 = Phi_23 / Phi_33
-                # k_1 = float(self.M_12 or 0) / (K_21 * K_12) ** 0.5
+
                 k_1 = (K_21 * K_12) ** 0.5
-                # k_2 = float(self.M_13 or 0) / (K_31 * K_13) ** 0.5
                 k_2 =  (K_31 * K_13) ** 0.5
-                # k_3 = float(self.M_23 or 0) / (K_23 * K_32) ** 0.5
                 k_3 =  (K_23 * K_32) ** 0.5
-                #k_1 = n_2 / np.abs(n_2) * (K_21 * K_12) ** 0.5
-                #k_2 = n_3 / np.abs(n_3) * (K_31 * K_13) ** 0.5
-                #k_3 = n_3 / np.abs(n_3) * (K_23 * K_32) ** 0.5
                 ff.femmt_print(f"Coupling Factors:\n"
                     f"K_21 = Phi_21 / Phi_11 = {K_21}\n"
                     f"K_31 = Phi_31 / Phi_11 = {K_31}\n"
@@ -1260,9 +1224,7 @@ class MagneticComponent:
                     f"    - Primary Side Stray Inductance: L_s1\n"
                     f"    - Secondary Side Stray Inductance: L_s2\n"
                     f"    - Tertiary Side Stray Inductance: L_s3\n"        
-                    f"    - Primary Side Main Inductance: L_h\n"
-                    #f"n := n2 = {n_2}\n"
-                    #f"n := n3 = {n_3}\n"        
+                    f"    - Primary Side Main Inductance: L_h\n"        
                     f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {L_s1}\n"
                     f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {L_s2}\n"
                     f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {L_s3}\n"         
@@ -1337,42 +1299,15 @@ class MagneticComponent:
 
         # Magnetic Component Type
         if self.component_type == ComponentType.Inductor:
-            #text_file.write(f"Flag_Transformer = 0;\n")
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
-            #text_file.write(f"Flag_Three_Transformer = 0;\n")
-        #if self.component_type == ComponentType.Transformer:
-            #text_file.write(f"Flag_Transformer = 1;\n")
-            #if len(self.windings) == 3:
-                #text_file.write(f"Flag_Three_Transformer = 1;\n")
-            #else:
-                #text_file.write(f"Flag_Three_Transformer = 0;\n")
 
-        #if self.component_type == ComponentType.Transformer:
-            #num_windings = len(self.windings)
-            #text_file.write(f"Flag_Transformer = 1;\n")
-            #for i in range(2, num_windings + 1):
-                #text_file.write(f"Flag_{i}_Transformer = 0;\n")
-            #text_file.write(f"Flag_{num_windings}_Transformer = 1;\n")
 
         if self.component_type == ComponentType.Transformer:
-            #text_file.write(f"Flag_Transformer = 1;\n")
-            #for i in range(1, len(self.windings) + 1):
-
-            #if len(self.windings) == 3:
-                #text_file.write(f"Flag_Three_Transformer = 1;\n")
-                #text_file.write(f"Flag_NWinding_Transformer = 0;\n")
-            #else:
-                #text_file.write(f"Flag_Three_Transformer = 0;\n")
-                #text_file.write(f"Flag_NWinding_Transformer = 1;\n")
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
 
         if self.component_type == ComponentType.IntegratedTransformer:
-            #text_file.write(f"Flag_Transformer = 1;\n")
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
-            #if len(self.windings) == 3:
-                #text_file.write(f"Flag_Three_Transformer = 1;\n")
-            #else:
-                #text_file.write(f"Flag_Three_Transformer = 0;\n")
+
 
         # Frequency
         text_file.write("Freq = %s;\n" % self.frequency)
@@ -1570,7 +1505,7 @@ class MagneticComponent:
                 sweep_dict["f"] = self.frequency
 
             # Winding names are needed to find the logging path
-            winding_name = ["Winding_1", "Winding_2", "Winding_3", "Winding_4", "Winding_5"]
+            winding_name = ["Winding_1", "Winding_2", "Winding_3", "Winding_4", "Winding_5", "Winding_6", "Winding_7", "Winding_8", "Winding_9", "Winding_10"]
 
             for winding in range(len(self.windings)):
 
@@ -2302,7 +2237,7 @@ class MagneticComponent:
         log["Hysteresis Losses"] = femm.mo_blockintegral(3)
         femm.mo_clearblock()
 
-        # Primary Winding Ciruit Properties
+
         # Obtain circuit properties for each winding
 
         for i in range(len(self.windings)):
@@ -2431,8 +2366,11 @@ class MagneticComponent:
         femm.hi_addmaterial('Air', k_air, k_air, q_vol_air, c_air)
         femm.hi_addmaterial('Air Gaps', k_air_gap, k_air_gap, q_vol_air_gap, c_air_gap)
         wire_distances = self.get_wire_distances()
+
+        # Check the type of conductor for this winding
         for winding_index, winding in enumerate(winding_losses_list):
             for i in range(len(winding)):
+                # Add a new material to FEMM with Litz conductor properties
                 femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index], wire_distances[winding_index][i]), c_wire)
         femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case)
 
@@ -2738,3 +2676,8 @@ class MagneticComponent:
             return geo
 
         raise Exception(f"Couldn't extract settings from file {log_file_path}")
+
+
+
+
+

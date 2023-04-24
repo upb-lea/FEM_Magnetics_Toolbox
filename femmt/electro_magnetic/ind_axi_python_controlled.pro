@@ -29,6 +29,7 @@ AIR                 = 110000;
 AIR_EXT             = 110001;
 IRON                = 120000;
 
+//physical numbers of conductors in n transformer
 For n In {1:n_windings}
        iCOND~{n} = 130000 + 1000*(n-1);
        istrandedCOND~{n} = 140000 + 1000*(n-1);
@@ -47,7 +48,10 @@ Group{
   Iron = Region[{IRON}];
 
   // Non Conducting Domain:
+  // Initialize the core-shell domain region to air
   DomainCC = Region[{Air}];
+
+  // Add the iron region to the core-shell domain region
   If(!Flag_Conducting_Core)
     DomainCC += Region[{Iron}];
   EndIf
@@ -57,37 +61,38 @@ Group{
   OuterBoundary = Region[{OUTBND}];
 
   // Current Conducting Domains
-
+  // Create a region for the winding
   For n In {1:n_windings} // loop over each winding //added by Othman
       Winding~{n} = Region[{}]; // create a region for the winding
       StrandedWinding~{n} = Region[{}]; // create a region for the stranded winding
   EndFor
 
-  //correction:
+  // Loop over each winding
   For n In {1:n_windings}
       nbturns~{n} = NbrCond~{n} / SymFactor;
-      For iF In {1:nbturns~{n}}
-        Turn~{n}~{iF} = Region[{(iCOND~{n}+iF-1)}];
-        Winding~{n} += Region[{(iCOND~{n}+iF-1)}];
-        TurnStrand~{n}~{iF} = Region[{(istrandedCOND~{n}+iF-1)}];
-        StrandedWinding~{n} += Region[{(istrandedCOND~{n}+iF-1)}];
+       // Loop over each turn in this winding to create a region for turns and then adding it to the winding
+      For winding_number In {1:nbturns~{n}}
+        Turn~{n}~{winding_number} = Region[{(iCOND~{n}+winding_number-1)}];
+        Winding~{n} += Region[{(iCOND~{n}+winding_number-1)}];
+        TurnStrand~{n}~{winding_number} = Region[{(istrandedCOND~{n}+winding_number-1)}];
+        StrandedWinding~{n} += Region[{(istrandedCOND~{n}+winding_number-1)}];
       EndFor
   EndFor
-
+   // Add this winding to the core domain region
   For n In {1:n_windings}  //added by Othman
       DomainC += Region[{Winding~{n}}] ;
   EndFor
-
+   // Add the iron region to the core domain region
   If(Flag_Conducting_Core)
     DomainC         += Region[{Iron}] ;
   EndIf
-
+   // Add this stranded winding to the shell domain region
   For n In {1:n_windings} //added by Othman
       DomainS += Region[{StrandedWinding~{n}}] ;
   EndFor
-
+  // Add the shell domain to the core-shell domain region
   DomainCC          += Region[{DomainS}] ;
-
+   //  the linear and non linear domains to air and all windings
 
   If(Flag_NL)
     Domain_Lin      = Region[{Air}];
@@ -104,9 +109,10 @@ Group{
     Domain_Lin_NoJs = Region[{Air, Iron}];
     Domain_NonLin   = Region[{}];
   EndIf
-
+  // Initialize the main domain to the core and core-shell domains
   Domain = Region[{DomainC, DomainCC}] ;
 
+ // Loop over each winding and add its regions to the corresponding conductor domain
   For n In {1:n_windings} // added by Othman
       DomainCond~{n} += Region[{Winding~{n}, StrandedWinding~{n}}] ;
   EndFor
@@ -178,7 +184,7 @@ Function {
 
   // sigma: conductivity (= imaginary part of complex permitivity)
   //rho[] = 1/sigma[];
-
+  // Set the conductivity of the winding region
   For n In {1:n_windings}
       sigma[#{Winding~{n}}] = sigma_winding~{n} ;
   EndFor
@@ -640,7 +646,7 @@ PostProcessing {
 
       // ------------------------------------------------------------------------------------------------
       // Voltage (Voltage_i = dFlux_Linkage_i / dt)
-      // Distinguish between litz wire case and solid case
+      // Distinguish between litz wire case and solid case for n-windings
 
       For n In {1:n_windings}
           If(Flag_HomogenisedModel~{n})
