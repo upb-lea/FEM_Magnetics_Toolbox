@@ -632,6 +632,7 @@ class Mesh:
                 cl = gmsh.model.geo.addCurveLoop(iso)
                 curve_loop_iso_core.append(cl)
                 self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
+            return curve_loop_iso_core
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -932,7 +933,7 @@ class Mesh:
         # Define mesh for conductors
         model_insulation: bool = True
         if model_insulation:
-            self.insulations_core_cond(p_iso_core)
+            curve_loop_iso_core = self.insulations_core_cond(p_iso_core)
 
         # Define mesh for air
         if self.core.core_type == CoreType.Single:
@@ -1013,6 +1014,8 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air, air_gaps and iso (since insulation is handled as air, as well as the air gaps)
         if self.model.core.core_type == CoreType.Single:
+            # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+            # must be
             air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=110000)
             # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
