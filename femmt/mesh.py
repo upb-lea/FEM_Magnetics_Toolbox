@@ -930,7 +930,7 @@ class Mesh:
         self.conductors(p_cond, l_cond, curve_loop_cond)
 
         # Define mesh for conductors
-        model_insulation: bool = False
+        model_insulation: bool = True
         if model_insulation:
             self.insulations_core_cond(p_iso_core)
 
@@ -953,7 +953,7 @@ class Mesh:
         # have a high runtime. Check if thats true and when it does try to reduce the number of synchronize() calls by adding all points first and
         # embed them later together:
         # This is added here therefore the additional points are not seen in the pictures and views
-        # self.forward_meshing(p_cond)
+        self.forward_meshing(p_cond)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # No mesh is generated here, because generating a mesh, saving it as *.msh, loading it, appending more geometry data
@@ -1155,9 +1155,10 @@ class Mesh:
 
         # Since the turns are saved for each vww all turns per winding must be collected
         flattened_turns = [0] * len(self.windings)
-        for vww in self.model.virtual_winding_windows:
-            for index, winding in enumerate(self.windings):
-                flattened_turns[winding.winding_number] += vww.turns[index]
+        for ww in self.model.winding_windows:
+            for vww in ww.virtual_winding_windows:
+                for index, winding in enumerate(self.windings):
+                    flattened_turns[winding.winding_number] += vww.turns[index]
 
         for winding in self.windings:
             winding_number = winding.winding_number

@@ -116,7 +116,7 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
         winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 9, None)
-        geo.set_winding_window(winding_window)
+        geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, visualize_before=False, save_png=False)
 
@@ -209,7 +209,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 9, None)
-        geo.set_winding_window(winding_window)
+        geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, visualize_before=False, save_png=False)
 
@@ -265,7 +265,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
         winding.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 9, None)
-        geo.set_winding_window(winding_window)
+        geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, visualize_before=False, save_png=False)
 
@@ -324,7 +324,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil(temp_folder):
         winding.set_rectangular_conductor(thickness=1e-3)
 
         vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, wrap_para_type)
-        geo.set_winding_window(winding_window)
+        geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, visualize_before=False, save_png=False)
 
@@ -398,7 +398,7 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
         # 7. add conductor to vww and add winding window to MagneticComponent
         left.set_winding(winding1, 10, None)
         right.set_winding(winding2, 10, None)
-        geo.set_winding_window(winding_window)
+        geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
         geo.create_model(freq=250000, visualize_before=False)
@@ -464,7 +464,7 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
         # 7. add conductor to vww and add winding window to MagneticComponent
         vww.set_interleaved_winding(winding1, 21, winding2, 7, fmt.InterleavedWindingScheme.HorizontalAlternating,
                                     0.0005)
-        geo.set_winding_window(winding_window)
+        geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
         geo.create_model(freq=250000, visualize_before=False)
@@ -543,7 +543,7 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
                                     0.0005)
         bot.set_interleaved_winding(winding1, 1, winding2, 2, fmt.InterleavedWindingScheme.HorizontalAlternating,
                                     0.0005)
-        geo.set_winding_window(winding_window)
+        geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
         geo.create_model(freq=250000, visualize_before=False)
@@ -566,16 +566,18 @@ def thermal_simulation(temp_folder):
         if not os.path.exists(working_directory):
             os.mkdir(working_directory)
 
-        core_db = fmt.core_database()["PQ 40/40"]
 
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, 
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
                                     working_directory=working_directory, silent=True, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
-        core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
-                        window_h=core_db["window_h"],
+        core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"])
+        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
                         sigma=0.,
                         non_linear=False,
@@ -601,7 +603,7 @@ def thermal_simulation(temp_folder):
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 8, None)
-        geo.set_winding_window(winding_window)
+        geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, visualize_before=False, save_png=False)
         geo.single_simulation(freq=100000, current=[3], show_results=False)
