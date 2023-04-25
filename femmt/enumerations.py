@@ -27,6 +27,9 @@ class WindingWindowSplit(IntEnum):
     VerticalStack = 5
     """Based on a vertical stack, the winding window is split into several virtual winding windows
     """
+    TenCells_Split = 6
+    """The winding window is split into 2x5 virtual winding windows
+    """
 
 
 class ComponentType(IntEnum):

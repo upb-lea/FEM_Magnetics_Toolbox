@@ -1471,3 +1471,5 @@ class Mesh:
 
         # Synchronize again
         gmsh.model.geo.synchronize()
+
+

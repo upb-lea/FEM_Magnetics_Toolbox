@@ -43,7 +43,7 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ Mag_b_real,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_b_real", ExtGmsh],  LastTimeStepOnly] ;
   //Print[ Mag_b_imag,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_b_imag", ExtGmsh],  LastTimeStepOnly] ;
   If(Flag_show_standard_fields)
-    Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh]];
+     Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh]];
   EndIf
   //  , StoreInVariable $Magb maybe use this for Core Loss
 

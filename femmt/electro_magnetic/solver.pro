@@ -168,47 +168,25 @@ Formulation {
       */
 
       // GlobalTerms are used for the current imprinting
-      If(!Flag_HomogenisedModel1)
-        If(Val_EE_1!=0)
-          GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
-        EndIf
-      EndIf
-      If(Flag_Transformer)
-        If(!Flag_HomogenisedModel2)
-          If(Val_EE_2!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
+      For n In {1:n_windings}
+          If(!Flag_HomogenisedModel~{n})
+            If(Val_EE~{n}!=0)
+              GlobalTerm { [ Dof{I}, {U} ] ; In Winding~{n} ; }
+            EndIf
+          //Else
+          //  GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding~{n} ; }
           EndIf
-        EndIf
-      EndIf
-
-       If(Flag_Three_Transformer)
-        If(!Flag_HomogenisedModel3)
-          If(Val_EE_3!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding3 ; }
-          EndIf
-        EndIf
-      EndIf
+      EndFor
 
 
-      /*
-      If(!Flag_HomogenisedModel1)
-        If(Val_EE_1!=0)
-          GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
-        EndIf
-      Else
-        GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding1 ; }
-      EndIf
 
-      If(Flag_Transformer)
-        If(!Flag_HomogenisedModel2)
-          If(Val_EE_2!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
-          EndIf
-        Else
-          GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding2 ; }
-        EndIf
-      EndIf
-      */
+
+
+
+
+
+
+
 
       //Galerkin { [ -Ns[]/Sc[] * Dof{ir}, {a} ] ;
       //  In DomainS ; Jacobian Vol ; Integration II ; }
