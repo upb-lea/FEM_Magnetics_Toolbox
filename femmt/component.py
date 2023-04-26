@@ -1523,9 +1523,10 @@ class MagneticComponent:
                 turns = 0
                 for ww in self.winding_windows:
                     for vww in ww.virtual_winding_windows:
-                        for index, conductor in enumerate(vww.windings):
+                        for conductor in vww.windings:
                             if conductor.winding_number == winding:
-                                turns += vww.turns[index]
+                                turns += vww.turns[conductor.winding_number]
+
                 winding_dict["number_turns"] = turns
 
                 # Currents
@@ -1610,9 +1611,9 @@ class MagneticComponent:
             turns = 0
             for ww in self.winding_windows:
                 for vww in ww.virtual_winding_windows:
-                    for index, conductor in enumerate(vww.windings):
+                    for conductor in vww.windings:
                         if conductor.winding_number == winding:
-                            turns += vww.turns[index]
+                            turns += vww.turns[conductor.winding_number]
 
             log_dict["total_losses"][f"winding{winding + 1}"] = {
                 "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
