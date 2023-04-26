@@ -2,7 +2,6 @@
 import os
 import numpy as np
 from typing import List
-from scipy.interpolate import interp1d
 
 # Local libraries
 from femmt.enumerations import ConductorType
@@ -14,8 +13,10 @@ class FileData:
     def __init__(self, working_directory: str):
         self.update_paths(working_directory)
 
-    def create_folders(self, *args) -> None:
-        """Creates folder for every given folder path (if it does not exist).
+    @staticmethod
+    def create_folders(*args) -> None:
+        """
+        Creates folder for every given folder path (if it does not exist).
         """
         for folder in list(args):
             if not os.path.exists(folder):
@@ -75,7 +76,7 @@ class MeshData:
     mu0: float
     core_w: float
     window_w: float
-    windings: List["Conductor"] # This is written as string because its a forward import
+    windings: List["Conductor"] # This is written as string because it is a forward import
 
     def __init__(self, global_accuracy: float, padding: float, mu0: float, core_w: float, window_w: float, windings: List["Conductor"]):
         self.global_accuracy = global_accuracy

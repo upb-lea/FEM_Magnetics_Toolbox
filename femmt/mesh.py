@@ -1,6 +1,5 @@
 # Python standard libraries
 import os
-from re import I
 import numpy as np
 from typing import Dict, List
 
@@ -24,7 +23,7 @@ class Mesh:
     stray_path: StrayPath
     insulation: Insulation
     component_type: ComponentType
-    windings: int
+    windings: List[Conductor]
     air_gaps: List[AirGaps]
     correct_outer_leg: bool
     region: bool
@@ -36,10 +35,11 @@ class Mesh:
     e_m_mesh_file: str
     thermal_mesh_file: str
 
-    # Additionaly there are all the needed lists for points, lines, curve_loops and plane_surfaces
+    # Additionally there are all the needed lists for points, lines, curve_loops and plane_surfaces
     # See set_empty_lists()
 
-    def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], correct_outer_leg: bool, file_paths: FileData, region: bool = None, silent: bool = False):
+    def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], correct_outer_leg: bool,
+                 file_paths: FileData, region: bool = None, silent: bool = False):
 
         # Initialize gmsh once
         if not gmsh.isInitialized():
@@ -632,6 +632,7 @@ class Mesh:
                 cl = gmsh.model.geo.addCurveLoop(iso)
                 curve_loop_iso_core.append(cl)
                 self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
+            return curve_loop_iso_core
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -847,7 +848,7 @@ class Mesh:
     def visualize(self, visualize_before, save_png):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Colorize model and show it if needed
-        # Create mesh
+        # mesh generation
         color_scheme = ff.colors_femmt_default
         colors_geometry = ff.colors_geometry_femmt_default
 
@@ -932,7 +933,7 @@ class Mesh:
         # Define mesh for conductors
         model_insulation: bool = True
         if model_insulation:
-            self.insulations_core_cond(p_iso_core)
+            curve_loop_iso_core = self.insulations_core_cond(p_iso_core)
 
         # Define mesh for air
         if self.core.core_type == CoreType.Single:
@@ -950,7 +951,7 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # TODO The following algorithms try to modify the mesh in order to reduce the runtime. But maybe the synchronize() calls
-        # have a high runtime. Check if thats true and when it does try to reduce the number of synchronize() calls by adding all points first and
+        # have a high runtime. Check if this is true and when it does try to reduce the number of synchronize() calls by adding all points first and
         # embed them later together:
         # This is added here therefore the additional points are not seen in the pictures and views
         self.forward_meshing(p_cond)
@@ -1013,6 +1014,8 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air, air_gaps and iso (since insulation is handled as air, as well as the air gaps)
         if self.model.core.core_type == CoreType.Single:
+            # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+            # must be
             air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=110000)
             # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)

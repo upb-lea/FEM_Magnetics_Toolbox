@@ -2,7 +2,7 @@
 from typing import List, Tuple
 
 class ConstraintPro:
-    # For boundary contstraints, the tuple contains (key, region, value)
+    # For boundary constraints, the tuple contains (key, region, value)
     boundary_constraints: List[Tuple[str, str, str]]
 
     def __init__(self):
@@ -69,7 +69,6 @@ class ParametersPro:
 
         with open(file_path, "w") as fd:
             for key, value in self.parameters.items():
-                line = ""''""
                 if type(value) is str:
                     line = f"{key} = \"{value}\";"
                 else:
@@ -89,7 +88,7 @@ class FunctionPro:
         self.q_vol = {}
 
     @staticmethod
-    def dict_as_fuction_str(name, dct):
+    def dict_as_function_str(name, dct):
         str = ""
         for key, value in dct.items():
             str += f"\t{name}[{key}] = {value};\n"
@@ -108,8 +107,8 @@ class FunctionPro:
     def create_file(self, file_path):
         with open(file_path, 'w') as fd:
             fd.write("Function {\n")
-            fd.write(FunctionPro.dict_as_fuction_str("k", self.k))
-            fd.write(FunctionPro.dict_as_fuction_str("qVol", self.q_vol))
+            fd.write(FunctionPro.dict_as_function_str("k", self.k))
+            fd.write(FunctionPro.dict_as_function_str("qVol", self.q_vol))
             fd.write("}")
 
 class PostOperationPro:
