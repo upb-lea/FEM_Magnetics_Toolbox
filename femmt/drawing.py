@@ -798,6 +798,7 @@ class TwoDaxiSymmetric:
                                 # Foil conductors where each conductor is very high and the conductors are expanding in the x-direction
                                 if virtual_winding_window.wrap_para == WrapParaType.FixedThickness:
                                     # Wrap defined number of turns and chosen thickness
+                                    winding.a_cell = winding.thickness * (top_bound - bot_bound)
                                     for i in range(turns):
                                         # CHECK if right bound is reached
                                         if (left_bound + (i + 1) * winding.thickness +
