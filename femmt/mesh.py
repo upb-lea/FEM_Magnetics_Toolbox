@@ -1,6 +1,5 @@
 # Python standard libraries
 import os
-from re import I
 import numpy as np
 from typing import Dict, List
 
@@ -24,7 +23,7 @@ class Mesh:
     stray_path: StrayPath
     insulation: Insulation
     component_type: ComponentType
-    windings: int
+    windings: List[Conductor]
     air_gaps: List[AirGaps]
     correct_outer_leg: bool
     region: bool
@@ -36,10 +35,11 @@ class Mesh:
     e_m_mesh_file: str
     thermal_mesh_file: str
 
-    # Additionaly there are all the needed lists for points, lines, curve_loops and plane_surfaces
+    # Additionally there are all the needed lists for points, lines, curve_loops and plane_surfaces
     # See set_empty_lists()
 
-    def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], correct_outer_leg: bool, file_paths: FileData, region: bool = None, silent: bool = False):
+    def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], correct_outer_leg: bool,
+                 file_paths: FileData, region: bool = None, silent: bool = False):
 
         # Initialize gmsh once
         if not gmsh.isInitialized():
@@ -848,7 +848,7 @@ class Mesh:
     def visualize(self, visualize_before, save_png):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Colorize model and show it if needed
-        # Create mesh
+        # mesh generation
         color_scheme = ff.colors_femmt_default
         colors_geometry = ff.colors_geometry_femmt_default
 
@@ -951,7 +951,7 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # TODO The following algorithms try to modify the mesh in order to reduce the runtime. But maybe the synchronize() calls
-        # have a high runtime. Check if thats true and when it does try to reduce the number of synchronize() calls by adding all points first and
+        # have a high runtime. Check if this is true and when it does try to reduce the number of synchronize() calls by adding all points first and
         # embed them later together:
         # This is added here therefore the additional points are not seen in the pictures and views
         self.forward_meshing(p_cond)

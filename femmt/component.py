@@ -1,22 +1,18 @@
 # Python standard libraries
 import csv
 import fileinput
-import numpy as np
 import os
-import sys
 import gmsh
 import json
 import warnings
 import inspect
-from matplotlib import pyplot as plt
-from scipy.optimize import brentq
-from scipy.integrate import quad
 from typing import List, Dict
 from datetime import datetime
 
-# Third parry libraries
+# Third party libraries
 from onelab import onelab
 import materialdatabase as mdb
+import numpy as np
 
 # Local libraries
 import femmt.functions as ff
@@ -26,8 +22,7 @@ from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, S
 from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
-from femmt.thermal import thermal_simulation
-import femmt.functions_reluctance as fr
+from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire
 
 class MagneticComponent:
     """
@@ -83,7 +78,7 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
-        self.core = None                        # Contains all informations about the cores
+        self.core = None                        # Contains all information about the cores
         self.air_gaps = None                    # Contains every air gap
         self.windings = None                    # List of the different winding objects which the following structure: windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
         self.insulation = None                  # Contains information about the needed insulations
@@ -161,7 +156,7 @@ class MagneticComponent:
 
         :param thermal_conductivity_dict: Contains the thermal conductivities for every region
         :type thermal_conductivity_dict: Dict
-        :param boundary_temperatures_dict: Contains the tmperatures at each boundary line
+        :param boundary_temperatures_dict: Contains the temperatures at each boundary line
         :type boundary_temperatures_dict: Dict
         :param boundary_flags_dict: Sets the boundary type (dirichlet or von neumann) for each boundary line
         :type boundary_flags_dict: Dict
@@ -247,10 +242,13 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Setup
-    def onelab_setup(self, is_gui):
+    def onelab_setup(self, is_gui: bool):
         """
         Either reads ONELAB parent folder path from config.json or asks the user to provide the ONELAB path it.
         Creates a config.json inside the site-packages folder at first run.
+
+        :param is_gui: set to True to avoid terminal output question for onelab file path at first run. Used especially in GUI
+        :type is_gui: bool
         """
         # check if config.json is available and not empty
         if os.path.isfile(self.file_data.config_path) and os.stat(self.file_data.config_path).st_size != 0:
@@ -276,7 +274,7 @@ class MagneticComponent:
             return
 
         while onelab_path_wrong:
-            onelab_path = os.path.normpath(input("Enter the path of onelabs parent folder (path to folder which contains getdp, onelab executables): "))
+            onelab_path = os.path.normpath(input("Enter the path of onelab's parent folder (path to folder which contains getdp, onelab executables): "))
 
             if os.path.exists(onelab_path):
                 onelab_path_wrong = False
@@ -295,7 +293,7 @@ class MagneticComponent:
     def high_level_geo_gen(self, frequency: float = None, skin_mesh_factor: float = None):
         """ Updates the mesh data and creates the model and mesh objects
 
-        :param frequency: Frequency used in the mesh denisty, defaults to None
+        :param frequency: Frequency used in the mesh density, defaults to None
         :type frequency: float, optional
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
@@ -314,7 +312,7 @@ class MagneticComponent:
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
         """Generates model and mesh.
 
-        :param frequency: Frequency used in the mesh denisty, defaults to None
+        :param frequency: Frequency used in the mesh density, defaults to None
         :type frequency: float, optional
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
@@ -360,12 +358,13 @@ class MagneticComponent:
         self.air_gaps = air_gaps
 
     def set_winding_windows(self, winding_windows: list[WindingWindow]):
-        """Adds the winding windows to the model. Creates the windings list, which contains the conductors
+        """
+        Adds the winding windows to the model. Creates the windings list, which contains the conductors
         from the virtual winding windows but sorted by the winding_number (ascending).
         Sets empty lists for excitation parameters
 
-        :param winding_window: WindingWindow object
-        :type winding_window: WindingWindow
+        :param winding_windows: List of WindingWindow objects
+        :type winding_windows: list[WindingWindow]
         """
         self.winding_windows = winding_windows
         windings = []
@@ -413,11 +412,9 @@ class MagneticComponent:
         :type skin_mesh_factor: float
         :param visualize_before: True for a pre-visualisation (e.g. check your geometry) and after this a simulation runs, False for a direct simulation
         :type visualize_before: bool
-        :param: do_meshing: [default to True], internal use only (e.g. for GUI)
-        :type do_meshing: bool
         :param save_png: True to save a png-figure, false for no figure
         :type save_png: bool
-        :param color_scheme: colorfile (definition for red, green, blue, ...)
+        :param color_scheme: color file (definition for red, green, blue, ...)
         :type color_scheme: Dict
         :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
         :type colors_geometry: Dict
@@ -518,17 +515,17 @@ class MagneticComponent:
 
             if leg_position == AirGapLegPosition.LeftLeg.value:
                 # left leg
-                # TODO this is wrong since the airgap is not centered on the y axis 
+                # TODO this is wrong since the air gap is not centered on the y axis
                 width = core_width - self.core.r_inner
             elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
             elif leg_position == AirGapLegPosition.RightLeg.value:
                 # right leg
-                # TODO this is wrong since the airgap is not centered on the y axis
+                # TODO this is wrong since the air gap is not centered on the y axis
                 width = core_width - self.core.r_inner
             else:
-                raise Exception(f"Unvalid leg position tag {leg_position} used for an air gap.")
+                raise Exception(f"Invalid leg position tag {leg_position} used for an air gap.")
 
             air_gap_volume += np.pi * width**2 * height
 
@@ -574,11 +571,11 @@ class MagneticComponent:
 
     def calculate_wire_volumes(self) -> List[float]:
         wire_volumes = []
-        wire_lenghts = self.calculate_wire_lengths()
+        wire_lengths = self.calculate_wire_lengths()
         for index, winding in enumerate(self.windings):
             cross_section_area = 0
             if winding.conductor_type == ConductorType.RoundLitz or winding.conductor_type == ConductorType.RoundSolid:
-                # For round wire its always the same
+                # For round wire it is always the same
                 cross_section_area = np.pi * winding.conductor_radius ** 2
             elif winding.conductor_type == ConductorType.RectangularSolid:
                 # Since the foil sizes also depends on the winding scheme, conductor_arrangement and wrap_para_type
@@ -614,7 +611,7 @@ class MagneticComponent:
             else:
                 raise Exception(f"Unknown conductor type {winding.conductor_type}")
 
-            wire_volumes.append(cross_section_area * wire_lenghts[index])
+            wire_volumes.append(cross_section_area * wire_lengths[index])
 
         return wire_volumes
 
@@ -722,7 +719,7 @@ class MagneticComponent:
 
     def simulate(self):
         """
-        Initializes a onelab client. Provides the GetDP based solver with the created mesh file.
+        Initializes an onelab client. Provides the GetDP based solver with the created mesh file.
         """
         ff.femmt_print(f"\n---\n"
               f"Initialize ONELAB API\n"
@@ -739,15 +736,14 @@ class MagneticComponent:
 
         os.chdir(self.file_data.working_directory)
 
-        verbose = ""
         if ff.silent:
             verbose = "-verbose 1"
         else:
             verbose = "-verbose 5"
 
-        # Run simulations as sub clients (non blocking??)
-        mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
-        self.onelab_client.runSubClient("myGetDP", mygetdp + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
+        # Run simulations as sub clients (non-blocking??)
+        getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
+        self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
 
     def pre_simulation(self):
         """
@@ -774,19 +770,18 @@ class MagneticComponent:
         self.write_electro_magnetic_post_pro()
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          plot_interpolation: bool = False, show_results = True):
+                          plot_interpolation: bool = False, show_results: bool = True):
         """
-
         Start a _single_ electromagnetic ONELAB simulation.
+
         :param plot_interpolation:
-        :param NL_core:
         :param freq: frequency to simulate
         :type freq: float
         :param current: current to simulate
-        :param skin_mesh_factor:
-        :type skin_mesh_factor: float
         :param phi_deg: phase angle in degree
         :type phi_deg: List[float]
+        :param show_results: Set to True to show the simulation results after the simulation has finished
+        :type show_results: bool
         """
         phi_deg = phi_deg or []
 
@@ -802,8 +797,10 @@ class MagneticComponent:
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last: bool = False, return_results: bool = False,
-                         excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5, visualize_before: bool = False, save_png: bool = False,
-                         color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default) -> Dict:
+                         excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5,
+                         visualize_before: bool = False, save_png: bool = False,
+                         color_scheme: Dict = ff.colors_femmt_default,
+                         colors_geometry: Dict = ff.colors_geometry_femmt_default) -> Dict:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -812,17 +809,17 @@ class MagneticComponent:
 
         >>> import femmt as fmt
         >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
-        >>> amplitue_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
+        >>> amplitude_list_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
         >>> phase_list_list = [[0], [10], [20], [30], [40], [50]]
-        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitude_list_list, phi_deg_list_list=phase_list_list)
 
         :Example Code for Transformer with 2 windings:
 
         >>> import femmt as fmt
         >>> fs_list = [0, 10000, 30000, 60000, 100000, 150000]
-        >>> amplitue_list_list = [[10, 2], [2, 1], [1, 0.5], [0.5, 0.25], [0.2, 0.1], [0.1, 0.05]]
+        >>> amplitude_list_list = [[10, 2], [2, 1], [1, 0.5], [0.5, 0.25], [0.2, 0.1], [0.1, 0.05]]
         >>> phase_list_list = [[0, 170], [10, 180], [20, 190], [30, 200], [40, 210], [50, 220]]
-        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitue_list_list, phi_deg_list_list=phase_list_list)
+        >>> geo.excitation_sweep(frequency_list=fs_list, current_list_list=amplitude_list_list, phi_deg_list_list=phase_list_list)
 
         :param frequency_list: Frequency in a list
         :type frequency_list: List
@@ -836,12 +833,12 @@ class MagneticComponent:
         :type return_results: bool
         :param visualize_before: show genarated mesh before the simulation is run
         :type visualize_before: bool
-        :param meshing:
-        :type meshing: bool
         :param color_scheme: colorfile (definition for red, green, blue, ...)
         :type color_scheme: Dict
         :param colors_geometry: definition for e.g. core is grey, winding is orange, ...
         :type colors_geometry: Dict
+        :param save_png: True to save a .png
+        :type save_png: bool
 
 
         :return: Results in a dictionary
@@ -856,7 +853,7 @@ class MagneticComponent:
             self.plot_fields = False
 
         # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
-        # In case of litz wire, only the lowest frequency is meshed (frequency indepent due to litz-approximation)
+        # In case of litz wire, only the lowest frequency is meshed (frequency indecent due to litz-approximation)
         if excitation_meshing_type is None:
             for winding in self.windings:
                 if winding.conductor_type == ConductorType.RoundSolid:
@@ -1247,13 +1244,13 @@ class MagneticComponent:
 
         # self.visualize()
 
-    def get_steinmetz_loss(self, Ipeak: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2, t_rise: float = 3e-6, t_fall: float = 3e-6,
-                            f_switch: float = 100000, skin_mesh_factor: float = 0.5):
+    def get_steinmetz_loss(self, peak_current: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2, t_rise: float = 3e-6, t_fall: float = 3e-6,
+                           f_switch: float = 100000, skin_mesh_factor: float = 0.5):
 
         """
 
         :param skin_mesh_factor:
-        :param Ipeak:
+        :param peak_current:
         :param ki:
         :param alpha:
         :param beta:
@@ -1261,10 +1258,10 @@ class MagneticComponent:
         :param t_fall:
         :param f_switch:
         """
-        Ipeak = Ipeak or [10, 10]
+        peak_current = peak_current or [10, 10]
 
         self.core.steinmetz_loss = 1
-        self.Ipeak = Ipeak
+        self.Ipeak = peak_current
         self.ki = ki
         self.alpha = alpha
         self.beta = beta
@@ -1279,7 +1276,7 @@ class MagneticComponent:
         # Call Simulation
         # self.high_level_geo_gen(frequency=0, skin_mesh_factor=skin_mesh_factor)
         # self.mesh.generate_mesh()
-        self.excitation(frequency=f_switch, amplitude_list=Ipeak, phase_deg_list=[0, 180])  # frequency and current
+        self.excitation(frequency=f_switch, amplitude_list=peak_current, phase_deg_list=[0, 180])  # frequency and current
         self.check_model()
         self.file_com
 
@@ -1631,7 +1628,7 @@ class MagneticComponent:
 
         # Core
         log_dict["total_losses"]["eddy_core"] = sum(log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
-        # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frquency is at [0]
+        # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frequency is at [0]
         # => just an approximation for excitation sweeps!
         log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
 
@@ -1673,10 +1670,12 @@ class MagneticComponent:
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
 
-    def read_log(self):
+    def read_log(self) -> Dict:
         """
+        Read results from electromagnetic simulation
+        :return: Logfile as a dictionary
+        :rtype: Dict
         """
-        log = {}
         with open(self.file_data.e_m_results_log_path, "r") as fd:
             content = json.loads(fd.read())
             log = content
@@ -1862,15 +1861,14 @@ class MagneticComponent:
         text_file.close()
         cell_geo = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.geo")
 
-        verbose = ""
         if ff.silent:
             verbose = "-verbose 1"
         else:
             verbose = "-verbose 5"
 
         # Run gmsh as a sub client
-        mygmsh = os.path.join(self.file_data.onelab_folder_path, "gmsh")
-        self.onelab_client.runSubClient("myGmsh", mygmsh + " " + cell_geo + " -2 " + verbose)
+        gmsh_client = os.path.join(self.file_data.onelab_folder_path, "gmsh")
+        self.onelab_client.runSubClient("myGmsh", gmsh_client + " " + cell_geo + " -2 " + verbose)
 
         modes = [1, 2]  # 1 = "skin", 2 = "proximity"
         reduced_frequencies = np.linspace(0, 1.25, 6)  # must be even
@@ -2305,7 +2303,7 @@ class MagneticComponent:
         :type case_gap_bot: float
         """
         # Optional usage of FEMM tool by David Meeker
-        # 2D Mesh and FEM interfaces (only for windows machines)
+        # 2D Mesh and FEM interfaces (only for Windows machines)
         if os.name == 'nt':
             ff.install_pyfemm_if_missing()
             if not self.femm_is_imported:
@@ -2350,7 +2348,7 @@ class MagneticComponent:
         c_wire = 0
 
         # Case
-        k_case = thermal_conductivity_dict["case"]["top"] # Does not matter when the regions all have the same thermal coductivity.
+        k_case = thermal_conductivity_dict["case"]["top"] # Does not matter when the regions all have the same thermal conductivity.
         q_vol_case = 0
         # c_case = 0.01
         c_case = 0
@@ -2476,7 +2474,7 @@ class MagneticComponent:
             # In order for the simulation to work the air_gap must be closed:
             femm.hi_drawline(0, self.two_d_axi.p_air_gaps[0, 1], 0, self.two_d_axi.p_air_gaps[2, 1])
 
-            # Close air gap to seperate from air
+            # Close air gap to separate from air
             femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
                                 self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
         else:
@@ -2607,7 +2605,7 @@ class MagneticComponent:
 
         :param log_file_path: Path to the log file
         :type log_file_path: str
-        :param working_directory: If the working directory shall be a different than from the log file enter a new one here, defaults to None
+        :param working_directory: If the working directory shall be a different from the log file enter a new one here, defaults to None
         :type working_directory: str, optional
         :return: Magnetic component containing the model
         :rtype: MagneticComponent

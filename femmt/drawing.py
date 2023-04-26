@@ -5,7 +5,7 @@ from typing import List
 # Local libraries
 from femmt.enumerations import *
 from femmt.data import MeshData
-from femmt.model import Core, WindingWindow, VirtualWindingWindow, AirGaps, StrayPath, Insulation
+from femmt.model import Core, WindingWindow, AirGaps, StrayPath, Insulation
 import femmt.functions as ff
 
 class TwoDaxiSymmetric:
@@ -417,7 +417,7 @@ class TwoDaxiSymmetric:
 
                                                 y -= windings[col_cond].conductor_radius * 2 + self.insulation.inner_winding_insulations[col_cond]  # one from top to bot
 
-                                            # Check wheter one winding is "finished" and only the other winding must be placed...
+                                            # Check whether one winding is "finished" and only the other winding must be placed...
                                             if N_completed[(col_cond + 1) % 2] == turns[(col_cond + 1) % 2]:
                                                 x += windings[col_cond].conductor_radius + \
                                                         windings[col_cond].conductor_radius + \
@@ -762,7 +762,7 @@ class TwoDaxiSymmetric:
                     elif virtual_winding_window.winding_type == WindingType.Single:
                         # One winding in the virtual winding window
                         winding = virtual_winding_window.windings[0]
-                        turns = sum(virtual_winding_window.turns)  # TODO:  find another soultion for this (is needed in mesh.py for air_stacked) see set_winding in model
+                        turns = sum(virtual_winding_window.turns)  # TODO:  find another solution for this (is needed in mesh.py for air_stacked) see set_winding in model
                         conductor_type = winding.conductor_type
                         winding_scheme = virtual_winding_window.winding_scheme
 

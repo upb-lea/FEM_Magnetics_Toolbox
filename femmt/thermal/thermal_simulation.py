@@ -131,10 +131,21 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
                 if not append:
                     append = True
 
-def simulate(onelab_folder_path: str, mesh_file: str, solver_file: str, silent: bool):
-    c = onelab.client(__file__)
+def simulate(onelab_folder_path: str, mesh_file: str, solver_file: str, silent: bool) -> None:
+    """
+    Start the thermal simulation.
 
-    verbose = ""
+    :param onelab_folder_path: onelab folder path
+    :type onelab_folder_path: str
+    :param mesh_file: file path to mesh
+    :type mesh_file: str
+    :param solver_file: file path to solver file
+    :type solver_file: str
+    :param silent: Set to True to prevent terminal outputs
+    :type silent: bool
+    """
+    onelab_client = onelab.client(__file__)
+
     if silent:
         verbose = "-verbose 1"
     else:
@@ -142,7 +153,7 @@ def simulate(onelab_folder_path: str, mesh_file: str, solver_file: str, silent: 
 
     # Run simulations as sub clients (non-blocking??)
     mygetdp = os.path.join(onelab_folder_path, "getdp")
-    c.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2 " + verbose)
+    onelab_client.runSubClient("myGetDP", mygetdp + " " + solver_file + " -msh " + mesh_file + " -solve analysis -v2 " + verbose)
 
 def parse_simple_table(file_path: str) -> np.array:
     """
@@ -156,7 +167,7 @@ def parse_simple_table(file_path: str) -> np.array:
     """
     with open(file_path, "r") as fd:
         lines = fd.readlines()
-        # print("lastline", lines[-1])
+        # print("last line", lines[-1])
         np_array = np.zeros(len(lines))
         for i, line in enumerate(lines):
             np_array[i] = float(line.split(" ")[5])
@@ -382,7 +393,7 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
     # Create files
     parameters_pro.create_file(parameters_file)
     function_pro.create_file(function_file)
-    group_pro.create_file(group_file, tags_dict["air_gaps_tag"] != None, tags_dict["insulations_tag"] != None)
+    group_pro.create_file(group_file, tags_dict["air_gaps_tag"] is not None, tags_dict["insulations_tag"] is not None)
     constraint_pro.create_file(constraint_file)
     post_operation_pro.create_file(post_operation_file)
 

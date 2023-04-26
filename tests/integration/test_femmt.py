@@ -773,7 +773,7 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
                     femmt_simulation_transformer_integrated_core_fixed_loss_angle
                     ):
     """
-    This functin tests if simulations can be set up from a simulation file.
+    This function tests if simulations can be set up from a simulation file.
     There is no complete function check, there is just an error-check if the load will fail or not.
 
     Note: Fixtures are used, to make sure that the latest self-generated log-files can be read.
