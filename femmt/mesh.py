@@ -2,6 +2,7 @@
 import os
 import numpy as np
 from typing import Dict, List
+import warnings
 
 # Third parry libraries
 import gmsh
@@ -932,6 +933,13 @@ class Mesh:
 
         # Define mesh for conductors
         model_insulation: bool = True
+        #TODO: Add model_insulation as an input parameter of the function.
+
+        if self.model.component_type == ComponentType.IntegratedTransformer:
+            warnings.warn("Inuslations are currently not implemented for integrated transformer and will be ignored.")
+            #TODO: Implement insulations for integrated transformer.
+            model_insulation = False
+
         if model_insulation:
             curve_loop_iso_core = self.insulations_core_cond(p_iso_core)
 
