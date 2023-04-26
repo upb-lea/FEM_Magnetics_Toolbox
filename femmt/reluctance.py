@@ -407,7 +407,7 @@ class MagneticCircuit:
                 self.data_matrix = self.add_column_to_data_matrix(self.data_matrix, self.r_outer, 'r_outer')  # 12
                 self.data_matrix = self.add_column_to_data_matrix(self.data_matrix, self.area[:, 0], 'center_leg_area')  # 13
                 self.data_matrix = self.add_column_to_data_matrix(self.data_matrix, self.area[:, 4], 'outer_leg_area')  # 14
-                self.data_matrix = self.add_column_to_data_matrix(self.data_matrix, self.core_h_middle, 'core_h')  # 15
+                self.data_matrix = self.add_column_to_data_matrix(self.data_matrix, self.core_h, 'core_h')  # 15
 
     def input_pre_check(self):
         """
@@ -426,8 +426,8 @@ class MagneticCircuit:
             raise Exception("string value wrong for sim_type argument")
         if not (self.component_type == 'inductor' or self.component_type == 'integrated_transformer'):
             raise Exception("string value wrong for component_type argument")
-        if any(item > 0.0005 for item in self.air_gap_h):
-            raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
+        #if any(item > 0.0005 for item in self.air_gap_h):
+        #    raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
         if self.sim_type == 'single':
             if not (len(self.core_inner_diameter) == 1 and len(self.window_h) == 1 and len(self.window_w) == 1 and len(
                     self.no_of_turns) == 1

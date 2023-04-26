@@ -73,8 +73,26 @@ Currently the magnetic solver only supports primary and secondary windings, ther
 However the implemented structure is capable of working with n windings.
 
 
+General file overview
+---------------------
+
+* ``.pro``: solver files for communication between python and the solver
+* ``.pos``: field results
+* ``.dat``: integrated field results
+* ``.msh``: mesh files
+
+Recommended Pycharm settings
+---------------------------------------------------------------
+
+Exclude simulation directory from indexing
+#########################################################
+
+Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the ``example_results`` direcory from the project, as shown in the following steps:
+``File`` -> ``Settings`` -> ``project structure``, select the folders you need (e.g. ``femmt/examples/example_results``, ``right click`` and click ``exlcuded``.
+
 Pycharm code highlightning for pro-files
---------------------------------------------
+#########################################################
+
 |image_pycharm_configuration_pro_files|
 
 .. |geometry_core_developer_notes| image:: ../images/geometry_core_developer_notes.png

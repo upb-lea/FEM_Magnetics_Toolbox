@@ -335,7 +335,7 @@ if component == "three-winding-transformer":
     geo.single_simulation(freq=250000, current=[4, 4, 4], phi_deg=[0, 180, 0])
 
     # Reference simulation using FEMM
-    geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
+    # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
 
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")

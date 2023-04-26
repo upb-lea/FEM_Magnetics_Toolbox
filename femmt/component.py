@@ -23,6 +23,7 @@ from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
 from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire
+from femmt.dtos import *
 
 class MagneticComponent:
     """
@@ -647,6 +648,14 @@ class MagneticComponent:
         :param imposed_red_f:
         :type imposed_red_f:
         """
+
+        # negative currents are not allowed and lead to wrong simulation results. Check for this.
+        # this message appears after meshing but before simulation
+        for amplitude in amplitude_list:
+            if amplitude < 0:
+                raise ValueError(
+                    "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
+
         ff.femmt_print(f"\n---\n"
               f"Excitation: \n"
               f"Frequency: {frequency}\n"
@@ -783,6 +792,15 @@ class MagneticComponent:
         :param show_results: Set to True to show the simulation results after the simulation has finished
         :type show_results: bool
         """
+        # negative currents are not allowed and lead to wrong simulation results. Check for this.
+        # this message appears before meshing and before simulation
+        # there is another ValueError rising inside excitation()-method for safety (but after meshing).
+        for current_value in current:
+            if current_value < 0:
+                raise ValueError(
+                    "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
+
+
         phi_deg = phi_deg or []
 
         self.mesh.generate_electro_magnetic_mesh()
@@ -844,6 +862,20 @@ class MagneticComponent:
         :return: Results in a dictionary
         :rtype: Dict
         """
+        # negative currents are not allowed and lead to wrong simulation results. Check for this.
+        # this message appears before meshing and before simulation
+        # there is another ValueError rising inside excitation()-method for safety (but after meshing).
+        for current_list in current_list_list:
+            for current in current_list:
+                if current < 0:
+                    raise ValueError(
+                        "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
+
+
+
+
+
+
         # frequencies = frequencies or []
         # currents = currents or []
         # phi = phi or []
@@ -1534,7 +1566,7 @@ class MagneticComponent:
                     # single_simulation -> get current from instance variable
                     complex_current_phasor = self.current[winding]
 
-                # Store complex value as list in json (because json isnt natively capable of complex values)
+                # Store complex value as list in json (because json is not natively capable of complex values)
                 winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
 
 
@@ -2246,9 +2278,15 @@ class MagneticComponent:
         log["Hysteresis Losses"] = femm.mo_blockintegral(3)
         femm.mo_clearblock()
 
-
-        # Obtain circuit properties for each winding
-
+        # Primary Winding circuit Properties
+        circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
+        log["Primary Current"] = circuit_properties_primary[0]
+        log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
+        log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
+        log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
+                                        circuit_properties_primary[2].imag / circuit_properties_primary[0]]
+        log["Primary Mean Power"] = [0.5*circuit_properties_primary[1].real*circuit_properties_primary[0],
+                                    0.5*circuit_properties_primary[1].imag*circuit_properties_primary[0]]
         for i in range(len(self.windings)):
             circuit_properties = femm.mo_getcircuitproperties('Winding' + str(i + 1))
             log["Winding" + str(i + 1) + " Current"] = circuit_properties[0]
@@ -2624,7 +2662,11 @@ class MagneticComponent:
             geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
-            core = Core(**settings["core"])
+            core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
+                                                            window_w=settings["core"]["window_w"],
+                                                            window_h=settings["core"]["window_h"])
+
+            core = Core(core_dimensions=core_dimensions, **settings["core"])
             geo.set_core(core)
 
             if "air_gaps" in settings:
@@ -2679,7 +2721,7 @@ class MagneticComponent:
 
             winding_window = WindingWindow(core, insulation)
             winding_window.virtual_winding_windows = new_virtual_winding_windows
-            geo.set_winding_window(winding_window)
+            geo.set_winding_windows([winding_window])
 
             return geo
 

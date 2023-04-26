@@ -1,85 +1,88 @@
 {
   "single_sweeps": [
     {
-      "f": 100000,
+      "f": 270000,
       "winding1": {
         "turn_losses": [
-          0.0145286363635498,
-          0.01400934520045811,
-          0.01206363662271089,
-          0.01046818697652722,
-          0.0097888160638828,
-          0.01001965784011447,
-          0.01113601431565826,
-          0.01320921279729466,
-          0.01680146336300302
+          0.01572450142098344,
+          0.04060216687433737,
+          0.08703666775793217,
+          0.1305243047987942,
+          0.1706799224223017,
+          0.1292934563819182,
+          0.08587629127087776,
+          0.04014514012124071,
+          0.01561550422443131
         ],
         "flux": [
-          9.691634059625143e-05,
-          -5.184479320867313e-07
+          0.00015825721753042428,
+          -4.423273819935796e-07
         ],
         "self_inductance": [
-          2.153696457694483e-05,
-          -1.152106515748295e-07
-        ],
-        "mag_field_energy": [
-          0.0001090307004125021,
-          -5.960153511062038e-07
+          3.516827056231651e-05,
+          -9.829497377635101e-08
         ],
         "V": [
-          0.3257504602817726,
-          60.89433272599818
+          0.7503907250264232,
+          268.4770444644171
         ],
         "number_turns": 9,
         "I": [
           4.5,
           0.0
         ],
-        "winding_losses": 0.1120249695431991,
-        "P": 0.7329385356339884,
-        "Q": 137.01224863349591,
-        "S": 137.01420902411516
+        "winding_losses": 0.7154979552728182,
+        "P": 1.6883791313094523,
+        "Q": 604.0733500449385,
+        "S": 604.0757095419463
       },
-      "core_eddy_losses": 0.01603820722248874,
-      "core_hyst_losses": 0.6844944235746491,
-      "all_winding_losses": 0.1120249695431991
+      "core_eddy_losses": 0.1655232295969782,
+      "core_hyst_losses": 6.629502956195709,
+      "all_winding_losses": 0.7154979552728182
     }
   ],
   "total_losses": {
     "winding1": {
-      "total": 0.11202496954319922,
+      "total": 0.7154979552728167,
       "turns": [
-        0.0145286363635498,
-        0.01400934520045811,
-        0.01206363662271089,
-        0.01046818697652722,
-        0.0097888160638828,
-        0.01001965784011447,
-        0.01113601431565826,
-        0.01320921279729466,
-        0.01680146336300302
+        0.01572450142098344,
+        0.04060216687433737,
+        0.08703666775793217,
+        0.1305243047987942,
+        0.1706799224223017,
+        0.1292934563819182,
+        0.08587629127087776,
+        0.04014514012124071,
+        0.01561550422443131
       ]
     },
-    "all_windings": 0.1120249695431991,
-    "eddy_core": 0.01603820722248874,
-    "hyst_core_fundamental_freq": 0.6844944235746491,
-    "core": 0.7005326307971378
+    "all_windings": 0.7154979552728182,
+    "eddy_core": 0.1655232295969782,
+    "hyst_core_fundamental_freq": 6.629502956195709,
+    "core": 6.795026185792687
   },
   "simulation_settings": {
-    "date": "2022-10-28 11:17:59",
+    "date": "2023-03-28 16:12:35",
     "component_type": "Inductor",
-    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/integration",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/inductor",
     "core": {
       "core_inner_diameter": 0.0149,
       "window_w": 0.01105,
       "window_h": 0.0295,
-      "material": "custom",
+      "material": "N49",
       "loss_approach": "LossAngle",
-      "mu_rel": 3000,
-      "phi_mu_deg": 10,
-      "sigma": 0.5,
+      "mu_r_abs": 1500,
+      "phi_mu_deg": null,
+      "sigma": 0.23873221241433593,
       "non_linear": false,
-      "correct_outer_leg": false
+      "correct_outer_leg": false,
+      "temperature": 45,
+      "permeability_datasource": "measurements",
+      "permeability_measurement_setup": "LEA_LK",
+      "permeability_datatype": "complex_permeability",
+      "permittivity_datasource": "measurements",
+      "permittivity_measurement_setup": "LEA_LK",
+      "permittivity_datatype": "complex_permittivity"
     },
     "virtual_winding_windows": [
       {
@@ -94,13 +97,13 @@
           {
             "winding_number": 0,
             "conductivity": "Copper",
-            "conductor_type": "RoundLitz",
+            "conductor_type": "RoundSolid",
             "thickness": null,
-            "conductor_radius": 0.0009899494936611666,
+            "conductor_radius": 0.0013,
             "conductor_arrangement": "Square",
-            "number_strands": 100,
-            "strand_radius": 7e-05,
-            "fill_factor": 0.5
+            "number_strands": 0,
+            "strand_radius": null,
+            "fill_factor": null
           }
         ],
         "turns": [
@@ -110,17 +113,13 @@
     ],
     "air_gaps": {
       "method": "Percent",
-      "air_gap_number": 2,
+      "air_gap_number": 1,
       "air_gaps": [
         {
           "leg_position": "CenterLeg",
-          "position_value": 10,
-          "height": 0.0005
-        },
-        {
-          "leg_position": "CenterLeg",
-          "position_value": 90,
-          "height": 0.0005
+          "position_value": 50,
+          "height": 0.0005,
+          "stacked_position": null
         }
       ]
     },
@@ -138,22 +137,22 @@
     }
   },
   "misc": {
-    "core_2daxi_volume": 1.9422585955845275e-05,
+    "core_2daxi_volume": 1.9509769078973208e-05,
     "core_2daxi_total_volume": 4.61718454654407e-05,
-    "core_2daxi_weight": 0.0,
+    "core_2daxi_weight": 0.09267140312512273,
     "wire_lengths": [
-      0.7034625709256517
+      0.7209955139988575
     ],
     "wire_volumes": [
-      2.165792987997508e-06
+      3.827975414984513e-06
     ],
     "wire_weight": [
-      0.01931887345293777
+      0.034145540701661856
     ],
-    "core_cost": 0.0,
+    "core_cost": 0.509692717188175,
     "winding_cost": [
-      3.757894253850563
+      3.5804741919282517
     ],
-    "total_cost_incl_margin": 5.0105256718007505
+    "total_cost_incl_margin": 5.453555878821902
   }
 }
