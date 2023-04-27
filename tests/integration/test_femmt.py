@@ -814,7 +814,8 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
 def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
                     femmt_simulation_inductor_core_fixed_loss_angle,
                     femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
-                    femmt_simulation_inductor_core_fixed_loss_angle_foil,
+                    femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal,
+                    femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical,
                     femmt_simulation_transformer_core_fixed_loss_angle,
                     femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
                     femmt_simulation_transformer_integrated_core_fixed_loss_angle
