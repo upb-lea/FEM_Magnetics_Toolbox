@@ -6,7 +6,7 @@ import gmsh
 import json
 import warnings
 import inspect
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 
 # Third party libraries
@@ -22,7 +22,7 @@ from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, S
 from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
-from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire
+from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire, read_results_log
 from femmt.dtos import *
 
 class MagneticComponent:
@@ -38,7 +38,8 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None, silent: bool = False, is_gui: bool = False):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
+                 silent: bool = False, is_gui: bool = False, simulation_name: Optional[str] = None):
         """
         :param component_type: Available options:
                                - "inductor"
@@ -51,6 +52,8 @@ class MagneticComponent:
         :type silent: bool
         :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line. Defaults to 'False' in command-line-mode.
         :type is_gui: bool
+        :param simulation_name: name without any effect. Will just be displayed in the result-log file
+        :type simulation_name: str
         """
         # Variable to set silent mode
         ff.set_silent_status(silent)
@@ -146,11 +149,12 @@ class MagneticComponent:
 
         self.onelab_setup(is_gui)
         self.onelab_client = onelab.client(__file__)
+        self.simulation_name = simulation_name
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
     def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
-                           case_gap_right: float, case_gap_bot: float, show_results: bool = True, visualize_before: bool = False, color_scheme: Dict = ff.colors_femmt_default,
+                           case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True, pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
                            colors_geometry: Dict = ff.colors_geometry_femmt_default):
         """
         Starts the thermal simulation using thermal_simulation.py
@@ -167,10 +171,10 @@ class MagneticComponent:
         :type case_gap_right: float
         :param case_gap_bot: Size of the bot case
         :type case_gap_bot: float
-        :param show_results: Shows thermal results in gmsh, defaults to True
-        :type show_results: bool, optional
-        :param visualize_before: Shows the thermal model before simulation, defaults to False
-        :type visualize_before: bool, optional
+        :param show_thermal_simulation_results: Shows thermal results in gmsh, defaults to True
+        :type show_thermal_simulation_results: bool, optional
+        :param pre_visualize_geometry: Shows the thermal model before simulation, defaults to False
+        :type pre_visualize_geometry: bool, optional
         :param color_scheme: Color scheme for visualization, defaults to ff.colors_femmt_default
         :type color_scheme: Dict, optional
         :param colors_geometry: Color geometry for visualization, defaults to ff.colors_geometry_femmt_default
@@ -179,7 +183,7 @@ class MagneticComponent:
         # Create necessary folders
         self.file_data.create_folders(self.file_data.thermal_results_folder_path)
 
-        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before)
+        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, pre_visualize_geometry)
 
         if not os.path.exists(self.file_data.e_m_results_log_path):
             # Simulation results file not created
@@ -234,7 +238,7 @@ class MagneticComponent:
             "conductor_radii": wire_radii,
             "wire_distances": self.get_wire_distances(),
             "case_volume": self.core.r_outer * case_gap_top + self.core.core_h * case_gap_right + self.core.r_outer * case_gap_bot,
-            "show_results": show_results,
+            "show_thermal_fem_results": show_thermal_simulation_results,
             "print_sensor_values": False,
             "silent": ff.silent
         }
@@ -401,7 +405,7 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Pre-Processing
 
-    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, visualize_before: bool = False,
+    def create_model(self, freq: float, skin_mesh_factor: float = 0.5, pre_visualize_geometry: bool = False,
                      save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
                      colors_geometry: Dict = ff.colors_geometry_femmt_default):
         """
@@ -411,8 +415,8 @@ class MagneticComponent:
         :type freq: float
         :param skin_mesh_factor: [default to 0.5]
         :type skin_mesh_factor: float
-        :param visualize_before: True for a pre-visualisation (e.g. check your geometry) and after this a simulation runs, False for a direct simulation
-        :type visualize_before: bool
+        :param pre_visualize_geometry: True for a pre-visualisation (e.g. check your geometry) and after this a simulation runs, False for a direct simulation
+        :type pre_visualize_geometry: bool
         :param save_png: True to save a png-figure, false for no figure
         :type save_png: bool
         :param color_scheme: color file (definition for red, green, blue, ...)
@@ -431,7 +435,7 @@ class MagneticComponent:
             raise Exception("Winding windows are not set properly. Please check the winding creation")
 
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
-        self.mesh.generate_hybrid_mesh(visualize_before=visualize_before, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
+        self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
 
     def get_single_complex_permeability(self):
         """
@@ -684,7 +688,7 @@ class MagneticComponent:
                         phase_deg_list.append(0)  # set to zero
 
                     else:
-                        raise ValueError
+                        raise ValueError("Missing phases inside excitation, e.g. 'phase_deg_list = [0, 180]'. ")
                 else:
                     self.phase_deg = phase_deg_list
                     # Define complex current phasor as excitation
@@ -779,7 +783,7 @@ class MagneticComponent:
         self.write_electro_magnetic_post_pro()
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          plot_interpolation: bool = False, show_results: bool = True):
+                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True):
         """
         Start a _single_ electromagnetic ONELAB simulation.
 
@@ -789,8 +793,8 @@ class MagneticComponent:
         :param current: current to simulate
         :param phi_deg: phase angle in degree
         :type phi_deg: List[float]
-        :param show_results: Set to True to show the simulation results after the simulation has finished
-        :type show_results: bool
+        :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
@@ -810,11 +814,11 @@ class MagneticComponent:
         self.pre_simulate()
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
-        if show_results:
+        if show_fem_simulation_results:
             self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last: bool = False, return_results: bool = False,
+                         show_last_fem_simulation: bool = False, return_results: bool = False,
                          excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5,
                          visualize_before: bool = False, save_png: bool = False,
                          color_scheme: Dict = ff.colors_femmt_default,
@@ -845,8 +849,8 @@ class MagneticComponent:
         :type current_list_list: List
         :param phi_deg_list_list: phase in degree, must be a list in a list, see example!
         :type phi_deg_list_list: List
-        :param show_last: shows last simulation in gmsh if set to True
-        :type show_last: bool
+        :param show_last_fem_simulation: shows last simulation in gmsh if set to True
+        :type show_last_fem_simulation: bool
         :param return_results: returns results in a dictionary
         :type return_results: bool
         :param visualize_before: show genarated mesh before the simulation is run
@@ -879,7 +883,7 @@ class MagneticComponent:
         # frequencies = frequencies or []
         # currents = currents or []
         # phi = phi or []
-        if show_last:
+        if show_last_fem_simulation:
             self.plot_fields = "standard"
         else:
             self.plot_fields = False
@@ -927,7 +931,7 @@ class MagneticComponent:
 
         self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
-        if show_last:
+        if show_last_fem_simulation:
             self.file_communication()
             self.visualize()
 
@@ -966,7 +970,7 @@ class MagneticComponent:
             currents = [[I0, 0], [0, I0]]
             phases = [[0, 180], [0, 180]]
 
-            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last=show_last)
+            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last_fem_simulation=show_last)
             # self.excitation_sweep(frequencies=op_frequency, currents=currents, phi=phases, show_last=visualize, meshing=False)
             # self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
 
@@ -1119,7 +1123,7 @@ class MagneticComponent:
             currents = [[I0, 0, 0], [0, I0, 0], [0, 0, I0]]
             phases = [[0, 180, 180], [0, 180, 180], [0, 180, 180]]
 
-            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last=show_last)
+            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last_fem_simulation=show_last)
             #self.excitation_sweep(frequencies=op_frequency, currents=currents, phi=phases, show_last=visualize, meshing=False)
             #self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
 
@@ -1544,7 +1548,7 @@ class MagneticComponent:
                 # Single values related to one winding are added as 'winding_losses' etc.
                 winding_dict = {"turn_losses": [],
                                 "flux": [],
-                                "self_inductance": [],
+                                "flux_over_current": [],
                                 # "mag_field_energy": [],
                                 "V": []}
 
@@ -1601,10 +1605,10 @@ class MagneticComponent:
                 # Inductance from voltage
 
                 if self.current[winding] != 0: # if-statement to avoid div by zero error
-                    winding_dict["self_inductance"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).real)
-                    winding_dict["self_inductance"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).imag)
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).real)
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).imag)
                 else:
-                    winding_dict["self_inductance"] = [0, 0]
+                    winding_dict["flux_over_current"] = [0, 0]
 
                 # Flux
                 winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
@@ -1667,6 +1671,7 @@ class MagneticComponent:
 
         # Total losses of inductive component according to single or sweep simulation
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
+        log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"]["all_windings"]
 
         # ---- Introduce calculations for writing the misc-dict into the result-log ----
         wire_type_list = []
@@ -2358,7 +2363,7 @@ class MagneticComponent:
         self.file_data.create_folders(self.file_data.femm_folder_path)
 
         # Extract losses
-        losses = read_log(self.file_data.e_m_results_log_path)
+        losses = read_results_log(self.file_data.e_m_results_log_path)
 
         # Extract wire_radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
@@ -2620,6 +2625,7 @@ class MagneticComponent:
         :rtype: Dict
         """
         content = {
+            "simulation_name": o.simulation_name,
             "date": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
             "component_type": o.component_type.name,
             "working_directory": o.file_data.working_directory,
@@ -2639,13 +2645,16 @@ class MagneticComponent:
         return content
 
     @staticmethod
-    def decode_settings_from_log(log_file_path: str, working_directory: str = None):
-        """Reads the given log and returns the magnetic component from th elog.
+    def decode_settings_from_log(log_file_path: str, working_directory: str = None, silent: bool = False):
+        """
+        Reads the given log and returns the magnetic component from th elog.
 
         :param log_file_path: Path to the log file
         :type log_file_path: str
         :param working_directory: If the working directory shall be a different from the log file enter a new one here, defaults to None
         :type working_directory: str, optional
+        :param silent: True to avoid terminal outputs. Helps to speed up simulations.
+        :type silent: bool
         :return: Magnetic component containing the model
         :rtype: MagneticComponent
         """
@@ -2685,43 +2694,47 @@ class MagneticComponent:
                 stray_path = StrayPath(**settings["stray_path"])
                 geo.set_stray_path(stray_path)
 
-            virtual_winding_windows = settings["virtual_winding_windows"]
             new_virtual_winding_windows = []
-            for vww in virtual_winding_windows:
-                turns = vww["turns"]
-                conductors = []
-                for winding in vww["windings"]:
-                    conductor = Conductor(winding["winding_number"], Conductivity[winding["conductivity"]])
-                    conductor_type = ConductorType[winding["conductor_type"]]
-                    if conductor_type == ConductorType.RectangularSolid:
-                        conductor.set_rectangular_conductor(winding["thickness"])
-                    elif conductor_type == ConductorType.RoundLitz:
-                        # 3 of 4 wire preferences are allowed, so fill-factor is set to None, even the value is known from the log.
-                        conductor.set_litz_round_conductor(winding["conductor_radius"], winding["number_strands"],
-                        winding["strand_radius"], None, ConductorArrangement[winding["conductor_arrangement"]])
-                    elif conductor_type == ConductorType.RoundSolid:
-                        conductor.set_solid_round_conductor(winding["conductor_radius"], ConductorArrangement[winding["conductor_arrangement"]])
+            winding_windows = settings["winding_windows"]
+            for winding_window in winding_windows:
+                virtual_winding_windows = winding_window["virtual_winding_windows"]
+                for vww in virtual_winding_windows:
+                    turns = vww["turns"]
+                    conductors = []
+                    for winding in vww["windings"]:
+                        conductor = Conductor(winding["winding_number"], Conductivity[winding["conductivity"]])
+                        conductor_type = ConductorType[winding["conductor_type"]]
+                        if conductor_type == ConductorType.RectangularSolid:
+                            conductor.set_rectangular_conductor(winding["thickness"])
+                        elif conductor_type == ConductorType.RoundLitz:
+                            # 3 of 4 wire preferences are allowed, so fill-factor is set to None, even the value is known from the log.
+                            conductor.set_litz_round_conductor(winding["conductor_radius"], winding["number_strands"],
+                            winding["strand_radius"], None, ConductorArrangement[winding["conductor_arrangement"]])
+                        elif conductor_type == ConductorType.RoundSolid:
+                            conductor.set_solid_round_conductor(winding["conductor_radius"], ConductorArrangement[winding["conductor_arrangement"]])
+                        else:
+                            raise Exception(f"Unknown conductor type {conductor_type.name}")
+
+                        conductors.append(conductor)
+
+                    new_vww = VirtualWindingWindow(vww["bot_bound"], vww["top_bound"], vww["left_bound"], vww["right_bound"])
+                    winding_type = WindingType[vww["winding_type"]]
+                    if winding_type == WindingType.Single:
+                        winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] is not None else None
+                        wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
+                        new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
+                    elif winding_type == WindingType.TwoInterleaved:
+                        new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1], InterleavedWindingScheme[vww["winding_scheme"]], vww["winding_insulation"])
                     else:
-                        raise Exception(f"Unknown conductor type {conductor_type.name}")
-
-                    conductors.append(conductor)
-
-                new_vww = VirtualWindingWindow(vww["bot_bound"], vww["top_bound"], vww["left_bound"], vww["right_bound"])
-                winding_type = WindingType[vww["winding_type"]]
-                if winding_type == WindingType.Single:
-                    winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] is not None else None
-                    wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
-                    new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
-                elif winding_type == WindingType.TwoInterleaved:
-                    new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1], InterleavedWindingScheme[vww["winding_scheme"]], vww["winding_insulation"])
-                else:
-                    raise Exception(f"Winding type {winding_type} is not implemented")
-
-                new_virtual_winding_windows.append(new_vww)
+                        raise Exception(f"Winding type {winding_type} is not implemented")
+                    new_virtual_winding_windows.append(new_vww)
 
             winding_window = WindingWindow(core, insulation)
             winding_window.virtual_winding_windows = new_virtual_winding_windows
             geo.set_winding_windows([winding_window])
+
+            # Variable to set silent mode
+            ff.set_silent_status(silent)
 
             return geo
 

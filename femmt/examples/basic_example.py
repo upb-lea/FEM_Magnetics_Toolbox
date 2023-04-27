@@ -141,11 +141,11 @@ if component == "inductor":
     geo.set_winding_windows([winding_window])
 
     # 8. create the model
-    geo.create_model(freq=inductor_frequency, visualize_before=True, save_png=False)
+    geo.create_model(freq=inductor_frequency, pre_visualize_geometry=True, save_png=False)
 
     # 6.a. start simulation
     geo.single_simulation(freq=inductor_frequency, current=[4.5],
-                          plot_interpolation=False, show_results=True)
+                          plot_interpolation=False, show_fem_simulation_results=True)
 
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
@@ -202,8 +202,8 @@ if component == "transformer-interleaved":
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=250000, visualize_before=True)
-    # geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_results=True)
+    geo.create_model(freq=250000, pre_visualize_geometry=True)
+    # geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_fem_simulation_results=True)
 
     # other simulation options:
     # ------------------------
@@ -264,7 +264,7 @@ if component == "transformer":
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=200000, visualize_before=True)
+    geo.create_model(freq=200000, pre_visualize_geometry=True)
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180])
 
 if component == "three-winding-transformer":
@@ -331,7 +331,7 @@ if component == "three-winding-transformer":
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=250000, visualize_before=True)
+    geo.create_model(freq=250000, pre_visualize_geometry=True)
     geo.single_simulation(freq=250000, current=[4, 4, 4], phi_deg=[0, 180, 0])
 
     # Reference simulation using FEMM
@@ -388,7 +388,7 @@ if component == "integrated_transformer":
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=250000, visualize_before=True)
+    geo.create_model(freq=250000, pre_visualize_geometry=True)
     geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 180])
 
     # other simulation options:
@@ -423,7 +423,7 @@ if component == "center-tapped-transformer":
     geo.set_insulation(insulation)
     geo.set_winding_windows([winding_window])
 
-    geo.create_model(freq=200000, visualize_before=True)
+    geo.create_model(freq=200000, pre_visualize_geometry=True)
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180])
 
     # Reference simulation using FEMM
@@ -479,7 +479,7 @@ if component == "stacked-transformer":
 
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=250000, visualize_before=False)
+    geo.create_model(freq=250000, pre_visualize_geometry=False)
     geo.single_simulation(freq=250000, current=[2.0, 4.0], phi_deg=[0, 180])
 
     # other simulation options:
@@ -515,9 +515,9 @@ if component == "stacked-center-tapped-transformer":
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
 
-    geo.create_model(freq=200000, visualize_before=True)
+    geo.create_model(freq=200000, pre_visualize_geometry=True)
 
-    geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_results=True)
+    geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_fem_simulation_results=True)
 
     # geo.get_inductances(I0=1, op_frequency=200000)
 
@@ -530,6 +530,6 @@ if component == "load_from_file":
 
     geo = fmt.MagneticComponent.decode_settings_from_log(file, working_directory)
 
-    geo.create_model(freq=100000, visualize_before=False, save_png=False)
+    geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
 
-    geo.single_simulation(freq=100000, current=[4.5], show_results=True)
+    geo.single_simulation(freq=100000, current=[4.5], show_fem_simulation_results=True)

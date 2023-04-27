@@ -2154,7 +2154,7 @@ class MainWindow(QMainWindow):
         print(f"geo:{geo}")
 
         # geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
-        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False,
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
                          save_png=True)
         print(f"geo.file_data.hybrid_color_visualize_file: {geo.file_data.hybrid_color_visualize_file}")
         image_pre_visualisation = PIL.Image.open(geo.file_data.hybrid_color_visualize_file)
@@ -3210,7 +3210,7 @@ class MainWindow(QMainWindow):
         # -----------------------------------------------
         # Simulation
         # -----------------------------------------------
-        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False,
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
                          save_png=False)
         # geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
 
@@ -3220,7 +3220,7 @@ class MainWindow(QMainWindow):
             if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
                 geo.single_simulation(freq=winding1_frequency_list[0],
                                       current=[winding1_amplitude_list[0]],
-                                      show_results=True)
+                                      show_fem_simulation_results=True)
             elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
                 geo.single_simulation(freq=winding1_frequency_list[0],
                                       current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
@@ -3449,7 +3449,7 @@ class MainWindow(QMainWindow):
         # order for the thermal simulation to work (geo.single_simulation is not needed).
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo = self.md_setup_geometry()
-        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False,
+        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
                          save_png=False)
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas,

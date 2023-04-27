@@ -116,9 +116,9 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
         vww.set_winding(winding, 9, None)
         geo.set_winding_windows([winding_window])
 
-        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
 
-        geo.single_simulation(freq=100000, current=[4.5], show_results=False)
+        geo.single_simulation(freq=100000, current=[4.5], show_fem_simulation_results=False)
 
         """
         Currently only the magnetics simulation is tested
@@ -209,9 +209,9 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
         vww.set_winding(winding, 9, None)
         geo.set_winding_windows([winding_window])
 
-        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
 
-        geo.single_simulation(freq=100000, current=[4.5], show_results=False)
+        geo.single_simulation(freq=100000, current=[4.5], show_fem_simulation_results=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -265,9 +265,9 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
         vww.set_winding(winding, 9, None)
         geo.set_winding_windows([winding_window])
 
-        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
 
-        geo.single_simulation(freq=100000, current=[4.5], show_results=False)
+        geo.single_simulation(freq=100000, current=[4.5], show_fem_simulation_results=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -324,9 +324,9 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
         vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, wrap_para_type)
         geo.set_winding_windows([winding_window])
 
-        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
 
-        geo.single_simulation(freq=100000, current=[3], show_results=False)
+        geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=False)
 
 
 
@@ -386,9 +386,9 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder)
         vww.set_winding(winding, 12, fmt.WindingScheme.FoilHorizontal, wrap_para_type)
         geo.set_winding_windows([winding_window])
 
-        geo.create_model(freq=100000, visualize_before=False, save_png=False)
+        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
 
-        geo.single_simulation(freq=100000, current=[3], show_results=False)
+        geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -456,8 +456,8 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
         geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
-        geo.create_model(freq=250000, visualize_before=False)
-        geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178], show_results=False)
+        geo.create_model(freq=250000, pre_visualize_geometry=False)
+        geo.single_simulation(freq=250000, current=[4, 4], phi_deg=[0, 178], show_fem_simulation_results=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -522,8 +522,8 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
         geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
-        geo.create_model(freq=250000, visualize_before=False)
-        geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_results=False)
+        geo.create_model(freq=250000, pre_visualize_geometry=False)
+        geo.single_simulation(freq=250000, current=[4, 12], phi_deg=[0, 180], show_fem_simulation_results=False)
 
 
 
@@ -601,8 +601,8 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
         geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
-        geo.create_model(freq=250000, visualize_before=False)
-        geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 175], show_results=False)
+        geo.create_model(freq=250000, pre_visualize_geometry=False)
+        geo.single_simulation(freq=250000, current=[8.0, 4.0], phi_deg=[0, 175], show_fem_simulation_results=False)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -659,8 +659,8 @@ def thermal_simulation(temp_folder):
         vww.set_winding(winding, 8, None)
         geo.set_winding_windows([winding_window])
 
-        geo.create_model(freq=100000, visualize_before=False, save_png=False)
-        geo.single_simulation(freq=100000, current=[3], show_results=False)
+        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
+        geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=False)
 
         thermal_conductivity_dict = {
             "air": 1.57,  # potting epoxy resign
@@ -708,7 +708,7 @@ def thermal_simulation(temp_folder):
 
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right,
-                               case_gap_bot, show_results=False, visualize_before=False, color_scheme=color_scheme,
+                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False, color_scheme=color_scheme,
                                colors_geometry=colors_geometry)
 
 
@@ -837,7 +837,8 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
         result_log_filepath_list = [femmt_simulation_inductor_core_material_database,
                                     femmt_simulation_inductor_core_fixed_loss_angle,
                                     femmt_simulation_inductor_core_fixed_loss_angle_litz_wire,
-                                    femmt_simulation_inductor_core_fixed_loss_angle_foil,
+                                    femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal,
+                                    femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical,
                                     femmt_simulation_transformer_core_fixed_loss_angle,
                                     femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
                                     femmt_simulation_transformer_integrated_core_fixed_loss_angle

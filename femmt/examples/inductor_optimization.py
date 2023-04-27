@@ -57,9 +57,9 @@ def load_from_single_file(working_directory: str, file_name: str):
 
     geo = fmt.MagneticComponent.decode_settings_from_log(file_path, working_directory)
 
-    geo.create_model(freq=frequency, visualize_before=False, save_png=False)
+    geo.create_model(freq=frequency, pre_visualize_geometry=False, save_png=False)
 
-    geo.single_simulation(freq=frequency, current=[current], show_results=True)
+    geo.single_simulation(freq=frequency, current=[current], show_fem_simulation_results=True)
 
 
 def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, plot_color: str, z_value: list = None,
@@ -1008,10 +1008,10 @@ class AutomatedDesign:
 
             try:
                 # 5. create the model
-                geo.create_model(freq=self.frequency, visualize_before=False, save_png=False)
+                geo.create_model(freq=self.frequency, pre_visualize_geometry=False, save_png=False)
 
                 # 6. start simulation
-                geo.single_simulation(freq=self.frequency, current=[self.peak_current], show_results=False)
+                geo.single_simulation(freq=self.frequency, current=[self.peak_current], show_fem_simulation_results=False)
 
 
 

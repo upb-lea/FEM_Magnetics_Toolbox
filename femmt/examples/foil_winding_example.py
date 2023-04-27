@@ -38,8 +38,8 @@ winding = fmt.Conductor(0, fmt.Conductivity.Copper)
 winding.set_rectangular_conductor(thickness=1e-3)
 
 vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, wrap_para_type)
-geo.set_winding_window(winding_window)
+geo.set_winding_windows([winding_window])
 
-geo.create_model(freq=100000, visualize_before=True, save_png=False)
+geo.create_model(freq=100000, pre_visualize_geometry=True, save_png=False)
 
-geo.single_simulation(freq=100000, current=[3], show_results=True)
+geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=True)

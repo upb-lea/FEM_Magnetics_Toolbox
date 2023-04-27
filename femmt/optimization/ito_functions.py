@@ -154,11 +154,11 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
     geo.set_winding_window(winding_window)
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=fundamental_frequency, visualize_before=visualize)
+    geo.create_model(freq=fundamental_frequency, pre_visualize_geometry=visualize)
     geo.single_simulation(freq=fundamental_frequency,
                           current=[i_peak_1, i_peak_2],
                           phi_deg=[phase_deg_1, phase_deg_2],
-                          show_results=visualize)
+                          show_fem_simulation_results=visualize)
 
     return geo
 
@@ -278,7 +278,7 @@ def integrated_transformer_fem_thermal_simulations_from_result_dtos(config_dto: 
 
             geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                    case_gap_right,
-                                   case_gap_bot, show_results=visualize, visualize_before=False, color_scheme=color_scheme,
+                                   case_gap_bot, show_thermal_simulation_results=visualize, pre_visualize_geometry=False, color_scheme=color_scheme,
                                    colors_geometry=colors_geometry)
 
             source_json_file = os.path.join(ito_target_and_fixed_parameters_dto.fem_working_directory, "results",

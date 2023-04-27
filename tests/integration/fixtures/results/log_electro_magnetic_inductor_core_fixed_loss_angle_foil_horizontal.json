@@ -21,7 +21,7 @@
           0.0002072743924806775,
           -3.869351375605063e-06
         ],
-        "self_inductance": [
+        "flux_over_current": [
           6.909144118884065e-05,
           -1.2923106686974461e-06
         ],
@@ -65,10 +65,12 @@
     "all_windings": 1.371119066534656,
     "eddy_core": 0.05498886292904095,
     "hyst_core_fundamental_freq": 2.22781440347982,
-    "core": 2.282803266408861
+    "core": 2.282803266408861,
+    "total_losses": 3.653922332943517
   },
   "simulation_settings": {
-    "date": "2023-04-27 09:06:20",
+    "simulation_name": null,
+    "date": "2023-04-27 15:28:50",
     "component_type": "Inductor",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {

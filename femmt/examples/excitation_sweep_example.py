@@ -67,10 +67,10 @@ if component == "inductor_sweep":
     geo.set_winding_window(winding_window)
 
     # 8. create the model
-    geo.create_model(freq=100000, visualize_before=True, save_png=False)
+    geo.create_model(freq=100000, pre_visualize_geometry=True, save_png=False)
 
     # 9. start simulation
-    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last=True)
+    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last_fem_simulation=True)
 
 
 if component == "transformer_sweep":
@@ -121,7 +121,7 @@ if component == "transformer_sweep":
     geo.set_winding_window(winding_window)
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=250000, visualize_before=True)
+    geo.create_model(freq=250000, pre_visualize_geometry=True)
 
     # 9. start simulation
-    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last=True)
+    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last_fem_simulation=True)

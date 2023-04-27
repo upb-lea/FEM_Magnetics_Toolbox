@@ -54,8 +54,8 @@ if sweep == "air_gap_height":
         complete.set_winding(conductor, 9, None)
         geo.set_winding_window(winding_window)
 
-        geo.create_model(freq=100000, visualize_before=False, save_png=False)
-        geo.single_simulation(freq=100000, current=[4.5], show_results=False)
+        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
+        geo.single_simulation(freq=100000, current=[4.5], show_fem_simulation_results=False)
 
     # After the simulations the sweep can be analyzed
     # This could be done using the FEMMTLogParser:

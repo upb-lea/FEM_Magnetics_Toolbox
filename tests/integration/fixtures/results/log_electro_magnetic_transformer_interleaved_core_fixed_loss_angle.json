@@ -30,7 +30,7 @@
           1.18377136953193e-07,
           8.29454813993643e-08
         ],
-        "self_inductance": [
+        "flux_over_current": [
           2.9596076279500293e-08,
           1.5703900297320496e-08
         ],
@@ -62,7 +62,7 @@
           -3.26619944423585e-06,
           6.291580652010018e-07
         ],
-        "self_inductance": [
+        "flux_over_current": [
           2.72182871866296e-07,
           -5.411320538166122e-08
         ],
@@ -127,10 +127,12 @@
     "all_windings": 5.921670669334439,
     "eddy_core": 0.0004508091599293325,
     "hyst_core_fundamental_freq": 0.003942118267844052,
-    "core": 0.004392927427773385
+    "core": 0.004392927427773385,
+    "total_losses": 5.926063596762212
   },
   "simulation_settings": {
-    "date": "2023-04-26 12:23:56",
+    "simulation_name": null,
+    "date": "2023-04-27 15:29:59",
     "component_type": "Transformer",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
@@ -228,8 +230,8 @@
     }
   },
   "misc": {
-    "core_2daxi_volume": 2.0622592275408493e-05,
-    "core_2daxi_total_volume": 5.0738292151801945e-05,
+    "core_2daxi_volume": 2.0622592275408514e-05,
+    "core_2daxi_total_volume": 5.073829215180196e-05,
     "core_2daxi_weight": 0.0,
     "wire_lengths": [
       1.7379290559658735,

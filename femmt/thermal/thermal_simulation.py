@@ -303,9 +303,9 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
     with open(output_file, "w") as fd:
         json.dump(data, fd, indent=2)
 
-def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict, 
-    boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float, wire_distances: float, case_volume: float,
-    show_results: bool, print_sensor_values: bool, silent: bool):
+def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict,
+                boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float, wire_distances: float, case_volume: float,
+                show_thermal_fem_results: bool, print_sensor_values: bool, silent: bool):
     """
     Runs a thermal simulation.
     
@@ -318,8 +318,8 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
     :param core_area: Area of the cross-section of the core
     :param conductor_radii: List of the radius for each winding 
     :param wire_distances: List of the outer radius for each winding
-    :param show_results: Boolean - Set true when the results shall be shown in a gmsh window
-    :type show_results: bool
+    :param show_thermal_fem_results: Boolean - Set true when the results shall be shown in a gmsh window
+    :type show_thermal_fem_results: bool
     :param print_sensor_values:
     :param silent: True for silent mode (no terminal outputs)
     :param case_volume: volume of the case in m³
@@ -401,6 +401,6 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
 
     post_operation(case_volume, output_file, sensor_points_file, core_file, insulation_file, winding_file)
 
-    if show_results:
+    if show_thermal_fem_results:
         gmsh.open(map_pos_file)
         gmsh.fltk.run()

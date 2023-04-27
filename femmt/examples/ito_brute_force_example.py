@@ -31,8 +31,8 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
     working_directory= os.path.join(os.path.dirname(__file__), "example_results", "integrated_transformer_optimization")
 )
 
-task = 'simulation_reluctance'
-#task = 'load_reluctance_and_filter'
+#task = 'simulation_reluctance'
+task = 'load_reluctance_and_filter'
 #task = 'load_reluctance_filter_and_simulate_fem'
 #task = 'plot_and_filter_fem_simulations_results'
 #task = "single_fem_simulation_from_reluctance_result"

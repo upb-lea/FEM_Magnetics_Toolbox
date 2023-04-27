@@ -111,7 +111,7 @@ def run_inductor_simulations(working_directory, combinations):
 
         name = combination["Name"]
         try:
-            geo.create_model(freq=250000, visualize_before=False, save_png=True)
+            geo.create_model(freq=250000, pre_visualize_geometry=False, save_png=True)
         except Exception as e:
             print(e)
             not_working.append(name + ": " + str(e))
@@ -172,7 +172,7 @@ def run_transformer_simulations(working_directory, combinations):
 
         name = combination["Name"]
         try:
-            geo.create_model(freq=250000, visualize_before=True, save_png=True)
+            geo.create_model(freq=250000, pre_visualize_geometry=True, save_png=True)
         except Exception as e:
             print(e)
             not_working.append(name + ": " + str(e))

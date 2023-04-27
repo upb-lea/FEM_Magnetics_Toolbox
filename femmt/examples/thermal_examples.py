@@ -47,10 +47,10 @@ if simulation == "lab_model":
                                         fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     vww.set_winding(winding, 8, None)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
-    geo.create_model(freq=100000, visualize_before=True, save_png=False)
-    geo.single_simulation(freq=100000, current=[3], show_results=False)
+    geo.create_model(freq=100000, pre_visualize_geometry=True, save_png=False)
+    geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=False)
 
     thermal_conductivity_dict = {
             "air": 0.122, # potting epoxy resign
@@ -98,8 +98,8 @@ if simulation == "lab_model":
     color_scheme = fmt.colors_ba_jonas
     colors_geometry = fmt.colors_geometry_draw_only_lines
 
-    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, 
-        case_gap_bot, show_results=True, visualize_before=True, color_scheme=color_scheme, colors_geometry=colors_geometry)
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right,
+                           case_gap_bot, show_thermal_simulation_results=True, pre_visualize_geometry=True, color_scheme=color_scheme, colors_geometry=colors_geometry)
 
 if simulation == "pq4040_ansys_comparison":
     # This simulation is used for the ansys simulation comparison
@@ -134,10 +134,10 @@ if simulation == "pq4040_ansys_comparison":
     winding.set_solid_round_conductor(conductor_radius=0.0015, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     vww.set_winding(winding, 8, None)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
-    geo.create_model(freq=100000, visualize_before=True, save_png=False)
-    geo.single_simulation(freq=100000, current=[3], show_results=False)
+    geo.create_model(freq=100000, pre_visualize_geometry=True, save_png=False)
+    geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=False)
 
     thermal_conductivity_dict = {
             "air": 1.57, # potting epoxy resign
@@ -186,8 +186,8 @@ if simulation == "pq4040_ansys_comparison":
     colors_geometry = fmt.colors_geometry_draw_only_lines
 
 
-    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, 
-        case_gap_bot, show_results=True, visualize_before=True, color_scheme=color_scheme, colors_geometry=colors_geometry)
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right,
+                           case_gap_bot, show_thermal_simulation_results=True, pre_visualize_geometry=True, color_scheme=color_scheme, colors_geometry=colors_geometry)
     #geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 
 if simulation == "pq4040axisymmetric":
@@ -225,10 +225,10 @@ if simulation == "pq4040axisymmetric":
     winding.set_solid_round_conductor(conductor_radius=0.0015, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     vww.set_winding(winding, 8, None)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
-    geo.create_model(freq=100000, visualize_before=True, save_png=False)
-    geo.single_simulation(freq=100000, current=[3], show_results=True)
+    geo.create_model(freq=100000, pre_visualize_geometry=True, save_png=False)
+    geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=True)
 
     thermal_conductivity_dict = {
             "air": 1.57, # potting epoxy resign
@@ -274,5 +274,5 @@ if simulation == "pq4040axisymmetric":
     color_scheme = fmt.colors_ba_jonas
     colors_geometry = fmt.colors_geometry_draw_only_lines
 
-    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, 
-        case_gap_bot, show_results=True, visualize_before=True, color_scheme=color_scheme, colors_geometry=colors_geometry)
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right,
+                           case_gap_bot, show_thermal_simulation_results=True, pre_visualize_geometry=True, color_scheme=color_scheme, colors_geometry=colors_geometry)
