@@ -391,6 +391,17 @@ class MagneticComponent:
         self.voltage = [None] * len(windings)
         self.phase_deg = np.zeros(len(windings))
 
+        # Correct the turns lists in each vww, so that they have the same length
+        for ww in winding_windows:
+            for vww in ww.virtual_winding_windows:
+                zeros_to_append = (len(self.windings) - len(vww.turns))
+                if zeros_to_append < 0:
+                    for i in range(0, -zeros_to_append):
+                        vww.turns.pop()
+                else:
+                    for i in range(0, zeros_to_append):
+                        vww.turns.append(0)
+
         # Default values for global_accuracy and padding
         self.mesh_data = MeshData(0.5, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
 

@@ -643,8 +643,7 @@ class VirtualWindingWindow:
     right_bound: float
 
     winding_type: WindingType
-    winding_scheme: Union[
-        WindingScheme, InterleavedWindingScheme]  # Either WindingScheme or InterleavedWindingScheme (Depending on the winding)
+    winding_scheme: Union[WindingScheme, InterleavedWindingScheme]  # Either WindingScheme or InterleavedWindingScheme (Depending on the winding)
     wrap_para: WrapParaType
 
     windings: List[Conductor]
@@ -723,7 +722,6 @@ class VirtualWindingWindow:
         self.winding_is_set = True
         self.winding_insulation = winding_insulation
         self.wrap_para = None
-
 
     def set_center_tapped_winding(self,
                                   conductor1: Conductor, turns1: int,
