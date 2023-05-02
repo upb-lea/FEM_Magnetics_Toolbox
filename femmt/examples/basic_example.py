@@ -429,6 +429,7 @@ if component == "center-tapped-transformer":
     # Reference simulation using FEMM
     # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
 
+
 if component == "stacked-transformer":
     working_directory = os.path.join(example_results_folder, "stacked-transformer")
     if not os.path.exists(working_directory):
@@ -508,7 +509,7 @@ if component == "stacked-center-tapped-transformer":
                                                                                                       primary_turns=14, primary_radius=1.1e-3, primary_number_strands=50, primary_strand_radius=0.00011,
                                                                                                       secondary_parallel_turns=2, secondary_thickness_foil=1e-3,
                                                                                                       iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
-                                                                                                      iso_primary_to_primary=1e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
+                                                                                                      iso_primary_to_primary=2e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=4e-4,
                                                                                                       interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
                                                                                                       primary_coil_turns=3)
 
