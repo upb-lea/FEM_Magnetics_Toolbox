@@ -1070,6 +1070,8 @@ class TwoDaxiSymmetric:
                         winding = virtual_winding_window.windings[1]
                         turns = virtual_winding_window.turns[1]
                         num = 1
+                        winding.a_cell = winding.thickness * (right_bound - left_bound)
+
                         for i in range(turns):
                             # CHECK if top bound is reached
                             # statement = (bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num]) <= top_bound
@@ -1106,6 +1108,8 @@ class TwoDaxiSymmetric:
                         winding = virtual_winding_window.windings[2]
                         turns = virtual_winding_window.turns[2]
                         num = 2
+                        winding.a_cell = winding.thickness * (right_bound - left_bound)
+
                         for i in range(turns):
                             # CHECK if top bound is reached
                             # statement = (bot_bound + (i + 1) * winding.thickness + i * self.insulation.inner_winding_insulations[num]) <= top_bound

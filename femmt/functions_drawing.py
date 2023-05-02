@@ -123,9 +123,9 @@ def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
         stack.append(secondary_row)
         stack.append(StackIsolation(thickness=isolations.secondary_to_tertiary))
         stack.append(tertiary_row)
-        if i < secondary_number_of_rows - 1:
+        if i < int(secondary_number_of_rows/2) - 1:
             stack.append(StackIsolation(thickness=isolations.tertiary_to_secondary))
-        elif i == secondary_number_of_rows - 1:
+        elif i == int(secondary_number_of_rows/2) - 1:
             pass
 
     group.stack = stack
@@ -161,7 +161,6 @@ def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_
 def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     # Which insulation is needed depends on the bot and top row neighbours
     # TODO: insert insulations into the stack depending on isolation matrix
-    # if type(top_row
 
     # TODO: remove following fix insertation
     insulation_positions = []
@@ -169,15 +168,34 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     number_of_added_insulations = 0
     # here: zero index means bot_row
     for i, bot_row in enumerate(stack_order[0:-1]):
-        top_row = stack_order[i + 1]
+        insulation_string = ""
         # print(f"{bot_row = }")
         # print(f"{top_row = }\n")
         insulation_positions.append(i + 1 + number_of_added_insulations)
         number_of_added_insulations += 1
 
-        # if type(bot_row) == ConductorRow:  # TODO: so ähnlich nach group oder row fragen und dann die infos über die isolation rausszierehn bei bot row und top row
-        #         if obj.winding_tag == WindingTag.Secondary:
-        insulation_tags.append(StackIsolation(thickness=isolations.secondary_to_secondary))
+        # TODO: dynamic isolations (vertical)
+        for n, row in enumerate([stack_order[i], stack_order[i + 1]]):
+            if type(row) == ConductorRow:
+                if row.winding_tag == WindingTag.Primary:
+                    insulation_string += "primary"
+                elif row.winding_tag == WindingTag.Secondary:
+                    insulation_string += "secondary"
+                elif row.winding_tag == WindingTag.Tertiary:
+                    insulation_string += "tertiary"
+            elif type(row) == CenterTappedGroup:
+                position_in_group = n-1  # 0 for the bot and -1 for the top element
+                if row.stack[position_in_group].winding_tag == WindingTag.Primary:
+                    insulation_string += "primary"
+                elif row.stack[position_in_group].winding_tag == WindingTag.Secondary:
+                    insulation_string += "secondary"
+                elif row.stack[position_in_group].winding_tag == WindingTag.Tertiary:
+                    insulation_string += "tertiary"
+
+            if n == 0:
+                insulation_string += "_to_"
+
+        insulation_tags.append(StackIsolation(thickness=getattr(isolations, insulation_string)))
 
     # Fill in the isolations
     for i, position in enumerate(insulation_positions):
