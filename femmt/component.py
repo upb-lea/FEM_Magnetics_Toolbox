@@ -335,7 +335,7 @@ class MagneticComponent:
         :param insulation: insulation object
         :type insulation: Insulation
         """
-        if insulation.inner_winding_insulations is None or not insulation.inner_winding_insulations:
+        if insulation.cond_cond is None or not insulation.cond_cond:
             raise Exception("insulations between the conductors must be set")
 
         if insulation.core_cond is None or not insulation.core_cond:

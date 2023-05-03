@@ -122,7 +122,7 @@ if component == "inductor":
     # 4. set insulations
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-    insulation.add_winding_insulations([0.0005], 0.0001)
+    insulation.add_winding_insulations([0.0005])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -183,7 +183,7 @@ if component == "transformer-interleaved":
     # 4. set insulations
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+    insulation.add_winding_insulations([0.0002, 0.0002])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -236,12 +236,12 @@ if component == "transformer":
     # 4. set insulation
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002], 0.0005)
+    insulation.add_winding_insulations([0.0002, 0.0002])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+    bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.005)
 
     # 6. create conductors and set parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -290,7 +290,7 @@ if component == "three-winding-transformer":
     # 4. set insulation
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002, 0.0002], 0.0005)
+    insulation.add_winding_insulations([0.0002, 0.0002, 0.0002])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -366,7 +366,7 @@ if component == "integrated_transformer":
     # 4. set insulations
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+    insulation.add_winding_insulations([0.0002, 0.0002])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -454,7 +454,7 @@ if component == "stacked-transformer":
     insulation = fmt.Insulation()
     # insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)  # TODO: needed for upper and lower winding window?
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)  # [bot, top, left, right]
-    insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+    insulation.add_winding_insulations([0.0002, 0.0002])
     geo.set_insulation(insulation)
 
     winding_window_top, winding_window_bot = fmt.create_stacked_winding_windows(core, insulation)

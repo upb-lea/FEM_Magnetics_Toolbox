@@ -543,9 +543,8 @@ class Insulation:
 
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
-    inner_winding_insulations: List[float]
-    vww_insulation: float
-    core_cond: List[float]
+    cond_cond: List[List[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    core_cond: List[float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
 
     insulation_delta: float
 
@@ -559,10 +558,8 @@ class Insulation:
         # Default value for all insulations
         # If the gaps between insulations and core (or windings) are to big/small just change this value
         self.insulation_delta = 0.00001
-        self.vww_insulation = None
 
-    def add_winding_insulations(self, inner_winding_insulations: List[float],
-                                virtual_winding_window_insulation: float = None):
+    def add_winding_insulations(self, inner_winding_insulations: List[List[float]]):
         """Adds insulations between turns of one winding and insulation between virtual winding windows.
         Insulation between virtual winding windows is not always needed.
 
@@ -571,13 +568,10 @@ class Insulation:
         :param virtual_winding_window_insulation: Sets the distance between two winding windows, defaults to None
         :type virtual_winding_window_insulation: float, optional
         """
-        if inner_winding_insulations is []:
+        if inner_winding_insulations is [[]]:
             raise Exception("Inner winding insulations list cannot be empty.")
-        if virtual_winding_window_insulation is None:
-            virtual_winding_window_insulation = 0
 
-        self.inner_winding_insulations = inner_winding_insulations
-        self.vww_insulation = virtual_winding_window_insulation
+        self.cond_cond = inner_winding_insulations
 
     def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
         """Adds insulations between the core and the winding window. Creating those will draw real rectangles in the model.
@@ -603,13 +597,12 @@ class Insulation:
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
     def to_dict(self):
-        if len(self.inner_winding_insulations) == 0 and self.vww_insulation is None:
+        if len(self.cond_cond) == 0:
             return {}
 
         return {
-            "inner_winding_insulations": self.inner_winding_insulations,
-            "core_insulations": self.core_cond,
-            "vww_insulation": self.vww_insulation
+            "inner_winding_insulations": self.cond_cond,
+            "core_insulations": self.core_cond
         }
 
 
@@ -794,7 +787,6 @@ class WindingWindow:
     bot_iso: List[float]
     right_iso: List[float]
 
-    vww_insulations: float
     insulations: Insulation
     split_type: WindingWindowSplit
     stray_path: StrayPath
@@ -835,9 +827,7 @@ class WindingWindow:
             self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
-        # Insulations between vwws
-        self.vww_insulations = insulations.vww_insulation
-        #self.vww_iso = [insulations.vww_isolation] * 4
+        # Insulations
         self.insulations = insulations
 
     def to_dict(self):
@@ -846,13 +836,12 @@ class WindingWindow:
             "max_top_bound": self.max_top_bound,
             "max_left_bound": self.max_left_bound,
             "max_right_bound": self.max_right_bound,
-            "vww_insulations": self.vww_insulations if self.vww_insulations is not None else None,
             "virtual_winding_windows": [virtual_winding_window.to_dict() for virtual_winding_window in self.virtual_winding_windows],
         }
 
 
-    def split_window(self, split_type: WindingWindowSplit, horizontal_split_factor: float = 0.5, horizontal_split_factor_2: float = 0.7, horizontal_split_factor_3: float = 0.8,
-                     horizontal_split_factor_4: float = 0.9, vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
+    def split_window(self, split_type: WindingWindowSplit, split_distance: float = 0,
+                     horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
         """Creates up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
         The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
         Not every value is needed for every split type:
@@ -875,9 +864,6 @@ class WindingWindow:
         :type vertical_split_factor: float, optional
         :return: Tuple containing the virtual winding windows
         :rtype: Tuple[VirtualWindingWindow]
-
-        it is updated on 24.04.2023. A new split is added and it is valid up to 10 winding. Split factors should be 4 for the horizontal, which they are called (horizontal_split_factor_1,
-        horizontal_split_factor_2,horizontal_split_factor_3,horizontal_split_factor_4), but not that horizontal_split_factor_1 is the same as horizontal_split_factor. I call it like this for arranging.
         """
 
         self.split_type = split_type
@@ -895,14 +881,7 @@ class WindingWindow:
                                             # TODO: should be changed to the core-cond isolation
             horizontal_split = min_pos + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
-            self.vww_insulations = distance
-        # elif self.core.core_type == CoreType.Stacked:
-        #     max_pos = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4  # TODO: could also be done arbitrarily
-        #     min_pos = self.core.window_h_bot / 2
-        #     distance = max_pos - min_pos
-        #     horizontal_split = min_pos + distance / 2
-        #     vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
-        #     self.vww_insulations = distance + 2 * min(self.insulations.core_cond)  # TODO: enhance the insulations situation!!!
+            split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
             horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
@@ -922,27 +901,27 @@ class WindingWindow:
             right = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
                 top_bound=self.max_top_bound,
-                left_bound=vertical_split + self.vww_insulations / 2,
+                left_bound=vertical_split + split_distance / 2,
                 right_bound=self.max_right_bound)
 
             left = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
                 top_bound=self.max_top_bound,
                 left_bound=self.max_left_bound,
-                right_bound=vertical_split - self.vww_insulations / 2)
+                right_bound=vertical_split - split_distance / 2)
 
             self.virtual_winding_windows = [left, right]
             return left, right
         elif split_type == WindingWindowSplit.HorizontalSplit:
             top = VirtualWindingWindow(
-                bot_bound=horizontal_split + self.vww_insulations / 2,
+                bot_bound=horizontal_split + split_distance / 2,
                 top_bound=self.max_top_bound,
                 left_bound=self.max_left_bound,
                 right_bound=self.max_right_bound)
 
             bot = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
-                top_bound=horizontal_split - self.vww_insulations / 2,
+                top_bound=horizontal_split - split_distance / 2,
                 left_bound=self.max_left_bound,
                 right_bound=self.max_right_bound)
 
@@ -950,101 +929,31 @@ class WindingWindow:
             return top, bot
         elif split_type == WindingWindowSplit.HorizontalAndVerticalSplit:
             top_left = VirtualWindingWindow(
-                bot_bound=horizontal_split + self.vww_insulations / 2,
+                bot_bound=horizontal_split + split_distance / 2,
                 top_bound=self.max_top_bound,
                 left_bound=self.max_left_bound,
-                right_bound=vertical_split - self.vww_insulations / 2)
+                right_bound=vertical_split - split_distance / 2)
 
             top_right = VirtualWindingWindow(
-                bot_bound=horizontal_split + self.vww_insulations / 2,
+                bot_bound=horizontal_split + split_distance / 2,
                 top_bound=self.max_top_bound,
-                left_bound=vertical_split + self.vww_insulations / 2,
+                left_bound=vertical_split + split_distance / 2,
                 right_bound=self.max_right_bound)
 
             bot_left = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
-                top_bound=horizontal_split - self.vww_insulations / 2,
+                top_bound=horizontal_split - split_distance / 2,
                 left_bound=self.max_left_bound,
-                right_bound=vertical_split - self.vww_insulations / 2)
+                right_bound=vertical_split - split_distance / 2)
 
             bot_right = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
-                top_bound=horizontal_split - self.vww_insulations / 2,
-                left_bound=vertical_split + self.vww_insulations / 2,
+                top_bound=horizontal_split - split_distance / 2,
+                left_bound=vertical_split + split_distance / 2,
                 right_bound=self.max_right_bound)
 
             self.virtual_winding_windows = [top_left, top_right, bot_left, bot_right]
             return top_left, top_right, bot_left, bot_right
-        elif split_type == WindingWindowSplit.TenCells_Split:
-            horizontal_split_1 = horizontal_split
-            horizontal_split_2 = self.max_top_bound - abs(
-                self.max_bot_bound - self.max_top_bound) * horizontal_split_factor_2
-            horizontal_split_3 = self.max_top_bound - abs(
-                self.max_bot_bound - self.max_top_bound) * horizontal_split_factor_3
-            horizontal_split_4 = self.max_top_bound - abs(
-                self.max_bot_bound - self.max_top_bound) * horizontal_split_factor_4
-
-            top_left = VirtualWindingWindow(
-                bot_bound=horizontal_split_1 + self.vww_insulations / 2,
-                top_bound=self.max_top_bound,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - self.vww_insulations / 2)
-
-            top_right = VirtualWindingWindow(
-                bot_bound=horizontal_split_1 + self.vww_insulations / 2,
-                top_bound=self.max_top_bound,
-                left_bound=vertical_split + self.vww_insulations / 2,
-                right_bound=self.max_right_bound)
-            mid_top_left = VirtualWindingWindow(
-                bot_bound=horizontal_split_2 + self.vww_insulations / 2,
-                top_bound=horizontal_split_1 + self.vww_insulations / 2,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - self.vww_insulations / 2)
-
-            mid_top_right = VirtualWindingWindow(
-                bot_bound=horizontal_split_2 + self.vww_insulations / 2,
-                top_bound=horizontal_split_1 + self.vww_insulations / 2,
-                left_bound=vertical_split + self.vww_insulations / 2,
-                right_bound=self.max_right_bound)
-
-            mid_left = VirtualWindingWindow(
-                bot_bound=horizontal_split_3 + self.vww_insulations / 2,
-                top_bound=horizontal_split_2 + self.vww_insulations / 2,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - self.vww_insulations / 2)
-
-            mid_right = VirtualWindingWindow(
-                bot_bound=horizontal_split_3 + self.vww_insulations / 2,
-                top_bound=horizontal_split_2 + self.vww_insulations / 2,
-                left_bound=vertical_split + self.vww_insulations / 2,
-                right_bound=self.max_right_bound)
-
-            mid_bot_left = VirtualWindingWindow(
-                bot_bound=horizontal_split_4 + self.vww_insulations / 2,
-                top_bound=horizontal_split_3 + self.vww_insulations / 2,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - self.vww_insulations / 2)
-
-            mid_bot_right = VirtualWindingWindow(
-                bot_bound=horizontal_split_4 + self.vww_insulations / 2,
-                top_bound=horizontal_split_3 + self.vww_insulations / 2,
-                left_bound=vertical_split + self.vww_insulations / 2,
-                right_bound=self.max_right_bound)
-
-            bot_left = VirtualWindingWindow(
-                bot_bound=self.max_bot_bound,
-                top_bound=horizontal_split_4 - self.vww_insulations / 2,
-                left_bound=self.max_left_bound,
-                right_bound=vertical_split - self.vww_insulations / 2)
-
-            bot_right = VirtualWindingWindow(
-                bot_bound=self.max_bot_bound,
-                top_bound=horizontal_split_4 - self.vww_insulations / 2,
-                left_bound=vertical_split + self.vww_insulations / 2,
-                right_bound=self.max_right_bound)
-
-            self.virtual_winding_windows = [top_left, top_right, mid_top_left, mid_top_right, mid_left, mid_right, mid_bot_left, mid_bot_right, bot_left, bot_right]
-            return top_left, top_right, mid_top_left, mid_top_right, mid_left, mid_right, mid_bot_left, mid_bot_right, bot_left, bot_right
         else:
             raise Exception(f"Winding window split type {split_type} not found")
 
