@@ -136,9 +136,9 @@ def set_center_tapped_windings(core,
     def define_isolations():
         insulation = Insulation()
         insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
-        insulation.add_winding_insulations([iso_primary_to_primary,
-                                            iso_secondary_to_secondary,
-                                            iso_primary_to_secondary])
+        insulation.add_winding_insulations([[iso_primary_to_primary, iso_primary_to_secondary, iso_primary_to_secondary],
+                                            [iso_primary_to_secondary, iso_secondary_to_secondary, iso_primary_to_secondary],
+                                            [iso_primary_to_secondary, iso_primary_to_secondary, iso_secondary_to_secondary]])
         return insulation
     insulation = define_isolations()
     # TODO: the following statement does not provide any new information to the model at the moment -> MERGE both insulation concepts together (FEMMT globally)
@@ -166,7 +166,7 @@ def set_center_tapped_windings(core,
                                  winding_tag=WindingTag.Primary,
                                  conductor_type=ConductorType.RoundLitz,
                                  radius=primary_radius,
-                                 cond_cond_isolation=insulation.cond_cond[0])
+                                 cond_cond_isolation=insulation.cond_cond[0][0])
 
         secondary_row = single_row(number_of_conds_per_winding=secondary_parallel_turns,
                                    window_width=core.window_w - insulation.core_cond[2] - insulation.core_cond[3],

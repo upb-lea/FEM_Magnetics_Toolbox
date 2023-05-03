@@ -559,19 +559,16 @@ class Insulation:
         # If the gaps between insulations and core (or windings) are to big/small just change this value
         self.insulation_delta = 0.00001
 
-    def add_winding_insulations(self, inner_winding_insulations: List[List[float]]):
+    def add_winding_insulations(self, inner_winding_insulation: List[List[float]]):
         """Adds insulations between turns of one winding and insulation between virtual winding windows.
         Insulation between virtual winding windows is not always needed.
-
-        :param inner_winding_insulations: List of floats which represent the insulations between turns of the same winding. This does not correspond to the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number. The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
-        :type inner_winding_insulations: List[float]
-        :param virtual_winding_window_insulation: Sets the distance between two winding windows, defaults to None
-        :type virtual_winding_window_insulation: float, optional
+        :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number. The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
+        :type inner_winding_insulation: List[List[float]]
         """
-        if inner_winding_insulations is [[]]:
+        if inner_winding_insulation is [[]]:
             raise Exception("Inner winding insulations list cannot be empty.")
 
-        self.cond_cond = inner_winding_insulations
+        self.cond_cond = inner_winding_insulation
 
     def add_core_insulations(self, top_core: float, bot_core: float, left_core: float, right_core: float):
         """Adds insulations between the core and the winding window. Creating those will draw real rectangles in the model.
@@ -689,8 +686,7 @@ class VirtualWindingWindow:
         if winding_scheme is WindingScheme.FoilVertical and wrap_para_type is None:
             raise Exception("When winding scheme is FoilVertical a wrap para type must be set.")
 
-    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int,
-                                winding_scheme: InterleavedWindingScheme, winding_insulation: float):
+    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme):
         """Sets an interleaved winding to the current virtual winding window. An interleaved winding always contains two conductors.
         If a conductor is primary or secondary is determined by the value of the winding number of the conductor. The order of the function parameters
         is irrelevant.
@@ -705,15 +701,12 @@ class VirtualWindingWindow:
         :type turns2: int
         :param winding_scheme: Interleaved winding scheme defines the way the conductors are drawn
         :type winding_scheme: InterleavedWindingScheme
-        :param winding_insulation: Isolation between the conductor 1 and conductor 2
-        :type winding_insulation: float
         """
         self.winding_type = WindingType.TwoInterleaved
         self.winding_scheme = winding_scheme
         self.windings = [conductor1, conductor2]
         self.turns = [turns1, turns2]
         self.winding_is_set = True
-        self.winding_insulation = winding_insulation
         self.wrap_para = None
 
     def set_center_tapped_winding(self,
