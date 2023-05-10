@@ -4,7 +4,7 @@
 import optuna
 
 # femmt libraries
-from femmt.optimization.integrated_transformer_dtos import *
+from femmt.optimization.ito_dtos import *
 
 
 class OptunaFemmtParser:

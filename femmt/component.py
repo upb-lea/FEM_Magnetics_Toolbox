@@ -456,7 +456,7 @@ class MagneticComponent:
         """
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase(ff.silent).get_material_property(material_name=self.core.material, property="initial_permeability")
+            complex_permeability = mu_0 * mdb.MaterialDatabase(ff.silent).get_material_attribute(material_name=self.core.material, attribute="initial_permeability")
             ff.femmt_print(f"{complex_permeability = }")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
@@ -556,7 +556,7 @@ class MagneticComponent:
             volumetric_mass_density = 0
             warnings.warn("Volumetric mass density not implemented for custom cores. Returns '0' in log-file: Core cost will also result to 0.")
         else:
-            volumetric_mass_density = self.core.material_database.get_material_property(material_name=self.core.material, property="volumetric_mass_density")
+            volumetric_mass_density = self.core.material_database.get_material_attribute(material_name=self.core.material, attribute="volumetric_mass_density")
         return self.calculate_core_volume() * volumetric_mass_density
 
     def get_wire_distances(self) -> List[List[float]]:
@@ -1889,31 +1889,36 @@ class MagneticComponent:
                     ff.femmt_print(f"Rounded Reduced frequency X = {X}")
                     self.create_strand_coeff(num)
 
-    def create_strand_coeff(self, num: int):
-        """TODO Doc
+    def create_strand_coeff(self, winding_number: int) -> None:
+        """
+        Creates the initial strand coefficients for a certain litz wire.
+        This function comes into account in case of the litz-coefficients are not known so far.
+        After generating the litz-coefficients, the results are stored to avoid a second time-consuming
+        strand coefficients generation.
+
+        This function sends commands via text-file to gmsh to generate the strand coefficients. The onelab (gmsh) client
+        is generated in a new instance.
+
+        :param winding_number: Winding number
+        :type winding_number: int
         """
         ff.femmt_print(f"\n"
               f"Pre-Simulation\n"
               f"-----------------------------------------\n"
               f"Create coefficients for strands approximation\n")
-        # Create a new onelab client
-        # -- Pre-Simulation Settings --
+
         text_file = open(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "PreParameter.pro"), "w")
-        # ---
+
         # Litz Approximation Coefficients are created with 4 layers
         # That's why here a hard-coded 4 is implemented
         # text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
         text_file.write(f"NbrLayers = 4;\n")
-        text_file.write(f"Fill = {self.windings[num].ff};\n")
-        ff.femmt_print("Here")
-        text_file.write(f"Rc = {self.windings[num].strand_radius};\n")  # double named!!! must be changed
+        text_file.write(f"Fill = {self.windings[winding_number].ff};\n")
+        text_file.write(f"Rc = {self.windings[winding_number].strand_radius};\n")  # double named!!! must be changed
         text_file.close()
         cell_geo = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.geo")
 
-        if ff.silent:
-            verbose = "-verbose 1"
-        else:
-            verbose = "-verbose 5"
+        verbose = "-verbose 1" if ff.silent else "-verbose 5"
 
         # Run gmsh as a sub client
         gmsh_client = os.path.join(self.file_data.onelab_folder_path, "gmsh")
@@ -1931,9 +1936,8 @@ class MagneticComponent:
                 # That's why here a hard-coded 4 is implemented
                 # text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
                 text_file.write(f"NbrLayers = 4;\n")
-
-                text_file.write(f"Fill = {self.windings[num].ff};\n")
-                text_file.write(f"Rc = {self.windings[num].strand_radius};\n")  # double named!!! must be changed
+                text_file.write(f"Fill = {self.windings[winding_number].ff};\n")
+                text_file.write(f"Rc = {self.windings[winding_number].strand_radius};\n")  # double named!!! must be changed
                 text_file.close()
 
                 # get model file names with correct path
@@ -1957,10 +1961,10 @@ class MagneticComponent:
         if not os.path.isdir(coeff_folder):
             os.mkdir(coeff_folder)
 
-        files = [os.path.join(coeff_folder, f"pB_RS_la{self.windings[num].ff}_4layer.dat"),
-                 os.path.join(coeff_folder, f"pI_RS_la{self.windings[num].ff}_4layer.dat"),
-                 os.path.join(coeff_folder, f"qB_RS_la{self.windings[num].ff}_4layer.dat"),
-                 os.path.join(coeff_folder, f"qI_RS_la{self.windings[num].ff}_4layer.dat")]
+        files = [os.path.join(coeff_folder, f"pB_RS_la{self.windings[winding_number].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"pI_RS_la{self.windings[winding_number].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"qB_RS_la{self.windings[winding_number].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"qI_RS_la{self.windings[winding_number].ff}_4layer.dat")]
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:

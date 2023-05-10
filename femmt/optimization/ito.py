@@ -15,7 +15,7 @@ import optuna
 import femmt.functions as ff
 import femmt.functions_reluctance as fr
 import femmt.optimization.functions_optimization as fo
-from femmt.optimization.integrated_transformer_dtos import *
+from femmt.optimization.ito_dtos import *
 import femmt.optimization.optuna_femmt_parser as op
 import femmt.optimization.ito_functions as itof
 import femmt
@@ -154,13 +154,8 @@ class IntegratedTransformerOptimization:
 
         material_data_list = []
         for material_name in config.material_list:
-            material_flux_density_vec, material_mu_r_imag_vec, material_mu_r_real_vec = material_db.permeability_data_to_pro_file(
-                config.temperature, fundamental_frequency, material_name, datasource=mdb.MaterialDataSource.ManufacturerDatasheet,
-                datatype='permeability_data', plot_interpolation=False)
-            material_mu_r_initial = material_db.get_material_property(material_name=material_name, property="initial_permeability")
-            saturation_flux_density = material_db.get_saturation_flux_density(material_name=material_name)
-
-            material_data_list.append(MaterialCurve(material_name, material_mu_r_initial, material_flux_density_vec, material_mu_r_imag_vec, material_mu_r_real_vec, saturation_flux_density))
+            material_dto = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
+            material_data_list.append(material_dto)
 
         # set up working directories
         working_directories = itof.set_up_folder_structure(config.working_directory)
@@ -254,18 +249,9 @@ class IntegratedTransformerOptimization:
                     saturation_flux_density = material_db.get_saturation_flux_density(material_name=material_name)
                     dimensioning_max_flux_density = saturation_flux_density * sweep_dto.factor_max_flux_density
 
-                    print(f"{saturation_flux_density = }")
-                    print(f"{dimensioning_max_flux_density = }")
+                    # get material data from material database.
+                    material_dto = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config_file.temperature)
 
-                    # get material properties, especially mu_r_imag
-                    material_flux_density_vec, material_mu_r_imag_vec, material_mu_r_real_vec = material_db.permeability_data_to_pro_file(
-                        config_file.temperature,
-                        fundamental_frequency,
-                        material_name,
-                        datasource=mdb.MaterialDataSource.ManufacturerDatasheet,
-                        datatype='permeability_data',
-                        plot_interpolation=False)
-                    mu_r_abs_vec = np.sqrt(material_mu_r_real_vec ** 2 + material_mu_r_imag_vec ** 2)
 
                     for count_geometry, t1d_core_geometry_material in enumerate(t2_core_geometry_sweep):
 
@@ -427,15 +413,15 @@ class IntegratedTransformerOptimization:
                                                                                                             mu_r_abs,
                                                                                                             flux_top_max,
                                                                                                             fundamental_frequency,
-                                                                                                            material_flux_density_vec,
-                                                                                                            material_mu_r_imag_vec)
+                                                                                                            material_dto.material_flux_density_vec,
+                                                                                                            material_dto.material_mu_r_imag_vec)
 
                                                             p_hyst_middle = fr.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
                                                                 flux_stray_max, core_inner_diameter / 4,
                                                                                 core_inner_diameter / 2,
                                                                                 core_inner_diameter / 2 + window_w,
                                                                 fundamental_frequency,
-                                                                mu_r_abs, material_flux_density_vec, material_mu_r_imag_vec)
+                                                                mu_r_abs, material_dto.material_flux_density_vec, material_dto.material_mu_r_imag_vec)
 
                                                             p_hyst_bot = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter,
                                                                                                             window_h_bot,
@@ -443,8 +429,8 @@ class IntegratedTransformerOptimization:
                                                                                                             mu_r_abs,
                                                                                                             flux_bot_max,
                                                                                                             fundamental_frequency,
-                                                                                                            material_flux_density_vec,
-                                                                                                            material_mu_r_imag_vec)
+                                                                                                            material_dto.material_flux_density_vec,
+                                                                                                            material_dto.material_mu_r_imag_vec)
 
                                                             p_hyst = p_hyst_top + p_hyst_bot + p_hyst_middle
 
