@@ -13,3 +13,4 @@ from femmt.dtos import *
 from femmt.functions_drawing import *
 from femmt.functions_model import *
 from femmt.functions_topologies import *
+from femmt.hpc import *

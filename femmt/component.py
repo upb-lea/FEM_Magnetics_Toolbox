@@ -425,7 +425,7 @@ class MagneticComponent:
 
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, pre_visualize_geometry: bool = False,
                      save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                     colors_geometry: Dict = ff.colors_geometry_femmt_default):
+                     colors_geometry: Dict = ff.colors_geometry_femmt_default, benchmark: bool = False):
         """
         Create a model from the abstract geometry description inside onelab including optional mesh generation
 
@@ -452,14 +452,18 @@ class MagneticComponent:
         if self.winding_windows is None:
             raise Exception("Winding windows are not set properly. Please check the winding creation")
 
-        start_time = time.time()
-        self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
-        high_level_geo_gen_time = time.time() - start_time
-        start_time = time.time()
-        self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
-        generate_hybrid_mesh_time = time.time() - start_time
+        if benchmark:
+            start_time = time.time()
+            self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+            high_level_geo_gen_time = time.time() - start_time
+            start_time = time.time()
+            self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
+            generate_hybrid_mesh_time = time.time() - start_time
 
-        return high_level_geo_gen_time, generate_hybrid_mesh_time
+            return high_level_geo_gen_time, generate_hybrid_mesh_time
+        else:
+            self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+            self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
     
     def get_single_complex_permeability(self):
         """
@@ -807,7 +811,7 @@ class MagneticComponent:
         self.write_electro_magnetic_post_pro()
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True):
+                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True, benchmark: bool = False):
         """
         Start a _single_ electromagnetic ONELAB simulation.
 
@@ -830,29 +834,39 @@ class MagneticComponent:
 
 
         phi_deg = phi_deg or []
+        if benchmark:
+            start_time = time.time()
+            self.mesh.generate_electro_magnetic_mesh()
+            generate_electro_magnetic_mesh_time = time.time() - start_time
 
-        start_time = time.time()
-        self.mesh.generate_electro_magnetic_mesh()
-        generate_electro_magnetic_mesh_time = time.time() - start_time
+            start_time = time.time()
+            self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
+            self.check_model()
+            self.file_communication()
+            self.pre_simulate()
+            prepare_simulation_time = time.time() - start_time
 
-        start_time = time.time()
-        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
-        self.check_model()
-        self.file_communication()
-        self.pre_simulate()
-        prepare_simulation_time = time.time() - start_time
+            start_time = time.time()
+            self.simulate()
+            real_simulation_time = time.time() - start_time
 
-        start_time = time.time()
-        self.simulate()
-        real_simulation_time = time.time() - start_time
+            start_time = time.time()
+            self.calculate_and_write_log()  # TODO: reuse center tapped
+            logging_time = time.time() - start_time
+            if show_fem_simulation_results:
+                self.visualize()
 
-        start_time = time.time()
-        self.calculate_and_write_log()  # TODO: reuse center tapped
-        logging_time = time.time() - start_time
-        if show_fem_simulation_results:
-            self.visualize()
-
-        return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
+            return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
+        else:
+            self.mesh.generate_electro_magnetic_mesh()
+            self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
+            self.check_model()
+            self.file_communication()
+            self.pre_simulate()
+            self.simulate()
+            self.calculate_and_write_log()  # TODO: reuse center tapped
+            if show_fem_simulation_results:
+                self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last_fem_simulation: bool = False, return_results: bool = False,

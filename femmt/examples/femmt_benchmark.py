@@ -131,10 +131,10 @@ def benchmark_simulation(working_directory):
 
     setup_time = time.time() - start_time
 
-    high_level_geo_gen_time, generate_hybrid_mesh_time = geo.create_model(freq=inductor_frequency, pre_visualize_geometry=False, save_png=False)
+    high_level_geo_gen_time, generate_hybrid_mesh_time = geo.create_model(freq=inductor_frequency, pre_visualize_geometry=False, save_png=False, benchmark=True)
 
     generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time = geo.single_simulation(freq=inductor_frequency, current=[4.5],
-                          plot_interpolation=False, show_fem_simulation_results=False)
+                          plot_interpolation=False, show_fem_simulation_results=False, benchmark=True)
 
     return {
         "setup_time": setup_time,
@@ -157,12 +157,6 @@ def single_benchmark(benchmark_results_folder):
     benchmark = Benchmark(benchmarks)
     benchmark.to_json(benchmark_results_file)
 
-def serial_benchmark(benchmark_results_folder):
-    benchmark_results_file = os.path.join(benchmark_results_folder, "benchmark_results_serial.json")
-
-    for i in range(10):
-        pass
-
 if __name__ == "__main__":
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     benchmark_results_folder = os.path.join(example_results_folder, "benchmarks")
@@ -171,4 +165,3 @@ if __name__ == "__main__":
         os.mkdir(benchmark_results_folder)
 
     single_benchmark(benchmark_results_folder)
-    #serial_benchmark(benchmark_results_folder)
