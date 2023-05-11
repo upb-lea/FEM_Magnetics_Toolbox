@@ -70,14 +70,14 @@ example_results_folder = os.path.join(os.path.dirname(__file__), "example_result
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-# component = "inductor"
+component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
 # component = "three-winding-transformer"
 # component = "integrated_transformer"
 # component = "center-tapped-transformer"
 # component = "stacked-transformer"
-component = "stacked-center-tapped-transformer"
+# component = "stacked-center-tapped-transformer"
 # component = "load_from_file"
 
 
@@ -143,13 +143,13 @@ if component == "inductor":
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=True, save_png=False)
 
-    # 6.a. start simulation
+    # 9.a. start simulation
     geo.single_simulation(freq=inductor_frequency, current=[4.5],
                           plot_interpolation=False, show_fem_simulation_results=True)
 
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
-    # 6.b. Excitation Sweep Example
+    # 9.b. Excitation Sweep Example
     # Perform a sweep using more than one frequency
     # fs = [0, 10000, 30000, 60000, 100000, 150000]
     # amplitude_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
@@ -157,7 +157,7 @@ if component == "inductor":
     # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
     # 9. start simulation
 
-    # 7. prepare and start thermal simulation
+    # 10. prepare and start thermal simulation
     # example_thermal_simulation()
 
 if component == "transformer-interleaved":
