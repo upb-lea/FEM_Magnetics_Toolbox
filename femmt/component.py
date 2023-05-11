@@ -6,6 +6,7 @@ import gmsh
 import json
 import warnings
 import inspect
+import time
 from typing import List, Dict, Optional
 from datetime import datetime
 
@@ -445,9 +446,15 @@ class MagneticComponent:
         if self.winding_windows is None:
             raise Exception("Winding windows are not set properly. Please check the winding creation")
 
+        start_time = time.time()
         self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+        high_level_geo_gen_time = time.time() - start_time
+        start_time = time.time()
         self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
+        generate_hybrid_mesh_time = time.time() - start_time
 
+        return high_level_geo_gen_time, generate_hybrid_mesh_time
+    
     def get_single_complex_permeability(self):
         """
         Function returns the complex permeability.
@@ -818,15 +825,28 @@ class MagneticComponent:
 
         phi_deg = phi_deg or []
 
+        start_time = time.time()
         self.mesh.generate_electro_magnetic_mesh()
+        generate_electro_magnetic_mesh_time = time.time() - start_time
+
+        start_time = time.time()
         self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
         self.check_model()
         self.file_communication()
         self.pre_simulate()
+        prepare_simulation_time = time.time() - start_time
+
+        start_time = time.time()
         self.simulate()
+        real_simulation_time = time.time() - start_time
+
+        start_time = time.time()
         self.calculate_and_write_log()  # TODO: reuse center tapped
+        logging_time = time.time() - start_time
         if show_fem_simulation_results:
             self.visualize()
+
+        return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last_fem_simulation: bool = False, return_results: bool = False,
