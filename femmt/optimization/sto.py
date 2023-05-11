@@ -101,6 +101,8 @@ class StackedTransformerOptimization:
                 window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
                 window_h_top = trial.suggest_float("window_h_top", config.window_h_top_min_max_list[0], config.window_h_top_min_max_list[1])
                 window_h_bot = trial.suggest_float("window_h_bot", config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
+                air_gap_coil = trial.suggest_float("air_gap_coil", 0.1e-3, window_h_top-0.1e-3)
+                air_gap_transformer = trial.suggest_float("air_gap_transformer", 0.1e-3, 5e-3)
                 foil_thickness = trial.suggest_float("foil_thickness", config.metal_sheet_thickness[0], config.metal_sheet_thickness[1])
 
                 # suggest categorical
@@ -126,8 +128,8 @@ class StackedTransformerOptimization:
                     geo.set_core(core)
 
                     air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
-                    air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, 0.002, stacked_position=femmt.StackedPosition.Top)
-                    air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, 0.001, stacked_position=femmt.StackedPosition.Bot)
+                    air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_coil, stacked_position=femmt.StackedPosition.Top)
+                    air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer, stacked_position=femmt.StackedPosition.Bot)
                     geo.set_air_gaps(air_gaps)
 
                     # set_center_tapped_windings() automatically places the condu
@@ -163,8 +165,22 @@ class StackedTransformerOptimization:
                     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180],
                                           show_fem_simulation_results=False)
 
+                    geo.get_inductances(I0=1, op_frequency=200000)
 
 
+                    print(f"{geo.L_1_1 = }")
+                    print(f"{geo.L_2_2 = }")
+                    print(f"{geo.L_3_3 = }")
+                    print(f"{geo.M_12 = }")
+                    print(f"{geo.M_13 = }")
+                    print(f"{geo.M_23 = }")
+                    print(f"{geo.L_s1 = }")
+                    print(f"{geo.L_s2 = }")
+                    print(f"{geo.L_s3 = }")
+                    print(f"{geo.L_h = }")
+
+                    difference_l_h = config.l_h_target - geo.L_h
+                    difference_l_s = config.l_s_target - geo.L_s1
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -184,13 +200,13 @@ class StackedTransformerOptimization:
                     total_loss = loaded_data_dict["total_losses"]["total_losses"]
                     total_cost = loaded_data_dict["misc"]["total_cost_incl_margin"]
 
-                    return total_volume, total_loss
+                    return total_volume, total_loss, difference_l_h
 
 
-                    # geo.get_inductances(I0=1, op_frequency=200000)
+
                 except Exception as e:
                     print(e)
-                    return float('nan'), float('nan')
+                    return float('nan'), float('nan'), float('nan')
 
             @staticmethod
             def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
@@ -271,7 +287,7 @@ class StackedTransformerOptimization:
                                                                                    target_and_fixed_parameters)
 
                 # Pass func to Optuna studies
-                study_in_memory = optuna.create_study(directions=["minimize", "minimize"],
+                study_in_memory = optuna.create_study(directions=["minimize", "minimize", "minimize"],
                                                       # sampler=optuna.samplers.TPESampler(),
                                                       sampler=optuna.samplers.NSGAIISampler(),
                                                       )
@@ -286,7 +302,7 @@ class StackedTransformerOptimization:
                 study_in_memory.optimize(func, n_trials=number_trials, gc_after_trial=False)
 
                 # in-memory calculation is shown before saving the data to database
-                fig = optuna.visualization.plot_pareto_front(study_in_memory, target_names=["volume", "losses"])
+                fig = optuna.visualization.plot_pareto_front(study_in_memory, target_names=["volume", "losses", "target_l_h"])
                 fig.show()
 
                 # introduce study in storage, e.g. sqlite or mysql
@@ -297,7 +313,7 @@ class StackedTransformerOptimization:
                 elif storage == 'mysql':
                     storage = "mysql://monty@localhost/mydb",
 
-                study_in_storage = optuna.create_study(directions=["minimize", "minimize"], study_name=study_name,
+                study_in_storage = optuna.create_study(directions=["minimize", "minimize", "minimize"], study_name=study_name,
                                                        storage=storage)
                 study_in_storage.add_trials(study_in_memory.trials)
 

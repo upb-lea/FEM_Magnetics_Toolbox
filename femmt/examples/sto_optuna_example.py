@@ -2,7 +2,6 @@
 import os
 
 # 3rd party libraries
-import pandas as pd
 import numpy as np
 import datetime
 
@@ -69,4 +68,4 @@ if __name__ == '__main__':
 
 
     if task == 'start_study':
-        fmt.StackedTransformerOptimization.FemSimulation.NSGAII.start_study(study_name, dab_transformer_config, 1000, storage='sqlite')
+        fmt.StackedTransformerOptimization.FemSimulation.NSGAII.start_study(study_name, dab_transformer_config, 200, storage='sqlite')
