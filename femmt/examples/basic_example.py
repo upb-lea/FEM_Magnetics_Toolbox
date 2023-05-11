@@ -209,7 +209,7 @@ if component == "transformer-interleaved":
     # other simulation options:
     # ------------------------
     # read inductances
-    geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5, show_last=True)
+    geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5, visualize_last_fem_simulation=True)
 
     # 9. start thermal simulation
     #example_thermal_simulation()
@@ -505,7 +505,7 @@ if component == "stacked-center-tapped-transformer":
 
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_fem_simulation_results=True)
 
-    # geo.get_inductances(I0=1, op_frequency=200000)
+    geo.get_inductances(I0=1, op_frequency=200000)
 
 if component == "load_from_file":
     working_directory = os.path.join(example_results_folder, "from-file")

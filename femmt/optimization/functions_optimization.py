@@ -7,7 +7,7 @@ import numpy as np
 
 # femmt libraries
 import femmt.functions as ff
-from femmt.optimization.integrated_transformer_dtos import *
+from femmt.optimization.ito_dtos import *
 
 def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, plot_color: str, z_value: list = None,
             z_label: str = None, inductance_value: list = None, annotations: list = None):

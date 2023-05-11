@@ -7,7 +7,7 @@ import json
 import warnings
 import inspect
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 
 # Third party libraries
@@ -108,11 +108,11 @@ class MagneticComponent:
         self.delta = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Materials
+        # Steinmetz loss material coefficients and current waveform
         self.Ipeak = None
-        # self.ki = None
-        # self.alpha = None
-        # self.beta = None
+        self.ki = None
+        self.alpha = None
+        self.beta = None
         self.t_rise = None
         self.t_fall = None
         self.f_switch = None
@@ -121,6 +121,8 @@ class MagneticComponent:
         # MeshData to store the mesh size for different points
         # Object is added in set_core
         self.mesh_data = None
+        self.mesh = None
+        self.two_d_axi = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # -- Used for Litz Validation --
@@ -128,7 +130,7 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-        # -- Results --
+        # 2 and 3 winding transformer inductance matrix
         self.L_1_1 = None
         self.L_2_2 = None
         self.L_3_3 = None
@@ -140,10 +142,14 @@ class MagneticComponent:
         self.M_32 = None
         self.M_23 = None
         self.Pv = None
-        # - Primary Concentrated
+        # 2 and 3 winding transformer primary concentrated equivalent circuit
         self.n_conc = None
         self.L_s_conc = None
         self.L_h_conc = None
+        self.L_s1 = None
+        self.L_s2 = None
+        self.L_s3 = None
+        self.L_h = None
 
         # -- FEMM variables --
         self.tot_loss_femm = None
@@ -463,7 +469,7 @@ class MagneticComponent:
         """
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase(ff.silent).get_material_property(material_name=self.core.material, property="initial_permeability")
+            complex_permeability = mu_0 * mdb.MaterialDatabase(ff.silent).get_material_attribute(material_name=self.core.material, attribute="initial_permeability")
             ff.femmt_print(f"{complex_permeability = }")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
@@ -563,7 +569,7 @@ class MagneticComponent:
             volumetric_mass_density = 0
             warnings.warn("Volumetric mass density not implemented for custom cores. Returns '0' in log-file: Core cost will also result to 0.")
         else:
-            volumetric_mass_density = self.core.material_database.get_material_property(material_name=self.core.material, property="volumetric_mass_density")
+            volumetric_mass_density = self.core.material_database.get_material_attribute(material_name=self.core.material, attribute="volumetric_mass_density")
         return self.calculate_core_volume() * volumetric_mass_density
 
     def get_wire_distances(self) -> List[List[float]]:
@@ -975,20 +981,35 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
-    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1, show_last: bool = False):
+    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1, visualize_last_fem_simulation: bool = False):
         """
-               :param show_last:
-               :param skin_mesh_factor:
-               :param I0:
-               :param op_frequency:
+        Performs 'open' simulations with input current for each winding and calculates the inductance matrix and
+        the primary concentrated equivalent circuit.
+
+        * 2 winding transformer:
+            - inductance matrix: L_1_1, L_2_2 and M
+            - primary concentrated equivalent circuits: n_conc, L_s_conc and L_h_conc
+
+        * 3 winding transformer
+            - inductance matrix: L_1_1, L_2_2, L_3_3, M_12, M_13 and M_23
+            - Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n2 and n3: L_s1, L_s2, L_s3 and L_h
+
+        :param visualize_last_fem_simulation: Show last FEM simulation result. Defaults to False.
+        :type visualize_last_fem_simulation: bool
+        :param skin_mesh_factor:
+        :type skin_mesh_factor: bool
+        :param I0: exciting peak current in A
+        :type I0: float
+        :param op_frequency: operating frequency in Hz
+        :type op_frequency: float
         """
         if len(self.windings) == 2:
+            # 2 winding transformer
             # Remove "old" Inductance Logs
             try:
                 os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat"))
                 os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat"))
-            except:
-                # TODO: Find better way for exception
+            except OSError:
                 pass
 
             # -- Inductance Estimation --
@@ -1001,9 +1022,7 @@ class MagneticComponent:
             currents = [[I0, 0], [0, I0]]
             phases = [[0, 180], [0, 180]]
 
-            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last_fem_simulation=show_last)
-            # self.excitation_sweep(frequencies=op_frequency, currents=currents, phi=phases, show_last=visualize, meshing=False)
-            # self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
+            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last_fem_simulation=visualize_last_fem_simulation)
 
             ff.femmt_print(f"\n"
                            f"                             == Inductances ==                             \n")
@@ -1125,23 +1144,13 @@ class MagneticComponent:
                            )
 
         if len(self.windings) == 3:
-
-            """
-
-            :param visualize:
-            :param skin_mesh_factor:
-            :param I0:
-            :param op_frequency:
-            """
-
+            # Three winding transformer
             # Remove "old" Inductance Logs
-
             try:
                 os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat"))
                 os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat"))
                 os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_3_3.dat"))
-            except:
-                # TODO: Find better way for exception
+            except OSError:
                 pass
 
              # -- Inductance Estimation --
@@ -1154,9 +1163,7 @@ class MagneticComponent:
             currents = [[I0, 0, 0], [0, I0, 0], [0, 0, I0]]
             phases = [[0, 180, 180], [0, 180, 180], [0, 180, 180]]
 
-            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last_fem_simulation=show_last)
-            #self.excitation_sweep(frequencies=op_frequency, currents=currents, phi=phases, show_last=visualize, meshing=False)
-            #self.excitation_sweep_old(frequencies=frequencies, currents=currents, phi=phases, show_last=visualize)
+            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last_fem_simulation=visualize_last_fem_simulation)
 
             ff.femmt_print(f"\n"
               f"                             == Inductances ==                             \n")
@@ -1271,10 +1278,10 @@ class MagneticComponent:
                 )
 
             # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n2 and n3
-            L_s1 = self.L_1_1 - (self.M_12 * self.M_13) / self.M_23
-            L_s2 = self.L_2_2 - (self.M_12 * self.M_23) / self.M_13
-            L_s3 = self.L_3_3 - (self.M_13 * self.M_23) / self.M_12
-            L_h = (self.M_12 * self.M_13) / self.M_23
+            self.L_s1 = self.L_1_1 - (self.M_12 * self.M_13) / self.M_23
+            self.L_s2 = self.L_2_2 - (self.M_12 * self.M_23) / self.M_13
+            self.L_s3 = self.L_3_3 - (self.M_13 * self.M_23) / self.M_12
+            self.L_h = (self.M_12 * self.M_13) / self.M_23
             #n_2 = self.M_13 / self.M_23
             #n_3 = self.M_12 / self.M_23
             ff.femmt_print(f"\n"
@@ -1286,10 +1293,10 @@ class MagneticComponent:
                 f"    - Secondary Side Stray Inductance: L_s2\n"
                 f"    - Tertiary Side Stray Inductance: L_s3\n"        
                 f"    - Primary Side Main Inductance: L_h\n"        
-                f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {L_s1}\n"
-                f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {L_s2}\n"
-                f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {L_s3}\n"         
-                f"L_h = M_12 * M_13 / M_23 = {L_h}\n"
+                f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {self.L_s1}\n"
+                f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {self.L_s2}\n"
+                f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {self.L_s3}\n"         
+                f"L_h = M_12 * M_13 / M_23 = {self.L_h}\n"
                 )
             """
             # Stray Inductance concentrated on Primary Side
@@ -1345,7 +1352,7 @@ class MagneticComponent:
         # self.mesh.generate_mesh()
         self.excitation(frequency=f_switch, amplitude_list=peak_current, phase_deg_list=[0, 180])  # frequency and current
         self.check_model()
-        self.file_com
+        self.file_communication()
 
     def write_electro_magnetic_parameter_pro(self):
         """
@@ -1909,31 +1916,36 @@ class MagneticComponent:
                     ff.femmt_print(f"Rounded Reduced frequency X = {X}")
                     self.create_strand_coeff(num)
 
-    def create_strand_coeff(self, num: int):
-        """TODO Doc
+    def create_strand_coeff(self, winding_number: int) -> None:
+        """
+        Creates the initial strand coefficients for a certain litz wire.
+        This function comes into account in case of the litz-coefficients are not known so far.
+        After generating the litz-coefficients, the results are stored to avoid a second time-consuming
+        strand coefficients generation.
+
+        This function sends commands via text-file to gmsh to generate the strand coefficients. The onelab (gmsh) client
+        is generated in a new instance.
+
+        :param winding_number: Winding number
+        :type winding_number: int
         """
         ff.femmt_print(f"\n"
               f"Pre-Simulation\n"
               f"-----------------------------------------\n"
               f"Create coefficients for strands approximation\n")
-        # Create a new onelab client
-        # -- Pre-Simulation Settings --
+
         text_file = open(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "PreParameter.pro"), "w")
-        # ---
+
         # Litz Approximation Coefficients are created with 4 layers
         # That's why here a hard-coded 4 is implemented
         # text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
         text_file.write(f"NbrLayers = 4;\n")
-        text_file.write(f"Fill = {self.windings[num].ff};\n")
-        ff.femmt_print("Here")
-        text_file.write(f"Rc = {self.windings[num].strand_radius};\n")  # double named!!! must be changed
+        text_file.write(f"Fill = {self.windings[winding_number].ff};\n")
+        text_file.write(f"Rc = {self.windings[winding_number].strand_radius};\n")  # double named!!! must be changed
         text_file.close()
         cell_geo = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.geo")
 
-        if ff.silent:
-            verbose = "-verbose 1"
-        else:
-            verbose = "-verbose 5"
+        verbose = "-verbose 1" if ff.silent else "-verbose 5"
 
         # Run gmsh as a sub client
         gmsh_client = os.path.join(self.file_data.onelab_folder_path, "gmsh")
@@ -1951,9 +1963,8 @@ class MagneticComponent:
                 # That's why here a hard-coded 4 is implemented
                 # text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
                 text_file.write(f"NbrLayers = 4;\n")
-
-                text_file.write(f"Fill = {self.windings[num].ff};\n")
-                text_file.write(f"Rc = {self.windings[num].strand_radius};\n")  # double named!!! must be changed
+                text_file.write(f"Fill = {self.windings[winding_number].ff};\n")
+                text_file.write(f"Rc = {self.windings[winding_number].strand_radius};\n")  # double named!!! must be changed
                 text_file.close()
 
                 # get model file names with correct path
@@ -1977,10 +1988,10 @@ class MagneticComponent:
         if not os.path.isdir(coeff_folder):
             os.mkdir(coeff_folder)
 
-        files = [os.path.join(coeff_folder, f"pB_RS_la{self.windings[num].ff}_4layer.dat"),
-                 os.path.join(coeff_folder, f"pI_RS_la{self.windings[num].ff}_4layer.dat"),
-                 os.path.join(coeff_folder, f"qB_RS_la{self.windings[num].ff}_4layer.dat"),
-                 os.path.join(coeff_folder, f"qI_RS_la{self.windings[num].ff}_4layer.dat")]
+        files = [os.path.join(coeff_folder, f"pB_RS_la{self.windings[winding_number].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"pI_RS_la{self.windings[winding_number].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"qB_RS_la{self.windings[winding_number].ff}_4layer.dat"),
+                 os.path.join(coeff_folder, f"qI_RS_la{self.windings[winding_number].ff}_4layer.dat")]
         for i in range(0, 4):
             with fileinput.FileInput(files[i], inplace=True) as file:
                 for line in file:
@@ -2346,7 +2357,7 @@ class MagneticComponent:
         file.close()
 
     @staticmethod
-    def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> List[float]:
+    def calculate_point_average(x1: float, y1: float, x2: float, y2: float) -> Tuple[float, float]:
         """Calculates the middle point between two given points.
 
         :param x1: Point1 x
