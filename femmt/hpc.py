@@ -10,9 +10,6 @@ def hpc_inner(parameters: Dict):
     model.create_model(freq=freq, pre_visualize_geometry=False, save_png=False)
     model.single_simulation(freq=freq, current=current, plot_interpolation=False, show_fem_simulation_results=False)
 
-def mute():
-    sys.stdout = open(os.devnull, "w")
-
 def hpc(n_processes, models: List[MagneticComponent], simulation_parameters: List[Dict]):
     with Pool(processes=n_processes) as pool:
         parameters = []

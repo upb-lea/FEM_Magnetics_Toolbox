@@ -18,7 +18,7 @@ def create_example_model(working_directory):
                     permeability_measurement_setup="LEA_LK",
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup="LEA_LK")
+                    permittivity_measurement_setup="LEA_LK", silent=True)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     geos = []
     simulation_parameters = []
 
-    for i in range(1):
+    for i in range(4):
         working_directory = os.path.join(parallel_folder, f"inductor_{i}")
         geos.append(create_example_model(working_directory))
         simulation_parameters.append({
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         })
 
     start_time = time.time()
-    fmt.hpc(5, geos, simulation_parameters)
+    fmt.hpc(4, geos, simulation_parameters)
     execution_time = time.time() - start_time
 
     print(f"Execution time: {execution_time}")

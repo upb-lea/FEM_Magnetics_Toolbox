@@ -21,9 +21,6 @@ import numpy as np
 from femmt.constants import *
 from femmt.enumerations import ConductorType
 
-# Needed for femmt_print
-silent = False
-
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
                         "green": (46, 194, 126),
@@ -539,7 +536,7 @@ def inner_points(a, b, input_points):
             #print("Only one air gap in this leg. No island needed.")
     return output
 
-
+# TODO Is this function even used?
 def min_max_inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate and
@@ -569,7 +566,7 @@ def min_max_inner_points(a, b, input_points):
         else:
             n += 1
     if buffer.shape[0] == 0:
-        femmt_print("No air gaps between interval borders")
+        print("No air gaps between interval borders")
     if buffer.shape[0] % 2 == 1:
         raise Exception("Odd number of input points")
     if dim == 2:
@@ -1062,10 +1059,10 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
     loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
 
-    femmt_print(inductance)
-    femmt_print(loss_core_eddy_current)
-    femmt_print(loss_core_hysteresis)
-    femmt_print(loss_winding_1)
+    print(inductance)
+    print(loss_core_eddy_current)
+    print(loss_core_hysteresis)
+    print(loss_winding_1)
 
     bar_width = 0.35
     plt.bar(0, loss_core_hysteresis, width=bar_width)
@@ -1091,33 +1088,6 @@ def point_is_in_rect(x, y, rect):
         return True
     
     return False
-
-def set_silent_status(s: bool) -> None:
-    """
-    Variable to store the silent status to show terminal outputs or not.
-    Using silent-mode increases speed of simulation significantly.
-    :param s: status for silent mode True/False
-    :type s: bool
-    :return: None
-    :rtype: None
-    """
-    global silent
-    silent = s
-
-def femmt_print(text: str, end:str='\n') -> None:
-    """
-    Print-function for femmt. Uses a silent-Flag as global variable, to show terminal outputs or not.
-    Using silent-mode increases speed of simulation significantly.
-
-    :param text: text to print
-    :type text: str
-    :param end: command text ends with, defaults to '\n'
-    :type: end: str
-    :return: None
-    :rtype: None
-    """
-    if not silent:
-        print(text, end)
 
 def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     """
@@ -1271,14 +1241,15 @@ def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity
     return 2 * np.pi / k.real
 
 
-def check_mqs_condition(radius, f, complex_permeability, complex_permittivity, conductivity, relative_margin_to_first_resonance=0.5):
+def check_mqs_condition(radius, f, complex_permeability, complex_permittivity, conductivity, relative_margin_to_first_resonance=0.5, silent: bool = False):
     axial_lambda = axial_wavelength(f, complex_permeability, complex_permittivity, conductivity)
     diameter_to_wavelength_ratio_of_first_resonance = 0.7655
     diameter_to_wavelength_ratio = 2 * radius / axial_lambda
     if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
         # raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
         #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
-        femmt_print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
+        if not silent:
+            print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
 
 if __name__ == '__main__':
     pass

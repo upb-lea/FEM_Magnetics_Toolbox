@@ -25,6 +25,7 @@ class TwoDaxiSymmetric:
     component_type: ComponentType
     mesh_data: MeshData
     number_of_windings: int
+    silent: bool
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
@@ -37,7 +38,7 @@ class TwoDaxiSymmetric:
     p_iso_pri_sec: List[List[float]]
 
     def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
-                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int):
+                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, silent: bool):
         self.core = core
         self.mesh_data = mesh_data
         self.winding_windows = winding_windows
@@ -46,6 +47,7 @@ class TwoDaxiSymmetric:
         self.stray_path = stray_path
         self.insulation = insulation
         self.number_of_windings = number_of_windings
+        self.silent = silent
 
         # -- Arrays for geometry data -- 
         # TODO Is the zero initialization necessary?
@@ -65,7 +67,11 @@ class TwoDaxiSymmetric:
             self.p_conductor.insert(i, [])
 
         self.r_inner = core.r_inner
-        self.r_outer = core.r_outer
+        self.r_outer = core.r_outer    
+        
+    def femmt_print(self, text: str):
+        if not self.silent:
+            print(text)
 
     def draw_outer(self):
         """
@@ -1163,7 +1169,7 @@ class TwoDaxiSymmetric:
         if self.component_type == ComponentType.IntegratedTransformer:
             # TODO: insulations implement for integrated_transformers
             # TODO Change back to warnings?
-            ff.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
+            self.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
         else:
             window_h = self.core.window_h
             iso = self.insulation

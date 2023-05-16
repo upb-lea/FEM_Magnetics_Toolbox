@@ -117,13 +117,6 @@ class Conductor:
         self.n_layers = ff.litz_calculate_number_layers(number_strands)
         self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
-        ff.femmt_print(f"Updated Litz Configuration: \n"
-                       f" ff: {self.ff} \n"
-                       f" Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
-                       f" Strand radius: {self.strand_radius} \n"
-                       f" Conductor radius: {self.conductor_radius}\n"
-                       f"---")
-
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
@@ -179,6 +172,8 @@ class Core:
 
     file_path_to_solver_folder: str  # location to create temporary pro file
 
+    silent: bool = False
+
     def __init__(self,
                  # dimensions
                  core_type: CoreType = CoreType.Single,
@@ -205,6 +200,7 @@ class Core:
                  sigma: float = None,
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
+                 silent: bool = False,
                  **kwargs):
         """TODO Doc
 
@@ -227,6 +223,8 @@ class Core:
         :param correct_outer_leg: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
         :type correct_outer_leg: bool, optional
         """
+        self.silent = silent
+
         # Set parameters
         self.core_type = core_type  # Basic shape of magnetic conductor
 
@@ -261,7 +259,7 @@ class Core:
         # Material Parameters
         # General
         # Initialize database
-        self.material_database = mdb.MaterialDatabase(ff.silent)
+        self.material_database = mdb.MaterialDatabase(silent)
         self.material = material
         self.file_path_to_solver_folder = None
         self.temperature = temperature
@@ -298,7 +296,6 @@ class Core:
                 self.ki = steinmetz_parameter[0]
                 self.alpha = steinmetz_parameter[1]
                 self.beta = steinmetz_parameter[2]
-                ff.femmt_print(f"{self.ki, self.alpha, self.beta = }")
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
         # if loss_approach == LossApproach.Generalized_Steinmetz:
@@ -367,7 +364,8 @@ class Core:
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
-        ff.femmt_print(f"{self.permeability['datasource'] = }")
+        if not self.silent:
+            print(f"{self.permeability['datasource'] = }")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
                                                              datasource=self.permeability["datasource"],
