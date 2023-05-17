@@ -187,16 +187,16 @@ def set_center_tapped_windings(core, primary_additional_bobbin,
     # Depending on core geometry, define the winding window
     if core.core_type == CoreType.Single:
         ww_bot = WindingWindow(core, insulation)
-        ww_bot_height = core.window_h
+        available_height = core.window_h - iso_top_core - iso_bot_core
     elif core.core_type == CoreType.Stacked:
         ww_top, ww_bot = create_stacked_winding_windows(core, insulation)
         vww_top = ww_top.split_window(WindingWindowSplit.NoSplitWithBobbin, top_bobbin=bobbin_coil_top, bot_bobbin=bobbin_coil_bot, left_bobbin=bobbin_coil_left, right_bobbin=bobbin_coil_right)
-        ww_bot_height = core.window_h_bot
+        available_height = core.window_h_bot - iso_top_core - iso_bot_core
     else:
         raise Exception(f"Unknown core type {core.core_type}")
 
     # Define the transformer winding stack
-    transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row, window_height=ww_bot_height, isolations=winding_isolations,
+    transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row, available_height=available_height, isolations=winding_isolations,
                                                         interleaving_type=interleaving_type, primary_additional_bobbin=primary_additional_bobbin)
 
     # Split the transformer winding window (ww_bot) in n virtual winding windows (vwws)
