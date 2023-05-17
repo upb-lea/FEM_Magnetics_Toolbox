@@ -58,14 +58,10 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_stacked_transformer_optimization")
 )
 
-
-task = 'start_study'
-
-study_name = "2023-05-09"
+study_name = "2023-05-16"
 
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-
-    if task == 'start_study':
-        fmt.StackedTransformerOptimization.FemSimulation.NSGAII.start_study(study_name, dab_transformer_config, 200, storage='sqlite')
+    #fmt.StackedTransformerOptimization.FemSimulation.NSGAII.start_study(study_name, dab_transformer_config, 200, storage='sqlite')
+    fmt.StackedTransformerOptimization.FemSimulation.NSGAII.show_study_results(study_name, dab_transformer_config)

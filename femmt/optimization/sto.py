@@ -200,13 +200,13 @@ class StackedTransformerOptimization:
                     total_loss = loaded_data_dict["total_losses"]["total_losses"]
                     total_cost = loaded_data_dict["misc"]["total_cost_incl_margin"]
 
-                    return total_volume, total_loss, difference_l_h
+                    return total_volume, total_loss, difference_l_h, difference_l_s
 
 
 
                 except Exception as e:
                     print(e)
-                    return float('nan'), float('nan'), float('nan')
+                    return float('nan'), float('nan'), float('nan'), float('nan')
 
             @staticmethod
             def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
@@ -287,7 +287,7 @@ class StackedTransformerOptimization:
                                                                                    target_and_fixed_parameters)
 
                 # Pass func to Optuna studies
-                study_in_memory = optuna.create_study(directions=["minimize", "minimize", "minimize"],
+                study_in_memory = optuna.create_study(directions=["minimize", "minimize", "minimize", "minimize"],
                                                       # sampler=optuna.samplers.TPESampler(),
                                                       sampler=optuna.samplers.NSGAIISampler(),
                                                       )
@@ -299,11 +299,11 @@ class StackedTransformerOptimization:
                 #optuna.logging.set_verbosity(optuna.logging.ERROR)
 
                 print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
-                study_in_memory.optimize(func, n_trials=number_trials, gc_after_trial=False)
+                study_in_memory.optimize(func, n_trials=number_trials, gc_after_trial=False, show_progress_bar=True)
 
                 # in-memory calculation is shown before saving the data to database
-                fig = optuna.visualization.plot_pareto_front(study_in_memory, target_names=["volume", "losses", "target_l_h"])
-                fig.show()
+                #fig = optuna.visualization.plot_pareto_front(study_in_memory, target_names=["volume", "losses", "target_l_h", "target_l_s"])
+                #fig.show()
 
                 # introduce study in storage, e.g. sqlite or mysql
                 if storage == 'sqlite':
@@ -313,11 +313,40 @@ class StackedTransformerOptimization:
                 elif storage == 'mysql':
                     storage = "mysql://monty@localhost/mydb",
 
-                study_in_storage = optuna.create_study(directions=["minimize", "minimize", "minimize"], study_name=study_name,
+                study_in_storage = optuna.create_study(directions=["minimize", "minimize", "minimize", 'minimize'], study_name=study_name,
                                                        storage=storage)
                 study_in_storage.add_trials(study_in_memory.trials)
 
+            @staticmethod
+            def show_study_results(study_name: str, config: StoSingleInputConfig) -> None:
+                """
+                Show the results of a study.
 
+                :param study_name: Name of the study
+                :type study_name: str
+                :param config: Integrated transformer configuration file
+                :type config: ItoSingleInputConfig
+                """
+                study = optuna.create_study(study_name=study_name,
+                                            storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
+                                            load_if_exists=True)
+
+                # Order: total_volume, total_loss, difference_l_h, difference_l_s
+
+                percent_error_difference_l_h = 20
+                l_h_absolute_error =  percent_error_difference_l_h / 100 * config.l_h_target
+                print(f"{config.l_h_target = }")
+                print(f"{l_h_absolute_error = }")
+
+                percent_error_difference_l_s = 20
+                l_s_absolute_error = percent_error_difference_l_s / 100 * config.l_s_target
+                print(f"{config.l_s_target = }")
+                print(f"{l_s_absolute_error = }")
+
+
+
+                fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None, t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume", "loss"])
+                fig.show()
 
 
     class ThermalSimulation:
