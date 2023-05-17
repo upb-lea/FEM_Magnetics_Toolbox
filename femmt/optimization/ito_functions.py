@@ -7,7 +7,7 @@ import inspect
 # 3rd party libraries
 
 # femmt libraries
-from femmt.optimization.integrated_transformer_dtos import *
+from femmt.optimization.ito_dtos import *
 import femmt.functions_reluctance as fr
 import femmt.functions as ff
 import femmt as fmt

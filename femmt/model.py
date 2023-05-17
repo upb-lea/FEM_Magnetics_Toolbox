@@ -287,8 +287,8 @@ class Core:
             self.sigma = 0
             if self.material != "custom":
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_property(material_name=self.material,
-                                                                             property="initial_permeability")
+                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
+                                                                             attribute="initial_permeability")
 
                 steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
                                                               datasource="measurements")
@@ -334,9 +334,9 @@ class Core:
 
             elif self.material != "custom":  # TODO: new condition here
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_property(material_name=self.material,
-                                                                             property="initial_permeability")
-                self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
+                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
+                                                                             attribute="initial_permeability")
+                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
@@ -364,7 +364,7 @@ class Core:
             self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
 
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-            self.sigma = 1 / self.material_database.get_material_property(material_name=self.material, property="resistivity")
+            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the

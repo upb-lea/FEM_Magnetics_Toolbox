@@ -368,6 +368,15 @@ def litz_database() -> Dict:
                                 "litz": "RUPALIT Safety V155",
                                 "insulation": "3 layers Mylar"}
 
+    litz_dict["1.71x140x0.1"] = {"strands_numbers": 140,
+                                "strand_radii": 0.1e-3 / 2,
+                                "conductor_radii": 1.71e-3 / 2,
+                                "ff": "",
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
 
     return litz_dict
 
