@@ -1,6 +1,5 @@
 # python libraries
 import os
-import warnings
 import shutil
 import json
 
@@ -44,15 +43,22 @@ class StackedTransformerOptimization:
         """
 
         # currents
-        time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(config.time_current_1_vec)
-        time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(config.time_current_2_vec)
+        time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
+            config.time_current_1_vec)
+        time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(
+            config.time_current_2_vec)
         fundamental_frequency = 1 / time_extracted[-1]
 
         i_rms_1 = fr.i_rms(config.time_current_1_vec)
         i_rms_2 = fr.i_rms(config.time_current_2_vec)
 
+        i_peak_1, i_peak_2 = fr.max_value_from_value_vec(current_extracted_1_vec, current_extracted_2_vec)
+        phi_deg_1, phi_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec,
+                                                               current_extracted_2_vec)
+
         # target inductances
-        target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s_target, config.l_h_target,
+        target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s_target,
+                                                                               config.l_h_target,
                                                                                config.n_target)
 
         # material properties
@@ -60,7 +66,8 @@ class StackedTransformerOptimization:
 
         material_data_list = []
         for material_name in config.material_list:
-            material_dto = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
+            material_dto = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency,
+                                                                          config.temperature)
             material_data_list.append(material_dto)
 
         # set up working directories
@@ -70,6 +77,10 @@ class StackedTransformerOptimization:
         target_and_fix_parameters = StoTargetAndFixedParameters(
             i_rms_1=i_rms_1,
             i_rms_2=i_rms_2,
+            i_peak_1=i_peak_1,
+            i_peak_2=i_peak_2,
+            i_phase_deg_1=phi_deg_1,
+            i_phase_deg_2=phi_deg_2,
             time_extracted_vec=time_extracted,
             current_extracted_1_vec=current_extracted_1_vec,
             current_extracted_2_vec=current_extracted_2_vec,
@@ -86,14 +97,16 @@ class StackedTransformerOptimization:
 
     class FemSimulation:
         class NSGAII:
-
             @staticmethod
-            def objective(trial, config, target_and_fixed_parameters):
+            def objective(trial, config: StoSingleInputConfig, target_and_fixed_parameters: StoTargetAndFixedParameters):
                 """
                 Objective for optuna optimization.
 
                 :param trial: optuna trail objective. Used by optuna
                 :param config: simulation configuration file
+                :type config: StoSingleInputConfig
+                :param target_and_fixed_parameters: contains pre-calculated values
+                :type target_and_fixed_parameters: StoTargetAndFixedParameters
 
                 """
                 # suggest core geometry
@@ -106,7 +119,6 @@ class StackedTransformerOptimization:
                 foil_thickness = trial.suggest_float("foil_thickness", config.metal_sheet_thickness[0], config.metal_sheet_thickness[1])
 
                 # suggest categorical
-                litz_database = ff.litz_database()
                 core_material = trial.suggest_categorical("material", config.material_list)
                 primary_litz_wire = trial.suggest_categorical("primary_litz_wire", config.primary_litz_wire_list)
 
@@ -137,7 +149,7 @@ class StackedTransformerOptimization:
                         core=core,
 
                         # primary litz
-                        primary_turns=15,
+                        primary_turns=14,
                         primary_radius=primary_litz_parameters["conductor_radii"],
                         primary_number_strands=primary_litz_parameters["strands_numbers"],
                         primary_strand_radius=primary_litz_parameters["strand_radii"],
@@ -160,13 +172,12 @@ class StackedTransformerOptimization:
                     geo.set_insulation(insulation)
                     geo.set_winding_windows([coil_window, transformer_window])
 
-                    geo.create_model(freq=200000, pre_visualize_geometry=False)
+                    geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
-                    geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180],
+                    geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency, current=[20, 120, 120], phi_deg=[0, 180, 180],
                                           show_fem_simulation_results=False)
 
-                    geo.get_inductances(I0=1, op_frequency=200000)
-
+                    geo.get_inductances(I0=1, op_frequency=target_and_fixed_parameters.fundamental_frequency)
 
                     print(f"{geo.L_1_1 = }")
                     print(f"{geo.L_2_2 = }")
@@ -180,7 +191,7 @@ class StackedTransformerOptimization:
                     print(f"{geo.L_h = }")
 
                     difference_l_h = config.l_h_target - geo.L_h
-                    difference_l_s = config.l_s_target - geo.L_s1
+                    difference_l_s12 = config.l_s_target - geo.L_s1
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -200,80 +211,13 @@ class StackedTransformerOptimization:
                     total_loss = loaded_data_dict["total_losses"]["total_losses"]
                     total_cost = loaded_data_dict["misc"]["total_cost_incl_margin"]
 
-                    return total_volume, total_loss, difference_l_h, difference_l_s
+                    return total_volume, total_loss, difference_l_h, difference_l_s12
 
 
 
                 except Exception as e:
                     print(e)
                     return float('nan'), float('nan'), float('nan'), float('nan')
-
-            @staticmethod
-            def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
-                """
-                Calculate fix parameters what can be derived from the input configuration.
-
-                return values are:
-
-                    i_rms_1
-                    i_rms_2
-                    time_extracted_vec
-                    current_extracted_1_vec
-                    current_extracted_2_vec
-                    material_dto_curve_list
-                    fundamental_frequency
-                    target_inductance_matrix
-                    fem_working_directory
-                    fem_simulation_results_directory
-                    reluctance_model_results_directory
-                    fem_thermal_simulation_results_directory
-
-                :param config: configuration file
-                :type config: ItoSingleInputConfig
-                :return: calculated target and fix parameters
-                :rtype: ItoTargetAndFixedParameters
-                """
-
-                # currents
-                time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
-                    config.time_current_1_vec)
-                time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(
-                    config.time_current_2_vec)
-                fundamental_frequency = 1 / time_extracted[-1]
-
-                i_rms_1 = fr.i_rms(config.time_current_1_vec)
-                i_rms_2 = fr.i_rms(config.time_current_2_vec)
-
-                # target inductances
-                target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s_target,
-                                                                                       config.l_h_target,
-                                                                                       config.n_target)
-
-                # material properties
-                material_db = mdb.MaterialDatabase(is_silent=True)
-
-                material_data_list = []
-                for material_name in config.material_list:
-                    material_dto = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config.temperature)
-                    material_data_list.append(material_dto)
-
-                # set up working directories
-                working_directories = itof.set_up_folder_structure(config.working_directory)
-
-                # finalize data to dto
-                target_and_fix_parameters = StoTargetAndFixedParameters(
-                    i_rms_1=i_rms_1,
-                    i_rms_2=i_rms_2,
-                    time_extracted_vec=time_extracted,
-                    current_extracted_1_vec=current_extracted_1_vec,
-                    current_extracted_2_vec=current_extracted_2_vec,
-                    material_dto_curve_list=material_data_list,
-                    fundamental_frequency=fundamental_frequency,
-                    target_inductance_matrix=target_inductance_matrix,
-                    working_directories=working_directories
-                )
-
-                return target_and_fix_parameters
 
             @staticmethod
             def start_study(study_name: str, config: StoSingleInputConfig, number_trials: int, storage: str = None) -> None:

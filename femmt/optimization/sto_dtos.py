@@ -69,11 +69,15 @@ class WorkingDirectories:
 @dataclass
 class StoTargetAndFixedParameters:
     """
-    Integrated-transformer optimization target and fixed parameters.
-    These parameters are calculated from the integrated-transformer input configuration (ItoSingleInputConfig).
+    Stacked-transformer optimization target and fixed parameters.
+    These parameters are calculated from the stacked-transformer input configuration (StoSingleInputConfig).
     """
     i_rms_1: float
     i_rms_2: float
+    i_peak_1: float
+    i_peak_2: float
+    i_phase_deg_1: float
+    i_phase_deg_2: float
     material_dto_curve_list: List[MaterialCurve]
     time_extracted_vec: List
     current_extracted_1_vec: List
@@ -81,5 +85,3 @@ class StoTargetAndFixedParameters:
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
-
-
