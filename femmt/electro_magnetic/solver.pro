@@ -167,14 +167,17 @@ Formulation {
       EndIf
       */
 
-      // GlobalTerms are used for the current imprinting
+
+      // GlobalTerms are used for the voltage - current relation
       For n In {1:n_windings}
           If(!Flag_HomogenisedModel~{n})
             If(Val_EE~{n}!=0)
               GlobalTerm { [ Dof{I}, {U} ] ; In Winding~{n} ; }
             EndIf
-          //Else
-          //  GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding~{n} ; }
+//          Else
+//            Galerkin { [ NbrCond~{n}/CoefGeo/AreaCell[] / sigma[] * NbrCond~{n}/CoefGeo/AreaCell[]* Dof{ir} , {ir} ] ;
+//                        In StrandedWinding~{n} ; Jacobian Vol ; Integration II ; }
+//            GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding~{n} ; }
           EndIf
       EndFor
 

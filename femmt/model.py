@@ -109,6 +109,8 @@ class Conductor:
         elif fill_factor is None:
             ff_exact = number_strands * strand_radius ** 2 / conductor_radius ** 2
             self.ff = np.around(ff_exact, decimals=2)
+            if self.ff > 0.99:
+                raise Exception(f"A fill factor of {self.ff} is unrealistic!")
         elif strand_radius is None:
             self.strand_radius = np.sqrt(conductor_radius ** 2 * fill_factor / number_strands)
         else:
@@ -834,7 +836,8 @@ class WindingWindow:
 
 
     def split_window(self, split_type: WindingWindowSplit, split_distance: float = 0,
-                     horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
+                     horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5,
+                     top_bobbin: float = None, bot_bobbin: float = None, left_bobbin: float = None, right_bobbin: float = None) -> Tuple[VirtualWindingWindow]:
         """Creates up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
         The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
         Not every value is needed for every split type:
@@ -890,6 +893,22 @@ class WindingWindow:
 
             self.virtual_winding_windows = [complete]
             return complete
+        elif split_type == WindingWindowSplit.NoSplitWithBobbin:
+            bobbin_def = [top_bobbin, bot_bobbin, left_bobbin, right_bobbin]
+            for index, element in enumerate(bobbin_def):
+                if element is not None and element > self.insulations.core_cond[index]:
+                    bobbin_def[index] = self.insulations.core_cond[index] - element
+                else:
+                    bobbin_def[index] = 0
+
+            complete = VirtualWindingWindow(
+                top_bound=self.max_top_bound + bobbin_def[0],
+                bot_bound=self.max_bot_bound - bobbin_def[1],
+                left_bound=self.max_left_bound - bobbin_def[2],
+                right_bound=self.max_right_bound + bobbin_def[3])
+            self.virtual_winding_windows = [complete]
+            return complete
+
         elif split_type == WindingWindowSplit.VerticalSplit:
             right = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
@@ -966,8 +985,10 @@ class WindingWindow:
                 if type(row_element) == StackIsolation:
                     vertical_space_used += row_element.thickness
                 else:
+                    additional_bobbin = 0
                     if type(row_element) == ConductorRow:
                         vertical_space_used += row_element.row_height
+                        additional_bobbin = row_element.additional_bobbin
                         if row_element.winding_tag == WindingTag.Primary:
                             winding_scheme_type.append(WindingType.Single)
                         elif row_element.winding_tag == WindingTag.Secondary or row_element.winding_tag == WindingTag.Tertiary:
@@ -981,7 +1002,7 @@ class WindingWindow:
                         VirtualWindingWindow(
                             bot_bound=self.max_bot_bound + vertical_space_used_last,
                             top_bound=self.max_bot_bound + vertical_space_used,
-                            left_bound=self.max_left_bound,
+                            left_bound=self.max_left_bound + additional_bobbin,
                             right_bound=self.max_right_bound))
 
         return self.virtual_winding_windows, winding_scheme_type

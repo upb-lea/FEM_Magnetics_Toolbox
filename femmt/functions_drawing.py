@@ -10,7 +10,7 @@ def number_of_rows(row: ConductorRow):
     return number_rows
 
 
-def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType, thickness=None, radius=None, cond_cond_isolation=None):
+def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType, thickness=None, radius=None, cond_cond_isolation=None, additional_bobbin=0):
     """
     Defines a full row of the defined conductor in the specified window width.
     It is assumed, that the row is full, which means, as many conductors are
@@ -24,7 +24,8 @@ def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTa
                                  number_of_conds_per_row=None,
                                  row_height=None,
                                  winding_tag=winding_tag,
-                                 number_of_rows=None)
+                                 number_of_rows=None,
+                                 additional_bobbin=additional_bobbin)
 
     if conductor_type == ConductorType.RoundLitz or conductor_type == ConductorType.RoundSolid:
         conductor_row.row_height = radius * 2
@@ -203,7 +204,8 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
 
 
 def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow,
-                                    window_height, isolations: ThreeWindingIsolation, interleaving_type: CenterTappedInterleavingType):
+                                    window_height, isolations: ThreeWindingIsolation, interleaving_type: CenterTappedInterleavingType,
+                                    primary_additional_bobbin):
     """Defines the vertical stacking of previously defined ConductorRows.
     IMPORTANT DEFINITION: the rows are calculated without taking into account
     any vertical insulation. Only the horizontal insulation from conductors
@@ -279,14 +281,16 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
 
         rowA = copy.deepcopy(primary_row)
         rowA.number_of_conds_per_row = 4
+        rowA.additional_bobbin = primary_additional_bobbin
+
         rowB = copy.deepcopy(primary_row)
         rowB.number_of_conds_per_row = 3
-
+        rowB.additional_bobbin = 2.0e-3
 
         stack_order.append(tertiary_row)
 
-        stack_order.append(rowA)
         stack_order.append(rowB)
+        stack_order.append(rowA)
 
         stack_order.append(secondary_row)
         stack_order.append(tertiary_row)
