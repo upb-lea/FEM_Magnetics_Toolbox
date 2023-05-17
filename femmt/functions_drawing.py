@@ -10,7 +10,7 @@ def number_of_rows(row: ConductorRow):
     return number_rows
 
 
-def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType, thickness=None, radius=None, cond_cond_isolation=None):
+def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType, thickness=None, radius=None, cond_cond_isolation=None, additional_bobbin=0):
     """
     Defines a full row of the defined conductor in the specified window width.
     It is assumed, that the row is full, which means, as many conductors are
@@ -24,7 +24,8 @@ def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTa
                                  number_of_conds_per_row=None,
                                  row_height=None,
                                  winding_tag=winding_tag,
-                                 number_of_rows=None)
+                                 number_of_rows=None,
+                                 additional_bobbin=additional_bobbin)
 
     if conductor_type == ConductorType.RoundLitz or conductor_type == ConductorType.RoundSolid:
         conductor_row.row_height = radius * 2
@@ -165,6 +166,7 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     # TODO: remove following fix insertation
     insulation_positions = []
     insulation_tags = []
+    insulation_stack = []
     number_of_added_insulations = 0
     # here: zero index means bot_row
     for i, bot_row in enumerate(stack_order[0:-1]):
@@ -195,15 +197,21 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
             if n == 0:
                 insulation_string += "_to_"
 
-        insulation_tags.append(StackIsolation(thickness=getattr(isolations, insulation_string)))
+        insulation_tags.append(insulation_string)
+        insulation_stack.append(StackIsolation(thickness=getattr(isolations, insulation_string)))
 
     # Fill in the isolations
     for i, position in enumerate(insulation_positions):
-        stack_order.insert(position, insulation_tags[i])
+        stack_order.insert(position, insulation_stack[i])
 
+    return insulation_tags
+    # print(f"{insulation_positions = }")
+    # print(f"{insulation_stack = }")
+    # print(f"{insulation_tags = }")
 
 def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow,
-                                    window_height, isolations: ThreeWindingIsolation, interleaving_type: CenterTappedInterleavingType):
+                                    available_height: float, isolations: ThreeWindingIsolation, interleaving_type: CenterTappedInterleavingType,
+                                    primary_additional_bobbin):
     """Defines the vertical stacking of previously defined ConductorRows.
     IMPORTANT DEFINITION: the rows are calculated without taking into account
     any vertical insulation. Only the horizontal insulation from conductors
@@ -275,27 +283,82 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
 
     elif interleaving_type == CenterTappedInterleavingType.TypeC:
         number_of_single_rows = None
-        stack_order = []
 
+        # Define Row with 4 conductors
         rowA = copy.deepcopy(primary_row)
         rowA.number_of_conds_per_row = 4
+        rowA.additional_bobbin = primary_additional_bobbin
+
+        # Define Row with 3 conductors
         rowB = copy.deepcopy(primary_row)
         rowB.number_of_conds_per_row = 3
+        rowB.additional_bobbin = primary_additional_bobbin
+
+        def stack_TypeC(stack_order):
+
+            # Stack the predefined rows
+            stack_order.append(tertiary_row)
+            stack_order.append(rowB)
+            stack_order.append(rowA)
+            stack_order.append(secondary_row)
+            stack_order.append(tertiary_row)
+            stack_order.append(rowA)
+            stack_order.append(rowB)
+            stack_order.append(secondary_row)
 
 
-        stack_order.append(tertiary_row)
 
-        stack_order.append(rowA)
-        stack_order.append(rowB)
+        # Initial stacking with predefined minimum insulations
+        initial_stack_order = []
+        stack_TypeC(initial_stack_order)
+        insulation_tags = insert_insulations_to_stack(initial_stack_order, isolations)
+        # print(f"{insulation_tags = }")
 
-        stack_order.append(secondary_row)
-        stack_order.append(tertiary_row)
 
-        stack_order.append(rowA)
-        stack_order.append(rowB)
+        number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = 0, 0, 0
+        number_of_primary_rows = 4
+        number_of_secondary_rows = 2
+        number_of_tertiary_rows = 2
 
-        stack_order.append(secondary_row)
+        number_of_insulations_primary_to_primary = insulation_tags.count("primary_to_primary")
+        number_of_insulations_primary_to_secondary = insulation_tags.count("primary_to_secondary") + insulation_tags.count("secondary_to_primary") + \
+                                                     insulation_tags.count("primary_to_tertiary") + insulation_tags.count("tertiary_to_primary")
+        number_of_insulations_secondary_to_secondary = insulation_tags.count("secondary_to_secondary") + insulation_tags.count("tertiary_to_tertiary") + \
+                                                       insulation_tags.count("secondary_to_tertiary") + insulation_tags.count("tertiary_to_secondary")
 
+
+
+        # 1 benötigte Höhe inklusive der mindest isolation 1 und 2/3 berechnen (könnte man auch nach Stack the predefined rows ausführen, dann spart man sich die Hardcodes)
+        # 2 CHECK: Der Abstand (isolation/bobbin,  zwischen 1 und 2/3 muss mindestens dem vorgegebenen Wert entsprechen)
+        # 3 falls bestanden: isolation/abstand so wählen, dass benötigte Höhe = verfügbare Höhe
+
+        # 1
+        minimum_needed_height = number_of_primary_rows * primary_row.row_height + \
+                                number_of_secondary_rows * secondary_row.row_height + \
+                                number_of_tertiary_rows * secondary_row.row_height + \
+                                number_of_insulations_primary_to_primary * isolations.primary_to_primary + \
+                                number_of_insulations_secondary_to_secondary * isolations.secondary_to_tertiary + \
+                                number_of_insulations_primary_to_secondary * isolations.primary_to_secondary
+
+        # 2
+        # print(f"{isolations = }")
+        import numpy as np
+        isolations.primary_to_secondary = np.round((available_height - minimum_needed_height +
+                                           number_of_insulations_primary_to_secondary * isolations.primary_to_secondary) / number_of_insulations_primary_to_secondary, 9) - 1e-9
+        isolations.primary_to_tertiary = isolations.primary_to_secondary
+        isolations.tertiary_to_primary = isolations.primary_to_secondary
+        isolations.secondary_to_primary = isolations.primary_to_secondary
+
+        # print(f"{available_height = }")
+        # print(f"{minimum_needed_height = }")
+
+        # 3
+        # print(f"{isolations = }")
+
+        stack_order = []
+        stack_TypeC(stack_order)
+
+        # Add insulations afterwards
         insert_insulations_to_stack(stack_order, isolations)
 
         # Create the complete ConductorStack from the stack_order

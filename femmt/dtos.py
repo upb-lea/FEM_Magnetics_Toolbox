@@ -24,6 +24,7 @@ class ConductorRow:
     row_height: float
     winding_tag: WindingTag
     number_of_rows: int
+    additional_bobbin: float
 
 
 @dataclass
