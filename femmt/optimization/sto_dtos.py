@@ -27,7 +27,7 @@ class StoSingleInputConfig:
     Also specifies the working directory where to store the results.
     """
     # target parameters
-    l_s_target: float
+    l_s12_target: float
     l_h_target: float
     n_target: float
 

@@ -149,6 +149,9 @@ class MagneticComponent:
         self.L_s2 = None
         self.L_s3 = None
         self.L_h = None
+        self.L_s12 = None
+        self.L_s13 = None
+        self.L_s23 = None
 
         # -- FEMM variables --
         self.tot_loss_femm = None
@@ -1265,9 +1268,9 @@ class MagneticComponent:
             n_13 = np.sqrt(self.L_1_1/self.L_3_3)  # self.M_12 / self.M_23
 
             # Shortcut Inductances
-            L_s12 = L_s1 + n_12**2 * L_s2
-            L_s13 = L_s1 + n_13**2 * L_s3
-            L_s23 = L_s2 + (n_13/n_12)**2 * L_s3
+            self.L_s12 = L_s1 + n_12**2 * L_s2
+            self.L_s13 = L_s1 + n_13**2 * L_s3
+            self.L_s23 = L_s2 + (n_13/n_12)**2 * L_s3
 
             ff.femmt_print(f"\n"
                 f"T-ECD (Lh on primary side):\n"
@@ -1284,9 +1287,9 @@ class MagneticComponent:
                 f"n_13 = np.sqrt(self.L_1_1/self.L_3_3) = {n_13}\n"         
                 f"L_h = M_12 * M_13 / M_23 = {L_h}\n\n"
                 f"Shortcut Inductances L_snm measured on winding n with short applied to winding m\n"
-                f"L_s12 = L_s1 + n_12**2 * L_s2 = {L_s12}\n"
-                f"L_s13 = L_s1 + n_13**2 * L_s3 = {L_s13}\n"
-                f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {L_s23}\n"
+                f"L_s12 = L_s1 + n_12**2 * L_s2 = {self.L_s12}\n"
+                f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
+                f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
                 )
 
         # self.visualize()

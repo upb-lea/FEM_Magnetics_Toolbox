@@ -57,7 +57,7 @@ class StackedTransformerOptimization:
                                                                current_extracted_2_vec)
 
         # target inductances
-        target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s_target,
+        target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s12_target,
                                                                                config.l_h_target,
                                                                                config.n_target)
 
@@ -127,16 +127,19 @@ class StackedTransformerOptimization:
                 try:
                     geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                                 working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                                  silent=True, simulation_name=f"Case_{trial.number}")
+                                                  silent=False, simulation_name=f"Case_{trial.number}")
 
                     core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                      window_h_top=window_h_top, window_h_bot=window_h_bot)
                     core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                                      material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
-                                      permeability_datasource=femmt.MaterialDataSource.ManufacturerDatasheet,
-                                      permeability_datatype=femmt.MeasurementDataType.ComplexPermeability,
-                                      permittivity_datasource=femmt.MaterialDataSource.ManufacturerDatasheet,
-                                      permittivity_datatype=femmt.MeasurementDataType.ComplexPermittivity)
+                                      mu_r_abs=3500, phi_mu_deg=12, sigma=1.2,
+                                      permeability_datasource=femmt.MaterialDataSource.Custom,
+                                      permittivity_datasource=femmt.MaterialDataSource.Custom)
+                                      #material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
+                                      #permeability_datasource=femmt.MaterialDataSource.ManufacturerDatasheet,
+                                      #permeability_datatype=femmt.MeasurementDataType.ComplexPermeability,
+                                      #permittivity_datasource=femmt.MaterialDataSource.ManufacturerDatasheet,
+                                      #permittivity_datatype=femmt.MeasurementDataType.ComplexPermittivity)
                     geo.set_core(core)
 
                     air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
@@ -149,6 +152,7 @@ class StackedTransformerOptimization:
                         core=core,
 
                         # primary litz
+                        primary_additional_bobbin=1e-3,
                         primary_turns=14,
                         primary_radius=primary_litz_parameters["conductor_radii"],
                         primary_number_strands=primary_litz_parameters["strands_numbers"],
@@ -164,6 +168,10 @@ class StackedTransformerOptimization:
                         iso_primary_to_primary=config.insulations.iso_primary_to_primary,
                         iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
                         iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
+                        bobbin_coil_top=0.5e-3,
+                        bobbin_coil_bot=core_dimensions.window_h_top / 2 - 0.85e-3,
+                        bobbin_coil_left=0.5e-3,
+                        bobbin_coil_right=0.2e-3,
 
                         # misc
                         interleaving_type=femmt.CenterTappedInterleavingType.TypeC,
@@ -172,26 +180,10 @@ class StackedTransformerOptimization:
                     geo.set_insulation(insulation)
                     geo.set_winding_windows([coil_window, transformer_window])
 
-                    geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
+                    geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
                     geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency, current=[20, 120, 120], phi_deg=[0, 180, 180],
                                           show_fem_simulation_results=False)
-
-                    geo.get_inductances(I0=1, op_frequency=target_and_fixed_parameters.fundamental_frequency)
-
-                    print(f"{geo.L_1_1 = }")
-                    print(f"{geo.L_2_2 = }")
-                    print(f"{geo.L_3_3 = }")
-                    print(f"{geo.M_12 = }")
-                    print(f"{geo.M_13 = }")
-                    print(f"{geo.M_23 = }")
-                    print(f"{geo.L_s1 = }")
-                    print(f"{geo.L_s2 = }")
-                    print(f"{geo.L_s3 = }")
-                    print(f"{geo.L_h = }")
-
-                    difference_l_h = config.l_h_target - geo.L_h
-                    difference_l_s12 = config.l_s_target - geo.L_s1
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -211,9 +203,13 @@ class StackedTransformerOptimization:
                     total_loss = loaded_data_dict["total_losses"]["total_losses"]
                     total_cost = loaded_data_dict["misc"]["total_cost_incl_margin"]
 
+                    # Getting inductance values should be after the general loss simulation,
+                    # otherwise loss simulations will have very small losses (wrong!)
+                    geo.get_inductances(I0=1, op_frequency=target_and_fixed_parameters.fundamental_frequency)
+                    difference_l_h = config.l_h_target - geo.L_h
+                    difference_l_s12 = config.l_s12_target - geo.L_s12
+
                     return total_volume, total_loss, difference_l_h, difference_l_s12
-
-
 
                 except Exception as e:
                     print(e)
@@ -283,8 +279,8 @@ class StackedTransformerOptimization:
                 print(f"{l_h_absolute_error = }")
 
                 percent_error_difference_l_s = 20
-                l_s_absolute_error = percent_error_difference_l_s / 100 * config.l_s_target
-                print(f"{config.l_s_target = }")
+                l_s_absolute_error = percent_error_difference_l_s / 100 * config.l_s12_target
+                print(f"{config.l_s12_target = }")
                 print(f"{l_s_absolute_error = }")
 
 
