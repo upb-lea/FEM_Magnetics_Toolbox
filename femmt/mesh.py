@@ -9,7 +9,7 @@ import gmsh
 
 # Local libraries
 import femmt.functions as ff
-from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType
+from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType, Verbosity
 from femmt.data import FileData
 from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation
 from femmt.drawing import TwoDaxiSymmetric
@@ -36,23 +36,32 @@ class Mesh:
     e_m_mesh_file: str
     thermal_mesh_file: str
 
-    silent: bool
+    verbosity: Verbosity
 
     # Additionally there are all the needed lists for points, lines, curve_loops and plane_surfaces
     # See set_empty_lists()
 
     def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], correct_outer_leg: bool,
-                 file_paths: FileData, region: bool = None, silent: bool = False):
+                 file_paths: FileData, verbosity: Verbosity, region: bool = None):
+
+        self.verbosity = verbosity
 
         # Initialize gmsh once
         if not gmsh.isInitialized():
             gmsh.initialize()
 
-        self.silent = silent
-        if silent:
+        if verbosity == Verbosity.Silent:
             gmsh.option.set_number("General.Verbosity", 1)
         else:
             gmsh.option.set_number("General.Verbosity", 5)
+
+        if verbosity == Verbosity.ToConsole:
+            gmsh.option.setNumber("General.Terminal", 1)
+        else:
+            gmsh.option.setNumber("General.Terminal", 0)
+
+        if verbosity == Verbosity.ToFile:
+            gmsh.logger.start()
 
         self.model = model
         self.core = model.core
@@ -71,9 +80,10 @@ class Mesh:
         self.mesh_folder_path = file_paths.mesh_folder_path
         self.e_m_mesh_file = file_paths.e_m_mesh_file
         self.thermal_mesh_file = file_paths.thermal_mesh_file
+        self.gmsh_log = file_paths.gmsh_log
 
     def femmt_print(self, text: str):
-        if not self.silent:
+        if not self.verbosity == Verbosity.Silent:
             print(text)
 
     def set_empty_point_lists(self):
@@ -1079,6 +1089,14 @@ class Mesh:
             os.mkdir(self.mesh_folder_path)
 
         gmsh.write(self.e_m_mesh_file)
+
+        if self.verbosity == Verbosity.ToFile:
+            lines = gmsh.logger.get()
+            text = ""
+            for line in lines:
+                text += f"{line}\n"
+            with open(self.gmsh_log, "w") as fd:
+                fd.write(text)
 
     def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before):
         self.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")

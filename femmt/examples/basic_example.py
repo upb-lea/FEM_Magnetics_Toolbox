@@ -89,7 +89,7 @@ if component == "inductor":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.ToFile)
 
     inductor_frequency = 270000
 
@@ -141,11 +141,11 @@ if component == "inductor":
     geo.set_winding_windows([winding_window])
 
     # 8. create the model
-    geo.create_model(freq=inductor_frequency, pre_visualize_geometry=True, save_png=False)
+    geo.create_model(freq=inductor_frequency, pre_visualize_geometry=False, save_png=False)
 
     # 9.a. start simulation
     geo.single_simulation(freq=inductor_frequency, current=[4.5],
-                          plot_interpolation=False, show_fem_simulation_results=True)
+                          plot_interpolation=False, show_fem_simulation_results=False)
 
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 

@@ -1,11 +1,20 @@
 import femmt as fmt
 import os
 import time
+import shutil
 
-def create_example_model(working_directory):
+def create_example_model(working_directory, electro_magnetic_base_folder):
     inductor_frequency = 270000
     
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
+    # Copy electro magnetic base folder
+    electro_magnetic_folder = os.path.join(working_directory, "electro_magnetic")
+    try:
+        shutil.copytree(electro_magnetic_base_folder, electro_magnetic_folder)
+    except OSError as err:
+        print(err)
+
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, 
+                                verbosity=fmt.Verbosity.ToFile, electro_magnetic_folder_path=electro_magnetic_folder)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
@@ -38,6 +47,7 @@ def create_example_model(working_directory):
     return geo
 
 if __name__ == "__main__":
+    electro_magnetic_base_folder = os.path.join(os.path.dirname(__file__), "..", "electro_magnetic")
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     benchmark_results_folder = os.path.join(example_results_folder, "benchmarks")
     parallel_folder = os.path.join(benchmark_results_folder, "parallel")
@@ -49,17 +59,17 @@ if __name__ == "__main__":
 
     geos = []
     simulation_parameters = []
-
-    for i in range(4):
+    working_directories = []
+    for i in range(30):
         working_directory = os.path.join(parallel_folder, f"inductor_{i}")
-        geos.append(create_example_model(working_directory))
+        geos.append(create_example_model(working_directory, electro_magnetic_base_folder))
         simulation_parameters.append({
             "freq": inductor_frequency,
             "current": [4.5]
         })
 
     start_time = time.time()
-    fmt.hpc(4, geos, simulation_parameters)
+    fmt.hpc(5, geos, simulation_parameters)
     execution_time = time.time() - start_time
 
     print(f"Execution time: {execution_time}")

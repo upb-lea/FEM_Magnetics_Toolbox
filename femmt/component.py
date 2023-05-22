@@ -41,7 +41,8 @@ class MagneticComponent:
     silent: bool = False
 
     def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-                 silent: bool = False, is_gui: bool = False, simulation_name: Optional[str] = None):
+                 verbosity: Verbosity = 2, is_gui: bool = False, simulation_name: Optional[str] = None, electro_magnetic_folder_path: str = None):
+        # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         :param component_type: Available options:
                                - "inductor"
@@ -58,7 +59,10 @@ class MagneticComponent:
         :type simulation_name: str
         """
         # Variable to set silent mode
-        self.silent = silent
+        self.verbosity = verbosity
+
+        if not verbosity == Verbosity.ToConsole:
+            gmsh.option.setNumber("General.Terminal", 0)
 
         self.femmt_print(f"\n"
                        f"Initialized a new Magnetic Component of type {component_type.name}\n"
@@ -73,7 +77,7 @@ class MagneticComponent:
             os.mkdir(working_directory)
 
         # Create file paths class in order to handle all paths
-        self.file_data = FileData(working_directory)
+        self.file_data = FileData(working_directory, electro_magnetic_folder_path)
 
         # To make sure femm is only imported once
         self.femm_is_imported = False
@@ -160,7 +164,7 @@ class MagneticComponent:
         self.simulation_name = simulation_name
 
     def femmt_print(self, text: str):
-        if not self.silent:
+        if not self.verbosity == Verbosity.Silent:
             print(text)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
@@ -252,7 +256,7 @@ class MagneticComponent:
             "case_volume": self.core.r_outer * case_gap_top + self.core.core_h * case_gap_right + self.core.r_outer * case_gap_bot,
             "show_thermal_fem_results": show_thermal_simulation_results,
             "print_sensor_values": False,
-            "silent": self.silent
+            "silent": self.verbosity == Verbosity.Silent # Add verbosity for thermal simulation
         }
 
         thermal_simulation.run_thermal(**thermal_parameters)
@@ -320,11 +324,11 @@ class MagneticComponent:
 
         # Create model
         self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.winding_windows, self.stray_path,
-                                            self.insulation, self.component_type, len(self.windings), self.silent)
+                                            self.insulation, self.component_type, len(self.windings), self.verbosity)
         self.two_d_axi.draw_model()
 
         # Create mesh
-        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, self.silent)
+        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, self.verbosity, None)
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
         """Generates model and mesh.
@@ -793,14 +797,18 @@ class MagneticComponent:
 
         os.chdir(self.file_data.working_directory)
 
-        if self.silent:
+        if self.verbosity == Verbosity.Silent:
             verbose = "-verbose 1"
         else:
             verbose = "-verbose 5"
 
+        to_file_str = ""
+        if self.verbosity == Verbosity.ToFile:
+            to_file_str = " > " + self.file_data.getdp_log
+
         # Run simulations as sub clients (non-blocking??)
         getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
-        self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
+        self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
 
     def pre_simulation(self):
         """

@@ -25,7 +25,7 @@ class TwoDaxiSymmetric:
     component_type: ComponentType
     mesh_data: MeshData
     number_of_windings: int
-    silent: bool
+    verbosity: Verbosity
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
@@ -38,7 +38,7 @@ class TwoDaxiSymmetric:
     p_iso_pri_sec: List[List[float]]
 
     def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
-                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, silent: bool):
+                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity):
         self.core = core
         self.mesh_data = mesh_data
         self.winding_windows = winding_windows
@@ -47,7 +47,7 @@ class TwoDaxiSymmetric:
         self.stray_path = stray_path
         self.insulation = insulation
         self.number_of_windings = number_of_windings
-        self.silent = silent
+        self.verbosity = verbosity
 
         # -- Arrays for geometry data -- 
         # TODO Is the zero initialization necessary?
@@ -70,7 +70,7 @@ class TwoDaxiSymmetric:
         self.r_outer = core.r_outer    
         
     def femmt_print(self, text: str):
-        if not self.silent:
+        if not self.verbosity == Verbosity.Silent:
             print(text)
 
     def draw_outer(self):
