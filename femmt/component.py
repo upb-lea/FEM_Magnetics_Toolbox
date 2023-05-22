@@ -149,6 +149,11 @@ class MagneticComponent:
         self.L_s2 = None
         self.L_s3 = None
         self.L_h = None
+        self.L_s12 = None
+        self.L_s13 = None
+        self.L_s23 = None
+        self.n_12 = None
+        self.n_13 = None
 
         # -- FEMM variables --
         self.tot_loss_femm = None
@@ -1257,18 +1262,18 @@ class MagneticComponent:
                 )
 
             # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n2 and n3
-            L_s1 = self.L_1_1 - (self.M_12 * self.M_13) / self.M_23
-            L_s2 = self.L_2_2 - (self.M_12 * self.M_23) / self.M_13
-            L_s3 = self.L_3_3 - (self.M_13 * self.M_23) / self.M_12
-            L_h = (self.M_12 * self.M_13) / self.M_23
-            n_12 = np.sqrt(self.L_1_1/self.L_2_2)  # self.M_13 / self.M_23
-            n_13 = np.sqrt(self.L_1_1/self.L_3_3)  # self.M_12 / self.M_23
-            n_23 = np.sqrt(self.L_2_2/self.L_3_3)
+            self.L_s1 = self.L_1_1 - (self.M_12 * self.M_13) / self.M_23
+            self.L_s2 = self.L_2_2 - (self.M_12 * self.M_23) / self.M_13
+            self.L_s3 = self.L_3_3 - (self.M_13 * self.M_23) / self.M_12
+            self.L_h = (self.M_12 * self.M_13) / self.M_23
+            self.n_12 = np.sqrt(self.L_1_1/self.L_2_2)  # self.M_13 / self.M_23
+            self.n_13 = np.sqrt(self.L_1_1/self.L_3_3)  # self.M_12 / self.M_23
+            self.n_23 = np.sqrt(self.L_2_2/self.L_3_3)
 
             # Shortcut Inductances
-            L_s12 = L_s1 + n_12**2 * L_s2
-            L_s13 = L_s1 + n_13**2 * L_s3
-            L_s23 = L_s2 + (n_13/n_12)**2 * L_s3
+            self.L_s12 = self.L_s1 + self.n_12**2 * self.L_s2
+            self.L_s13 = self.L_s1 + self.n_13**2 * self.L_s3
+            self.L_s23 = self.L_s2 + (self.n_13/self.n_12)**2 * self.L_s3
 
             ff.femmt_print(f"\n"
                 f"T-ECD (Lh on primary side):\n"
@@ -1278,17 +1283,17 @@ class MagneticComponent:
                 f"    - Transformation Ratio with respect to the primary and the Secondary: n2\n"
                 f"    - Transformation Ratio with respect to the primary and the Tertiary: n3\n"
                 f"    - Primary Side Main Inductance: L_h\n"        
-                f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {L_s1}\n"
-                f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {L_s2}\n"
-                f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {L_s3}\n"         
-                f"n_12 = np.sqrt(self.L_1_1/self.L_2_2) = {n_12}\n"         
-                f"n_13 = np.sqrt(self.L_1_1/self.L_3_3) = {n_13}\n"         
-                f"n_23 = np.sqrt(self.L_2_2/self.L_3_3) = {n_23}\n"         
-                f"L_h = M_12 * M_13 / M_23 = {L_h}\n\n"
+                f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {self.L_s1}\n"
+                f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {self.L_s2}\n"
+                f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {self.L_s3}\n"         
+                f"n_12 = np.sqrt(self.L_1_1/self.L_2_2) = {self.n_12}\n"         
+                f"n_13 = np.sqrt(self.L_1_1/self.L_3_3) = {self.n_13}\n"
+                f"n_23 = np.sqrt(self.L_2_2/self.L_3_3) = {self.n_23}\n"         
+                f"L_h = M_12 * M_13 / M_23 = {self.L_h}\n\n"
                 f"Shortcut Inductances L_snm measured on winding n with short applied to winding m\n"
-                f"L_s12 = L_s1 + n_12**2 * L_s2 = {L_s12}\n"
-                f"L_s13 = L_s1 + n_13**2 * L_s3 = {L_s13}\n"
-                f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {L_s23}\n"
+                f"L_s12 = L_s1 + n_12**2 * L_s2 = {self.L_s12}\n"
+                f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
+                f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
                 )
 
         # self.visualize()
