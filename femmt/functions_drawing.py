@@ -343,11 +343,14 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         # 2
         # print(f"{isolations = }")
         import numpy as np
-        isolations.primary_to_secondary = np.round((available_height - minimum_needed_height +
-                                           number_of_insulations_primary_to_secondary * isolations.primary_to_secondary) / number_of_insulations_primary_to_secondary, 9) - 1e-9
-        isolations.primary_to_tertiary = isolations.primary_to_secondary
-        isolations.tertiary_to_primary = isolations.primary_to_secondary
-        isolations.secondary_to_primary = isolations.primary_to_secondary
+        new_iso_parameter = np.round((available_height - minimum_needed_height +
+                                      number_of_insulations_primary_to_secondary * isolations.primary_to_secondary) /
+                                     number_of_insulations_primary_to_secondary, 9) - 1e-9
+        if new_iso_parameter > isolations.primary_to_secondary:
+            isolations.primary_to_secondary = new_iso_parameter
+            isolations.primary_to_tertiary = new_iso_parameter
+            isolations.tertiary_to_primary = new_iso_parameter
+            isolations.secondary_to_primary = new_iso_parameter
 
         # print(f"{available_height = }")
         # print(f"{minimum_needed_height = }")
