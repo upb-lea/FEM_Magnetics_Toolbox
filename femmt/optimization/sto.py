@@ -117,6 +117,7 @@ class StackedTransformerOptimization:
                 air_gap_coil = trial.suggest_float("air_gap_coil", 0.1e-3, window_h_top-0.1e-3)
                 air_gap_transformer = trial.suggest_float("air_gap_transformer", 0.1e-3, 5e-3)
                 foil_thickness = trial.suggest_float("foil_thickness", config.metal_sheet_thickness[0], config.metal_sheet_thickness[1])
+                inner_coil_insulation = trial.suggest_float("inner_coil_insulation", 0.5e-3, 5e-3)
 
                 # suggest categorical
                 core_material = trial.suggest_categorical("material", config.material_list)
@@ -127,7 +128,7 @@ class StackedTransformerOptimization:
                 try:
                     geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                                 working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                                  silent=False, simulation_name=f"Case_{trial.number}")
+                                                  silent=True, simulation_name=f"Case_{trial.number}")
 
                     core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                      window_h_top=window_h_top, window_h_bot=window_h_bot)
@@ -170,7 +171,7 @@ class StackedTransformerOptimization:
                         iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
                         bobbin_coil_top=0.5e-3,
                         bobbin_coil_bot=core_dimensions.window_h_top / 2 - 0.85e-3,
-                        bobbin_coil_left=0.5e-3,
+                        bobbin_coil_left=inner_coil_insulation,
                         bobbin_coil_right=0.2e-3,
 
                         # misc
@@ -180,7 +181,7 @@ class StackedTransformerOptimization:
                     geo.set_insulation(insulation)
                     geo.set_winding_windows([coil_window, transformer_window])
 
-                    geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
+                    geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
                     geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency, current=[20, 120, 120], phi_deg=[0, 180, 180],
                                           show_fem_simulation_results=False)
@@ -258,7 +259,31 @@ class StackedTransformerOptimization:
                 study_in_storage.add_trials(study_in_memory.trials)
 
             @staticmethod
-            def show_study_results(study_name: str, config: StoSingleInputConfig) -> None:
+            def proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int) -> None:
+                """
+                Proceed a study which is stored as sqlite database.
+
+                :param study_name: Name of the study
+                :type study_name: str
+                :param config: Simulation configuration
+                :type config: ItoSingleInputConfig
+                :param number_trials: Number of trials adding to the existing study
+                :type number_trials: int
+                """
+                target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+
+                # Wrap the objective inside a lambda and call objective inside it
+                func = lambda trial: femmt.optimization.StackedTransformerOptimization.FemSimulation.NSGAII.objective(trial, config,
+                                                                                   target_and_fixed_parameters)
+
+                study = optuna.create_study(study_name=study_name, storage=f"sqlite:///study_{study_name}.sqlite3",
+                                            load_if_exists=True)
+                study.optimize(func, n_trials=number_trials)
+
+            @staticmethod
+            def show_study_results(study_name: str, config: StoSingleInputConfig,
+                                   percent_error_difference_l_h: float = 20,
+                                   percent_error_difference_l_s12: float = 20) -> None:
                 """
                 Show the results of a study.
 
@@ -266,6 +291,10 @@ class StackedTransformerOptimization:
                 :type study_name: str
                 :param config: Integrated transformer configuration file
                 :type config: ItoSingleInputConfig
+                :param percent_error_difference_l_h: relative error allowed in l_h
+                :type percent_error_difference_l_s12: float
+                :param percent_error_difference_l_s12: relative error allowed in L_s12
+                :type percent_error_difference_l_s12: float
                 """
                 study = optuna.create_study(study_name=study_name,
                                             storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
@@ -273,17 +302,13 @@ class StackedTransformerOptimization:
 
                 # Order: total_volume, total_loss, difference_l_h, difference_l_s
 
-                percent_error_difference_l_h = 20
                 l_h_absolute_error =  percent_error_difference_l_h / 100 * config.l_h_target
                 print(f"{config.l_h_target = }")
                 print(f"{l_h_absolute_error = }")
 
-                percent_error_difference_l_s = 20
-                l_s_absolute_error = percent_error_difference_l_s / 100 * config.l_s12_target
+                l_s_absolute_error = percent_error_difference_l_s12 / 100 * config.l_s12_target
                 print(f"{config.l_s12_target = }")
                 print(f"{l_s_absolute_error = }")
-
-
 
                 fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None, t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume", "loss"])
                 fig.show()

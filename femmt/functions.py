@@ -377,6 +377,15 @@ def litz_database() -> Dict:
                                 "litz": "",
                                 "insulation": ""}
 
+    litz_dict["1.7x500x0.06"] = {"strands_numbers": 500,
+                                "strand_radii": 0.06e-3 / 2,
+                                "conductor_radii": 1.7e-3 / 2,
+                                "ff": "",
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
 
     return litz_dict
 
