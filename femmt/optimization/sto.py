@@ -276,9 +276,15 @@ class StackedTransformerOptimization:
                 func = lambda trial: femmt.optimization.StackedTransformerOptimization.FemSimulation.NSGAII.objective(trial, config,
                                                                                    target_and_fixed_parameters)
 
-                study = optuna.create_study(study_name=study_name, storage=f"sqlite:///study_{study_name}.sqlite3",
-                                            load_if_exists=True)
-                study.optimize(func, n_trials=number_trials)
+                study_in_storage = optuna.create_study(study_name=study_name, storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
+                                                    load_if_exists=True)
+
+                study_in_memory = optuna.create_study(directions=["minimize", "minimize", "minimize", 'minimize'],
+                                                       study_name=study_name)
+                study_in_memory.add_trials(study_in_storage.trials)
+                study_in_memory.optimize(func, n_trials=number_trials)
+
+                study_in_storage.add_trials(study_in_memory.trials[(-number_trials - 1):-1])
 
             @staticmethod
             def show_study_results(study_name: str, config: StoSingleInputConfig,
