@@ -321,6 +321,8 @@ class Core:
 
             if self.permittivity["datasource"] == MaterialDataSource.Custom:
                 self.sigma = sigma  # from user
+            else:
+                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
             if self.permeability["datasource"] == MaterialDataSource.Custom:
                  # this is a service for the user:
@@ -330,13 +332,9 @@ class Core:
                     self.permeability_type = PermeabilityType.FixedLossAngle
                 else:
                     self.permeability_type = PermeabilityType.RealValue
-
-
-            elif self.material != "custom":  # TODO: new condition here
+            else:
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-                                                                             attribute="initial_permeability")
-                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
+                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material, attribute="initial_permeability")
 
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
