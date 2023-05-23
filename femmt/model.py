@@ -41,7 +41,8 @@ class Conductor:
     # Not used in femmt_classes. Only needed for to_dict()
     conductivity: Conductivity = None
 
-    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False):
+    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False,
+                 winding_material_temperature: float = 100):
         """Creates a conductor object.
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
         The conductor with the lowest winding number (starting from 0) will be treated as primary, second-lowest number as secondary and so on.
@@ -61,7 +62,7 @@ class Conductor:
 
         dict_material_database = ff.wire_material_database()
         if conductivity.name in dict_material_database:
-            self.cond_sigma = dict_material_database[conductivity.name]["sigma"]
+            self.cond_sigma = ff.conductivity_temperature(conductivity.name, winding_material_temperature)
         else:
             raise Exception(f"Material {conductivity.name} not found in database")
 

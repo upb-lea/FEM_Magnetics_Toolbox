@@ -649,7 +649,7 @@ class MagneticComponent:
 
         # TODO: distinguish between wire material. Only copper at the moment
         for wire_volume in self.calculate_wire_volumes():
-            wire_weight.append(wire_volume * wire_material["Copper"]["volumetric_mass_density"])
+            wire_weight.append(wire_volume * wire_material["Copper"].volumetric_mass_density)
 
         return wire_weight
 

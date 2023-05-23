@@ -749,7 +749,7 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
 
     total_turn_length = turns_count * middle_turn_length
 
-    sigma_copper = ff.wire_material_database()[material]["sigma"]
+    sigma_copper = ff.wire_material_database()[material].sigma
 
     # return R = rho * l / A
     return total_turn_length / (conductor_radius ** 2 * np.pi) / sigma_copper

@@ -59,3 +59,13 @@ class ConductorStack:
 @dataclass
 class StackIsolation:
     thickness: float
+
+
+@dataclass
+class WireMaterial:
+    name: str
+    sigma: float
+    temperature: float
+    temperature_coefficient: float
+    thermal_conductivity: float
+    volumetric_mass_density: float
