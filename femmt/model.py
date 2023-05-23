@@ -172,7 +172,7 @@ class Core:
 
     file_path_to_solver_folder: str  # location to create temporary pro file
 
-    silent: bool = False
+    mdb_verbosity: Verbosity
 
     def __init__(self,
                  # dimensions
@@ -200,7 +200,7 @@ class Core:
                  sigma: float = None,
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
-                 silent: bool = False,
+                 mdb_verbosity: Verbosity = Verbosity.ToConsole,
                  **kwargs):
         """TODO Doc
 
@@ -223,7 +223,7 @@ class Core:
         :param correct_outer_leg: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
         :type correct_outer_leg: bool, optional
         """
-        self.silent = silent
+        self.mdb_verbosity = mdb_verbosity
 
         # Set parameters
         self.core_type = core_type  # Basic shape of magnetic conductor
@@ -259,7 +259,7 @@ class Core:
         # Material Parameters
         # General
         # Initialize database
-        self.material_database = mdb.MaterialDatabase(silent)
+        self.material_database = mdb.MaterialDatabase(self.mdb_verbosity == Verbosity.Silent)
         self.material = material
         self.file_path_to_solver_folder = None
         self.temperature = temperature
@@ -364,7 +364,7 @@ class Core:
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
-        if not self.silent:
+        if self.mdb_verbosity == Verbosity.ToConsole:
             print(f"{self.permeability['datasource'] = }")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,

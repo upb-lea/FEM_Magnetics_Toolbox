@@ -9,7 +9,8 @@ def create_example_model(working_directory, electro_magnetic_base_folder):
     # Copy electro magnetic base folder
     electro_magnetic_folder = os.path.join(working_directory, "electro_magnetic")
     try:
-        shutil.copytree(electro_magnetic_base_folder, electro_magnetic_folder)
+        if not os.path.isdir(electro_magnetic_folder):
+            shutil.copytree(electro_magnetic_base_folder, electro_magnetic_folder)
     except OSError as err:
         print(err)
 
@@ -60,7 +61,7 @@ if __name__ == "__main__":
     geos = []
     simulation_parameters = []
     working_directories = []
-    for i in range(30):
+    for i in range(5):
         working_directory = os.path.join(parallel_folder, f"inductor_{i}")
         geos.append(create_example_model(working_directory, electro_magnetic_base_folder))
         simulation_parameters.append({

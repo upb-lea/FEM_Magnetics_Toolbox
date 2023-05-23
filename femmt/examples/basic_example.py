@@ -108,7 +108,7 @@ if component == "inductor":
                     permeability_measurement_setup="LEA_LK",
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup="LEA_LK")
+                    permittivity_measurement_setup="LEA_LK", mdb_verbosity=fmt.Verbosity.Silent)
                     # mu_rel=3000, phi_mu_deg=10,
                     # sigma=0.5)
     geo.set_core(core)

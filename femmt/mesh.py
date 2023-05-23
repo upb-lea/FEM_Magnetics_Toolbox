@@ -1,8 +1,9 @@
 # Python standard libraries
 import os
 import numpy as np
-from typing import Dict, List
 import warnings
+from logging import Logger
+from typing import Dict, List
 
 # Third parry libraries
 import gmsh
@@ -37,14 +38,16 @@ class Mesh:
     thermal_mesh_file: str
 
     verbosity: Verbosity
+    logger: Logger
 
     # Additionally there are all the needed lists for points, lines, curve_loops and plane_surfaces
     # See set_empty_lists()
 
     def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], correct_outer_leg: bool,
-                 file_paths: FileData, verbosity: Verbosity, region: bool = None):
+                 file_paths: FileData, verbosity: Verbosity, logger: Logger, region: bool = None):
 
         self.verbosity = verbosity
+        self.logger = logger
 
         # Initialize gmsh once
         if not gmsh.isInitialized():
@@ -84,7 +87,7 @@ class Mesh:
 
     def femmt_print(self, text: str):
         if not self.verbosity == Verbosity.Silent:
-            print(text)
+            self.logger.info(text)
 
     def set_empty_point_lists(self):
         # Add empty lists

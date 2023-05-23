@@ -7,6 +7,7 @@ import json
 import warnings
 import inspect
 import time
+import logging
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 
@@ -57,17 +58,7 @@ class MagneticComponent:
         :type is_gui: bool
         :param simulation_name: name without any effect. Will just be displayed in the result-log file
         :type simulation_name: str
-        """
-        # Variable to set silent mode
-        self.verbosity = verbosity
-
-        if not verbosity == Verbosity.ToConsole:
-            gmsh.option.setNumber("General.Terminal", 0)
-
-        self.femmt_print(f"\n"
-                       f"Initialized a new Magnetic Component of type {component_type.name}\n"
-                       f"--- --- --- ---")
-
+        """            
         # Get caller filepath when no working_directory was set
         if working_directory is None:
             caller_filename = inspect.stack()[1].filename
@@ -79,6 +70,23 @@ class MagneticComponent:
         # Create file paths class in order to handle all paths
         self.file_data = FileData(working_directory, electro_magnetic_folder_path)
 
+        # Variable to set silent mode
+        self.verbosity = verbosity
+        self.logger = logging.getLogger("FEMMTLogger")
+        self.logger.setLevel(logging.INFO)
+
+        if not verbosity == Verbosity.ToConsole:
+            gmsh.option.setNumber("General.Terminal", 0)
+
+        if verbosity == Verbosity.ToFile:
+            fh = logging.FileHandler(self.file_data.femmt_log, mode="w")
+            fh.setLevel(logging.INFO)
+            self.logger.addHandler(fh)
+
+        self.femmt_print(f"\n"
+                       f"Initialized a new Magnetic Component of type {component_type.name}\n"
+                       f"--- --- --- ---")
+        
         # To make sure femm is only imported once
         self.femm_is_imported = False
 
@@ -164,8 +172,8 @@ class MagneticComponent:
         self.simulation_name = simulation_name
 
     def femmt_print(self, text: str):
-        if not self.verbosity == Verbosity.Silent:
-            print(text)
+        if self.verbosity != Verbosity.Silent:
+            self.logger.info(text)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
@@ -324,11 +332,11 @@ class MagneticComponent:
 
         # Create model
         self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.winding_windows, self.stray_path,
-                                            self.insulation, self.component_type, len(self.windings), self.verbosity)
+                                            self.insulation, self.component_type, len(self.windings), self.verbosity, self.logger)
         self.two_d_axi.draw_model()
 
         # Create mesh
-        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, self.verbosity, None)
+        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, self.verbosity, self.logger, None)
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
         """Generates model and mesh.

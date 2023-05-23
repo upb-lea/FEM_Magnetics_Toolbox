@@ -1,5 +1,6 @@
 # Python standard libraries
 import numpy as np
+from logging import Logger
 from typing import List
 
 # Local libraries
@@ -26,6 +27,7 @@ class TwoDaxiSymmetric:
     mesh_data: MeshData
     number_of_windings: int
     verbosity: Verbosity
+    logger: Logger
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
@@ -38,7 +40,7 @@ class TwoDaxiSymmetric:
     p_iso_pri_sec: List[List[float]]
 
     def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
-                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity):
+                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity, logger: Logger):
         self.core = core
         self.mesh_data = mesh_data
         self.winding_windows = winding_windows
@@ -48,6 +50,7 @@ class TwoDaxiSymmetric:
         self.insulation = insulation
         self.number_of_windings = number_of_windings
         self.verbosity = verbosity
+        self.logger = logger
 
         # -- Arrays for geometry data -- 
         # TODO Is the zero initialization necessary?
@@ -71,7 +74,7 @@ class TwoDaxiSymmetric:
         
     def femmt_print(self, text: str):
         if not self.verbosity == Verbosity.Silent:
-            print(text)
+            self.logger.info(text)
 
     def draw_outer(self):
         """

@@ -58,6 +58,7 @@ class FileData:
         self.results_em_simulation = os.path.join(self.mesh_folder_path, "results.png")
         self.gmsh_log = os.path.join(self.results_folder_path, "log_gmsh.txt")
         self.getdp_log = os.path.join(self.results_folder_path, "log_getdp.txt")
+        self.femmt_log = os.path.join(self.results_folder_path, "log_femmt.txt")
         self.onelab_folder_path = None
 
         # Create necessary folders
