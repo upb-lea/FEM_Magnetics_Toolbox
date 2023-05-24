@@ -51,6 +51,10 @@ class Conductor:
         :type winding_number: int
         :param conductivity: Sets the conductivity for the conductor
         :type conductivity: float
+        :param winding_material_temperature: temperature of winding material, default set to 100 °C
+        :type winding_material_temperature: float
+        :param parallel: Set to True to introduce parallel conductors. Default set to False
+        :type parallel: bool
         """
         if winding_number < 0:
             raise Exception("Winding index cannot be negative.")
