@@ -70,14 +70,14 @@ example_results_folder = os.path.join(os.path.dirname(__file__), "example_result
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-# component = "inductor"
+component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
 # component = "three-winding-transformer"
 # component = "integrated_transformer"
 # component = "center-tapped-transformer"
 # component = "stacked-transformer"
-component = "stacked-center-tapped-transformer"
+# component = "stacked-center-tapped-transformer"
 # component = "load_from_file"
 
 
@@ -130,7 +130,7 @@ if component == "inductor":
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=75)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
@@ -192,10 +192,10 @@ if component == "transformer-interleaved":
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductors and set parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=75)
     winding1.set_solid_round_conductor(0.0011, None)
 
-    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper, winding_material_temperature=75)
     winding2.set_solid_round_conductor(0.0011, None)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
@@ -246,7 +246,7 @@ if component == "transformer":
     bot, top = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, split_distance=0.001)
 
     # 6. create conductors and set parameters
-    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=95)
     winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     #winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
@@ -405,7 +405,8 @@ if component == "center-tapped-transformer":
                                                                                      secondary_parallel_turns=3, secondary_thickness_foil=1e-3,
                                                                                      iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
                                                                                      iso_primary_to_primary=1e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
-                                                                                     interleaving_type=fmt.CenterTappedInterleavingType.TypeA)
+                                                                                     interleaving_type=fmt.CenterTappedInterleavingType.TypeA,
+                                                                                     primary_additional_bobbin=1e-3)
 
 
     geo.set_insulation(insulation)
@@ -496,7 +497,8 @@ if component == "stacked-center-tapped-transformer":
                                                                                                       iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
                                                                                                       iso_primary_to_primary=2e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=4e-4,
                                                                                                       interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
-                                                                                                      primary_coil_turns=3)
+                                                                                                      primary_coil_turns=3,
+                                                                                                      primary_additional_bobbin=1e-3)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
