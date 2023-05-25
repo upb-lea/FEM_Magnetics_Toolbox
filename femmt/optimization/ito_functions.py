@@ -53,7 +53,7 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
 
     # generate new and empty working directory
     if not os.path.exists(working_directory):
-        os.mkdir(working_directory)
+        os.makedirs(working_directory)
 
     working_directories = WorkingDirectories(
         fem_working_directory=os.path.join(working_directory, '00_femmt_simulation'),
