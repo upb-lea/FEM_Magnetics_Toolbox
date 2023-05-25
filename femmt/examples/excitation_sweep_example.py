@@ -28,7 +28,14 @@ if component == "inductor_sweep":
     core_db = fmt.core_database()["PQ 40/40"]
 
     core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                    material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
+                    material="N95", temperature=25, frequency=100000,
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup="LEA_LK",
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup="LEA_LK")
+
     # mu_rel=3000, phi_mu_deg=10,
     # sigma=0.5)
     geo.set_core(core)
@@ -60,10 +67,10 @@ if component == "inductor_sweep":
     geo.set_winding_window(winding_window)
 
     # 8. create the model
-    geo.create_model(freq=100000, visualize_before=True, save_png=False)
+    geo.create_model(freq=100000, pre_visualize_geometry=True, save_png=False)
 
     # 9. start simulation
-    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last=True)
+    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last_fem_simulation=True)
 
 
 if component == "transformer_sweep":
@@ -82,7 +89,7 @@ if component == "transformer_sweep":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    mu_rel=3100, phi_mu_deg=12,
+                    mu_r_abs=3100, phi_mu_deg=12,
                     sigma=1.2)
     geo.set_core(core)
 
@@ -114,7 +121,7 @@ if component == "transformer_sweep":
     geo.set_winding_window(winding_window)
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=250000, visualize_before=True)
+    geo.create_model(freq=250000, pre_visualize_geometry=True)
 
     # 9. start simulation
-    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last=True)
+    geo.excitation_sweep(frequency_list=frequencies, current_list_list=current_amplitudes, phi_deg_list_list=phases, show_last_fem_simulation=True)

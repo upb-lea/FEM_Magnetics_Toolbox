@@ -1,9 +1,18 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
+
+
+class WindingTag(IntEnum):
+    """Names of windings
+    """
+    Primary = 1
+    Secondary = 2
+    Tertiary = 3
+
 
 class WindingWindowSplit(IntEnum):
-    """Determines how many virtual winding windowes are created by the winding window. Used in Winding window class.
+    """Determines how many virtual winding windows are created by the winding window. Used in Winding window class.
     """
-    NoSplit = 1 
+    NoSplit = 1
     """Virtual winding window same size as winding window
     """
     HorizontalSplit = 2
@@ -15,6 +24,17 @@ class WindingWindowSplit(IntEnum):
     HorizontalAndVerticalSplit = 4
     """Splits winding window in four virtual winding windows separated by a horizontal and vertical line
     """
+    VerticalStack = 5
+    """Based on a vertical stack, the winding window is split into several virtual winding windows
+    """
+    TenCells_Split = 6
+    """The winding window is split into 2x5 virtual winding windows
+    """
+    NoSplitWithBobbin = 7
+    """Acts like "NoSplit", but takes bobbin geometry instead of core-cond insulation to define the virtual winding window.
+    """
+
+
 
 class ComponentType(IntEnum):
     """Sets the component type for the whole simulation. Needs to be given to the MagneticComponent on creation.
@@ -22,6 +42,14 @@ class ComponentType(IntEnum):
     Inductor = 1
     Transformer = 2
     IntegratedTransformer = 3
+
+
+class CoreType(IntEnum):
+    """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation.
+    """
+    Single = 1  # one axisymmetric core
+    Stacked = 2  # one and a half cores
+
 
 class AirGapMethod(IntEnum):
     """Sets the method how the air gap position (vertical) is set.
@@ -36,6 +64,10 @@ class AirGapMethod(IntEnum):
     Manually = 3
     """The vertical position needs to be given manually. In metres.
     """
+    Stacked = 4
+    """Two air gaps can be defined with "bot" (center of lower core) and "top" (between backside of upper core and stacked core).
+    """
+
 
 class AirGapLegPosition(IntEnum):
     """Sets the core at which the air gap will be added. Currently only CenterLeg is supported.
@@ -51,15 +83,33 @@ class AirGapLegPosition(IntEnum):
     """Air gap in right leg.
     """
 
+
+class StackedPosition(IntEnum):
+    """For stacked cores: options to place air gaps.
+
+    1 to place air gap in the top winding window
+    2 to place air gap in the bot winding window
+    """
+    Top = 1
+    Bot = 2
+
+
 class WindingType(IntEnum):
     """Internally used in VirtualWindingWindow class. 
     """
-    Interleaved = 1
+    TwoInterleaved = 1
+    """only two winding (transformer) interleaving
+    """
     Single = 2
+    """only one winding (with n turns) in the virtual winding window
+    """
+    CenterTappedGroup = 3
+    """special 3 winding topology with typical center gapped winding schemes
+    """
+
 
 class WindingScheme(IntEnum):
-    """Used when adding a single winding to the virtual winding window. Only used with an
-    rectangular solid conductor.
+    """Used when adding a single winding to the virtual winding window. Only used with a rectangular solid conductor.
     """
     Full = 1
     """The whole virtual winding window is filled with one conductor.
@@ -73,6 +123,7 @@ class WindingScheme(IntEnum):
     FoilHorizontal = 4
     """Foils are very wide (x-axis) and drawn along y-axis.
     """
+
 
 class InterleavedWindingScheme(IntEnum):
     """Used when adding an interleaved winding to the virtual winding window.
@@ -90,6 +141,7 @@ class InterleavedWindingScheme(IntEnum):
     """First winding is drawn bottom to top. Second winding is drawn top to bottom.
     """
 
+
 class ConductorArrangement(IntEnum):
     """Set for round conductors when having a single conductor in the virtual winding window.
     """
@@ -101,8 +153,18 @@ class ConductorArrangement(IntEnum):
     """
     Hexagonal = 3
     """Turns are drawn more compact. The turn of the next line slides in the empty space between two turns of the previous line.
-    Frist drawn in y-direction then x-direction.
+    First drawn in y-direction then x-direction.
     """
+
+
+class CenterTappedInterleavingType(IntEnum):
+    """
+    """
+    custom = 1
+    TypeA = 2
+    TypeB = 3
+    TypeC = 4
+
 
 class ConductorType(IntEnum):
     """Sets the type of the conductor.
@@ -110,6 +172,7 @@ class ConductorType(IntEnum):
     RoundSolid = 1
     RoundLitz = 2
     RectangularSolid = 3
+
 
 class WrapParaType(IntEnum):
     """Sets the wrap para type. Only necessary for a single conductor in a virtual winding window and a FoilVertical winding scheme.
@@ -123,11 +186,13 @@ class WrapParaType(IntEnum):
     The thickness parameter when creating the conductor is irrelevant.
     """
 
+
 class Conductivity(IntEnum):
     """Sets the conductivity of the conductor.
     """
     Copper = 1
     Aluminium = 2
+
 
 class LossApproach(IntEnum):
     """Sets the way how losses will be calculated.
@@ -135,12 +200,14 @@ class LossApproach(IntEnum):
     Steinmetz = 1
     LossAngle = 2
 
+
 class PermeabilityType(IntEnum):
-    """Sets the way how permeability data is recieved.  
+    """Sets the way how permeability data is received.
     """
     FixedLossAngle = 1
     RealValue = 2
     FromData = 3
+
 
 class ExcitationMeshingType(IntEnum):
     """When running an excitation it is possible to not mesh at every frequency.
@@ -148,3 +215,20 @@ class ExcitationMeshingType(IntEnum):
     MeshOnlyLowestFrequency = 1
     MeshOnlyHighestFrequency = 2
     MeshEachFrequency = 3
+
+
+# Following Enums must always be consistent with the materialdatabase
+class MaterialDataSource(str, Enum):
+    """Sets the source from where data is taken.
+    """
+    Custom = "custom"
+    Measurement = "measurements"
+    ManufacturerDatasheet = "manufacturer_datasheet"
+
+
+class MeasurementDataType(str, Enum):
+    """Sets the type of measurement data.
+    """
+    ComplexPermeability = "complex_permeability"
+    ComplexPermittivity = "complex_permittivity"
+    Steinmetz = "Steinmetz"

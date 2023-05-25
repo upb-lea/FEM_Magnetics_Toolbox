@@ -13,9 +13,13 @@ geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_d
 
 core_db = fmt.core_database()["PQ 40/40"]
 
-core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
-                mu_rel=3100, phi_mu_deg=12,
-                sigma=0.6)
+core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                window_w=core_db["window_w"], window_h=core_db["window_h"])
+core = fmt.Core(core_dimensions=core_dimensions,
+non_linear=False, sigma=0.6, mu_r_abs=3200, phi_mu_deg=12,
+                permeability_datasource = fmt.MaterialDataSource.Custom,
+                permittivity_datasource = fmt.MaterialDataSource.Custom)
+
 geo.set_core(core)
 
 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
@@ -34,8 +38,8 @@ winding = fmt.Conductor(0, fmt.Conductivity.Copper)
 winding.set_rectangular_conductor(thickness=1e-3)
 
 vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, wrap_para_type)
-geo.set_winding_window(winding_window)
+geo.set_winding_windows([winding_window])
 
-geo.create_model(freq=100000, visualize_before=True, save_png=False)
+geo.create_model(freq=100000, pre_visualize_geometry=True, save_png=False)
 
-geo.single_simulation(freq=100000, current=[3], show_results=True)
+geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=True)

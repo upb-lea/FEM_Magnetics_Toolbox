@@ -1,0 +1,87 @@
+# This is a basic workflow to help you get started with Actions
+
+#############################
+# Main difference between main and develop branch
+# 2023-02-15
+# Note: The push/pull test file on develop branch differs from main
+# * main test uses main branch of materialdatabase
+# * develop test uses develop branch of materialdatabase
+#############################
+
+name: develop_branch - Pytest on push and on pull requests
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  pytest-develop:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: install femmt package
+        run: |
+            sudo apt-get update
+            # Problem with OSError: libGLU.so.1: connot open shared object file
+            # Answer here: https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo
+            sudo apt install libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libglu1
+            # Unzip used for onelab
+            sudo apt install unzip
+            pip install --upgrade pip
+            pip install opencv-python
+            pip install -e .
+            pip install pytest
+
+      - name: install material database package
+        run: |
+            pwd
+            ls
+            wget https://github.com/upb-lea/materialdatabase/archive/refs/heads/develop.zip
+            unzip develop.zip
+            rm develop.zip
+            cd materialdatabase-develop
+            pip install -e .
+            cd ..
+            echo show folder path
+            pwd
+            echo show folder structure:
+            ls 
+
+
+      - name: Install ONELAB
+        run: |
+          wget https://onelab.info/files/onelab-Linux64.zip
+          unzip onelab-Linux64.zip -d .
+          mv onelab-Linux64 onelab
+          rm onelab-Linux64.zip
+          pwd
+          ls
+
+      # Runs a set of commands using the runners shell
+      - name: Run pytests
+        run: |
+          echo Start testing...
+          pytest tests
+          echo tests finished.
+
+      - name: Install sphinx and build documentation with sphinx
+        run: |
+          pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email
+          pwd
+          ls
+          cd documentation/
+          make html

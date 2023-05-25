@@ -1,0 +1,161 @@
+{
+  "single_sweeps": [
+    {
+      "f": 100000,
+      "winding1": {
+        "turn_losses": [
+          0.08703148764905409,
+          0.02171480733039618,
+          0.01241581051920198,
+          0.005052889750325747,
+          0.001046304552284966
+        ],
+        "flux": [
+          3.546133642425155e-05,
+          -5.47684094919681e-07
+        ],
+        "flux_over_current": [
+          1.18204300072085e-05,
+          -1.829092409873198e-07
+        ],
+        "V": [
+          0.3447757966556694,
+          22.28098564375114
+        ],
+        "number_turns": 5,
+        "I": [
+          3.0,
+          0.0
+        ],
+        "winding_losses": 0.1272612998012638,
+        "P": 0.5171636949835041,
+        "Q": 33.42147846562671,
+        "S": 33.42547951960837
+      },
+      "core_eddy_losses": 0.009347770430762565,
+      "core_hyst_losses": 0.3805546249885314,
+      "all_winding_losses": 0.1272612998012638
+    }
+  ],
+  "total_losses": {
+    "winding1": {
+      "total": 0.12726129980126297,
+      "turns": [
+        0.08703148764905409,
+        0.02171480733039618,
+        0.01241581051920198,
+        0.005052889750325747,
+        0.001046304552284966
+      ]
+    },
+    "all_windings": 0.1272612998012638,
+    "eddy_core": 0.009347770430762565,
+    "hyst_core_fundamental_freq": 0.3805546249885314,
+    "core": 0.38990239541929395,
+    "total_losses": 0.5171636952205577
+  },
+  "simulation_settings": {
+    "simulation_name": null,
+    "date": "2023-05-23 14:16:41",
+    "component_type": "Inductor",
+    "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
+    "core": {
+      "core_inner_diameter": 0.0149,
+      "window_w": 0.01105,
+      "window_h": 0.0295,
+      "material": "custom",
+      "loss_approach": "LossAngle",
+      "mu_r_abs": 3100,
+      "phi_mu_deg": 12,
+      "sigma": 0.6,
+      "non_linear": false,
+      "correct_outer_leg": false,
+      "temperature": null,
+      "permeability_datasource": "custom",
+      "permeability_measurement_setup": null,
+      "permeability_datatype": null,
+      "permittivity_datasource": "custom",
+      "permittivity_measurement_setup": null,
+      "permittivity_datatype": null
+    },
+    "winding_windows": [
+      {
+        "max_bot_bound": -0.013749999999999998,
+        "max_top_bound": 0.013749999999999998,
+        "max_left_bound": 0.00945,
+        "max_right_bound": 0.0175,
+        "virtual_winding_windows": [
+          {
+            "bot_bound": -0.013749999999999998,
+            "top_bound": 0.013749999999999998,
+            "left_bound": 0.00945,
+            "right_bound": 0.0175,
+            "winding_type": "Single",
+            "winding_scheme": "FoilVertical",
+            "wrap_para": "FixedThickness",
+            "windings": [
+              {
+                "winding_number": 0,
+                "conductivity": "Copper",
+                "conductor_type": "RectangularSolid",
+                "thickness": 0.001,
+                "conductor_radius": 1,
+                "conductor_arrangement": null,
+                "number_strands": 0,
+                "strand_radius": null,
+                "fill_factor": null
+              }
+            ],
+            "turns": [
+              5
+            ]
+          }
+        ]
+      }
+    ],
+    "air_gaps": {
+      "method": "Center",
+      "air_gap_number": 1,
+      "air_gaps": [
+        {
+          "leg_position": "CenterLeg",
+          "position_value": 0,
+          "height": 0.0005,
+          "stacked_position": null
+        }
+      ]
+    },
+    "insulation": {
+      "inner_winding_insulations": [
+        [
+          0.0005
+        ]
+      ],
+      "core_insulations": [
+        0.001,
+        0.001,
+        0.002,
+        0.001
+      ]
+    }
+  },
+  "misc": {
+    "core_2daxi_volume": 1.9509769078973208e-05,
+    "core_2daxi_total_volume": 4.61718454654407e-05,
+    "core_2daxi_weight": 0.0,
+    "wire_lengths": [
+      0.3066194429903638
+    ],
+    "wire_volumes": [
+      9.045273568215733e-06
+    ],
+    "wire_weight": [
+      0.08068384022848434
+    ],
+    "core_cost": 0.0,
+    "winding_cost": [
+      7.2432505677684675
+    ],
+    "total_cost_incl_margin": 9.65766742369129
+  }
+}

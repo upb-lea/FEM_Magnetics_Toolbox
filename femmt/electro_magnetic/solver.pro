@@ -149,15 +149,15 @@ Formulation {
         In DomainC ; Jacobian Vol ; Integration II ; }
 
       // sigma Nabla PHI
-      Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {a} ] ;
+      Galerkin { [ -sigma[] * Dof{ur}/CoefGeo , {a} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
-      Galerkin { [ sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
+      Galerkin { [ -sigma[] * Dof{ur}/CoefGeo , {ur} ] ;
         In DomainC ; Jacobian Vol ; Integration II ; }
 
       // -Je (imprinted current density)
       Galerkin { [ -1/AreaCell[] *  Dof{ir}, {a} ] ;
         In DomainS ; Jacobian Vol ; Integration II ; }
-      Galerkin { DtDof [ -1/AreaCell[] * Dof{a}, {ir} ] ;
+      Galerkin { DtDof [ 1/AreaCell[] * Dof{a}, {ir} ] ;
         In DomainS ; Jacobian Vol ; Integration II ; }
       //GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In DomainS ; }
 
@@ -167,40 +167,29 @@ Formulation {
       EndIf
       */
 
-      // GlobalTerms are used for the current imprinting
-      If(!Flag_HomogenisedModel1)
-        If(Val_EE_1!=0)
-          GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
-        EndIf
-      EndIf
-      If(Flag_Transformer)
-        If(!Flag_HomogenisedModel2)
-          If(Val_EE_2!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
+
+      // GlobalTerms are used for the voltage - current relation
+      For n In {1:n_windings}
+          If(!Flag_HomogenisedModel~{n})
+            If(Val_EE~{n}!=0)
+              GlobalTerm { [ Dof{I}, {U} ] ; In Winding~{n} ; }
+            EndIf
+//          Else
+//            Galerkin { [ NbrCond~{n}/CoefGeo/AreaCell[] / sigma[] * NbrCond~{n}/CoefGeo/AreaCell[]* Dof{ir} , {ir} ] ;
+//                        In StrandedWinding~{n} ; Jacobian Vol ; Integration II ; }
+//            GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding~{n} ; }
           EndIf
-        EndIf
-      EndIf
+      EndFor
 
 
-      /*
-      If(!Flag_HomogenisedModel1)
-        If(Val_EE_1!=0)
-          GlobalTerm { [ Dof{I}, {U} ] ; In Winding1 ; }
-        EndIf
-      Else
-        GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding1 ; }
-      EndIf
 
-      If(Flag_Transformer)
-        If(!Flag_HomogenisedModel2)
-          If(Val_EE_2!=0)
-            GlobalTerm { [ Dof{I}, {U} ] ; In Winding2 ; }
-          EndIf
-        Else
-          GlobalTerm { [ Dof{Us}/CoefGeo, {Is} ] ; In StrandedWinding2 ; }
-        EndIf
-      EndIf
-      */
+
+
+
+
+
+
+
 
       //Galerkin { [ -Ns[]/Sc[] * Dof{ir}, {a} ] ;
       //  In DomainS ; Jacobian Vol ; Integration II ; }
