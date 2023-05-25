@@ -6,8 +6,6 @@ from typing import List
 import numpy as np
 from materialdatabase.dtos import MaterialCurve
 
-
-
 @dataclass
 class StoInsulation:
     iso_top_core: float
@@ -16,7 +14,8 @@ class StoInsulation:
     iso_right_core: float
     iso_primary_to_primary: float
     iso_secondary_to_secondary: float
-    iso_primary_to_secondary:float
+    iso_primary_to_secondary: float
+    iso_primary_additional: float
 
 @dataclass
 class StoSingleInputConfig:
@@ -40,11 +39,10 @@ class StoSingleInputConfig:
     material_list: list
     core_inner_diameter_min_max_list: list
     window_w_min_max_list: list
-    window_h_top_min_max_list: list
     window_h_bot_min_max_list: list
-    factor_max_flux_density: float
+    max_transformer_total_height: float
     primary_litz_wire_list: list
-    metal_sheet_thickness: list
+    metal_sheet_thickness_list: list
 
     # fix parameters: insulations
     insulations: StoInsulation
