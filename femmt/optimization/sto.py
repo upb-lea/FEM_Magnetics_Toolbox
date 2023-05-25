@@ -217,8 +217,8 @@ class StackedTransformerOptimization:
                     geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
                     geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
-                                          current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2, target_and_fixed_parameters.i_peak_2],
-                                          phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2 + 180],
+                                          current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
+                                          phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
                                           show_fem_simulation_results=False)
 
                     # copy result files to result-file folder
