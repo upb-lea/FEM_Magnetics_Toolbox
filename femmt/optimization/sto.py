@@ -254,6 +254,9 @@ class StackedTransformerOptimization:
             @staticmethod
             def start_study(study_name: str, config: StoSingleInputConfig, number_trials: int, storage: str = None) -> None:
 
+                if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
+                    raise Exception(f"study '{study_name}' already availabe. Choose different study name.")
+
                 # calculate the target and fixed parameters
                 # and generate the folder structure inside this function
                 target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
