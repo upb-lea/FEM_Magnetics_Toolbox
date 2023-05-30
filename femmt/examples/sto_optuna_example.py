@@ -63,5 +63,6 @@ study_name = "2023-05-25"
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    fmt.StackedTransformerOptimization.FemSimulation.NSGAII.start_study(study_name, dab_transformer_config, 50, storage='sqlite')
+    #fmt.StackedTransformerOptimization.FemSimulation.NSGAII.start_study(study_name, dab_transformer_config, 2, storage='sqlite')
+    fmt.StackedTransformerOptimization.FemSimulation.NSGAII.proceed_study(study_name, dab_transformer_config, 10)
     #fmt.StackedTransformerOptimization.FemSimulation.NSGAII.show_study_results(study_name, dab_transformer_config)
