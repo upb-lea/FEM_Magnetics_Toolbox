@@ -56,6 +56,8 @@ class StackedTransformerOptimization:
         phi_deg_1, phi_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec,
                                                                current_extracted_2_vec)
 
+        phi_deg_2 = phi_deg_2 - 180
+
         # target inductances
         target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s12_target,
                                                                                config.l_h_target,
@@ -320,7 +322,7 @@ class StackedTransformerOptimization:
                 study_in_memory = optuna.create_study(directions=["minimize", "minimize", "minimize", 'minimize'],
                                                        study_name=study_name)
                 study_in_memory.add_trials(study_in_storage.trials)
-                study_in_memory.optimize(func, n_trials=number_trials)
+                study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[(-number_trials - 1):-1])
 
