@@ -10,8 +10,8 @@ from femmt.model import Conductor
 class FileData:
     """Contains paths to every folder and file needed in femmt.
     """
-    def __init__(self, working_directory: str, electro_magnetic_folder_path: str = None):
-        self.update_paths(working_directory, electro_magnetic_folder_path)
+    def __init__(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None):
+        self.update_paths(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
 
     @staticmethod
     def create_folders(*args) -> None:
@@ -22,7 +22,7 @@ class FileData:
             if not os.path.exists(folder):
                 os.mkdir(folder)
 
-    def update_paths(self, working_directory: str, electro_magnetic_folder_path: str = None) -> None:
+    def update_paths(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None) -> None:
         """Sets the local path based on the given working directory
 
         :param working_directory: working directory folder path
@@ -40,7 +40,10 @@ class FileData:
         self.e_m_values_folder_path = os.path.join(self.results_folder_path, "values")
         self.e_m_fields_folder_path = os.path.join(self.results_folder_path, "fields")
         self.e_m_circuit_folder_path = os.path.join(self.results_folder_path, "circuit")
-        self.e_m_strands_coefficients_folder_path = os.path.join(self.electro_magnetic_folder_path, "Strands_Coefficients")
+        if strands_coefficients_folder_path:
+            self.e_m_strands_coefficients_folder_path = strands_coefficients_folder_path
+        else:
+            self.e_m_strands_coefficients_folder_path = os.path.join(self.electro_magnetic_folder_path, "Strands_Coefficients")
         self.femm_folder_path = os.path.join(self.working_directory, "femm")
         self.reluctance_model_folder_path = os.path.join(self.working_directory, "reluctance_model")
         self.thermal_results_folder_path = os.path.join(self.results_folder_path, "thermal")

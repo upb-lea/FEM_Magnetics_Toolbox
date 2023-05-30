@@ -89,7 +89,7 @@ if component == "inductor":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.ToFile)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.Silent)
 
     inductor_frequency = 270000
 

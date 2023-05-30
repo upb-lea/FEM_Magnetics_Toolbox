@@ -42,7 +42,8 @@ class MagneticComponent:
     silent: bool = False
 
     def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-                 verbosity: Verbosity = 2, is_gui: bool = False, simulation_name: Optional[str] = None, electro_magnetic_folder_path: str = None):
+                 verbosity: Verbosity = 2, is_gui: bool = False, simulation_name: Optional[str] = None, 
+                 electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None):
         # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         :param component_type: Available options:
@@ -68,7 +69,7 @@ class MagneticComponent:
             os.mkdir(working_directory)
 
         # Create file paths class in order to handle all paths
-        self.file_data = FileData(working_directory, electro_magnetic_folder_path)
+        self.file_data = FileData(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
 
         # Variable to set silent mode
         self.verbosity = verbosity
@@ -1576,6 +1577,7 @@ class MagneticComponent:
             #text_file.write(f"DirResValsTertiary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Tertiary/\";\n")
         text_file.write(f"DirResCirc = \"{self.file_data.e_m_circuit_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"OptionPos = \"{self.file_data.results_folder_path.replace(backslash, '/')}/option.pos\";\n")
+        text_file.write(f"DirStrandCoeff = \"{self.file_data.e_m_strands_coefficients_folder_path.replace(backslash, '/')}/\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":
