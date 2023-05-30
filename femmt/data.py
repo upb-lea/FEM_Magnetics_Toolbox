@@ -11,7 +11,8 @@ class FileData:
     """Contains paths to every folder and file needed in femmt.
     """
     def __init__(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None):
-        self.update_paths(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
+        if working_directory is not None:
+            self.update_paths(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
 
     @staticmethod
     def create_folders(*args) -> None:
@@ -62,7 +63,6 @@ class FileData:
         self.gmsh_log = os.path.join(self.results_folder_path, "log_gmsh.txt")
         self.getdp_log = os.path.join(self.results_folder_path, "log_getdp.txt")
         self.femmt_log = os.path.join(self.results_folder_path, "log_femmt.txt")
-        self.onelab_folder_path = None
 
         # Create necessary folders
         self.create_folders(self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 

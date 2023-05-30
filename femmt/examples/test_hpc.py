@@ -3,32 +3,9 @@ import os
 import time
 import shutil
 
-def copy_electro_magnetic_necessary_files(src_folder, dest_folder):
-    files = ["core_materials_temp.pro", "fields.pro", "ind_axi_python_controlled.pro", "Parameter.pro", "postquantities.pro", "solver.pro", "values.pro"]
-
-    for file in files:
-        from_path = os.path.join(src_folder, file)
-        to_path = os.path.join(dest_folder, file)
-        shutil.copy(from_path, to_path)
-
-def create_example_model(working_directory, electro_magnetic_base_folder, strands_coefficients_folder_path):
-    inductor_frequency = 270000
-    
-    # Copy important files from electro magnetic base folder
-    electro_magnetic_folder = os.path.join(working_directory, "electro_magnetic")
-    try:
-        if not os.path.isdir(working_directory):
-            os.mkdir(working_directory)
-        if not os.path.isdir(electro_magnetic_folder):
-            os.mkdir(electro_magnetic_folder)
-        copy_electro_magnetic_necessary_files(electro_magnetic_base_folder, electro_magnetic_folder)
-    except OSError as err:
-        print(err)
-
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, 
-                                verbosity=fmt.Verbosity.ToFile, 
-                                electro_magnetic_folder_path=electro_magnetic_folder,
-                                strands_coefficients_folder_path=strands_coefficients_folder_path)
+def create_parallel_example_model(inductor_frequency):    
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None, # Can be set to None since it will be overwritten anyways
+                                verbosity=fmt.Verbosity.ToFile)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
@@ -62,30 +39,27 @@ def create_example_model(working_directory, electro_magnetic_base_folder, strand
     return geo
 
 if __name__ == "__main__":
-    electro_magnetic_base_folder = os.path.join(os.path.dirname(__file__), "..", "electro_magnetic")
-    strands_coefficients_folder_path = os.path.join(electro_magnetic_base_folder, "Strands_Coefficients")
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     benchmark_results_folder = os.path.join(example_results_folder, "benchmarks")
-    parallel_folder = os.path.join(benchmark_results_folder, "parallel")
+    working_directory = os.path.join(benchmark_results_folder, "parallel")
 
-    if not os.path.exists(parallel_folder):
-        os.mkdir(parallel_folder)
+    number_of_models = 10
+    number_of_processes = 5
 
     inductor_frequency = 270000
 
     geos = []
     simulation_parameters = []
     working_directories = []
-    for i in range(10):
-        working_directory = os.path.join(parallel_folder, f"inductor_{i}")
-        geos.append(create_example_model(working_directory, electro_magnetic_base_folder, strands_coefficients_folder_path))
+    for i in range(number_of_models):
+        geos.append(create_parallel_example_model(inductor_frequency))
         simulation_parameters.append({
             "freq": inductor_frequency,
             "current": [4.5]
         })
 
     start_time = time.time()
-    fmt.hpc(5, geos, simulation_parameters)
+    fmt.run(number_of_processes, geos, simulation_parameters, working_directory)
     execution_time = time.time() - start_time
 
     print(f"Execution time: {execution_time}")
