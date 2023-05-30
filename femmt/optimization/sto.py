@@ -56,6 +56,8 @@ class StackedTransformerOptimization:
         phi_deg_1, phi_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec,
                                                                current_extracted_2_vec)
 
+        phi_deg_2 = phi_deg_2 - 180
+
         # target inductances
         target_inductance_matrix = fr.calculate_inductance_matrix_from_ls_lh_n(config.l_s12_target,
                                                                                config.l_h_target,
@@ -112,35 +114,67 @@ class StackedTransformerOptimization:
                 # suggest core geometry
                 core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0], config.core_inner_diameter_min_max_list[1])
                 window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
-                window_h_top = trial.suggest_float("window_h_top", config.window_h_top_min_max_list[0], config.window_h_top_min_max_list[1])
-                window_h_bot = trial.suggest_float("window_h_bot", config.window_h_bot_min_max_list[0], config.window_h_bot_min_max_list[1])
-                air_gap_coil = trial.suggest_float("air_gap_coil", 0.1e-3, window_h_top-0.1e-3)
                 air_gap_transformer = trial.suggest_float("air_gap_transformer", 0.1e-3, 5e-3)
-                foil_thickness = trial.suggest_float("foil_thickness", config.metal_sheet_thickness[0], config.metal_sheet_thickness[1])
                 inner_coil_insulation = trial.suggest_float("inner_coil_insulation", 0.5e-3, 5e-3)
 
-                # suggest categorical
-                core_material = trial.suggest_categorical("material", config.material_list)
                 primary_litz_wire = trial.suggest_categorical("primary_litz_wire", config.primary_litz_wire_list)
 
                 primary_litz_parameters = ff.litz_database()[primary_litz_wire]
+                primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
+
+                # Will always be calculated from the given parameters
+                available_width = window_w - inner_coil_insulation - config.insulations.iso_right_core
+
+                # ToDo: Hard coded primary coil turns
+                # Note: int() is used to round down.
+                number_rows_coil_winding = int((3 * primary_litz_diameter) / available_width) + 1
+
+                window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+
+                # Maximum coil air gap depends on the maximum window height top
+                air_gap_coil = trial.suggest_float("air_gap_coil", 0.1e-3, window_h_top - 0.1e-3)
+
+                # suggest categorical
+                core_material = trial.suggest_categorical("material", config.material_list)
+                foil_thickness = trial.suggest_categorical("foil_thickness", config.metal_sheet_thickness_list)
+
 
                 try:
+                    if config.max_transformer_total_height is not None:
+                        # Maximum transformer height
+                        window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
+                        window_h_bot_min = config.window_h_bot_min_max_list[0]
+                        if window_h_bot_min > window_h_bot_max:
+                            print(f"{number_rows_coil_winding = }")
+                            print(f"{window_h_top = }")
+                            raise ValueError(f"{window_h_bot_min = } > {window_h_bot_max = }")
+
+                        window_h_bot = trial.suggest_float("window_h_bot", window_h_bot_min, window_h_bot_max)
+
+                    else:
+                        window_h_bot = trial.suggest_float("window_h_bot", config.window_h_bot_min_max_list[0],
+                                                           config.window_h_bot_min_max_list[1])
+
+
+
                     geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
-                                                working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
+                                                  working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
                                                   silent=True, simulation_name=f"Case_{trial.number}")
 
                     core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                      window_h_top=window_h_top, window_h_bot=window_h_bot)
                     core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                                      mu_r_abs=3500, phi_mu_deg=12, sigma=1.2,
-                                      permeability_datasource=femmt.MaterialDataSource.Custom,
-                                      permittivity_datasource=femmt.MaterialDataSource.Custom)
-                                      #material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
-                                      #permeability_datasource=femmt.MaterialDataSource.ManufacturerDatasheet,
-                                      #permeability_datatype=femmt.MeasurementDataType.ComplexPermeability,
-                                      #permittivity_datasource=femmt.MaterialDataSource.ManufacturerDatasheet,
-                                      #permittivity_datatype=femmt.MeasurementDataType.ComplexPermittivity)
+                                      #mu_r_abs=3500, phi_mu_deg=12, sigma=1.2,
+                                      #permeability_datasource=femmt.MaterialDataSource.Custom,
+                                      #permittivity_datasource=femmt.MaterialDataSource.Custom)
+                                      material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
+                                      permeability_datasource=femmt.MaterialDataSource.Measurement,
+                                      permeability_datatype=femmt.MeasurementDataType.ComplexPermeability,
+                                      permeability_measurement_setup="LEA_LK",
+                                      permittivity_datasource=femmt.MaterialDataSource.Measurement,
+                                      permittivity_datatype=femmt.MeasurementDataType.ComplexPermittivity,
+                                      permittivity_measurement_setup="LEA_LK")
+
                     geo.set_core(core)
 
                     air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
@@ -169,21 +203,24 @@ class StackedTransformerOptimization:
                         iso_primary_to_primary=config.insulations.iso_primary_to_primary,
                         iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
                         iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
-                        bobbin_coil_top=0.5e-3,
-                        bobbin_coil_bot=core_dimensions.window_h_top / 2 - 0.85e-3,
+                        bobbin_coil_top=config.insulations.iso_top_core,
+                        bobbin_coil_bot=config.insulations.iso_bot_core,
                         bobbin_coil_left=inner_coil_insulation,
-                        bobbin_coil_right=0.2e-3,
+                        bobbin_coil_right=config.insulations.iso_right_core,
 
                         # misc
                         interleaving_type=femmt.CenterTappedInterleavingType.TypeC,
-                        primary_coil_turns=3)
+                        primary_coil_turns=3,
+                        winding_temperature=config.temperature)
 
                     geo.set_insulation(insulation)
                     geo.set_winding_windows([coil_window, transformer_window])
 
                     geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
-                    geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency, current=[20, 120, 120], phi_deg=[0, 180, 180],
+                    geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
+                                          current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
+                                          phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
                                           show_fem_simulation_results=False)
 
                     # copy result files to result-file folder
@@ -218,6 +255,9 @@ class StackedTransformerOptimization:
 
             @staticmethod
             def start_study(study_name: str, config: StoSingleInputConfig, number_trials: int, storage: str = None) -> None:
+
+                if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
+                    raise Exception(f"study '{study_name}' already availabe. Choose different study name.")
 
                 # calculate the target and fixed parameters
                 # and generate the folder structure inside this function
@@ -282,7 +322,7 @@ class StackedTransformerOptimization:
                 study_in_memory = optuna.create_study(directions=["minimize", "minimize", "minimize", 'minimize'],
                                                        study_name=study_name)
                 study_in_memory.add_trials(study_in_storage.trials)
-                study_in_memory.optimize(func, n_trials=number_trials)
+                study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[(-number_trials - 1):-1])
 
