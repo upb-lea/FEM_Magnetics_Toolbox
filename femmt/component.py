@@ -475,31 +475,36 @@ class MagneticComponent:
             complex_permeability = mu_0 * self.core.mu_r_abs
         return complex_permeability
 
-    def check_model(self):
+    def check_model_mqs_condition(self) -> None:
         """
+        Check the model for magneto-quasi-static condition for frequencies != 0
+
         Is called before a simulation.
-        e.g.: Used to check the model for magneto-quasi-static condition.
-        :return:
+        Loads the permittivity from the material database (measurement or datasheet) and calculates the
+        resonance ratio = diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance
+
+        :return: None
         """
-        if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
-            epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
-                                                                                          material_name="N49",
-                                                                                          datasource=self.core.permittivity["datasource"],
-                                                                                          datatype=self.core.permittivity["datatype"],
-                                                                                          measurement_setup=self.core.permittivity["measurement_setup"],
-                                                                                          interpolation_type="linear")
+        if self.frequency != 0:
+            if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
+                epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
+                                                                                              material_name="N49",
+                                                                                              datasource=self.core.permittivity["datasource"],
+                                                                                              datatype=self.core.permittivity["datatype"],
+                                                                                              measurement_setup=self.core.permittivity["measurement_setup"],
+                                                                                              interpolation_type="linear")
 
-            complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
-            ff.femmt_print(f"{complex_permittivity = }\n"
-                           f"{epsilon_r = }\n"
-                           f"{epsilon_phi_deg = }")
+                complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
+                ff.femmt_print(f"{complex_permittivity = }\n"
+                               f"{epsilon_r = }\n"
+                               f"{epsilon_phi_deg = }")
 
-            ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
-                                   complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+                ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                                       complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
 
-        else:
-            ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
-                                   complex_permittivity=0, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+            else:
+                ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                                       complex_permittivity=0, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
@@ -786,22 +791,27 @@ class MagneticComponent:
         """
         self.high_level_geo_gen()
         self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
-        self.file_communication()
-        self.pre_simulate()
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
 
-    def file_communication(self):
+    def write_simulation_parameters_to_pro_files(self):
         """
         Interaction between python and Prolog files.
+
+        Writes the simulation parameters to .pro-files
+
+        Parameter.pro: includes material properties, currents, phases, ...
+        postquantities.pro: includes directions to store the raw results from the FEM simulation
+
         """
-        # --------------------------------- File Communication --------------------------------
         # All shared control variables and parameters are passed to a temporary Prolog file
         ff.femmt_print(f"\n---\n"
-              f"File Communication\n")
+              f"Write simulation parameters to .pro files (file communication).\n")
 
-        # Write initialization parameters for simulation in .pro file
+        # Write initialization parameters for simulation in 'Parameter.pro' file
         self.write_electro_magnetic_parameter_pro()
 
-        # Write postprocessing parameters in .pro file
+        # Write postprocessing parameters in 'postquantities.pro' file
         self.write_electro_magnetic_post_pro()
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
@@ -831,9 +841,9 @@ class MagneticComponent:
 
         self.mesh.generate_electro_magnetic_mesh()
         self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
-        self.check_model()
-        self.file_communication()
-        self.pre_simulate()
+        self.check_model_mqs_condition()
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
         if show_fem_simulation_results:
@@ -928,9 +938,9 @@ class MagneticComponent:
 
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
                                     phase_deg_list=phi_deg_list_list[i])  # frequency and current
-                self.check_model()
-                self.file_communication()
-                self.pre_simulate()
+                self.check_model_mqs_condition()
+                self.write_simulation_parameters_to_pro_files()
+                self.generate_load_litz_approximation_parameters()
                 self.simulate()
         else:
             if excitation_meshing_type == ExcitationMeshingType.MeshOnlyHighestFrequency:
@@ -945,16 +955,16 @@ class MagneticComponent:
             for i in range(0, len(frequency_list)):
                 self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
                                 phase_deg_list=phi_deg_list_list[i])  # frequency and current
-                self.check_model()
-                self.file_communication()
-                self.pre_simulate()
+                self.check_model_mqs_condition()
+                self.write_simulation_parameters_to_pro_files()
+                self.generate_load_litz_approximation_parameters()
                 self.simulate()
                 # self.visualize()
 
         self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
 
         if show_last_fem_simulation:
-            self.file_communication()
+            self.write_simulation_parameters_to_pro_files()
             self.visualize()
 
         if return_results:
@@ -963,6 +973,54 @@ class MagneticComponent:
                        "j2H": self.load_result("j2H", len(frequency_list), "real"),
                        "p_hyst": self.load_result("p_hyst", len(frequency_list), "real")}
             return results
+
+
+    def component_study(self, frequency: List[float], current: List[float], phi_deg: List[float] = None,
+                        plot_interpolation: bool = False, show_fem_simulation_results: bool = True):
+        """
+        Start a _single_ electromagnetic ONELAB simulation.
+
+        :param plot_interpolation:
+        :param frequency: frequency to simulate
+        :type frequency: float
+        :param current: current to simulate
+        :param phi_deg: phase angle in degree
+        :type phi_deg: List[float]
+        :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        """
+        # negative currents are not allowed and lead to wrong simulation results. Check for this.
+        # this message appears before meshing and before simulation
+        # there is another ValueError rising inside excitation()-method for safety (but after meshing).
+        for current_value in current:
+            if current_value < 0:
+               raise ValueError(
+                    "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
+
+        if len(frequency) != len(current) or len(frequency) != len(phi_deg):
+            raise ValueError(f"List lengths do not match: {len(frequency) = }, {len(current) = }, {len(phi_deg) = }")
+
+
+        phi_deg = phi_deg or []
+
+        # start the simulations
+        self.mesh.generate_electro_magnetic_mesh()
+
+        # get the inductance
+        self.get_inductances(I0=1, op_frequency=frequency, skin_mesh_factor = 1, visualize_last_fem_simulation=show_fem_simulation_results)
+
+        # calculate hysteresis losses
+
+        # calculate eddy current losses
+
+        # self.excitation(frequency=frequency, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
+        # self.check_model_mqs_condition()
+        # self.write_simulation_parameters_to_pro_files()
+        # self.generate_load_litz_approximation_parameters()
+        # self.simulate()
+        # self.calculate_and_write_log()  # TODO: reuse center tapped
+        # if show_fem_simulation_results:
+        #     self.visualize()
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
@@ -1331,8 +1389,8 @@ class MagneticComponent:
         # self.high_level_geo_gen(frequency=0, skin_mesh_factor=skin_mesh_factor)
         # self.mesh.generate_mesh()
         self.excitation(frequency=f_switch, amplitude_list=peak_current, phase_deg_list=[0, 180])  # frequency and current
-        self.check_model()
-        self.file_communication()
+        self.check_model_mqs_condition()
+        self.write_simulation_parameters_to_pro_files()
 
     def write_electro_magnetic_parameter_pro(self):
         """
@@ -1875,9 +1933,12 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Litz Approximation [internal methods]
-    def pre_simulate(self):
+    def generate_load_litz_approximation_parameters(self):
         """
         Used to determine the litz-approximation coefficients.
+
+        Checks if litz-approximation parameters exists. In case of non-existing litz-parameters for the certain
+        litz, the litz parameters are generated directly
         """
         for num in range(len(self.windings)):
             if self.windings[num].conductor_type == ConductorType.RoundLitz:
