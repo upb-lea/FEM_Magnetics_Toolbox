@@ -1,8 +1,8 @@
 import femmt as fmt
 import os
 
-component = "inductor_sweep"
-# component = "transformer_sweep"
+# component = "inductor_sweep"
+component = "transformer_sweep"
 
 example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
 if not os.path.exists(example_results_folder):
@@ -26,8 +26,12 @@ if component == "inductor_sweep":
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                    window_w=core_db["window_w"],
+                                                    window_h=core_db["window_h"])
 
-    core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"],
+    core = fmt.Core(core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
                     material="N95", temperature=25, frequency=100000,
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
@@ -49,7 +53,7 @@ if component == "inductor_sweep":
     # 4. set insulations
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-    insulation.add_winding_insulations([0.0005])
+    insulation.add_winding_insulations([[0.0005]])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -57,14 +61,14 @@ if component == "inductor_sweep":
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=100)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     vww.set_winding(winding, 9, None)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
     # 8. create the model
     geo.create_model(freq=100000, pre_visualize_geometry=True, save_png=False)
@@ -85,23 +89,30 @@ if component == "transformer_sweep":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=False)
 
     # 2. set core parameters
-    core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    mu_r_abs=3100, phi_mu_deg=12,
-                    sigma=1.2)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
+                                                    window_w=0.012,
+                                                    window_h=0.0295)
+
+
+    core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom,
+                    mu_r_abs=3100, phi_mu_deg=12, sigma=1.2)
     geo.set_core(core)
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 50, 0.0005)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulation
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002], 0.0005)
+    insulation.add_winding_insulations([[0.0002, 0.0002],
+                                        [0.0002, 0.0002]])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -118,7 +129,7 @@ if component == "transformer_sweep":
     # 7. add conductor to vww and add winding window to MagneticComponent
     left.set_winding(winding1, 10, None)
     right.set_winding(winding2, 10, None)
-    geo.set_winding_window(winding_window)
+    geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, pre_visualize_geometry=True)
