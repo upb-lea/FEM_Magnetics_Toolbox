@@ -8,6 +8,7 @@ import warnings
 import inspect
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
+import dataclasses
 
 # Third party libraries
 from onelab import onelab
@@ -24,6 +25,7 @@ from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
 from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire, read_results_log
 from femmt.dtos import *
+import femmt.functions_reluctance as fr
 
 class MagneticComponent:
     """
@@ -499,11 +501,11 @@ class MagneticComponent:
                                f"{epsilon_r = }\n"
                                f"{epsilon_phi_deg = }")
 
-                ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, frequency=self.frequency, complex_permeability=self.get_single_complex_permeability(),
                                        complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
 
             else:
-                ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, frequency=self.frequency, complex_permeability=self.get_single_complex_permeability(),
                                        complex_permittivity=0, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
@@ -785,15 +787,6 @@ class MagneticComponent:
         getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
         self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
 
-    def pre_simulation(self):
-        """
-        - Complete "pre-simulation" call
-        """
-        self.high_level_geo_gen()
-        self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
-        self.write_simulation_parameters_to_pro_files()
-        self.generate_load_litz_approximation_parameters()
-
     def write_simulation_parameters_to_pro_files(self):
         """
         Interaction between python and Prolog files.
@@ -850,11 +843,12 @@ class MagneticComponent:
             self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last_fem_simulation: bool = False, return_results: bool = False,
+                         show_last_fem_simulation: bool = False,
                          excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5,
                          visualize_before: bool = False, save_png: bool = False,
                          color_scheme: Dict = ff.colors_femmt_default,
-                         colors_geometry: Dict = ff.colors_geometry_femmt_default) -> Dict:
+                         colors_geometry: Dict = ff.colors_geometry_femmt_default,
+                         inductance_dict: Dict = None, core_hyst_loss: float = None) -> None:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -883,8 +877,6 @@ class MagneticComponent:
         :type phi_deg_list_list: List
         :param show_last_fem_simulation: shows last simulation in gmsh if set to True
         :type show_last_fem_simulation: bool
-        :param return_results: returns results in a dictionary
-        :type return_results: bool
         :param visualize_before: show genarated mesh before the simulation is run
         :type visualize_before: bool
         :param color_scheme: colorfile (definition for red, green, blue, ...)
@@ -894,9 +886,6 @@ class MagneticComponent:
         :param save_png: True to save a .png
         :type save_png: bool
 
-
-        :return: Results in a dictionary
-        :rtype: Dict
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
@@ -906,11 +895,6 @@ class MagneticComponent:
                 if current < 0:
                     raise ValueError(
                         "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
-
-
-
-
-
 
         # frequencies = frequencies or []
         # currents = currents or []
@@ -931,14 +915,14 @@ class MagneticComponent:
                     excitation_meshing_type = ExcitationMeshingType.MeshOnlyLowestFrequency
 
         if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
-            for i in range(0, len(frequency_list)):
-                self.high_level_geo_gen(frequency=frequency_list[i], skin_mesh_factor=skin_mesh_factor)
+            for count_frequency, _ in enumerate(frequency_list):
+                self.high_level_geo_gen(frequency=frequency_list[count_frequency], skin_mesh_factor=skin_mesh_factor)
                 self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
                 self.mesh.generate_electro_magnetic_mesh()
 
-                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
-                                    phase_deg_list=phi_deg_list_list[i])  # frequency and current
-                self.check_model_mqs_condition()
+                self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
+                                    phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
+                if count_frequency == 0: self.check_model_mqs_condition()
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -952,79 +936,94 @@ class MagneticComponent:
             self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            for i in range(0, len(frequency_list)):
-                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
-                                phase_deg_list=phi_deg_list_list[i])  # frequency and current
-                self.check_model_mqs_condition()
+            for count_frequency in range(0, len(frequency_list)):
+                self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
+                                phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
+                if count_frequency == 0: self.check_model_mqs_condition()
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
                 # self.visualize()
 
-        self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
+        self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list,
+                                     frequencies=frequency_list, inductance_dict=inductance_dict,
+                                     core_hyst_losses=core_hyst_loss)
 
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
             self.visualize()
 
-        if return_results:
-            # Return a Dictionary with the results
-            results = {"j2F": self.load_result("j2F", len(frequency_list), "real"),
-                       "j2H": self.load_result("j2H", len(frequency_list), "real"),
-                       "p_hyst": self.load_result("p_hyst", len(frequency_list), "real")}
-            return results
+    def component_study(self, time_current_vectors: List[List[List[float]]]):
+
+        # winding losses
+        frequency_current_phase_deg_list = []
 
 
-    def component_study(self, frequency: List[float], current: List[float], phi_deg: List[float] = None,
-                        plot_interpolation: bool = False, show_fem_simulation_results: bool = True):
-        """
-        Start a _single_ electromagnetic ONELAB simulation.
+        # hysteresis losses
+        hyst_loss_amplitudes = []
+        hyst_loss_phases_deg = []
+        hyst_frequency = 1 / (time_current_vectors[0][0][-1])
+        for time_current_vector in time_current_vectors:
 
-        :param plot_interpolation:
-        :param frequency: frequency to simulate
-        :type frequency: float
-        :param current: current to simulate
-        :param phi_deg: phase angle in degree
-        :type phi_deg: List[float]
-        :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
-        :type show_fem_simulation_results: bool
-        """
-        # negative currents are not allowed and lead to wrong simulation results. Check for this.
-        # this message appears before meshing and before simulation
-        # there is another ValueError rising inside excitation()-method for safety (but after meshing).
-        for current_value in current:
-            if current_value < 0:
-               raise ValueError(
-                    "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
+            # collect winding losses simulation input parameters
+            [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time')
+            phi_deg = np.rad2deg(phi_rad)
+            frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
 
-        if len(frequency) != len(current) or len(frequency) != len(phi_deg):
-            raise ValueError(f"List lengths do not match: {len(frequency) = }, {len(current) = }, {len(phi_deg) = }")
+            # collect hysteresis loss simulation input parameters
+            hyst_loss_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
+            hyst_loss_phases_deg.append(fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
 
 
-        phi_deg = phi_deg or []
+        # check if all frequency vectors include the same frequencies
+        for count in range(len(frequency_current_phase_deg_list) - 1):
+            if not np.array_equal(frequency_current_phase_deg_list[count][0],frequency_current_phase_deg_list[count + 1][0]):
+                raise ValueError("Frequency vectors for different currents are not the same!")
 
-        # start the simulations
-        self.mesh.generate_electro_magnetic_mesh()
+        # transfer format from fft()-output to excitation_sweep()-input
+        current_list_list = []
+        phi_deg_list_list = []
+        for count_frequency, frequency in enumerate(frequency_list):
+            currents_single_frequency = []
+            phi_deg_single_frequency = []
+            for count_current, _ in enumerate(time_current_vectors):
+                currents_single_frequency.append(frequency_current_phase_deg_list[count_current][1][count_frequency])
+                phi_deg_single_frequency.append(frequency_current_phase_deg_list[count_current][2][count_frequency])
+            current_list_list.append(currents_single_frequency)
+            phi_deg_list_list.append(phi_deg_single_frequency)
 
         # get the inductance
-        self.get_inductances(I0=1, op_frequency=frequency, skin_mesh_factor = 1, visualize_last_fem_simulation=show_fem_simulation_results)
+        inductance_dict = self.get_inductances(I0=1, op_frequency=hyst_frequency, skin_mesh_factor = 1)
+        print(f"{inductance_dict = }")
 
         # calculate hysteresis losses
+        # use a single simulation
+        self.mesh.generate_electro_magnetic_mesh()
+        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
+        self.check_model_mqs_condition()
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_log()  # TODO: reuse center tapped
+        [p_hyst] = self.load_result(res_name="p_hyst")
+        print(F"{p_hyst  = }")
 
-        # calculate eddy current losses
+        # calculate the winding losses
+        self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
+                              core_hyst_loss=float(p_hyst))
 
-        # self.excitation(frequency=frequency, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
-        # self.check_model_mqs_condition()
-        # self.write_simulation_parameters_to_pro_files()
-        # self.generate_load_litz_approximation_parameters()
-        # self.simulate()
-        # self.calculate_and_write_log()  # TODO: reuse center tapped
-        # if show_fem_simulation_results:
-        #     self.visualize()
+
+
+
+
+
+
+
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
-    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1, visualize_last_fem_simulation: bool = False):
+    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1,
+                        visualize_last_fem_simulation: bool = False):
         """
         Performs 'open' simulations with input current for each winding and calculates the inductance matrix and
         the primary concentrated equivalent circuit.
@@ -1041,12 +1040,15 @@ class MagneticComponent:
         :type visualize_last_fem_simulation: bool
         :param skin_mesh_factor:
         :type skin_mesh_factor: bool
-        :param I0: exciting peak current in A
+        :param I0: exciting peak current in A. For all transformers, this value is used in all windings.
         :type I0: float
         :param op_frequency: operating frequency in Hz
         :type op_frequency: float
         """
-        if len(self.windings) == 2:
+        if len(self.windings) == 1:
+            raise NotImplementedError("This function will not be implemented. See 'flux_over_current' in 'log_electro_magnetic.json' ")
+
+        elif len(self.windings) == 2:
             # 2 winding transformer
             # Remove "old" Inductance Logs
             try:
@@ -1186,7 +1188,19 @@ class MagneticComponent:
                            f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
                            )
 
-        if len(self.windings) == 3:
+            inductance =  TransformerInductance(
+                l_h_conc = self.L_h_conc,
+                l_s_conc = self.L_s_conc,
+                n_conc = self.n_conc,
+                M = self.M,
+                L_1_1 = self.L_1_1,
+                L_2_2 = self.L_2_2,
+            )
+
+            return dataclasses.asdict(inductance)
+
+
+        elif len(self.windings) == 3:
             # Three winding transformer
             # Remove "old" Inductance Logs
             try:
@@ -1353,6 +1367,26 @@ class MagneticComponent:
                 f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
                 f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
                 )
+
+            inductances = ThreeWindingTransformerInductance(
+                M_12 = self.M_12,
+                M_13 = self.M_13,
+                M_23 = self.M_23,
+                L_s1 = self.L_s1,
+                L_s2 = self.L_s2,
+                L_s3 = self.L_s3,
+                L_h = self.L_h,
+                n_12 = self.n_12,
+                n_13 = self.n_13,
+                n_23 = self.n_23,
+                L_s12 = self.L_s12,
+                L_s13 = self.L_s13,
+                L_s23 = self.L_s23
+            )
+            return dataclasses.asdict(inductances)
+
+        else:
+            raise NotImplementedError("get_inductances() is only valid for 2- and 3-winding transformers.")
 
         # self.visualize()
 
@@ -1577,14 +1611,28 @@ class MagneticComponent:
 
         text_file.close()
 
-    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
+    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None,
+                                inductance_dict: dict = None, core_hyst_losses: float = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
-        them in a dictionary. Additionally, the input settings which are used in order to create the simulation are also printed.
-        From this data type a JSON log file is created.
+        them in a result dictionary (JSON log file).
+
+        This file includes:
+         * results (losses, ...) of the simulation
+         * geometry parameters of the given simulation
+         * optional parameters can be added to the log, like the inductance values or the core hysteresis losses from
+                    external simulations
+
         :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
+        :type sweep_number: int
         :param currents: Current values of the sweep iterations. Not needed for single simulation
+        :type currents: list
         :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
+        :type frequencies: list
+        :param inductance_dict: Optional inductance dict to include in the logfile.
+        :type inductance_dict: dict
+        :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given, the external value is used in the result-log. Otherwise, the hysteresis losses of the fundamental frequency is used
+        :type core_hyst_losses: float
         """
         # ---- Print simulation results ----
 
@@ -1743,7 +1791,13 @@ class MagneticComponent:
         log_dict["total_losses"]["eddy_core"] = sum(log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
         # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frequency is at [0]
         # => just an approximation for excitation sweeps!
-        log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
+        # In case of given external core_hyst_losses value from another simulation, the external value is used.
+        if isinstance(core_hyst_losses, float) or isinstance(core_hyst_losses, int):
+            log_dict["total_losses"]["hyst_core_fundamental_freq"] = core_hyst_losses
+        elif core_hyst_losses is not None:
+            raise ValueError("External core hysteresis losses are given in non-float format")
+        else:
+            log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
 
         # Total losses of inductive component according to single or sweep simulation
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
@@ -1780,6 +1834,10 @@ class MagneticComponent:
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
+
+        if isinstance(inductance_dict, Dict):
+            log_dict["inductances"] = inductance_dict
+
         # ====== save data as JSON ======
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
@@ -1908,6 +1966,7 @@ class MagneticComponent:
         """
         Loads the "last_n" parameters from a result file of the scalar quantity "res_name".
         Either the real or imaginary part can be chosen.
+
         :param part: "real" or "imaginary" part can be chosen
         :param res_name: name of the quantity
         :param res_type: type of the quantity: "value" or "circuit"

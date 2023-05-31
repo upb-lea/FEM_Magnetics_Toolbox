@@ -69,3 +69,28 @@ class WireMaterial:
     temperature_coefficient: float
     thermal_conductivity: float
     volumetric_mass_density: float
+
+@dataclass
+class TransformerInductance:
+    l_h_conc: float
+    l_s_conc: float
+    n_conc: float
+    M: float
+    L_1_1: float
+    L_2_2: float
+
+@dataclass
+class ThreeWindingTransformerInductance:
+    M_12: float
+    M_13: float
+    M_23: float
+    L_s1: float
+    L_s2: float
+    L_s3: float
+    L_h: float
+    n_12: float
+    n_13: float
+    n_23: float
+    L_s12: float
+    L_s13: float
+    L_s23: float
