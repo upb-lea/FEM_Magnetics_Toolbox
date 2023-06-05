@@ -6,9 +6,15 @@ import shutil
 
 # Third parry libraries
 from femmt import MagneticComponent
-from femmt.data import FileData
 
-def _copy_electro_magnetic_necessary_files(src_folder, dest_folder):
+def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
+    """Inner function. Needed in order to appropriately run parallel simulations since some GetDP files are changed in every simulation instance
+
+    :param src_folder: Path to the base electro_magnetic folder
+    :type src_folder: str
+    :param dest_folder: Path to the folder where the necessary files shall be stored. The "new" electro_magnetic folder for the corresponding simulation.
+    :type dest_folder: str
+    """
     files = ["core_materials_temp.pro", "fields.pro", "ind_axi_python_controlled.pro", "Parameter.pro", "postquantities.pro", "solver.pro", "values.pro"]
 
     for file in files:
@@ -16,15 +22,30 @@ def _copy_electro_magnetic_necessary_files(src_folder, dest_folder):
         to_path = os.path.join(dest_folder, file)
         shutil.copy(from_path, to_path)
 
-def _hpc(parameters: Dict):
+def hpc_single_simulation(parameters: Dict):
+    """The default function which is used for parallel execution. Using this function for every model create_model() and single_simulation will be executed.
+    If for the parallel simulation a custom function is needed you can take this as an example. The parameters dictionary is always given to the parallel executed function.
+
+    :param parameters: Dictionary containing the needed parameters. One parameters is always 'model' which is the MagneticComponent. The other one is
+                        always 'simulation_parameters' which is also a dict and then contains the parameters given to the run() function (for this specific model).
+    :type parameters: Dict
+    """
     model = parameters["model"]
+
+    if "freq" not in parameters["simulation_parameters"]:
+        print("'freq' argument is missing. Simulation will be skipped.")
+        return
+    if "current" not in parameters["simulation_parameters"]:
+        print("'current' argument is missing. Simulation will be skipped.")
+        return
+
     freq = parameters["simulation_parameters"]["freq"]
     current = parameters["simulation_parameters"]["current"]
 
     model.create_model(freq=freq, pre_visualize_geometry=False, save_png=False)
     model.single_simulation(freq=freq, current=current, plot_interpolation=False, show_fem_simulation_results=False)
 
-def run(n_processes: int, models: List[MagneticComponent], simulation_parameters: List[Dict], working_directory: str, custom_hpc: Callable = None):
+def run_hpc(n_processes: int, models: List[MagneticComponent], simulation_parameters: List[Dict], working_directory: str, custom_hpc: Callable = None):
     """Executes the given models on the given number of parallel processes. Typically this number shouldn't be higher than the number of cores of the processor.
 
     :param n_processes: Number of parallel processes. If this is equal to None the number returned by os.cpu_count() is used.
@@ -66,21 +87,14 @@ def run(n_processes: int, models: List[MagneticComponent], simulation_parameters
     with Pool(processes=n_processes) as pool:
         parameters = []
         for index, (model, simulation_parameter) in enumerate(zip(models, simulation_parameters)):
-            # Check simulation parameters
-            if custom_hpc is None:
-                if "freq" not in simulation_parameter:
-                    print(f"Missing simulation parameter {index}:freq. Simulation will be skipped.")
-                    continue
-                if "current" not in simulation_parameter:
-                    print(f"Missing simulation parameter {index}:current. Simulation will be skipped.")
-                    continue
-
+            # Fill parameters list
             parameters.append({
                 "model": model,
                 "simulation_parameters": simulation_parameter
             })
             
         if custom_hpc is None:
-            pool.map(_hpc, parameters)
+            pool.map(hpc_single_simulation, parameters)
         else:
             pool.map(custom_hpc, parameters)
+            

@@ -859,6 +859,8 @@ class MagneticComponent:
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
         # there is another ValueError rising inside excitation()-method for safety (but after meshing).
+        if type(current) is not list:
+            raise Exception("The current must be given in a list.")
         for current_value in current:
             if current_value < 0:
                 raise ValueError(

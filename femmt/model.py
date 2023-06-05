@@ -201,7 +201,7 @@ class Core:
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
                  mdb_verbosity: Verbosity = Verbosity.ToConsole,
-                 **kwargs):
+                 **kwargs): # TODO Is this kwargs really needed? Can this be removed?
         """TODO Doc
 
         :param core_inner_diameter: diameter of the inner core
