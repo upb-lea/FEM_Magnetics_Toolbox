@@ -892,34 +892,49 @@ def test_thermal_simulation(thermal_simulation):
 
 def test_basic_examples(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_inductor.basic_example_inductor(onelab_folder=onelab_folder, show_visual_outputs=False)
+    femmt.examples.basic_inductor.basic_example_inductor(onelab_folder=onelab_folder,
+                                                         show_visual_outputs=False,
+                                                         is_test=True)
 
 
 def test_basic_example_transformer_interleaved(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_interleaved.basic_example_transformer_interleaved(onelab_folder=onelab_folder, show_visual_outputs=False)
+    femmt.examples.basic_transformer_interleaved.basic_example_transformer_interleaved(onelab_folder=onelab_folder,
+                                                                                       show_visual_outputs=False,
+                                                                                       is_test=True)
 
 
 def test_basic_example_transformer(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer.basic_example_transformer(onelab_folder=onelab_folder, show_visual_outputs=False)
+    femmt.examples.basic_transformer.basic_example_transformer(onelab_folder=onelab_folder, show_visual_outputs=False,
+                                                               is_test=True)
 
 def test_basic_example_transformer_three_winding(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder, show_visual_outputs=False)
+    femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)
 
 def test_basic_example_transformer_integrated(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_integrated.basic_example_transformer_intergrated(onelab_folder=onelab_folder, show_visual_outputs=False)
+    femmt.examples.basic_transformer_integrated.basic_example_transformer_intergrated(onelab_folder=onelab_folder,
+                                                                                      show_visual_outputs=False,
+                                                                                      is_test=True)
 
 def test_basic_example_transformer_center_tapped(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_center_tapped.basic_example_transformer_center_tapped(onelab_folder=onelab_folder, show_visual_outputs=False)
+    femmt.examples.basic_transformer_center_tapped.basic_example_transformer_center_tapped(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)
 
 def test_basic_example_transformer_stacked(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_stacked.basic_example_transformer_stacked(onelab_folder=onelab_folder, show_visual_outputs=False)
+    femmt.examples.basic_transformer_stacked.basic_example_transformer_stacked(onelab_folder=onelab_folder,
+                                                                               show_visual_outputs=False,
+                                                                               is_test=True)
 
 def test_basic_example_transformer_stacked_center_tapped(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(onelab_folder=onelab_folder, show_visual_outputs=False)
+    femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(onelab_folder=onelab_folder,
+                                                                                                           show_visual_outputs=False,
+                                                                                                           is_test=True)
