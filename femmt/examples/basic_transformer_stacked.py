@@ -1,10 +1,11 @@
 import femmt as fmt
 import os
 
-def basic_example_transformer_three_winding(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+
+def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+
+
     def example_thermal_simulation(show_visual_outputs: bool = True):
-
-
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -74,63 +75,66 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
 
-    # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "three-winding-transformer")
+    working_directory = os.path.join(example_results_folder, "stacked-transformer")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                silent=True, is_gui=is_test)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                working_directory=working_directory, silent=True, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015)
-    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.01,
+                                                     window_h_bot=0.03)
+    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12,
+                    sigma=0.6,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 3. set air gap parameters
-    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.002, stacked_position=fmt.StackedPosition.Top)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, stacked_position=fmt.StackedPosition.Bot)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set insulation
+    # 4. set insulations
     insulation = fmt.Insulation()
-    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([[0.0002, 0.0004, 0.0004],
-                                        [0.0004, 0.0002, 0.0004],
-                                        [0.0004, 0.0004, 0.0002]])
+    # insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)  # TODO: needed for upper and lower winding window?
+    insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)  # [bot, top, left, right]
+    insulation.add_winding_insulations([[0.0002, 0.001],
+                                        [0.001, 0.0002]])
     geo.set_insulation(insulation)
 
-    # 5. create winding window and virtual winding windows (vww)
-    winding_window = fmt.WindingWindow(core, insulation)
-    top_left, top_right, bot_left, bot_right = winding_window.split_window(
-        fmt.WindingWindowSplit.HorizontalAndVerticalSplit, horizontal_split_factor=0.4)
-    top_left = winding_window.combine_vww(top_left, bot_left)
+    winding_window_top, winding_window_bot = fmt.create_stacked_winding_windows(core, insulation)
 
-    # 6. create conductors and set parameters
+    vww_top = winding_window_top.split_window(fmt.WindingWindowSplit.NoSplit)
+    vww_bot = winding_window_bot.split_window(fmt.WindingWindowSplit.NoSplit)
+
+    # 6. set conductor parameters
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+    winding1.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
+
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-    winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
-    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
-    winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    winding2.set_solid_round_conductor(1e-3, fmt.ConductorArrangement.Square)
+    # winding2.set_litz_round_conductor(None, 120, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    top_left.set_winding(winding1, 8, fmt.WindingType.Single)
-    top_right.set_winding(winding2, 6, fmt.WindingType.Single)
-    bot_right.set_winding(winding3, 12, fmt.WindingType.Single)
+    vww_top.set_interleaved_winding(winding1, 16, winding2, 0, fmt.InterleavedWindingScheme.HorizontalAlternating)
+    vww_bot.set_interleaved_winding(winding1, 40, winding2, 20, fmt.InterleavedWindingScheme.HorizontalAlternating)
 
-    geo.set_winding_windows([winding_window])
+    geo.set_winding_windows([winding_window_top, winding_window_bot])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, pre_visualize_geometry=show_visual_outputs)
-    geo.single_simulation(freq=250000, current=[4, 4, 4], phi_deg=[0, 180, 0], show_fem_simulation_results=show_visual_outputs)
+    geo.single_simulation(freq=250000, current=[2.0, 4.0], phi_deg=[0, 180], show_fem_simulation_results=show_visual_outputs)
 
+    # other simulation options:
+    # -------------------------
+    # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
 
 if __name__ == "__main__":
-    basic_example_transformer_three_winding(show_visual_outputs=True)
+    basic_example_transformer(show_visual_outputs=True)

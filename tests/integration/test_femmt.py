@@ -7,7 +7,10 @@ import femmt.examples.basic_inductor
 import femmt.examples.basic_transformer_interleaved
 import femmt.examples.basic_transformer
 import femmt.examples.basic_transformer_three_winding
-
+import femmt.examples.basic_transformer_integrated
+import femmt.examples.basic_transformer_center_tapped
+import femmt.examples.basic_transformer_stacked
+import femmt.examples.basic_transformer_stacked_center_tapped
 
 
 def compare_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
@@ -904,3 +907,19 @@ def test_basic_example_transformer(temp_folder):
 def test_basic_example_transformer_three_winding(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder, show_visual_outputs=False)
+
+def test_basic_example_transformer_integrated(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_integrated.basic_example_transformer_intergrated(onelab_folder=onelab_folder, show_visual_outputs=False)
+
+def test_basic_example_transformer_center_tapped(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_center_tapped.basic_example_transformer_center_tapped(onelab_folder=onelab_folder, show_visual_outputs=False)
+
+def test_basic_example_transformer_stacked(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_stacked.basic_example_transformer_stacked(onelab_folder=onelab_folder, show_visual_outputs=False)
+
+def test_basic_example_transformer_stacked_center_tapped(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(onelab_folder=onelab_folder, show_visual_outputs=False)
