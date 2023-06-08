@@ -1,8 +1,15 @@
+# python libraries
+import copy
+from typing import Optional
+
+# 3rd party libraries
+
+# femmt libraries
 from femmt.dtos import *
 from femmt.model import WindingWindow, Conductor, Insulation
 from femmt.functions_drawing import *
 from femmt.functions_model import define_center_tapped_insulation
-import copy
+
 
 
 def create_stacked_winding_windows(core, insulation):
@@ -114,8 +121,10 @@ def set_center_tapped_windings(core, primary_additional_bobbin,
                                iso_primary_to_primary, iso_secondary_to_secondary, iso_primary_to_secondary,
                                interleaving_type: CenterTappedInterleavingType,
                                bobbin_coil_top=None, bobbin_coil_bot=None, bobbin_coil_left=None, bobbin_coil_right=None,
-                               primary_coil_turns=None):
+                               primary_coil_turns=None, winding_temperature: Optional[float] = None):
     """
+    Set center tapped windings
+
     :param interleaving_type:
     :param primary_strand_radius:
     :param primary_number_strands:
@@ -136,34 +145,36 @@ def set_center_tapped_windings(core, primary_additional_bobbin,
     :param bobbin_coil_bot: 
     :param bobbin_coil_top: 
     :param primary_coil_turns:
+    :param winding_temperature: winding temperature in °C
+    :type winding_temperature: Optional[float]
     :return:
     """
-    def define_isolations():
+    def define_insulations():
         insulation = Insulation()
         insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
         insulation.add_winding_insulations([[iso_primary_to_primary, iso_primary_to_secondary, iso_primary_to_secondary],
                                             [iso_primary_to_secondary, iso_secondary_to_secondary, iso_primary_to_secondary],
                                             [iso_primary_to_secondary, iso_primary_to_secondary, iso_secondary_to_secondary]])
         return insulation
-    insulation = define_isolations()
+    insulation = define_insulations()
     # TODO: the following statement does not provide any new information to the model at the moment -> MERGE both insulation concepts together (FEMMT globally)
     winding_isolations = define_center_tapped_insulation(primary_to_primary=iso_primary_to_primary,
                                                          secondary_to_secondary=iso_secondary_to_secondary,
                                                          primary_to_secondary=iso_primary_to_secondary)
 
-    def define_windings():
-        winding1 = Conductor(0, Conductivity.Copper)
+    def define_windings(winding_temperature: float):
+        winding1 = Conductor(0, Conductivity.Copper, winding_material_temperature=winding_temperature)
         winding1.set_litz_round_conductor(primary_radius, primary_number_strands, primary_strand_radius, None, conductor_arrangement=ConductorArrangement.SquareFullWidth)
 
-        winding2 = Conductor(1, Conductivity.Copper)
+        winding2 = Conductor(1, Conductivity.Copper, winding_material_temperature=winding_temperature)
         winding2.set_rectangular_conductor(thickness=secondary_thickness_foil)
         winding2.parallel = True
 
-        winding3 = Conductor(2, Conductivity.Copper)
+        winding3 = Conductor(2, Conductivity.Copper, winding_material_temperature=winding_temperature)
         winding3.set_rectangular_conductor(thickness=secondary_thickness_foil)
         winding3.parallel = True
         return winding1, winding2, winding3
-    winding1, winding2, winding3 = define_windings()
+    winding1, winding2, winding3 = define_windings(winding_temperature)
 
     def define_rows():
         primary_row = single_row(number_of_conds_per_winding=primary_turns,

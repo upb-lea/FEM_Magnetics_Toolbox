@@ -70,14 +70,14 @@ example_results_folder = os.path.join(os.path.dirname(__file__), "example_result
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-# component = "inductor"
+component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
 # component = "three-winding-transformer"
 # component = "integrated_transformer"
 # component = "center-tapped-transformer"
 # component = "stacked-transformer"
-component = "stacked-center-tapped-transformer"
+# component = "stacked-center-tapped-transformer"
 # component = "load_from_file"
 
 
@@ -130,7 +130,7 @@ if component == "inductor":
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
     # 6. create conductor and set parameters: use solid wires
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
     #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
@@ -166,7 +166,8 @@ if component == "transformer-interleaved":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                silent=True)
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
@@ -221,7 +222,8 @@ if component == "transformer":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                silent=True)
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
@@ -276,7 +278,8 @@ if component == "three-winding-transformer":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                silent=True)
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015)
@@ -330,7 +333,8 @@ if component == "integrated_transformer":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                working_directory=working_directory, silent=True)
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.011, window_h=0.03)
@@ -388,7 +392,8 @@ if component == "center-tapped-transformer":
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                silent=True)
 
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
@@ -405,7 +410,8 @@ if component == "center-tapped-transformer":
                                                                                      secondary_parallel_turns=3, secondary_thickness_foil=1e-3,
                                                                                      iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
                                                                                      iso_primary_to_primary=1e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
-                                                                                     interleaving_type=fmt.CenterTappedInterleavingType.TypeA)
+                                                                                     interleaving_type=fmt.CenterTappedInterleavingType.TypeA,
+                                                                                     primary_additional_bobbin=100, winding_temperature=100)
 
 
     geo.set_insulation(insulation)
@@ -423,7 +429,8 @@ if component == "stacked-transformer":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                working_directory=working_directory, silent=True)
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.01, window_h_bot=0.03)
@@ -477,7 +484,8 @@ if component == "stacked-center-tapped-transformer":
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=False)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                working_directory=working_directory, silent=False)
 
     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005, window_h_bot=0.017)
     core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
@@ -496,7 +504,9 @@ if component == "stacked-center-tapped-transformer":
                                                                                                       iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
                                                                                                       iso_primary_to_primary=2e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=4e-4,
                                                                                                       interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
-                                                                                                      primary_coil_turns=3)
+                                                                                                      primary_coil_turns=3,
+                                                                                                      primary_additional_bobbin=1e-3,
+                                                                                                      winding_temperature=100)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
