@@ -958,8 +958,7 @@ class MagneticComponent:
         # winding losses
         frequency_current_phase_deg_list = []
 
-
-        # hysteresis losses
+        # collect simulation input parameters from time_current_vectors
         hyst_loss_amplitudes = []
         hyst_loss_phases_deg = []
         hyst_frequency = 1 / (time_current_vectors[0][0][-1])
@@ -973,7 +972,6 @@ class MagneticComponent:
             # collect hysteresis loss simulation input parameters
             hyst_loss_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
             hyst_loss_phases_deg.append(fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
-
 
         # check if all frequency vectors include the same frequencies
         for count in range(len(frequency_current_phase_deg_list) - 1):
@@ -994,7 +992,6 @@ class MagneticComponent:
 
         # get the inductance
         inductance_dict = self.get_inductances(I0=1, op_frequency=hyst_frequency, skin_mesh_factor = 1)
-        print(f"{inductance_dict = }")
 
         # calculate hysteresis losses
         # use a single simulation
@@ -1006,7 +1003,6 @@ class MagneticComponent:
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
         [p_hyst] = self.load_result(res_name="p_hyst")
-        print(F"{p_hyst  = }")
 
         # calculate the winding losses
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
