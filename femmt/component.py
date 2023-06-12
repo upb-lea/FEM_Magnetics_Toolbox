@@ -757,7 +757,8 @@ class MagneticComponent:
         else:
             # DC case
             self.delta = 1e20  # random huge value
-            self.red_freq[num] = 0
+            for num in range(len(self.windings)):
+                self.red_freq[num] = 0
 
     def simulate(self):
         """
@@ -995,7 +996,6 @@ class MagneticComponent:
 
         # calculate hysteresis losses
         # use a single simulation
-        self.mesh.generate_electro_magnetic_mesh()
         self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
@@ -1006,6 +1006,115 @@ class MagneticComponent:
 
         # calculate the winding losses
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
+                              core_hyst_loss=float(p_hyst))
+
+
+    def center_tapped_study(self, time_current_vectors: List[List[List[float]]]):
+
+        def hysteresis_loss_excitation(time_current_vectors):
+            # collect simulation input parameters from time_current_vectors
+            hyst_loss_amplitudes = []
+            hyst_loss_phases_deg = []
+            hyst_frequency = 1 / (time_current_vectors[0][0][-1])
+            for time_current_vector in time_current_vectors:
+                # collect hysteresis loss simulation input parameters
+                hyst_loss_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
+                hyst_loss_phases_deg.append(fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
+            return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
+
+        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg):
+            # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
+            hyst_loss_amplitudes[-1] = hyst_loss_amplitudes[-1]/2
+            hyst_loss_amplitudes.append(hyst_loss_amplitudes[-1])
+            hyst_loss_phases_deg.append(hyst_loss_phases_deg[-1])
+            # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
+            return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
+
+        def split_time_current_vectors_center_tapped(time_current_vectors):
+            # print(f"{time_current_vectors = }")
+            positive_secondary_current = np.copy(time_current_vectors[1][1])
+            positive_secondary_current[positive_secondary_current < 0] = 0
+            # print(f"{positive_secondary_current = }")
+            negative_secondary_current = np.copy(time_current_vectors[1][1])
+            negative_secondary_current[negative_secondary_current > 0] = 0
+            # print(f"{negative_secondary_current = }")
+
+            center_tapped_time_current_vectors = [time_current_vectors[0],
+                                                  [time_current_vectors[1][0], positive_secondary_current],
+                                                  [time_current_vectors[1][0], negative_secondary_current]]
+
+            # from matplotlib import pyplot as plt
+            # plt.plot(time_current_vectors[1][0], negative_secondary_current)
+            # plt.show()
+            return center_tapped_time_current_vectors
+
+        def linear_loss_excitation(time_current_vectors):
+            # winding losses
+            frequency_current_phase_deg_list = []
+            # collect winding losses simulation input parameters
+            for time_current_vector in time_current_vectors:
+                [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time')
+                phi_deg = np.rad2deg(phi_rad)
+                frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
+
+            # check if all frequency vectors include the same frequencies
+            # WORKAROUND: if any frequency is not included in one of the vectors it is added with amplitude  = 0 and phase = 0
+            # TODO: recalculate the fft at the "missing frequencies and add their values...
+            all_frequencies = set()
+            for count in range(len(frequency_current_phase_deg_list) - 1):
+                if not np.array_equal(frequency_current_phase_deg_list[count][0],frequency_current_phase_deg_list[count + 1][0]):
+                    # raise ValueError("Frequency vectors for different currents are not the same!")
+                    # print("Frequency vectors for different currents are not the same!")
+                    all_frequencies = all_frequencies | set(frequency_current_phase_deg_list[count][0]) | set(frequency_current_phase_deg_list[count + 1][0])
+                    # print(f"Original: {frequency_current_phase_deg_list = }")
+
+            for frequency in list(all_frequencies):
+                for count in range(0, len(frequency_current_phase_deg_list)):
+                    if frequency not in frequency_current_phase_deg_list[count][0]:
+                        ii = np.searchsorted(frequency_current_phase_deg_list[count][0], frequency)
+                        frequency_current_phase_deg_list[count][0] = np.insert(frequency_current_phase_deg_list[count][0], ii, frequency)
+                        frequency_current_phase_deg_list[count][1] = np.insert(frequency_current_phase_deg_list[count][1], ii, 0)
+                        frequency_current_phase_deg_list[count][2] = np.insert(frequency_current_phase_deg_list[count][2], ii, 0)
+            # print(f"Corrected: {frequency_current_phase_deg_list = }")
+            return frequency_list, frequency_current_phase_deg_list
+
+        time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
+        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = hysteresis_loss_excitation(time_current_vectors)
+        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg)
+        time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
+        frequency_list, frequency_current_phase_deg_list = linear_loss_excitation(time_current_vectors)
+
+        # transfer format from fft()-output to excitation_sweep()-input
+        current_list_list = []
+        phi_deg_list_list = []
+        for count_frequency, frequency in enumerate(frequency_list):
+            currents_single_frequency = []
+            phi_deg_single_frequency = []
+            for count_current, _ in enumerate(time_current_vectors):
+                currents_single_frequency.append(frequency_current_phase_deg_list[count_current][1][count_frequency])
+                phi_deg_single_frequency.append(frequency_current_phase_deg_list[count_current][2][count_frequency])
+            current_list_list.append(currents_single_frequency)
+            phi_deg_list_list.append(phi_deg_single_frequency)
+
+        # get the inductance
+        inductance_dict = self.get_inductances(I0=1, op_frequency=hyst_frequency, skin_mesh_factor = 1)
+
+        # calculate hysteresis losses TODO: Clean up
+        # use a single simulation
+        # self.mesh.generate_electro_magnetic_mesh()
+        # print(f"{hyst_frequency = }")
+        # print(f"{hyst_loss_amplitudes = }")
+        # print(f"{hyst_loss_phases_deg = }")
+        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
+        self.check_model_mqs_condition()
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_log()  # TODO: reuse center tapped
+        [p_hyst] = self.load_result(res_name="p_hyst")
+
+        # calculate the winding losses
+        self.excitation_sweep(list(frequency_list), current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=float(p_hyst))
 
 
@@ -1049,8 +1158,6 @@ class MagneticComponent:
             for x in range(0, n):
                 for y in range(0, n):
                     if x == y:
-                        print(x)
-                        print(y)
                         currents[x][y] = I0
                         phases[x][y] = 0
 
