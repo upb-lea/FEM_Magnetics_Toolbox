@@ -3,7 +3,9 @@
 // ----------------------
 Include "Parameter.pro";
 Include "postquantities.pro";
-Include "core_materials_temp.pro";
+If(Flag_Permeability_From_Data)
+  Include "core_materials_temp.pro";
+EndIf
 ExtGmsh = ".pos";
 
 
@@ -244,7 +246,7 @@ Function {
   For n In {1:n_windings}
       FSinusoidal~{n}[] = F_Cos_wt_p[]{2*Pi*Freq, Phase~{n}}; //Complex_MH[1,0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
       Fct_Src~{n}[] = FSinusoidal~{n}[];
-      Signn~{n} = (Phase~{n}==Pi) ? -1 : 1;  //TODO: Inductance Calc
+      Signn~{n} = (Phase~{n}==Pi) ? -1 : 1;
   EndFor
 
   // Auxiliary functions for post-processing
@@ -252,12 +254,6 @@ Function {
   nuOm[#{Iron}] = -nu[$1]*Complex[0.,1.];
   //nuOm[#{Winding1, Winding2, Winding3}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
 
-
-  // Resistive/Skin Coefficient - will be multiplied with current "ir", which is zero except in windings
-  kkk[#{Iron, Air}] =  0 ;
-  For n In {1:n_windings}
-      kkk[#{Winding~{n}}] =  0 ;
-  EndFor
 
   For n In {1:n_windings}
       If(Flag_HomogenisedModel~{n})
@@ -276,9 +272,9 @@ Function {
          prox_nui~{n}[]  = InterpolationLinear[$1]{ prox_nui_list~{n}() } ;
          // Formula from Paper:
          nu[#{StrandedWinding~{n}}] = nu0*Complex[prox_nur~{n}[Rr~{n}], prox_nui~{n}[Rr~{n}]*Fill~{n}*Rr~{n}^2/2];
-         nuOm[#{StrandedWinding~{n}}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ]; // sTill
-         kkk[#{StrandedWinding~{n}}] =  SymFactor * skin_rhor~{n}[Rr~{n}] / sigma_winding~{n} / Fill~{n} ;
-         sigma[#{StrandedWinding~{n}}] = SymFactor * skin_rhor~{n}[Rr~{n}] / sigma_winding~{n} / Fill~{n} ;
+         nuOm[#{StrandedWinding~{n}}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
+         // sigma[#{StrandedWinding~{n}}] = SymFactor * Complex[ skin_rhor~{n}[Rr~{n}] / sigma_winding~{n} / Fill~{n},  2*Pi*Freq*skin_rhoi~{n}[Rr~{n}]*mu0/(8*Pi*Fill~{n})];
+         sigma[#{StrandedWinding~{n}}] = SymFactor * Complex[ skin_rhor~{n}[Rr~{n}] / sigma_winding~{n} / Fill~{n}, 0];
       EndIf
   EndFor
 
@@ -538,15 +534,15 @@ PostProcessing {
 
       If(Freq==0.0)
            { Name j2H ; Value { Integral {
-             [ CoefGeo*( Re[-{d a}*Conj[nuOm[]*{d a}]] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
+             [ CoefGeo*( Re[-{d a}*Conj[nuOm[]*{d a}]] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
              In DomainS ; Jacobian Vol ; Integration II ; } } }
       Else
            { Name j2H ; Value { Integral {
-             [ 0.5*CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
+             [ 0.5*CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
              In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2H_density ; Value { Integral {
-             [ 0.5*CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
+             [ 0.5*CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
              In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2Hprox ; Value { Integral {
@@ -554,7 +550,7 @@ PostProcessing {
             In DomainS ; Jacobian Vol ; Integration II ; } } }
 
            { Name j2Hskin ; Value { Integral {
-            [ 0.5*CoefGeo*kkk[]*SquNorm[-1/AreaCell[]*{ir}] ] ;// 0.5 for frequency domain
+            [ 0.5*CoefGeo*sigma[]*SquNorm[-1/AreaCell[]*{ir}] ] ;// 0.5 for frequency domain
             In DomainS ; Jacobian Vol ; Integration II ; } } }
       EndIf
 
@@ -637,7 +633,7 @@ PostProcessing {
       // DomainS (Stranded Conductors)
 
       { Name SoH ; Value { Integral { // Complex power = Active power +j * Reactive power => S = P+j*Q
-            [ CoefGeo * ({d a}*Conj[nuOm[{d a}]*{d a}] + kkk[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
+            [ CoefGeo * ({d a}*Conj[nuOm[{d a}]*{d a}] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
             In DomainC ; Jacobian Vol ; Integration II ; } } } //Complex power
             // xfmr changed Domain to DomainC
             // to prevent from div by zero error in "Air" and "Core" domains
@@ -650,7 +646,7 @@ PostProcessing {
 
       For n In {1:n_windings}
           If(Flag_HomogenisedModel~{n})
-             { Name Voltage~{n} ; Value { Integral { [ CoefGeo / AreaCell~{n} * (CompZ[Dt[{a}]] + kkk[]*CompZ[{ir}] / AreaCell~{n}) ]; In DomainCond~{n}; Jacobian Vol; Integration II; } } }
+             { Name Voltage~{n} ; Value { Integral { [ CoefGeo / AreaCell~{n} * (CompZ[Dt[{a}]] + sigma[]*CompZ[{ir}] / AreaCell~{n}) ]; In DomainCond~{n}; Jacobian Vol; Integration II; } } }
           Else
              { Name Voltage~{n} ; Value { Integral { [ CompZ[{ur}] / AreaCell~{n} ]; In DomainCond~{n}; Jacobian Vol; Integration II; } } }
           EndIf

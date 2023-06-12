@@ -41,7 +41,8 @@ class Conductor:
     # Not used in femmt_classes. Only needed for to_dict()
     conductivity: Conductivity = None
 
-    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False):
+    def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False,
+                 winding_material_temperature: float = 100):
         """Creates a conductor object.
         The winding_number sets the order of the conductors. Every conductor needs to have a unique winding number.
         The conductor with the lowest winding number (starting from 0) will be treated as primary, second-lowest number as secondary and so on.
@@ -50,6 +51,10 @@ class Conductor:
         :type winding_number: int
         :param conductivity: Sets the conductivity for the conductor
         :type conductivity: float
+        :param winding_material_temperature: temperature of winding material, default set to 100 °C
+        :type winding_material_temperature: float
+        :param parallel: Set to True to introduce parallel conductors. Default set to False
+        :type parallel: bool
         """
         if winding_number < 0:
             raise Exception("Winding index cannot be negative.")
@@ -61,7 +66,7 @@ class Conductor:
 
         dict_material_database = ff.wire_material_database()
         if conductivity.name in dict_material_database:
-            self.cond_sigma = dict_material_database[conductivity.name]["sigma"]
+            self.cond_sigma = ff.conductivity_temperature(conductivity.name, winding_material_temperature)
         else:
             raise Exception(f"Material {conductivity.name} not found in database")
 
@@ -109,6 +114,8 @@ class Conductor:
         elif fill_factor is None:
             ff_exact = number_strands * strand_radius ** 2 / conductor_radius ** 2
             self.ff = np.around(ff_exact, decimals=2)
+            if self.ff > 0.99:
+                raise Exception(f"A fill factor of {self.ff} is unrealistic!")
         elif strand_radius is None:
             self.strand_radius = np.sqrt(conductor_radius ** 2 * fill_factor / number_strands)
         else:
@@ -316,6 +323,8 @@ class Core:
 
             if self.permittivity["datasource"] == MaterialDataSource.Custom:
                 self.sigma = sigma  # from user
+            else:
+                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
             if self.permeability["datasource"] == MaterialDataSource.Custom:
                  # this is a service for the user:
@@ -325,13 +334,9 @@ class Core:
                     self.permeability_type = PermeabilityType.FixedLossAngle
                 else:
                     self.permeability_type = PermeabilityType.RealValue
-
-
-            elif self.material != "custom":  # TODO: new condition here
+            else:
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-                                                                             attribute="initial_permeability")
-                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
+                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material, attribute="initial_permeability")
 
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
@@ -344,11 +349,23 @@ class Core:
         # Needed because of to_dict
         self.kwargs = kwargs
 
-    def update_sigma(self, frequency):
+    def update_sigma(self, frequency: bool) -> None:
         """
+        Updates the core conductivity.
+        The core conductivity is used to calculate eddy current losses inside the FEM simulation.
 
-        :param frequency:
-        :return:
+        In case of datasheet parameters, the DC-resistance is loaded from the material database.
+        In case of measurement parameters, the AC-resistance is loaded from the material database.
+         * The AC-resistance is interpolated by the material database for the certain frequency
+         * AC-resistance = imaginary part of complex permittivity
+
+        The AC-resistance decreases when increasing the frequency.
+        Using AC-resistance (interpolated from measurements) is more accurate than the static DC-datasheet resistance.
+
+        The conductivity 'sigma' = (1 / AC-resistance) is used for the simulation.
+
+        :param frequency: operating frequency in Hz
+        :type frequency: float
         """
         if self.permittivity["datasource"] == MaterialDataSource.Measurement:
             epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature, frequency=frequency, material_name=self.material,
@@ -832,7 +849,8 @@ class WindingWindow:
 
 
     def split_window(self, split_type: WindingWindowSplit, split_distance: float = 0,
-                     horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5) -> Tuple[VirtualWindingWindow]:
+                     horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5,
+                     top_bobbin: float = None, bot_bobbin: float = None, left_bobbin: float = None, right_bobbin: float = None) -> Tuple[VirtualWindingWindow]:
         """Creates up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
         The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
         Not every value is needed for every split type:
@@ -888,6 +906,22 @@ class WindingWindow:
 
             self.virtual_winding_windows = [complete]
             return complete
+        elif split_type == WindingWindowSplit.NoSplitWithBobbin:
+            bobbin_def = [top_bobbin, bot_bobbin, left_bobbin, right_bobbin]
+            for index, element in enumerate(bobbin_def):
+                if element is not None and element > self.insulations.core_cond[index]:
+                    bobbin_def[index] = self.insulations.core_cond[index] - element
+                else:
+                    bobbin_def[index] = 0
+
+            complete = VirtualWindingWindow(
+                top_bound=self.max_top_bound + bobbin_def[0],
+                bot_bound=self.max_bot_bound - bobbin_def[1],
+                left_bound=self.max_left_bound - bobbin_def[2],
+                right_bound=self.max_right_bound + bobbin_def[3])
+            self.virtual_winding_windows = [complete]
+            return complete
+
         elif split_type == WindingWindowSplit.VerticalSplit:
             right = VirtualWindingWindow(
                 bot_bound=self.max_bot_bound,
@@ -964,8 +998,10 @@ class WindingWindow:
                 if type(row_element) == StackIsolation:
                     vertical_space_used += row_element.thickness
                 else:
+                    additional_bobbin = 0
                     if type(row_element) == ConductorRow:
                         vertical_space_used += row_element.row_height
+                        additional_bobbin = row_element.additional_bobbin
                         if row_element.winding_tag == WindingTag.Primary:
                             winding_scheme_type.append(WindingType.Single)
                         elif row_element.winding_tag == WindingTag.Secondary or row_element.winding_tag == WindingTag.Tertiary:
@@ -979,7 +1015,7 @@ class WindingWindow:
                         VirtualWindingWindow(
                             bot_bound=self.max_bot_bound + vertical_space_used_last,
                             top_bound=self.max_bot_bound + vertical_space_used,
-                            left_bound=self.max_left_bound,
+                            left_bound=self.max_left_bound + additional_bobbin,
                             right_bound=self.max_right_bound))
 
         return self.virtual_winding_windows, winding_scheme_type

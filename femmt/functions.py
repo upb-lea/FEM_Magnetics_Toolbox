@@ -20,6 +20,7 @@ import numpy as np
 # Local libraries
 from femmt.constants import *
 from femmt.enumerations import ConductorType
+from femmt.dtos import *
 
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
@@ -374,11 +375,20 @@ def litz_database() -> Dict:
                                 "litz": "",
                                 "insulation": ""}
 
+    litz_dict["1.7x500x0.06"] = {"strands_numbers": 500,
+                                "strand_radii": 0.06e-3 / 2,
+                                "conductor_radii": 1.7e-3 / 2,
+                                "ff": "",
+                                "manufacturer": "",
+                                "material_number": "",
+                                "litz": "",
+                                "insulation": ""}
+
 
     return litz_dict
 
 
-def wire_material_database() -> Dict:
+def wire_material_database() -> Dict[str, WireMaterial]:
     """
     Returns wire materials e.g. copper, aluminium in a dictionary
 
@@ -387,19 +397,49 @@ def wire_material_database() -> Dict:
     """
     wire_material = {}
 
-    wire_material["Copper"] = {
-        "sigma": 5.8e7,
-        "thermal_conductivity": 400,
-        "volumetric_mass_density": 8920,
-    }
+    wire_material["Copper"] = WireMaterial(
+        name="copper",
+        sigma= 5.8e7,
+        temperature= 25,
+        temperature_coefficient = 3.9e-3,
+        thermal_conductivity = 400,
+        volumetric_mass_density = 8920,
+    )
 
-    wire_material["Aluminium"] = {
-        "sigma": 3.7e7,
-        "thermal_conductivity": 235,
-        "volumetric_mass_density": 2699,
-    }
+    wire_material["Aluminium"] = WireMaterial(
+        name="aluminium",
+        sigma= 3.7e7,
+        temperature= 25,
+        temperature_coefficient = 3.9e-3,
+        thermal_conductivity = 235,
+        volumetric_mass_density = 2699,
+    )
 
     return wire_material
+
+def conductivity_temperature(material: str, temperature: float) -> float:
+    """
+    Calculates the conductivity for a certain temperature of the material.
+
+    :param material: material name, e.g. "copper"
+    :type material: str
+    :param temperature: temperature in °C
+    :type temperature: float
+    :return: conductivity of material at given temperature
+    :rtype: float
+    """
+
+    material_from_database = wire_material_database()[material]
+
+    sigma_database = material_from_database.sigma
+    temperature_database = material_from_database.temperature
+    temperature_coefficient_database = material_from_database.temperature_coefficient
+
+    resistance_temperature = 1 / sigma_database * (1 + temperature_coefficient_database * (temperature - temperature_database))
+    sigma_temperature = 1 / resistance_temperature
+
+    return sigma_temperature
+
 
 def create_folders(*args) -> None:
     """Creates folder for every given folder path (if it does not exist).

@@ -3,6 +3,15 @@ import os
 import json
 import femmt as fmt
 import deepdiff
+import femmt.examples.basic_inductor
+import femmt.examples.basic_transformer_interleaved
+import femmt.examples.basic_transformer
+import femmt.examples.basic_transformer_three_winding
+import femmt.examples.basic_transformer_integrated
+import femmt.examples.basic_transformer_center_tapped
+import femmt.examples.basic_transformer_stacked
+import femmt.examples.basic_transformer_stacked_center_tapped
+
 
 def compare_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
     first_content = None
@@ -104,13 +113,13 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([0.0005], 0.0001)
+        insulation.add_winding_insulations([[0.0005]])
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 9, None)
@@ -196,13 +205,13 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([0.0005], 0.0001)
+        insulation.add_winding_insulations([[0.0005]])
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_solid_round_conductor(conductor_radius=0.0013,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
@@ -253,13 +262,13 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
-        insulation.add_winding_insulations([0.0005], 0.0001)
+        insulation.add_winding_insulations([[0.0005]])
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 9, None)
@@ -312,13 +321,13 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([0.0005])
+        insulation.add_winding_insulations([[0.0005]])
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_rectangular_conductor(thickness=1e-3)
 
         vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, wrap_para_type)
@@ -374,13 +383,13 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder)
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([0.0005])
+        insulation.add_winding_insulations([[0.0005]])
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_rectangular_conductor(thickness=1e-3)
 
         vww.set_winding(winding, 12, fmt.WindingScheme.FoilHorizontal, wrap_para_type)
@@ -436,18 +445,18 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
         # 4. set insulation
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([0.0002, 0.0002], 0.0005)
+        insulation.add_winding_insulations([[0.0002, 0.0002], [0.0002, 0.0002]])
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
         winding_window = fmt.WindingWindow(core, insulation)
-        left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+        left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, 0.0005)
 
         # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
@@ -502,7 +511,7 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
         # 4. set insulations
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+        insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]])
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
@@ -510,15 +519,14 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         # 6. create conductors and set parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding1.set_solid_round_conductor(0.0011, None)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding2.set_solid_round_conductor(0.0011, None)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
-        vww.set_interleaved_winding(winding1, 21, winding2, 7, fmt.InterleavedWindingScheme.HorizontalAlternating,
-                                    0.0005)
+        vww.set_interleaved_winding(winding1, 21, winding2, 7, fmt.InterleavedWindingScheme.HorizontalAlternating)
         geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
@@ -577,27 +585,25 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
         # 4. set insulations
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+        insulation.add_winding_insulations([[0.0002, 0.0005], [0.0005, 0.0002]])
         geo.set_insulation(insulation)
 
         # 5. create winding window and virtual winding windows (vww)
         # For an integrated transformer it is not necessary to set horizontal and vertical split factors
         # since this is determined by the stray_path
         winding_window = fmt.WindingWindow(core, insulation, stray_path, air_gaps)
-        top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
+        top, bot = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit, 0.0001)
 
         # 6. set conductor parameters
-        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding1 = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding1.set_solid_round_conductor(0.0011, None)
 
-        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+        winding2 = fmt.Conductor(1, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding2.set_solid_round_conductor(0.0011, None)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
-        top.set_interleaved_winding(winding1, 3, winding2, 6, fmt.InterleavedWindingScheme.HorizontalAlternating,
-                                    0.0005)
-        bot.set_interleaved_winding(winding1, 1, winding2, 2, fmt.InterleavedWindingScheme.HorizontalAlternating,
-                                    0.0005)
+        top.set_interleaved_winding(winding1, 3, winding2, 6, fmt.InterleavedWindingScheme.HorizontalAlternating)
+        bot.set_interleaved_winding(winding1, 1, winding2, 2, fmt.InterleavedWindingScheme.HorizontalAlternating)
         geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
@@ -646,13 +652,13 @@ def thermal_simulation(temp_folder):
 
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([0.0001])
+        insulation.add_winding_insulations([[0.0001]])
         geo.set_insulation(insulation)
 
         winding_window = fmt.WindingWindow(core, insulation)
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_solid_round_conductor(conductor_radius=0.0015,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
@@ -875,3 +881,60 @@ def test_thermal_simulation(thermal_simulation):
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "results_thermal.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+
+
+##############################
+# Basic example tests
+# These tests just run the basic examples an see if the run without error
+# There is no result comparison
+##############################
+
+
+def test_basic_examples(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor.basic_example_inductor(onelab_folder=onelab_folder,
+                                                         show_visual_outputs=False,
+                                                         is_test=True)
+
+
+def test_basic_example_transformer_interleaved(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_interleaved.basic_example_transformer_interleaved(onelab_folder=onelab_folder,
+                                                                                       show_visual_outputs=False,
+                                                                                       is_test=True)
+
+
+def test_basic_example_transformer(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer.basic_example_transformer(onelab_folder=onelab_folder, show_visual_outputs=False,
+                                                               is_test=True)
+
+def test_basic_example_transformer_three_winding(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)
+
+def test_basic_example_transformer_integrated(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_integrated.basic_example_transformer_intergrated(onelab_folder=onelab_folder,
+                                                                                      show_visual_outputs=False,
+                                                                                      is_test=True)
+
+def test_basic_example_transformer_center_tapped(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_center_tapped.basic_example_transformer_center_tapped(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)
+
+def test_basic_example_transformer_stacked(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_stacked.basic_example_transformer_stacked(onelab_folder=onelab_folder,
+                                                                               show_visual_outputs=False,
+                                                                               is_test=True)
+
+def test_basic_example_transformer_stacked_center_tapped(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(onelab_folder=onelab_folder,
+                                                                                                           show_visual_outputs=False,
+                                                                                                           is_test=True)

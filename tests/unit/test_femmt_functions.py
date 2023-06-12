@@ -127,3 +127,12 @@ def test_calculate_inductance_matrix():
 
     assert inductance_matrix[0] == pytest.approx([0.000935, 0.00027419354838709674], rel=1e-3)
     assert inductance_matrix[1] == pytest.approx([0.00027419354838709674, 8.844953173777314e-05], rel=1e-3)
+
+def test_conductivity_temperature():
+    temperature = 100
+
+    copper_sigma_100_degree_calculated = femmt.conductivity_temperature("Copper", temperature)
+    aluminium_sigma_100_degree_calculated = femmt.conductivity_temperature("Aluminium", temperature)
+
+    assert copper_sigma_100_degree_calculated == pytest.approx(4.4874e7, rel=1e-3)
+    assert aluminium_sigma_100_degree_calculated == pytest.approx(2.8627e7, rel=1e-3)

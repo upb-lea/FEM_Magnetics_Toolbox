@@ -163,6 +163,11 @@ class MagneticComponent:
         self.L_s2 = None
         self.L_s3 = None
         self.L_h = None
+        self.L_s12 = None
+        self.L_s13 = None
+        self.L_s23 = None
+        self.n_12 = None
+        self.n_13 = None
 
         # -- FEMM variables --
         self.tot_loss_femm = None
@@ -683,7 +688,7 @@ class MagneticComponent:
 
         # TODO: distinguish between wire material. Only copper at the moment
         for wire_volume in self.calculate_wire_volumes():
-            wire_weight.append(wire_volume * wire_material["Copper"]["volumetric_mass_density"])
+            wire_weight.append(wire_volume * wire_material["Copper"].volumetric_mass_density)
 
         return wire_weight
 
@@ -1281,7 +1286,6 @@ class MagneticComponent:
                 f"k_1 = Sqrt(K_12 * K_21) = M_12 / Sqrt(L_1_1 * L_2_2) = {k_1}\n"
                 f"k_2 = Sqrt(K_31 * K_13) = M_13 / Sqrt(L_1_1 * L_3_3) = {k_2}\n"
                 f"k_3 = Sqrt(K_23 * K_32) = M_23 / Sqrt(L_2_2 * L_3_3) = {k_3}\n"
-
                 )
 
             # Read the logged inductance values
@@ -1316,7 +1320,7 @@ class MagneticComponent:
             M_32 = self.L_3_3 * K_23  # Only to proof correctness - ideally: M_32 = M_23
             self.femmt_print(f"\n"
                 f"Main/Counter Inductance:\n"
-                f"M = k * Sqrt(L_1_1 * L_2_2) = {self.M}\n"
+                # f"M = k * Sqrt(L_1_1 * L_2_2) = {self.M}\n"
                 f"M_12 = L_1_1 * K_21 = {M_12}\n"
                 f"M_21 = L_2_2 * K_21 = {M_21}\n"
                 f"M_13 = L_1_1 * K_31 = {M_13}\n"
@@ -1330,21 +1334,34 @@ class MagneticComponent:
             self.L_s2 = self.L_2_2 - (self.M_12 * self.M_23) / self.M_13
             self.L_s3 = self.L_3_3 - (self.M_13 * self.M_23) / self.M_12
             self.L_h = (self.M_12 * self.M_13) / self.M_23
-            #n_2 = self.M_13 / self.M_23
-            #n_3 = self.M_12 / self.M_23
+            self.n_12 = np.sqrt(self.L_1_1/self.L_2_2)  # self.M_13 / self.M_23
+            self.n_13 = np.sqrt(self.L_1_1/self.L_3_3)  # self.M_12 / self.M_23
+            self.n_23 = np.sqrt(self.L_2_2/self.L_3_3)
+
+            # Shortcut Inductances
+            self.L_s12 = self.L_s1 + self.n_12**2 * self.L_s2
+            self.L_s13 = self.L_s1 + self.n_13**2 * self.L_s3
+            self.L_s23 = self.L_s2 + (self.n_13/self.n_12)**2 * self.L_s3
+
             self.femmt_print(f"\n"
-                f"T-ECD (primary side transformed):\n"
-                f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
-                f"    - Transformation Ratio with respect to the primary and the Secondary: n2\n"
-                f"    - Transformation Ratio with respect to the primary and the Tertiary: n3\n"
+                f"T-ECD (Lh on primary side):\n"
                 f"    - Primary Side Stray Inductance: L_s1\n"
                 f"    - Secondary Side Stray Inductance: L_s2\n"
                 f"    - Tertiary Side Stray Inductance: L_s3\n"        
+                f"    - Transformation Ratio with respect to the primary and the Secondary: n2\n"
+                f"    - Transformation Ratio with respect to the primary and the Tertiary: n3\n"
                 f"    - Primary Side Main Inductance: L_h\n"        
                 f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {self.L_s1}\n"
                 f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {self.L_s2}\n"
                 f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {self.L_s3}\n"         
-                f"L_h = M_12 * M_13 / M_23 = {self.L_h}\n"
+                f"n_12 = np.sqrt(self.L_1_1/self.L_2_2) = {self.n_12}\n"         
+                f"n_13 = np.sqrt(self.L_1_1/self.L_3_3) = {self.n_13}\n"
+                f"n_23 = np.sqrt(self.L_2_2/self.L_3_3) = {self.n_23}\n"         
+                f"L_h = M_12 * M_13 / M_23 = {self.L_h}\n\n"
+                f"Shortcut Inductances L_snm measured on winding n with short applied to winding m\n"
+                f"L_s12 = L_s1 + n_12**2 * L_s2 = {self.L_s12}\n"
+                f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
+                f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
                 )
             """
             # Stray Inductance concentrated on Primary Side

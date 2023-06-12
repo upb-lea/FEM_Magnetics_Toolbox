@@ -6,8 +6,6 @@ from typing import List
 import numpy as np
 from materialdatabase.dtos import MaterialCurve
 
-
-
 @dataclass
 class StoInsulation:
     iso_top_core: float
@@ -16,7 +14,8 @@ class StoInsulation:
     iso_right_core: float
     iso_primary_to_primary: float
     iso_secondary_to_secondary: float
-    iso_primary_to_secondary:float
+    iso_primary_to_secondary: float
+    iso_primary_additional: float
 
 @dataclass
 class StoSingleInputConfig:
@@ -27,7 +26,7 @@ class StoSingleInputConfig:
     Also specifies the working directory where to store the results.
     """
     # target parameters
-    l_s_target: float
+    l_s12_target: float
     l_h_target: float
     n_target: float
 
@@ -40,11 +39,10 @@ class StoSingleInputConfig:
     material_list: list
     core_inner_diameter_min_max_list: list
     window_w_min_max_list: list
-    window_h_top_min_max_list: list
     window_h_bot_min_max_list: list
-    factor_max_flux_density: float
+    max_transformer_total_height: float
     primary_litz_wire_list: list
-    metal_sheet_thickness: list
+    metal_sheet_thickness_list: list
 
     # fix parameters: insulations
     insulations: StoInsulation
@@ -69,11 +67,15 @@ class WorkingDirectories:
 @dataclass
 class StoTargetAndFixedParameters:
     """
-    Integrated-transformer optimization target and fixed parameters.
-    These parameters are calculated from the integrated-transformer input configuration (ItoSingleInputConfig).
+    Stacked-transformer optimization target and fixed parameters.
+    These parameters are calculated from the stacked-transformer input configuration (StoSingleInputConfig).
     """
     i_rms_1: float
     i_rms_2: float
+    i_peak_1: float
+    i_peak_2: float
+    i_phase_deg_1: float
+    i_phase_deg_2: float
     material_dto_curve_list: List[MaterialCurve]
     time_extracted_vec: List
     current_extracted_1_vec: List
@@ -81,5 +83,3 @@ class StoTargetAndFixedParameters:
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
-
-
