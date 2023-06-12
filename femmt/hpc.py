@@ -15,7 +15,7 @@ def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
     :param dest_folder: Path to the folder where the necessary files shall be stored. The "new" electro_magnetic folder for the corresponding simulation.
     :type dest_folder: str
     """
-    files = ["core_materials_temp.pro", "fields.pro", "ind_axi_python_controlled.pro", "Parameter.pro", "postquantities.pro", "solver.pro", "values.pro"]
+    files = ["fields.pro", "ind_axi_python_controlled.pro", "solver.pro", "values.pro"]
 
     for file in files:
         from_path = os.path.join(src_folder, file)
