@@ -77,7 +77,7 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
         os.mkdir(working_directory)
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                silent=True, is_gui=is_test)
+                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
