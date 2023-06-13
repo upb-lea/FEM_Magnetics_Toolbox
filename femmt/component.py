@@ -1044,8 +1044,15 @@ class MagneticComponent:
                                                   [time_current_vectors[1][0], negative_secondary_current]]
 
             # from matplotlib import pyplot as plt
-            # plt.plot(time_current_vectors[1][0], negative_secondary_current)
+            # plt.plot(time_current_vectors[1][0], negative_secondary_current, label="negative_secondary_current")
+            # plt.plot(time_current_vectors[1][0], positive_secondary_current, label="positive_secondary_current")
+            # plt.plot(time_current_vectors[0][0], time_current_vectors[0][1], label="primary_current")
+            # plt.xlabel("time / s")
+            # plt.ylabel("current / A")
+            # plt.grid()
+            # plt.legend()
             # plt.show()
+
             return center_tapped_time_current_vectors
 
         def linear_loss_excitation(time_current_vectors):
@@ -1080,9 +1087,36 @@ class MagneticComponent:
 
         time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
         hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = hysteresis_loss_excitation(time_current_vectors)
+
+        # i_1 = hyst_loss_amplitudes[0] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
+        # i_2 = hyst_loss_amplitudes[1] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
+        # from matplotlib import pyplot as plt
+        # plt.plot(time_current_vectors[0][0], i_1, label="i_1")
+        # plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
+        # plt.xlabel("time / s")
+        # plt.ylabel("current / A")
+        # plt.grid()
+        # plt.legend()
+        # plt.show()
+
         hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg)
         time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
         frequency_list, frequency_current_phase_deg_list = linear_loss_excitation(time_current_vectors)
+
+        print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
+
+        # i_1 = hyst_loss_amplitudes[0] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
+        # i_2 = hyst_loss_amplitudes[1] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
+        # i_3 =  hyst_loss_amplitudes[2] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[2]))
+        # from matplotlib import pyplot as plt
+        # plt.plot(time_current_vectors[0][0], i_1, label="i_1")
+        # plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
+        # plt.plot(time_current_vectors[0][0], i_3, "--", label="i_3")
+        # plt.xlabel("time / s")
+        # plt.ylabel("current / A")
+        # plt.grid()
+        # plt.legend()
+        # plt.show()
 
         # transfer format from fft()-output to excitation_sweep()-input
         current_list_list = []
