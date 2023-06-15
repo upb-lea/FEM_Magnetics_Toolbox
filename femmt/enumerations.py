@@ -30,7 +30,10 @@ class WindingWindowSplit(IntEnum):
     TenCells_Split = 6
     """The winding window is split into 2x5 virtual winding windows
     """
-    NoSplitWithBobbin = 7
+    NCells_Split = 7
+    """The winding window is split into 2xN/2 virtual winding windows
+    """
+    NoSplitWithBobbin = 8
     """Acts like "NoSplit", but takes bobbin geometry instead of core-cond insulation to define the virtual winding window.
     """
 
