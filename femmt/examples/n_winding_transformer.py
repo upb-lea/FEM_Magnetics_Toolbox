@@ -45,7 +45,8 @@ geo.set_insulation(insulation)
 
 # 5. create winding window and virtual winding windows (vww)
 winding_window = fmt.WindingWindow(core, insulation)
-cells = winding_window.NHorizontalSplit([1/7, 2/7, 3/7, 4/7, 5/7, 6/7])
+# cells = winding_window.NHorizontalSplit([1/7, 2/7, 3/7, 4/7, 5/7, 6/7])
+cells = winding_window.NHorizontalSplit([1/4, 2/4, 3/4], vertical_split_factors=[None, 0.5, 0.5, 0.5])
 # 6. create conductors and set parameters
 
 winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
