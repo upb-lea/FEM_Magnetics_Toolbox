@@ -2,27 +2,27 @@ import femmt as fmt
 import os
 
 
-def example_thermal_simulation():
+def example_thermal_simulation(flag_insulation: bool):
     # Thermal simulation:
     # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
     # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
     # which will be applied on the boundary of the simulation (dirichlet boundary condition).
-    
+
     # The case parameter sets the thermal conductivity for a case which will be set around the core.
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
-            "air": 0.0263,
-            "case": { # epoxy resign
-                "top": 1.54,
-                "top_right": 1.54,
-                "right": 1.54,
-                "bot_right": 1.54,
-                "bot": 1.54
-            },
-            "core": 5, # ferrite
-            "winding": 400, # copper
-            "air_gaps": 180, # aluminiumnitride
-            "insulation": 0.42 # polyethylen
+        "air": 0.0263,
+        "case": {  # epoxy resign
+            "top": 1.54,
+            "top_right": 1.54,
+            "right": 1.54,
+            "bot_right": 1.54,
+            "bot": 1.54
+        },
+        "core": 5,  # ferrite
+        "winding": 400,  # copper
+        "air_gaps": 180,  # aluminiumnitride
+        "insulation": 0.42 if flag_insulation else None  # polyethylen
     }
 
     # Here the case size can be determined
@@ -41,7 +41,7 @@ def example_thermal_simulation():
         "value_boundary_bottom_right": 20,
         "value_boundary_bottom": 20
     }
-    
+
     # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
     # Currently only one temperature can be applied which will be set on every boundary site.
     femm_boundary_temperature = 20
@@ -63,21 +63,27 @@ def example_thermal_simulation():
     # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
-    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                           case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas)
+    # example_thermal_simulation(True)  # For simulation with insulation
+    # example_thermal_simulation(False)  # For simulation without insulation
+
+    geo.thermal_simulation(flag_insulation, thermal_conductivity_dict, boundary_temperatures, boundary_flags,
+                           case_gap_top,
+                           case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas,
+                           colors_geometry=fmt.colors_geometry_ba_jonas)
+
 
 example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-# component = "inductor"
+component = "inductor"
 # component = "transformer-interleaved"
 # component = "transformer"
 # component = "three-winding-transformer"
 # component = "integrated_transformer"
 # component = "center-tapped-transformer"
 # component = "stacked-transformer"
-component = "stacked-center-tapped-transformer"
+# component = "stacked-center-tapped-transformer"
 # component = "load_from_file"
 
 
@@ -89,7 +95,8 @@ if component == "inductor":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                silent=False)
 
     inductor_frequency = 270000
 
@@ -109,8 +116,8 @@ if component == "inductor":
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
                     permittivity_measurement_setup="LEA_LK")
-                    # mu_rel=3000, phi_mu_deg=10,
-                    # sigma=0.5)
+    # mu_rel=3000, phi_mu_deg=10,
+    # sigma=0.5)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -120,8 +127,9 @@ if component == "inductor":
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation()
+    insulation = fmt.Insulation(flag_insulation=False)
     insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+
     insulation.add_winding_insulations([[0.0005]])
     geo.set_insulation(insulation)
 
@@ -133,8 +141,8 @@ if component == "inductor":
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
-    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
-    #fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+    # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
+    # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     vww.set_winding(winding, 9, None)
@@ -158,7 +166,7 @@ if component == "inductor":
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    # example_thermal_simulation()
+    example_thermal_simulation(False)
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(example_results_folder, "transformer-interleaved")
@@ -171,7 +179,8 @@ if component == "transformer-interleaved":
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
     core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
 
     geo.set_core(core)
 
@@ -212,8 +221,8 @@ if component == "transformer-interleaved":
     geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5, visualize_last_fem_simulation=True)
 
     # 9. start thermal simulation
-    #example_thermal_simulation()
-    
+    # example_thermal_simulation()
+
 if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
     working_directory = os.path.join(example_results_folder, "transformer")
@@ -226,7 +235,8 @@ if component == "transformer":
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -235,7 +245,7 @@ if component == "transformer":
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulation
-    insulation = fmt.Insulation()
+    insulation = fmt.Insulation(flag_insulation=False)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
@@ -249,11 +259,11 @@ if component == "transformer":
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    #winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    #winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+    # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    # winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
-    #winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-    #winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    # winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    # winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
     winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
@@ -268,6 +278,8 @@ if component == "transformer":
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=200000, pre_visualize_geometry=True)
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180])
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation(False)
 
 if component == "three-winding-transformer":
     # Example for a transformer with multiple virtual winding windows.
@@ -281,7 +293,8 @@ if component == "three-winding-transformer":
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -299,7 +312,8 @@ if component == "three-winding-transformer":
 
     # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    top_left, top_right, bot_left, bot_right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalAndVerticalSplit, horizontal_split_factor=0.4)
+    top_left, top_right, bot_left, bot_right = winding_window.split_window(
+        fmt.WindingWindowSplit.HorizontalAndVerticalSplit, horizontal_split_factor=0.4)
     top_left = winding_window.combine_vww(top_left, bot_left)
 
     # 6. create conductors and set parameters
@@ -323,6 +337,8 @@ if component == "three-winding-transformer":
 
     # Reference simulation using FEMM
     # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation()
 
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")
@@ -330,12 +346,14 @@ if component == "integrated_transformer":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                working_directory=working_directory)
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.011, window_h=0.03)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=0.6,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 2.1 set stray path parameters
@@ -351,7 +369,7 @@ if component == "integrated_transformer":
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation()
+    insulation = fmt.Insulation(flag_insulation=False)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
@@ -381,18 +399,22 @@ if component == "integrated_transformer":
 
     # other simulation options:
     # -------------------------
-    #geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+    # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation(False)
 
 if component == "center-tapped-transformer":
     working_directory = os.path.join(example_results_folder, "center-tapped-transformer")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                silent=True)
 
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -401,18 +423,29 @@ if component == "center-tapped-transformer":
 
     # set_center_tapped_windings() automatically places the conductors
     insulation, winding_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
-                                                                                     primary_turns=12, primary_radius=1.1e-3, primary_number_strands=50, primary_strand_radius=0.00011,
-                                                                                     secondary_parallel_turns=3, secondary_thickness_foil=1e-3,
-                                                                                     iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
-                                                                                     iso_primary_to_primary=1e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
+                                                                                     primary_additional_bobbin=0,
+                                                                                     primary_turns=12,
+                                                                                     primary_radius=1.1e-3,
+                                                                                     primary_number_strands=50,
+                                                                                     primary_strand_radius=0.00011,
+                                                                                     secondary_parallel_turns=3,
+                                                                                     secondary_thickness_foil=1e-3,
+                                                                                     iso_top_core=0.001,
+                                                                                     iso_bot_core=0.001,
+                                                                                     iso_left_core=0.002,
+                                                                                     iso_right_core=0.001,
+                                                                                     iso_primary_to_primary=1e-4,
+                                                                                     iso_secondary_to_secondary=2e-4,
+                                                                                     iso_primary_to_secondary=5e-4,
                                                                                      interleaving_type=fmt.CenterTappedInterleavingType.TypeA)
-
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([winding_window])
 
     geo.create_model(freq=200000, pre_visualize_geometry=True)
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180])
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation()
 
     # Reference simulation using FEMM
     # geo.femm_reference(freq=250000, current=[4, 4, 4], sign=[1, -1, 1], non_visualize=0)
@@ -423,12 +456,16 @@ if component == "stacked-transformer":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                working_directory=working_directory)
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.01, window_h_bot=0.03)
-    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=0.6,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.02, window_h_top=0.01,
+                                                     window_h_bot=0.03)
+    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12,
+                    sigma=0.6,
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -465,8 +502,10 @@ if component == "stacked-transformer":
     geo.set_winding_windows([winding_window_top, winding_window_bot])
 
     # 8. start simulation with given frequency, currents and phases
-    geo.create_model(freq=250000, pre_visualize_geometry=False)
+    geo.create_model(freq=250000, pre_visualize_geometry=True)
     geo.single_simulation(freq=250000, current=[2.0, 4.0], phi_deg=[0, 180])
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation()
 
     # other simulation options:
     # -------------------------
@@ -477,11 +516,15 @@ if component == "stacked-center-tapped-transformer":
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory, silent=False)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                working_directory=working_directory, silent=False)
 
-    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005, window_h_bot=0.017)
-    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+    core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005,
+                                                     window_h_bot=0.017)
+    core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12,
+                    sigma=1.2,
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
@@ -491,10 +534,20 @@ if component == "stacked-center-tapped-transformer":
 
     # set_center_tapped_windings() automatically places the condu
     insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
-                                                                                                      primary_turns=14, primary_radius=1.1e-3, primary_number_strands=50, primary_strand_radius=0.00011,
-                                                                                                      secondary_parallel_turns=2, secondary_thickness_foil=1e-3,
-                                                                                                      iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
-                                                                                                      iso_primary_to_primary=2e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=4e-4,
+                                                                                                      primary_additional_bobbin=0,
+                                                                                                      primary_turns=14,
+                                                                                                      primary_radius=1.1e-3,
+                                                                                                      primary_number_strands=50,
+                                                                                                      primary_strand_radius=0.00011,
+                                                                                                      secondary_parallel_turns=2,
+                                                                                                      secondary_thickness_foil=1e-3,
+                                                                                                      iso_top_core=0.001,
+                                                                                                      iso_bot_core=0.001,
+                                                                                                      iso_left_core=0.002,
+                                                                                                      iso_right_core=0.001,
+                                                                                                      iso_primary_to_primary=2e-4,
+                                                                                                      iso_secondary_to_secondary=2e-4,
+                                                                                                      iso_primary_to_secondary=4e-4,
                                                                                                       interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
                                                                                                       primary_coil_turns=3)
 
@@ -505,7 +558,9 @@ if component == "stacked-center-tapped-transformer":
 
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_fem_simulation_results=True)
 
-    geo.get_inductances(I0=1, op_frequency=200000)
+    # geo.get_inductances(I0=1, op_frequency=200000)
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation()
 
 if component == "load_from_file":
     working_directory = os.path.join(example_results_folder, "from-file")
