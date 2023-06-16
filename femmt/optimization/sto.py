@@ -220,7 +220,8 @@ class StackedTransformerOptimization:
                     geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
                     geo.center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
-                                                                  [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]])
+                                                                  [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
+                                            plot_waveforms=True)
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -374,7 +375,8 @@ class StackedTransformerOptimization:
                     geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
                     geo.center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
-                                                                  [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]])
+                                                                  [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
+                                            plot_waveforms=True)
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -734,7 +736,8 @@ class StackedTransformerOptimization:
                 #                       show_fem_simulation_results=False)
 
                 geo.center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
-                                                              [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]])
+                                                              [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
+                                        plot_waveforms=True)
 
 
     class ThermalSimulation:

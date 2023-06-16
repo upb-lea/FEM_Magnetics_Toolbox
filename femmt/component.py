@@ -9,6 +9,7 @@ import inspect
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 import dataclasses
+from matplotlib import pyplot as plt
 
 # Third party libraries
 from onelab import onelab
@@ -1009,7 +1010,7 @@ class MagneticComponent:
                               core_hyst_loss=float(p_hyst))
 
 
-    def center_tapped_study(self, time_current_vectors: List[List[List[float]]]):
+    def center_tapped_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False):
 
         def hysteresis_loss_excitation(time_current_vectors):
             # collect simulation input parameters from time_current_vectors
@@ -1043,15 +1044,15 @@ class MagneticComponent:
                                                   [time_current_vectors[1][0], positive_secondary_current],
                                                   [time_current_vectors[1][0], negative_secondary_current]]
 
-            # from matplotlib import pyplot as plt
-            # plt.plot(time_current_vectors[1][0], negative_secondary_current, label="negative_secondary_current")
-            # plt.plot(time_current_vectors[1][0], positive_secondary_current, label="positive_secondary_current")
-            # plt.plot(time_current_vectors[0][0], time_current_vectors[0][1], label="primary_current")
-            # plt.xlabel("time / s")
-            # plt.ylabel("current / A")
-            # plt.grid()
-            # plt.legend()
-            # plt.show()
+            if plot_waveforms:
+                plt.plot(time_current_vectors[1][0], negative_secondary_current, label="negative_secondary_current")
+                plt.plot(time_current_vectors[1][0], positive_secondary_current, label="positive_secondary_current")
+                plt.plot(time_current_vectors[0][0], time_current_vectors[0][1], label="primary_current")
+                plt.xlabel("time / s")
+                plt.ylabel("current / A")
+                plt.grid()
+                plt.legend()
+                plt.show()
 
             return center_tapped_time_current_vectors
 
@@ -1096,35 +1097,34 @@ class MagneticComponent:
         time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
         hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = hysteresis_loss_excitation(time_current_vectors)
 
-        # i_1 = hyst_loss_amplitudes[0] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
-        # i_2 = hyst_loss_amplitudes[1] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
-        # from matplotlib import pyplot as plt
-        # plt.plot(time_current_vectors[0][0], i_1, label="i_1")
-        # plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
-        # plt.xlabel("time / s")
-        # plt.ylabel("current / A")
-        # plt.grid()
-        # plt.legend()
-        # plt.show()
+
+        if plot_waveforms:
+            i_1 = hyst_loss_amplitudes[0] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
+            i_2 = hyst_loss_amplitudes[1] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
+            plt.plot(time_current_vectors[0][0], i_1, label="i_1")
+            plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
+            plt.xlabel("time / s")
+            plt.ylabel("current / A")
+            plt.grid()
+            plt.legend()
+            plt.show()
 
         hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg)
         time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
         frequency_list, frequency_current_phase_deg_list = linear_loss_excitation(time_current_vectors)
 
-        print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
-
-        # i_1 = hyst_loss_amplitudes[0] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
-        # i_2 = hyst_loss_amplitudes[1] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
-        # i_3 =  hyst_loss_amplitudes[2] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[2]))
-        # from matplotlib import pyplot as plt
-        # plt.plot(time_current_vectors[0][0], i_1, label="i_1")
-        # plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
-        # plt.plot(time_current_vectors[0][0], i_3, "--", label="i_3")
-        # plt.xlabel("time / s")
-        # plt.ylabel("current / A")
-        # plt.grid()
-        # plt.legend()
-        # plt.show()
+        if plot_waveforms:
+            i_1 = hyst_loss_amplitudes[0] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
+            i_2 = hyst_loss_amplitudes[1] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
+            i_3 =  hyst_loss_amplitudes[2] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[2]))
+            plt.plot(time_current_vectors[0][0], i_1, label="i_1")
+            plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
+            plt.plot(time_current_vectors[0][0], i_3, "--", label="i_3")
+            plt.xlabel("time / s")
+            plt.ylabel("current / A")
+            plt.grid()
+            plt.legend()
+            plt.show()
 
         # transfer format from fft()-output to excitation_sweep()-input
         current_list_list = []
@@ -1156,13 +1156,9 @@ class MagneticComponent:
         [p_hyst] = self.load_result(res_name="p_hyst")
 
         # Correct the hysteresis loss for the triangular shaped flux density waveform
-        print(f"sinusoidal: {p_hyst = }")
-        print(f"{self.core.temperature}")
         alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
                                                                       datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
         p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
-        print(f"triangular, D=0.5, {alpha_from_db=}: {p_hyst = }")
-
 
         # calculate the winding losses
         self.excitation_sweep(list(frequency_list), current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
