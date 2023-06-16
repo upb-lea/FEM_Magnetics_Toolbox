@@ -490,7 +490,7 @@ class MagneticComponent:
         if self.frequency != 0:
             if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
                 epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
-                                                                                              material_name="N49",
+                                                                                              material_name="N49", # TODO: remove hardcode!!!
                                                                                               datasource=self.core.permittivity["datasource"],
                                                                                               datatype=self.core.permittivity["datatype"],
                                                                                               measurement_setup=self.core.permittivity["measurement_setup"],
@@ -1085,6 +1085,14 @@ class MagneticComponent:
             # print(f"Corrected: {frequency_current_phase_deg_list = }")
             return frequency_list, frequency_current_phase_deg_list
 
+        def factor_triangular_hysteresis_loss_iGSE(D, alpha):
+            nominator = 2 * (D ** (1 - alpha) + (1 - D) ** (1 - alpha))
+            theta = np.linspace(0, 2 * np.pi, 100)
+            integrant = np.abs(np.cos(theta)) ** alpha
+            denominator = np.pi ** (alpha - 1) * np.trapz(integrant, x=theta)
+            return nominator / denominator
+
+
         time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
         hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = hysteresis_loss_excitation(time_current_vectors)
 
@@ -1146,6 +1154,15 @@ class MagneticComponent:
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
         [p_hyst] = self.load_result(res_name="p_hyst")
+
+        # Correct the hysteresis loss for the triangular shaped flux density waveform
+        print(f"sinusoidal: {p_hyst = }")
+        print(f"{self.core.temperature}")
+        alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
+                                                                      datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
+        p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
+        print(f"triangular, D=0.5, {alpha_from_db=}: {p_hyst = }")
+
 
         # calculate the winding losses
         self.excitation_sweep(list(frequency_list), current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
