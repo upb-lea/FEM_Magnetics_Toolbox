@@ -221,7 +221,7 @@ class StackedTransformerOptimization:
 
                     geo.center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
                                                                   [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
-                                            plot_waveforms=True)
+                                            plot_waveforms=False)
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
@@ -376,7 +376,7 @@ class StackedTransformerOptimization:
 
                     geo.center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
                                                                   [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
-                                            plot_waveforms=True)
+                                            plot_waveforms=False)
 
                     # copy result files to result-file folder
                     source_json_file = os.path.join(
