@@ -86,13 +86,14 @@ class Mesh:
         l_bound_core = []
         l_bound_air = []
         l_core_air = []
+        l_core_core = []
         l_cond = []
         for num in range(len(self.windings)):
             l_cond.append([])
         l_region = []
         l_air_gaps_air = []
         l_iso_core = []
-        return l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core
+        return l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core
 
     def set_empty_curve_loop_lists(self):
         # Curve Loops
@@ -548,6 +549,257 @@ class Mesh:
         curve_loop_core = gmsh.model.geo.addCurveLoop(l_bound_core + l_core_air)  # TODO: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([-curve_loop_core]))
 
+    def moduar_stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list, l_core_core: list):
+        # Points
+        # (index refers to sketch)
+        from operator import itemgetter
+        index_bot, bot_air_gap_center_y = min(enumerate(self.model.air_gaps.midpoints[:][1]), key=itemgetter(1))
+        bot_air_gap_length = self.model.air_gaps.midpoints[index_bot][2]
+
+        index_top, top_air_gap_center_y = max(enumerate(self.model.air_gaps.midpoints[:][1]), key=itemgetter(1))
+        top_air_gap_length = self.model.air_gaps.midpoints[index_top][2]
+
+        # core part bottom right
+        # 0
+        p_core.append(gmsh.model.geo.addPoint(0,
+                                              bot_air_gap_center_y - bot_air_gap_length / 2,
+                                              0,
+                                              self.model.p_outer[1][3]))  # TODO accuracy of mesh
+        # 1
+        p_core.append(gmsh.model.geo.addPoint(0,
+                                              self.model.p_outer[1][1],
+                                              self.model.p_outer[1][2],
+                                              self.model.p_outer[1][3]))  # TODO accuracy of mesh
+        # 2 bot right
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[1][0],
+                                              self.model.p_outer[1][1],
+                                              self.model.p_outer[1][2],
+                                              self.model.p_outer[1][3]))  # TODO accuracy of mesh
+        # 3 connector_rect bot_right
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[1][0],
+                                              self.model.p_window_bot[3][1],
+                                              self.model.p_window_bot[3][2],
+                                              self.model.p_outer[1][3]))
+
+        # 4 bot window top_right (= connector_rect bot_left)
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_bot[3][0],
+                                              self.model.p_window_bot[3][1],
+                                              self.model.p_window_bot[3][2],
+                                              self.model.p_window_bot[3][3]))
+
+        # 5 bot window bot_right
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_bot[1][0],
+                                              self.model.p_window_bot[1][1],
+                                              self.model.p_window_bot[1][2],
+                                              self.model.p_window_bot[1][3]))
+
+        # 6 bot window bot_left
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_bot[0][0],
+                                              self.model.p_window_bot[0][1],
+                                              self.model.p_window_bot[0][2],
+                                              self.model.p_window_bot[0][3]))
+
+        # 7
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_bot[0][0],
+                                              bot_air_gap_center_y - bot_air_gap_length / 2,
+                                              0,
+                                              self.model.p_window_bot[0][3]))  # TODO:air gap accuracy
+
+        # core part top right
+        # 8 connector_rect top_right
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[3][0],
+                                              self.model.p_outer[3][1],
+                                              self.model.p_outer[3][2],
+                                              self.model.p_outer[1][3]))
+
+        # 9 top right
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[3][0],
+                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_inner_diameter / 4,
+                                              self.model.p_outer[3][2],
+                                              self.model.p_outer[1][3]))  # TODO accuracy of mesh
+
+        # 10 top left
+        p_core.append(gmsh.model.geo.addPoint(0,
+                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_inner_diameter / 4,
+                                              self.model.p_outer[3][2],
+                                              self.model.p_outer[1][3]))  # TODO accuracy of mesh
+
+        # 11
+        p_core.append(gmsh.model.geo.addPoint(0,
+                                              top_air_gap_center_y + top_air_gap_length / 2,
+                                              0,
+                                              self.model.p_outer[1][3]))  # TODO accuracy of mesh
+
+        # 12
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_top[0][0],
+                                              top_air_gap_center_y + top_air_gap_length / 2,
+                                              0,
+                                              self.model.p_window_bot[0][3]))  # TODO accuracy of mesh
+
+        # 13
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_top[2][0],
+                                              self.model.p_window_top[2][1],
+                                              self.model.p_window_top[2][2],
+                                              self.model.p_window_top[2][3]))
+
+        # 14
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_top[3][0],
+                                              self.model.p_window_top[3][1],
+                                              self.model.p_window_top[3][2],
+                                              self.model.p_window_top[3][3]))
+
+        # 15
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_top[1][0],
+                                              self.model.p_window_top[1][1],
+                                              self.model.p_window_top[1][2],
+                                              self.model.p_window_top[1][3]))
+
+
+
+        #  center part
+        # 16 top air gap bot_left # TODO: Code for distributed air gaps
+        p_core.append(gmsh.model.geo.addPoint(0,
+                                              top_air_gap_center_y - top_air_gap_length / 2,
+                                              0,
+                                              self.model.p_outer[1][3]))  # TODO: Code for distributed air gaps
+
+
+        # 17
+        p_core.append(gmsh.model.geo.addPoint(0,
+                                              self.model.p_window_bot[2][1],
+                                              self.model.p_window_bot[2][2],
+                                              self.model.p_outer[1][3]))
+
+        # 18
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_bot[2][0],
+                                              self.model.p_window_bot[2][1],
+                                              self.model.p_window_bot[2][2],
+                                              self.model.p_window_bot[2][3]))
+
+        # 19 bot air gap left # TODO: Code for distributed air gaps
+        p_core.append(gmsh.model.geo.addPoint(0,
+                                              bot_air_gap_center_y + bot_air_gap_length / 2,
+                                              0,
+                                              self.model.p_outer[1][3]))  # TODO: Code for distributed air gaps
+
+        # 20 bot air gap # TODO: Code for distributed air gaps
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_window_bot[2][0],
+                                              bot_air_gap_center_y + bot_air_gap_length / 2,
+                                              0,
+                                              self.model.p_window_bot[0][3]))  # TODO: Code for distributed air gaps
+
+
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Curves
+        # (index refers to sketch)
+
+        # Curves: Boundary - Core
+        # [0]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[0],
+                                                   p_core[1]))
+        # [1]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[1],
+                                                   p_core[2]))
+        # [2]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[2],
+                                                   p_core[3]))
+        # [3]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[3],
+                                                   p_core[8]))
+        # [4]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[8],
+                                                   p_core[9]))
+        # [5]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[9],
+                                                   p_core[10]))
+        # [6]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[10],
+                                                   p_core[11]))
+        # [7]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[16],
+                                                   p_core[17]))
+        # [8]
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[17],
+                                                   p_core[19]))
+
+        # Curves: Bound - Air
+        # [0]
+        l_bound_air.append(gmsh.model.geo.addLine(p_core[11],
+                                                  p_core[16]))
+        # [1]
+        l_bound_air.append(gmsh.model.geo.addLine(p_core[19],
+                                                  p_core[0]))
+
+        # Curves: Core - Air
+        # top window
+        # [0]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[11],
+                                                 p_core[12]))
+        # [1]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[12],
+                                                 p_core[13]))
+        # [2]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[13],
+                                                 p_core[14]))
+        # [3]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[14],
+                                                 p_core[15]))
+        # [4]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[15],
+                                                 p_core[16]))
+        # bot window
+        # [5]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[18],
+                                                 p_core[4]))
+        # [6]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[19],
+                                                 p_core[20]))
+        # [7]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[20],
+                                                 p_core[18]))
+        # [8]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[4],
+                                                 p_core[5]))
+        # [9]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[5],
+                                                 p_core[6]))
+        # [10]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[6],
+                                                 p_core[7]))
+        # [11]
+        l_core_air.append(gmsh.model.geo.addLine(p_core[7],
+                                                 p_core[0]))
+
+        # core core
+        # [0]
+        l_core_core.append(gmsh.model.geo.addLine(p_core[8],
+                                                  p_core[15]))
+        # [1]
+        l_core_core.append(gmsh.model.geo.addLine(p_core[15],
+                                                  p_core[4]))
+        # [2]
+        l_core_core.append(gmsh.model.geo.addLine(p_core[4],
+                                                  p_core[3]))
+        # [3]
+        l_core_core.append(gmsh.model.geo.addLine(p_core[17],
+                                                  p_core[18]))
+
+        print([l_bound_core[7]] + l_core_air[4:6] + [-l_core_core[1]] + [l_core_core[3]])
+
+        gmsh.model.geo.synchronize()
+        gmsh.fltk.run()
+        # Plane: Main Core --> plane_surface_core[0]
+        curve_loop_core_bot = gmsh.model.geo.addCurveLoop(l_bound_core[0:3] + l_core_air[8:12] + [-l_core_core[2]])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_top = gmsh.model.geo.addCurveLoop(l_bound_core[4:7] + l_core_air[0:4] + [-l_core_core[0]])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_center_left_top = gmsh.model.geo.addCurveLoop([l_bound_core[7]] + l_core_air[4:6] + [-l_core_core[1]] + [l_core_core[3]])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_center_left_bot = gmsh.model.geo.addCurveLoop([l_bound_core[8]] + l_core_air[6:8] + [-l_core_core[3]])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_center_right = gmsh.model.geo.addCurveLoop([l_bound_core[3]] + l_core_core[0:3])  # TODO: must be taken into account that its a kind of interrupted lines
+        self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_bot]))
+        self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_top]))
+        self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_left_bot]))
+        self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_left_top]))
+        self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_right]))
+
     def conductors(self, p_cond: list, l_cond: list, curve_loop_cond: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
@@ -914,7 +1166,7 @@ class Mesh:
         # Initialization
         self.set_empty_plane_lists()
         p_core, p_island, p_cond, p_region, p_iso_core = self.set_empty_point_lists()
-        l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core = self.set_empty_line_lists()
+        l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core = self.set_empty_line_lists()
         curve_loop_cond, curve_loop_island, curve_loop_air, curve_loop_air_gaps, curve_loop_iso_core = self.set_empty_curve_loop_lists()
 
         # Set path for storing the mesh file
@@ -926,8 +1178,8 @@ class Mesh:
                              l_bound_core, l_core_air, l_bound_air, l_air_gaps_air,
                              curve_loop_island, curve_loop_air_gaps)
         if self.core.core_type == CoreType.Stacked:
-            self.stacked_core(p_core, l_bound_core, l_core_air, l_bound_air)
-
+            # self.stacked_core(p_core, l_bound_core, l_core_air, l_bound_air)
+            self.moduar_stacked_core(p_core, l_bound_core, l_core_air, l_bound_air, l_core_core)
         # Define mesh for conductors
         self.conductors(p_cond, l_cond, curve_loop_cond)
 
