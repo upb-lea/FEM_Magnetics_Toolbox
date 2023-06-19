@@ -21,7 +21,7 @@ Flag_Circuit            = Flag_ImposedVoltage;
 // 1 means full cylinder
 SymFactor               = 1. ;
 CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
-n_windings = Number_of_Windings;  //added by Othman
+n_windings = Number_of_Windings;
 
 // ----------------------
 // Physical numbers
@@ -70,7 +70,7 @@ Group{
 
   // Current Conducting Domains
   // Create a region for the winding
-  For n In {1:n_windings} // loop over each winding //added by Othman
+  For n In {1:n_windings} // loop over each winding
       Winding~{n} = Region[{}]; // create a region for the winding
       StrandedWinding~{n} = Region[{}]; // create a region for the stranded winding
   EndFor
@@ -121,7 +121,7 @@ Group{
   Domain = Region[{DomainC, DomainCC}] ;
 
  // Loop over each winding and add its regions to the corresponding conductor domain
-  For n In {1:n_windings} // added by Othman
+  For n In {1:n_windings}
       DomainCond~{n} += Region[{Winding~{n}, StrandedWinding~{n}}] ;
   EndFor
 
@@ -151,7 +151,7 @@ Group{
 
   Inductance_Cir  = Region[ {} ];
 
-  For n In {1:n_windings}   //added by Othman
+  For n In {1:n_windings}
       Capacitance_Cir~{n} = Region[{}] ;
   EndFor
   Capacitance_Cir = {};
@@ -224,7 +224,6 @@ Function {
         mu[#{Core}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
         nu[#{Core}]   = 1/mu[$1, $2] ;
     ElseIf(Flag_Permeability_From_Data)
-        //mu[#{Core}]   = Complex[mu0*(mur^2-f_mu_imag[$1, $2]^2)^(0.5), mu0*f_mu_imag[$1, $2]] ;  // TODO
         mu[#{Core}]   = Complex[mu0*f_mu_real[$1], -mu0*f_mu_imag[$1]] ;
         nu[#{Core}]   = 1/mu[$1, $2] ;
     Else
@@ -595,7 +594,7 @@ PostProcessing {
       { Name p_hyst ; Value { Integral {
         // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
         [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
-        In Core ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
+        In Core ; Jacobian Vol ; Integration II ;} } }
 
       { Name p_hyst_density ; Value { Integral {
         [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;

@@ -2558,7 +2558,7 @@ class MagneticComponent:
             log["Winding" + str(i + 1) + " Current"] = circuit_properties[0]
             log["Winding" + str(i + 1) + " Voltage"] = [circuit_properties[1].real, circuit_properties[1].imag]
             log["Winding" + str(i + 1) + " Flux"] = [circuit_properties[2].real, circuit_properties[2].imag]
-            if circuit_properties[0] != 0:  # added by Othman
+            if circuit_properties[0] != 0:
                 log["Winding" + str(i + 1) + " Self Inductance"] = [circuit_properties[2].real / circuit_properties[0],
                                                                     circuit_properties[2].imag / circuit_properties[0]]
             else:
