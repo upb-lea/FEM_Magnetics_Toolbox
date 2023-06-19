@@ -7,7 +7,7 @@ PostOperation Get_global UsingPost MagDyn_a {
 
   // Windings Total
   // Solid
-  //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // TODO: Complex power
+  //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_Core.dat")] ; // TODO: Complex power
   //Print[ j2F[ Winding~{1} ], OnGlobal, Format TimeTable, File > StrCat[DirResVals, "j2F_1.dat"]] ;
 
   For n In {1:n_windings}
@@ -53,11 +53,11 @@ PostOperation Get_global UsingPost MagDyn_a {
 
   // Core
 
-  // Eddy Current Losses according to sigma in core/iron
-  Print[ j2F[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"CoreEddyCurrentLosses.dat"]] ;
+  // Eddy Current Losses according to sigma in Core
+  Print[ j2F[ Core ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"CoreEddyCurrentLosses.dat"]] ;
 
-  // Hysteresis Losses according to complex permeability in core/iron
-  Print[ p_hyst[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"p_hyst.dat"]] ;// Core losses
+  // Hysteresis Losses according to complex permeability in Core
+  Print[ p_hyst[ Core ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"p_hyst.dat"]] ;// Core losses
   For n In {1:nCoreParts}
       Print[ p_hyst[ CorePart~{n} ], OnGlobal , Format TimeTable, File > Sprintf[StrCat[DirResValsCore, "p_hyst_%g.dat"], n]] ;
       Print[ j2F[ CorePart~{n} ], OnGlobal , Format TimeTable, File > Sprintf[StrCat[DirResValsCore, "CoreEddyCurrentLosses_%g.dat"], n]] ;
@@ -65,19 +65,19 @@ PostOperation Get_global UsingPost MagDyn_a {
 
   // Steinmetz Core Losses
   If(Flag_Generalized_Steinmetz_loss)
-    Print[ piGSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"piGSE.dat"]] ;// Core losses
-    Print[ piGSE[ Iron ], OnGlobal, Format Table];
+    Print[ piGSE[ Core ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"piGSE.dat"]] ;// Core losses
+    Print[ piGSE[ Core ], OnGlobal, Format Table];
   EndIf
 
   If(Flag_Steinmetz_loss)
-    Print[ pSE[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"pSE.dat"]] ;// Core losses
-    Print[ pSE[ Iron ], OnGlobal, Format Table];
+    Print[ pSE[ Core ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"pSE.dat"]] ;// Core losses
+    Print[ pSE[ Core ], OnGlobal, Format Table];
   EndIf
 
 
   // Stored Energy
   Print[ MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
-  // Print[ MagEnergy[Iron], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_iron.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
+  // Print[ MagEnergy[Core], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_Core.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
   // Print[ MagEnergy[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_air.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
   // Print[ MagEnergy[Winding1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_winding1.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
 

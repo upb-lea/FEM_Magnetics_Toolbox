@@ -29,7 +29,7 @@ n_windings = Number_of_Windings;  //added by Othman
 OUTBND              = 111111;
 AIR                 = 110000;
 AIR_EXT             = 110001;
-IRON                = 120000;
+CORE_PN                = 120000;
 
 //physical numbers of conductors in n transformer
 For n In {1:n_windings}
@@ -48,20 +48,20 @@ Group{
   // ----------------------
   Air  = Region[{AIR, AIR_EXT}];
 
-  Iron = Region[{}];
+  Core = Region[{}];
   // Core Domain
   For n In {1:nCoreParts}
-    CorePart~{n} = Region[{(IRON+n-1)}];
-    Iron += Region[{(IRON+n-1)}];
+    CorePart~{n} = Region[{(CORE_PN+n-1)}];
+    Core += Region[{(CORE_PN+n-1)}];
   EndFor
 
   // Non Conducting Domain:
   // Initialize the core-shell domain region to air
   DomainCC = Region[{Air}];
 
-  // Add the iron region to the core-shell domain region
+  // Add the Core region to the core-shell domain region
   If(!Flag_Conducting_Core)
-    DomainCC += Region[{Iron}];
+    DomainCC += Region[{Core}];
   EndIf
 
   // Boundary Conditions
@@ -90,9 +90,9 @@ Group{
   For n In {1:n_windings}
       DomainC += Region[{Winding~{n}}] ;
   EndFor
-   // Add the iron region to the core domain region
+   // Add the Core region to the core domain region
   If(Flag_Conducting_Core)
-    DomainC += Region[{Iron}];
+    DomainC += Region[{Core}];
   EndIf
    // Add this stranded winding to the shell domain region
   For n In {1:n_windings}
@@ -108,13 +108,13 @@ Group{
         Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
     EndFor
     Domain_Lin_NoJs = Region[{Air}];
-    Domain_NonLin   = Region[{Iron}];
+    Domain_NonLin   = Region[{Core}];
   Else
-    Domain_Lin      = Region[{Air, Iron}];
+    Domain_Lin      = Region[{Air, Core}];
     For n In {1:n_windings}
         Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
     EndFor
-    Domain_Lin_NoJs = Region[{Air, Iron}];
+    Domain_Lin_NoJs = Region[{Air, Core}];
     Domain_NonLin   = Region[{}];
   EndIf
   // Initialize the main domain to the core and core-shell domains
@@ -182,7 +182,7 @@ Function {
 
   // in non-stranded domains, def. AreaCell to 1 (neutral element of mutiplication)
 
-  AreaCell[#{Air, Iron}] = 1.;
+  AreaCell[#{Air, Core}] = 1.;
   For n In {1:n_windings}
       AreaCell[#{Winding~{n}}] = 1.;
   EndFor
@@ -198,11 +198,11 @@ Function {
   EndFor
 
   If(Flag_Conducting_Core)
-    sigma[#{Iron}] = sigma_core;
+    sigma[#{Core}] = sigma_core;
     sigma[#{Air}] = 0.;
   EndIf
   If(!Flag_Conducting_Core)
-    sigma[#{Air, Iron}] = 0.;
+    sigma[#{Air, Core}] = 0.;
   EndIf
 
   // nu: reluctivity
@@ -217,33 +217,33 @@ Function {
   // Hysteresis Loss
   // Imaginary Part Of Permeability
   // Liste von Lukas hinterlegen
-  //mu_imag[ #{Iron} ] = mu0 * f_mu_imag[$1, $2];
+  //mu_imag[ #{Core} ] = mu0 * f_mu_imag[$1, $2];
 
   If(!Flag_NL)
     If(Flag_Fixed_Loss_Angle)
-        mu[#{Iron}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
-        nu[#{Iron}]   = 1/mu[$1, $2] ;
+        mu[#{Core}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
+        nu[#{Core}]   = 1/mu[$1, $2] ;
     ElseIf(Flag_Permeability_From_Data)
-        //mu[#{Iron}]   = Complex[mu0*(mur^2-f_mu_imag[$1, $2]^2)^(0.5), mu0*f_mu_imag[$1, $2]] ;  // TODO
-        mu[#{Iron}]   = Complex[mu0*f_mu_real[$1], -mu0*f_mu_imag[$1]] ;
-        nu[#{Iron}]   = 1/mu[$1, $2] ;
+        //mu[#{Core}]   = Complex[mu0*(mur^2-f_mu_imag[$1, $2]^2)^(0.5), mu0*f_mu_imag[$1, $2]] ;  // TODO
+        mu[#{Core}]   = Complex[mu0*f_mu_real[$1], -mu0*f_mu_imag[$1]] ;
+        nu[#{Core}]   = 1/mu[$1, $2] ;
     Else
-        mu[#{Iron}]   = mu0*mur ;
-        nu[#{Iron}]   = 1/mu[$1, $2] ;
+        mu[#{Core}]   = mu0*mur ;
+        nu[#{Core}]   = 1/mu[$1, $2] ;
     EndIf
 
   Else
-    //nu[ #{Iron} ] = nu_3kW[$1] ;
-    //h[ #{Iron} ]  = h_3kW[$1];
-    //dhdb_NL[ #{Iron} ]= dhdb_3kW_NL[$1] ;
-    //dhdb[ #{Iron} ]   = dhdb_3kW[$1] ;
+    //nu[ #{Core} ] = nu_3kW[$1] ;
+    //h[ #{Core} ]  = h_3kW[$1];
+    //dhdb_NL[ #{Core} ]= dhdb_3kW_NL[$1] ;
+    //dhdb[ #{Core} ]   = dhdb_3kW[$1] ;
 
-    //nu[ #{Iron} ] = nu_N95[$1] ;
-    nu[ #{Iron} ] = nu~{Core_Material}[$1] ;
-    h[ #{Iron} ]  = h~{Core_Material}[$1];
-    //dhdb_NL[ #{Iron} ]= dhdb_95_NL[$1] ;
-    dhdb_NL[ #{Iron} ]= dhdb_95100_NL[$1] ;
-    dhdb[ #{Iron} ]   = dhdb~{Core_Material}[$1] ;
+    //nu[ #{Core} ] = nu_N95[$1] ;
+    nu[ #{Core} ] = nu~{Core_Material}[$1] ;
+    h[ #{Core} ]  = h~{Core_Material}[$1];
+    //dhdb_NL[ #{Core} ]= dhdb_95_NL[$1] ;
+    dhdb_NL[ #{Core} ]= dhdb_95100_NL[$1] ;
+    dhdb[ #{Core} ]   = dhdb~{Core_Material}[$1] ;
   EndIf
 
   // Excitation Current
@@ -257,7 +257,7 @@ Function {
 
   // Auxiliary functions for post-processing
   nuOm[#{Air}] = nu[]*Complex[0.,1.];
-  nuOm[#{Iron}] = -nu[$1]*Complex[0.,1.];
+  nuOm[#{Core}] = -nu[$1]*Complex[0.,1.];
   //nuOm[#{Winding1, Winding2, Winding3}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
 
 
@@ -333,7 +333,7 @@ Constraint {
   { Name Voltage_2D ;
     Case{
       If(Flag_Conducting_Core)
-        { Region Iron ; Value 0; }
+        { Region Core ; Value 0; }
       EndIf
     }
   }
@@ -474,8 +474,8 @@ PostProcessing {
 
       { Name nur ; Value { Term { [ Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       //{ Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
+      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Core ; Jacobian Vol ; } } }
+      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Core ; Jacobian Vol ; } } }
       { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name mur_im ; Value { Term { [ Norm [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
@@ -576,15 +576,15 @@ PostProcessing {
                                         ((Norm[{d a}]*2 / t_fall )^alpha) * t_fall
                                         // 10 abschnitte reinbauen
                                         // python überprüfung + vorfaktoren zu NULL
-                                   ) ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+                                   ) ] ; In Core ; Jacobian Vol ; Integration II ;} } }
       EndIf
 
       If(Flag_Steinmetz_loss)
         { Name pSE ; Value { Integral { [ CoefGeo * ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+                                     ] ; In Core ; Jacobian Vol ; Integration II ;} } }
 
         { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+                                     ] ; In Core ; Jacobian Vol ; Integration II ;} } }
       EndIf
 
 
@@ -595,11 +595,11 @@ PostProcessing {
       { Name p_hyst ; Value { Integral {
         // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
         [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
-        In Iron ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
+        In Core ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
 
       { Name p_hyst_density ; Value { Integral {
         [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
-        In Iron ; Jacobian Vol ; Integration II ;} } }
+        In Core ; Jacobian Vol ; Integration II ;} } }
 
 
 
