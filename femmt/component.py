@@ -1780,7 +1780,9 @@ class MagneticComponent:
                 sweep_dict["f"] = self.frequency
 
             # Winding names are needed to find the logging path
-            winding_name = ["Winding_1", "Winding_2", "Winding_3", "Winding_4", "Winding_5", "Winding_6", "Winding_7", "Winding_8", "Winding_9", "Winding_10"]
+            winding_name = []
+            for i in range(0, len(self.windings)):
+                winding_name.append(f"Winding_{i+1}")
 
             for winding in range(len(self.windings)):
 
@@ -1871,6 +1873,14 @@ class MagneticComponent:
             # Core losses TODO: Choose between Steinmetz or complex core losses
             sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run]
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
+
+            # Core Part losses
+            if len(self.mesh.plane_surface_core) > 1:
+                sweep_dict["core_parts"] = {}
+                for i in range(0, len(self.mesh.plane_surface_core)):
+                    sweep_dict["core_parts"][f"core_part_{i+1}"] = {}
+                    sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"] = self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{i+1}", last_n=sweep_number)[sweep_run]
+                    sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"] = self.load_result(res_name=f"core_parts/p_hyst_{i+1}", last_n=sweep_number)[sweep_run]
 
             # Sum losses of all windings of one single run
             sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(len(self.windings)))
