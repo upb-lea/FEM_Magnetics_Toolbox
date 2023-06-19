@@ -784,10 +784,6 @@ class Mesh:
         l_core_core.append(gmsh.model.geo.addLine(p_core[17],
                                                   p_core[18]))
 
-        print([l_bound_core[7]] + l_core_air[4:6] + [-l_core_core[1]] + [l_core_core[3]])
-
-        gmsh.model.geo.synchronize()
-        gmsh.fltk.run()
         # Plane: Main Core --> plane_surface_core[0]
         curve_loop_core_bot = gmsh.model.geo.addCurveLoop(l_bound_core[0:3] + l_core_air[8:12] + [-l_core_core[2]])  # TODO: must be taken into account that its a kind of interrupted lines
         curve_loop_core_top = gmsh.model.geo.addCurveLoop(l_bound_core[4:7] + l_core_air[0:4] + [-l_core_core[0]])  # TODO: must be taken into account that its a kind of interrupted lines
@@ -1232,7 +1228,9 @@ class Mesh:
         # Define physical Surfaces and Curves
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
-        self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=120000)
+        self.ps_core = []
+        for i in range(0, len(self.plane_surface_core)):
+            self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=120000+i))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
@@ -1290,7 +1288,9 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]
-        gmsh.model.setPhysicalName(2, self.ps_core, "CORE")
+        for i in range(0, len(self.plane_surface_core)):
+            gmsh.model.setPhysicalName(2, self.ps_core[i], f"CORE_{i}")
+
         for num in range(len(self.windings)):
             for i in range(len(self.ps_cond[num])):
                 gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
@@ -1408,7 +1408,9 @@ class Mesh:
         # Define physical Surfaces and Curves
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
-        self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=120000)
+        self.ps_core = []
+        for i in range(0, len(self.plane_surface_core)):
+            self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=120000+i))
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
@@ -1476,7 +1478,8 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]
-        gmsh.model.setPhysicalName(2, self.ps_core, "CORE")
+        for i in range(0, len(self.plane_surface_core)):
+            gmsh.model.setPhysicalName(2, self.ps_core[i], f"CORE_{i}")
         for num in range(len(self.windings)):
             for i in range(len(self.ps_cond[num])):
                 gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")

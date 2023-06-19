@@ -1601,6 +1601,9 @@ class MagneticComponent:
                 text_file.write(f"Flag_HomogenisedModel_{num + 1} = 0;\n")
 
             # -- Geometry --
+            # Core Parts
+            text_file.write(f"nCoreParts = {len(self.mesh.plane_surface_core)};\n")
+
             # Number of turns per conductor
             turns = 0
             for ww in self.winding_windows:
@@ -1709,7 +1712,7 @@ class MagneticComponent:
         text_file.write(f"DirRes = \"{self.file_data.results_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"DirResFields = \"{self.file_data.e_m_fields_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"DirResVals = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/\";\n")
-        #text_file.write(f"DirResValsPrimary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Primary/\";\n")
+        text_file.write(f"DirResValsCore = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/core_parts/\";\n")
         for i in range(1, len(self.windings) + 1):
             text_file.write(f"DirResValsWinding_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/\";\n")
             #text_file.write(f"DirResValsSecondary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")

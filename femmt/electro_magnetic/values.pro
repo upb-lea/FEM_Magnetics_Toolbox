@@ -58,6 +58,10 @@ PostOperation Get_global UsingPost MagDyn_a {
 
   // Hysteresis Losses according to complex permeability in core/iron
   Print[ p_hyst[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"p_hyst.dat"]] ;// Core losses
+  For n In {1:nCoreParts}
+      Print[ p_hyst[ CorePart~{n} ], OnGlobal , Format TimeTable, File > Sprintf[StrCat[DirResValsCore, "p_hyst_%g.dat"], n]] ;
+      Print[ j2F[ CorePart~{n} ], OnGlobal , Format TimeTable, File > Sprintf[StrCat[DirResValsCore, "CoreEddyCurrentLosses_%g.dat"], n]] ;
+  EndFor
 
   // Steinmetz Core Losses
   If(Flag_Generalized_Steinmetz_loss)

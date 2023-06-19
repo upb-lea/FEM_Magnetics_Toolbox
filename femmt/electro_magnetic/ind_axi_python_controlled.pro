@@ -47,7 +47,13 @@ Group{
   // Physical Domains
   // ----------------------
   Air  = Region[{AIR, AIR_EXT}];
-  Iron = Region[{IRON}];
+
+  Iron = Region[{}];
+  // Core Domain
+  For n In {1:nCoreParts}
+    CorePart~{n} = Region[{(IRON+n-1)}];
+    Iron += Region[{(IRON+n-1)}];
+  EndFor
 
   // Non Conducting Domain:
   // Initialize the core-shell domain region to air
@@ -81,15 +87,15 @@ Group{
       EndFor
   EndFor
    // Add this winding to the core domain region
-  For n In {1:n_windings}  //added by Othman
+  For n In {1:n_windings}
       DomainC += Region[{Winding~{n}}] ;
   EndFor
    // Add the iron region to the core domain region
   If(Flag_Conducting_Core)
-    DomainC         += Region[{Iron}] ;
+    DomainC += Region[{Iron}];
   EndIf
    // Add this stranded winding to the shell domain region
-  For n In {1:n_windings} //added by Othman
+  For n In {1:n_windings}
       DomainS += Region[{StrandedWinding~{n}}] ;
   EndFor
   // Add the shell domain to the core-shell domain region
@@ -389,7 +395,7 @@ Resolution {
 
     Operation {
 
-
+      CreateDir[DirResValsCore];
       For n In {1:n_windings}
           CreateDir[DirResValsWinding~{n}];
       EndFor
