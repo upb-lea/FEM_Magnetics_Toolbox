@@ -730,14 +730,13 @@ class StackedTransformerOptimization:
 
                 geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
-                # geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
-                #                       current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
-                #                       phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
-                #                       show_fem_simulation_results=False)
+                # Get the current waveforms in the desired format
+                center_tapped_study_excitation = geo.center_tapped_pre_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
+                                                                                                   [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
+                                                                             plot_waveforms=False)
+                # print(center_tapped_study_excitation)
 
-                geo.center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
-                                                              [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
-                                        plot_waveforms=True)
+                geo.center_tapped_study(center_tapped_study_excitation=center_tapped_study_excitation)
 
 
     class ThermalSimulation:

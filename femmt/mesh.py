@@ -549,7 +549,7 @@ class Mesh:
         curve_loop_core = gmsh.model.geo.addCurveLoop(l_bound_core + l_core_air)  # TODO: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([-curve_loop_core]))
 
-    def moduar_stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list, l_core_core: list):
+    def modular_stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list, l_core_core: list):
         # Points
         # (index refers to sketch)
         from operator import itemgetter
@@ -784,17 +784,24 @@ class Mesh:
         l_core_core.append(gmsh.model.geo.addLine(p_core[17],
                                                   p_core[18]))
 
-        # Plane: Main Core --> plane_surface_core[0]
+        # Transformer flux path only
         curve_loop_core_bot = gmsh.model.geo.addCurveLoop(l_bound_core[0:3] + l_core_air[8:12] + [-l_core_core[2]])  # TODO: must be taken into account that its a kind of interrupted lines
-        curve_loop_core_top = gmsh.model.geo.addCurveLoop(l_bound_core[4:7] + l_core_air[0:4] + [-l_core_core[0]])  # TODO: must be taken into account that its a kind of interrupted lines
-        curve_loop_core_center_left_top = gmsh.model.geo.addCurveLoop([l_bound_core[7]] + l_core_air[4:6] + [-l_core_core[1]] + [l_core_core[3]])  # TODO: must be taken into account that its a kind of interrupted lines
-        curve_loop_core_center_left_bot = gmsh.model.geo.addCurveLoop([l_bound_core[8]] + l_core_air[6:8] + [-l_core_core[3]])  # TODO: must be taken into account that its a kind of interrupted lines
-        curve_loop_core_center_right = gmsh.model.geo.addCurveLoop([l_bound_core[3]] + l_core_core[0:3])  # TODO: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_bot]))
-        self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_top]))
+        curve_loop_core_center_left_bot = gmsh.model.geo.addCurveLoop([l_bound_core[8]] + l_core_air[6:8] + [-l_core_core[3]])  # TODO: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_left_bot]))
+
+        # Shared path parts
+        curve_loop_core_center_left_top = gmsh.model.geo.addCurveLoop([l_bound_core[7]] + l_core_air[4:6] + [-l_core_core[1]] + [l_core_core[3]])  # TODO: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_left_top]))
+        curve_loop_core_center_right = gmsh.model.geo.addCurveLoop([l_bound_core[3]] + l_core_core[0:3])  # TODO: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_right]))
+
+        # Choke path only
+        curve_loop_core_top = gmsh.model.geo.addCurveLoop(l_bound_core[4:7] + l_core_air[0:4] + [-l_core_core[0]])  # TODO: must be taken into account that its a kind of interrupted lines
+        self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_top]))
+
+
+
 
     def conductors(self, p_cond: list, l_cond: list, curve_loop_cond: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1175,7 +1182,7 @@ class Mesh:
                              curve_loop_island, curve_loop_air_gaps)
         if self.core.core_type == CoreType.Stacked:
             # self.stacked_core(p_core, l_bound_core, l_core_air, l_bound_air)
-            self.moduar_stacked_core(p_core, l_bound_core, l_core_air, l_bound_air, l_core_core)
+            self.modular_stacked_core(p_core, l_bound_core, l_core_air, l_bound_air, l_core_core)
         # Define mesh for conductors
         self.conductors(p_cond, l_cond, curve_loop_cond)
 

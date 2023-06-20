@@ -1009,15 +1009,14 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=float(p_hyst))
 
+    def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False):
 
-    def center_tapped_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False):
-
-        def hysteresis_loss_excitation(time_current_vectors):
+        def hysteresis_loss_excitation(input_time_current_vectors):
             # collect simulation input parameters from time_current_vectors
             hyst_loss_amplitudes = []
             hyst_loss_phases_deg = []
-            hyst_frequency = 1 / (time_current_vectors[0][0][-1])
-            for time_current_vector in time_current_vectors:
+            hyst_frequency = 1 / (input_time_current_vectors[0][0][-1])
+            for time_current_vector in input_time_current_vectors:
                 # collect hysteresis loss simulation input parameters
                 hyst_loss_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
                 hyst_loss_phases_deg.append(fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
@@ -1086,17 +1085,30 @@ class MagneticComponent:
             # print(f"Corrected: {frequency_current_phase_deg_list = }")
             return frequency_list, frequency_current_phase_deg_list
 
-        def factor_triangular_hysteresis_loss_iGSE(D, alpha):
-            nominator = 2 * (D ** (1 - alpha) + (1 - D) ** (1 - alpha))
-            theta = np.linspace(0, 2 * np.pi, 100)
-            integrant = np.abs(np.cos(theta)) ** alpha
-            denominator = np.pi ** (alpha - 1) * np.trapz(integrant, x=theta)
-            return nominator / denominator
+        center_tapped_study_excitation = {
+            "hysteresis": {
+                "frequency": None,
+                "transformer": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                },
+                "choke": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                }
+            },
+            "linear_losses": {
+                "frequencies": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            }
+        }
 
-
+        # Hysteresis Loss Excitation
         time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
         hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = hysteresis_loss_excitation(time_current_vectors)
-
+        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg)
+        center_tapped_study_excitation["hysteresis"]["frequency"] = hyst_frequency
 
         if plot_waveforms:
             i_1 = hyst_loss_amplitudes[0] * np.cos(time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
@@ -1109,7 +1121,19 @@ class MagneticComponent:
             plt.legend()
             plt.show()
 
-        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg)
+        # calculate hysteresis losses in the xfmr
+        xfmr_scale = 1.7
+        center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"] = list(np.array(hyst_loss_amplitudes) * xfmr_scale)
+        center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"] = hyst_loss_phases_deg
+
+        # calculate hysteresis losses in the choke
+        choke_hyst_loss_amplitudes = hyst_loss_amplitudes
+        choke_hyst_loss_amplitudes[1] = choke_hyst_loss_amplitudes[0] * 7
+        choke_hyst_loss_amplitudes[2] = choke_hyst_loss_amplitudes[0] * 7
+        center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"] = choke_hyst_loss_amplitudes
+        center_tapped_study_excitation["hysteresis"]["choke"]["current_phases_deg"] = [0, 180, 180]
+
+        # Linear Loss Excitation
         time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
         frequency_list, frequency_current_phase_deg_list = linear_loss_excitation(time_current_vectors)
 
@@ -1137,40 +1161,82 @@ class MagneticComponent:
                 phi_deg_single_frequency.append(frequency_current_phase_deg_list[count_current][2][count_frequency])
             current_list_list.append(currents_single_frequency)
             phi_deg_list_list.append(phi_deg_single_frequency)
+        center_tapped_study_excitation["linear_losses"]["frequencies"] = list(frequency_list)
+        center_tapped_study_excitation["linear_losses"]["current_amplitudes"] = current_list_list
+        center_tapped_study_excitation["linear_losses"]["current_phases_deg"] = phi_deg_list_list
+
+        return center_tapped_study_excitation
+
+    def center_tapped_study(self, center_tapped_study_excitation):
+        """
+        Comprehensive component analysis for center tapped transformers with dedicated choke.
+
+        :param time_current_vectors:
+        :param plot_waveforms:
+        :return:
+        """
+
+        def factor_triangular_hysteresis_loss_iGSE(D, alpha):
+            nominator = 2 * (D ** (1 - alpha) + (1 - D) ** (1 - alpha))
+            theta = np.linspace(0, 2 * np.pi, 100)
+            integrant = np.abs(np.cos(theta)) ** alpha
+            denominator = np.pi ** (alpha - 1) * np.trapz(integrant, x=theta)
+            return nominator / denominator
+
 
         # get the inductance
-        inductance_dict = self.get_inductances(I0=1, op_frequency=hyst_frequency, skin_mesh_factor = 1)
+        inductance_dict = self.get_inductances(I0=1, op_frequency=center_tapped_study_excitation["hysteresis"]["frequency"], skin_mesh_factor = 1)
 
-        # calculate hysteresis losses TODO: Clean up
-        # use a single simulation
-        # self.mesh.generate_electro_magnetic_mesh()
-        # print(f"{hyst_frequency = }")
-        # print(f"{hyst_loss_amplitudes = }")
-        # print(f"{hyst_loss_phases_deg = }")
-        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
+        # Initialize the hysteresis losses with zero
+        p_hyst = 0
+        print(f"{p_hyst = }")
+
+        self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
+                        amplitude_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"],
+                        phase_deg_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"],
+                        plot_interpolation=False)
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
-        [p_hyst] = self.load_result(res_name="p_hyst")
+
+        log = self.read_log()
+        for i in [1, 2, 3, 4]:
+            res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
+            print(f"core_part_{i} = {res}")
+            p_hyst += res
+        print(f"{p_hyst = }")
 
         # Correct the hysteresis loss for the triangular shaped flux density waveform
         alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
                                                                       datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
         p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
+        print(f"{p_hyst = }")
 
-        # calculate the winding losses
-        self.excitation_sweep(list(frequency_list), current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
-                              core_hyst_loss=float(p_hyst))
+        self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
+                        amplitude_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"],
+                        phase_deg_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_phases_deg"],
+                        plot_interpolation=False)
+        self.check_model_mqs_condition()
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_log()  # TODO: reuse center tapped
 
+        log = self.read_log()
+        for i in [3, 4, 5]:
+            res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
+            print(f"core_part_{i} = {res}")
+            p_hyst += res
 
+        print(f"{p_hyst = }")
 
-
-
-
-
-
+        # calculate the winding losses # TODO: avoid meshing twice
+        self.excitation_sweep(center_tapped_study_excitation["linear_losses"]["frequencies"],
+                              center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
+                              center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
+                              inductance_dict=inductance_dict, core_hyst_loss=float(p_hyst))
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
