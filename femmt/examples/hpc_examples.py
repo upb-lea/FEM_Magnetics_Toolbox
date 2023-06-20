@@ -1,7 +1,10 @@
 # Python standard libraries
 from typing import Dict
+from itertools import product
 import os
 import time
+import matplotlib.pyplot as plt
+import statistics
 
 # Local libraries
 import femmt as fmt
@@ -42,7 +45,7 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
 
     return geo
 
-def create_parallel_example_inductor(inductor_frequency: int) -> fmt.MagneticComponent:
+def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: float = 0.0005, air_gap_position: int = 50) -> fmt.MagneticComponent:
     """Creates an example model which is used for the parallel execution example. This does implement a simple inductor with given inductor_frequency.
 
     :param inductor_frequency: Frequency for the inductor.
@@ -65,7 +68,7 @@ def create_parallel_example_inductor(inductor_frequency: int) -> fmt.MagneticCom
                     permittivity_measurement_setup="LEA_LK", mdb_verbosity=fmt.Verbosity.Silent)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_height, air_gap_position)
     geo.set_air_gaps(air_gaps)
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
@@ -104,16 +107,67 @@ def custom_hpc(parameters: Dict):
     model.create_model(freq=250000, pre_visualize_geometry=False)
     model.single_simulation(freq=250000, current=current, phi_deg=phi_deg, show_fem_simulation_results=False)
 
+def parallel_simulation_study(averaging_count):
+    example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+    parallel_results_folder = os.path.join(example_results_folder, "parallel")
+    study_results_folder = os.path.join(parallel_results_folder, "study")
+
+    if not os.path.exists(study_results_folder):
+        os.mkdir(study_results_folder)
+
+    process_counts = [6, 7, 8]
+    frequencies = [100000, 150000, 200000]
+    air_gap_heights = [0.0002, 0.0005, 0.0007]
+    air_gap_positions = [20, 40, 60, 80]
+
+    models = []
+    simulation_parameters = []
+
+    runtimes = []
+
+    for frequency, air_gap_height, air_gap_position in product(frequencies, air_gap_heights, air_gap_positions):
+            models.append(create_parallel_example_inductor(frequency, air_gap_height, air_gap_position))
+            simulation_parameters.append({
+                "freq": frequency,
+                "current": [1]
+    })
+
+    for process_count in process_counts:
+        working_directory = os.path.join(study_results_folder, f"{process_count}")
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        simulation_times = []
+        for count in range(averaging_count):
+            start_time = time.time()
+            fmt.run_hpc(process_count, models, simulation_parameters, working_directory)
+            simulation_times.append(time.time() - start_time)
+
+        runtimes.append(statistics.fmean(simulation_times))
+
+
+    print("Process counts:", process_counts)
+    print("Runtimes:", runtimes)
+    
+    plt.plot(process_counts, runtimes, "bo")
+    plt.title(f"Parallel study ({len(models)} different models)")
+    plt.xlabel("Number of processes")
+    if averaging_count > 1:
+        plt.ylabel(f"Runtime (mean of {averaging_count} simulations)")
+    else:
+        plt.ylabel(f"Runtime")
+    plt.show()
 
 if __name__ == "__main__":
     # ---- Choosing the execution ----
-    execution_type = "default_example"
+    # execution_type = "default_example"
     # execution_type = "custom_hpc"
+    execution_type = "parallel_study"
 
     if execution_type == "default_example":
         example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
-        benchmark_results_folder = os.path.join(example_results_folder, "benchmarks")
-        working_directory = os.path.join(benchmark_results_folder, "parallel")
+        parallel_results_folder = os.path.join(example_results_folder, "parallel")
+        working_directory = os.path.join(parallel_results_folder, "default")
 
         number_of_models = 10
         number_of_processes = 5
@@ -138,8 +192,8 @@ if __name__ == "__main__":
 
     elif execution_type == "custom_hpc":
         example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
-        benchmark_results_folder = os.path.join(example_results_folder, "benchmarks")
-        working_directory = os.path.join(benchmark_results_folder, "parallel")
+        parallel_results_folder = os.path.join(example_results_folder, "parallel")
+        working_directory = os.path.join(parallel_results_folder, "default")
 
         number_of_models = 8
         number_of_processes = 4
@@ -162,6 +216,8 @@ if __name__ == "__main__":
 
         print(f"Execution time: {execution_time}")
 
+    elif execution_type == "parallel_study":
+        parallel_simulation_study(3)
     else:
         raise Exception(f"Execution type {execution_type} not found.")
 
