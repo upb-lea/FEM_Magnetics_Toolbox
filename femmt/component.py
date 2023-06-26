@@ -1189,7 +1189,7 @@ class MagneticComponent:
 
         # Initialize the hysteresis losses with zero
         p_hyst = 0
-        print(f"{p_hyst = }")
+        # print(f"{p_hyst = }")
 
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"],
@@ -1204,15 +1204,15 @@ class MagneticComponent:
         log = self.read_log()
         for i in [1, 2, 3, 4]:
             res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
-            print(f"core_part_{i} = {res}")
+            # print(f"core_part_{i} = {res}")
             p_hyst += res
-        print(f"{p_hyst = }")
+        # print(f"{p_hyst = }")
 
         # Correct the hysteresis loss for the triangular shaped flux density waveform
         alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
                                                                       datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
         p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
-        print(f"{p_hyst = }")
+        # print(f"{p_hyst = }")
 
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"],
@@ -1227,10 +1227,10 @@ class MagneticComponent:
         log = self.read_log()
         for i in [3, 4, 5]:
             res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
-            print(f"core_part_{i} = {res}")
+            # print(f"core_part_{i} = {res}")
             p_hyst += res
 
-        print(f"{p_hyst = }")
+        # print(f"{p_hyst = }")
 
         # calculate the winding losses # TODO: avoid meshing twice
         self.excitation_sweep(center_tapped_study_excitation["linear_losses"]["frequencies"],
