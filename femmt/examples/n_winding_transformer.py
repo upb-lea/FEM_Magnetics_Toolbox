@@ -1,7 +1,8 @@
 import femmt as fmt
 import os
 
-def example_thermal_simulation(flag_insulation: bool):
+
+def example_thermal_simulation():
     # Thermal simulation:
     # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
     # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -10,7 +11,7 @@ def example_thermal_simulation(flag_insulation: bool):
     # The case parameter sets the thermal conductivity for a case which will be set around the core.
     # This could model some case in which the transformer is placed in together with a set potting material.
     thermal_conductivity_dict = {
-        "air": 1.54,
+        "air": 0.0263,
         "case": {  # epoxy resign
             "top": 1.54,
             "top_right": 1.54,
@@ -21,7 +22,7 @@ def example_thermal_simulation(flag_insulation: bool):
         "core": 5,  # ferrite
         "winding": 400,  # copper
         "air_gaps": 180,  # aluminiumnitride
-        "insulation": 0.42 if flag_insulation else None  # polyethylen
+        "insulation": 0.42  # polyethylen
     }
 
     # Here the case size can be determined
@@ -62,11 +63,7 @@ def example_thermal_simulation(flag_insulation: bool):
     # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
     # order for the thermal simulation to work (geo.single_simulation is not needed).
     # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
-    # example_thermal_simulation(True)  # For simulation with insulation
-    # example_thermal_simulation(False)  # For simulation without insulation
-
-    geo.thermal_simulation(flag_insulation, thermal_conductivity_dict, boundary_temperatures, boundary_flags,
-                           case_gap_top,
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                            case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas,
                            colors_geometry=fmt.colors_geometry_ba_jonas)
 
@@ -75,10 +72,10 @@ example_results_folder = os.path.join(os.path.dirname(__file__), "example_result
 if not os.path.exists(example_results_folder):
     os.mkdir(example_results_folder)
 
-component = "inductor"
-#component = "transformer-interleaved"
-#component = "transformer"
-#component = "integrated_transformer"
+# component = "inductor"
+# component = "transformer-interleaved"
+component = "transformer"
+# component = "integrated_transformer"
 # component = "load_from_file"
 
 # Create Object
@@ -90,18 +87,13 @@ if component == "inductor":
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                silent=False)
-
-    inductor_frequency = 270000
+                                silent=True)
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                    window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"])
-
-    core = fmt.Core(core_type=fmt.CoreType.Single,
-                    core_dimensions=core_dimensions,
+    inductor_frequency = 270000
+    core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
+                    window_h=core_db["window_h"],
                     material="N49", temperature=45, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
@@ -117,14 +109,13 @@ if component == "inductor":
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
-    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation(flag_insulation=False)
-    insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
-
-    insulation.add_winding_insulations([[0.0005]])
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+    insulation.add_winding_insulations([0.0005], 0.0001)
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -140,7 +131,7 @@ if component == "inductor":
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     vww.set_winding(winding, 9, None)
-    geo.set_winding_windows([winding_window])
+    geo.set_winding_window(winding_window)
 
     # 8. create the model
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=True, save_png=False)
@@ -160,7 +151,7 @@ if component == "inductor":
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(False)
+    # example_thermal_simulation()
 
 if component == "transformer-interleaved":
     working_directory = os.path.join(example_results_folder, "transformer-interleaved")
@@ -172,7 +163,9 @@ if component == "transformer-interleaved":
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.0295, window_w=0.012, core_inner_diameter=0.015,
-                    non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
+                    non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
 
     geo.set_core(core)
 
@@ -212,8 +205,8 @@ if component == "transformer-interleaved":
     # geo.get_inductances(I0=8, op_frequency=250000, skin_mesh_factor=0.5)
 
     # 9. start thermal simulation
-    #example_thermal_simulation()
-    
+    # example_thermal_simulation()
+
 if component == "transformer":
     # Example for a transformer with multiple virtual winding windows.
     working_directory = os.path.join(example_results_folder, "transformer")
@@ -221,12 +214,14 @@ if component == "transformer":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                silent=True)
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.12, window_w=0.09, core_inner_diameter=0.050)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -237,41 +232,49 @@ if component == "transformer":
     # 4. set insulation
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002], 0.0005)
+    # insulation.add_winding_insulations([0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002], 0.0005)
+    insulation.add_winding_insulations(
+        [[0.0002, 0.0004, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0002, 0.0004, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0002, 0.0004, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0002, 0.0004, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004],
+         [0.0004, 0.0002, 0.0004, 0.0002, 0.0002, 0.0004, 0.0002, 0.0002, 0.0002, 0.0004, 0.0002, 0.0004]])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    top_left, top_right, mid_top_left, mid_top_right, mid_left, mid_right, mid_bot_left, mid_bot_right,  bot_left, bot_right = winding_window.split_window(fmt.WindingWindowSplit.TenCells_Split, horizontal_split_factor=0.2, horizontal_split_factor_2=0.4,
-                                                                    horizontal_split_factor_3=0.6, horizontal_split_factor_4=0.8 )
-    #mid_left = winding_window.combine_vww(mid_bot_left, mid_left)
-    #top_left = winding_window.combine_vww(top_left, bot_left)
-    #top_right = winding_window.combine_vww(bot_right, top_right)
-    #top_right = winding_window.combine_vww(top_right, bot_right)
+    cells = winding_window.NCellsSplit(0, [1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6])
     # 6. create conductors and set parameters
 
-    #winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    #winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
-
     winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-    winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    winding1.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+
+    # winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    # winding1.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+
+    # winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-    winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
+    winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    #winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-    #winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    # winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    # winding3.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
-    winding3.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
-
-    #winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
-    #winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
-    winding4.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Hexagonal)
-    #winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
-    #winding4.set_litz_round_conductor(0.0011, 50, 0.000011, None, fmt.ConductorArrangement.Square)
+    winding4.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
+    # winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+    # winding4.set_litz_round_conductor(0.0011, 50, 0.000011, None, fmt.ConductorArrangement.Square)
 
     winding5 = fmt.Conductor(4, fmt.Conductivity.Copper)
     winding5.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
@@ -279,8 +282,8 @@ if component == "transformer":
     winding6 = fmt.Conductor(5, fmt.Conductivity.Copper)
     winding6.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    #winding7 = fmt.Conductor(6, fmt.Conductivity.Copper)
-    #winding7.set_litz_round_conductor(0.0011, 5, 0.00011, None, fmt.ConductorArrangement.Square)
+    winding7 = fmt.Conductor(6, fmt.Conductivity.Copper)
+    winding7.set_litz_round_conductor(0.0011, 5, 0.00011, None, fmt.ConductorArrangement.Square)
 
     winding7 = fmt.Conductor(6, fmt.Conductivity.Copper)
     winding7.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
@@ -288,8 +291,8 @@ if component == "transformer":
     winding8 = fmt.Conductor(7, fmt.Conductivity.Copper)
     winding8.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
-    #winding8 = fmt.Conductor(7, fmt.Conductivity.Copper)
-    #winding8.set_litz_round_conductor(0.0011, 50, 0.000011, None, fmt.ConductorArrangement.Square)
+    # winding8 = fmt.Conductor(7, fmt.Conductivity.Copper)
+    # winding8.set_litz_round_conductor(0.0011, 50, 0.000011, None, fmt.ConductorArrangement.Square)
 
     winding9 = fmt.Conductor(8, fmt.Conductivity.Copper)
     winding9.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
@@ -297,40 +300,54 @@ if component == "transformer":
     winding10 = fmt.Conductor(9, fmt.Conductivity.Copper)
     winding10.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
+    winding11 = fmt.Conductor(10, fmt.Conductivity.Copper)
+    winding11.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
+    winding12 = fmt.Conductor(11, fmt.Conductivity.Copper)
+    winding12.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
+    # 5. create winding window and virtual winding windows (vww)
+    # winding_window = fmt.WindingWindow(core, insulation)
+    # cells = winding_window.NCellsSplit(0, [1/6, 2/6, 3/6, 4/6, 5/6])
     # 7. add conductor to vww and add winding window to MagneticComponent
-    top_left.set_winding(winding1, 15, fmt.WindingType.Single)
-    top_right.set_winding(winding2, 10, fmt.WindingType.Single)
-    mid_top_left.set_winding(winding3, 10, fmt.WindingType.Single)
-    mid_top_right.set_winding(winding4, 10, fmt.WindingType.Single)
-    mid_left.set_winding(winding5, 10, fmt.WindingType.Single)
-    mid_right.set_winding(winding6, 10, fmt.WindingType.Single)
-    mid_bot_left.set_winding(winding7, 10, fmt.WindingType.Single)
-    mid_bot_right.set_winding(winding8, 10, fmt.WindingType.Single)
-    bot_left.set_winding(winding9, 8, fmt.WindingType.Single)
-    bot_right.set_winding(winding10, 12, fmt.WindingType.Single)
+    cells[0].set_winding(winding1, 9, fmt.WindingType.Single)
+    cells[1].set_winding(winding2, 10, fmt.WindingType.Single)
+    cells[2].set_winding(winding3, 9, fmt.WindingType.Single)
+    cells[3].set_winding(winding4, 7, fmt.WindingType.Single)
+    cells[4].set_winding(winding5, 12, fmt.WindingType.Single)
+    cells[5].set_winding(winding6, 9, fmt.WindingType.Single)
+    cells[6].set_winding(winding7, 9, fmt.WindingType.Single)
+    cells[7].set_winding(winding8, 12, fmt.WindingType.Single)
+    cells[8].set_winding(winding9, 13, fmt.WindingType.Single)
+    cells[9].set_winding(winding10, 15, fmt.WindingType.Single)
+    cells[10].set_winding(winding11, 11, fmt.WindingType.Single)
+    cells[11].set_winding(winding12, 15, fmt.WindingType.Single)
     geo.set_winding_windows([winding_window])
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, pre_visualize_geometry=True)
-    geo.single_simulation(freq=250000, current=[4, 4, 4, 4, 4, 4, 4, 4, 4, 4], phi_deg=[0, 180, 180, 180, 180, 180, 180, 180, 180, 180])
+    geo.single_simulation(freq=250000, current=[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                          phi_deg=[0, 180, 0, 180, 0, 180, 0, 180, 0, 180, 0, 180])
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation()
 
     # read inductances
-    #geo.get_inductances(I0=4, op_frequency=250000, skin_mesh_factor=0.5, visualize=False)
+    # geo.get_inductances(I0=4, op_frequency=250000, skin_mesh_factor=0.5, visualize=False)
     # Reference simulation using FEMM
-    geo.femm_reference(freq=250000, current=[4, 4, 4, 4, 4, 4, 4, 4, 4, 4], sign=[1, -1, -1, -1, -1, -1, -1, -1, -1, -1], non_visualize=0)
+    # geo.femm_reference(freq=250000, current=[4, 4, 4, 4, 4, 4, 4, 4, 4, 4], sign=[1, -1, -1, -1, -1, -1, -1, -1, -1, -1], non_visualize=0)
 if component == "integrated_transformer":
     working_directory = os.path.join(example_results_folder, "integrated-transformer")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer, working_directory=working_directory)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                working_directory=working_directory)
 
     # 2. set core parameters
     core = fmt.Core(window_h=0.03, window_w=0.011, core_inner_diameter=0.02,
                     mu_r_abs=3100, phi_mu_deg=12,
-                    sigma=0.6, permeability_datasource = fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom)
+                    sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
 
     # 2.1 set stray path parameters
