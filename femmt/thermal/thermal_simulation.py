@@ -335,6 +335,9 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
         json.dump(data, fd, indent=2)
 
 
+
+
+
 def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict,
                 boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float,
                 wire_distances: float, case_volume: float,
@@ -400,6 +403,7 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
 
     # Extract losses
     winding_losses = []
+
     # Get number of windings
     winding_keys = [key for key in losses.keys() if key.startswith("winding")]
     num_windings = len(winding_keys)
@@ -411,6 +415,9 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
             for winding in losses[key]["turns"]:
                 inner_winding_list.append(winding)
         winding_losses.append(inner_winding_list)
+
+
+
 
     core_losses = losses["core"]
 

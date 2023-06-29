@@ -164,7 +164,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
-    def thermal_simulation(self,  flag_insulation: bool, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
+    def thermal_simulation(self, flag_insulation: bool, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
                            case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True, pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
                            colors_geometry: Dict = ff.colors_geometry_femmt_default):
         """
@@ -196,6 +196,9 @@ class MagneticComponent:
 
         self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, pre_visualize_geometry)
 
+
+
+
         #insulation_tag = self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
 
         if not os.path.exists(self.file_data.e_m_results_log_path):
@@ -226,6 +229,7 @@ class MagneticComponent:
             "boundary_regions": self.mesh.thermal_boundary_region_tags,
             "insulations_tag": self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
 
+
         }
 
         # Core area -> Is needed to estimate the heat flux
@@ -255,7 +259,9 @@ class MagneticComponent:
             "show_thermal_fem_results": show_thermal_simulation_results,
             "print_sensor_values": False,
             "silent": ff.silent,
-            "flag_insulation": flag_insulation
+            "flag_insulation": flag_insulation,
+
+
 
         }
 

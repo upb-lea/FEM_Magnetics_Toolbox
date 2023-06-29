@@ -1189,9 +1189,17 @@ class Mesh:
                     self.ps_cond[winding_number].append(
                         gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=150000 + 1000 * winding_number + i))
             else:
-                for i in range(flattened_turns[winding_number]):
-                    self.ps_cond[winding_number].append(
-                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
+                if winding.parallel:
+                    tags = self.plane_surface_cond[winding_number]
+                    physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=130000 + 1000 * winding_number)
+                    for i in range(flattened_turns[winding_number]):
+                        self.ps_cond[winding_number].append(physical_group_number)
+
+                else:
+                    for i in range(flattened_turns[winding_number]):
+                        self.ps_cond[winding_number].append(
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air
