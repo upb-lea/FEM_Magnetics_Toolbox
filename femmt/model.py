@@ -354,11 +354,23 @@ class Core:
         # Needed because of to_dict
         self.kwargs = kwargs
 
-    def update_sigma(self, frequency):
+    def update_sigma(self, frequency: bool) -> None:
         """
+        Updates the core conductivity.
+        The core conductivity is used to calculate eddy current losses inside the FEM simulation.
 
-        :param frequency:
-        :return:
+        In case of datasheet parameters, the DC-resistance is loaded from the material database.
+        In case of measurement parameters, the AC-resistance is loaded from the material database.
+         * The AC-resistance is interpolated by the material database for the certain frequency
+         * AC-resistance = imaginary part of complex permittivity
+
+        The AC-resistance decreases when increasing the frequency.
+        Using AC-resistance (interpolated from measurements) is more accurate than the static DC-datasheet resistance.
+
+        The conductivity 'sigma' = (1 / AC-resistance) is used for the simulation.
+
+        :param frequency: operating frequency in Hz
+        :type frequency: float
         """
         if self.permittivity["datasource"] == MaterialDataSource.Measurement:
             epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature,
