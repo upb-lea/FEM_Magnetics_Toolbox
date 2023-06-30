@@ -170,7 +170,7 @@ class Core:
     phi_mu_deg: float  # mu_complex = mu_r_abs * exp(j*phi_mu_deg)
 
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
-    sigma: float  # Imaginary part of complex equivalent permittivity [frequency-dependent]
+    sigma: complex  # Imaginary part of complex equivalent permittivity [frequency-dependent]
 
     steinmetz_loss: int = 0
     generalized_steinmetz_loss: int = 0
@@ -209,7 +209,7 @@ class Core:
                  permittivity_datasource: str = None,
                  permittivity_datatype: str = None,
                  permittivity_measurement_setup: str = None,
-                 sigma: float = None,
+                 sigma: complex = None,
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
                  **kwargs):
@@ -376,7 +376,7 @@ class Core:
                                                                                  measurement_setup=self.permittivity["measurement_setup"],
                                                                                  datatype=self.permittivity["datatype"])
             self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
-            self.sigma = complex(2 * np.pi * frequency * self.complex_permittivity.imag, 2 * np.pi * frequency * self.complex_permittivity.real)
+            self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag, self.complex_permittivity.real)
 
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
             self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
@@ -404,7 +404,7 @@ class Core:
                 "loss_approach": self.loss_approach.name,
                 "mu_r_abs": self.mu_r_abs,
                 "phi_mu_deg": self.phi_mu_deg,
-                "sigma": self.sigma,
+                "sigma": [self.sigma.real, self.sigma.imag],
                 "non_linear": self.non_linear,
                 "correct_outer_leg": self.correct_outer_leg,
                 "temperature": self.temperature,
