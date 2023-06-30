@@ -491,7 +491,7 @@ class MagneticComponent:
         if self.frequency != 0:
             if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
                 epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
-                                                                                              material_name="N49", # TODO: remove hardcode!!!
+                                                                                              material_name=self.core.material,
                                                                                               datasource=self.core.permittivity["datasource"],
                                                                                               datatype=self.core.permittivity["datatype"],
                                                                                               measurement_setup=self.core.permittivity["measurement_setup"],
@@ -1641,7 +1641,8 @@ class MagneticComponent:
                 # TODO: Make following definition general
                 # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
                 self.core.sigma = 1 / 6
-            text_file.write(f"sigma_core = {self.core.sigma};\n")
+            text_file.write(f"sigma_core = {self.core.sigma.real};\n")
+            text_file.write(f"sigma_core_imag = {self.core.sigma.imag};\n")
         else:
             text_file.write(f"Flag_Conducting_Core = 0;\n")
 
@@ -1917,8 +1918,8 @@ class MagneticComponent:
                 if complex_current_phasor == 0:  # if-statement to avoid div by zero error
                     winding_dict["flux_over_current"] = [0, 0]
                 else:
-                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*complex_current_phasor * self.frequency)).real)
-                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*complex_current_phasor * self.frequency)).imag)
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*complex_current_phasor * sweep_dict["f"])).real)
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*complex_current_phasor * sweep_dict["f"])).imag)
 
 
                 # Flux

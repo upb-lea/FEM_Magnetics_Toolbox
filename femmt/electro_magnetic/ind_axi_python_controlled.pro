@@ -198,7 +198,7 @@ Function {
   EndFor
 
   If(Flag_Conducting_Core)
-    sigma[#{Core}] = sigma_core;
+    sigma[#{Core}] = Complex[sigma_core, sigma_core_imag];
     sigma[#{Air}] = 0.;
   EndIf
   If(!Flag_Conducting_Core)

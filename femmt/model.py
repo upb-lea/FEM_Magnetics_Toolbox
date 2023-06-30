@@ -376,7 +376,7 @@ class Core:
                                                                                  measurement_setup=self.permittivity["measurement_setup"],
                                                                                  datatype=self.permittivity["datatype"])
             self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
-            self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
+            self.sigma = complex(2 * np.pi * frequency * self.complex_permittivity.imag, 2 * np.pi * frequency * self.complex_permittivity.real)
 
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
             self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
