@@ -616,24 +616,28 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Insulations
         # Core to Windings
-        if self.model.p_iso_core:  # Check if list is not empty
+        # If no insulation, return an empty list
+        if not self.model.p_iso_core:
+            return []
+        #if self.model.p_iso_core and self.insulation.flag_insulation:  # Check if list is not empty
             # Points
-            for iso in self.model.p_iso_core:
-                p_iso = []
-                for i in iso:
-                    p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
-                p_iso_core.append(p_iso)
-            # Lines
-            l_iso_core = [[gmsh.model.geo.addLine(iso[i], iso[(i + 1) % 4]) for i in range(4)] for iso in p_iso_core]
+        for iso in self.model.p_iso_core:
+            p_iso = []
+            for i in iso:
+                p_iso.append(gmsh.model.geo.addPoint(i[0], i[1], i[2], i[3]))
+            p_iso_core.append(p_iso)
+        # Lines
+        l_iso_core = [[gmsh.model.geo.addLine(iso[i], iso[(i + 1) % 4]) for i in range(4)] for iso in p_iso_core]
 
-            # Curve loop and surface
-            curve_loop_iso_core = []
-            self.plane_surface_iso_core = []
-            for iso in l_iso_core:
-                cl = gmsh.model.geo.addCurveLoop(iso)
-                curve_loop_iso_core.append(cl)
-                self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
-            return curve_loop_iso_core
+        # Curve loop and surface
+        curve_loop_iso_core = []
+        self.plane_surface_iso_core = []
+        for iso in l_iso_core:
+            cl = gmsh.model.geo.addCurveLoop(iso)
+            curve_loop_iso_core.append(cl)
+            self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
+        return curve_loop_iso_core
+
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -684,6 +688,13 @@ class Mesh:
         # The first curve loop represents the outer bounds: self.curve_loop_air (should only contain one element)
         # The other curve loops represent holes in the surface -> For each conductor as well as each insulation
         self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
+
+        #if curve_loop_iso_core is not None:
+           # self.plane_surface_air.append(
+            #gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
+
+        #else:
+            #self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))
 
     def air_stacked(self, l_core_air: list, l_bound_air, curve_loop_cond: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -982,6 +993,7 @@ class Mesh:
         # Core
         self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=120000)
 
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
         self.ps_cond = []
@@ -1006,7 +1018,7 @@ class Mesh:
             if winding.conductor_type == ConductorType.RoundLitz:
                 for i in range(flattened_turns[winding_number]):
                     self.ps_cond[winding_number].append(
-                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=140000 + 1000 * winding_number + i))
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=150000 + 1000 * winding_number + i))
 
             else:
                 if winding.parallel:
@@ -1157,7 +1169,6 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
         self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=120000)
-
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
         self.ps_cond = []
@@ -1176,11 +1187,19 @@ class Mesh:
             if winding.conductor_type == ConductorType.RoundLitz:
                 for i in range(flattened_turns[winding_number]):
                     self.ps_cond[winding_number].append(
-                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=140000 + 1000 * winding_number + i))
+                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=150000 + 1000 * winding_number + i))
             else:
-                for i in range(flattened_turns[winding_number]):
-                    self.ps_cond[winding_number].append(
-                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
+                if winding.parallel:
+                    tags = self.plane_surface_cond[winding_number]
+                    physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=130000 + 1000 * winding_number)
+                    for i in range(flattened_turns[winding_number]):
+                        self.ps_cond[winding_number].append(physical_group_number)
+
+                else:
+                    for i in range(flattened_turns[winding_number]):
+                        self.ps_cond[winding_number].append(
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air
@@ -1188,12 +1207,18 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Air gaps
-        self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001)
+        if self.model.core.core_type == CoreType.Single:
+            self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001) #trying by Othman for stacked transformer
+        elif self.model.core.core_type == CoreType.Stacked:
+            air_total = self.plane_surface_air_bot + self.plane_surface_air_top
+            self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=110001)
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # insulations
         # TODO Currently insulations can only have the same material
         self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
@@ -1262,8 +1287,11 @@ class Mesh:
         # winding colors
         for winding_number in range(len(self.windings)):
             for turn_number in range(len(self.plane_surface_cond[winding_number])):
-                gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])], color_scheme[colors_geometry["winding"][winding_number]][0],
-                                    color_scheme[colors_geometry["winding"][winding_number]][1], color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
+                color_index = winding_number % len(colors_geometry["winding"])  # Use modulo to cycle through color schemes
+                gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])],
+                                    color_scheme[colors_geometry["winding"][color_index]][0],
+                                    color_scheme[colors_geometry["winding"][color_index]][1],
+                                    color_scheme[colors_geometry["winding"][color_index]][2], recursive=True)
 
         # insulation color (inner insulation / bobbin)
         gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core], color_insulation[0], color_insulation[1],
@@ -1381,10 +1409,11 @@ class Mesh:
 
             # insulations are currently not implemented for integrated transformers
             if self.component_type != ComponentType.IntegratedTransformer:
-                iso_core_left = self.model.p_iso_core[0]
-                iso_core_top = self.model.p_iso_core[1]
-                iso_core_right = self.model.p_iso_core[2]
-                iso_core_bot = self.model.p_iso_core[3]
+                if self.model.p_iso_core:  # check if list is not empty
+                    iso_core_left = self.model.p_iso_core[0]
+                    iso_core_top = self.model.p_iso_core[1]
+                    iso_core_right = self.model.p_iso_core[2]
+                    iso_core_bot = self.model.p_iso_core[3]
 
             # Extract all free_points
             for i in range(len(possible_points)):
@@ -1417,21 +1446,22 @@ class Mesh:
                 point = gmsh.model.geo.addPoint(x, y, 0, 1 * self.mesh_data.c_window)
 
                 if self.component_type != ComponentType.IntegratedTransformer:
-                    if ff.point_is_in_rect(x, y, iso_core_left):
-                        # Left iso
-                        left_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_top):
-                        # Top iso
-                        top_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_right):
-                        # Right iso
-                        right_iso.append(point)
-                    elif ff.point_is_in_rect(x, y, iso_core_bot):
-                        # Bot iso
-                        bot_iso.append(point)
-                    else:
-                        # Air
-                        air.append(point)
+                    if self.model.p_iso_core: # check if list is not empty
+                        if ff.point_is_in_rect(x, y, iso_core_left):
+                            # Left iso
+                            left_iso.append(point)
+                        elif ff.point_is_in_rect(x, y, iso_core_top):
+                            # Top iso
+                            top_iso.append(point)
+                        elif ff.point_is_in_rect(x, y, iso_core_right):
+                            # Right iso
+                            right_iso.append(point)
+                        elif ff.point_is_in_rect(x, y, iso_core_bot):
+                            # Bot iso
+                            bot_iso.append(point)
+                        else:
+                            # Air
+                            air.append(point)
                 else:
                     air.append(point)
             # Call synchronize so the points will be added to the model
