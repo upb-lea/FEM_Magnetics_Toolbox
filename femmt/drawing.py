@@ -1158,7 +1158,8 @@ class TwoDaxiSymmetric:
         iso.core_cond, a delta, which is used in order for no overlapping lines will cause
         the "real" insulation to be slightly smaller than set by the user.
         """
-
+        if not self.insulation.flag_insulation:
+            return  # if flag_insulation is False, just return without drawing insulations
 
         if self.component_type == ComponentType.IntegratedTransformer:
             # TODO: insulations implement for integrated_transformers
@@ -1372,6 +1373,8 @@ class TwoDaxiSymmetric:
                     print("No insulations for winding type {vww.winding_type.name}")
             """
 
+
+
     def draw_model(self):
         self.draw_outer()
         if self.core.core_type == CoreType.Single:
@@ -1380,10 +1383,13 @@ class TwoDaxiSymmetric:
         if self.core.core_type == CoreType.Stacked:
             self.draw_stacked_windows()
         self.draw_conductors()
-        self.draw_insulations()
+
+        if self.insulation.flag_insulation:  # check flag before drawing insulations
+            self.draw_insulations()
 
         # TODO: Region
         # if self.core.core_type == CoreType.Single:
         #     self.draw_region_single()
         # if self.core.core_type == CoreType.Stacked:
         #     self.draw_region_stacked()
+

@@ -169,7 +169,7 @@ class MagneticComponent:
     # Thermal simulation
     def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
                            case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True, pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                           colors_geometry: Dict = ff.colors_geometry_femmt_default):
+                           colors_geometry: Dict = ff.colors_geometry_femmt_default, flag_insulation: bool = True):
         """
         Starts the thermal simulation using thermal_simulation.py
 
@@ -199,6 +199,11 @@ class MagneticComponent:
 
         self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, pre_visualize_geometry)
 
+
+
+
+        #insulation_tag = self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
+
         if not os.path.exists(self.file_data.e_m_results_log_path):
             # Simulation results file not created
             raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
@@ -225,7 +230,9 @@ class MagneticComponent:
             "winding_tags": self.mesh.ps_cond,
             "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
             "boundary_regions": self.mesh.thermal_boundary_region_tags,
-            "insulations_tag": self.mesh.ps_insulation if len(self.insulation.core_cond) == 4 else None
+            "insulations_tag": self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
+
+
         }
 
         # Core area -> Is needed to estimate the heat flux
@@ -254,7 +261,11 @@ class MagneticComponent:
             "case_volume": self.core.r_outer * case_gap_top + self.core.core_h * case_gap_right + self.core.r_outer * case_gap_bot,
             "show_thermal_fem_results": show_thermal_simulation_results,
             "print_sensor_values": False,
-            "silent": ff.silent
+            "silent": ff.silent,
+            "flag_insulation": flag_insulation,
+
+
+
         }
 
         thermal_simulation.run_thermal(**thermal_parameters)
@@ -325,8 +336,11 @@ class MagneticComponent:
                                             self.insulation, self.component_type, len(self.windings))
         self.two_d_axi.draw_model()
 
+
         # Create mesh
+
         self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
+
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
         """Generates model and mesh.
@@ -579,7 +593,7 @@ class MagneticComponent:
         return self.calculate_core_volume() * volumetric_mass_density
 
     def get_wire_distances(self) -> List[List[float]]:
-        """Helper function which returns the distance (radius) of each conductor to the y-axis 
+        """Helper function which returns the distance (radius) of each conductor to the y-axis
 
         :return: Wire distances
         :rtype: List[List[float]]
@@ -1847,9 +1861,7 @@ class MagneticComponent:
                 sweep_dict["f"] = self.frequency
 
             # Winding names are needed to find the logging path
-            winding_name = []
-            for i in range(0, len(self.windings)):
-                winding_name.append(f"Winding_{i+1}")
+            winding_name = ["Winding_" + str(i) for i in range(1, len(self.windings) + 1)]
 
             for winding in range(len(self.windings)):
 
