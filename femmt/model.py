@@ -564,9 +564,9 @@ class Insulation:
         float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
 
     insulation_delta: float
-    flag_insulation: bool
+    flag_insulation: bool = True
 
-    def __init__(self, flag_insulation):
+    def __init__(self, flag_insulation: bool = True):
         """Creates an insulation object.
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles

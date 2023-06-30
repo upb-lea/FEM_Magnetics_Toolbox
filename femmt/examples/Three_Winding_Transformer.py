@@ -1,7 +1,7 @@
 import femmt as fmt
 import os
 
-def example_thermal_simulation(flag_insulation: bool):
+def example_thermal_simulation(flag_insulation: bool =True ):
     # Thermal simulation:
     # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
     # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -65,10 +65,10 @@ def example_thermal_simulation(flag_insulation: bool):
     # example_thermal_simulation(True)  # For simulation with insulation
     # example_thermal_simulation(False)  # For simulation without insulation
 
-    geo.thermal_simulation(flag_insulation, thermal_conductivity_dict, boundary_temperatures, boundary_flags,
+    geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags,
                            case_gap_top,
                            case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas,
-                           colors_geometry=fmt.colors_geometry_ba_jonas)
+                           colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation= flag_insulation)
 
 
 example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")

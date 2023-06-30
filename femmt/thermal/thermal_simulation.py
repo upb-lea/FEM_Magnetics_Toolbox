@@ -235,7 +235,7 @@ def parse_gmsh_parsed(file_path: str):
 
 
 def post_operation(case_volume: float, output_file: str, sensor_points_file: str, core_file: str, insulation_file: str,
-                   winding_file: str, flag_insulation:bool):
+                   winding_file: str, flag_insulation: bool = True):
     """
     Post operations after performing the thermal simulation. Calculates minimum, maximum and mean temperatures of core,
     conductors and insulations.
@@ -341,7 +341,7 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
 def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict,
                 boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float,
                 wire_distances: float, case_volume: float,
-                show_thermal_fem_results: bool, print_sensor_values: bool, silent: bool, flag_insulation: bool):
+                show_thermal_fem_results: bool, print_sensor_values: bool, silent: bool, flag_insulation: bool = True):
     """
     Runs a thermal simulation.
 

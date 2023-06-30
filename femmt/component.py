@@ -164,9 +164,9 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
-    def thermal_simulation(self, flag_insulation: bool, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
+    def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
                            case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True, pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                           colors_geometry: Dict = ff.colors_geometry_femmt_default):
+                           colors_geometry: Dict = ff.colors_geometry_femmt_default, flag_insulation: bool = True):
         """
         Starts the thermal simulation using thermal_simulation.py
 
