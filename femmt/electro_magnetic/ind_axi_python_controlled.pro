@@ -3,7 +3,9 @@
 // ----------------------
 Include "Parameter.pro";
 Include "postquantities.pro";
-Include "core_materials_temp.pro";
+If(Flag_Permeability_From_Data)
+  Include "core_materials_temp.pro";
+EndIf
 ExtGmsh = ".pos";
 
 
