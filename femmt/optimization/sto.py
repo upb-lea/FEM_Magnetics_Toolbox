@@ -424,10 +424,17 @@ class StackedTransformerOptimization:
                 :type config: ItoSingleInputConfig
                 :param number_trials: Number of trials adding to the existing study
                 :type number_trials: int
+                :param number_objectives: number of objectives, e.g. 3 or 4
+                :type number_objectives: int
+                :param storage: storage database, e.g. 'sqlite' or 'mysql'
+                :type storage: str
                 """
                 def objective_directions(number_objectives: int):
                     """
                     Checks if the number of objectives is correct and returns the minimizing targets
+                    :param number_objectives: number of objectives
+                    :type number_objectives: int
+                    :returns: objective targets and optimization function
                     """
                     if number_objectives == 3:
                         # Wrap the objective inside a lambda and call objective inside it
@@ -444,7 +451,6 @@ class StackedTransformerOptimization:
                         return ["minimize", "minimize", "minimize", 'minimize'], func
                     else:
                         raise ValueError("Invalid objective number.")
-
 
                 if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
                     print("Existing study found. Proceeding.")
@@ -518,6 +524,7 @@ class StackedTransformerOptimization:
                 fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None, t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume", "loss"])
                 fig.show()
 
+            @staticmethod
             def show_study_results3(study_name: str, config: StoSingleInputConfig,
                                    error_difference_inductance_sum) -> None:
                 """
@@ -544,7 +551,19 @@ class StackedTransformerOptimization:
                 # fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[2] if True else None, t.values[1] if True else None), target_names=["inductance_error_normalized", "loss"])
                 fig.show()
 
-            def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number):
+            @staticmethod
+            def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number_trial: int):
+                """
+                Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
+                number_trial design inside the study 'study_name'.
+
+                :param study_name: name of the study
+                :type study_name: str
+                :param config: stacked transformer configuration file
+                :type config: StoSingleInputConfig
+                :param number_trial: number of trial to simulate
+                :type number_trial: int
+                """
                 target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
                 study = optuna.create_study(study_name=study_name,
@@ -552,7 +571,7 @@ class StackedTransformerOptimization:
                                             load_if_exists=True)
 
 
-                trial = study.trials[number]
+                trial = study.trials[number_trial]
                 trial_params = trial.params
 
                 # suggest core geometry
