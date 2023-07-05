@@ -1011,8 +1011,24 @@ class MagneticComponent:
 
 
     def center_tapped_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False):
+        """
+        Performs a full study of the magnetic component, what includes
+         * inductance simulation by get_inductances()
+         * hysteresis loss simulation (delta_flux using a sinusoidal waveform and a correction factor to calculate back to triangular waveform)
+         * winding losses (performs an excitation sweep)
+        :param time_current_vectors: primary and secondary current waveforms over time
+        :type time_current_vectors: List[List[List[float]]]
+        :param plot_waveforms: True to show the current waveforms
+        :type plot_waveforms: bool
+        """
 
-        def hysteresis_loss_excitation(time_current_vectors):
+        def hysteresis_loss_excitation(time_current_vectors: List[List[List[float]]]):
+            """
+            Calculates the FEM-simulation input parameters to get a sinusoidal magnetization flux with the amplitudes
+            and the frequency of the 'real-world' triangular magnetization flux.
+            :param time_current_vectors: primary and secondary current waveforms over time
+            :type time_current_vectors: List[List[List[float]]]
+            """
             # collect simulation input parameters from time_current_vectors
             hyst_loss_amplitudes = []
             hyst_loss_phases_deg = []
@@ -1031,7 +1047,7 @@ class MagneticComponent:
             # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
-        def split_time_current_vectors_center_tapped(time_current_vectors):
+        def split_time_current_vectors_center_tapped(time_current_vectors: List[List[List[float]]]):
             # print(f"{time_current_vectors = }")
             positive_secondary_current = np.copy(time_current_vectors[1][1])
             positive_secondary_current[positive_secondary_current < 0] = 0
@@ -1056,7 +1072,14 @@ class MagneticComponent:
 
             return center_tapped_time_current_vectors
 
-        def linear_loss_excitation(time_current_vectors):
+        def linear_loss_excitation(time_current_vectors: List[List[List[float]]]):
+            """
+            Perform FFT to get the primary and secondary currents to calculate the wire losses.
+            These losses can be 'linear added' to get the total winding losses.
+
+            :param time_current_vectors: primary and secondary current waveforms over time
+            :type time_current_vectors: List[List[List[float]]]
+            """
             # winding losses
             frequency_current_phase_deg_list = []
             # collect winding losses simulation input parameters
@@ -1086,8 +1109,16 @@ class MagneticComponent:
             # print(f"Corrected: {frequency_current_phase_deg_list = }")
             return frequency_list, frequency_current_phase_deg_list
 
-        def factor_triangular_hysteresis_loss_iGSE(D, alpha):
-            nominator = 2 * (D ** (1 - alpha) + (1 - D) ** (1 - alpha))
+        def factor_triangular_hysteresis_loss_iGSE(duty_cycle: float, alpha: float):
+            """
+            Calculates the correction factor for the hysteresis losses to get the correct losses for a triangular
+            flux waveform but from a sinusoidal flux simulation
+            :param duty_cycle: duty cycle 0...1
+            :type duty_cycle: float
+            :param alpha: frequency exponent of Steinmetz equation
+            :type alpha: float
+            """
+            nominator = 2 * (duty_cycle ** (1 - alpha) + (1 - duty_cycle) ** (1 - alpha))
             theta = np.linspace(0, 2 * np.pi, 100)
             integrant = np.abs(np.cos(theta)) ** alpha
             denominator = np.pi ** (alpha - 1) * np.trapz(integrant, x=theta)
@@ -1158,7 +1189,7 @@ class MagneticComponent:
         # Correct the hysteresis loss for the triangular shaped flux density waveform
         alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
                                                                       datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
-        p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
+        p_hyst = factor_triangular_hysteresis_loss_iGSE(duty_cycle=0.5, alpha=alpha_from_db) * p_hyst
 
         # calculate the winding losses
         self.excitation_sweep(list(frequency_list), current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
