@@ -410,51 +410,6 @@ class StackedTransformerOptimization:
                     print(e)
                     return float('nan'), float('nan'), float('nan')
 
-            @staticmethod
-            def start_study(study_name: str, config: StoSingleInputConfig, number_trials: int, storage: str = None) -> None:
-
-                if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
-                    raise Exception(f"study '{study_name}' already availabe. Choose different study name.")
-
-                # calculate the target and fixed parameters
-                # and generate the folder structure inside this function
-                target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
-
-                # Wrap the objective inside a lambda and call objective inside it
-                func = lambda trial: femmt.StackedTransformerOptimization.FemSimulation.NSGAII.objective4(trial, config,
-                                                                                                          target_and_fixed_parameters)
-
-                # Pass func to Optuna studies
-                study_in_memory = optuna.create_study(directions=["minimize", "minimize", "minimize", "minimize"],
-                                                      # sampler=optuna.samplers.TPESampler(),
-                                                      sampler=optuna.samplers.NSGAIISampler(),
-                                                      )
-
-                # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
-                # .INFO: all messages (default)
-                # .WARNING: fails and warnings
-                # .ERROR: only errors
-                #optuna.logging.set_verbosity(optuna.logging.ERROR)
-
-                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
-                study_in_memory.optimize(func, n_trials=number_trials, gc_after_trial=False, show_progress_bar=True)
-
-                # in-memory calculation is shown before saving the data to database
-                #fig = optuna.visualization.plot_pareto_front(study_in_memory, target_names=["volume", "losses", "target_l_h", "target_l_s"])
-                #fig.show()
-
-                # introduce study in storage, e.g. sqlite or mysql
-                if storage == 'sqlite':
-                    # Note: for sqlite operation, there needs to be three slashes '///' even before the path '/home/...'
-                    # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
-                    storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
-                elif storage == 'mysql':
-                    storage = "mysql://monty@localhost/mydb",
-
-                study_in_storage = optuna.create_study(directions=["minimize", "minimize", "minimize", 'minimize'], study_name=study_name,
-                                                       storage=storage)
-                study_in_storage.add_trials(study_in_memory.trials)
-
             def start_study3(study_name: str, config: StoSingleInputConfig, number_trials: int, storage: str = None) -> None:
 
                 if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
@@ -500,7 +455,7 @@ class StackedTransformerOptimization:
                 study_in_storage.add_trials(study_in_memory.trials)
 
             @staticmethod
-            def proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int) -> None:
+            def start_proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int, storage: str = 'sqlite') -> None:
                 """
                 Proceed a study which is stored as sqlite database.
 
@@ -511,19 +466,42 @@ class StackedTransformerOptimization:
                 :param number_trials: Number of trials adding to the existing study
                 :type number_trials: int
                 """
+                if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
+                    print("Existing study found. Proceeding.")
+                    raise Exception(f"study '{study_name}' already available. Choose different study name.")
+
                 target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+
+                # introduce study in storage, e.g. sqlite or mysql
+                if storage == 'sqlite':
+                    # Note: for sqlite operation, there needs to be three slashes '///' even before the path '/home/...'
+                    # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
+                    storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
+                elif storage == 'mysql':
+                    storage = "mysql://monty@localhost/mydb",
+
+                # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
+                # .INFO: all messages (default)
+                # .WARNING: fails and warnings
+                # .ERROR: only errors
+                #optuna.logging.set_verbosity(optuna.logging.ERROR)
 
                 # Wrap the objective inside a lambda and call objective inside it
                 func = lambda trial: femmt.optimization.StackedTransformerOptimization.FemSimulation.NSGAII.objective4(trial, config,
                                                                                                                        target_and_fixed_parameters)
-
-                study_in_storage = optuna.create_study(study_name=study_name, storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
-                                                    load_if_exists=True)
+                study_in_storage = optuna.create_study(study_name=study_name,
+                                                       storage=storage,
+                                                       directions=["minimize", "minimize", "minimize", 'minimize'],
+                                                       load_if_exists=True)
 
                 study_in_memory = optuna.create_study(directions=["minimize", "minimize", "minimize", 'minimize'],
                                                        study_name=study_name)
                 study_in_memory.add_trials(study_in_storage.trials)
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
+
+                # in-memory calculation is shown before saving the data to database
+                #fig = optuna.visualization.plot_pareto_front(study_in_memory, target_names=["volume", "losses", "target_l_h", "target_l_s"])
+                #fig.show()
 
                 study_in_storage.add_trials(study_in_memory.trials[(-number_trials - 1):-1])
 
