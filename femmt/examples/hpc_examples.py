@@ -112,6 +112,9 @@ def parallel_simulation_study(averaging_count):
     parallel_results_folder = os.path.join(example_results_folder, "parallel")
     study_results_folder = os.path.join(parallel_results_folder, "study")
 
+    if not os.path.exists(parallel_results_folder):
+        os.mkdir(parallel_results_folder)
+
     if not os.path.exists(study_results_folder):
         os.mkdir(study_results_folder)
 
