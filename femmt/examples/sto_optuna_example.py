@@ -5,6 +5,8 @@ import os
 import numpy as np
 import datetime
 
+import optuna.samplers
+
 #femmt libraries
 import femmt as fmt
 
@@ -64,5 +66,7 @@ study_name = "2023-07-05"
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    fmt.StackedTransformerOptimization.FemSimulation.NSGAII.start_proceed_study(study_name, dab_transformer_config, 10, number_objectives=4)
-    #fmt.StackedTransformerOptimization.FemSimulation.NSGAII.show_study_results(study_name, dab_transformer_config)
+    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 2,
+                                                                                number_objectives=4,
+                                                                                sampler=optuna.samplers.NSGAIIISampler())
+    #fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config)
