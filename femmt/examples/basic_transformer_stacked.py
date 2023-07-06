@@ -81,7 +81,7 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                working_directory=working_directory, silent=True, is_gui=is_test)
+                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder

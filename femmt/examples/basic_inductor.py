@@ -79,7 +79,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                silent=True, is_gui=is_test)
+                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
@@ -101,7 +101,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                     permeability_measurement_setup="LEA_LK",
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup="LEA_LK")
+                    permittivity_measurement_setup="LEA_LK", mdb_verbosity=fmt.Verbosity.Silent)
     # mu_rel=3000, phi_mu_deg=10,
     # sigma=0.5)
     geo.set_core(core)

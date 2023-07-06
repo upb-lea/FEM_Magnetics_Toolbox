@@ -81,7 +81,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
         os.mkdir(working_directory)
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                working_directory=working_directory, silent=False, is_gui=is_test)
+                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
