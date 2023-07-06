@@ -35,47 +35,47 @@ colors_femmt_default = {"blue": (28, 113, 216),
                         }
 
 colors_geometry_femmt_default = {
-                    "core": "black",
-                    "air_gap": "yellow",
-                    "winding": ["orange", "brown", "yellow", "green", "red", "black", "grey", "blue", "orange", "purple"],
-                    "insulation": "blue",
-                    "potting_inner": "grey",
-                    "potting_outer": "grey",
-                }
-
-
+    "core": "black",
+    "air_gap": "yellow",
+    "winding": ["orange", "brown", "yellow", "green", "red", "black", "grey", "blue", "orange", "purple", "grey",
+                "blue", "orange", "purple"],
+    "insulation": "blue",
+    "potting_inner": "grey",
+    "potting_outer": "grey",
+}
 
 colors_ba_jonas = {"blue": (28, 113, 216),
-                        'red': (213, 6, 6),
-                        "green":  (6, 213, 6),
-                        "orange": (230, 97, 0),
-                        "purple": (129, 61, 156),
-                        "brown": (134, 94, 60),
-                        "grey": (193, 193, 193),
-                        "yellow": (255, 171, 6),
-                        "black": (58, 58, 58),
-                        "white": (255, 255, 255),
-                        "grey_dark": (109, 109, 109),
-                        "grey_dark_dark": (50, 50, 50)
-                        }
+                   'red': (213, 6, 6),
+                   "green": (6, 213, 6),
+                   "orange": (230, 97, 0),
+                   "purple": (129, 61, 156),
+                   "brown": (134, 94, 60),
+                   "grey": (193, 193, 193),
+                   "yellow": (255, 171, 6),
+                   "black": (58, 58, 58),
+                   "white": (255, 255, 255),
+                   "grey_dark": (109, 109, 109),
+                   "grey_dark_dark": (50, 50, 50)
+                   }
 
 colors_geometry_ba_jonas = {
-                    "core": "black",
-                    "air_gap": "yellow",
-                    "winding": ["green", "red", "yellow"],
-                    "insulation": "grey_dark",
-                    "potting_inner": "grey",
-                    "potting_outer": "grey_dark_dark",
-                }
+    "core": "black",
+    "air_gap": "yellow",
+    "winding": ["green", "red", "yellow"],
+    "insulation": "grey_dark",
+    "potting_inner": "grey",
+    "potting_outer": "grey_dark_dark",
+}
 
 colors_geometry_draw_only_lines = {
-                    "core": "grey_dark",
-                    "air_gap": "grey_dark",
-                    "winding": ["green", "green", "green"],
-                    "insulation": "grey_dark",
-                    "potting_inner": "grey_dark",
-                    "potting_outer": "grey_dark",
-                }
+    "core": "grey_dark",
+    "air_gap": "grey_dark",
+    "winding": ["green", "green", "green"],
+    "insulation": "grey_dark",
+    "potting_inner": "grey_dark",
+    "potting_outer": "grey_dark",
+}
+
 
 def core_database() -> Dict:
     """
@@ -136,7 +136,7 @@ def core_database() -> Dict:
         "core_h": 24.76e-3,
         "core_inner_diameter": 12e-3,
         "window_h": 16.1e-3,
-        "window_w": (22.5-12)/2*1e-3,
+        "window_w": (22.5 - 12) / 2 * 1e-3,
         "core_dimension_x": 26.5e-3,
         "core_dimension_y": 19.0e-3,
     }
@@ -144,7 +144,7 @@ def core_database() -> Dict:
         "core_h": 20.5e-3,
         "core_inner_diameter": 13.45e-3,
         "window_h": 11.5e-3,
-        "window_w": (27.5-13.45)/2 * 1e-3,
+        "window_w": (27.5 - 13.45) / 2 * 1e-3,
         "core_dimension_x": 32.0e-3,
         "core_dimension_y": 22.0e-3,
     }
@@ -152,7 +152,7 @@ def core_database() -> Dict:
         "core_h": 30.35e-3,
         "core_inner_diameter": 13.45e-3,
         "window_h": 21.3e-3,
-        "window_w": (27.5-13.45)/2 * 1e-3,
+        "window_w": (27.5 - 13.45) / 2 * 1e-3,
         "core_dimension_x": 32.0e-3,
         "core_dimension_y": 22.0e-3,
     }
@@ -160,7 +160,7 @@ def core_database() -> Dict:
         "core_h": 34.8e-3,
         "core_inner_diameter": 14.35e-3,
         "window_h": 25e-3,
-        "window_w": (32-14.35)/2 * 1e-3,
+        "window_w": (32 - 14.35) / 2 * 1e-3,
         "core_dimension_x": 35.1e-3,
         "core_dimension_y": 26.0e-3,
     }
@@ -168,7 +168,7 @@ def core_database() -> Dict:
         "core_h": 30.3e-3,
         "core_inner_diameter": 14.9e-3,
         "window_h": 20e-3,
-        "window_w": (37-14.9)/2 * 1e-3,
+        "window_w": (37 - 14.9) / 2 * 1e-3,
         "core_dimension_x": 40.5e-3,
         "core_dimension_y": 28.0e-3,
     }
@@ -176,7 +176,7 @@ def core_database() -> Dict:
         "core_h": 39.8e-3,
         "core_inner_diameter": 14.9e-3,
         "window_h": 29.5e-3,
-        "window_w": (37-14.9)/2 * 1e-3,
+        "window_w": (37 - 14.9) / 2 * 1e-3,
         "core_dimension_x": 40.5e-3,
         "core_dimension_y": 28.0e-3,
     }
@@ -184,7 +184,7 @@ def core_database() -> Dict:
         "core_h": 40e-3,
         "core_inner_diameter": 20e-3,
         "window_h": 26.1e-3,
-        "window_w": (44-20)/2 * 1e-3,
+        "window_w": (44 - 20) / 2 * 1e-3,
         "core_dimension_x": 50.0e-3,
         "core_dimension_y": 32.0e-3,
     }
@@ -192,7 +192,7 @@ def core_database() -> Dict:
         "core_h": 50e-3,
         "core_inner_diameter": 20e-3,
         "window_h": 36.1e-3,
-        "window_w": (44-20)/2 * 1e-3,
+        "window_w": (44 - 20) / 2 * 1e-3,
         "core_dimension_x": 50.0e-3,
         "core_dimension_y": 32.0e-3,
     }
@@ -200,7 +200,7 @@ def core_database() -> Dict:
         "core_h": 60e-3,
         "core_inner_diameter": 26e-3,
         "window_h": 42e-3,
-        "window_w": (65-26)/2 * 1e-3,
+        "window_w": (65 - 26) / 2 * 1e-3,
         "core_dimension_x": 65.0e-3,
         "core_dimension_y": 45.0e-3,
     }
@@ -212,31 +212,31 @@ def core_database() -> Dict:
         "core_h": 93 * 1e-3,
         "core_inner_diameter": pm_core_inner_diameter_calculator(43e-3, 5.4e-3),
         "window_h": 63 * 1e-3,
-        "window_w":  (88-43)/2 * 1e-3,
+        "window_w": (88 - 43) / 2 * 1e-3,
     }
     core_dict["PM 50/39"] = {
         "core_h": 39 * 1e-3,
         "core_inner_diameter": pm_core_inner_diameter_calculator(20e-3, 5.4e-3),
         "window_h": 26.4 * 1e-3,
-        "window_w": (39-20)/2 * 1e-3,
+        "window_w": (39 - 20) / 2 * 1e-3,
     }
     core_dict["PM 62/49"] = {
         "core_h": 49 * 1e-3,
         "core_inner_diameter": pm_core_inner_diameter_calculator(25.5e-3, 5.4e-3),
         "window_h": 33.4 * 1e-3,
-        "window_w": (48.8-25.5)/2 * 1e-3,
+        "window_w": (48.8 - 25.5) / 2 * 1e-3,
     }
     core_dict["PM 74/59"] = {
         "core_h": 59 * 1e-3,
         "core_inner_diameter": pm_core_inner_diameter_calculator(29.5e-3, 5.4e-3),
         "window_h": 40.7e-3,
-        "window_w": (57.5-29.5)/2 * 1e-3,
+        "window_w": (57.5 - 29.5) / 2 * 1e-3,
     }
     core_dict["PM 87/70"] = {
         "core_h": 70 * 1e-3,
         "core_inner_diameter": pm_core_inner_diameter_calculator(31.7e-3, 8.5e-3),
         "window_h": 48 * 1e-3,
-        "window_w": (67.1-31.7)/2 * 1e-3,
+        "window_w": (67.1 - 31.7) / 2 * 1e-3,
     }
     return core_dict
 
@@ -293,12 +293,12 @@ def litz_database() -> Dict:
                                "insulation": "textile"
                                }
     litz_dict["1.35x200x0.071"] = {"strands_numbers": 200,
-                                  "strand_radii": 0.071e-3 / 2,
-                                  "conductor_radii": 1.35e-3 / 2,
-                                  "ff": "",
-                                  "manufacturer": "PACK",
-                                  "material_number": "",
-                                  "litz": "RUPALIT V155",
+                                   "strand_radii": 0.071e-3 / 2,
+                                   "conductor_radii": 1.35e-3 / 2,
+                                   "ff": "",
+                                   "manufacturer": "PACK",
+                                   "material_number": "",
+                                   "litz": "RUPALIT V155",
                                    "insulation": "textile"}
 
     litz_dict["3.2x2100x0.05"] = {"strands_numbers": 2100,
@@ -367,23 +367,22 @@ def litz_database() -> Dict:
                                 "insulation": "3 layers Mylar"}
 
     litz_dict["1.71x140x0.1"] = {"strands_numbers": 140,
-                                "strand_radii": 0.1e-3 / 2,
-                                "conductor_radii": 1.71e-3 / 2,
-                                "ff": "",
-                                "manufacturer": "",
-                                "material_number": "",
-                                "litz": "",
-                                "insulation": ""}
+                                 "strand_radii": 0.1e-3 / 2,
+                                 "conductor_radii": 1.71e-3 / 2,
+                                 "ff": "",
+                                 "manufacturer": "",
+                                 "material_number": "",
+                                 "litz": "",
+                                 "insulation": ""}
 
     litz_dict["1.7x500x0.06"] = {"strands_numbers": 500,
-                                "strand_radii": 0.06e-3 / 2,
-                                "conductor_radii": 1.7e-3 / 2,
-                                "ff": "",
-                                "manufacturer": "",
-                                "material_number": "",
-                                "litz": "",
-                                "insulation": ""}
-
+                                 "strand_radii": 0.06e-3 / 2,
+                                 "conductor_radii": 1.7e-3 / 2,
+                                 "ff": "",
+                                 "manufacturer": "",
+                                 "material_number": "",
+                                 "litz": "",
+                                 "insulation": ""}
 
     return litz_dict
 
@@ -399,23 +398,24 @@ def wire_material_database() -> Dict[str, WireMaterial]:
 
     wire_material["Copper"] = WireMaterial(
         name="copper",
-        sigma= 5.8e7,
-        temperature= 25,
-        temperature_coefficient = 3.9e-3,
-        thermal_conductivity = 400,
-        volumetric_mass_density = 8920,
+        sigma=5.8e7,
+        temperature=25,
+        temperature_coefficient=3.9e-3,
+        thermal_conductivity=400,
+        volumetric_mass_density=8920,
     )
 
     wire_material["Aluminium"] = WireMaterial(
         name="aluminium",
-        sigma= 3.7e7,
-        temperature= 25,
-        temperature_coefficient = 3.9e-3,
-        thermal_conductivity = 235,
-        volumetric_mass_density = 2699,
+        sigma=3.7e7,
+        temperature=25,
+        temperature_coefficient=3.9e-3,
+        thermal_conductivity=235,
+        volumetric_mass_density=2699,
     )
 
     return wire_material
+
 
 def conductivity_temperature(material: str, temperature: float) -> float:
     """
@@ -435,7 +435,8 @@ def conductivity_temperature(material: str, temperature: float) -> float:
     temperature_database = material_from_database.temperature
     temperature_coefficient_database = material_from_database.temperature_coefficient
 
-    resistance_temperature = 1 / sigma_database * (1 + temperature_coefficient_database * (temperature - temperature_database))
+    resistance_temperature = 1 / sigma_database * (
+                1 + temperature_coefficient_database * (temperature - temperature_database))
     sigma_temperature = 1 / resistance_temperature
 
     return sigma_temperature
@@ -447,6 +448,7 @@ def create_folders(*args) -> None:
     for folder in list(args):
         if not os.path.exists(folder):
             os.mkdir(folder)
+
 
 def cost_material_database() -> Dict:
     """
@@ -467,31 +469,31 @@ def cost_material_database() -> Dict:
                                                "high_si_steel": 12,
                                                "goes": 2.5}
     cost_database["winding_material_euro_per_kilogram"] = {ConductorType.RoundSolid.name: 10,
-                                                  "flat": 10,
-                                                  ConductorType.RectangularSolid.name: 20,
-                                                  ConductorType.RoundLitz.name: -1}
+                                                           "flat": 10,
+                                                           ConductorType.RectangularSolid.name: 20,
+                                                           ConductorType.RoundLitz.name: -1}
 
     cost_database["winding_material_euro_per_unit"] = {ConductorType.RoundSolid.name: 1,
-                                                  "flat": 2,
-                                                  ConductorType.RectangularSolid.name: 2,
-                                                  ConductorType.RoundLitz.name: 1}
+                                                       "flat": 2,
+                                                       ConductorType.RectangularSolid.name: 2,
+                                                       ConductorType.RoundLitz.name: 1}
 
     cost_database["winding_fabrication_euro_per_kilogram"] = {ConductorType.RoundSolid.name: 7,
-                                                  "flat": 21,
-                                                  ConductorType.RectangularSolid.name: 14,
-                                                  ConductorType.RoundLitz.name: 7}
+                                                              "flat": 21,
+                                                              ConductorType.RectangularSolid.name: 14,
+                                                              ConductorType.RoundLitz.name: 7}
     cost_database["winding_fabrication_euro_per_unit"] = {ConductorType.RoundSolid.name: 2,
-                                                  "flat": 4,
-                                                  ConductorType.RectangularSolid.name: 2.5,
-                                                  ConductorType.RoundLitz.name: 2}
+                                                          "flat": 4,
+                                                          ConductorType.RectangularSolid.name: 2.5,
+                                                          ConductorType.RoundLitz.name: 2}
 
     cost_database["winding_material_euro_per_kilogram_for_litz"] = {"sigma_numerator": 15,
                                                                     "sigma_denominator": 0.45}
 
     cost_database["gross_margin"] = 0.25
 
-
     return cost_database
+
 
 def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter: float) -> np.array:
     """
@@ -531,6 +533,7 @@ def install_pyfemm_if_missing() -> None:
         subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
         print("'pyfemm' is now installed!")
 
+
 def inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate as the two
@@ -566,14 +569,14 @@ def inner_points(a, b, input_points):
         raise Exception("Odd number of input points")
     if dim == 2:
         raise Exception("Not implemented Error: Only 2D is implemented")
-    dim2 = (dim+1) % 2
+    dim2 = (dim + 1) % 2
     if output.shape[0] >= 2:
         argmax = np.argmax(output[:, dim2])
         output = np.delete(output, argmax, 0)
         argmin = np.argmin(output[:, dim2])
         output = np.delete(output, argmin, 0)
-        #if output.shape[0] == 0:
-            #print("Only one air gap in this leg. No island needed.")
+        # if output.shape[0] == 0:
+        # print("Only one air gap in this leg. No island needed.")
     return output
 
 # TODO Is this function even used?
@@ -611,14 +614,14 @@ def min_max_inner_points(a, b, input_points):
         raise Exception("Odd number of input points")
     if dim == 2:
         raise Exception("Not implemented Error: Only 2D is implemented")
-    dim2 = (dim+1) % 2
+    dim2 = (dim + 1) % 2
     if buffer.shape[0] >= 2:
         argmax = np.argmax(buffer[:, 1])
         max_point = buffer[argmax]
         argmin = np.argmin(buffer[:, 1])
         min_point = buffer[argmin]
     return [min_point, max_point]
-    
+
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -654,13 +657,13 @@ def litz_calculate_number_layers(n_strands: int) -> int:
     :rtype: int
 
     """
-    return np.sqrt(0.25+(n_strands-1)/3)-0.5
+    return np.sqrt(0.25 + (n_strands - 1) / 3) - 0.5
 
 
 def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str = 'no', mode: str = 'rad',
         f0: Union[float, None] = None, title: str = 'ffT', filter_type: str = 'factor',
         filter_value_factor: float = 0.01, filter_value_harmonic: int = 100,
-        figure_size: Tuple=None, figure_directory: str=None) -> npt.NDArray[list]:
+        figure_size: Tuple = None, figure_directory: str = None) -> npt.NDArray[list]:
     """
     A fft for an input signal. Input signal is in vector format and should include one period.
 
@@ -760,8 +763,8 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
         x_out = x_mag_corrected
         phi_rad_out = phi_rad_corrected
     else:
-        raise ValueError(f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
-
+        raise ValueError(
+            f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
 
     if plot != 'no' and plot != False:
         print(f"{title = }")
@@ -806,7 +809,8 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     return np.array([f_out, x_out, phi_rad_out])
 
 
-def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000, figure_directory: str = None):
+def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000,
+                              figure_directory: str = None):
     time_period = 1 / min(frequency_list)
 
     t_interp = np.linspace(0, time_period, sample_factor)
@@ -838,10 +842,11 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
     if figure_directory is not None:
         plt.savefig(figure_directory, bbox_inches="tight")
 
-    #plt.show()
+    # plt.show()
 
 
-def compare_fft_list(input_data_list: list, sample_factor: float = 1000,  mode: str = 'rad', f0: Union[float,None] = None) -> None:
+def compare_fft_list(input_data_list: list, sample_factor: float = 1000, mode: str = 'rad',
+                     f0: Union[float, None] = None) -> None:
     """
     generate fft curves from input curves and compare them to each other
 
@@ -919,15 +924,15 @@ def data_logging(sim_choice):
 
     # Either read old data or create
     if sim_choice != 'show':
-      # pseudo 2D dataframe: ['strand number, strand radius'], 'frequency'  | const. litz radius --> ff
-      if not os.path.isfile(target_femm):
-          df_pv_femm = pd.DataFrame([], index=frequencies, columns=[])
-          df_pv_femmt = pd.DataFrame([], index=frequencies, columns=[])
-      else:
-          # Read Loss Data
-          df_pv_femm = pd.read_json(target_femm)
-          df_pv_femmt = pd.read_json(target_femmt)
-      # print(df_pv_femm, df_pv_femmt)
+        # pseudo 2D dataframe: ['strand number, strand radius'], 'frequency'  | const. litz radius --> ff
+        if not os.path.isfile(target_femm):
+            df_pv_femm = pd.DataFrame([], index=frequencies, columns=[])
+            df_pv_femmt = pd.DataFrame([], index=frequencies, columns=[])
+        else:
+            # Read Loss Data
+            df_pv_femm = pd.read_json(target_femm)
+            df_pv_femmt = pd.read_json(target_femmt)
+        # print(df_pv_femm, df_pv_femmt)
 
 
 def get_dicts_with_keys_and_values(data, **kwargs):
@@ -988,7 +993,7 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     :rtype: Tuple
 
     :Example:
-    
+
     >>> import femmt as fmt
     >>> frequency_1 = [50, 100, 150, 200]
     >>> frequency_2 = [50, 100, 150, 170, 200]
@@ -1082,7 +1087,6 @@ def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
     return (cylinder_diameter / 2) ** 2 * np.pi * cylinder_height
 
 
-
 def create_physical_group(dim, entities, name):
     tag = gmsh.model.addPhysicalGroup(dim, entities)
     gmsh.model.setPhysicalName(dim, tag, name)
@@ -1090,7 +1094,7 @@ def create_physical_group(dim, entities, name):
     return tag
 
 
-def visualize_simulation_results(simulation_result_file_path: str, store_figure_file_path: str, show_plot = True) -> None:
+def visualize_simulation_results(simulation_result_file_path: str, store_figure_file_path: str, show_plot=True) -> None:
     with open(simulation_result_file_path, "r") as fd:
         loaded_results_dict = json.loads(fd.read())
 
@@ -1106,7 +1110,7 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     bar_width = 0.35
     plt.bar(0, loss_core_hysteresis, width=bar_width)
-    plt.bar(0, loss_core_eddy_current, bottom= loss_core_hysteresis, width=bar_width)
+    plt.bar(0, loss_core_eddy_current, bottom=loss_core_hysteresis, width=bar_width)
     plt.bar(1, loss_winding_1, width=bar_width)
     plt.legend(['Hysteresis loss', 'Eddy current loss', 'Winding loss'])
     plt.ylabel('Losses in W')
@@ -1119,6 +1123,7 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
     return loaded_results_dict
 
+
 def point_is_in_rect(x, y, rect):
     # x, y of the point
     # List of 4 points given as tuples with (x, y) in the order top-right, top-left, bottom-right, bottom-left
@@ -1126,7 +1131,7 @@ def point_is_in_rect(x, y, rect):
     # Return true if point is in rect
     if y < rect[0][1] and y > rect[3][1] and x > rect[0][0] and x < rect[1][0]:
         return True
-    
+
     return False
 
 def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
@@ -1146,7 +1151,8 @@ def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     return sigma_core * core_weight
 
 
-def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str], single_strand_cross_section_list: Union[List[float], None] = None):
+def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str],
+                          single_strand_cross_section_list: Union[List[float], None] = None):
     """
     Calculates single winding material and fabrication costs depending on winding-type and weight
 
@@ -1164,31 +1170,37 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
     if single_strand_cross_section_list is None:
         single_strand_cross_section_list = []
 
-
     cost_database = cost_material_database()
     winding_cost_list = []
 
     for winding_count, winding_weight in enumerate(wire_weight_list):
         # material cost (per kilogram and per unit)
-        sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram"][wire_type_list[winding_count]]
+        sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram"][
+            wire_type_list[winding_count]]
         if sigma_material_winding_euro_per_kilogram == -1:
             # case for special litz wire calculation. Additional data is loaded from cost_database.
-            sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_numerator"] / (single_strand_cross_section_list[winding_count] * 1e6 + cost_database["winding_material_euro_per_kilogram_for_litz"]["sigma_denominator"])
+            sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"][
+                                                           "sigma_numerator"] / (single_strand_cross_section_list[
+                                                                                     winding_count] * 1e6 +
+                                                                                 cost_database[
+                                                                                     "winding_material_euro_per_kilogram_for_litz"][
+                                                                                     "sigma_denominator"])
 
         winding_material_euro_per_unit = cost_database["winding_material_euro_per_unit"][wire_type_list[winding_count]]
 
         winding_material_cost = sigma_material_winding_euro_per_kilogram * winding_weight + winding_material_euro_per_unit
 
         # fabrication cost (per kilogram and per unit)
-        sigma_fabrication_euro_per_kilogram = cost_database["winding_fabrication_euro_per_kilogram"][wire_type_list[winding_count]]
-        fabrication_material_euro_per_unit = cost_database["winding_fabrication_euro_per_unit"][wire_type_list[winding_count]]
+        sigma_fabrication_euro_per_kilogram = cost_database["winding_fabrication_euro_per_kilogram"][
+            wire_type_list[winding_count]]
+        fabrication_material_euro_per_unit = cost_database["winding_fabrication_euro_per_unit"][
+            wire_type_list[winding_count]]
 
         winding_fabrication_cost = sigma_fabrication_euro_per_kilogram * winding_weight + fabrication_material_euro_per_unit
 
         winding_cost_list.append(winding_material_cost + winding_fabrication_cost)
 
     return winding_cost_list
-
 
 
 def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str],
@@ -1219,13 +1231,13 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
 
     cost_core = cost_function_core(core_weight, core_type)
 
-
     cost_winding_list = cost_function_winding(wire_weight_list, wire_type_list, single_strand_cross_section_list)
     cost_winding = sum(cost_winding_list)
 
     total_cost_including_margin = 1 / (1 - cost_database["gross_margin"]) * (cost_core + cost_winding)
 
     return total_cost_including_margin
+
 
 def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_max: list):
     """
@@ -1263,14 +1275,15 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
         elif len(keyword_list) == 4:
             data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]]
         elif len(keyword_list) == 5:
-            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]][keyword_list[4]]
+            data_to_compare = full_data[keyword_list[0]][keyword_list[1]][keyword_list[2]][keyword_list[3]][
+                keyword_list[4]]
 
         if value_min <= data_to_compare <= value_max:
             print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
 
 
 def wave_vector(f, complex_permeability, complex_permittivity, conductivity):
-    omega = 2*np.pi*f
+    omega = 2 * np.pi * f
     j = complex(0, 1)
     complex_equivalent_permittivity = complex_permittivity - j * conductivity / omega
     return omega * np.sqrt(complex_permeability * complex_equivalent_permittivity)
@@ -1281,7 +1294,8 @@ def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity
     return 2 * np.pi / k.real
 
 
-def check_mqs_condition(radius, f, complex_permeability, complex_permittivity, conductivity, relative_margin_to_first_resonance=0.5, silent: bool = False):
+def check_mqs_condition(radius, f, complex_permeability, complex_permittivity, conductivity,
+                        relative_margin_to_first_resonance=0.5, silent: bool = False):
     axial_lambda = axial_wavelength(f, complex_permeability, complex_permittivity, conductivity)
     diameter_to_wavelength_ratio_of_first_resonance = 0.7655
     diameter_to_wavelength_ratio = 2 * radius / axial_lambda
@@ -1290,6 +1304,7 @@ def check_mqs_condition(radius, f, complex_permeability, complex_permittivity, c
         #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
         if not silent:
             print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
+
 
 if __name__ == '__main__':
     pass

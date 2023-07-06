@@ -34,7 +34,7 @@ IRON                = 120000;
 //physical numbers of conductors in n transformer
 For n In {1:n_windings}
        iCOND~{n} = 130000 + 1000*(n-1);
-       istrandedCOND~{n} = 140000 + 1000*(n-1);
+       istrandedCOND~{n} = 150000 + 1000*(n-1);
 EndFor
 
 
@@ -81,7 +81,7 @@ Group{
       EndFor
   EndFor
    // Add this winding to the core domain region
-  For n In {1:n_windings}  //added by Othman
+  For n In {1:n_windings}
       DomainC += Region[{Winding~{n}}] ;
   EndFor
    // Add the iron region to the core domain region
