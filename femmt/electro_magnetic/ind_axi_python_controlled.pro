@@ -442,7 +442,7 @@ PostProcessing {
       // Electrical Field
 
       { Name e ; Value { Term { [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ; In Domain ; Jacobian Vol ; } } }
-      { Name MagEz ; Value { Term { [  -1*(Dt[{a}]+{ur}/CoefGeo)  ] ; In Domain ; Jacobian Vol ; } } }
+      { Name MagEz ; Value { Term { [  Norm[ -1*(Dt[{a}]+{ur}/CoefGeo) ]  ] ; In Domain ; Jacobian Vol ; } } }
 
 
 

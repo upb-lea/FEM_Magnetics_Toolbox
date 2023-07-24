@@ -24,12 +24,10 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     inductor_frequency = 5e5
 
     # 2. set core parameters
-    # core_db = fmt.core_database()["PQ 40/40"]
-    core_db = fmt.core_database()["PQ 50/50"]
+    core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"],
-                                                    core_h=core_db["core_h"])
+                                                    window_h=core_db["window_h"])
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,

@@ -136,7 +136,7 @@ class Mesh:
         # Points
         # (index refers to sketch)
 
-        # First point (left point of lowest air gap)
+        # [0]
         if self.model.air_gaps.number > 0:
             p_core.append(gmsh.model.geo.addPoint(0,
                                                   self.model.p_air_gaps[0][1],
@@ -154,27 +154,43 @@ class Mesh:
         else:
             correction_of_outer_points = 0
 
+        # [1]
         p_core.append(gmsh.model.geo.addPoint(0,
+                                              -self.core.core_h_center_leg / 2,
+                                              self.model.p_outer[1][2],
+                                              self.model.p_outer[1][3]))
+
+        # [2]
+        p_core.append(gmsh.model.geo.addPoint(self.model.core.core_inner_diameter / 2,
+                                              -self.core.core_h_center_leg / 2,
+                                              self.model.p_outer[1][2],
+                                              self.model.p_outer[1][3]))
+
+        # [3]
+        p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[1][0],
                                               self.model.p_outer[1][1],
                                               self.model.p_outer[1][2],
                                               self.model.p_outer[1][3]))
 
-        p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[1][0],
-                                              self.model.p_outer[1][1] + correction_of_outer_points,
-                                              self.model.p_outer[1][2],
-                                              self.model.p_outer[1][3]))
-
+        # [4]
         p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[3][0],
-                                              self.model.p_outer[3][1] - correction_of_outer_points,
-                                              self.model.p_outer[3][2],
-                                              self.model.p_outer[3][3]))
-
-        p_core.append(gmsh.model.geo.addPoint(0,
                                               self.model.p_outer[3][1],
                                               self.model.p_outer[3][2],
                                               self.model.p_outer[3][3]))
 
-        # Two points of highest air gap
+        # [5]
+        p_core.append(gmsh.model.geo.addPoint(self.model.core.core_inner_diameter / 2,
+                                              self.core.core_h_center_leg / 2,
+                                              self.model.p_outer[1][2],
+                                              self.model.p_outer[1][3]))
+
+        # [6]
+        p_core.append(gmsh.model.geo.addPoint(0,
+                                              self.core.core_h_center_leg / 2,
+                                              self.model.p_outer[3][2],
+                                              self.model.p_outer[3][3]))
+
+        # [7] and [8] (Two points of highest air gap)
         if self.model.air_gaps.number > 0:
             p_core.append(gmsh.model.geo.addPoint(0,
                                                   self.model.p_air_gaps[-2][1],
@@ -189,29 +205,31 @@ class Mesh:
             p_core.append(None)  # dummy filled for no air gap special case
             p_core.append(None)  # dummy filled for no air gap special case
 
-        # Clockwise
-        # Four points of the window
+        # [9] (Clockwise, Four points of the window)
         p_core.append(gmsh.model.geo.addPoint(self.model.p_window[6][0],
                                               self.model.p_window[6][1],
                                               self.model.p_window[6][2],
                                               self.model.p_window[6][3]))
 
+        # [10]
         p_core.append(gmsh.model.geo.addPoint(self.model.p_window[7][0],
                                               self.model.p_window[7][1],
                                               self.model.p_window[7][2],
                                               self.model.p_window[7][3]))
 
+        # [11]
         p_core.append(gmsh.model.geo.addPoint(self.model.p_window[5][0],
                                               self.model.p_window[5][1],
                                               self.model.p_window[5][2],
                                               self.model.p_window[5][3]))
 
+        # [12]
         p_core.append(gmsh.model.geo.addPoint(self.model.p_window[4][0],
                                               self.model.p_window[4][1],
                                               self.model.p_window[4][2],
                                               self.model.p_window[4][3]))
 
-        # Last point of lowest air gap
+        # [13] (Last point of lowest air gap)
         if self.model.air_gaps.number > 0:
             p_core.append(gmsh.model.geo.addPoint(self.model.p_air_gaps[1][0],
                                                   self.model.p_air_gaps[1][1],
@@ -229,10 +247,10 @@ class Mesh:
         if self.model.air_gaps.number > 0:
             l_bound_core.append(gmsh.model.geo.addLine(p_core[0],
                                                        p_core[1]))
-            l_bound_core.append(gmsh.model.geo.addLine(p_core[4],
-                                                       p_core[5]))
+            l_bound_core.append(gmsh.model.geo.addLine(p_core[6],
+                                                       p_core[7]))
         else:
-            l_bound_core.append(gmsh.model.geo.addLine(p_core[4],
+            l_bound_core.append(gmsh.model.geo.addLine(p_core[6],
                                                        p_core[1]))
         l_bound_core.append(gmsh.model.geo.addLine(p_core[1],
                                                    p_core[2]))
@@ -240,27 +258,32 @@ class Mesh:
                                                    p_core[3]))
         l_bound_core.append(gmsh.model.geo.addLine(p_core[3],
                                                    p_core[4]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[4],
+                                                   p_core[5]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[5],
+                                                   p_core[6]))
+
         # Curves: Core - Air
         if self.model.air_gaps.number > 0:
-            l_core_air.append(gmsh.model.geo.addLine(p_core[5],
-                                                     p_core[6]))
-            l_core_air.append(gmsh.model.geo.addLine(p_core[6],
-                                                     p_core[7]))
-        l_core_air.append(gmsh.model.geo.addLine(p_core[7],
-                                                 p_core[8]))
-        l_core_air.append(gmsh.model.geo.addLine(p_core[8],
-                                                 p_core[9]))
+            l_core_air.append(gmsh.model.geo.addLine(p_core[7],
+                                                     p_core[8]))
+            l_core_air.append(gmsh.model.geo.addLine(p_core[8],
+                                                     p_core[9]))
         l_core_air.append(gmsh.model.geo.addLine(p_core[9],
                                                  p_core[10]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[10],
+                                                 p_core[11]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[11],
+                                                 p_core[12]))
 
         if self.model.air_gaps.number > 0:
-            l_core_air.append(gmsh.model.geo.addLine(p_core[10],
-                                                     p_core[11]))
-            l_core_air.append(gmsh.model.geo.addLine(p_core[11],
+            l_core_air.append(gmsh.model.geo.addLine(p_core[12],
+                                                     p_core[13]))
+            l_core_air.append(gmsh.model.geo.addLine(p_core[13],
                                                      p_core[0]))
         else:
-            l_core_air.append(gmsh.model.geo.addLine(p_core[10],
-                                                     p_core[7]))
+            l_core_air.append(gmsh.model.geo.addLine(p_core[12],
+                                                     p_core[9]))
 
         # Plane: Main Core --> plane_surface_core[0]
         if self.model.air_gaps.number > 0:
@@ -315,7 +338,7 @@ class Mesh:
 
         # Curves: Boundary - Air
         if self.model.air_gaps.number == 1:
-            l_bound_air.append(gmsh.model.geo.addLine(p_core[0], p_core[5]))
+            l_bound_air.append(gmsh.model.geo.addLine(p_core[0], p_core[7]))
         else:
             for i in range(0, int(len(p_island) / 4)):
                 if i == 0:  # First Line
@@ -324,13 +347,13 @@ class Mesh:
                     l_bound_air.append(
                         gmsh.model.geo.addLine(p_island[4 * (i - 1) + 2], p_island[4 * i + 0]))
                 if i == int(len(p_island) / 4) - 1:  # Last Line
-                    l_bound_air.append(gmsh.model.geo.addLine(p_island[-2], p_core[5]))
+                    l_bound_air.append(gmsh.model.geo.addLine(p_island[-2], p_core[7]))
 
         # Curves: Close air gaps
         if self.model.air_gaps.number > 0:
             for i in range(self.model.air_gaps.number):
-                bottom_point = p_core[11] if i == 0 else p_island[(i - 1) * 4 + 3]
-                top_point = p_core[6] if i == self.model.air_gaps.number - 1 else p_island[i * 4 + 1]
+                bottom_point = p_core[13] if i == 0 else p_island[(i - 1) * 4 + 3]
+                top_point = p_core[8] if i == self.model.air_gaps.number - 1 else p_island[i * 4 + 1]
 
                 if self.component_type == ComponentType.IntegratedTransformer:
                     if self.stray_path.start_index == i:
@@ -359,6 +382,7 @@ class Mesh:
                 bottom = l_core_air_air_gap[1]
             else:
                 bottom = l_core_air[6 + 3 * i]
+
 
             curve_loop = gmsh.model.geo.addCurveLoop([left, top, bottom, right], -1, True)
             curve_loop_air_gaps.append(curve_loop)

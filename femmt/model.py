@@ -189,7 +189,7 @@ class Core:
                  # dimensions
                  core_type: CoreType = CoreType.Single,
                  core_dimensions=None,
-                 correct_outer_leg: bool = False,
+                 detailed_core_model: bool = False,
 
                  # material data
                  material: str = "custom",
@@ -230,8 +230,8 @@ class Core:
         :type sigma: float, optional
         :param non_linear: _description_, defaults to False
         :type non_linear: bool, optional
-        :param correct_outer_leg: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
-        :type correct_outer_leg: bool, optional
+        :param detailed_core_model: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
+        :type detailed_core_model: bool, optional
         """
         # Set parameters
         self.core_type = core_type  # Basic shape of magnetic conductor
@@ -239,13 +239,15 @@ class Core:
         # Geometric Parameters
         self.core_inner_diameter = core_dimensions.core_inner_diameter
         self.window_w = core_dimensions.window_w
-        self.correct_outer_leg = correct_outer_leg
+        self.core_h_center_leg = core_dimensions.core_h
+        self.correct_outer_leg = detailed_core_model
         self.r_inner = self.window_w + self.core_inner_diameter / 2
 
         if self.core_type == CoreType.Single:
             self.window_h = core_dimensions.window_h
             self.number_core_windows = 2
-            self.core_h = self.window_h + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
+            self.core_h = self.window_h + self.core_inner_diameter / 2
+            self.core_h_center_leg = self.window_h + self.core_inner_diameter / 2  # per default
         if self.core_type == CoreType.Stacked:
             self.window_h_bot = core_dimensions.window_h_bot
             self.window_h_top = core_dimensions.window_h_top
@@ -253,12 +255,21 @@ class Core:
             self.core_h = self.window_h_bot + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
             self.number_core_windows = 4
 
-        if correct_outer_leg:
-            # hard-coded case for PQ 40/40-cores:
-            # the outer cross-section differs from inner cross-section and is corrected here.
-            # Note: for PQ 40/40 cores only!!
-            A_out = 200 * 10 ** -6
-            self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
+        if detailed_core_model:
+            # Definition of the center core height
+            self.core_h_center_leg = core_dimensions.core_h  # Directly taken from core database
+
+            # Calculation of the outer core radius  TODO: additional value from core specification needed
+            # self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
+            self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
+
+            # Calculation of the outer core height TODO:additional value from core specification needed
+            width_meas = 23e-3  # for PQ4040
+            h_meas = 5.2e-3  # for PQ4040
+            alpha = np.arcsin((width_meas / 2) / (self.core_inner_diameter / 2 + self.window_w))
+            h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))  # Areal leg
+            self.core_h = self.window_h + 2 * h_outer
+
         else:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
             # this is the recommended default-case
@@ -376,17 +387,16 @@ class Core:
             epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature,
                                                                                  frequency=frequency,
                                                                                  material_name=self.material,
-                                                                                 datasource=self.permittivity[
-                                                                                     "datasource"],
-                                                                                 measurement_setup=self.permittivity[
-                                                                                     "measurement_setup"],
+                                                                                 datasource=self.permittivity["datasource"],
+                                                                                 measurement_setup=self.permittivity["measurement_setup"],
                                                                                  datatype=self.permittivity["datatype"])
             self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
             self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag, self.complex_permittivity.real)
+            # self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag, 0)
+            # self.sigma = complex(1/10, 0)
 
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
-                                                                           attribute="resistivity")
+            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the
@@ -433,7 +443,7 @@ class Core:
                 "loss_approach": self.loss_approach.name,
                 "mu_r_abs": self.mu_r_abs,
                 "phi_mu_deg": self.phi_mu_deg,
-                "sigma": self.sigma,
+                "sigma": [self.sigma.real, self.sigma.imag],
                 "non_linear": self.non_linear,
                 "correct_outer_leg": self.correct_outer_leg,
                 "temperature": self.temperature,
