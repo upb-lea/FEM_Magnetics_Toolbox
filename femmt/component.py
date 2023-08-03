@@ -590,17 +590,52 @@ class MagneticComponent:
         :return: Wire distances
         :rtype: List[List[float]]
         """
-        wire_distance = []
-        for winding in self.two_d_axi.p_conductor:
+        #wire_distance = []
+        #for winding in self.two_d_axi.p_conductor:
             # 5 points are for 1 wire
-            num_points = len(winding)
-            num_windings = num_points//5
+            #num_points = len(winding)
+            #num_windings = num_points//5
+            #winding_list = []
+            #for i in range(num_windings):
+                #winding_list.append(winding[i*5][0])
+            #wire_distance.append(winding_list)
+
+        #return wire_distance
+
+        wire_distance = []
+        for num, conductor in enumerate(self.two_d_axi.p_conductor):
+            # Check if the winding is parallel and calculate points accordingly
+            if self.windings[num].parallel: # as in center_tapped transformer, RectangularSolid is used in parallel winding
+                num_points = len(conductor)
+                num_turns = num_points // 4
+                point_increment = 4
+            else:
+                num_points = len(conductor)
+                num_turns = num_points // 5
+                point_increment = 5
+
             winding_list = []
-            for i in range(num_windings):
-                winding_list.append(winding[i*5][0])
+            for i in range(num_turns):
+                winding_list.append(conductor[i * point_increment][0])
             wire_distance.append(winding_list)
 
         return wire_distance
+        #wire_distance = []
+        #for winding_index in range(len(self.two_d_axi.p_conductor)):
+            #winding = self.two_d_axi.p_conductor[winding_index]
+            # 5 points are for 1 wire
+            #num_points = len(winding)
+            #num_windings = num_points // 5
+            #winding_list = []
+            #for i in range(num_windings):
+                #winding_list.append(winding[i * 5][0])
+            # If this winding is parallel and it is the second or third winding, duplicate the last value in winding_list
+            #if self.windings[winding_index].parallel and (winding_index == 1 or winding_index == 2):
+                #winding_list.append(winding_list[-1])
+            #wire_distance.append(winding_list)
+
+       # return wire_distance
+
 
     def calculate_wire_lengths(self) -> List[float]:
         distances = self.get_wire_distances()
@@ -1424,6 +1459,7 @@ class MagneticComponent:
             if self.windings[num].parallel:
                 text_file.write(f"NbrCond_{num + 1} = 1;\n")
                 text_file.write(f"AreaCell_{num + 1} = {self.windings[num].a_cell*turns};\n")
+
             else:
                 text_file.write(f"NbrCond_{num + 1} = {turns};\n")
                 text_file.write(f"AreaCell_{num + 1} = {self.windings[num].a_cell};\n")
@@ -1616,7 +1652,7 @@ class MagneticComponent:
                 else:
                     winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
                     if self.windings[winding].parallel:
-                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{1}", last_n=sweep_number)[sweep_run])
+                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{1}", last_n=sweep_number)[sweep_run])
                     else:
                         for turn in range(0, winding_dict["number_turns"]):
                             winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])

@@ -3,7 +3,7 @@ import re
 import json
 import numpy as np
 import os
-from typing import Dict
+from typing import Dict, List
 
 # Third parry libraries
 import gmsh
@@ -13,6 +13,8 @@ from onelab import onelab
 import femmt.thermal.thermal_functions as thermal_f
 from femmt.thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
 from femmt.data import FileData
+
+
 
 
 def create_case(boundary_regions, boundary_physical_groups, boundary_temperatures, boundary_flags, k_case,
@@ -93,18 +95,38 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
     k = {}
     regions = {}
     windings_total_str = "{"
+    tag_counters = {}
+
+
+
 
     for winding_index, winding in enumerate(winding_tags):
         if winding is not None and len(winding) > 0:
+            if winding is not None and len(winding) > 0:
+                original_winding = winding[:]
+                #winding = list(set(winding))  # Remove duplicates from winding
+                if len(original_winding) > len(winding_losses[winding_index]):
+                    # Distribute the loss of the single physical turn equally over each geometric turn for parallel windings (need to be reviewd))
+                    winding_losses[winding_index] = [winding_losses[winding_index][0] / len(original_winding) for _ in range(len(original_winding))]
+
+
+
             for index, tag in enumerate(winding):
                 name = f"winding_{winding_index}_{index}"
                 windings_total_str += f"{name}, "
                 q_vol[name] = thermal_f.calculate_heat_flux_round_wire(winding_losses[winding_index][index],
                                                                        conductor_radii[winding_index],
                                                                        wire_distances[winding_index][index])
+
                 print(q_vol[name])
                 k[name] = k_windings
-                regions[name] = tag
+                if tag not in tag_counters: # The counter is needed here to create a single region for for every turn in case of parallel windings
+                    tag_counters[tag] = 0
+                else:
+                    tag_counters[tag] += 1
+                regions[name] = tag + tag_counters[tag]
+                #regions[name] = tag
+
 
     # Needs to be added. [:-2] removes the last ', '
     regions["windings_total"] = windings_total_str[:-2] + "}"
@@ -150,6 +172,7 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
     append = False
     for winding_index, winding in enumerate(windings):
         if winding is not None and len(winding) > 0:
+            #winding = list(set(winding))  # Remove duplicates from region of parallel windings
             for index, tag in enumerate(winding):
                 name = f"winding_{winding_index}_{index}"
                 post_operation_pro.add_on_elements_of_statement("T", name, winding_file, "GmshParsed", 0, name, append)

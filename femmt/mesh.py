@@ -1180,7 +1180,10 @@ class Mesh:
         for ww in self.model.winding_windows:
             for vww in ww.virtual_winding_windows:
                 for index, winding in enumerate(self.windings):
-                    flattened_turns[winding.winding_number] += vww.turns[index]
+                    try:
+                        flattened_turns[winding.winding_number] += vww.turns[index]
+                    except:
+                        pass
 
         for winding in self.windings:
             winding_number = winding.winding_number

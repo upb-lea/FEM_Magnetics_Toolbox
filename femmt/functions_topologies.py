@@ -150,7 +150,7 @@ def set_center_tapped_windings(core, primary_additional_bobbin,
     :return:
     """
     def define_insulations():
-        insulation = Insulation()
+        insulation = Insulation(flag_insulation=True)
         insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
         insulation.add_winding_insulations([[iso_primary_to_primary, iso_primary_to_secondary, iso_primary_to_secondary],
                                             [iso_primary_to_secondary, iso_secondary_to_secondary, iso_primary_to_secondary],

@@ -2,7 +2,7 @@ import femmt as fmt
 import os
 
 def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    def example_thermal_simulation(show_visual_outputs: bool = True):
+    def example_thermal_simulation(show_visual_outputs: bool = True, flag_insulation:bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -11,7 +11,7 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
         # The case parameter sets the thermal conductivity for a case which will be set around the core.
         # This could model some case in which the transformer is placed in together with a set potting material.
         thermal_conductivity_dict = {
-            "air": 0.0263,
+            "air": 1.54,
             "case": { # epoxy resign
                 "top": 1.54,
                 "top_right": 1.54,
@@ -22,7 +22,7 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
             "core": 5, # ferrite
             "winding": 400, # copper
             "air_gaps": 180, # aluminiumnitride
-            "insulation": 0.42 # polyethylen
+            "insulation": 0.42 if flag_insulation else None # polyethylen
         }
 
         # Here the case size can be determined
@@ -106,6 +106,7 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
 
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_fem_simulation_results=show_visual_outputs)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 if __name__ == "__main__":
     basic_example_transformer_center_tapped(show_visual_outputs=True)
