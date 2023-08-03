@@ -590,17 +590,6 @@ class MagneticComponent:
         :return: Wire distances
         :rtype: List[List[float]]
         """
-        #wire_distance = []
-        #for winding in self.two_d_axi.p_conductor:
-            # 5 points are for 1 wire
-            #num_points = len(winding)
-            #num_windings = num_points//5
-            #winding_list = []
-            #for i in range(num_windings):
-                #winding_list.append(winding[i*5][0])
-            #wire_distance.append(winding_list)
-
-        #return wire_distance
 
         wire_distance = []
         for num, conductor in enumerate(self.two_d_axi.p_conductor):
@@ -620,22 +609,6 @@ class MagneticComponent:
             wire_distance.append(winding_list)
 
         return wire_distance
-        #wire_distance = []
-        #for winding_index in range(len(self.two_d_axi.p_conductor)):
-            #winding = self.two_d_axi.p_conductor[winding_index]
-            # 5 points are for 1 wire
-            #num_points = len(winding)
-            #num_windings = num_points // 5
-            #winding_list = []
-            #for i in range(num_windings):
-                #winding_list.append(winding[i * 5][0])
-            # If this winding is parallel and it is the second or third winding, duplicate the last value in winding_list
-            #if self.windings[winding_index].parallel and (winding_index == 1 or winding_index == 2):
-                #winding_list.append(winding_list[-1])
-            #wire_distance.append(winding_list)
-
-       # return wire_distance
-
 
     def calculate_wire_lengths(self) -> List[float]:
         distances = self.get_wire_distances()
