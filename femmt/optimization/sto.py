@@ -163,7 +163,7 @@ class StackedTransformerOptimization:
 
                 geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                               working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                              silent=True, simulation_name=f"Case_{trial.number}")
+                                              verbosity=femmt.Verbosity.Silent, simulation_name=f"Case_{trial.number}")
 
                 core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                  window_h_top=window_h_top, window_h_bot=window_h_bot)
@@ -475,7 +475,7 @@ class StackedTransformerOptimization:
 
             geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                           working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                          silent=True, simulation_name=f"Single_Case_{trial._trial_id}")
+                                          verbosity=fmt.Verbosity.Silent, simulation_name=f"Single_Case_{trial._trial_id}")
 
             core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                window_h_top=window_h_top, window_h_bot=window_h_bot)

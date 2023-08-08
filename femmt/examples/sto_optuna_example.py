@@ -66,7 +66,7 @@ study_name = "2023-07-05"
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 2,
+    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 15,
                                                                                 number_objectives=4,
                                                                                 sampler=optuna.samplers.NSGAIIISampler())
     #fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config)
