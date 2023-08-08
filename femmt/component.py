@@ -6,6 +6,8 @@ import gmsh
 import json
 import warnings
 import inspect
+import time
+import logging
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 import dataclasses
@@ -39,10 +41,12 @@ class MagneticComponent:
     # Initialization of all class variables
     # Common variables for all instances
 
-    onelab_folder_path = None
+    onelab_folder_path: str = None
+    silent: bool = False
 
     def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-                 silent: bool = False, is_gui: bool = False, simulation_name: Optional[str] = None):
+                 verbosity: Verbosity = 2, is_gui: bool = False, simulation_name: Optional[str] = None):
+        # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         :param component_type: Available options:
                                - "inductor"
@@ -57,14 +61,7 @@ class MagneticComponent:
         :type is_gui: bool
         :param simulation_name: name without any effect. Will just be displayed in the result-log file
         :type simulation_name: str
-        """
-        # Variable to set silent mode
-        ff.set_silent_status(silent)
-
-        ff.femmt_print(f"\n"
-                       f"Initialized a new Magnetic Component of type {component_type.name}\n"
-                       f"--- --- --- ---")
-
+        """            
         # Get caller filepath when no working_directory was set
         if working_directory is None:
             caller_filename = inspect.stack()[1].filename
@@ -76,6 +73,23 @@ class MagneticComponent:
         # Create file paths class in order to handle all paths
         self.file_data = FileData(working_directory)
 
+        # Variable to set silent mode
+        self.verbosity = verbosity
+        self.logger = logging.getLogger("FEMMTLogger")
+        self.logger.setLevel(logging.INFO)
+
+        if not verbosity == Verbosity.ToConsole:
+            gmsh.option.setNumber("General.Terminal", 0)
+
+        if verbosity == Verbosity.ToFile:
+            fh = logging.FileHandler(self.file_data.femmt_log, mode="w")
+            fh.setLevel(logging.INFO)
+            self.logger.addHandler(fh)
+
+        self.femmt_print(f"\n"
+                       f"Initialized a new Magnetic Component of type {component_type.name}\n"
+                       f"--- --- --- ---")
+        
         # To make sure femm is only imported once
         self.femm_is_imported = False
 
@@ -165,11 +179,15 @@ class MagneticComponent:
         self.onelab_client = onelab.client(__file__)
         self.simulation_name = simulation_name
 
+    def femmt_print(self, text: str):
+        if self.verbosity != Verbosity.Silent:
+            self.logger.info(text)
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
     def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
                            case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True, pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                           colors_geometry: Dict = ff.colors_geometry_femmt_default):
+                           colors_geometry: Dict = ff.colors_geometry_femmt_default, flag_insulation: bool = True):
         """
         Starts the thermal simulation using thermal_simulation.py
 
@@ -199,6 +217,11 @@ class MagneticComponent:
 
         self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, pre_visualize_geometry)
 
+
+
+
+        #insulation_tag = self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
+
         if not os.path.exists(self.file_data.e_m_results_log_path):
             # Simulation results file not created
             raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
@@ -225,7 +248,9 @@ class MagneticComponent:
             "winding_tags": self.mesh.ps_cond,
             "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
             "boundary_regions": self.mesh.thermal_boundary_region_tags,
-            "insulations_tag": self.mesh.ps_insulation if len(self.insulation.core_cond) == 4 else None
+            "insulations_tag": self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
+
+
         }
 
         # Core area -> Is needed to estimate the heat flux
@@ -254,7 +279,8 @@ class MagneticComponent:
             "case_volume": self.core.r_outer * case_gap_top + self.core.core_h * case_gap_right + self.core.r_outer * case_gap_bot,
             "show_thermal_fem_results": show_thermal_simulation_results,
             "print_sensor_values": False,
-            "silent": ff.silent
+            "silent": self.verbosity == Verbosity.Silent, # Add verbosity for thermal simulation
+            "flag_insulation": flag_insulation
         }
 
         thermal_simulation.run_thermal(**thermal_parameters)
@@ -299,7 +325,7 @@ class MagneticComponent:
                 onelab_path_wrong = False
                 break
             else:
-                ff.femmt_print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
+                self.femmt_print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
         self.file_data.onelab_folder_path = onelab_path
 
         # Write the path to the config.json
@@ -322,11 +348,15 @@ class MagneticComponent:
 
         # Create model
         self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.winding_windows, self.stray_path,
-                                            self.insulation, self.component_type, len(self.windings))
+                                            self.insulation, self.component_type, len(self.windings), self.verbosity, self.logger)
         self.two_d_axi.draw_model()
 
+
         # Create mesh
-        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
+        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, self.verbosity, self.logger, None)
+        #self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
+
+
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
         """Generates model and mesh.
@@ -399,6 +429,17 @@ class MagneticComponent:
         # print(f"{windings = }")
         self.windings = sorted(windings, key = lambda x: x.winding_number)
 
+        # Print statement was moved here so the silence functionality is not needed in Conductors class.
+        # TODO Can this be even removed?
+        for winding in self.windings:
+            if winding.conductor_type == ConductorType.RoundLitz:
+                self.femmt_print(f"Updated Litz Configuration: \n"
+                    f" ff: {winding.ff} \n"
+                    f" Number of layers/strands: {winding.n_layers}/{winding.n_strands} \n"
+                    f" Strand radius: {winding.strand_radius} \n"
+                    f" Conductor radius: {winding.conductor_radius}\n"
+                    f"---")
+
         # Set excitation parameter lists
         self.current = [None] * len(windings)
         self.current_density = [None] * len(windings)
@@ -432,7 +473,7 @@ class MagneticComponent:
 
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, pre_visualize_geometry: bool = False,
                      save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                     colors_geometry: Dict = ff.colors_geometry_femmt_default):
+                     colors_geometry: Dict = ff.colors_geometry_femmt_default, benchmark: bool = False):
         """
         Create a model from the abstract geometry description inside onelab including optional mesh generation
 
@@ -453,15 +494,25 @@ class MagneticComponent:
             raise Exception("A core class needs to be added to the magnetic component")
         if self.air_gaps is None:
             self.air_gaps = AirGaps(None, None)
-            ff.femmt_print("No air gaps are added")
+            self.femmt_print("No air gaps are added")
         if self.insulation is None:
             raise Exception("An insulation class need to be added to the magnetic component")
         if self.winding_windows is None:
             raise Exception("Winding windows are not set properly. Please check the winding creation")
 
-        self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
-        self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
+        if benchmark:
+            start_time = time.time()
+            self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+            high_level_geo_gen_time = time.time() - start_time
+            start_time = time.time()
+            self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
+            generate_hybrid_mesh_time = time.time() - start_time
 
+            return high_level_geo_gen_time, generate_hybrid_mesh_time
+        else:
+            self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+            self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
+    
     def get_single_complex_permeability(self):
         """
         Function returns the complex permeability.
@@ -470,8 +521,8 @@ class MagneticComponent:
         """
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase(ff.silent).get_material_attribute(material_name=self.core.material, attribute="initial_permeability")
-            ff.femmt_print(f"{complex_permeability = }")
+            complex_permeability = mu_0 * mdb.MaterialDatabase(self.silent).get_material_attribute(material_name=self.core.material, attribute="initial_permeability")
+            self.femmt_print(f"{complex_permeability = }")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
         if self.core.permeability_type == PermeabilityType.RealValue:
@@ -488,26 +539,25 @@ class MagneticComponent:
 
         :return: None
         """
-        if self.frequency != 0:
-            if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
-                epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
-                                                                                              material_name="N49", # TODO: remove hardcode!!!
-                                                                                              datasource=self.core.permittivity["datasource"],
-                                                                                              datatype=self.core.permittivity["datatype"],
-                                                                                              measurement_setup=self.core.permittivity["measurement_setup"],
-                                                                                              interpolation_type="linear")
+        if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
+            epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
+                                                                                          material_name="N49",
+                                                                                          datasource=self.core.permittivity["datasource"],
+                                                                                          datatype=self.core.permittivity["datatype"],
+                                                                                          measurement_setup=self.core.permittivity["measurement_setup"],
+                                                                                          interpolation_type="linear")
 
-                complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
-                ff.femmt_print(f"{complex_permittivity = }\n"
-                               f"{epsilon_r = }\n"
-                               f"{epsilon_phi_deg = }")
+            complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
+            self.femmt_print(f"{complex_permittivity = }\n"
+                           f"{epsilon_r = }\n"
+                           f"{epsilon_phi_deg = }")
 
-                ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, frequency=self.frequency, complex_permeability=self.get_single_complex_permeability(),
-                                       complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+            ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, frequency=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                                   complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5, silent=self.silent)
 
-            else:
-                ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, frequency=self.frequency, complex_permeability=self.get_single_complex_permeability(),
-                                       complex_permittivity=0, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+        else:
+            ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, frequency=self.frequency, complex_permeability=self.get_single_complex_permeability(),
+                                   complex_permittivity=0, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5, silent=self.silent)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
@@ -579,7 +629,7 @@ class MagneticComponent:
         return self.calculate_core_volume() * volumetric_mass_density
 
     def get_wire_distances(self) -> List[List[float]]:
-        """Helper function which returns the distance (radius) of each conductor to the y-axis 
+        """Helper function which returns the distance (radius) of each conductor to the y-axis
 
         :return: Wire distances
         :rtype: List[List[float]]
@@ -690,7 +740,7 @@ class MagneticComponent:
                 raise ValueError(
                     "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
 
-        ff.femmt_print(f"\n---\n"
+        self.femmt_print(f"\n---\n"
               f"Excitation: \n"
               f"Frequency: {frequency}\n"
               f"Current(s): {amplitude_list}\n"
@@ -752,8 +802,8 @@ class MagneticComponent:
                 elif self.windings[num].conductor_type == ConductorType.RoundSolid:
                     self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                 else:
-                    ff.femmt_print("Reduced Frequency does not have a physical value here")
-                    ff.femmt_print(self.windings[num].conductor_type)
+                    self.femmt_print("Reduced Frequency does not have a physical value here")
+                    self.femmt_print(self.windings[num].conductor_type)
                     self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
         else:
             # DC case
@@ -765,7 +815,7 @@ class MagneticComponent:
         """
         Initializes an onelab client. Provides the GetDP based solver with the created mesh file.
         """
-        ff.femmt_print(f"\n---\n"
+        self.femmt_print(f"\n---\n"
               f"Initialize ONELAB API\n"
               f"Run Simulation\n")
 
@@ -780,14 +830,18 @@ class MagneticComponent:
 
         os.chdir(self.file_data.working_directory)
 
-        if ff.silent:
+        if self.verbosity == Verbosity.Silent:
             verbose = "-verbose 1"
         else:
             verbose = "-verbose 5"
 
+        to_file_str = ""
+        if self.verbosity == Verbosity.ToFile:
+            to_file_str = " > " + self.file_data.getdp_log
+
         # Run simulations as sub clients (non-blocking??)
         getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
-        self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
+        self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
 
     def write_simulation_parameters_to_pro_files(self):
         """
@@ -800,8 +854,8 @@ class MagneticComponent:
 
         """
         # All shared control variables and parameters are passed to a temporary Prolog file
-        ff.femmt_print(f"\n---\n"
-              f"Write simulation parameters to .pro files (file communication).\n")
+        self.femmt_print(f"\n---\n"
+              f"Write simulation parameters to .pro files (File Communication)\n")
 
         # Write initialization parameters for simulation in 'Parameter.pro' file
         self.write_electro_magnetic_parameter_pro()
@@ -810,7 +864,7 @@ class MagneticComponent:
         self.write_electro_magnetic_post_pro()
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True):
+                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True, benchmark: bool = False):
         """
         Start a _single_ electromagnetic ONELAB simulation.
 
@@ -826,6 +880,8 @@ class MagneticComponent:
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
         # there is another ValueError rising inside excitation()-method for safety (but after meshing).
+        if type(current) is not list:
+            raise Exception("The current must be given in a list.")
         for current_value in current:
             if current_value < 0:
                 raise ValueError(
@@ -833,16 +889,40 @@ class MagneticComponent:
 
 
         phi_deg = phi_deg or []
+        if benchmark:
+            start_time = time.time()
+            self.mesh.generate_electro_magnetic_mesh()
+            generate_electro_magnetic_mesh_time = time.time() - start_time
 
-        self.mesh.generate_electro_magnetic_mesh()
-        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
-        self.check_model_mqs_condition()
-        self.write_simulation_parameters_to_pro_files()
-        self.generate_load_litz_approximation_parameters()
-        self.simulate()
-        self.calculate_and_write_log()  # TODO: reuse center tapped
-        if show_fem_simulation_results:
-            self.visualize()
+            start_time = time.time()
+            self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
+            self.check_model_mqs_condition()
+            self.write_simulation_parameters_to_pro_files()
+            self.pre_simulate()
+            prepare_simulation_time = time.time() - start_time
+
+            start_time = time.time()
+            self.simulate()
+            real_simulation_time = time.time() - start_time
+
+            start_time = time.time()
+            self.calculate_and_write_log()  # TODO: reuse center tapped
+            logging_time = time.time() - start_time
+            if show_fem_simulation_results:
+                self.visualize()
+
+            return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
+        else:
+            self.mesh.generate_electro_magnetic_mesh()
+            self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
+            self.check_model_mqs_condition()
+            self.write_simulation_parameters_to_pro_files()
+            self.generate_load_litz_approximation_parameters()
+            self.simulate()
+            self.calculate_and_write_log()  # TODO: reuse center tapped
+            if show_fem_simulation_results:
+                self.visualize()
+
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last_fem_simulation: bool = False,
@@ -1285,35 +1365,35 @@ class MagneticComponent:
             for x in range(0, len(flux_linkages)):
                 for y in range(0, len(flux_linkages)):
                     string_to_print += f"Phi_{x+1}{y+1} = {flux_linkages[x][y]}     Induced by I_{y+1} in Winding{x+1}\n"
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"Fluxes: ")
-            ff.femmt_print(string_to_print)
+            self.femmt_print(string_to_print)
 
         def visualize_self_inductances(self_inductances):
             string_to_print = ""
             for x in range(0, len(flux_linkages)):
                 string_to_print += f"L_{x+1}_{x+1} = {self_inductances[x]}\n"
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"Self Inductances: ")
-            ff.femmt_print(string_to_print)
+            self.femmt_print(string_to_print)
 
         def visualize_coupling_factors(coupling_matrix):
             string_to_print = ""
             for x in range(0, len(flux_linkages)):
                 for y in range(0, len(coupling_matrix)):
                     string_to_print += f"K_{x + 1}{y + 1} = Phi_{x + 1}{y + 1} / Phi_{y + 1}{y + 1} = {coupling_matrix[x][y]}\n"
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"Coupling Factors: ")
-            ff.femmt_print(string_to_print)
+            self.femmt_print(string_to_print)
 
         def visualize_mean_coupling_factors(mean_coupling_factors):
             string_to_print = ""
             for x in range(0, len(mean_coupling_factors)):
                 for y in range(0, len(mean_coupling_factors)):
                     string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} / Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"Mean Coupling Factors: ")
-            ff.femmt_print(string_to_print)
+            self.femmt_print(string_to_print)
 
         def visualize_mean_mutual_inductances(inductance_matrix):
             """e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
@@ -1325,9 +1405,9 @@ class MagneticComponent:
                         pass
                     else:
                         string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"Mean Mutual Inductances: ")
-            ff.femmt_print(string_to_print)
+            self.femmt_print(string_to_print)
 
         def visualize_mutual_inductances(self_inductances, coupling_factors):
             """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
@@ -1339,9 +1419,9 @@ class MagneticComponent:
                         pass
                     else:
                         string_to_print += f"M_{x + 1}{y + 1} = {self_inductances[y].real * coupling_factors[x][y]}\n"
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"Mutual Inductances: ")
-            ff.femmt_print(string_to_print)
+            self.femmt_print(string_to_print)
 
         def visualize_inductance_matrix_coefficients(inductance_matrix):
             """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
@@ -1353,9 +1433,9 @@ class MagneticComponent:
                         string_to_print += f"L_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
                     else:
                         string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"Inductance Matrix Coefficients: ")
-            ff.femmt_print(string_to_print)
+            self.femmt_print(string_to_print)
 
         def visualize_inductance_matrix(inductance_matrix):
             """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
@@ -1366,9 +1446,9 @@ class MagneticComponent:
                     string_to_print += f"{np.round(inductance_matrix[x][y].real, 12)} "
                 string_to_print += f"\n"
 
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"Inductance Matrix: ")
-            ff.femmt_print(string_to_print)
+            self.femmt_print(string_to_print)
 
         if len(self.windings) == 1:
             raise NotImplementedError("For inductor, this function will not be implemented. See 'flux_over_current' in 'log_electro_magnetic.json' ")
@@ -1400,7 +1480,6 @@ class MagneticComponent:
                 # print(np.array(inductance_matrix).imag)
 
         if len(self.windings) == 2:
-
             # Self inductances
             self.L_1_1 = self_inductances[0].real
             self.L_2_2 = self_inductances[1].real
@@ -1421,7 +1500,7 @@ class MagneticComponent:
             #         secondary_turns += vww.turns[1]
             # n = primary_turns / secondary_turns
             #
-            # ff.femmt_print(f"\n"
+            # self.femmt_print(f"\n"
             #                f"Turns Ratio:\n"
             #                f"n = {n}\n"
             #                )
@@ -1430,7 +1509,7 @@ class MagneticComponent:
             # l_s1 = self.L_1_1 - self.M * n
             # l_s2 = self.L_2_2 - self.M / n
             # l_h = self.M * n
-            # ff.femmt_print(f"\n"
+            # self.femmt_print(f"\n"
             #                f"T-ECD (primary side transformed):\n"
             #                f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
             #                f"    - Transformation Ratio: n\n"
@@ -1448,7 +1527,7 @@ class MagneticComponent:
             self.L_s_conc = (1 - k ** 2) * self.L_1_1
             self.L_h_conc = self.M ** 2 / self.L_2_2
 
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                            f"T-ECD (primary side concentrated):\n"
                            f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
                            f"    - Transformation Ratio: n\n"
@@ -1495,7 +1574,7 @@ class MagneticComponent:
             self.L_s13 = self.L_s1 + self.n_13**2 * self.L_s3
             self.L_s23 = self.L_s2 + (self.n_13/self.n_12)**2 * self.L_s3
 
-            ff.femmt_print(f"\n"
+            self.femmt_print(f"\n"
                 f"T-ECD (Lh on primary side):\n"
                 f"    - Primary Side Stray Inductance: L_s1\n"
                 f"    - Secondary Side Stray Inductance: L_s2\n"
@@ -1515,6 +1594,23 @@ class MagneticComponent:
                 f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
                 f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
                 )
+            """
+            # Stray Inductance concentrated on Primary Side
+            self.n_conc = self.M / self.L_2_2
+            self.L_s_conc = (1 - k ** 2) * self.L_1_1
+            self.L_h_conc = self.M ** 2 / self.L_2_2
+
+            self.femmt_print(f"\n"
+                f"T-ECD (primary side concentrated):\n"
+                f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                f"    - Transformation Ratio: n\n"
+                f"    - (Primary) Stray Inductance: L_s1\n"
+                f"    - Primary Side Main Inductance: L_h\n"
+                f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
+                f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
+                f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
+                )
+            """
 
             inductances = ThreeWindingTransformerInductance(
                 M_12 = self.M_12,
@@ -1680,12 +1776,12 @@ class MagneticComponent:
                 text_file.write(f"Val_EE_{num + 1} = {self.voltage[num]};\n")
                 raise NotImplementedError
 
-            ff.femmt_print(f"Cell surface area: {self.windings[num].a_cell} \n"
+            self.femmt_print(f"Cell surface area: {self.windings[num].a_cell} \n"
                   f"Reduced frequency: {self.red_freq[num]}")
 
             if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == ConductorType.RoundLitz:
                 # TODO: Allow higher reduced frequencies
-                ff.femmt_print(f"Litz Coefficients only implemented for X<=1.25")
+                self.femmt_print(f"Litz Coefficients only implemented for X<=1.25")
                 raise Warning
             # Reduced Frequency
             text_file.write(f"Rr_{num + 1} = {self.red_freq[num]};\n")
@@ -1747,6 +1843,7 @@ class MagneticComponent:
             #text_file.write(f"DirResValsTertiary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Tertiary/\";\n")
         text_file.write(f"DirResCirc = \"{self.file_data.e_m_circuit_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"OptionPos = \"{self.file_data.results_folder_path.replace(backslash, '/')}/option.pos\";\n")
+        text_file.write(f"DirStrandCoeff = \"{self.file_data.e_m_strands_coefficients_folder_path.replace(backslash, '/')}/\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":
@@ -1808,7 +1905,7 @@ class MagneticComponent:
                 sweep_dict["f"] = self.frequency
 
             # Winding names are needed to find the logging path
-            winding_name = ["Winding_1", "Winding_2", "Winding_3", "Winding_4", "Winding_5", "Winding_6", "Winding_7", "Winding_8", "Winding_9", "Winding_10"]
+            winding_name = ["Winding_" + str(i) for i in range(1, len(self.windings) + 1)]
 
             for winding in range(len(self.windings)):
 
@@ -2008,7 +2105,7 @@ class MagneticComponent:
         - For example current density, ohmic losses or the magnetic field density can be visualized
         """
         # ---------------------------------------- Visualization in gmsh ---------------------------------------
-        ff.femmt_print(f"\n---\n"
+        self.femmt_print(f"\n---\n"
               f"Visualize fields in GMSH front end:\n")
 
         # gmsh.initialize()
@@ -2043,7 +2140,7 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
             gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
-            ff.femmt_print(gmsh.option.getNumber(f"View[{view}].Max"))
+            self.femmt_print(gmsh.option.getNumber(f"View[{view}].Max"))
             view += 1
 
         if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
@@ -2154,13 +2251,13 @@ class MagneticComponent:
                 # if os.path.isfile(self.path +
                 # f"/Strands_Coefficients/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
                 if os.path.exists(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "coeff", f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
-                    ff.femmt_print("Coefficients for stands approximation are found.")
+                    self.femmt_print("Coefficients for stands approximation are found.")
 
                 else:
                     # Rounding X to fit it with corresponding parameters from the database
                     X = self.red_freq[num]
                     X = np.around(X, decimals=3)
-                    ff.femmt_print(f"Rounded Reduced frequency X = {X}")
+                    self.femmt_print(f"Rounded Reduced frequency X = {X}")
                     self.create_strand_coeff(num)
 
     def create_strand_coeff(self, winding_number: int) -> None:
@@ -2176,7 +2273,7 @@ class MagneticComponent:
         :param winding_number: Winding number
         :type winding_number: int
         """
-        ff.femmt_print(f"\n"
+        self.femmt_print(f"\n"
               f"Pre-Simulation\n"
               f"-----------------------------------------\n"
               f"Create coefficients for strands approximation\n")
@@ -2192,7 +2289,7 @@ class MagneticComponent:
         text_file.close()
         cell_geo = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.geo")
 
-        verbose = "-verbose 1" if ff.silent else "-verbose 5"
+        verbose = "-verbose 1" if self.silent else "-verbose 5"
 
         # Run gmsh as a sub client
         gmsh_client = os.path.join(self.file_data.onelab_folder_path, "gmsh")
@@ -2305,7 +2402,7 @@ class MagneticComponent:
                 self.core.sigma = 1 / 6
 
 
-        ff.femmt_print(f"{self.core.permeability_type=}, {self.core.sigma=}")
+        self.femmt_print(f"{self.core.permeability_type=}, {self.core.sigma=}")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         elif self.core.permeability_type == PermeabilityType.RealValue:
@@ -2317,8 +2414,8 @@ class MagneticComponent:
         for i in range(0, len(self.windings)):
             if self.windings[i].conductor_type == ConductorType.RoundLitz:
                 femm.mi_addmaterial('Litz', 1, 1, 0, 0, self.windings[i].cond_sigma/1e6, 0, 0, 1, 5, 0, 0, self.windings[i].n_strands, 2 * 1000 * self.windings[i].strand_radius)  # type := 5. last argument
-                ff.femmt_print(f"Number of strands: {self.windings[i].n_strands}")
-                ff.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
+                self.femmt_print(f"Number of strands: {self.windings[i].n_strands}")
+                self.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
             if self.windings[i].conductor_type == ConductorType.RoundSolid:
                 femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[i].cond_sigma/1e6, 0, 0, 1, 0, 0, 0, 0, 0)
 
@@ -2507,9 +2604,9 @@ class MagneticComponent:
         # If we were interested in the flux density at specific positions,
         # we could inquire at specific points directly:
         b0 = femm.mo_getb(0, 0)
-        ff.femmt_print('Flux density at the center of the bar is %g T' % np.abs(b0[1]))
+        self.femmt_print('Flux density at the center of the bar is %g T' % np.abs(b0[1]))
         b1 = femm.mo_getb(0.01, 0.05)
-        ff.femmt_print(f"Flux density at r=1cm, z=5cm is {np.abs(b1[1])} T")
+        self.femmt_print(f"Flux density at r=1cm, z=5cm is {np.abs(b1[1])} T")
 
         # The program will report the terminal properties of the circuit:
         # current, voltage, and flux linkage
@@ -2521,7 +2618,7 @@ class MagneticComponent:
         # If we were interested in inductance, it could be obtained by
         # dividing flux linkage by current
         L = 1000 * np.abs(vals[2]) / np.abs(vals[0])
-        ff.femmt_print('The self-inductance of the coil is %g mH' % L)
+        self.femmt_print('The self-inductance of the coil is %g mH' % L)
 
         # Or we could, for example, plot the results along a line using
         zee = []
@@ -2558,11 +2655,11 @@ class MagneticComponent:
 
         log = {}
 
-        # ff.femmt_print(hyst_loss)
+        # self.femmt_print(hyst_loss)
         # tmp = femm.mo_getcircuitproperties('Primary')
-        # ff.femmt_print(tmp)
+        # self.femmt_print(tmp)
         # self.tot_loss_femm = 0.5 * tmp[0] * tmp[1]
-        # ff.femmt_print(self.tot_loss_femm)
+        # self.femmt_print(self.tot_loss_femm)
 
         # Write Circuit Properties
         # log["Circuit Properties"] = femm.mo_getcircuitproperties('Primary')

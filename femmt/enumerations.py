@@ -1,5 +1,13 @@
 from enum import IntEnum, Enum
 
+class Verbosity(IntEnum):
+    """State of verbosity
+    """
+    # TODO Currently in ToFile the FEMMT console outputs are just supressed not written to a file
+    # TODO Add Verbosity for materialdatabase
+    Silent = 1 # No outputs
+    ToConsole = 2 # Outputs to console
+    ToFile = 3 # Outputs to file
 
 class WindingTag(IntEnum):
     """Names of windings

@@ -34,7 +34,7 @@ IRON                = 120000;
 //physical numbers of conductors in n transformer
 For n In {1:n_windings}
        iCOND~{n} = 130000 + 1000*(n-1);
-       istrandedCOND~{n} = 140000 + 1000*(n-1);
+       istrandedCOND~{n} = 150000 + 1000*(n-1);
 EndFor
 
 
@@ -81,7 +81,7 @@ Group{
       EndFor
   EndFor
    // Add this winding to the core domain region
-  For n In {1:n_windings}  //added by Othman
+  For n In {1:n_windings}
       DomainC += Region[{Winding~{n}}] ;
   EndFor
    // Add the iron region to the core domain region
@@ -258,10 +258,10 @@ Function {
   For n In {1:n_windings}
       If(Flag_HomogenisedModel~{n})
          // Secondary
-         file_ZSkinRe~{n}  = Sprintf("Strands_Coefficients/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
-         file_ZSkinIm~{n}  = Sprintf("Strands_Coefficients/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
-         file_NuProxRe~{n} = Sprintf("Strands_Coefficients/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
-         file_NuProxIm~{n} = Sprintf("Strands_Coefficients/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
+         file_ZSkinRe~{n}  = Sprintf(StrCat[DirStrandCoeff, "coeff/pI_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
+         file_ZSkinIm~{n}  = Sprintf(StrCat[DirStrandCoeff, "coeff/qI_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
+         file_NuProxRe~{n} = Sprintf(StrCat[DirStrandCoeff, "coeff/qB_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
+         file_NuProxIm~{n} = Sprintf(StrCat[DirStrandCoeff, "coeff/pB_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
          skin_rhor_list~{n}() = ListFromFile[ file_ZSkinRe~{n} ];
          skin_rhoi_list~{n}() = ListFromFile[ file_ZSkinIm~{n} ];
          prox_nur_list~{n}()  = ListFromFile[ file_NuProxRe~{n} ];

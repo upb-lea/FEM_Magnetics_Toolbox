@@ -124,13 +124,6 @@ class Conductor:
         self.n_layers = ff.litz_calculate_number_layers(number_strands)
         self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
-        ff.femmt_print(f"Updated Litz Configuration: \n"
-                       f" ff: {self.ff} \n"
-                       f" Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
-                       f" Strand radius: {self.strand_radius} \n"
-                       f" Conductor radius: {self.conductor_radius}\n"
-                       f"---")
-
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
@@ -159,7 +152,6 @@ class Core:
     frequency > 0: mu_r_abs is used
     """
 
-
     # Standard material data
     material: str
 
@@ -185,6 +177,8 @@ class Core:
     datasource: str  # type of data to be accessed ( datasheet or measurement)
 
     file_path_to_solver_folder: str  # location to create temporary pro file
+
+    mdb_verbosity: Verbosity
 
     def __init__(self,
                  # dimensions
@@ -212,7 +206,8 @@ class Core:
                  sigma: float = None,
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
-                 **kwargs):
+                 mdb_verbosity: Verbosity = Verbosity.ToConsole,
+                 **kwargs): # TODO Is this kwargs really needed? Can this be removed?
         """TODO Doc
 
         :param core_inner_diameter: diameter of the inner core
@@ -234,6 +229,8 @@ class Core:
         :param correct_outer_leg: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
         :type correct_outer_leg: bool, optional
         """
+        self.mdb_verbosity = mdb_verbosity
+
         # Set parameters
         self.core_type = core_type  # Basic shape of magnetic conductor
 
@@ -268,7 +265,7 @@ class Core:
         # Material Parameters
         # General
         # Initialize database
-        self.material_database = mdb.MaterialDatabase(ff.silent)
+        self.material_database = mdb.MaterialDatabase(self.mdb_verbosity == Verbosity.Silent)
         self.material = material
         self.file_path_to_solver_folder = None
         self.temperature = temperature
@@ -293,10 +290,11 @@ class Core:
             if self.material != "custom":
                 self.permeability_type = PermeabilityType.FromData
                 self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
-                                                                             attribute="initial_permeability")
+                                                                              attribute="initial_permeability")
 
-                steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material, type="Steinmetz",
-                                                              datasource="measurements")
+                steinmetz_data = self.material_database.get_steinmetz_data(material_name=self.material,
+                                                                           type="Steinmetz",
+                                                                           datasource="measurements")
                 self.ki = steinmetz_data['ki']
                 self.alpha = steinmetz_data['alpha']
                 self.beta = steinmetz_data['beta']
@@ -305,32 +303,32 @@ class Core:
                 self.ki = steinmetz_parameter[0]
                 self.alpha = steinmetz_parameter[1]
                 self.beta = steinmetz_parameter[2]
-                ff.femmt_print(f"{self.ki, self.alpha, self.beta = }")
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
         # if loss_approach == LossApproach.Generalized_Steinmetz:
         #     raise NotImplemented
-            # self.sigma = 0
-            # if self.material != "custom":
-            #     self.permeability_type = PermeabilityType.FromData
-            #     self.mu_rel = Database.get_initial_permeability(material_name=self.material)
-            #     self.t_rise = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
-            #         't_rise']
-            #     self.t_fall = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
-            #         't_fall']
-            # elif self.material == "custom":  # ----generalized_steinmetz_parameter consist of list of ki, alpha , beta from the user
-            #     self.t_rise = generalized_steinmetz_parameter[0]
-            #     self.t_fall = generalized_steinmetz_parameter[1]
+        # self.sigma = 0
+        # if self.material != "custom":
+        #     self.permeability_type = PermeabilityType.FromData
+        #     self.mu_rel = Database.get_initial_permeability(material_name=self.material)
+        #     self.t_rise = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
+        #         't_rise']
+        #     self.t_fall = Database.get_steinmetz_data(material_name=self.material, type="Generalized_Steinmetz")[
+        #         't_fall']
+        # elif self.material == "custom":  # ----generalized_steinmetz_parameter consist of list of ki, alpha , beta from the user
+        #     self.t_rise = generalized_steinmetz_parameter[0]
+        #     self.t_fall = generalized_steinmetz_parameter[1]
 
         if loss_approach == LossApproach.LossAngle:
 
             if self.permittivity["datasource"] == MaterialDataSource.Custom:
                 self.sigma = sigma  # from user
             else:
-                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
+                self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
+                                                                               attribute="resistivity")
 
             if self.permeability["datasource"] == MaterialDataSource.Custom:
-                 # this is a service for the user:
+                # this is a service for the user:
                 # In case of not giving a fixed loss angle phi_mu_deg,
                 # the initial permeability from datasheet is used (RealValue)
                 if phi_mu_deg is not None and phi_mu_deg != 0:
@@ -339,7 +337,8 @@ class Core:
                     self.permeability_type = PermeabilityType.RealValue
             else:
                 self.permeability_type = PermeabilityType.FromData
-                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material, attribute="initial_permeability")
+                self.mu_r_abs = self.material_database.get_material_attribute(material_name=self.material,
+                                                                              attribute="initial_permeability")
 
         else:
             raise Exception("Loss approach {loss_approach.value} is not implemented")
@@ -371,20 +370,27 @@ class Core:
         :type frequency: float
         """
         if self.permittivity["datasource"] == MaterialDataSource.Measurement:
-            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature, frequency=frequency, material_name=self.material,
-                                                                                 datasource=self.permittivity["datasource"],
-                                                                                 measurement_setup=self.permittivity["measurement_setup"],
+            epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature,
+                                                                                 frequency=frequency,
+                                                                                 material_name=self.material,
+                                                                                 datasource=self.permittivity[
+                                                                                     "datasource"],
+                                                                                 measurement_setup=self.permittivity[
+                                                                                     "measurement_setup"],
                                                                                  datatype=self.permittivity["datatype"])
-            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
+            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)),
+                                                                        np.sin(np.deg2rad(phi_epsilon_deg)))
             self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
 
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
+            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
+                                                                           attribute="resistivity")
 
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
-        ff.femmt_print(f"{self.permeability['datasource'] = }")
+        if self.mdb_verbosity == Verbosity.ToConsole:
+            print(f"{self.permeability['datasource'] = }")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
                                                              datasource=self.permeability["datasource"],
@@ -468,7 +474,8 @@ class AirGaps:
         self.number = 0
         self.air_gap_settings = []
 
-    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0, stacked_position: StackedPosition = None):
+    def add_air_gap(self, leg_position: AirGapLegPosition, height: float, position_value: Optional[float] = 0,
+                    stacked_position: StackedPosition = None):
         """
         Brings a single air gap to the core.
 
@@ -527,7 +534,8 @@ class AirGaps:
                 self.midpoints.append([0, 0, height])
                 self.number += 1
             if stacked_position == StackedPosition.Top:
-                self.midpoints.append([0, self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + height / 2, height])  # TODO: could also be done arbitrarily
+                self.midpoints.append([0, self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4 + height / 2,
+                                       height])  # TODO: could also be done arbitrarily
                 self.number += 1
 
         else:
@@ -560,12 +568,15 @@ class Insulation:
 
     In general, it is not necessary to add an insulation object at all when no insulation is needed.
     """
-    cond_cond: List[List[float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
-    core_cond: List[float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
+    cond_cond: List[List[
+        float]]  # two-dimensional list with size NxN, where N is the number of windings (symmetrical isolation matrix)
+    core_cond: List[
+        float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
 
     insulation_delta: float
+    flag_insulation: bool = True
 
-    def __init__(self):
+    def __init__(self, flag_insulation: bool = True):
         """Creates an insulation object.
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
@@ -575,6 +586,10 @@ class Insulation:
         # Default value for all insulations
         # If the gaps between insulations and core (or windings) are to big/small just change this value
         self.insulation_delta = 0.00001
+        self.flag_insulation = flag_insulation
+
+    def set_flag_insulation(self, flag):  # to differentiate between the simulation with and without insulation
+        self.flag_insulation = flag
 
     def add_winding_insulations(self, inner_winding_insulation: List[List[float]]):
         """Adds insulations between turns of one winding and insulation between virtual winding windows.
@@ -608,6 +623,7 @@ class Insulation:
         if right_core is None:
             right_core = 0
 
+        self.core_cond = [top_core, bot_core, left_core, right_core]
         self.core_cond = [top_core, bot_core, left_core, right_core]
 
     def to_dict(self):
@@ -650,7 +666,8 @@ class VirtualWindingWindow:
     right_bound: float
 
     winding_type: WindingType
-    winding_scheme: Union[WindingScheme, InterleavedWindingScheme]  # Either WindingScheme or InterleavedWindingScheme (Depending on the winding)
+    winding_scheme: Union[
+        WindingScheme, InterleavedWindingScheme]  # Either WindingScheme or InterleavedWindingScheme (Depending on the winding)
     wrap_para: WrapParaType
 
     windings: List[Conductor]
@@ -694,7 +711,8 @@ class VirtualWindingWindow:
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
         self.windings = [conductor]
-        self.turns = [0] * (conductor.winding_number + 1)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
+        self.turns = [0] * (
+                    conductor.winding_number + 1)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
         # self.turns = [0] * (3)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
         self.turns.insert(conductor.winding_number, turns)
         self.winding_is_set = True
@@ -703,7 +721,8 @@ class VirtualWindingWindow:
         if winding_scheme is WindingScheme.FoilVertical and wrap_para_type is None:
             raise Exception("When winding scheme is FoilVertical a wrap para type must be set.")
 
-    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int, winding_scheme: InterleavedWindingScheme):
+    def set_interleaved_winding(self, conductor1: Conductor, turns1: int, conductor2: Conductor, turns2: int,
+                                winding_scheme: InterleavedWindingScheme):
         """Sets an interleaved winding to the current virtual winding window. An interleaved winding always contains two conductors.
         If a conductor is primary or secondary is determined by the value of the winding number of the conductor. The order of the function parameters
         is irrelevant.
@@ -737,7 +756,8 @@ class VirtualWindingWindow:
         # self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
         #                                                           secondary_to_secondary=2e-4,
         #                                                           primary_to_secondary=5e-4)
-        self.winding_insulation = [isolation_primary_to_primary, isolation_secondary_to_secondary, isolation_primary_to_secondary]
+        self.winding_insulation = [isolation_primary_to_primary, isolation_secondary_to_secondary,
+                                   isolation_primary_to_secondary]
         self.winding_type = WindingType.CenterTappedGroup
         self.winding_scheme = None  # TODO: centertapped maybe add vertical or sth. like this
         self.windings = [conductor1, conductor2, conductor3]
@@ -777,7 +797,7 @@ class VirtualWindingWindow:
                 "turns": self.turns,
             }
 
-    # TODO Since in combine_vww it is necessary to compare vwws maybe a __eq__ and __ne__ 
+    # TODO Since in combine_vww it is necessary to compare vwws maybe a __eq__ and __ne__
     # function should be implemented.
 
 
@@ -791,7 +811,7 @@ class WindingWindow:
     max_right_bound: float
 
     # 4 different insulations which can be Null if there is a vww overlapping
-    # The lists contain 4 values x1, y1, x2, y2 where (x1, y1) is the lower left and (x2, y2) the upper right point 
+    # The lists contain 4 values x1, y1, x2, y2 where (x1, y1) is the lower left and (x2, y2) the upper right point
     top_iso: List[float]
     left_iso: List[float]
     bot_iso: List[float]
@@ -833,7 +853,8 @@ class WindingWindow:
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - insulations.core_cond[0]
+            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - \
+                                 insulations.core_cond[0]
             self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
@@ -846,13 +867,14 @@ class WindingWindow:
             "max_top_bound": self.max_top_bound,
             "max_left_bound": self.max_left_bound,
             "max_right_bound": self.max_right_bound,
-            "virtual_winding_windows": [virtual_winding_window.to_dict() for virtual_winding_window in self.virtual_winding_windows],
+            "virtual_winding_windows": [virtual_winding_window.to_dict() for virtual_winding_window in
+                                        self.virtual_winding_windows],
         }
-
 
     def split_window(self, split_type: WindingWindowSplit, split_distance: float = 0,
                      horizontal_split_factor: float = 0.5, vertical_split_factor: float = 0.5,
-                     top_bobbin: float = None, bot_bobbin: float = None, left_bobbin: float = None, right_bobbin: float = None) -> Tuple[VirtualWindingWindow]:
+                     top_bobbin: float = None, bot_bobbin: float = None, left_bobbin: float = None,
+                     right_bobbin: float = None) -> Tuple[VirtualWindingWindow]:
         """Creates up to 4 virtual winding windows depending on the split type and the horizontal and vertical split factors.
         The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
         Not every value is needed for every split type:
@@ -860,7 +882,7 @@ class WindingWindow:
         - HorizontalSplit: Horizontal split factor needed
         - VerticalSplit: Vertical split factor needed
         - HorizontalAndVerticalSplit: Both split factors needed
-        
+
         Up to 4 virtual winding windows are returned:
         - NoSplit: complete
         - HorizontalSplit: left, right
@@ -888,13 +910,14 @@ class WindingWindow:
             air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
             max_pos = max(air_gap_2_position, air_gap_1_position)
             min_pos = min(air_gap_2_position, air_gap_1_position)
-            distance = max_pos - min_pos    # TODO: this is set in accordance to the midpoint of the air gap:
-                                            # TODO: should be changed to the core-cond isolation
+            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
+            # TODO: should be changed to the core-cond isolation
             horizontal_split = min_pos + distance / 2
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
-            horizontal_split = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
+            horizontal_split = self.max_top_bound - abs(
+                self.max_bot_bound - self.max_top_bound) * horizontal_split_factor
             vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
 
         # Check for every possible split type and return the corresponding VirtualWindingWindows
@@ -983,6 +1006,117 @@ class WindingWindow:
             return top_left, top_right, bot_left, bot_right
         else:
             raise Exception(f"Winding window split type {split_type} not found")
+
+    def NCellsSplit(self, split_distance: float = 0, horizontal_split_factors: list[float] = None,
+                    vertical_split_factor: float = 0.5):
+        self.vertical_split_factor = vertical_split_factor
+        # Convert horizontal_split_factors to a numpy array
+        horizontal_split_factors = np.array(horizontal_split_factors)
+        if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
+            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
+            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
+            max_pos = max(air_gap_2_position, air_gap_1_position)
+            min_pos = min(air_gap_2_position, air_gap_1_position)
+            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
+            # TODO: should be changed to the core-cond isolation
+            horizontal_splits = min_pos + distance / 2
+            vertical_split = self.max_left_bound + (
+                    self.max_right_bound - self.max_left_bound) * vertical_split_factor
+            split_distance = distance  # here, the distance between the two vwws is set automatically
+        else:
+            horizontal_splits = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * np.array(
+                horizontal_split_factors)
+            # horizontal_splits = self.max_top_bound - np.abs(self.max_bot_bound - self.max_top_bound) * np.array(horizontal_split_factors)
+
+            vertical_split = self.max_left_bound + (
+                    self.max_right_bound - self.max_left_bound) * vertical_split_factor
+        # Initialize lists for Left_cells, Right_cells and virtual_winding_windows
+        self.Left_cells = []
+        self.Right_cells = []
+        self.virtual_winding_windows = []
+        # Create the first pair of virtual winding windows
+        self.Left_cells.append(VirtualWindingWindow(
+            bot_bound=horizontal_splits[0] + split_distance / 2,
+            top_bound=self.max_top_bound,
+            left_bound=self.max_left_bound,
+            right_bound=vertical_split - split_distance / 2))
+
+        self.Right_cells.append(VirtualWindingWindow(
+            bot_bound=horizontal_splits[0] + split_distance / 2,
+            top_bound=self.max_top_bound,
+            left_bound=vertical_split + split_distance / 2,
+            right_bound=self.max_right_bound))
+
+        # Create the remaining pairs of virtual winding windows
+        for i in range(1, len(horizontal_splits)):
+            self.Left_cells.append(VirtualWindingWindow(
+                bot_bound=horizontal_splits[i] + split_distance / 2,
+                top_bound=horizontal_splits[i - 1] + split_distance / 2,
+                left_bound=self.max_left_bound,
+                right_bound=vertical_split - split_distance / 2))
+            self.Right_cells.append(VirtualWindingWindow(
+                bot_bound=horizontal_splits[i] + split_distance / 2,
+                top_bound=horizontal_splits[i - 1] + split_distance / 2,
+                left_bound=vertical_split + split_distance / 2,
+                right_bound=self.max_right_bound))
+
+        # Create the last pair of virtual winding windows
+        self.Left_cells.append(VirtualWindingWindow(
+            bot_bound=self.max_bot_bound,
+            top_bound=horizontal_splits[-1] - split_distance / 2,
+            left_bound=self.max_left_bound,
+            right_bound=vertical_split - split_distance / 2))
+        self.Right_cells.append(VirtualWindingWindow(
+            bot_bound=self.max_bot_bound,
+            top_bound=horizontal_splits[-1] - split_distance / 2,
+            left_bound=vertical_split + split_distance / 2,
+            right_bound=self.max_right_bound))
+
+        # Loop through the number of horizontal splits (plus one to account for the last cells)
+        # Append each pair of left and right cells to the virtual_winding_windows list.
+        # This creates a list of all virtual winding windows in the sequence: Left, Right, Left, Right, ...
+        for i in range(0, len(horizontal_splits) + 1):
+            self.virtual_winding_windows.append(self.Left_cells[i])
+            self.virtual_winding_windows.append(self.Right_cells[i])
+        # Instead of returning the separate lists of Left_cells and Right_cells,
+        # we return the combined list of all virtual winding windows.
+        return self.virtual_winding_windows
+
+    def split_with_stack(self, stack: ConductorStack):
+        """
+        The winding window is splitted according to a ConductorStack dataclass.
+        :param stack:
+        :return:
+        """
+        bottom_up = True
+        vertical_space_used = 0  # initialize the counter with zero
+        self.virtual_winding_windows = []
+        winding_scheme_type = []
+        if bottom_up:
+            for i, row_element in enumerate(stack.order):
+                vertical_space_used_last = vertical_space_used
+                if type(row_element) == StackIsolation:
+                    vertical_space_used += row_element.thickness
+                else:
+                    if type(row_element) == ConductorRow:
+                        vertical_space_used += row_element.row_height
+                        if row_element.winding_tag == WindingTag.Primary:
+                            winding_scheme_type.append(WindingType.Single)
+                        elif row_element.winding_tag == WindingTag.Secondary or row_element.winding_tag == WindingTag.Tertiary:
+                            winding_scheme_type.append(WindingScheme.FoilHorizontal)
+
+                    elif type(row_element) == CenterTappedGroup:
+                        vertical_space_used += get_height_of_group(group=row_element)
+                        winding_scheme_type.append(WindingType.CenterTappedGroup)
+
+                    self.virtual_winding_windows.append(
+                        VirtualWindingWindow(
+                            bot_bound=self.max_bot_bound + vertical_space_used_last,
+                            top_bound=self.max_bot_bound + vertical_space_used,
+                            left_bound=self.max_left_bound,
+                            right_bound=self.max_right_bound))
+
+        return self.virtual_winding_windows, winding_scheme_type
 
     def split_with_stack(self, stack: ConductorStack):
         """
