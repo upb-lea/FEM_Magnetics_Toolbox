@@ -5,6 +5,8 @@ import os
 import numpy as np
 import datetime
 
+import optuna.samplers
+
 #femmt libraries
 import femmt as fmt
 
@@ -50,6 +52,7 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     max_transformer_total_height=40e-3,
     primary_litz_wire_list= ["1.71x140x0.1"],
     metal_sheet_thickness_list= [0.0005, 0.0015],
+    primary_coil_turns_min_max_list = [1,5],
 
     # fix parameters
     insulations=sto_insulations,
@@ -58,11 +61,12 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_stacked_transformer_optimization")
 )
 
-study_name = "2023-05-25"
+study_name = "2023-07-05"
 
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    #fmt.StackedTransformerOptimization.FemSimulation.NSGAII.start_study(study_name, dab_transformer_config, 2, storage='sqlite')
-    fmt.StackedTransformerOptimization.FemSimulation.NSGAII.proceed_study(study_name, dab_transformer_config, 10)
-    #fmt.StackedTransformerOptimization.FemSimulation.NSGAII.show_study_results(study_name, dab_transformer_config)
+    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 15,
+                                                                                number_objectives=4,
+                                                                                sampler=optuna.samplers.NSGAIIISampler())
+    #fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config)

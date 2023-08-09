@@ -36,6 +36,7 @@ class StoSingleInputConfig:
     temperature: float
 
     # sweep parameters: geometry and materials
+    primary_coil_turns_min_max_list: list
     material_list: list
     core_inner_diameter_min_max_list: list
     window_w_min_max_list: list

@@ -1184,3 +1184,61 @@ class WindingWindow:
         self.virtual_winding_windows.append(new_vww)
 
         return new_vww
+
+    def NHorizontalSplit(self, horizontal_split_factors: list[float] = None, vertical_split_factors: list[float] = None):
+        if vertical_split_factors == None:
+            vertical_split_factors = [None] * (len(horizontal_split_factors)+1)
+
+        # Convert horizontal_split_factors to a numpy array
+        horizontal_split_factors = np.array(horizontal_split_factors)
+        if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
+            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
+            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
+            max_pos = max(air_gap_2_position, air_gap_1_position)
+            min_pos = min(air_gap_2_position, air_gap_1_position)
+            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
+            # TODO: should be changed to the core-cond isolation
+            horizontal_splits = min_pos + distance / 2
+            vertical_split = self.max_left_bound + (
+                    self.max_right_bound - self.max_left_bound) * vertical_split_factor
+            split_distance = distance  # here, the distance between the two vwws is set automatically
+        else:
+            horizontal_splits = [self.max_left_bound]
+            horizontal_splits = horizontal_splits + list(self.max_left_bound + (self.max_right_bound-self.max_left_bound) * horizontal_split_factors)
+            horizontal_splits.append(self.max_right_bound)
+            print(f"{horizontal_split_factors = }")
+            print(f"{horizontal_splits = }")
+            print(f"{self.max_left_bound = }")
+
+        # Initialize lists for cells and virtual_winding_windows
+        self.cells = []
+        self.virtual_winding_windows = []
+
+        # Create the remaining pairs of virtual winding windows
+        for i in range(0, len(horizontal_splits)-1):
+            if vertical_split_factors[i] != None:
+                self.cells.append(VirtualWindingWindow(
+                    bot_bound=self.max_bot_bound,
+                    top_bound=self.max_top_bound - (self.max_top_bound - self.max_bot_bound) * vertical_split_factors[i],
+                    left_bound=horizontal_splits[i],
+                    right_bound=horizontal_splits[i+1]))
+                self.cells.append(VirtualWindingWindow(
+                    bot_bound=self.max_top_bound - (self.max_top_bound - self.max_bot_bound) * vertical_split_factors[i],
+                    top_bound=self.max_top_bound,
+                    left_bound=horizontal_splits[i],
+                    right_bound=horizontal_splits[i+1]))
+            else:
+                self.cells.append(VirtualWindingWindow(
+                    bot_bound=self.max_bot_bound,
+                    top_bound=self.max_top_bound,
+                    left_bound=horizontal_splits[i],
+                    right_bound=horizontal_splits[i+1]))
+
+        # Loop through the number of horizontal splits (plus one to account for the last cells)
+        # Append each pair of left and right cells to the virtual_winding_windows list.
+        # This creates a list of all virtual winding windows in the sequence: Left, Right, Left, Right, ...
+        for i in range(0, len(self.cells)):
+            self.virtual_winding_windows.append(self.cells[i])
+        # Instead of returning the separate lists of Left_cells and Right_cells,
+        # we return the combined list of all virtual winding windows.
+        return self.virtual_winding_windows
