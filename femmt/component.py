@@ -541,7 +541,7 @@ class MagneticComponent:
         """
         if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
             epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
-                                                                                          material_name="N49",
+                                                                                          material_name=self.core.material,
                                                                                           datasource=self.core.permittivity["datasource"],
                                                                                           datatype=self.core.permittivity["datatype"],
                                                                                           measurement_setup=self.core.permittivity["measurement_setup"],
