@@ -90,10 +90,12 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"])
+                                                    window_h=core_db["window_h"],
+                                                    core_h=core_db["core_h"])
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
+                    detailed_core_model=True,
                     material="N49", temperature=45, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,

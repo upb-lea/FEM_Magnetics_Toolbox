@@ -239,7 +239,6 @@ class Core:
         # Geometric Parameters
         self.core_inner_diameter = core_dimensions.core_inner_diameter
         self.window_w = core_dimensions.window_w
-        self.core_h_center_leg = core_dimensions.core_h
         self.correct_outer_leg = detailed_core_model
         self.r_inner = self.window_w + self.core_inner_diameter / 2
 

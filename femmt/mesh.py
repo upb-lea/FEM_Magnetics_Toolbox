@@ -1264,70 +1264,78 @@ class Mesh:
     def generate_electro_magnetic_mesh(self, refine=0):
         ff.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
+        PL_BOUND = 111111
+        PS_AIR = 110000
+        PS_CORE = 120000
+        PS_COND_SOLID = 130000
+        PS_COND_SOLID_DEAD = 230000
+        PS_ROUND_LITZ = 150000
+        PS_ROUND_LITZ_DEAD = 250000
+
         gmsh.open(self.model_geo_file)
 
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Define physical Surfaces and Curves
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Core
-        self.ps_core = []
-        for i in range(0, len(self.plane_surface_core)):
-            self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=120000+i))
+        def set_physical_surface_core():
+            self.ps_core = []
+            for i in range(0, len(self.plane_surface_core)):
+                self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=PS_CORE+i))
 
+        set_physical_surface_core()
 
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Conductors
-        self.ps_cond = []
-        for num in range(len(self.windings)):
-            self.ps_cond.append([])
+        def set_physical_surface_conductor():
+            self.ps_cond = []
+            for num in range(len(self.windings)):
+                self.ps_cond.append([])
 
-        # Since the turns are saved for each vww all turns per winding must be collected
-        flattened_turns = [0] * len(self.windings)
-        for ww in self.model.winding_windows:
-            for vww in ww.virtual_winding_windows:
-                for index, winding in enumerate(self.windings):
-                    # print(f"{index = }")
-                    # print(f"{ vww.turns = }")
-                    # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
-                    try:
-                        flattened_turns[winding.winding_number] += vww.turns[index]
-                    except:
-                        pass
+            # Since the turns are saved for each vww all turns per winding must be collected
+            flattened_turns = [0] * len(self.windings)
+            for ww in self.model.winding_windows:
+                for vww in ww.virtual_winding_windows:
+                    for index, winding in enumerate(self.windings):
+                        # print(f"{index = }")
+                        # print(f"{ vww.turns = }")
+                        # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
+                        try:
+                            flattened_turns[winding.winding_number] += vww.turns[index]
+                        except:
+                            pass
 
-        for winding in self.windings:
-            winding_number = winding.winding_number
-            if winding.conductor_type == ConductorType.RoundLitz:
-                for i in range(flattened_turns[winding_number]):
-                    self.ps_cond[winding_number].append(
-                        gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=150000 + 1000 * winding_number + i))
-
-            else:
-                if winding.parallel:
-                    tags = self.plane_surface_cond[winding_number]
-                    physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=130000 + 1000 * winding_number)
-                    for i in range(flattened_turns[winding_number]):
-                        self.ps_cond[winding_number].append(physical_group_number)
-                else:
+            for winding in self.windings:
+                winding_number = winding.winding_number
+                if winding.conductor_type == ConductorType.RoundLitz:
                     for i in range(flattened_turns[winding_number]):
                         self.ps_cond[winding_number].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=PS_ROUND_LITZ + 1000 * winding_number + i))
 
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Air, air_gaps and iso (since insulation is handled as air, as well as the air gaps)
-        if self.model.core.core_type == CoreType.Single:
-            # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
-            # must be
-            air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
-            self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=110000)
-            # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
-        elif self.model.core.core_type == CoreType.Stacked:
-            air_total = self.plane_surface_air_bot + self.plane_surface_air_top
-            self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=110000)
+                else:
+                    if winding.parallel:
+                        tags = self.plane_surface_cond[winding_number]
+                        physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=PS_COND_SOLID + 1000 * winding_number)
+                        for i in range(flattened_turns[winding_number]):
+                            self.ps_cond[winding_number].append(physical_group_number)
+                    else:
+                        for i in range(flattened_turns[winding_number]):
+                            self.ps_cond[winding_number].append(
+                                gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=PS_COND_SOLID + 1000 * winding_number + i))
 
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Boundary
-        self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=111111)
-        # print(f"Physical Conductor Surfaces: {self.ps_cond}")
+        set_physical_surface_conductor()
+
+        def set_physical_surfaces_air():
+            if self.model.core.core_type == CoreType.Single:
+                # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+                # must be
+                air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
+                self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=PS_AIR)
+                # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
+            elif self.model.core.core_type == CoreType.Stacked:
+                air_total = self.plane_surface_air_bot + self.plane_surface_air_top
+                self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=PS_AIR)
+
+        set_physical_surfaces_air()
+
+        def set_physical_line_bound():
+            self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=PL_BOUND)
+
+        set_physical_line_bound()
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]
@@ -1344,24 +1352,13 @@ class Mesh:
         gmsh.model.geo.synchronize()
 
         # Output .msh file
-        # TODO: What are these flags about???
         gmsh.option.setNumber("Mesh.SaveAll", 1)
         gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
         gmsh.option.setNumber("Mesh.SurfaceFaces", 0)
 
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # TODO: Adaptive Meshing
-        if refine == 1:
-            ff.femmt_print("\n ------- \nRefined Mesh Creation ")
-            # mesh the new gmsh.model using the size field
-            bg_field = gmsh.model.mesh.field.add("PostView")
-            # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
-            gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
-            ff.femmt_print("\nMeshing...\n")
-            gmsh.model.mesh.generate(2)
-        else:
-            ff.femmt_print("\nMeshing...\n")
-            gmsh.model.mesh.generate(2)
+        # Mesh the model
+        ff.femmt_print("\nMeshing...\n")
+        gmsh.model.mesh.generate(2)
 
         if not os.path.exists(self.mesh_folder_path):
             os.mkdir(self.mesh_folder_path)
