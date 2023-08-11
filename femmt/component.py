@@ -1267,7 +1267,7 @@ class MagneticComponent:
         [p_hyst] = self.load_result(res_name="p_hyst")
 
         # Correct the hysteresis loss for the triangular shaped flux density waveform
-        alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
+        alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(self.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
                                                                       datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
         p_hyst = factor_triangular_hysteresis_loss_iGSE(duty_cycle=0.5, alpha=alpha_from_db) * p_hyst
 
