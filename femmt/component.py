@@ -1018,10 +1018,14 @@ class MagneticComponent:
             self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            for count_frequency in range(0, len(frequency_list)):
+
+            check_model_mqs_condition_already_performerd = False
+            for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if count_frequency == 0: self.check_model_mqs_condition()
+                if value_frequency != 0 and not check_model_mqs_condition_already_performerd:
+                    self.check_model_mqs_condition()
+                    check_model_mqs_condition_already_performerd = True
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1272,6 +1276,9 @@ class MagneticComponent:
         p_hyst = factor_triangular_hysteresis_loss_iGSE(duty_cycle=0.5, alpha=alpha_from_db) * p_hyst
 
         # calculate the winding losses
+        print(f"{frequency_list = }")
+        print(f"{current_list_list = }")
+        print(f"{inductance_dict = }")
         self.excitation_sweep(list(frequency_list), current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=float(p_hyst))
 

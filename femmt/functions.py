@@ -1316,6 +1316,9 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
     :param relative_margin_to_first_resonance: relative margin to the first resonance. Defaults to 0.5.
     :type relative_margin_to_first_resonance: float
     """
+    if frequency == 0:
+        raise ValueError("check_mqs_condition() only works for frequencies != 0")
+
     axial_lambda = axial_wavelength(frequency, complex_permeability, complex_permittivity, conductivity)
     diameter_to_wavelength_ratio_of_first_resonance = 0.7655
     diameter_to_wavelength_ratio = 2 * radius / axial_lambda
