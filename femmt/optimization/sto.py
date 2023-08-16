@@ -118,7 +118,9 @@ class StackedTransformerOptimization:
             core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0], config.core_inner_diameter_min_max_list[1])
             window_w = trial.suggest_float("window_w", config.window_w_min_max_list[0], config.window_w_min_max_list[1])
             air_gap_transformer = trial.suggest_float("air_gap_transformer", 0.1e-3, 5e-3)
-            inner_coil_insulation = trial.suggest_float("inner_coil_insulation", 0.5e-3, 5e-3)
+
+            primary_additional_bobbin = 1e-3
+            inner_coil_insulation = primary_additional_bobbin + config.insulations.iso_left_core
 
             primary_litz_wire = trial.suggest_categorical("primary_litz_wire", config.primary_litz_wire_list)
 
@@ -191,8 +193,8 @@ class StackedTransformerOptimization:
                     core=core,
 
                     # primary litz
-                    primary_additional_bobbin=1e-3,
-                    primary_turns=14,
+                    primary_additional_bobbin=primary_additional_bobbin,
+                    primary_turns=config.n_target,
                     primary_radius=primary_litz_parameters["conductor_radii"],
                     primary_number_strands=primary_litz_parameters["strands_numbers"],
                     primary_strand_radius=primary_litz_parameters["strand_radii"],
