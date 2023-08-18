@@ -1357,5 +1357,172 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
                        f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
         femmt_print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
 
+
+def create_open_circuit_excitation_sweep(I0, n, frequency):
+    frequencies = [frequency] * n
+    currents = [[0] * n for _ in range(n)]
+    phases = [[180] * n for _ in range(n)]
+
+    for x in range(0, n):
+        for y in range(0, n):
+            if x == y:
+                currents[x][y] = I0
+                phases[x][y] = 0
+
+    return frequencies, currents, phases
+
+
+def list_to_complex(complex_list):
+        return complex(complex_list[0], complex_list[1])
+
+
+def get_self_inductances_from_log(log):
+    self_inductances = []
+    for ol_index, open_loop_result in enumerate(log["single_sweeps"]):
+        active_winding_name = f"winding{ol_index + 1}"
+        self_inductances.append(list_to_complex(open_loop_result[active_winding_name]["flux_over_current"]))
+    return self_inductances
+
+
+def get_flux_linkages_from_log(log):
+    flux_linkages = []
+    for ol_index, open_loop_result in enumerate(log["single_sweeps"]):
+        flux_linkages.append([])
+        for winding_index in range(0, len(log["single_sweeps"])):
+            flux_linkages[ol_index].append(list_to_complex(open_loop_result[f"winding{winding_index + 1}"]["flux"]))
+    return flux_linkages
+
+
+def get_coupling_matrix(flux_linkages):
+    coupling_matrix = [[None] * len(flux_linkages) for _ in range(len(flux_linkages))]
+    for self_index in range(0, len(flux_linkages)):
+        for cross_index in range(0, len(flux_linkages)):
+            coupling_matrix[cross_index][self_index] = flux_linkages[cross_index][self_index].real / flux_linkages[self_index][self_index].real
+    return coupling_matrix
+
+
+def get_mean_coupling_factors(coupling_matrix):
+    mean_coupling_factors = [[None] * len(coupling_matrix) for _ in range(len(coupling_matrix))]
+    for self_index in range(0, len(coupling_matrix)):
+        for cross_index in range(0, len(coupling_matrix)):
+            mean_coupling_factors[cross_index][self_index] = (coupling_matrix[cross_index][self_index] * coupling_matrix[self_index][cross_index]) ** 0.5
+    return mean_coupling_factors
+
+
+def get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matrix):
+    inductance_matrix = [[None] * len(mean_coupling_factors) for _ in range(len(mean_coupling_factors))]
+    for x in range(0, len(coupling_matrix)):
+        for y in range(0, len(coupling_matrix)):
+            inductance_matrix[x][y] = mean_coupling_factors[x][y] * (self_inductances[x] * self_inductances[y]) ** 0.5
+    return inductance_matrix
+
+
+def visualize_flux_linkages(flux_linkages):
+    string_to_print = ""
+    for x in range(0, len(flux_linkages)):
+        for y in range(0, len(flux_linkages)):
+            string_to_print += f"Phi_{x+1}{y+1} = {flux_linkages[x][y]}     Induced by I_{y+1} in Winding{x+1}\n"
+    femmt_print(f"\n"
+                   f"Fluxes: ")
+    femmt_print(string_to_print)
+
+
+def visualize_self_inductances(self_inductances, flux_linkages):
+    string_to_print = ""
+    for x in range(0, len(flux_linkages)):
+        string_to_print += f"L_{x+1}_{x+1} = {self_inductances[x]}\n"
+    femmt_print(f"\n"
+                   f"Self Inductances: ")
+    femmt_print(string_to_print)
+
+
+def visualize_self_resistances(self_inductances, flux_linkages, frequency):
+    string_to_print = ""
+    for x in range(0, len(flux_linkages)):
+        string_to_print += f"Z_{x+1}_{x+1} = {self_inductances[x].imag*2*np.pi*frequency}\n"
+    femmt_print(f"\n"
+                   f"Self Resistances: ")
+    femmt_print(string_to_print)
+
+
+def visualize_coupling_factors(coupling_matrix, flux_linkages):
+    string_to_print = ""
+    for x in range(0, len(flux_linkages)):
+        for y in range(0, len(coupling_matrix)):
+            string_to_print += f"K_{x + 1}{y + 1} = Phi_{x + 1}{y + 1} / Phi_{y + 1}{y + 1} = {coupling_matrix[x][y]}\n"
+    femmt_print(f"\n"
+                   f"Coupling Factors: ")
+    femmt_print(string_to_print)
+
+
+def visualize_mean_coupling_factors(mean_coupling_factors):
+    string_to_print = ""
+    for x in range(0, len(mean_coupling_factors)):
+        for y in range(0, len(mean_coupling_factors)):
+            string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} / Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
+    femmt_print(f"\n"
+                   f"Mean Coupling Factors: ")
+    femmt_print(string_to_print)
+
+
+def visualize_mean_mutual_inductances(inductance_matrix):
+    """e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
+    """
+    string_to_print = ""
+    for x in range(0, len(inductance_matrix)):
+        for y in range(0, len(inductance_matrix)):
+            if x == y:
+                pass
+            else:
+                string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
+    femmt_print(f"\n"
+                   f"Mean Mutual Inductances: ")
+    femmt_print(string_to_print)
+
+
+def visualize_mutual_inductances(self_inductances, coupling_factors):
+    """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+    """
+    string_to_print = ""
+    for x in range(0, len(coupling_factors)):
+        for y in range(0, len(coupling_factors)):
+            if x == y:
+                pass
+            else:
+                string_to_print += f"M_{x + 1}{y + 1} = {self_inductances[y].real * coupling_factors[x][y]}\n"
+    femmt_print(f"\n"
+                   f"Mutual Inductances: ")
+    femmt_print(string_to_print)
+
+
+def visualize_inductance_matrix_coefficients(inductance_matrix):
+    """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+    """
+    string_to_print = ""
+    for x in range(0, len(inductance_matrix)):
+        for y in range(0, len(inductance_matrix)):
+            if x == y:
+                string_to_print += f"L_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
+            else:
+                string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
+    femmt_print(f"\n"
+                   f"Inductance Matrix Coefficients: ")
+    femmt_print(string_to_print)
+
+
+def visualize_inductance_matrix(inductance_matrix):
+    """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+    """
+    string_to_print = ""
+    for x in range(0, len(inductance_matrix)):
+        for y in range(0, len(inductance_matrix)):
+            string_to_print += f"{np.round(inductance_matrix[x][y].real, 12)} "
+        string_to_print += f"\n"
+
+    femmt_print(f"\n"
+                   f"Inductance Matrix: ")
+    femmt_print(string_to_print)
+
+
 if __name__ == '__main__':
     pass

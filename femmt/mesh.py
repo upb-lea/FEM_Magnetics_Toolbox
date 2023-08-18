@@ -1077,64 +1077,74 @@ class Mesh:
     def boundary(self, p_core: list, p_region: list, l_bound_core: list, l_bound_air: list, l_region: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
-        if self.region is None:
-            self.l_bound_tmp = l_bound_core[:5]
-            for i in range(len(l_bound_air)):
-                self.l_bound_tmp.append(l_bound_air[-i - 1])
-                if i != len(l_bound_air) - 1:  # last run
-                    self.l_bound_tmp.append(l_bound_core[-i - 1])
+        if self.core.core_type == CoreType.Single:
+            if self.region is None:
+                self.l_bound_tmp = l_bound_core[:7]
+                for i in range(len(l_bound_air)):
+                    self.l_bound_tmp.append(l_bound_air[-i - 1])
+                    if i != len(l_bound_air) - 1:  # last run
+                        self.l_bound_tmp.append(l_bound_core[-i - 1])
 
-        else:
-            # Generate Lines of Region
-            # start top left and go clockwise
-            p_region.append(gmsh.model.geo.addPoint(0,
-                                                    self.model.p_region_bound[2][1],
-                                                    self.model.p_region_bound[2][2],
-                                                    self.model.p_region_bound[2][3]))
+            else:
+                # Generate Lines of Region
+                # start top left and go clockwise
+                p_region.append(gmsh.model.geo.addPoint(0,
+                                                        self.model.p_region_bound[2][1],
+                                                        self.model.p_region_bound[2][2],
+                                                        self.model.p_region_bound[2][3]))
 
-            p_region.append(gmsh.model.geo.addPoint(self.model.p_region_bound[3][0],
-                                                    self.model.p_region_bound[3][1],
-                                                    self.model.p_region_bound[3][2],
-                                                    self.model.p_region_bound[3][3]))
+                p_region.append(gmsh.model.geo.addPoint(self.model.p_region_bound[3][0],
+                                                        self.model.p_region_bound[3][1],
+                                                        self.model.p_region_bound[3][2],
+                                                        self.model.p_region_bound[3][3]))
 
-            p_region.append(gmsh.model.geo.addPoint(self.model.p_region_bound[1][0],
-                                                    self.model.p_region_bound[1][1],
-                                                    self.model.p_region_bound[1][2],
-                                                    self.model.p_region_bound[1][3]))
+                p_region.append(gmsh.model.geo.addPoint(self.model.p_region_bound[1][0],
+                                                        self.model.p_region_bound[1][1],
+                                                        self.model.p_region_bound[1][2],
+                                                        self.model.p_region_bound[1][3]))
 
-            p_region.append(gmsh.model.geo.addPoint(0,
-                                                    self.model.p_region_bound[0][1],
-                                                    self.model.p_region_bound[0][2],
-                                                    self.model.p_region_bound[0][3]))
+                p_region.append(gmsh.model.geo.addPoint(0,
+                                                        self.model.p_region_bound[0][1],
+                                                        self.model.p_region_bound[0][2],
+                                                        self.model.p_region_bound[0][3]))
 
-            # Outer Region Lines
-            l_region.append(gmsh.model.geo.addLine(p_core[4],
-                                                   p_region[0]))
-            l_region.append(gmsh.model.geo.addLine(p_region[0],
-                                                   p_region[1]))
-            l_region.append(gmsh.model.geo.addLine(p_region[1],
-                                                   p_region[2]))
-            l_region.append(gmsh.model.geo.addLine(p_region[2],
-                                                   p_region[3]))
-            l_region.append(gmsh.model.geo.addLine(p_region[3],
-                                                   p_core[1]))
+                # Outer Region Lines
+                l_region.append(gmsh.model.geo.addLine(p_core[4],
+                                                       p_region[0]))
+                l_region.append(gmsh.model.geo.addLine(p_region[0],
+                                                       p_region[1]))
+                l_region.append(gmsh.model.geo.addLine(p_region[1],
+                                                       p_region[2]))
+                l_region.append(gmsh.model.geo.addLine(p_region[2],
+                                                       p_region[3]))
+                l_region.append(gmsh.model.geo.addLine(p_region[3],
+                                                       p_core[1]))
 
-            # Boundary Line
-            self.l_bound_tmp = [l_bound_core[4]]
+                # Boundary Line
+                self.l_bound_tmp = [l_bound_core[4]]
 
-            for i in range(len(l_region)):
-                self.l_bound_tmp.append(l_region[i])
+                for i in range(len(l_region)):
+                    self.l_bound_tmp.append(l_region[i])
 
-            self.l_bound_tmp.append(l_bound_core[0])
+                self.l_bound_tmp.append(l_bound_core[0])
 
-            for i in range(len(l_bound_air)):
-                self.l_bound_tmp.append(l_bound_air[-i - 1])
-                if i != len(l_bound_air) - 1:  # last run
-                    self.l_bound_tmp.append(l_bound_core[-i - 1])
+                for i in range(len(l_bound_air)):
+                    self.l_bound_tmp.append(l_bound_air[-i - 1])
+                    if i != len(l_bound_air) - 1:  # last run
+                        self.l_bound_tmp.append(l_bound_core[-i - 1])
 
-            # Outer Air Surface
-            curve_loop_outer_air = gmsh.model.geo.addCurveLoop(l_region + l_bound_core[1:4])
-            self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
+                # Outer Air Surface
+                curve_loop_outer_air = gmsh.model.geo.addCurveLoop(l_region + l_bound_core[1:4])
+                self.plane_surface_outer_air.append(gmsh.model.geo.addPlaneSurface([curve_loop_outer_air]))
+
+        elif self.core.core_type == CoreType.Stacked:
+            if self.region is None:
+                self.l_bound_tmp = l_bound_core[:8]
+                for i in range(len(l_bound_air)):
+                    self.l_bound_tmp.append(l_bound_air[-i - 1])
+                    if i != len(l_bound_air) - 1:  # last run
+                        self.l_bound_tmp.append(l_bound_core[-i - 1])
+                print(f"{self.l_bound_tmp = }")
 
     def visualize(self, visualize_before, save_png):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1264,20 +1274,18 @@ class Mesh:
     def generate_electro_magnetic_mesh(self, refine=0):
         ff.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
-        PL_BOUND = 111111
-        PS_AIR = 110000
-        PS_CORE = 120000
-        PS_COND_SOLID = 130000
-        PS_COND_SOLID_DEAD = 230000
-        PS_ROUND_LITZ = 150000
-        PS_ROUND_LITZ_DEAD = 250000
+        self.PN_BOUND = 111111
+        self.PN_AIR = 110000
+        self.PN_CORE = 120000
+        self.PN_COND_SOLID = 130000
+        self.PN_ROUND_LITZ = 150000
 
         gmsh.open(self.model_geo_file)
 
         def set_physical_surface_core():
             self.ps_core = []
             for i in range(0, len(self.plane_surface_core)):
-                self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=PS_CORE+i))
+                self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=self.PN_CORE+i))
 
         set_physical_surface_core()
 
@@ -1304,38 +1312,42 @@ class Mesh:
                 if winding.conductor_type == ConductorType.RoundLitz:
                     for i in range(flattened_turns[winding_number]):
                         self.ps_cond[winding_number].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=PS_ROUND_LITZ + 1000 * winding_number + i))
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=self.PN_ROUND_LITZ + 1000 * winding_number + i))
 
                 else:
                     if winding.parallel:
                         tags = self.plane_surface_cond[winding_number]
-                        physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=PS_COND_SOLID + 1000 * winding_number)
+                        physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=self.PN_COND_SOLID + 1000 * winding_number)
                         for i in range(flattened_turns[winding_number]):
                             self.ps_cond[winding_number].append(physical_group_number)
                     else:
                         for i in range(flattened_turns[winding_number]):
                             self.ps_cond[winding_number].append(
-                                gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=PS_COND_SOLID + 1000 * winding_number + i))
+                                gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=self.PN_COND_SOLID + 1000 * winding_number + i))
 
         set_physical_surface_conductor()
 
-        def set_physical_surfaces_air():
+
+
+
+        def set_physical_surface_air():
             if self.model.core.core_type == CoreType.Single:
                 # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
                 # must be
                 air_and_air_gaps = self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
-                self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=PS_AIR)
+                self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_and_air_gaps, tag=self.PN_AIR)
                 # ps_air_ext = gmsh.model.geo.addPhysicalGroup(2, plane_surface_outer_air, tag=1001)
             elif self.model.core.core_type == CoreType.Stacked:
                 air_total = self.plane_surface_air_bot + self.plane_surface_air_top
-                self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=PS_AIR)
+                self.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=self.PN_AIR)
 
-        set_physical_surfaces_air()
+        set_physical_surface_air()
 
         def set_physical_line_bound():
-            self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=PL_BOUND)
+            self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=self.PN_BOUND)
 
         set_physical_line_bound()
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]

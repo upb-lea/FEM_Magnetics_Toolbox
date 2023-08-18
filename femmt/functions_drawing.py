@@ -286,24 +286,25 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
 
         # Define Row with 4 conductors
         rowA = copy.deepcopy(primary_row)
+        # rowA.cond_cond_isolation = 1e-3
         rowA.number_of_conds_per_row = 4
         rowA.additional_bobbin = primary_additional_bobbin
 
         # Define Row with 3 conductors
         rowB = copy.deepcopy(primary_row)
         rowB.number_of_conds_per_row = 3
-        rowB.additional_bobbin = primary_additional_bobbin
+        rowB.additional_bobbin = primary_additional_bobbin + rowB.row_height/2
 
         def stack_TypeC(stack_order):
 
             # Stack the predefined rows
             stack_order.append(tertiary_row)
-            stack_order.append(rowB)
             stack_order.append(rowA)
-            stack_order.append(secondary_row)
+            stack_order.append(rowB)
             stack_order.append(tertiary_row)
-            stack_order.append(rowA)
+            stack_order.append(secondary_row)
             stack_order.append(rowB)
+            stack_order.append(rowA)
             stack_order.append(secondary_row)
 
 
