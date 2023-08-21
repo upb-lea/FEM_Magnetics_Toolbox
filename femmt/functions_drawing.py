@@ -211,12 +211,30 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     # print(f"{insulation_tags = }")
 
 
+def get_set_of_integers_from_string_list(string_list):
+    integer_list = []
+    for string in string_list:
+        try:
+            if int(string) not in integer_list:
+                integer_list.append(int(string))
+        except:
+            pass
+    return integer_list
+
+
 def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingSchemesFoilLitz, stack_order, primary_additional_bobbin, center_foil_additional_bobbin,
-                                         primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow):
+                                         primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow, isolations: ThreeWindingIsolation):
+
+    # Init the winding counters (needed for vertical insulation adjustments)
     number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = 0, 0, 0
 
+    # Split the interleaving scheme directive to obtain the single stacked winding parts
     string_stack_order = interleaving_scheme.split(sep="_")
-    print(string_stack_order)
+
+    # Needed to shift all other primary rows half a position to the right (quasi hexagonal)
+    max_primary_conductors_per_row = max(get_set_of_integers_from_string_list(string_stack_order))
+
+    # Iterate over the stack
     for no_element, element in enumerate(string_stack_order):
 
         # Foil windings are handled first: Secondary and Tertiary (usually symmetric)
@@ -230,7 +248,8 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
 
             # Stacking of the foils does not depend on secondary and tertiary
             # center_foil_additional_bobbin affects only, if the foil is in the inner 50 % of all rows (close to the air gap)
-            if no_element < len(string_stack_order)/4 or no_element >= len(string_stack_order)*3/4:
+            center_interval = 0.5
+            if no_element < len(string_stack_order)*(center_interval/2) or no_element >= len(string_stack_order)*(1/2+center_interval/2):
                 stack_order.append(temp_row)
             else:
                 center_temp_row = copy.deepcopy(temp_row)
@@ -242,6 +261,9 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
             temp_row = copy.deepcopy(primary_row)
             temp_row.number_of_conds_per_row = int(element)
             temp_row.additional_bobbin = primary_additional_bobbin
+
+            if temp_row.number_of_conds_per_row < max_primary_conductors_per_row:
+                temp_row.additional_bobbin += temp_row.row_height/2 + isolations.primary_to_primary/2
             stack_order.append(temp_row)
             number_of_primary_rows += 1
 
@@ -256,7 +278,7 @@ def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_
 
     number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = \
         stack_order_from_interleaving_scheme(interleaving_scheme, initial_stack_order, primary_additional_bobbin, center_foil_additional_bobbin,
-                                             primary_row, secondary_row, tertiary_row)
+                                             primary_row, secondary_row, tertiary_row, isolations)
 
     insulation_tags = insert_insulations_to_stack(initial_stack_order, isolations)
     number_of_insulations_primary_to_primary = insulation_tags.count("primary_to_primary")
@@ -368,7 +390,8 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         stack_order = []
         stack_order_from_interleaving_scheme(interleaving_scheme, stack_order,
                                              primary_additional_bobbin, center_foil_additional_bobbin,
-                                             primary_row, secondary_row, tertiary_row)
+                                             primary_row, secondary_row, tertiary_row,
+                                             isolations)
 
         # Add insulations afterwards
         insert_insulations_to_stack(stack_order, isolations)
