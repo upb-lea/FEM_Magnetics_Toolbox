@@ -114,17 +114,20 @@ def place_windings(vwws, winding_scheme_type, transformer_stack, primary_turns,
     return vwws
 
 
-def set_center_tapped_windings(core, primary_additional_bobbin,
-                               primary_turns, primary_radius, primary_number_strands, primary_strand_radius,
-                               secondary_parallel_turns, secondary_thickness_foil,
+def set_center_tapped_windings(core,
+                               primary_turns, primary_radius, primary_number_strands, primary_strand_radius, primary_additional_bobbin,
+                               secondary_parallel_turns, secondary_thickness_foil, center_foil_additional_bobbin,
                                iso_top_core, iso_bot_core, iso_left_core, iso_right_core,
                                iso_primary_to_primary, iso_secondary_to_secondary, iso_primary_to_secondary,
-                               interleaving_type: CenterTappedInterleavingType,
+                               interleaving_type: CenterTappedInterleavingType, interleaving_scheme: InterleavingSchemesFoilLitz,
                                bobbin_coil_top=None, bobbin_coil_bot=None, bobbin_coil_left=None, bobbin_coil_right=None,
                                primary_coil_turns=None, winding_temperature: Optional[float] = None):
     """
     Set center tapped windings
 
+    :param interleaving_scheme:
+    :param center_foil_additional_bobbin:
+    :param primary_additional_bobbin:
     :param interleaving_type:
     :param primary_strand_radius:
     :param primary_number_strands:
@@ -209,7 +212,8 @@ def set_center_tapped_windings(core, primary_additional_bobbin,
 
     # Define the transformer winding stack
     transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row, available_height=available_height, isolations=winding_isolations,
-                                                        interleaving_type=interleaving_type, primary_additional_bobbin=primary_additional_bobbin)
+                                                        interleaving_type=interleaving_type, interleaving_scheme=interleaving_scheme,
+                                                        primary_additional_bobbin=primary_additional_bobbin, center_foil_additional_bobbin=center_foil_additional_bobbin)
 
     # Split the transformer winding window (ww_bot) in n virtual winding windows (vwws)
     vwws_bot, winding_scheme_type = ww_bot.split_with_stack(transformer_stack)

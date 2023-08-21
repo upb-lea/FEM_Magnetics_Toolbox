@@ -169,6 +169,26 @@ class CenterTappedInterleavingType(IntEnum):
     TypeC = 4
 
 
+class InterleavingSchemesFoilLitz(str, Enum):
+    """
+    ----sec---
+    ooo-primary-ooo
+    ooo-primary-ooo
+    ---ter---
+    ---sec---
+    ooo-primary-ooo
+    ooo-primary-ooo
+    ---ter---
+    """
+    ter_3_4_ter_sec_4_3_sec = "ter_3_4_ter_sec_4_3_sec"
+    ter_4_3_ter_sec_3_4_sec = "ter_4_3_ter_sec_3_4_sec"
+    ter_3_4_sec_ter_4_3_sec = "ter_3_4_sec_ter_4_3_sec"
+    ter_4_3_sec_ter_3_4_sec = "ter_4_3_sec_ter_3_4_sec"
+    ter_sec_3_4_4_3_sec_ter = "ter_sec_3_4_4_3_ter_sec"
+    ter_sec_4_3_3_4_sec_ter = "ter_sec_4_3_3_4_ter_sec"
+    _4_3_ter_sec__sec_ter_3_4 = "4_3_ter_sec_sec_ter_3_4"
+
+
 class ConductorType(IntEnum):
     """Sets the type of the conductor.
     """
