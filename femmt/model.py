@@ -162,7 +162,7 @@ class Core:
     phi_mu_deg: float  # mu_complex = mu_r_abs * exp(j*phi_mu_deg)
 
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
-    sigma: complex  # Imaginary part of complex equivalent permittivity [frequency-dependent]
+    sigma: complex  # complex equivalent permittivity [frequency-dependent], real and imaginary part
 
     steinmetz_loss: int = 0
     generalized_steinmetz_loss: int = 0
