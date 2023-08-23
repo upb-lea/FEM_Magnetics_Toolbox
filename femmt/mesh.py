@@ -1387,21 +1387,21 @@ class Mesh:
         # Core point and line tags
         core_point_tags = []
         core_line_tags = []
-        if self.model.air_gaps.number == 0:
+        if self.model.air_gaps.number == 0:  # TODO...
             core_point_tags = [4, 3, 2, 1]
             core_line_tags = [4, 3, 2]
         else:
-            core_point_tags = [5, 4, 3, 2]
-            core_line_tags = [5, 4, 3]
+            core_point_tags = [7, 6, 5, 4, 3, 2]
+            core_line_tags = [7, 6, 5, 4, 3]
 
         tl_point = core_point_tags[0]  # Top left - default 5
-        tr_point = core_point_tags[1]  # Top right - default 4
-        br_point = core_point_tags[2]  # Bottom right - default 3
-        bl_point = core_point_tags[3]  # Bottom left - default 2
+        tr_point = core_point_tags[2]  # Top right - default 4
+        br_point = core_point_tags[3]  # Bottom right - default 3
+        bl_point = core_point_tags[5]  # Bottom left - default 2
 
-        top_line = core_line_tags[0]  # default 4
-        right_line = core_line_tags[1]  # default 3
-        bottom_line = core_line_tags[2]  # default 2
+        top_lines = [core_line_tags[0], core_line_tags[1]]  # default 4
+        right_line = core_line_tags[2]  # default 3
+        bottom_lines = [core_line_tags[3], core_line_tags[4]]   # default 2
 
         # Get positions from points
         tl_point_pos = gmsh.model.getValue(0, tl_point, [])
@@ -1418,8 +1418,9 @@ class Mesh:
         top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
         top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
         top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
-        top_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_left_line, top_case_top_line, top_case_right_line, top_line])
+        top_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_left_line, top_case_top_line, top_case_right_line]+top_lines)
         top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
+
 
         # top right
         top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
@@ -1450,7 +1451,7 @@ class Mesh:
         bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh)
         bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
         bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
-        bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_line, bottom_right_case_left_line])
+        bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_right_case_left_line]+bottom_lines)
         bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
 
         gmsh.model.geo.synchronize()
@@ -1459,9 +1460,7 @@ class Mesh:
         # Define physical Surfaces and Curves
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
-        self.ps_core = []
-        for i in range(0, len(self.plane_surface_core)):
-            self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=120000+i))
+        self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=120000)  # TODO: for stacked (modular) core geometry
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
@@ -1544,7 +1543,7 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]
         for i in range(0, len(self.plane_surface_core)):
-            gmsh.model.setPhysicalName(2, self.ps_core[i], f"CORE_{i}")
+            gmsh.model.setPhysicalName(2, self.ps_core, f"CORE")  # TODO: for stacked (modular) core geometry
         for num in range(len(self.windings)):
             for i in range(len(self.ps_cond[num])):
                 gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
