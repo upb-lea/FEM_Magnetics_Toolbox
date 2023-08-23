@@ -217,7 +217,7 @@ class StackedTransformerOptimization:
                                                                          time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
                                                                                                [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]])
 
-            geo.center_tapped_study(center_tapped_study_excitation=center_tapped_study_excitation)
+            geo.stacked_core_center_tapped_study(center_tapped_study_excitation=center_tapped_study_excitation)
 
         @staticmethod
         def load_trial_dict(trial, target_and_fixed_parameters: StoTargetAndFixedParameters):

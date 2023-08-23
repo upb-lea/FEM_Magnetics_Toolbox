@@ -823,52 +823,44 @@ class MagneticComponent:
         # Write postprocessing parameters in 'postquantities.pro' file
         self.write_electro_magnetic_post_pro()
 
-    def overwrite_physical_surface(self):
+    def overwrite_conductors_with_air(self, physical_surfaces_to_overwrite: list):
         """
 
         EXPERIMENTAL
 
+
+
         :return:
         """
+        if True:
+            with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "r") as mesh_file:
+                mesh_data = mesh_file.read()
 
-        self.mesh.ps_cond_dead = []
-        # self.ps_cond =
-        cond_to_air = self.mesh.plane_surface_cond[0][8]
-        print(f"{cond_to_air = }")
+            for ps in physical_surfaces_to_overwrite:
+                # mesh_data = mesh_data.replace(f'1 {ps} 4', f'1 {ps+1000000} 4')
+                mesh_data = mesh_data.replace(f'1 {ps} 4', f'1 {ps+1000000} 4')
 
-        gmsh.model.geo.removePhysicalGroups([(2, 130008)])
+            with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
+                mesh_file.write(mesh_data)
 
+    def overwrite_air_conductors_with_conductors(self, physical_surfaces_to_overwrite: list):
+        """
 
-        # print(gmsh.model.getPhysicalGroups(dim=-1))
-        air_plane_entities = list(gmsh.model.getEntitiesForPhysicalGroup(dim=2, tag=self.mesh.PN_AIR))
-        print(f"{air_plane_entities = }")
-
-        air_plane_entities.append(cond_to_air)
-        print(f"{air_plane_entities = }")
-        gmsh.model.geo.removePhysicalGroups([(2, self.mesh.PN_AIR)])
-        self.mesh.ps_air = gmsh.model.geo.addPhysicalGroup(2, air_plane_entities, tag=self.mesh.PN_AIR)
-
-        gmsh.model.geo.synchronize()
-        #
-        # air_plane_entities = list(gmsh.model.getEntitiesForPhysicalGroup(dim=2, tag=PS_COND_SOLID))
-        # print(f"{air_plane_entities = }")
-        # Output .msh file
-        gmsh.option.setNumber("Mesh.SaveAll", 1)
-        gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
-        gmsh.option.setNumber("Mesh.SurfaceFaces", 0)
-
-        # Mesh the model
-        ff.femmt_print("\nMeshing...\n")
-        gmsh.model.mesh.generate(2)
-
-        gmsh.fltk.run()
-
-        if not os.path.exists(self.mesh.mesh_folder_path):
-            os.mkdir(self.mesh.mesh_folder_path)
-
-        gmsh.write(self.mesh.e_m_mesh_file)
+        EXPERIMENTAL
 
 
+
+        :return:
+        """
+        if True:
+            with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "r") as mesh_file:
+                mesh_data = mesh_file.read()
+
+            for ps in physical_surfaces_to_overwrite:
+                mesh_data = mesh_data.replace(f'1 {ps} 4', f'1 {ps-1000000} 4')
+
+            with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
+                mesh_file.write(mesh_data)
 
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
                           plot_interpolation: bool = False, show_fem_simulation_results: bool = True):
@@ -896,7 +888,6 @@ class MagneticComponent:
         phi_deg = phi_deg or []
 
         self.mesh.generate_electro_magnetic_mesh()
-        # self.overwrite_physical_surface()
         self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
@@ -1229,10 +1220,12 @@ class MagneticComponent:
 
         return center_tapped_study_excitation
 
-    def center_tapped_study(self, center_tapped_study_excitation):
+    def stacked_core_center_tapped_study(self, center_tapped_study_excitation, no_primary_coil_turns=None, non_sine_hysteresis_correction=False):
         """
         Comprehensive component analysis for center tapped transformers with dedicated choke.
 
+        :param non_sine_hysteresis_correction:
+        :param center_tapped_study_excitation:
         :param time_current_vectors:
         :param plot_waveforms:
         :return:
@@ -1253,11 +1246,13 @@ class MagneticComponent:
         p_hyst = 0
         # print(f"{p_hyst = }")
 
+
+        ps_primary_coil_turns = [150000+i for i in range(no_primary_coil_turns)]
+        self.overwrite_conductors_with_air(ps_primary_coil_turns)
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"],
                         phase_deg_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"],
                         plot_interpolation=False)
-        self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
@@ -1270,17 +1265,20 @@ class MagneticComponent:
             p_hyst += res
         # print(f"{p_hyst = }")
 
-        # Correct the hysteresis loss for the triangular shaped flux density waveform
-        alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
-                                                                      datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
-        p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
-        # print(f"{p_hyst = }")
+        if non_sine_hysteresis_correction:
+            # Correct the hysteresis loss for the triangular shaped flux density waveform
+            # alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
+            #                                                               datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
+            # p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
+            # print(f"{p_hyst = }")
 
+            ps_primary_coil_turns = [150000 + i for i in range(no_primary_coil_turns)]
+
+        self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns)+1000000))
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"],
                         phase_deg_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_phases_deg"],
                         plot_interpolation=False)
-        self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()

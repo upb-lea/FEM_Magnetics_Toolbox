@@ -29,7 +29,9 @@ n_windings = Number_of_Windings;
 OUTBND              = 111111;
 AIR                 = 110000;
 AIR_EXT             = 110001;
-CORE_PN                = 120000;
+AIR_COND            = 1000000;
+CORE_PN             = 120000;
+
 
 //physical numbers of conductors in n transformer
 For n In {1:n_windings}
@@ -55,6 +57,32 @@ Group{
     Core += Region[{(CORE_PN+n-1)}];
   EndFor
 
+
+  // Current Conducting Domains
+  // Create a region for the winding
+  For n In {1:n_windings} // loop over each winding
+      Winding~{n} = Region[{}]; // create a region for the winding
+      StrandedWinding~{n} = Region[{}]; // create a region for the stranded winding
+  EndFor
+
+
+  // Loop over each winding
+  For winding_number In {1:n_windings}
+      nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+       // Loop over each turn in this winding to create a region for turns and then adding it to the winding
+      For turn_number In {1:nbturns~{winding_number}}
+        // Solid
+        Turn~{winding_number}~{turn_number} = Region[{(iCOND~{winding_number}+turn_number-1)}];
+        Winding~{winding_number} += Region[{(iCOND~{winding_number}+turn_number-1)}];
+        Air += Region[{(AIR_COND+iCOND~{winding_number}+turn_number-1)}];
+        // Stranded
+        TurnStrand~{winding_number}~{turn_number} = Region[{(istrandedCOND~{winding_number}+turn_number-1)}];
+        StrandedWinding~{winding_number} += Region[{(istrandedCOND~{winding_number}+turn_number-1)}];
+        Air += Region[{(AIR_COND+istrandedCOND~{winding_number}+turn_number-1)}];
+      EndFor
+  EndFor
+
+
   // Non Conducting Domain:
   // Initialize the core-shell domain region to air
   DomainCC = Region[{Air}];
@@ -68,25 +96,7 @@ Group{
   // including symmetry
   OuterBoundary = Region[{OUTBND}];
 
-  // Current Conducting Domains
-  // Create a region for the winding
-  For n In {1:n_windings} // loop over each winding
-      Winding~{n} = Region[{}]; // create a region for the winding
-      StrandedWinding~{n} = Region[{}]; // create a region for the stranded winding
-  EndFor
-
-  // Loop over each winding
-  For n In {1:n_windings}
-      nbturns~{n} = NbrCond~{n} / SymFactor;
-       // Loop over each turn in this winding to create a region for turns and then adding it to the winding
-      For winding_number In {1:nbturns~{n}}
-        Turn~{n}~{winding_number} = Region[{(iCOND~{n}+winding_number-1)}];
-        Winding~{n} += Region[{(iCOND~{n}+winding_number-1)}];
-        TurnStrand~{n}~{winding_number} = Region[{(istrandedCOND~{n}+winding_number-1)}];
-        StrandedWinding~{n} += Region[{(istrandedCOND~{n}+winding_number-1)}];
-      EndFor
-  EndFor
-   // Add this winding to the core domain region
+   // Add the winding to the core domain region
   For n In {1:n_windings}
       DomainC += Region[{Winding~{n}}] ;
   EndFor

@@ -1144,7 +1144,6 @@ class Mesh:
                     self.l_bound_tmp.append(l_bound_air[-i - 1])
                     if i != len(l_bound_air) - 1:  # last run
                         self.l_bound_tmp.append(l_bound_core[-i - 1])
-                print(f"{self.l_bound_tmp = }")
 
     def visualize(self, visualize_before, save_png):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1351,14 +1350,14 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]
-        for i in range(0, len(self.plane_surface_core)):
-            gmsh.model.setPhysicalName(2, self.ps_core[i], f"CORE_{i}")
-
-        for num in range(len(self.windings)):
-            for i in range(len(self.ps_cond[num])):
-                gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
-        gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
-        gmsh.model.setPhysicalName(1, self.pc_bound, "BOUND")
+        # for i in range(0, len(self.plane_surface_core)):
+        #     gmsh.model.setPhysicalName(2, self.ps_core[i], f"CORE_{i}")
+        #
+        # for num in range(len(self.windings)):
+        #     for i in range(len(self.ps_cond[num])):
+        #         gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
+        # gmsh.model.setPhysicalName(2, self.ps_air, "AIR")
+        # gmsh.model.setPhysicalName(1, self.pc_bound, "BOUND")
 
         # Synchronize
         gmsh.model.geo.synchronize()
