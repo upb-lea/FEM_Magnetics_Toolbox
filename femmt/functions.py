@@ -1431,12 +1431,13 @@ def visualize_mean_coupling_factors(mean_coupling_factors, silent: bool):
     for x in range(0, len(mean_coupling_factors)):
         for y in range(0, len(mean_coupling_factors)):
             string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} / Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
-        print(f"\n"
-              f"Mean Coupling Factors: ")
-        print(string_to_print)
+        if not silent:
+            print(f"\n"
+                  f"Mean Coupling Factors: ")
+            print(string_to_print)
 
 
-def visualize_mean_mutual_inductances(inductance_matrix):
+def visualize_mean_mutual_inductances(inductance_matrix, silent: bool):
     """e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
     """
     string_to_print = ""
@@ -1446,12 +1447,13 @@ def visualize_mean_mutual_inductances(inductance_matrix):
                 pass
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-    femmt_print(f"\n"
-                   f"Mean Mutual Inductances: ")
-    femmt_print(string_to_print)
+    if not silent:
+        print(f"\n"
+              f"Mean Mutual Inductances: ")
+        print(string_to_print)
 
 
-def visualize_mutual_inductances(self_inductances, coupling_factors):
+def visualize_mutual_inductances(self_inductances, coupling_factors, silent: bool):
     """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
     string_to_print = ""
@@ -1461,12 +1463,13 @@ def visualize_mutual_inductances(self_inductances, coupling_factors):
                 pass
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {self_inductances[y].real * coupling_factors[x][y]}\n"
-    femmt_print(f"\n"
-                   f"Mutual Inductances: ")
-    femmt_print(string_to_print)
+    if not silent:
+        print(f"\n"
+              f"Mutual Inductances: ")
+        print(string_to_print)
 
 
-def visualize_inductance_matrix_coefficients(inductance_matrix):
+def visualize_inductance_matrix_coefficients(inductance_matrix, silent: bool):
     """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
     string_to_print = ""
@@ -1476,9 +1479,10 @@ def visualize_inductance_matrix_coefficients(inductance_matrix):
                 string_to_print += f"L_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
-    femmt_print(f"\n"
+    if not silent:
+        print(f"\n"
                    f"Inductance Matrix Coefficients: ")
-    femmt_print(string_to_print)
+        print(string_to_print)
 
 
 def visualize_inductance_matrix(inductance_matrix, silent: bool):
