@@ -10,8 +10,9 @@ from femmt.model import Conductor
 class FileData:
     """Contains paths to every folder and file needed in femmt.
     """
-    def __init__(self, working_directory: str):
-        self.update_paths(working_directory)
+    def __init__(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None):
+        if working_directory is not None:
+            self.update_paths(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
 
     @staticmethod
     def create_folders(*args) -> None:
@@ -22,7 +23,7 @@ class FileData:
             if not os.path.exists(folder):
                 os.mkdir(folder)
 
-    def update_paths(self, working_directory: str) -> None:
+    def update_paths(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None) -> None:
         """Sets the local path based on the given working directory
 
         :param working_directory: working directory folder path
@@ -32,12 +33,18 @@ class FileData:
         self.working_directory = working_directory
         self.femmt_folder_path = os.path.dirname(__file__)
         self.mesh_folder_path = os.path.join(self.working_directory, "mesh")
-        self.electro_magnetic_folder_path = os.path.join(self.femmt_folder_path, "electro_magnetic")
+        if electro_magnetic_folder_path:
+            self.electro_magnetic_folder_path = electro_magnetic_folder_path
+        else:
+            self.electro_magnetic_folder_path = os.path.join(self.femmt_folder_path, "electro_magnetic")
         self.results_folder_path = os.path.join(self.working_directory, "results")
         self.e_m_values_folder_path = os.path.join(self.results_folder_path, "values")
         self.e_m_fields_folder_path = os.path.join(self.results_folder_path, "fields")
         self.e_m_circuit_folder_path = os.path.join(self.results_folder_path, "circuit")
-        self.e_m_strands_coefficients_folder_path = os.path.join(self.electro_magnetic_folder_path, "Strands_Coefficients")
+        if strands_coefficients_folder_path:
+            self.e_m_strands_coefficients_folder_path = strands_coefficients_folder_path
+        else:
+            self.e_m_strands_coefficients_folder_path = os.path.join(self.electro_magnetic_folder_path, "Strands_Coefficients")
         self.femm_folder_path = os.path.join(self.working_directory, "femm")
         self.reluctance_model_folder_path = os.path.join(self.working_directory, "reluctance_model")
         self.thermal_results_folder_path = os.path.join(self.results_folder_path, "thermal")
@@ -53,7 +60,9 @@ class FileData:
         self.hybrid_color_visualize_file = os.path.join(self.mesh_folder_path, "hybrid_color.png")
         self.thermal_mesh_file = os.path.join(self.mesh_folder_path, "thermal.msh")
         self.results_em_simulation = os.path.join(self.mesh_folder_path, "results.png")
-        self.onelab_folder_path = None
+        self.gmsh_log = os.path.join(self.results_folder_path, "log_gmsh.txt")
+        self.getdp_log = os.path.join(self.results_folder_path, "log_getdp.txt")
+        self.femmt_log = os.path.join(self.results_folder_path, "log_femmt.txt")
 
         # Create necessary folders
         self.create_folders(self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 

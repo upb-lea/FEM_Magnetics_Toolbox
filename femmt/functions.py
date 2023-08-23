@@ -22,9 +22,6 @@ from femmt.constants import *
 from femmt.enumerations import ConductorType
 from femmt.dtos import *
 
-# Needed for femmt_print
-silent = False
-
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
                         "green": (46, 194, 126),
@@ -582,7 +579,7 @@ def inner_points(a, b, input_points):
         # print("Only one air gap in this leg. No island needed.")
     return output
 
-
+# TODO Is this function even used?
 def min_max_inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate and
@@ -612,7 +609,7 @@ def min_max_inner_points(a, b, input_points):
         else:
             n += 1
     if buffer.shape[0] == 0:
-        femmt_print("No air gaps between interval borders")
+        print("No air gaps between interval borders")
     if buffer.shape[0] % 2 == 1:
         raise Exception("Odd number of input points")
     if dim == 2:
@@ -1106,10 +1103,10 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
     loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
 
-    femmt_print(inductance)
-    femmt_print(loss_core_eddy_current)
-    femmt_print(loss_core_hysteresis)
-    femmt_print(loss_winding_1)
+    print(inductance)
+    print(loss_core_eddy_current)
+    print(loss_core_hysteresis)
+    print(loss_winding_1)
 
     bar_width = 0.35
     plt.bar(0, loss_core_hysteresis, width=bar_width)
@@ -1136,36 +1133,6 @@ def point_is_in_rect(x, y, rect):
         return True
 
     return False
-
-
-def set_silent_status(s: bool) -> None:
-    """
-    Variable to store the silent status to show terminal outputs or not.
-    Using silent-mode increases speed of simulation significantly.
-    :param s: status for silent mode True/False
-    :type s: bool
-    :return: None
-    :rtype: None
-    """
-    global silent
-    silent = s
-
-
-def femmt_print(text: str, end: str = '\n') -> None:
-    """
-    Print-function for femmt. Uses a silent-Flag as global variable, to show terminal outputs or not.
-    Using silent-mode increases speed of simulation significantly.
-
-    :param text: text to print
-    :type text: str
-    :param end: command text ends with, defaults to '\n'
-    :type: end: str
-    :return: None
-    :rtype: None
-    """
-    if not silent:
-        print(text, end)
-
 
 def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     """
@@ -1327,8 +1294,8 @@ def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity
     return 2 * np.pi / k.real
 
 
-def check_mqs_condition(radius: float, frequency: float, complex_permeability: float, complex_permittivity: float,
-                        conductivity: float, relative_margin_to_first_resonance: float=0.5):
+def check_mqs_condition(radius, frequency, complex_permeability, complex_permittivity, conductivity,
+                        relative_margin_to_first_resonance=0.5, silent: bool = False):
     """
     Checks if the condition for a magnetoquasistatic simulation is fulfilled.
 
@@ -1353,9 +1320,10 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
     diameter_to_wavelength_ratio_of_first_resonance = 0.7655
     diameter_to_wavelength_ratio = 2 * radius / axial_lambda
     if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
-        warnings.warn(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
-                       f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
-        femmt_print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
+        # raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
+        #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
+        if not silent:
+            print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
 
 
 def create_open_circuit_excitation_sweep(I0, n, frequency):
@@ -1417,52 +1385,55 @@ def get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matr
     return inductance_matrix
 
 
-def visualize_flux_linkages(flux_linkages):
+def visualize_flux_linkages(flux_linkages, silent: bool):
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         for y in range(0, len(flux_linkages)):
             string_to_print += f"Phi_{x+1}{y+1} = {flux_linkages[x][y]}     Induced by I_{y+1} in Winding{x+1}\n"
-    femmt_print(f"\n"
-                   f"Fluxes: ")
-    femmt_print(string_to_print)
+    if not silent:
+        print(f"\nFluxes: ")
+        print(string_to_print)
 
 
-def visualize_self_inductances(self_inductances, flux_linkages):
+def visualize_self_inductances(self_inductances, flux_linkages, silent: bool):
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         string_to_print += f"L_{x+1}_{x+1} = {self_inductances[x]}\n"
-    femmt_print(f"\n"
-                   f"Self Inductances: ")
-    femmt_print(string_to_print)
+    if not silent:
+        print(f"\n"
+              f"Self Inductances: ")
+        print(string_to_print)
 
 
-def visualize_self_resistances(self_inductances, flux_linkages, frequency):
+def visualize_self_resistances(self_inductances, flux_linkages, frequency, silent: bool):
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         string_to_print += f"Z_{x+1}_{x+1} = {self_inductances[x].imag*2*np.pi*frequency}\n"
-    femmt_print(f"\n"
-                   f"Self Resistances: ")
-    femmt_print(string_to_print)
+    if not silent:
+        print(f"\n"
+              f"Self Resistances: ")
+        print(string_to_print)
 
 
-def visualize_coupling_factors(coupling_matrix, flux_linkages):
+def visualize_coupling_factors(coupling_matrix, flux_linkages, silent: bool):
     string_to_print = ""
     for x in range(0, len(flux_linkages)):
         for y in range(0, len(coupling_matrix)):
             string_to_print += f"K_{x + 1}{y + 1} = Phi_{x + 1}{y + 1} / Phi_{y + 1}{y + 1} = {coupling_matrix[x][y]}\n"
-    femmt_print(f"\n"
-                   f"Coupling Factors: ")
-    femmt_print(string_to_print)
+    if not silent:
+        print(f"\n"
+              f"Coupling Factors: ")
+        print(string_to_print)
 
 
-def visualize_mean_coupling_factors(mean_coupling_factors):
+def visualize_mean_coupling_factors(mean_coupling_factors, silent: bool):
     string_to_print = ""
     for x in range(0, len(mean_coupling_factors)):
         for y in range(0, len(mean_coupling_factors)):
             string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} / Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
-    femmt_print(f"\n"
-                   f"Mean Coupling Factors: ")
-    femmt_print(string_to_print)
+        print(f"\n"
+              f"Mean Coupling Factors: ")
+        print(string_to_print)
 
 
 def visualize_mean_mutual_inductances(inductance_matrix):
@@ -1510,7 +1481,7 @@ def visualize_inductance_matrix_coefficients(inductance_matrix):
     femmt_print(string_to_print)
 
 
-def visualize_inductance_matrix(inductance_matrix):
+def visualize_inductance_matrix(inductance_matrix, silent: bool):
     """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
     string_to_print = ""
@@ -1519,9 +1490,11 @@ def visualize_inductance_matrix(inductance_matrix):
             string_to_print += f"{np.round(inductance_matrix[x][y].real, 12)} "
         string_to_print += f"\n"
 
-    femmt_print(f"\n"
+    if not silent:
+        print(f"\n"
                    f"Inductance Matrix: ")
-    femmt_print(string_to_print)
+        print(string_to_print)
+
 
 
 if __name__ == '__main__':
