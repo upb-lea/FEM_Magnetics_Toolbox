@@ -84,7 +84,7 @@ def basic_example_transformer_intergrated(onelab_folder: str = None, show_visual
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.011, window_h=0.03)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.011, window_h=0.03, core_h = 0.08)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=0.6,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom)

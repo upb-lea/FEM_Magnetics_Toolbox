@@ -87,7 +87,7 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015, core_h=0.08)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom)

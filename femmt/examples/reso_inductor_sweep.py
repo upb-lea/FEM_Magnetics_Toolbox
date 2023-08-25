@@ -1,0 +1,108 @@
+import numpy as np
+
+import femmt as fmt
+import os
+
+def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+
+    example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+    if not os.path.exists(example_results_folder):
+        os.mkdir(example_results_folder)
+
+    # Working directory can be set arbitrarily
+    working_directory = os.path.join(example_results_folder, "reso_inductor")
+    if not os.path.exists(working_directory):
+        os.mkdir(working_directory)
+
+    # 1. chose simulation type
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                silent=True, is_gui=is_test)
+
+    # This line is for automated pytest running on github only. Please ignore this line!
+    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+
+    inductor_frequency = 5e5
+
+    # 2. set core parameters
+    # core_db = fmt.core_database()["PQ 40/40"]
+    core_db = fmt.core_database()["PQ 50/50"]
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                    window_w=core_db["window_w"],
+                                                    window_h=core_db["window_h"],
+                                                    core_h=core_db["core_h"])
+
+    core = fmt.Core(core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    material="N95", temperature=30, frequency=inductor_frequency,
+                    # permeability_datasource="manufacturer_datasheet",
+                    # permeability_datasource=fmt.MaterialDataSource.Custom, mu_r_abs=2000, phi_mu_deg=1,
+
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    # permeability_measurement_setup="LEA_LK",
+                    permeability_measurement_setup="small_signal2",
+                    # permeability_measurement_setup="small_signal1",
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    # permittivity_measurement_setup="LEA_LK")
+                    permittivity_measurement_setup="small_signal")
+
+                    # permeability_datasource = fmt.MaterialDataSource.Custom, mu_r_abs=1945, phi_mu_deg=1.551,
+                    # permittivity_datasource = fmt.MaterialDataSource.Custom,
+                    # permittivity_datatype = fmt.MeasurementDataType.ComplexPermittivity,
+                    # sigma=complex(0.34999993, 1.9999996)  # 500kHz  5.9476647885531e-06
+                    # # sigma = complex(0.38499992, 2.19999956)  # 550kHz
+                    # # sigma=complex(0.69999986, 3.9999992)  # 1MHz
+                    # )
+    geo.set_core(core)
+
+    # 3. set air gap parameters
+    # air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
+    # geo.set_air_gaps(air_gaps)
+
+    # 4. set insulations
+    insulation = fmt.Insulation(flag_insulation=False)
+    insulation.add_core_insulations(0.001, 0.014, 0.006, 0.001)
+    insulation.add_winding_insulations([[0.0005]])
+    geo.set_insulation(insulation)
+
+    # 5. create winding window and virtual winding windows (vww)
+    winding_window = fmt.WindingWindow(core, insulation)
+    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+    # 6. create conductor and set parameters: use solid wires
+    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=30)
+    winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+    # winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
+    # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
+    #                                  fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+
+    # 7. add conductor to vww and add winding window to MagneticComponent
+    vww.set_winding(winding, 1, None)
+    geo.set_winding_windows([winding_window])
+
+    # 8. create the model
+    geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
+
+    # 6.a. start simulation
+    # geo.single_simulation(freq=inductor_frequency, current=[0.01],
+    #                       plot_interpolation=True, show_fem_simulation_results=show_visual_outputs)
+
+
+    # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
+
+    # # 6.b. Excitation Sweep Example
+    # # Perform a sweep using more than one frequency
+    fs = list(np.linspace(100e3, 500e3, 5))
+    amplitude_list = [[0.01] for x in range(5)]
+    # currents = np.linspace(0.5, 1/30, 10)
+    # amplitude_list = [[x] for x in currents]
+    phase_list = [[0] for x in range(5)]
+    geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
+
+
+
+if __name__ == "__main__":
+    basic_example_inductor(show_visual_outputs=True)

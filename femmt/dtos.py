@@ -7,6 +7,7 @@ class SingleCoreDimensions:
     core_inner_diameter: float
     window_w: float
     window_h: float
+    core_h: float
 
 
 @dataclass

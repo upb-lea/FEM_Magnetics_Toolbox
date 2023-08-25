@@ -115,9 +115,11 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
                                                                                                       iso_secondary_to_secondary=2e-4,
                                                                                                       iso_primary_to_secondary=4e-4,
                                                                                                       interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
+                                                                                                      interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
                                                                                                       primary_coil_turns=3,
                                                                                                       primary_additional_bobbin=1e-3,
-                                                                                                      winding_temperature=100)
+                                                                                                      winding_temperature=100,
+                                                                                                      center_foil_additional_bobbin=0e-3)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
@@ -126,7 +128,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
 
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_fem_simulation_results=show_visual_outputs)
 
-    geo.get_inductances(I0=1, op_frequency=200000)
+    # geo.get_inductances(I0=1, op_frequency=200000)
 
 if __name__ == "__main__":
     basic_example_transformer_stacked_center_tapped(show_visual_outputs=True)

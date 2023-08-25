@@ -137,4 +137,4 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
 
 if __name__ == "__main__":
-    basic_example_transformer(show_visual_outputs=True)
+    basic_example_transformer_stacked(show_visual_outputs=True)
