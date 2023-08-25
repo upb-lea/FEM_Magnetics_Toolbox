@@ -974,7 +974,7 @@ class TwoDaxiSymmetric:
                                             0,
                                             self.mesh_data.c_conductor[num]])
                                         i += 1
-                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # one step from left to right
+                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # TODO: anisotrop insulation  # one step from left to right
                                     y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # bot to top
                                     x = left_bound + winding.conductor_radius  # always the same
 

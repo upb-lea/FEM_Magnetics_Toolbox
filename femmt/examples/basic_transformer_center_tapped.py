@@ -82,7 +82,7 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
-    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015, core_h=0.05)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
     geo.set_core(core)
@@ -98,7 +98,9 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
                                                                                      iso_top_core=0.001, iso_bot_core=0.001, iso_left_core=0.002, iso_right_core=0.001,
                                                                                      iso_primary_to_primary=1e-4, iso_secondary_to_secondary=2e-4, iso_primary_to_secondary=5e-4,
                                                                                      interleaving_type=fmt.CenterTappedInterleavingType.TypeA,
-                                                                                     primary_additional_bobbin=100, winding_temperature=100)
+                                                                                     interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
+                                                                                     primary_additional_bobbin=100, winding_temperature=100,
+                                                                                     center_foil_additional_bobbin=0e-3)
 
 
     geo.set_insulation(insulation)

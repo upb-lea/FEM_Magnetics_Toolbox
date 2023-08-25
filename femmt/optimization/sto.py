@@ -94,11 +94,11 @@ class StackedTransformerOptimization:
 
         return target_and_fix_parameters
 
+
     class ReluctanceModel:
         pass
 
     class FemSimulation:
-
         @staticmethod
         def objective(trial, config: StoSingleInputConfig,
                        target_and_fixed_parameters: StoTargetAndFixedParameters,
@@ -143,7 +143,6 @@ class StackedTransformerOptimization:
             # suggest categorical
             core_material = trial.suggest_categorical("material", config.material_list)
             foil_thickness = trial.suggest_categorical("foil_thickness", config.metal_sheet_thickness_list)
-
 
             try:
                 if config.max_transformer_total_height is not None:
@@ -481,6 +480,7 @@ class StackedTransformerOptimization:
 
             core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                window_h_top=window_h_top, window_h_bot=window_h_bot)
+
             core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
                               # mu_r_abs=3500, phi_mu_deg=12, sigma=1.2,
                               # permeability_datasource=femmt.MaterialDataSource.Custom,
@@ -523,7 +523,9 @@ class StackedTransformerOptimization:
                 iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
                 bobbin_coil_top=config.insulations.iso_top_core,
                 bobbin_coil_bot=config.insulations.iso_bot_core,
+
                 bobbin_coil_left=inner_coil_insulation,
+
                 bobbin_coil_right=config.insulations.iso_right_core,
 
                 # misc
@@ -533,6 +535,7 @@ class StackedTransformerOptimization:
 
             geo.set_insulation(insulation)
             geo.set_winding_windows([coil_window, transformer_window])
+
 
             geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
