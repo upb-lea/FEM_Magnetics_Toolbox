@@ -124,13 +124,6 @@ class Conductor:
         self.n_layers = ff.litz_calculate_number_layers(number_strands)
         self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
-        ff.femmt_print(f"Updated Litz Configuration: \n"
-                       f" ff: {self.ff} \n"
-                       f" Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
-                       f" Strand radius: {self.strand_radius} \n"
-                       f" Conductor radius: {self.conductor_radius}\n"
-                       f"---")
-
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
@@ -169,7 +162,7 @@ class Core:
     phi_mu_deg: float  # mu_complex = mu_r_abs * exp(j*phi_mu_deg)
 
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
-    sigma: complex  # Imaginary part of complex equivalent permittivity [frequency-dependent]
+    sigma: complex  # complex equivalent permittivity [frequency-dependent], real and imaginary part
 
     steinmetz_loss: int = 0
     generalized_steinmetz_loss: int = 0
@@ -184,6 +177,8 @@ class Core:
     datasource: str  # type of data to be accessed ( datasheet or measurement)
 
     file_path_to_solver_folder: str  # location to create temporary pro file
+
+    mdb_verbosity: Verbosity
 
     def __init__(self,
                  # dimensions
@@ -211,7 +206,8 @@ class Core:
                  sigma: complex = None,
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
-                 **kwargs):
+                 mdb_verbosity: Verbosity = Verbosity.ToConsole,
+                 **kwargs): # TODO Is this kwargs really needed? Can this be removed?
         """TODO Doc
 
         :param core_inner_diameter: diameter of the inner core
@@ -233,6 +229,8 @@ class Core:
         :param detailed_core_model: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
         :type detailed_core_model: bool, optional
         """
+        self.mdb_verbosity = mdb_verbosity
+
         # Set parameters
         self.core_type = core_type  # Basic shape of magnetic conductor
 
@@ -277,7 +275,7 @@ class Core:
         # Material Parameters
         # General
         # Initialize database
-        self.material_database = mdb.MaterialDatabase(ff.silent)
+        self.material_database = mdb.MaterialDatabase(self.mdb_verbosity == Verbosity.Silent)
         self.material = material
         self.file_path_to_solver_folder = None
         self.temperature = temperature
@@ -315,7 +313,6 @@ class Core:
                 self.ki = steinmetz_parameter[0]
                 self.alpha = steinmetz_parameter[1]
                 self.beta = steinmetz_parameter[2]
-                ff.femmt_print(f"{self.ki, self.alpha, self.beta = }")
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
         # if loss_approach == LossApproach.Generalized_Steinmetz:
@@ -400,7 +397,8 @@ class Core:
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
-        ff.femmt_print(f"{self.permeability['datasource'] = }")
+        if self.mdb_verbosity == Verbosity.ToConsole:
+            print(f"{self.permeability['datasource'] = }")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
                                                              datasource=self.permeability["datasource"],

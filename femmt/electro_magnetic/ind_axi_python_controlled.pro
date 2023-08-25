@@ -273,10 +273,10 @@ Function {
   For n In {1:n_windings}
       If(Flag_HomogenisedModel~{n})
          // Secondary
-         file_ZSkinRe~{n}  = Sprintf("Strands_Coefficients/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
-         file_ZSkinIm~{n}  = Sprintf("Strands_Coefficients/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
-         file_NuProxRe~{n} = Sprintf("Strands_Coefficients/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
-         file_NuProxIm~{n} = Sprintf("Strands_Coefficients/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
+         file_ZSkinRe~{n}  = Sprintf(StrCat[DirStrandCoeff, "coeff/pI_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
+         file_ZSkinIm~{n}  = Sprintf(StrCat[DirStrandCoeff, "coeff/qI_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
+         file_NuProxRe~{n} = Sprintf(StrCat[DirStrandCoeff, "coeff/qB_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
+         file_NuProxIm~{n} = Sprintf(StrCat[DirStrandCoeff, "coeff/pB_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
          skin_rhor_list~{n}() = ListFromFile[ file_ZSkinRe~{n} ];
          skin_rhoi_list~{n}() = ListFromFile[ file_ZSkinIm~{n} ];
          prox_nur_list~{n}()  = ListFromFile[ file_NuProxRe~{n} ];

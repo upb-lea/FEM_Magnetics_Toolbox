@@ -81,7 +81,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
         os.mkdir(working_directory)
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                working_directory=working_directory, silent=False, is_gui=is_test)
+                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
@@ -115,9 +115,11 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
                                                                                                       iso_secondary_to_secondary=2e-4,
                                                                                                       iso_primary_to_secondary=4e-4,
                                                                                                       interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
+                                                                                                      interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
                                                                                                       primary_coil_turns=3,
                                                                                                       primary_additional_bobbin=1e-3,
-                                                                                                      winding_temperature=100)
+                                                                                                      winding_temperature=100,
+                                                                                                      center_foil_additional_bobbin=0e-3)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])

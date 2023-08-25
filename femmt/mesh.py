@@ -1,15 +1,16 @@
 # Python standard libraries
 import os
 import numpy as np
-from typing import Dict, List
 import warnings
+from logging import Logger
+from typing import Dict, List
 
 # Third parry libraries
 import gmsh
 
 # Local libraries
 import femmt.functions as ff
-from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType
+from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType, Verbosity
 from femmt.data import FileData
 from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation
 from femmt.drawing import TwoDaxiSymmetric
@@ -36,20 +37,34 @@ class Mesh:
     e_m_mesh_file: str
     thermal_mesh_file: str
 
+    verbosity: Verbosity
+    logger: Logger
+
     # Additionally there are all the needed lists for points, lines, curve_loops and plane_surfaces
     # See set_empty_lists()
 
     def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], correct_outer_leg: bool,
-                 file_paths: FileData, region: bool = None, silent: bool = False):
+                 file_paths: FileData, verbosity: Verbosity, logger: Logger, region: bool = None):
+
+        self.verbosity = verbosity
+        self.logger = logger
 
         # Initialize gmsh once
         if not gmsh.isInitialized():
             gmsh.initialize()
 
-        if silent:
+        if verbosity == Verbosity.Silent:
             gmsh.option.set_number("General.Verbosity", 1)
         else:
             gmsh.option.set_number("General.Verbosity", 5)
+
+        if verbosity == Verbosity.ToConsole:
+            gmsh.option.setNumber("General.Terminal", 1)
+        else:
+            gmsh.option.setNumber("General.Terminal", 0)
+
+        if verbosity == Verbosity.ToFile:
+            gmsh.logger.start()
 
         self.model = model
         self.core = model.core
@@ -68,6 +83,11 @@ class Mesh:
         self.mesh_folder_path = file_paths.mesh_folder_path
         self.e_m_mesh_file = file_paths.e_m_mesh_file
         self.thermal_mesh_file = file_paths.thermal_mesh_file
+        self.gmsh_log = file_paths.gmsh_log
+
+    def femmt_print(self, text: str):
+        if not self.verbosity == Verbosity.Silent:
+            self.logger.info(text)
 
     def set_empty_point_lists(self):
         # Add empty lists
@@ -1209,7 +1229,7 @@ class Mesh:
 
         :return:
         """
-        ff.femmt_print("Hybrid Mesh Generation in Gmsh")
+        self.femmt_print("Hybrid Mesh Generation in Gmsh")
         # Initialization
         self.set_empty_plane_lists()
         p_core, p_island, p_cond, p_region, p_iso_core = self.set_empty_point_lists()
@@ -1271,7 +1291,7 @@ class Mesh:
         gmsh.write(self.model_geo_file)
 
     def generate_electro_magnetic_mesh(self, refine=0):
-        ff.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
+        self.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
         self.PN_BOUND = 111111
         self.PN_AIR = 110000
@@ -1367,17 +1387,36 @@ class Mesh:
         gmsh.option.setNumber("Mesh.MshFileVersion", 4.1)
         gmsh.option.setNumber("Mesh.SurfaceFaces", 0)
 
-        # Mesh the model
-        ff.femmt_print("\nMeshing...\n")
-        gmsh.model.mesh.generate(2)
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # TODO: Adaptive Meshing
+        if refine == 1:
+            self.femmt_print("\n ------- \nRefined Mesh Creation ")
+            # mesh the new gmsh.model using the size field
+            bg_field = gmsh.model.mesh.field.add("PostView")
+            # TODO: gmsh.model.mesh.field.setNumber(bg_field, "ViewTag", sf_view)
+            gmsh.model.mesh.field.setAsBackgroundMesh(bg_field)
+            self.femmt_print("\nMeshing...\n")
+            gmsh.model.mesh.generate(2)
+        else:
+            # Mesh the model
+            self.femmt_print("\nMeshing...\n")
+            gmsh.model.mesh.generate(2)
 
         if not os.path.exists(self.mesh_folder_path):
             os.mkdir(self.mesh_folder_path)
 
         gmsh.write(self.e_m_mesh_file)
 
+        if self.verbosity == Verbosity.ToFile:
+            lines = gmsh.logger.get()
+            text = ""
+            for line in lines:
+                text += f"{line}\n"
+            with open(self.gmsh_log, "w") as fd:
+                fd.write(text)
+
     def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before):
-        ff.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")
+        self.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")
 
         gmsh.open(self.model_geo_file)
 
@@ -1640,7 +1679,7 @@ class Mesh:
 
         # TODO: Inter conductor meshing!
         if all(winding.conductor_type == ConductorType.RoundSolid for winding in self.windings):
-            ff.femmt_print(f"Making use of skin based meshing\n")
+            self.femmt_print(f"Making use of skin based meshing\n")
             for num in range(len(self.windings)):
                 for i in range(0, int(len(p_cond[num]) / 5)):
                     gmsh.model.mesh.embed(0, [p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
