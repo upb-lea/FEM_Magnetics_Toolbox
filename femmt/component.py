@@ -557,6 +557,7 @@ class MagneticComponent:
             else:
                 ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, frequency=self.frequency, complex_permeability=self.get_single_complex_permeability(),
                                        complex_permittivity=0, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5, silent=self.silent)
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
     def calculate_core_volume_with_air(self) -> float:
@@ -936,6 +937,7 @@ class MagneticComponent:
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
+
             prepare_simulation_time = time.time() - start_time
 
             start_time = time.time()
@@ -1148,7 +1150,7 @@ class MagneticComponent:
             # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
-        def split_time_current_vectors_center_tapped(time_current_vectors):
+        def split_time_current_vectors_center_tapped(time_current_vectors: List[List[List[float]]]):
             # print(f"{time_current_vectors = }")
             positive_secondary_current = np.copy(time_current_vectors[1][1])
             positive_secondary_current[positive_secondary_current < 0] = 0
@@ -1173,7 +1175,14 @@ class MagneticComponent:
 
             return center_tapped_time_current_vectors
 
-        def linear_loss_excitation(time_current_vectors):
+        def linear_loss_excitation(time_current_vectors: List[List[List[float]]]):
+            """
+            Perform FFT to get the primary and secondary currents to calculate the wire losses.
+            These losses can be 'linear added' to get the total winding losses.
+
+            :param time_current_vectors: primary and secondary current waveforms over time
+            :type time_current_vectors: List[List[List[float]]]
+            """
             # winding losses
             frequency_current_phase_deg_list = []
             # collect winding losses simulation input parameters
@@ -1388,7 +1397,6 @@ class MagneticComponent:
         :param op_frequency: operating frequency in Hz
         :type op_frequency: float
         """
-
         if len(self.windings) == 1:
             raise NotImplementedError("For inductor, this function will not be implemented. See 'flux_over_current' in 'log_electro_magnetic.json' ")
 
@@ -1406,6 +1414,7 @@ class MagneticComponent:
             mean_coupling_factors = ff.get_mean_coupling_factors(coupling_matrix)
             inductance_matrix = ff.get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matrix)
 
+
             if print_to_console:
                 ff.visualize_self_inductances(self_inductances, flux_linkages, silent=self.silent)
                 ff.visualize_self_resistances(self_inductances, flux_linkages, op_frequency, silent=self.silent)
@@ -1420,7 +1429,6 @@ class MagneticComponent:
                 # print(np.array(inductance_matrix).imag)
 
         if len(self.windings) == 2:
-
             # Self inductances
             self.L_1_1 = self_inductances[0].real
             self.L_2_2 = self_inductances[1].real
@@ -1441,7 +1449,7 @@ class MagneticComponent:
             #         secondary_turns += vww.turns[1]
             # n = primary_turns / secondary_turns
             #
-            # ff.femmt_print(f"\n"
+            # self.femmt_print(f"\n"
             #                f"Turns Ratio:\n"
             #                f"n = {n}\n"
             #                )
@@ -1450,7 +1458,7 @@ class MagneticComponent:
             # l_s1 = self.L_1_1 - self.M * n
             # l_s2 = self.L_2_2 - self.M / n
             # l_h = self.M * n
-            # ff.femmt_print(f"\n"
+            # self.femmt_print(f"\n"
             #                f"T-ECD (primary side transformed):\n"
             #                f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
             #                f"    - Transformation Ratio: n\n"

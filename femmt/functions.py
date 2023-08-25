@@ -1294,8 +1294,8 @@ def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity
     return 2 * np.pi / k.real
 
 
-def check_mqs_condition(radius, frequency, complex_permeability, complex_permittivity, conductivity,
-                        relative_margin_to_first_resonance=0.5, silent: bool = False):
+def check_mqs_condition(radius: float, frequency: float, complex_permeability: float, complex_permittivity: float,
+                        conductivity: float, relative_margin_to_first_resonance: float=0.5, silent: bool = False):
     """
     Checks if the condition for a magnetoquasistatic simulation is fulfilled.
 
@@ -1498,7 +1498,6 @@ def visualize_inductance_matrix(inductance_matrix, silent: bool):
         print(f"\n"
                    f"Inductance Matrix: ")
         print(string_to_print)
-
 
 
 if __name__ == '__main__':
