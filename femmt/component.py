@@ -1298,14 +1298,15 @@ class MagneticComponent:
 
         return center_tapped_study_excitation
 
-    def stacked_core_center_tapped_study(self, center_tapped_study_excitation, no_primary_coil_turns=None, non_sine_hysteresis_correction=False):
+    def stacked_core_center_tapped_study(self, center_tapped_study_excitation, number_primary_coil_turns: int = None,
+                                         non_sine_hysteresis_correction: bool = False):
         """
         Comprehensive component analysis for center tapped transformers with dedicated choke.
 
-        :param non_sine_hysteresis_correction:
+        :param non_sine_hysteresis_correction: True to enable the non-sinusoidal hysteresis correction factor
         :param center_tapped_study_excitation:
-        :param time_current_vectors:
-        :param plot_waveforms:
+        :param number_primary_coil_turns: number of primary coil turns. Needed due to a special trick to get the transformer losses without effect of the choke
+        :type number_primary_coil_turns: int
         :return:
         """
 
@@ -1325,7 +1326,7 @@ class MagneticComponent:
         # print(f"{p_hyst = }")
 
 
-        ps_primary_coil_turns = [150000+i for i in range(no_primary_coil_turns)]
+        ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
         self.overwrite_conductors_with_air(ps_primary_coil_turns)
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"],
@@ -1350,7 +1351,7 @@ class MagneticComponent:
             # p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
             # print(f"{p_hyst = }")
 
-            ps_primary_coil_turns = [150000 + i for i in range(no_primary_coil_turns)]
+            ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
 
         self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns)+1000000))
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
