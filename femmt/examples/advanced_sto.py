@@ -9,6 +9,7 @@ import optuna.samplers
 
 #femmt libraries
 import femmt as fmt
+import materialdatabase as mdb
 
 
 
@@ -45,7 +46,7 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     temperature=100,
 
     # sweep parameters: geometry and material
-    material_list = ["N95"],
+    material_list = [mdb.Material.N95],
     core_inner_diameter_min_max_list= [18e-3, 22e-3],
     window_w_min_max_list= [10e-3, 14e-3],
     window_h_bot_min_max_list= [13e-3, 15e-3],
@@ -66,7 +67,7 @@ study_name = "2023-07-05"
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 15,
+    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 50,
                                                                                 number_objectives=4,
                                                                                 sampler=optuna.samplers.NSGAIIISampler())
     #fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config)

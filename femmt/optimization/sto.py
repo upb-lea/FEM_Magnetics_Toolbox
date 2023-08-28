@@ -169,16 +169,13 @@ class StackedTransformerOptimization:
                 core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                  window_h_top=window_h_top, window_h_bot=window_h_bot)
                 core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                                  #mu_r_abs=3500, phi_mu_deg=12, sigma=1.2,
-                                  #permeability_datasource=femmt.MaterialDataSource.Custom,
-                                  #permittivity_datasource=femmt.MaterialDataSource.Custom)
                                   material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
                                   permeability_datasource=femmt.MaterialDataSource.Measurement,
                                   permeability_datatype=femmt.MeasurementDataType.ComplexPermeability,
-                                  permeability_measurement_setup="LEA_LK",
+                                  permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
                                   permittivity_datasource=femmt.MaterialDataSource.Measurement,
                                   permittivity_datatype=femmt.MeasurementDataType.ComplexPermittivity,
-                                  permittivity_measurement_setup="LEA_LK")
+                                  permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
 
                 geo.set_core(core)
 
@@ -212,6 +209,8 @@ class StackedTransformerOptimization:
                     bobbin_coil_bot=config.insulations.iso_bot_core,
                     bobbin_coil_left=inner_coil_insulation,
                     bobbin_coil_right=config.insulations.iso_right_core,
+                    center_foil_additional_bobbin=0e-3,
+                    interleaving_scheme=femmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
 
                     # misc
                     interleaving_type=femmt.CenterTappedInterleavingType.TypeC,
@@ -223,7 +222,7 @@ class StackedTransformerOptimization:
 
                 geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
-                geo.center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
+                geo.stacked_core_center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
                                                               [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
                                         plot_waveforms=False)
 

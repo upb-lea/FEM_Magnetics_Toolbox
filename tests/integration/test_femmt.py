@@ -11,6 +11,9 @@ import femmt.examples.basic_transformer_integrated
 import femmt.examples.basic_transformer_center_tapped
 import femmt.examples.basic_transformer_stacked
 import femmt.examples.basic_transformer_stacked_center_tapped
+import femmt.examples.basic_inductor_foil_vertical
+import femmt.examples.basic_transformer_n_winding
+import femmt.examples.advanced_indutor_sweep
 import materialdatabase as mdb
 
 
@@ -1067,3 +1070,23 @@ def test_basic_example_transformer_stacked_center_tapped(temp_folder):
     femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(onelab_folder=onelab_folder,
                                                                                                            show_visual_outputs=False,
                                                                                                            is_test=True)
+
+def test_basic_example_inductor_foil_vertical(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_foil_vertical.basic_example_inductor_foil_vertical(onelab_folder=onelab_folder,
+                                                                                                           show_visual_outputs=False,
+                                                                                                           is_test=True)
+
+
+def test_basic_example_transformer_n_winding(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_n_winding.basic_example_transformer_n_winding(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                   is_test=True)
+
+
+def test_advanced_example_inductor_sweep(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.advanced_indutor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                   is_test=True)

@@ -1,9 +1,10 @@
 import numpy as np
 
 import femmt as fmt
+import materialdatabase as mdb
 import os
 
-def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
@@ -16,7 +17,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                silent=True, is_gui=is_test)
+                                verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
@@ -33,27 +34,17 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material="N95", temperature=30, frequency=inductor_frequency,
+                    material=mdb.Material.N95, temperature=30, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
                     # permeability_datasource=fmt.MaterialDataSource.Custom, mu_r_abs=2000, phi_mu_deg=1,
 
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    # permeability_measurement_setup="LEA_LK",
-                    permeability_measurement_setup="small_signal2",
-                    # permeability_measurement_setup="small_signal1",
+                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    # permittivity_measurement_setup="LEA_LK")
-                    permittivity_measurement_setup="small_signal")
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
 
-                    # permeability_datasource = fmt.MaterialDataSource.Custom, mu_r_abs=1945, phi_mu_deg=1.551,
-                    # permittivity_datasource = fmt.MaterialDataSource.Custom,
-                    # permittivity_datatype = fmt.MeasurementDataType.ComplexPermittivity,
-                    # sigma=complex(0.34999993, 1.9999996)  # 500kHz  5.9476647885531e-06
-                    # # sigma = complex(0.38499992, 2.19999956)  # 550kHz
-                    # # sigma=complex(0.69999986, 3.9999992)  # 1MHz
-                    # )
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -105,4 +96,4 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
 
 if __name__ == "__main__":
-    basic_example_inductor(show_visual_outputs=True)
+    advanced_example_inductor_sweep(show_visual_outputs=True)

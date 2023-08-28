@@ -1133,7 +1133,40 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=float(p_hyst))
 
-    def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False):
+    def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False)\
+            -> Dict:
+        """
+        As magnetizing currents are often non-sinusoidal, some corrections in the simulation current waveforms
+        are needed. This function calculates the new current waveforms for the center tapped study to get
+        inductance values and so on.
+
+        :param time_current_vectors: time-current vectors for primary and secondary
+        :type time_current_vectors: List[List[List[float]]]
+        :param plot_waveforms: True to watch the pre-calculated waveforms
+        :type plot_waveforms: bool
+        :return: new current waveform vector
+        :rtype: Dict
+
+        return dict:
+        center_tapped_study_excitation = {
+            "hysteresis": {
+                "frequency": None,
+                "transformer": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                },
+                "choke": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                }
+            },
+            "linear_losses": {
+                "frequencies": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            }
+        }
+        """
 
         def hysteresis_loss_excitation(input_time_current_vectors):
             # collect simulation input parameters from time_current_vectors
