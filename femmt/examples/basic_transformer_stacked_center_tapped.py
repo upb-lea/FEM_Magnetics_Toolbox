@@ -119,6 +119,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
                                                                                                       primary_coil_turns=3,
                                                                                                       primary_additional_bobbin=1e-3,
                                                                                                       winding_temperature=100,
+                                                                                                      bobbin_coil_left=3e-3,
                                                                                                       center_foil_additional_bobbin=0e-3)
 
     geo.set_insulation(insulation)
@@ -128,7 +129,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
 
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_fem_simulation_results=show_visual_outputs)
 
-    # geo.get_inductances(I0=1, op_frequency=200000)
+    geo.get_inductances(I0=1, op_frequency=200000)
 
 if __name__ == "__main__":
     basic_example_transformer_stacked_center_tapped(show_visual_outputs=True)

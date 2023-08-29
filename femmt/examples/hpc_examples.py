@@ -6,8 +6,10 @@ import time
 import matplotlib.pyplot as plt
 import statistics
 
+
 # Local libraries
 import femmt as fmt
+import materialdatabase as mdb
 
 """This file contains examples for the use of the hpc function. Internally the multprocessing package is used.
 
@@ -56,16 +58,17 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"])
+                                                    window_h=core_db["window_h"],
+                                                    core_h=core_db["core_h"])
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material="N49", temperature=45, frequency=inductor_frequency,
+                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup="LEA_LK",
+                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup="LEA_LK", mdb_verbosity=fmt.Verbosity.Silent)
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_height, air_gap_position)

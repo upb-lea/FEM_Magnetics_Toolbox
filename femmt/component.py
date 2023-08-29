@@ -1058,10 +1058,14 @@ class MagneticComponent:
             self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            for count_frequency in range(0, len(frequency_list)):
+
+            check_model_mqs_condition_already_performerd = False
+            for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency], amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if count_frequency == 0: self.check_model_mqs_condition()
+                if value_frequency != 0 and not check_model_mqs_condition_already_performerd:
+                    self.check_model_mqs_condition()
+                    check_model_mqs_condition_already_performerd = True
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1129,7 +1133,40 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=float(p_hyst))
 
-    def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False):
+    def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False)\
+            -> Dict:
+        """
+        As magnetizing currents are often non-sinusoidal, some corrections in the simulation current waveforms
+        are needed. This function calculates the new current waveforms for the center tapped study to get
+        inductance values and so on.
+
+        :param time_current_vectors: time-current vectors for primary and secondary
+        :type time_current_vectors: List[List[List[float]]]
+        :param plot_waveforms: True to watch the pre-calculated waveforms
+        :type plot_waveforms: bool
+        :return: new current waveform vector
+        :rtype: Dict
+
+        return dict:
+        center_tapped_study_excitation = {
+            "hysteresis": {
+                "frequency": None,
+                "transformer": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                },
+                "choke": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                }
+            },
+            "linear_losses": {
+                "frequencies": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            }
+        }
+        """
 
         def hysteresis_loss_excitation(input_time_current_vectors):
             # collect simulation input parameters from time_current_vectors
@@ -1294,14 +1331,15 @@ class MagneticComponent:
 
         return center_tapped_study_excitation
 
-    def stacked_core_center_tapped_study(self, center_tapped_study_excitation, no_primary_coil_turns=None, non_sine_hysteresis_correction=False):
+    def stacked_core_center_tapped_study(self, center_tapped_study_excitation, number_primary_coil_turns: int = None,
+                                         non_sine_hysteresis_correction: bool = False):
         """
         Comprehensive component analysis for center tapped transformers with dedicated choke.
 
-        :param non_sine_hysteresis_correction:
+        :param non_sine_hysteresis_correction: True to enable the non-sinusoidal hysteresis correction factor
         :param center_tapped_study_excitation:
-        :param time_current_vectors:
-        :param plot_waveforms:
+        :param number_primary_coil_turns: number of primary coil turns. Needed due to a special trick to get the transformer losses without effect of the choke
+        :type number_primary_coil_turns: int
         :return:
         """
 
@@ -1321,7 +1359,7 @@ class MagneticComponent:
         # print(f"{p_hyst = }")
 
 
-        ps_primary_coil_turns = [150000+i for i in range(no_primary_coil_turns)]
+        ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
         self.overwrite_conductors_with_air(ps_primary_coil_turns)
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"],
@@ -1346,7 +1384,7 @@ class MagneticComponent:
             # p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
             # print(f"{p_hyst = }")
 
-            ps_primary_coil_turns = [150000 + i for i in range(no_primary_coil_turns)]
+            ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
 
         self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns)+1000000))
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],

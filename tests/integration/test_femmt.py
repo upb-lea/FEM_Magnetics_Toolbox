@@ -11,6 +11,10 @@ import femmt.examples.basic_transformer_integrated
 import femmt.examples.basic_transformer_center_tapped
 import femmt.examples.basic_transformer_stacked
 import femmt.examples.basic_transformer_stacked_center_tapped
+import femmt.examples.basic_inductor_foil_vertical
+import femmt.examples.basic_transformer_n_winding
+import femmt.examples.advanced_indutor_sweep
+import materialdatabase as mdb
 
 
 def compare_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
@@ -105,7 +109,7 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
                                                         core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material="N95", temperature=25, frequency=100000,
+                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25, frequency=100000,
                         permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
                         permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
         geo.set_core(core)
@@ -199,13 +203,13 @@ def femmt_simulation_inductor_core_material_database_measurement(temp_folder):
                                                         core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material="N95", temperature=25, frequency=100000,
+                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25, frequency=100000,
                         permeability_datasource=fmt.MaterialDataSource.Measurement,
                         permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        permeability_measurement_setup="LEA_LK",
+                        permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
                         permittivity_datasource=fmt.MaterialDataSource.Measurement,
                         permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        permittivity_measurement_setup="LEA_LK")
+                        permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -1066,3 +1070,24 @@ def test_basic_example_transformer_stacked_center_tapped(temp_folder):
     femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(onelab_folder=onelab_folder,
                                                                                                            show_visual_outputs=False,
                                                                                                            is_test=True)
+
+def test_basic_example_inductor_foil_vertical(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_foil_vertical.basic_example_inductor_foil_vertical(onelab_folder=onelab_folder,
+                                                                                                           show_visual_outputs=False,
+                                                                                                           is_test=True)
+
+
+def test_basic_example_transformer_n_winding(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_n_winding.basic_example_transformer_n_winding(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                   is_test=True)
+
+
+def test_advanced_example_inductor_sweep(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.advanced_indutor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                   is_test=True)
+
