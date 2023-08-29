@@ -1352,7 +1352,9 @@ class MagneticComponent:
 
 
         # get the inductance
-        inductance_dict = self.get_inductances(I0=1, op_frequency=center_tapped_study_excitation["hysteresis"]["frequency"], skin_mesh_factor = 1)
+        inductance_dict = self.get_inductances(I0=1, skin_mesh_factor = 1,
+                                               op_frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
+                                               silent=self.silent)
 
         # Initialize the hysteresis losses with zero
         p_hyst = 0
@@ -1413,7 +1415,7 @@ class MagneticComponent:
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
     def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1,
-                        visualize_last_fem_simulation: bool = False, print_to_console: bool = True):
+                        visualize_last_fem_simulation: bool = False, silent: bool = False):
         """
         Performs 'open' simulations with input current for each winding and calculates the inductance matrix and
         the primary concentrated equivalent circuit.
@@ -1434,6 +1436,8 @@ class MagneticComponent:
         :type I0: float
         :param op_frequency: operating frequency in Hz
         :type op_frequency: float
+        :param silent: True for not terminal output
+        :type silent: bool
         """
         if len(self.windings) == 1:
             raise NotImplementedError("For inductor, this function will not be implemented. See 'flux_over_current' in 'log_electro_magnetic.json' ")
@@ -1452,8 +1456,7 @@ class MagneticComponent:
             mean_coupling_factors = ff.get_mean_coupling_factors(coupling_matrix)
             inductance_matrix = ff.get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matrix)
 
-
-            if print_to_console:
+            if not silent:
                 ff.visualize_self_inductances(self_inductances, flux_linkages, silent=self.silent)
                 ff.visualize_self_resistances(self_inductances, flux_linkages, op_frequency, silent=self.silent)
                 ff.visualize_flux_linkages(flux_linkages, silent=self.silent)
