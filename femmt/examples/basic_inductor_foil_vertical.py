@@ -21,7 +21,10 @@ def basic_example_inductor_foil_vertical(onelab_folder: str = None, show_visual_
 
     # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.Silent, is_gui=True)
+                                verbosity=fmt.Verbosity.Silent, is_gui=is_test)
+
+    # This line is for automated pytest running on github only. Please ignore this line!
+    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
