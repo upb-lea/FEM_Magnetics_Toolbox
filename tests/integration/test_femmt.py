@@ -1090,3 +1090,4 @@ def test_advanced_example_inductor_sweep(temp_folder):
     femmt.examples.advanced_indutor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
                                                                                    is_test=True)
+
