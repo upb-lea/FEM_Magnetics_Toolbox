@@ -220,11 +220,17 @@ class StackedTransformerOptimization:
                 geo.set_insulation(insulation)
                 geo.set_winding_windows([coil_window, transformer_window])
 
-                geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
+                geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
-                geo.stacked_core_center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
-                                                              [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
-                                        plot_waveforms=False)
+                center_tapped_study_excitation = geo.center_tapped_pre_study(
+                    time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec], [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]])
+
+                geo.stacked_core_center_tapped_study(center_tapped_study_excitation, number_primary_coil_turns=primary_coil_turns)
+
+
+                #geo.stacked_core_center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
+                #                                              [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
+                #                        plot_waveforms=False)
 
                 # copy result files to result-file folder
                 source_json_file = os.path.join(
@@ -536,7 +542,7 @@ class StackedTransformerOptimization:
             geo.set_winding_windows([coil_window, transformer_window])
 
 
-            geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
+            geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
             # geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
             #                       current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
