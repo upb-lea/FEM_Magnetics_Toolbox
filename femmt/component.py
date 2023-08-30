@@ -1657,6 +1657,7 @@ class MagneticComponent:
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
 
+
     def write_electro_magnetic_parameter_pro(self):
         """
         Write materials and other parameters to the "Parameter.pro" file.
@@ -1707,82 +1708,72 @@ class MagneticComponent:
             text_file.write(f"f_switch = {self.f_switch};\n")
 
         # Conductor specific definitions
-        for num in range(len(self.windings)):
+        for winding_number in range(len(self.windings)):
             # -- Control Flags --
             if self.flag_excitation_type == 'current':
                 text_file.write(f"Flag_ImposedVoltage = 0;\n")
             if self.flag_excitation_type == 'voltage':
                 text_file.write(f"Flag_ImposedVoltage = 1;\n")
-            if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                text_file.write(f"Flag_HomogenisedModel_{num + 1} = 1;\n")
+            if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
+                text_file.write(f"Flag_HomogenisedModel_{winding_number + 1} = 1;\n")
             else:
-                text_file.write(f"Flag_HomogenisedModel_{num + 1} = 0;\n")
+                text_file.write(f"Flag_HomogenisedModel_{winding_number + 1} = 0;\n")
 
             # -- Geometry --
             # Core Parts
             text_file.write(f"nCoreParts = {len(self.mesh.plane_surface_core)};\n")
 
-            # Number of turns per conductor
-            turns = 0
-            for ww in self.winding_windows:
-                for vww in ww.virtual_winding_windows:
-                    for index, winding in enumerate(self.windings):
-                        if winding.winding_number == num:
-                            # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
-                            try:
-                                turns += vww.turns[index]
-                            except:
-                                pass
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=winding_number)
 
-            if self.windings[num].parallel:
-                text_file.write(f"NbrCond_{num + 1} = 1;\n")
-                text_file.write(f"AreaCell_{num + 1} = {self.windings[num].a_cell*turns};\n")
+            if self.windings[winding_number].parallel:
+                text_file.write(f"NbrCond_{winding_number + 1} = 1;\n")
+                text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell*turns};\n")
             else:
-                text_file.write(f"NbrCond_{num + 1} = {turns};\n")
-                text_file.write(f"AreaCell_{num + 1} = {self.windings[num].a_cell};\n")
+                text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
+                text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
 
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
-            if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                text_file.write(f"NbrStrands_{num + 1} = {self.windings[num].n_strands};\n")
-                text_file.write(f"Fill_{num + 1} = {self.windings[num].ff};\n")
+            if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
+                text_file.write(f"NbrStrands_{winding_number + 1} = {self.windings[winding_number].n_strands};\n")
+                text_file.write(f"Fill_{winding_number + 1} = {self.windings[winding_number].ff};\n")
                 # ---
                 # Litz Approximation Coefficients were created with 4 layers
                 # That's why here a hard-coded 4 is implemented
                 # text_file.write(f"NbrLayers{num+1} = {self.n_layers[num]};\n")
-                text_file.write(f"NbrLayers_{num + 1} = 4;\n")
+                text_file.write(f"NbrLayers_{winding_number + 1} = 4;\n")
 
-            text_file.write(f"Rc_{num + 1} = {self.windings[num].conductor_radius};\n")
+            text_file.write(f"Rc_{winding_number + 1} = {self.windings[winding_number].conductor_radius};\n")
 
             # -- Excitation --
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
-                text_file.write(f"Val_EE_{num + 1} = {abs(self.current[num])};\n")
-                text_file.write(f"Phase_{num + 1} = {np.deg2rad(self.phase_deg[num])};\n")
-                text_file.write(f"Parallel_{num + 1} = {int(self.windings[num].parallel==True)};\n")
+                text_file.write(f"Val_EE_{winding_number + 1} = {abs(self.current[winding_number])};\n")
+                text_file.write(f"Phase_{winding_number + 1} = {np.deg2rad(self.phase_deg[winding_number])};\n")
+                text_file.write(f"Parallel_{winding_number + 1} = {int(self.windings[winding_number].parallel==True)};\n")
 
             if self.flag_excitation_type == 'current_density':
-                text_file.write(f"Val_EE_{num + 1} = {self.current_density[num]};\n")
+                text_file.write(f"Val_EE_{winding_number + 1} = {self.current_density[winding_number]};\n")
                 raise NotImplementedError
 
             if self.flag_excitation_type == 'voltage':
-                text_file.write(f"Val_EE_{num + 1} = {self.voltage[num]};\n")
+                text_file.write(f"Val_EE_{winding_number + 1} = {self.voltage[winding_number]};\n")
                 raise NotImplementedError
 
-            self.femmt_print(f"Cell surface area: {self.windings[num].a_cell} \n"
-                  f"Reduced frequency: {self.red_freq[num]}")
+            self.femmt_print(f"Cell surface area: {self.windings[winding_number].a_cell} \n"
+                  f"Reduced frequency: {self.red_freq[winding_number]}")
 
-            if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == ConductorType.RoundLitz:
+            if self.red_freq[winding_number] > 1.25 and self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
                 # TODO: Allow higher reduced frequencies
                 self.femmt_print(f"Litz Coefficients only implemented for X<=1.25")
                 raise Warning
             # Reduced Frequency
-            text_file.write(f"Rr_{num + 1} = {self.red_freq[num]};\n")
+            text_file.write(f"Rr_{winding_number + 1} = {self.red_freq[winding_number]};\n")
 
             # Material Properties
             # Conductor Material
-            text_file.write(f"sigma_winding_{num + 1} = {self.windings[num].cond_sigma};\n")
+            text_file.write(f"sigma_winding_{winding_number + 1} = {self.windings[winding_number].cond_sigma};\n")
 
         # -- Materials --
 
@@ -1901,7 +1892,7 @@ class MagneticComponent:
             # Winding names are needed to find the logging path
             winding_name = ["Winding_" + str(i) for i in range(1, len(self.windings) + 1)]
 
-            for winding in range(len(self.windings)):
+            for winding_number in range(len(self.windings)):
 
                 # Create empty winding dictionary
                 # create dictionary winding_dict with 'turn_losses' as list of the j=number_turns turn losses.
@@ -1913,22 +1904,17 @@ class MagneticComponent:
                                 "V": []}
 
                 # Number turns
-                turns = 0
-                for ww in self.winding_windows:
-                    for vww in ww.virtual_winding_windows:
-                        for conductor in vww.windings:
-                            if conductor.winding_number == winding:
-                                turns += vww.turns[conductor.winding_number]
+                turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings, winding_number=winding_number)
 
                 winding_dict["number_turns"] = turns
 
                 # Currents
                 if sweep_number > 1:
                     # sweep_simulation -> get currents from passed currents
-                    complex_current_phasor = currents[sweep_run][winding]
+                    complex_current_phasor = currents[sweep_run][winding_number]
                 else:
                     # single_simulation -> get current from instance variable
-                    complex_current_phasor = self.current[winding]
+                    complex_current_phasor = self.current[winding_number]
 
                 # Store complex value as list in json (because json is not natively capable of complex values)
                 winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
@@ -1936,19 +1922,19 @@ class MagneticComponent:
 
 
                 # Case litz: Load homogenized results
-                if self.windings[winding].conductor_type == ConductorType.RoundLitz:
-                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
+                if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
+                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding_number + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, winding_dict["number_turns"]):
-                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
                 # Case Solid: Load results, (pitfall for parallel windings results are only stored in one turn!)
                 else:
-                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
-                    if self.windings[winding].parallel:
-                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{1}", last_n=sweep_number)[sweep_run])
+                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding_number + 1}", last_n=sweep_number)[sweep_run]
+                    if self.windings[winding_number].parallel:
+                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{1}", last_n=sweep_number)[sweep_run])
                     else:
                         for turn in range(0, winding_dict["number_turns"]):
-                            winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+                            winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
 
 
                 # Magnetic Field Energy
@@ -1956,8 +1942,8 @@ class MagneticComponent:
                 # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Voltage
-                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding_number + 1}", part="real", last_n=sweep_number)[sweep_run])
+                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding_number + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
                 complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
 
                 # Inductance
@@ -1973,8 +1959,8 @@ class MagneticComponent:
 
 
                 # Flux
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", last_n=sweep_number)[sweep_run])
+                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
                 # Flux from voltage
                 #winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).real)  # (L*I).real
                 #winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).imag)  # (L*I).imag
@@ -1985,7 +1971,7 @@ class MagneticComponent:
                 winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
                 winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
 
-                sweep_dict[f"winding{winding+1}"] = winding_dict
+                sweep_dict[f"winding{winding_number+1}"] = winding_dict
 
             # Core losses TODO: Choose between Steinmetz or complex core losses
             sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run]
@@ -2009,26 +1995,26 @@ class MagneticComponent:
         # Also needed as excitation for steady state thermal simulations
 
         # Single Windings
-        for winding in range(len(self.windings)):
+        for winding_number in range(len(self.windings)):
             # Number of turns per conductor
             turns = 0
             for ww in self.winding_windows:
                 for vww in ww.virtual_winding_windows:
                     for conductor in vww.windings:
-                        if conductor.winding_number == winding:
+                        if conductor.winding_number == winding_number:
                             turns += vww.turns[conductor.winding_number]
 
-            log_dict["total_losses"][f"winding{winding + 1}"] = {
-                "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
+            log_dict["total_losses"][f"winding{winding_number + 1}"] = {
+                "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding_number+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
                 "turns": []
             }
-            if self.windings[winding].parallel:
-                log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(
-                    sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][0] for d in range(len(log_dict["single_sweeps"]))))
+            if self.windings[winding_number].parallel:
+                log_dict["total_losses"][f"winding{winding_number + 1}"]["turns"].append(
+                    sum(log_dict["single_sweeps"][d][f"winding{winding_number + 1}"]["turn_losses"][0] for d in range(len(log_dict["single_sweeps"]))))
             else:
                 for turn in range(0, turns):
-                    log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(
-                        sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
+                    log_dict["total_losses"][f"winding{winding_number + 1}"]["turns"].append(
+                        sum(log_dict["single_sweeps"][d][f"winding{winding_number + 1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
 
         # Winding (all windings)
         log_dict["total_losses"]["all_windings"] = sum(log_dict["single_sweeps"][d]["all_winding_losses"] for d in range(len(log_dict["single_sweeps"])))
@@ -2051,13 +2037,13 @@ class MagneticComponent:
 
         # ---- Introduce calculations for writing the misc-dict into the result-log ----
         wire_type_list = []
-        for winding in self.windings:
-            wire_type_list.append(winding.conductor_type.name)
+        for winding_number in self.windings:
+            wire_type_list.append(winding_number.conductor_type.name)
 
         single_strand_cross_section_list = []
-        for winding in self.windings:
-            if winding.strand_radius:
-                single_strand_cross_section = winding.strand_radius ** 2 * np.pi
+        for winding_number in self.windings:
+            if winding_number.strand_radius:
+                single_strand_cross_section = winding_number.strand_radius ** 2 * np.pi
                 single_strand_cross_section_list.append(single_strand_cross_section)
             else:
                 single_strand_cross_section_list.append(None)
