@@ -11,12 +11,12 @@ from femmt.enumerations import *
 class StoInsulation:
     iso_top_core: float
     iso_bot_core: float
-    iso_left_core: float
+    iso_left_core_min: float
     iso_right_core: float
     iso_primary_to_primary: float
     iso_secondary_to_secondary: float
     iso_primary_to_secondary: float
-    iso_primary_additional: float
+    iso_primary_inner_bobbin: float
 
 @dataclass
 class StoSingleInputConfig:
@@ -55,10 +55,10 @@ class StoSingleInputConfig:
     # data sources
     permeability_datasource: MaterialDataSource
     permeability_datatype: MeasurementDataType
-    permeability_measurement_setup: str
+    permeability_measurement_setup: MeasurementSetup
     permittivity_datasource: MaterialDataSource
     permittivity_datatype: MeasurementDataType
-    permittivity_measurement_setup: str
+    permittivity_measurement_setup: MeasurementSetup
 
 
 @dataclass
