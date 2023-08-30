@@ -59,7 +59,14 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     insulations=sto_insulations,
 
     # misc
-    working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_stacked_transformer_optimization")
+    working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_stacked_transformer_optimization"),
+
+    permeability_datasource=fmt.MaterialDataSource.Measurement,
+    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+    permeability_measurement_setup=mdb.MeasurementSetup.LEA_MTB_small_signal,
+    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_MTB_small_signal
 )
 
 study_name = "2023-07-05"
@@ -67,5 +74,5 @@ study_name = "2023-07-05"
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    #fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 50,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler())
-    fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 50, percent_error_difference_l_s12=50)
+    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 50,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler())
+    # fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 50, percent_error_difference_l_s12=50)

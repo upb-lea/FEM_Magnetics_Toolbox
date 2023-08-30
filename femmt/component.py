@@ -519,7 +519,7 @@ class MagneticComponent:
         """
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase(self.silent).get_material_attribute(material_name=self.core.material, attribute="initial_permeability")
+            complex_permeability = mu_0 * mdb.MaterialDatabase(self.verbosity == Verbosity.Silent).get_material_attribute(material_name=self.core.material, attribute="initial_permeability")
             self.femmt_print(f"{complex_permeability = }")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
@@ -539,7 +539,7 @@ class MagneticComponent:
         """
         if self.frequency != 0:
             if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
-                epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
+                epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.verbosity == Verbosity.Silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
                                                                                               material_name=self.core.material,
                                                                                               datasource=self.core.permittivity["datasource"],
                                                                                               datatype=self.core.permittivity["datatype"],
