@@ -9,8 +9,6 @@ import optuna.samplers
 
 #femmt libraries
 import femmt as fmt
-import materialdatabase as mdb
-
 
 
 core_database = fmt.core_database()
@@ -46,7 +44,7 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     temperature=100,
 
     # sweep parameters: geometry and material
-    material_list = [mdb.Material.N95],
+    material_list = [fmt.Material.N95],
     core_inner_diameter_min_max_list= [18e-3, 22e-3],
     window_w_min_max_list= [10e-3, 14e-3],
     window_h_bot_min_max_list= [13e-3, 15e-3],
@@ -63,10 +61,10 @@ dab_transformer_config = fmt.StoSingleInputConfig(
 
     permeability_datasource=fmt.MaterialDataSource.Measurement,
     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-    permeability_measurement_setup=mdb.MeasurementSetup.LEA_MTB_small_signal,
+    permeability_measurement_setup=fmt.MeasurementSetup.LEA_MTB_small_signal,
     permittivity_datasource=fmt.MaterialDataSource.Measurement,
     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_MTB_small_signal
+    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_MTB_small_signal
 )
 
 study_name = "2023-07-05"
@@ -74,5 +72,5 @@ study_name = "2023-07-05"
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 50,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler())
+    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 3,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler())
     # fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 50, percent_error_difference_l_s12=50)

@@ -488,12 +488,12 @@ class StackedTransformerOptimization:
 
             core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
                               material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
-                              permeability_datasource=femmt.MaterialDataSource.Measurement,
-                              permeability_datatype=femmt.MeasurementDataType.ComplexPermeability,
-                              permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                              permittivity_datasource=femmt.MaterialDataSource.Measurement,
-                              permittivity_datatype=femmt.MeasurementDataType.ComplexPermittivity,
-                              permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
+                              permeability_datasource=config.permeability_datasource,
+                              permeability_datatype=config.permeability_datatype,
+                              permeability_measurement_setup=config.permeability_measurement_setup,
+                              permittivity_datasource=config.permittivity_datasource,
+                              permittivity_datatype=config.permittivity_datatype,
+                              permittivity_measurement_setup=config.permittivity_measurement_setup)
 
             geo.set_core(core)
 
