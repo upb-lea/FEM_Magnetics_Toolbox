@@ -170,12 +170,12 @@ class StackedTransformerOptimization:
                                                                  window_h_top=window_h_top, window_h_bot=window_h_bot)
                 core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
                                   material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
-                                  permeability_datasource=femmt.MaterialDataSource.Measurement,
-                                  permeability_datatype=femmt.MeasurementDataType.ComplexPermeability,
-                                  permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                                  permittivity_datasource=femmt.MaterialDataSource.Measurement,
-                                  permittivity_datatype=femmt.MeasurementDataType.ComplexPermittivity,
-                                  permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
+                                  permeability_datasource=config.permeability_datasource,
+                                  permeability_datatype=config.permeability_datatype,
+                                  permeability_measurement_setup=config.permeability_measurement_setup,
+                                  permittivity_datasource=config.permittivity_datasource,
+                                  permittivity_datatype=config.permittivity_datatype,
+                                  permittivity_measurement_setup=config.permittivity_measurement_setup)
 
                 geo.set_core(core)
 
@@ -220,7 +220,7 @@ class StackedTransformerOptimization:
                 geo.set_insulation(insulation)
                 geo.set_winding_windows([coil_window, transformer_window])
 
-                geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
+                geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
 
                 center_tapped_study_excitation = geo.center_tapped_pre_study(
                     time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec], [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]])
@@ -481,22 +481,19 @@ class StackedTransformerOptimization:
 
             geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                           working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                          verbosity=fmt.Verbosity.Silent, simulation_name=f"Single_Case_{trial._trial_id}")
+                                          verbosity=femmt.Verbosity.Silent, simulation_name=f"Single_Case_{trial._trial_id}")
 
             core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                window_h_top=window_h_top, window_h_bot=window_h_bot)
 
             core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                              # mu_r_abs=3500, phi_mu_deg=12, sigma=1.2,
-                              # permeability_datasource=femmt.MaterialDataSource.Custom,
-                              # permittivity_datasource=femmt.MaterialDataSource.Custom)
                               material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
                               permeability_datasource=femmt.MaterialDataSource.Measurement,
                               permeability_datatype=femmt.MeasurementDataType.ComplexPermeability,
-                              permeability_measurement_setup="LEA_LK",
+                              permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
                               permittivity_datasource=femmt.MaterialDataSource.Measurement,
                               permittivity_datatype=femmt.MeasurementDataType.ComplexPermittivity,
-                              permittivity_measurement_setup="LEA_LK")
+                              permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
 
             geo.set_core(core)
 

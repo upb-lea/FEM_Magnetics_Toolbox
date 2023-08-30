@@ -5,6 +5,7 @@ from typing import List
 # 3rd party libraries
 import numpy as np
 from materialdatabase.dtos import MaterialCurve
+from femmt.enumerations import *
 
 @dataclass
 class StoInsulation:
@@ -51,6 +52,13 @@ class StoSingleInputConfig:
     # misc
     working_directory: str
 
+    # data sources
+    permeability_datasource: MaterialDataSource
+    permeability_datatype: MeasurementDataType
+    permeability_measurement_setup: str
+    permittivity_datasource: MaterialDataSource
+    permittivity_datatype: MeasurementDataType
+    permittivity_measurement_setup: str
 
 
 @dataclass
