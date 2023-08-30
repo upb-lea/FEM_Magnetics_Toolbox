@@ -385,7 +385,6 @@ class StackedTransformerOptimization:
                                         load_if_exists=True)
 
             # Order: total_volume, total_loss, difference_l_h, difference_l_s
-
             l_h_absolute_error =  percent_error_difference_l_h / 100 * config.l_h_target
             print(f"{config.l_h_target = }")
             print(f"{l_h_absolute_error = }")
@@ -393,8 +392,6 @@ class StackedTransformerOptimization:
             l_s_absolute_error = percent_error_difference_l_s12 / 100 * config.l_s12_target
             print(f"{config.l_s12_target = }")
             print(f"{l_s_absolute_error = }")
-
-            # print(study.trials[1414])
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None, t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume", "loss"])
             fig.show()
@@ -453,7 +450,8 @@ class StackedTransformerOptimization:
             core_inner_diameter = trial_params["core_inner_diameter"]
             window_w = trial_params["window_w"]
             air_gap_transformer = trial_params["air_gap_transformer"]
-            inner_coil_insulation = trial_params["inner_coil_insulation"]
+            # inner_coil_insulation = trial_params["inner_coil_insulation"]
+            iso_left_core = trial_params["iso_left_core"]
 
             primary_litz_wire = trial_params["primary_litz_wire"]
 
@@ -461,21 +459,23 @@ class StackedTransformerOptimization:
             primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
 
             # Will always be calculated from the given parameters
-            available_width = window_w - inner_coil_insulation - config.insulations.iso_right_core
+            available_width = window_w - iso_left_core - config.insulations.iso_right_core
 
             # Suggestion of top window coil
             # Theoretically also 0 coil turns possible (number_rows_coil_winding must then be recalculated to avoid neg. values)
             primary_coil_turns = trial_params["primary_coil_turns"]
             # Note: int() is used to round down.
-            number_rows_coil_winding = int((primary_coil_turns * (primary_litz_diameter + config.insulations.iso_primary_to_primary) - inner_coil_insulation) / available_width) + 1
+            number_rows_coil_winding = int((primary_coil_turns * (primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
             window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
                         number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+
+            primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
             # Maximum coil air gap depends on the maximum window height top
             air_gap_coil = trial_params["air_gap_coil"]
 
             # suggest categorical
-            core_material = trial_params["material"]
+            core_material = Material(trial_params["material"])
             foil_thickness = trial_params["foil_thickness"]
 
             if config.max_transformer_total_height is not None:
@@ -500,7 +500,8 @@ class StackedTransformerOptimization:
                                                                window_h_top=window_h_top, window_h_bot=window_h_bot)
 
             core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
-                              material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
+                              material=core_material, temperature=config.temperature,
+                              frequency=target_and_fixed_parameters.fundamental_frequency,
                               permeability_datasource=config.permeability_datasource,
                               permeability_datatype=config.permeability_datatype,
                               permeability_measurement_setup=config.permeability_measurement_setup,
@@ -520,8 +521,8 @@ class StackedTransformerOptimization:
                 core=core,
 
                 # primary litz
-                primary_additional_bobbin=1e-3,
-                primary_turns=14,
+                primary_additional_bobbin=primary_additional_bobbin,
+                primary_turns=config.n_target,
                 primary_radius=primary_litz_parameters["conductor_radii"],
                 primary_number_strands=primary_litz_parameters["strands_numbers"],
                 primary_strand_radius=primary_litz_parameters["strand_radii"],
@@ -532,16 +533,16 @@ class StackedTransformerOptimization:
 
                 # insulation
                 iso_top_core=config.insulations.iso_top_core, iso_bot_core=config.insulations.iso_bot_core,
-                iso_left_core=config.insulations.iso_left_core, iso_right_core=config.insulations.iso_right_core,
+                iso_left_core=config.insulations.iso_left_core_min, iso_right_core=config.insulations.iso_right_core,
                 iso_primary_to_primary=config.insulations.iso_primary_to_primary,
                 iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
                 iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
                 bobbin_coil_top=config.insulations.iso_top_core,
                 bobbin_coil_bot=config.insulations.iso_bot_core,
-
-                bobbin_coil_left=inner_coil_insulation,
-
+                bobbin_coil_left=iso_left_core,
                 bobbin_coil_right=config.insulations.iso_right_core,
+                center_foil_additional_bobbin=0e-3,
+                interleaving_scheme=femmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
 
                 # misc
                 interleaving_type=femmt.CenterTappedInterleavingType.TypeC,
@@ -559,11 +560,11 @@ class StackedTransformerOptimization:
             #                       phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
             #                       show_fem_simulation_results=False)
 
-            geo.center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
-                                                          [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
-                                    plot_waveforms=True)
+            center_tapped_study_excitation = geo.center_tapped_pre_study(
+                time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
+                                       target_and_fixed_parameters.current_extracted_1_vec],
+                                      [target_and_fixed_parameters.time_extracted_vec,
+                                       target_and_fixed_parameters.current_extracted_2_vec]])
 
-
-    class ThermalSimulation:
-        pass
-
+            geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
+                                                 number_primary_coil_turns=primary_coil_turns)

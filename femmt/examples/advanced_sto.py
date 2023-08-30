@@ -67,10 +67,11 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK
 )
 
-study_name = "2023-07-05"
+study_name = "2023-08-30"
 
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 10,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler(), show_geometries=False)
-    # fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 50, percent_error_difference_l_s12=50)
+    # fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 10,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler(), show_geometries=False)
+    # fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 100, percent_error_difference_l_s12=100)
+    fmt.StackedTransformerOptimization.FemSimulation.re_simulate_single_result(study_name, dab_transformer_config, 6)
