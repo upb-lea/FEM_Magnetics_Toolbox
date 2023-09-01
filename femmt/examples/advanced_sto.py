@@ -52,6 +52,8 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     primary_litz_wire_list= ["1.71x140x0.1"],
     metal_sheet_thickness_list= [0.5e-3, 1.5e-3],
     primary_coil_turns_min_max_list = [1,5],
+    interleaving_type_list=[fmt.CenterTappedInterleavingType.TypeC],
+    interleaving_scheme_list=[fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec],
 
     # fix parameters
     insulations=sto_insulations,
@@ -72,6 +74,6 @@ study_name = "2023-08-30"
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    # fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 10,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler(), show_geometries=False)
+    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 10,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler(), show_geometries=False)
     # fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 100, percent_error_difference_l_s12=100)
-    fmt.StackedTransformerOptimization.FemSimulation.re_simulate_single_result(study_name, dab_transformer_config, 6)
+    # fmt.StackedTransformerOptimization.FemSimulation.re_simulate_single_result(study_name, dab_transformer_config, 6)

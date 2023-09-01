@@ -45,6 +45,8 @@ class StoSingleInputConfig:
     max_transformer_total_height: float
     primary_litz_wire_list: list
     metal_sheet_thickness_list: list
+    interleaving_scheme_list: list
+    interleaving_type_list: list
 
     # fix parameters: insulations
     insulations: StoInsulation

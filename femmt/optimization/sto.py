@@ -145,6 +145,8 @@ class StackedTransformerOptimization:
             # suggest categorical
             core_material = trial.suggest_categorical("material", config.material_list)
             foil_thickness = trial.suggest_categorical("foil_thickness", config.metal_sheet_thickness_list)
+            interleaving_scheme = trial.suggest_categorical("interleaving_scheme", config.interleaving_scheme_list)
+            interleaving_type = trial.suggest_categorical("interleaving_type", config.interleaving_type_list)
 
             try:
                 if config.max_transformer_total_height is not None:
@@ -217,10 +219,10 @@ class StackedTransformerOptimization:
                     bobbin_coil_left=config.insulations.iso_primary_inner_bobbin,
                     bobbin_coil_right=config.insulations.iso_right_core,
                     center_foil_additional_bobbin=0e-3,
-                    interleaving_scheme=femmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
+                    interleaving_scheme=interleaving_scheme,
 
                     # misc
-                    interleaving_type=femmt.CenterTappedInterleavingType.TypeC,
+                    interleaving_type=interleaving_type,
                     primary_coil_turns=primary_coil_turns,
                     winding_temperature=config.temperature)
 
@@ -349,9 +351,17 @@ class StackedTransformerOptimization:
                    trial, config,
                    target_and_fixed_parameters, number_objectives, show_geometries)
 
-            if not isinstance(end_time, datetime.datetime):
+            if (end_time + datetime.timedelta(seconds=10)) < datetime.datetime.now():
+                raise ValueError("May wrong set end time?"
+                                 f"\nCurrent time: {datetime.datetime.now()}"
+                                 f"\nEnd time: {end_time}")
+            elif end_time < datetime.datetime.now() + datetime.timedelta(seconds=10):
+                print("start simulation")
                 # in case of no given end_time, the end_time is one second after now.
                 end_time = datetime.datetime.now() + datetime.timedelta(seconds=1)
+            else:
+                pass
+
 
             while datetime.datetime.now() < end_time:
                 print(f"current time: {datetime.datetime.now()}")
