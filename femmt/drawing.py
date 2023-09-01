@@ -1117,7 +1117,7 @@ class TwoDaxiSymmetric:
                     if winding not in all_windings:
                         all_windings.append(winding)
 
-                    needed_number_of_turns += sum(vww.turns)
+                needed_number_of_turns += sum(vww.turns)
 
         drawn_number_of_turns = 0
 
