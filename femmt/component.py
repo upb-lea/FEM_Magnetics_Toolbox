@@ -80,11 +80,13 @@ class MagneticComponent:
 
         if not verbosity == Verbosity.ToConsole:
             gmsh.option.setNumber("General.Terminal", 0)
+            self.silent = True
 
         if verbosity == Verbosity.ToFile:
             fh = logging.FileHandler(self.file_data.femmt_log, mode="w")
             fh.setLevel(logging.INFO)
             self.logger.addHandler(fh)
+            self.silent = True
 
         self.femmt_print(f"\n"
                        f"Initialized a new Magnetic Component of type {component_type.name}\n"
