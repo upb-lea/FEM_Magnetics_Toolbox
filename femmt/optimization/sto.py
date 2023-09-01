@@ -262,8 +262,10 @@ class StackedTransformerOptimization:
                 # Get inductance values
                 difference_l_h = config.l_h_target - geo.L_h
                 difference_l_s12 = config.l_s12_target - geo.L_s12
-                # print(f"{difference_l_h}")
-                # print(f"{difference_l_s12}")
+
+                trial.set_user_attr("l_h", geo.L_h)
+                trial.set_user_attr("l_s12", geo.L_s12)
+
                 # TODO: Normalize on goal values here or the whole generation on min and max? for each feature inbetween 0 and 1
                 # norm_total_loss, norm_difference_l_h, norm_difference_l_s12 = total_loss/10, abs(difference_l_h/config.l_h_target), abs(difference_l_s12/config.l_s12_target)
                 # return norm_total_loss, norm_difference_l_h, norm_difference_l_s12
