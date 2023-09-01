@@ -2,6 +2,7 @@
 import os
 import shutil
 import json
+import datetime
 
 # 3rd party libraries
 import optuna
@@ -123,9 +124,6 @@ class StackedTransformerOptimization:
             iso_left_core = trial.suggest_float("iso_left_core", config.insulations.iso_left_core_min, config.insulations.iso_primary_inner_bobbin)
 
             primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
-
-            # primary_additional_bobbin = 1e-3
-            # inner_coil_insulation = primary_additional_bobbin + config.insulations.iso_left_core
 
             primary_litz_wire = trial.suggest_categorical("primary_litz_wire", config.primary_litz_wire_list)
 
@@ -281,12 +279,16 @@ class StackedTransformerOptimization:
                 elif number_objectives == 4:
                     return float('nan'), float('nan'), float('nan'), float('nan')
 
+
+
         @staticmethod
         def start_proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
+                                end_time: datetime.datetime = datetime.datetime.now(),
                                 number_objectives: int = None,
                                 storage: str = 'sqlite',
                                 sampler = optuna.samplers.NSGAIISampler(),
-                                show_geometries: bool = False) -> None:
+                                show_geometries: bool = False,
+                                ) -> None:
             """
             Proceed a study which is stored as sqlite database.
 
@@ -304,6 +306,8 @@ class StackedTransformerOptimization:
             :type sampler: optuna.sampler-object
             :param show_geometries: True to show the geometry of each suggestion (with valid geometry data)
             :type show_geometries: bool
+            :param end_time: datetime object with the end time of simulation. If the end_time is not reached, a new simulation with number_objectives is started
+            :type end_time: datetime.datetime
             """
             def objective_directions(number_objectives: int):
                 """
@@ -347,22 +351,27 @@ class StackedTransformerOptimization:
                 trial, config,
                 target_and_fixed_parameters, number_objectives, show_geometries)
 
-            study_in_storage = optuna.create_study(study_name=study_name,
-                                                   storage=storage,
-                                                   directions=directions,
-                                                   load_if_exists=True, sampler=sampler)
+            if not isinstance(end_time, datetime.datetime):
+                # in case of no given end_time, the end_time is one second after now.
+                end_time = datetime.datetime.now() + datetime.timedelta(seconds=1)
+
+            while datetime.datetime.now() < end_time:
+                print(f"current time: {datetime.datetime.now()}")
+                print(f"end time: {end_time}")
+                print(f"Performing another {number_trials} trials.")
+
+                study_in_storage = optuna.create_study(study_name=study_name,
+                                                       storage=storage,
+                                                       directions=directions,
+                                                       load_if_exists=True, sampler=sampler)
 
 
-            study_in_memory = optuna.create_study(directions=directions, study_name=study_name, sampler=sampler)
-            print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
-            study_in_memory.add_trials(study_in_storage.trials)
-            study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
+                study_in_memory = optuna.create_study(directions=directions, study_name=study_name, sampler=sampler)
+                print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
+                study_in_memory.add_trials(study_in_storage.trials)
+                study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
-            # in-memory calculation is shown before saving the data to database
-            #fig = optuna.visualization.plot_pareto_front(study_in_memory, target_names=["volume", "losses", "target_l_h", "target_l_s"])
-            #fig.show()
-
-            study_in_storage.add_trials(study_in_memory.trials[(-number_trials - 1):-1])
+                study_in_storage.add_trials(study_in_memory.trials[(-number_trials - 1):-1])
 
         @staticmethod
         def show_study_results(study_name: str, config: StoSingleInputConfig,
@@ -406,10 +415,9 @@ class StackedTransformerOptimization:
             :type study_name: str
             :param config: Integrated transformer configuration file
             :type config: ItoSingleInputConfig
-            :param percent_error_difference_l_h: relative error allowed in l_h
-            :type percent_error_difference_l_s12: float
-            :param percent_error_difference_l_s12: relative error allowed in L_s12
-            :type percent_error_difference_l_s12: float
+            :param error_difference_inductance_sum: e.g. 0.05 for 5%
+            :type error_difference_inductance_sum: float
+
             """
             study = optuna.create_study(study_name=study_name,
                                         storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
@@ -438,22 +446,22 @@ class StackedTransformerOptimization:
             """
             target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
-            study = optuna.create_study(study_name=study_name,
+            loaded_study = optuna.create_study(study_name=study_name,
                                         storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
                                         load_if_exists=True)
 
 
-            trial = study.trials[number_trial]
-            trial_params = trial.params
+            loaded_trial = loaded_study.trials[number_trial]
+            loaded_trial_params = loaded_trial.params
 
             # suggest core geometry
-            core_inner_diameter = trial_params["core_inner_diameter"]
-            window_w = trial_params["window_w"]
-            air_gap_transformer = trial_params["air_gap_transformer"]
+            core_inner_diameter = loaded_trial_params["core_inner_diameter"]
+            window_w = loaded_trial_params["window_w"]
+            air_gap_transformer = loaded_trial_params["air_gap_transformer"]
             # inner_coil_insulation = trial_params["inner_coil_insulation"]
-            iso_left_core = trial_params["iso_left_core"]
+            iso_left_core = loaded_trial_params["iso_left_core"]
 
-            primary_litz_wire = trial_params["primary_litz_wire"]
+            primary_litz_wire = loaded_trial_params["primary_litz_wire"]
 
             primary_litz_parameters = ff.litz_database()[primary_litz_wire]
             primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
@@ -461,22 +469,26 @@ class StackedTransformerOptimization:
             # Will always be calculated from the given parameters
             available_width = window_w - iso_left_core - config.insulations.iso_right_core
 
-            # Suggestion of top window coil
+            # Re-calculation of top window coil
             # Theoretically also 0 coil turns possible (number_rows_coil_winding must then be recalculated to avoid neg. values)
-            primary_coil_turns = trial_params["primary_coil_turns"]
+            primary_coil_turns = loaded_trial_params["primary_coil_turns"]
             # Note: int() is used to round down.
             number_rows_coil_winding = int((primary_coil_turns * (primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
             window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
                         number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
+
+            print(f"{config.insulations.iso_primary_inner_bobbin = }")
+            print(f"{iso_left_core = }")
+
             primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
             # Maximum coil air gap depends on the maximum window height top
-            air_gap_coil = trial_params["air_gap_coil"]
+            air_gap_coil = loaded_trial_params["air_gap_coil"]
 
             # suggest categorical
-            core_material = Material(trial_params["material"])
-            foil_thickness = trial_params["foil_thickness"]
+            core_material = Material(loaded_trial_params["material"])
+            foil_thickness = loaded_trial_params["foil_thickness"]
 
             if config.max_transformer_total_height is not None:
                 # Maximum transformer height
@@ -487,14 +499,14 @@ class StackedTransformerOptimization:
                     print(f"{window_h_top = }")
                     raise ValueError(f"{window_h_bot_min = } > {window_h_bot_max = }")
 
-                window_h_bot = trial_params["window_h_bot"]
+                window_h_bot = loaded_trial_params["window_h_bot"]
 
             else:
-                window_h_bot = trial_params["window_h_bot"]
+                window_h_bot = loaded_trial_params["window_h_bot"]
 
             geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                           working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                          verbosity=femmt.Verbosity.Silent, simulation_name=f"Single_Case_{trial._trial_id}")
+                                          verbosity=femmt.Verbosity.Silent, simulation_name=f"Single_Case_{loaded_trial._trial_id}")
 
             core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                window_h_top=window_h_top, window_h_bot=window_h_bot)
@@ -552,8 +564,7 @@ class StackedTransformerOptimization:
             geo.set_insulation(insulation)
             geo.set_winding_windows([coil_window, transformer_window])
 
-
-            geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=False)
+            geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
             # geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
             #                       current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
