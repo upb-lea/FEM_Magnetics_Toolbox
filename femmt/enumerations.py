@@ -263,3 +263,24 @@ class MeasurementDataType(str, Enum):
     ComplexPermeability = "complex_permeability"
     ComplexPermittivity = "complex_permittivity"
     Steinmetz = "Steinmetz"
+
+class MeasurementSetup(str, Enum):
+    """Sets the source from where data is taken.
+    """
+    LEA_MTB = "LEA_MTB"
+    LEA_MTB_small_signal = "LEA_MTB_small_signal"
+    LEA_LK = "LEA_LK"
+
+class Material(str, Enum):
+    """
+    Sets the name of the core material as enums.
+    """
+
+    N49 = "N49"
+    N87 = "N87"
+    N95 = "N95"
+    PC200 = "PC200"
+    custom_material = "custom_material"
+    DMR96A = "DMR96A"
+    DMR96A2 = "DMR96A2"
+    DMR96A2_test = "DMR96A2_test"

@@ -206,7 +206,7 @@ class Core:
                  sigma: complex = None,
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
-                 mdb_verbosity: Verbosity = Verbosity.ToConsole,
+                 mdb_verbosity: Verbosity = Verbosity.Silent,
                  **kwargs): # TODO Is this kwargs really needed? Can this be removed?
         """TODO Doc
 
