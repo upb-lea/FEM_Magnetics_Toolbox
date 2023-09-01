@@ -15,6 +15,7 @@ import femmt.optimization.ito_functions as itof
 import femmt
 import materialdatabase as mdb
 
+
 class StackedTransformerOptimization:
 
     @staticmethod
@@ -95,15 +96,11 @@ class StackedTransformerOptimization:
 
         return target_and_fix_parameters
 
-
-    class ReluctanceModel:
-        pass
-
     class FemSimulation:
         @staticmethod
         def objective(trial, config: StoSingleInputConfig,
-                       target_and_fixed_parameters: StoTargetAndFixedParameters,
-                       number_objectives: int, show_geometries: bool = False):
+                      target_and_fixed_parameters: StoTargetAndFixedParameters,
+                      number_objectives: int, show_geometries: bool = False):
             """
             Objective for optuna optimization.
 
@@ -114,6 +111,8 @@ class StackedTransformerOptimization:
             :type target_and_fixed_parameters: StoTargetAndFixedParameters
             :param number_objectives: number of objectives to give different target output parameters
             :type number_objectives: int
+            :param show_geometries: True to display the geometries
+            :type show_geometries: bool
             """
             # suggest core geometry
             core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0], config.core_inner_diameter_min_max_list[1])
@@ -173,7 +172,7 @@ class StackedTransformerOptimization:
                                               verbosity=verbosity, simulation_name=f"Case_{trial.number}")
 
                 core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
-                                                                 window_h_top=window_h_top, window_h_bot=window_h_bot)
+                                                                   window_h_top=window_h_top, window_h_bot=window_h_bot)
                 core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
                                   material=core_material, temperature=config.temperature, frequency=target_and_fixed_parameters.fundamental_frequency,
                                   permeability_datasource=config.permeability_datasource,
@@ -286,7 +285,7 @@ class StackedTransformerOptimization:
                                 end_time: datetime.datetime = datetime.datetime.now(),
                                 number_objectives: int = None,
                                 storage: str = 'sqlite',
-                                sampler = optuna.samplers.NSGAIISampler(),
+                                sampler=optuna.samplers.NSGAIISampler(),
                                 show_geometries: bool = False,
                                 ) -> None:
             """
@@ -306,7 +305,7 @@ class StackedTransformerOptimization:
             :type sampler: optuna.sampler-object
             :param show_geometries: True to show the geometry of each suggestion (with valid geometry data)
             :type show_geometries: bool
-            :param end_time: datetime object with the end time of simulation. If the end_time is not reached, a new simulation with number_objectives is started
+            :param end_time: datetime object with the end time of simulation. If the end_time is not reached, a new simulation with number_objectives is started, e.g. datetime.datetime(2023,9,1,13,00) 2023-09-01, 13.00
             :type end_time: datetime.datetime
             """
             def objective_directions(number_objectives: int):
@@ -326,7 +325,6 @@ class StackedTransformerOptimization:
 
             if os.path.exists(f"{config.working_directory}/study_{study_name}.sqlite3"):
                 print("Existing study found. Proceeding.")
-                # raise Exception(f"study '{study_name}' already available. Choose different study name.")
 
             target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
@@ -344,12 +342,12 @@ class StackedTransformerOptimization:
             # .ERROR: only errors
             #optuna.logging.set_verbosity(optuna.logging.ERROR)
 
-            directions=objective_directions(number_objectives)
+            directions = objective_directions(number_objectives)
 
             func = lambda \
-                    trial: femmt.optimization.StackedTransformerOptimization.FemSimulation.objective(
-                trial, config,
-                target_and_fixed_parameters, number_objectives, show_geometries)
+                   trial: femmt.optimization.StackedTransformerOptimization.FemSimulation.objective(
+                   trial, config,
+                   target_and_fixed_parameters, number_objectives, show_geometries)
 
             if not isinstance(end_time, datetime.datetime):
                 # in case of no given end_time, the end_time is one second after now.
@@ -407,7 +405,7 @@ class StackedTransformerOptimization:
 
         @staticmethod
         def show_study_results3(study_name: str, config: StoSingleInputConfig,
-                               error_difference_inductance_sum) -> None:
+                                error_difference_inductance_sum) -> None:
             """
             Show the results of a study.
 
@@ -447,9 +445,8 @@ class StackedTransformerOptimization:
             target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
             loaded_study = optuna.create_study(study_name=study_name,
-                                        storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
-                                        load_if_exists=True)
-
+                                               storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
+                                               load_if_exists=True)
 
             loaded_trial = loaded_study.trials[number_trial]
             loaded_trial_params = loaded_trial.params
@@ -476,7 +473,6 @@ class StackedTransformerOptimization:
             number_rows_coil_winding = int((primary_coil_turns * (primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
             window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
                         number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
-
 
             print(f"{config.insulations.iso_primary_inner_bobbin = }")
             print(f"{iso_left_core = }")
