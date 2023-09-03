@@ -22,9 +22,6 @@ from femmt.constants import *
 from femmt.enumerations import ConductorType
 from femmt.dtos import *
 
-# Needed for femmt_print
-silent = False
-
 colors_femmt_default = {"blue": (28, 113, 216),
                         'red': (192, 28, 40),
                         "green": (46, 194, 126),
@@ -582,7 +579,7 @@ def inner_points(a, b, input_points):
         # print("Only one air gap in this leg. No island needed.")
     return output
 
-
+# TODO Is this function even used?
 def min_max_inner_points(a, b, input_points):
     """
     Returns the input points that have a common coordinate and
@@ -612,7 +609,7 @@ def min_max_inner_points(a, b, input_points):
         else:
             n += 1
     if buffer.shape[0] == 0:
-        femmt_print("No air gaps between interval borders")
+        print("No air gaps between interval borders")
     if buffer.shape[0] % 2 == 1:
         raise Exception("Odd number of input points")
     if dim == 2:
@@ -909,38 +906,10 @@ def store_as_npy_in_directory(dir_path: str, file_name: str, numpy_data) -> None
     np.save(dir_path + "/" + file_name, numpy_data)
 
 
-def data_logging(sim_choice):
+def get_dicts_with_keys_and_values(data, **kwargs) -> Dict:
     """
-    !!! not finally implemented !!!
-
-    This method shall do the saving and loading of results! with date and time
-
-    :return:
-
-    """
-    frequencies = None
-    # Data Logging with date and time
-    datetime = time.strftime("%Y%m%d_%H%M%S")
-
-    target_femm = 'Pv_FEMM_' + datetime + '.json'
-    target_femmt = 'Pv_FEMMT_' + datetime + '.json'
-
-    # Either read old data or create
-    if sim_choice != 'show':
-        # pseudo 2D dataframe: ['strand number, strand radius'], 'frequency'  | const. litz radius --> ff
-        if not os.path.isfile(target_femm):
-            df_pv_femm = pd.DataFrame([], index=frequencies, columns=[])
-            df_pv_femmt = pd.DataFrame([], index=frequencies, columns=[])
-        else:
-            # Read Loss Data
-            df_pv_femm = pd.read_json(target_femm)
-            df_pv_femmt = pd.read_json(target_femmt)
-        # print(df_pv_femm, df_pv_femmt)
-
-
-def get_dicts_with_keys_and_values(data, **kwargs):
-    """
-    Returns a list of dictionaries out of a list of dictionaries which contains pairs of the given key(s) and value(s).
+    Returns a list of dictionaries out of a list of dictionaries which contains pairs
+    of the given key(s) and value(s).
     :param data: list of dicts
     :type data: List
     :param kwargs: keys and values in dicts
@@ -955,7 +924,7 @@ def get_dicts_with_keys_and_values(data, **kwargs):
     return valid_data
 
 
-def get_dict_with_unique_keys(data, *keys):
+def get_dict_with_unique_keys(data, *keys) -> Dict:
     """
     Returns a dictionary out of a list of dictionaries which contains the given key(s).
     :param data: list of dicts
@@ -1106,10 +1075,10 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
     loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
 
-    femmt_print(inductance)
-    femmt_print(loss_core_eddy_current)
-    femmt_print(loss_core_hysteresis)
-    femmt_print(loss_winding_1)
+    print(inductance)
+    print(loss_core_eddy_current)
+    print(loss_core_hysteresis)
+    print(loss_winding_1)
 
     bar_width = 0.35
     plt.bar(0, loss_core_hysteresis, width=bar_width)
@@ -1134,37 +1103,21 @@ def point_is_in_rect(x, y, rect):
     # Return true if point is in rect
     if y < rect[0][1] and y > rect[3][1] and x > rect[0][0] and x < rect[1][0]:
         return True
-
     return False
 
 
-def set_silent_status(s: bool) -> None:
-    """
-    Variable to store the silent status to show terminal outputs or not.
-    Using silent-mode increases speed of simulation significantly.
-    :param s: status for silent mode True/False
-    :type s: bool
-    :return: None
-    :rtype: None
-    """
-    global silent
-    silent = s
-
-
-def femmt_print(text: str, end: str = '\n') -> None:
-    """
-    Print-function for femmt. Uses a silent-Flag as global variable, to show terminal outputs or not.
-    Using silent-mode increases speed of simulation significantly.
-
-    :param text: text to print
-    :type text: str
-    :param end: command text ends with, defaults to '\n'
-    :type: end: str
-    :return: None
-    :rtype: None
-    """
-    if not silent:
-        print(text, end)
+def get_number_of_turns_of_winding(winding_windows, windings: List, winding_number: int):
+    turns = 0
+    for ww in winding_windows:
+        for vww in ww.virtual_winding_windows:
+            for index, winding in enumerate(windings):
+                if winding.winding_number == winding_number:
+                    # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
+                    try:
+                        turns += vww.turns[index]
+                    except:
+                        pass
+    return turns
 
 
 def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
@@ -1315,7 +1268,18 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
             print(f"{value_min} <= {data_to_compare} <= {value_max} for file named {file}")
 
 
-def wave_vector(f, complex_permeability, complex_permittivity, conductivity):
+def wave_vector(f: float, complex_permeability: complex, complex_permittivity: complex, conductivity: float):
+    """
+
+    :param f: frequency
+    :type f: float
+    :param complex_permeability: complex permeability
+    :type complex_permeability: complex
+    :param complex_permittivity: complex permittivity
+    :type complex_permittivity: complex
+    :param conductivity: conductivity of the core material
+    :type conductivity: float
+    """
     omega = 2 * np.pi * f
     j = complex(0, 1)
     complex_equivalent_permittivity = complex_permittivity - j * conductivity / omega
@@ -1327,16 +1291,302 @@ def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity
     return 2 * np.pi / k.real
 
 
-def check_mqs_condition(radius, f, complex_permeability, complex_permittivity, conductivity,
-                        relative_margin_to_first_resonance=0.5):
-    axial_lambda = axial_wavelength(f, complex_permeability, complex_permittivity, conductivity)
+def check_mqs_condition(radius: float, frequency: float, complex_permeability: float, complex_permittivity: float,
+                        conductivity: float, relative_margin_to_first_resonance: float = 0.5, silent: bool = False):
+    """
+    Checks if the condition for a magnetoquasistatic simulation is fulfilled.
+
+    Calculates the ratio (core-diameter / wavelength) and includes a safety margin factor of 0.5.
+    In case of ratio > 1, the simulated frequency is too high. A magnetoquasistatic simulation will not lead to good
+    results. It is recommended to reduce the frequency or use a full-wave solver (not supported by FEMMT).
+
+    :param radius: core radius
+    :type radius: float
+    :param frequency: frequency in Hz
+    :type frequency: float
+    :param complex_permeability: complex permeability
+    :type complex_permeability: float
+    :param complex_permittivity: complex permittivity
+    :type complex_permittivity: float
+    :param conductivity: core conductivity
+    :type conductivity: float
+    :param relative_margin_to_first_resonance: relative margin to the first resonance. Defaults to 0.5.
+    :type relative_margin_to_first_resonance: float
+    :param silent: True for no terminal output
+    :type silent: bool
+    """
+    if frequency == 0:
+        raise ValueError("check_mqs_condition() only works for frequencies != 0")
+
+    axial_lambda = axial_wavelength(frequency, complex_permeability, complex_permittivity, conductivity)
     diameter_to_wavelength_ratio_of_first_resonance = 0.7655
     diameter_to_wavelength_ratio = 2 * radius / axial_lambda
     if diameter_to_wavelength_ratio > diameter_to_wavelength_ratio_of_first_resonance * relative_margin_to_first_resonance:
         # raise Warning(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance} - "
         #               f"1 means 1st resonance - should be kept well below 1 to ensure MQS approach to be correct! ")
-        femmt_print(
-            f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
+        if not silent:
+            print(f"Resonance Ratio: {diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance}")
+
+
+def create_open_circuit_excitation_sweep(I0, n, frequency):
+    frequencies = [frequency] * n
+    currents = [[0] * n for _ in range(n)]
+    phases = [[180] * n for _ in range(n)]
+
+    for x in range(0, n):
+        for y in range(0, n):
+            if x == y:
+                currents[x][y] = I0
+                phases[x][y] = 0
+
+    return frequencies, currents, phases
+
+
+def list_to_complex(complex_list: list):
+    """
+    Brings a list of two numbers (where first is real part, second is imaginary part) into a python specific complex number
+    :param complex_list:
+    :type complex_list: list
+    :return: complex number
+    :rtype: complex
+    """
+    return complex(complex_list[0], complex_list[1])
+
+
+def get_self_inductances_from_log(log: Dict) -> List:
+    """
+    Read the self-inductances from the result log file (dictionary)
+    :param log: Result log dictionary
+    :type log: Dict
+    :return: self-inductances in a list
+    :rtype: List
+    """
+    self_inductances = []
+    for ol_index, open_loop_result in enumerate(log["single_sweeps"]):
+        active_winding_name = f"winding{ol_index + 1}"
+        self_inductances.append(list_to_complex(open_loop_result[active_winding_name]["flux_over_current"]))
+    return self_inductances
+
+
+def get_flux_linkages_from_log(log: Dict) -> List:
+    """
+    Read the flux-linkages from the result log file (dictionary)
+    :param log: Result log dictionary
+    :type log: Dict
+    :return: flux-linkages in a list
+    :rtype: List
+    """
+    flux_linkages = []
+    for ol_index, open_loop_result in enumerate(log["single_sweeps"]):
+        flux_linkages.append([])
+        for winding_index in range(0, len(log["single_sweeps"])):
+            flux_linkages[ol_index].append(list_to_complex(open_loop_result[f"winding{winding_index + 1}"]["flux"]))
+    return flux_linkages
+
+
+def get_coupling_matrix(flux_linkages: List) -> np.array:
+    """
+    Calculate the coupling factors from the given flux linkages.
+    :param flux_linkages: flux-linkages
+    :type flux_linkages: List
+    :return: coupling-matrix in a matrix (np.array)
+    :rtype: np.array
+    """
+    coupling_matrix = [[None] * len(flux_linkages) for _ in range(len(flux_linkages))]
+    for self_index in range(0, len(flux_linkages)):
+        for cross_index in range(0, len(flux_linkages)):
+            coupling_matrix[cross_index][self_index] = flux_linkages[cross_index][self_index].real / flux_linkages[self_index][self_index].real
+    return coupling_matrix
+
+
+def get_mean_coupling_factors(coupling_matrix: np.array):
+    """
+    calculate the mean coupling factors from the coupling matrix
+    :param coupling_matrix: matrix with coupling factors between windings
+    :type coupling_matrix: np.array
+    """
+    mean_coupling_factors = [[None] * len(coupling_matrix) for _ in range(len(coupling_matrix))]
+    for self_index in range(0, len(coupling_matrix)):
+        for cross_index in range(0, len(coupling_matrix)):
+            mean_coupling_factors[cross_index][self_index] = (coupling_matrix[cross_index][self_index] * coupling_matrix[self_index][cross_index]) ** 0.5
+    return mean_coupling_factors
+
+
+def get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matrix):
+    inductance_matrix = [[None] * len(mean_coupling_factors) for _ in range(len(mean_coupling_factors))]
+    for x in range(0, len(coupling_matrix)):
+        for y in range(0, len(coupling_matrix)):
+            inductance_matrix[x][y] = mean_coupling_factors[x][y] * (self_inductances[x] * self_inductances[y]) ** 0.5
+    return inductance_matrix
+
+
+def visualize_flux_linkages(flux_linkages: List, silent: bool) -> None:
+    """
+    Print the flux linkages to the terminal (or file-) output
+    :param flux_linkages: flux-linkages in a list
+    :type flux_linkages: List
+    :param silent: True for no output
+    :type silent: bool
+    """
+    string_to_print = ""
+    for x in range(0, len(flux_linkages)):
+        for y in range(0, len(flux_linkages)):
+            string_to_print += f"Phi_{x+1}{y+1} = {flux_linkages[x][y]}     Induced by I_{y+1} in Winding{x+1}\n"
+    if not silent:
+        print(f"\nFluxes: ")
+        print(string_to_print)
+
+
+def visualize_self_inductances(self_inductances: List, flux_linkages, silent: bool) -> None:
+    """
+    Print the self-inductances to the terminal (or file-) output
+    :param self_inductances: self-inductances in a list
+    :type self_inductances: List
+    :param silent: True for no output
+    :type silent: bool
+    """
+    string_to_print = ""
+    for x in range(0, len(flux_linkages)):
+        string_to_print += f"L_{x+1}_{x+1} = {self_inductances[x]}\n"
+    if not silent:
+        print(f"\n"
+              f"Self Inductances: ")
+        print(string_to_print)
+
+
+def visualize_self_resistances(self_inductances: List, flux_linkages: List, frequency: float, silent: bool) -> None:
+    """
+    Calculate and print the self resistances to the terminal (or file-) output
+
+    :param self_inductances: self-inductances in a list
+    :type self_inductances: List
+    :param flux_linkages: flux-linkage
+    :type flux_linkages: List
+    :param frequency: Frequency in Hz
+    :type frequency: float
+    :param silent: True for no output
+    :type silent: bool
+    """
+    string_to_print = ""
+    for x in range(0, len(flux_linkages)):
+        string_to_print += f"Z_{x+1}_{x+1} = {self_inductances[x].imag*2*np.pi*frequency}\n"
+    if not silent:
+        print(f"\n"
+              f"Self Resistances: ")
+        print(string_to_print)
+
+
+def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: List, silent: bool):
+    """
+    Print the coupling factors to the terminal (or file-) output
+    :param coupling_matrix: matrix with coupling factors between the windings
+    :type coupling_matrix: np.array
+    :param flux_linkages: flux-linkages in a list
+    :type flux_linkages: List
+    :param silent: True for no output
+    :type silent: bool
+    """
+    string_to_print = ""
+    for x in range(0, len(flux_linkages)):
+        for y in range(0, len(coupling_matrix)):
+            string_to_print += f"K_{x + 1}{y + 1} = Phi_{x + 1}{y + 1} / Phi_{y + 1}{y + 1} = {coupling_matrix[x][y]}\n"
+    if not silent:
+        print(f"\n"
+              f"Coupling Factors: ")
+        print(string_to_print)
+
+
+def visualize_mean_coupling_factors(mean_coupling_factors: List, silent: bool):
+    """
+    Print the mean coupling factors to the terminal (or file-) output
+    :param mean_coupling_factors: mean_coupling_factors in a list
+    :type mean_coupling_factors: List
+    :param silent: True for no output
+    :type silent: bool
+    """
+    string_to_print = ""
+    for x in range(0, len(mean_coupling_factors)):
+        for y in range(0, len(mean_coupling_factors)):
+            string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} / Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
+        if not silent:
+            print(f"\n"
+                  f"Mean Coupling Factors: ")
+            print(string_to_print)
+
+
+def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool):
+    """
+    Print the mean mutal inductances to the terminal (or file-) output
+    :param inductance_matrix: inductance matrix
+    :type inductance_matrix: np.array
+    :param silent: True for no output
+    :type silent: bool
+    e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
+    """
+    string_to_print = ""
+    for x in range(0, len(inductance_matrix)):
+        for y in range(0, len(inductance_matrix)):
+            if x == y:
+                pass
+            else:
+                string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
+    if not silent:
+        print(f"\n"
+              f"Mean Mutual Inductances: ")
+        print(string_to_print)
+
+
+def visualize_mutual_inductances(self_inductances: List, coupling_factors: List, silent: bool):
+    """
+    Print the mutal inductances to the terminal (or file-) output
+    :param inductance_matrix: inductance matrix
+    :type inductance_matrix: np.array
+    :param silent: True for no output
+    :type silent: bool
+    e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+    """
+    string_to_print = ""
+    for x in range(0, len(coupling_factors)):
+        for y in range(0, len(coupling_factors)):
+            if x == y:
+                pass
+            else:
+                string_to_print += f"M_{x + 1}{y + 1} = {self_inductances[y].real * coupling_factors[x][y]}\n"
+    if not silent:
+        print(f"\n"
+              f"Mutual Inductances: ")
+        print(string_to_print)
+
+
+def visualize_inductance_matrix_coefficients(inductance_matrix, silent: bool):
+    """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+    """
+    string_to_print = ""
+    for x in range(0, len(inductance_matrix)):
+        for y in range(0, len(inductance_matrix)):
+            if x == y:
+                string_to_print += f"L_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
+            else:
+                string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
+    if not silent:
+        print(f"\n"
+                   f"Inductance Matrix Coefficients: ")
+        print(string_to_print)
+
+
+def visualize_inductance_matrix(inductance_matrix, silent: bool):
+    """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+    """
+    string_to_print = ""
+    for x in range(0, len(inductance_matrix)):
+        for y in range(0, len(inductance_matrix)):
+            string_to_print += f"{np.round(inductance_matrix[x][y].real, 12)} "
+        string_to_print += f"\n"
+
+    if not silent:
+        print(f"\n"
+              f"Inductance Matrix: ")
+        print(string_to_print)
 
 
 if __name__ == '__main__':
