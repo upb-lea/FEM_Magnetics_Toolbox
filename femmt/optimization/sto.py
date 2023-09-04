@@ -486,9 +486,6 @@ class StackedTransformerOptimization:
             window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
                         number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
-            print(f"{config.insulations.iso_primary_inner_bobbin = }")
-            print(f"{iso_left_core = }")
-
             primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
             # Maximum coil air gap depends on the maximum window height top
@@ -553,13 +550,13 @@ class StackedTransformerOptimization:
 
                 # insulation
                 iso_top_core=config.insulations.iso_top_core, iso_bot_core=config.insulations.iso_bot_core,
-                iso_left_core=config.insulations.iso_left_core_min, iso_right_core=config.insulations.iso_right_core,
+                iso_left_core=iso_left_core, iso_right_core=config.insulations.iso_right_core,
                 iso_primary_to_primary=config.insulations.iso_primary_to_primary,
                 iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
                 iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
                 bobbin_coil_top=config.insulations.iso_top_core,
                 bobbin_coil_bot=config.insulations.iso_bot_core,
-                bobbin_coil_left=iso_left_core,
+                bobbin_coil_left=config.insulations.iso_primary_inner_bobbin,
                 bobbin_coil_right=config.insulations.iso_right_core,
                 center_foil_additional_bobbin=0e-3,
                 interleaving_scheme=femmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
