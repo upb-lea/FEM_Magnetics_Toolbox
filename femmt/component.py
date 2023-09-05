@@ -6,8 +6,12 @@ import gmsh
 import json
 import warnings
 import inspect
+import time
+import logging
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
+import dataclasses
+from matplotlib import pyplot as plt
 
 # Third party libraries
 from onelab import onelab
@@ -24,6 +28,8 @@ from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
 from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire, read_results_log
 from femmt.dtos import *
+import femmt.functions_reluctance as fr
+
 
 class MagneticComponent:
     """
@@ -36,10 +42,12 @@ class MagneticComponent:
     # Initialization of all class variables
     # Common variables for all instances
 
-    onelab_folder_path = None
+    onelab_folder_path: str = None
+    silent: bool = False
 
     def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-                 silent: bool = False, is_gui: bool = False, simulation_name: Optional[str] = None):
+                 verbosity: Verbosity = 2, is_gui: bool = False, simulation_name: Optional[str] = None):
+        # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         :param component_type: Available options:
                                - "inductor"
@@ -55,13 +63,6 @@ class MagneticComponent:
         :param simulation_name: name without any effect. Will just be displayed in the result-log file
         :type simulation_name: str
         """
-        # Variable to set silent mode
-        ff.set_silent_status(silent)
-
-        ff.femmt_print(f"\n"
-                       f"Initialized a new Magnetic Component of type {component_type.name}\n"
-                       f"--- --- --- ---")
-
         # Get caller filepath when no working_directory was set
         if working_directory is None:
             caller_filename = inspect.stack()[1].filename
@@ -73,6 +74,25 @@ class MagneticComponent:
         # Create file paths class in order to handle all paths
         self.file_data = FileData(working_directory)
 
+        # Variable to set silent mode
+        self.verbosity = verbosity
+        self.logger = logging.getLogger("FEMMTLogger")
+        self.logger.setLevel(logging.INFO)
+
+        if not verbosity == Verbosity.ToConsole:
+            gmsh.option.setNumber("General.Terminal", 0)
+            self.silent = True
+
+        if verbosity == Verbosity.ToFile:
+            fh = logging.FileHandler(self.file_data.femmt_log, mode="w")
+            fh.setLevel(logging.INFO)
+            self.logger.addHandler(fh)
+            self.silent = True
+
+        self.femmt_print(f"\n"
+                         f"Initialized a new Magnetic Component of type {component_type.name}\n"
+                         f"--- --- --- ---")
+
         # To make sure femm is only imported once
         self.femm_is_imported = False
 
@@ -82,12 +102,12 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
-        self.core = None                        # Contains all information about the cores
-        self.air_gaps = None                    # Contains every air gap
-        self.windings = None                    # List of the different winding objects which the following structure: windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
-        self.insulation = None                  # Contains information about the needed insulations
-        self.winding_windows = None             # Contains a list of every winding_window which was created containing a list of virtual_winding_windows
-        self.stray_path = None                  # Contains information about the stray_path (only for integrated transformers)
+        self.core = None  # Contains all information about the cores
+        self.air_gaps = None  # Contains every air gap
+        self.windings = None  # List of the different winding objects which the following structure: windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
+        self.insulation = None  # Contains information about the needed insulations
+        self.winding_windows = None  # Contains a list of every winding_window which was created containing a list of virtual_winding_windows
+        self.stray_path = None  # Contains information about the stray_path (only for integrated transformers)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Control Flags
@@ -98,12 +118,12 @@ class MagneticComponent:
         # Empty lists will be set when a winding window is added to the magnetic component
         self.imposed_reduced_frequency = None
         self.flag_excitation_type = None
-        self.current = []                       # Defined for every conductor
-        self.current_density = []               # Defined for every conductor
-        self.voltage = []                       # Defined for every conductor
+        self.current = []  # Defined for every conductor
+        self.current_density = []  # Defined for every conductor
+        self.voltage = []  # Defined for every conductor
         self.frequency = None
-        self.phase_deg = None                   # Default is zero, Defined for every conductor
-        self.red_freq = None                    # [] * self.n_windings  # Defined for every conductor
+        self.phase_deg = None  # Default is zero, Defined for every conductor
+        self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
         self.delta = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -162,10 +182,16 @@ class MagneticComponent:
         self.onelab_client = onelab.client(__file__)
         self.simulation_name = simulation_name
 
+    def femmt_print(self, text: str):
+        if self.verbosity != Verbosity.Silent:
+            self.logger.info(text)
+
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
-    def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict, boundary_flags_dict: Dict, case_gap_top: float,
-                           case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True, pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
+    def thermal_simulation(self, thermal_conductivity_dict: Dict, boundary_temperatures_dict: Dict,
+                           boundary_flags_dict: Dict, case_gap_top: float,
+                           case_gap_right: float, case_gap_bot: float, show_thermal_simulation_results: bool = True,
+                           pre_visualize_geometry: bool = False, color_scheme: Dict = ff.colors_femmt_default,
                            colors_geometry: Dict = ff.colors_geometry_femmt_default, flag_insulation: bool = True):
         """
         Starts the thermal simulation using thermal_simulation.py
@@ -194,16 +220,15 @@ class MagneticComponent:
         # Create necessary folders
         self.file_data.create_folders(self.file_data.thermal_results_folder_path)
 
-        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, pre_visualize_geometry)
+        self.mesh.generate_thermal_mesh(case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry,
+                                        pre_visualize_geometry)
 
-
-
-
-        #insulation_tag = self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
+        # insulation_tag = self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
 
         if not os.path.exists(self.file_data.e_m_results_log_path):
             # Simulation results file not created
-            raise Exception("Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
+            raise Exception(
+                "Cannot run thermal simulation -> Magnetic simulation needs to run first (no results_log.json found")
 
         # Check if the results log path simulation settings fit the current simulation settings
         current_settings = MagneticComponent.encode_settings(self)
@@ -222,19 +247,18 @@ class MagneticComponent:
                                 Please re-run the magnetic simulation.")
 
         tags = {
-            "core_tag": self.mesh.ps_core,
+            "core_tags": self.mesh.ps_core,
             "background_tag": self.mesh.ps_air,
             "winding_tags": self.mesh.ps_cond,
             "air_gaps_tag": self.mesh.ps_air_gaps if self.air_gaps.number > 0 else None,
             "boundary_regions": self.mesh.thermal_boundary_region_tags,
-            "insulations_tag": self.mesh.ps_insulation if flag_insulation and len(self.insulation.core_cond) == 4 else None
-
-
+            "insulations_tag": self.mesh.ps_insulation if flag_insulation and len(
+                self.insulation.core_cond) == 4 else None
         }
 
         # Core area -> Is needed to estimate the heat flux
         # Power density for volumes W/m^3
-        core_area = self.calculate_core_volume()
+        core_area = [self.calculate_core_volume()] # TODO Core area should be calculated for every core_part as needed in Thermal
 
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
@@ -258,11 +282,8 @@ class MagneticComponent:
             "case_volume": self.core.r_outer * case_gap_top + self.core.core_h * case_gap_right + self.core.r_outer * case_gap_bot,
             "show_thermal_fem_results": show_thermal_simulation_results,
             "print_sensor_values": False,
-            "silent": ff.silent,
-            "flag_insulation": flag_insulation,
-
-
-
+            "silent": self.verbosity == Verbosity.Silent,  # Add verbosity for thermal simulation
+            "flag_insulation": flag_insulation
         }
 
         thermal_simulation.run_thermal(**thermal_parameters)
@@ -301,13 +322,14 @@ class MagneticComponent:
             return
 
         while onelab_path_wrong:
-            onelab_path = os.path.normpath(input("Enter the path of onelab's parent folder (path to folder which contains getdp, onelab executables): "))
+            onelab_path = os.path.normpath(input(
+                "Enter the path of onelab's parent folder (path to folder which contains getdp, onelab executables): "))
 
             if os.path.exists(onelab_path):
                 onelab_path_wrong = False
                 break
             else:
-                ff.femmt_print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
+                self.femmt_print('onelab not found! Tool searches for onelab.py in the folder. Please re-enter path!')
         self.file_data.onelab_folder_path = onelab_path
 
         # Write the path to the config.json
@@ -329,15 +351,16 @@ class MagneticComponent:
         self.mesh_data.update_data(frequency, skin_mesh_factor)
 
         # Create model
-        self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.winding_windows, self.stray_path,
-                                            self.insulation, self.component_type, len(self.windings))
+        self.two_d_axi = TwoDaxiSymmetric(self.core, self.mesh_data, self.air_gaps, self.winding_windows,
+                                          self.stray_path,
+                                          self.insulation, self.component_type, len(self.windings), self.verbosity,
+                                          self.logger)
         self.two_d_axi.draw_model()
 
-
         # Create mesh
-
-        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
-
+        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, self.verbosity,
+                         self.logger, None)
+        # self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
         """Generates model and mesh.
@@ -350,7 +373,6 @@ class MagneticComponent:
         self.high_level_geo_gen(frequency=frequency, skin_mesh_factor=skin_mesh_factor)
         self.mesh.generate_hybrid_mesh()  # create the mesh itself with gmsh
         self.mesh.generate_electro_magnetic_mesh()  # assign the physical entities/domains to the mesh
-
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Create Model
@@ -408,7 +430,18 @@ class MagneticComponent:
 
         # print(f"{winding_window.virtual_winding_windows = }")
         # print(f"{windings = }")
-        self.windings = sorted(windings, key = lambda x: x.winding_number)
+        self.windings = sorted(windings, key=lambda x: x.winding_number)
+
+        # Print statement was moved here so the silence functionality is not needed in Conductors class.
+        # TODO Can this be even removed?
+        for winding in self.windings:
+            if winding.conductor_type == ConductorType.RoundLitz:
+                self.femmt_print(f"Updated Litz Configuration: \n"
+                                 f" ff: {winding.ff} \n"
+                                 f" Number of layers/strands: {winding.n_layers}/{winding.n_strands} \n"
+                                 f" Strand radius: {winding.strand_radius} \n"
+                                 f" Conductor radius: {winding.conductor_radius}\n"
+                                 f"---")
 
         # Set excitation parameter lists
         self.current = [None] * len(windings)
@@ -443,7 +476,7 @@ class MagneticComponent:
 
     def create_model(self, freq: float, skin_mesh_factor: float = 0.5, pre_visualize_geometry: bool = False,
                      save_png: bool = False, color_scheme: Dict = ff.colors_femmt_default,
-                     colors_geometry: Dict = ff.colors_geometry_femmt_default):
+                     colors_geometry: Dict = ff.colors_geometry_femmt_default, benchmark: bool = False):
         """
         Create a model from the abstract geometry description inside onelab including optional mesh generation
 
@@ -464,14 +497,26 @@ class MagneticComponent:
             raise Exception("A core class needs to be added to the magnetic component")
         if self.air_gaps is None:
             self.air_gaps = AirGaps(None, None)
-            ff.femmt_print("No air gaps are added")
+            self.femmt_print("No air gaps are added")
         if self.insulation is None:
             raise Exception("An insulation class need to be added to the magnetic component")
         if self.winding_windows is None:
             raise Exception("Winding windows are not set properly. Please check the winding creation")
 
-        self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
-        self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png, color_scheme=color_scheme, colors_geometry=colors_geometry)
+        if benchmark:
+            start_time = time.time()
+            self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+            high_level_geo_gen_time = time.time() - start_time
+            start_time = time.time()
+            self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png,
+                                           color_scheme=color_scheme, colors_geometry=colors_geometry)
+            generate_hybrid_mesh_time = time.time() - start_time
+
+            return high_level_geo_gen_time, generate_hybrid_mesh_time
+        else:
+            self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
+            self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png,
+                                           color_scheme=color_scheme, colors_geometry=colors_geometry)
 
     def get_single_complex_permeability(self):
         """
@@ -481,39 +526,54 @@ class MagneticComponent:
         """
         if self.core.permeability_type == PermeabilityType.FromData:
             # take datasheet value from database
-            complex_permeability = mu_0 * mdb.MaterialDatabase(ff.silent).get_material_attribute(material_name=self.core.material, attribute="initial_permeability")
-            ff.femmt_print(f"{complex_permeability = }")
+            complex_permeability = mu_0 * mdb.MaterialDatabase(
+                self.verbosity == Verbosity.Silent).get_material_attribute(material_name=self.core.material,
+                                                                           attribute="initial_permeability")
+            self.femmt_print(f"{complex_permeability = }")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-            complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)), np.sin(np.deg2rad(self.core.phi_mu_deg)))
+            complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)),
+                                                                       np.sin(np.deg2rad(self.core.phi_mu_deg)))
         if self.core.permeability_type == PermeabilityType.RealValue:
             complex_permeability = mu_0 * self.core.mu_r_abs
         return complex_permeability
 
-    def check_model(self):
+    def check_model_mqs_condition(self) -> None:
         """
+        Check the model for magneto-quasi-static condition for frequencies != 0
+
         Is called before a simulation.
-        e.g.: Used to check the model for magneto-quasi-static condition.
-        :return:
+        Loads the permittivity from the material database (measurement or datasheet) and calculates the
+        resonance ratio = diameter_to_wavelength_ratio / diameter_to_wavelength_ratio_of_first_resonance
+
+        :return: None
         """
-        if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity["datasource"] == "datasheet":
-            epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(ff.silent).get_permittivity(temperature=self.core.temperature, frequency=self.frequency,
-                                                                                          material_name="N49",
-                                                                                          datasource=self.core.permittivity["datasource"],
-                                                                                          datatype=self.core.permittivity["datatype"],
-                                                                                          measurement_setup=self.core.permittivity["measurement_setup"],
-                                                                                          interpolation_type="linear")
+        if self.frequency != 0:
+            if self.core.permittivity["datasource"] == "measurements" or self.core.permittivity[
+                "datasource"] == "datasheet":
+                epsilon_r, epsilon_phi_deg = mdb.MaterialDatabase(self.verbosity == Verbosity.Silent).get_permittivity(
+                    temperature=self.core.temperature, frequency=self.frequency,
+                    material_name=self.core.material,
+                    datasource=self.core.permittivity["datasource"],
+                    datatype=self.core.permittivity["datatype"],
+                    measurement_setup=self.core.permittivity["measurement_setup"],
+                    interpolation_type="linear")
 
-            complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)), np.sin(np.deg2rad(epsilon_phi_deg)))
-            ff.femmt_print(f"{complex_permittivity = }\n"
-                           f"{epsilon_r = }\n"
-                           f"{epsilon_phi_deg = }")
+                complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),
+                                                                       np.sin(np.deg2rad(epsilon_phi_deg)))
+                self.femmt_print(f"{complex_permittivity = }\n"
+                                 f"{epsilon_r = }\n"
+                                 f"{epsilon_phi_deg = }")
 
-            ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
-                                   complex_permittivity=complex_permittivity, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+                ff.check_mqs_condition(radius=self.core.core_inner_diameter / 2, frequency=self.frequency,
+                                       complex_permeability=self.get_single_complex_permeability(),
+                                       complex_permittivity=complex_permittivity, conductivity=self.core.sigma,
+                                       relative_margin_to_first_resonance=0.5, silent=self.silent)
 
-        else:
-            ff.check_mqs_condition(radius=self.core.core_inner_diameter/2, f=self.frequency, complex_permeability=self.get_single_complex_permeability(),
-                                   complex_permittivity=0, conductivity=self.core.sigma, relative_margin_to_first_resonance=0.5)
+            else:
+                ff.check_mqs_condition(radius=self.core.core_inner_diameter / 2, frequency=self.frequency,
+                                       complex_permeability=self.get_single_complex_permeability(),
+                                       complex_permittivity=0, conductivity=self.core.sigma,
+                                       relative_margin_to_first_resonance=0.5, silent=self.silent)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Miscellaneous
@@ -530,7 +590,7 @@ class MagneticComponent:
 
         core_width = self.core.r_outer
 
-        return np.pi * core_width**2 * core_height
+        return np.pi * core_width ** 2 * core_height
 
     def calculate_core_volume(self) -> float:
         """Calculates the volume of the core excluding air.
@@ -568,9 +628,10 @@ class MagneticComponent:
             else:
                 raise Exception(f"Invalid leg position tag {leg_position} used for an air gap.")
 
-            air_gap_volume += np.pi * width**2 * height
+            air_gap_volume += np.pi * width ** 2 * height
 
-        return np.pi*(core_width**2 * core_height - (inner_leg_width+winding_width)**2 * winding_height + inner_leg_width**2 * winding_height) - air_gap_volume
+        return np.pi * (core_width ** 2 * core_height - (
+                    inner_leg_width + winding_width) ** 2 * winding_height + inner_leg_width ** 2 * winding_height) - air_gap_volume
 
     def calculate_core_weight(self) -> float:
         """
@@ -579,9 +640,11 @@ class MagneticComponent:
         """
         if self.core.material == 'custom':
             volumetric_mass_density = 0
-            warnings.warn("Volumetric mass density not implemented for custom cores. Returns '0' in log-file: Core cost will also result to 0.")
+            warnings.warn(
+                "Volumetric mass density not implemented for custom cores. Returns '0' in log-file: Core cost will also result to 0.")
         else:
-            volumetric_mass_density = self.core.material_database.get_material_attribute(material_name=self.core.material, attribute="volumetric_mass_density")
+            volumetric_mass_density = self.core.material_database.get_material_attribute(
+                material_name=self.core.material, attribute="volumetric_mass_density")
         return self.calculate_core_volume() * volumetric_mass_density
 
     def get_wire_distances(self) -> List[List[float]]:
@@ -590,11 +653,22 @@ class MagneticComponent:
         :return: Wire distances
         :rtype: List[List[float]]
         """
+        # wire_distance = []
+        # for winding in self.two_d_axi.p_conductor:
+        #     # 5 points are for 1 wire
+        #     num_points = len(winding)
+        #     num_windings = num_points // 5
+        #     winding_list = []
+        #     for i in range(num_windings):
+        #         winding_list.append(winding[i * 5][0])
+        #     wire_distance.append(winding_list)
+        #
+        # return wire_distance
 
         wire_distance = []
         for num, conductor in enumerate(self.two_d_axi.p_conductor):
             # Check if the winding is parallel and calculate points accordingly
-            if self.windings[num].parallel: # as in center_tapped transformer, RectangularSolid is used in parallel winding
+            if self.windings[num].parallel:  # as in center_tapped transformer, RectangularSolid is used in parallel winding
                 num_points = len(conductor)
                 num_turns = num_points // 4
                 point_increment = 4
@@ -609,6 +683,8 @@ class MagneticComponent:
             wire_distance.append(winding_list)
 
         return wire_distance
+
+
 
     def calculate_wire_lengths(self) -> List[float]:
         distances = self.get_wire_distances()
@@ -645,7 +721,8 @@ class MagneticComponent:
                                         if wrap_para_type == WrapParaType.FixedThickness:
                                             cross_section_area = self.core.window_h * winding.thickness
                                         elif wrap_para_type == WrapParaType.Interpolate:
-                                            cross_section_area = self.core.window_h * self.core.window_w / vww.turns[vww_index]
+                                            cross_section_area = self.core.window_h * self.core.window_w / vww.turns[
+                                                vww_index]
                                         else:
                                             raise Exception(f"Unknown wrap para type {wrap_para_type}")
                                     else:
@@ -704,17 +781,17 @@ class MagneticComponent:
                 raise ValueError(
                     "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
 
-        ff.femmt_print(f"\n---\n"
-              f"Excitation: \n"
-              f"Frequency: {frequency}\n"
-              f"Current(s): {amplitude_list}\n"
-              f"Phase(s): {phase_deg_list}\n")
-
+        self.femmt_print(f"\n---\n"
+                         f"Excitation: \n"
+                         f"Frequency: {frequency}\n"
+                         f"Current(s): {amplitude_list}\n"
+                         f"Phase(s): {phase_deg_list}\n")
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.permeability["datasource"] != MaterialDataSource.Custom:
-            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path, plot_interpolation)  # frequency update to core class
+            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path,
+                                                    plot_interpolation)  # frequency update to core class
         if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
             self.core.update_sigma(frequency)
         # Has the user provided a list of phase angles?
@@ -736,8 +813,8 @@ class MagneticComponent:
                 else:
                     self.phase_deg = phase_deg_list
                     # Define complex current phasor as excitation
-                    self.current[num] = complex(amplitude_list[num]*np.cos(np.deg2rad(phase_deg_list[num])),
-                                                amplitude_list[num]*np.sin(np.deg2rad(phase_deg_list[num])))
+                    self.current[num] = complex(amplitude_list[num] * np.cos(np.deg2rad(phase_deg_list[num])),
+                                                amplitude_list[num] * np.sin(np.deg2rad(phase_deg_list[num])))
 
         # Imposed current density
         if self.flag_excitation_type == 'current_density':
@@ -746,7 +823,6 @@ class MagneticComponent:
         # Imposed voltage
         if self.flag_excitation_type == 'voltage':
             raise NotImplementedError
-
 
         # -- Frequency --
 
@@ -759,28 +835,31 @@ class MagneticComponent:
             self.red_freq.append([])
 
         if self.frequency != 0:
-            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * mu_0))  # TODO: distinguish between material conductivities
+            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[
+                0].cond_sigma * mu_0))  # TODO: distinguish between material conductivities
             for num in range(len(self.windings)):
                 if self.windings[num].conductor_type == ConductorType.RoundLitz:
                     self.red_freq[num] = self.windings[num].strand_radius / self.delta
                 elif self.windings[num].conductor_type == ConductorType.RoundSolid:
                     self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                 else:
-                    ff.femmt_print("Reduced Frequency does not have a physical value here")
-                    ff.femmt_print(self.windings[num].conductor_type)
-                    self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
+                    self.femmt_print("Reduced Frequency does not have a physical value here")
+                    self.femmt_print(self.windings[num].conductor_type)
+                    self.red_freq[
+                        num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
         else:
             # DC case
             self.delta = 1e20  # random huge value
-            self.red_freq[num] = 0
+            for num in range(len(self.windings)):
+                self.red_freq[num] = 0
 
     def simulate(self):
         """
         Initializes an onelab client. Provides the GetDP based solver with the created mesh file.
         """
-        ff.femmt_print(f"\n---\n"
-              f"Initialize ONELAB API\n"
-              f"Run Simulation\n")
+        self.femmt_print(f"\n---\n"
+                         f"Initialize ONELAB API\n"
+                         f"Run Simulation\n")
 
         # -- Simulation --
         # create a new onelab client
@@ -793,41 +872,82 @@ class MagneticComponent:
 
         os.chdir(self.file_data.working_directory)
 
-        if ff.silent:
+        if self.verbosity == Verbosity.Silent:
             verbose = "-verbose 1"
         else:
             verbose = "-verbose 5"
 
+        to_file_str = ""
+        if self.verbosity == Verbosity.ToFile:
+            to_file_str = " > " + self.file_data.getdp_log
+
         # Run simulations as sub clients (non-blocking??)
         getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
-        self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
+        self.onelab_client.runSubClient("myGetDP",
+                                        getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
 
-    def pre_simulation(self):
-        """
-        - Complete "pre-simulation" call
-        """
-        self.high_level_geo_gen()
-        self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
-        self.file_communication()
-        self.pre_simulate()
-
-    def file_communication(self):
+    def write_simulation_parameters_to_pro_files(self):
         """
         Interaction between python and Prolog files.
-        """
-        # --------------------------------- File Communication --------------------------------
-        # All shared control variables and parameters are passed to a temporary Prolog file
-        ff.femmt_print(f"\n---\n"
-              f"File Communication\n")
 
-        # Write initialization parameters for simulation in .pro file
+        Writes the simulation parameters to .pro-files
+
+        Parameter.pro: includes material properties, currents, phases, ...
+        postquantities.pro: includes directions to store the raw results from the FEM simulation
+
+        """
+        # All shared control variables and parameters are passed to a temporary Prolog file
+        self.femmt_print(f"\n---\n"
+                         f"Write simulation parameters to .pro files (file communication).\n")
+
+        # Write initialization parameters for simulation in 'Parameter.pro' file
         self.write_electro_magnetic_parameter_pro()
 
-        # Write postprocessing parameters in .pro file
+        # Write postprocessing parameters in 'postquantities.pro' file
         self.write_electro_magnetic_post_pro()
 
+    def overwrite_conductors_with_air(self, physical_surfaces_to_overwrite: list):
+        """
+
+        EXPERIMENTAL
+
+
+
+        :return:
+        """
+        if True:
+            with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "r") as mesh_file:
+                mesh_data = mesh_file.read()
+
+            for ps in physical_surfaces_to_overwrite:
+                # mesh_data = mesh_data.replace(f'1 {ps} 4', f'1 {ps+1000000} 4')
+                mesh_data = mesh_data.replace(f'1 {ps} 4', f'1 {ps + 1000000} 4')
+
+            with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
+                mesh_file.write(mesh_data)
+
+    def overwrite_air_conductors_with_conductors(self, physical_surfaces_to_overwrite: list):
+        """
+
+        EXPERIMENTAL
+
+
+
+        :return:
+        """
+        if True:
+            with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "r") as mesh_file:
+                mesh_data = mesh_file.read()
+
+            for ps in physical_surfaces_to_overwrite:
+                mesh_data = mesh_data.replace(f'1 {ps} 4', f'1 {ps - 1000000} 4')
+
+            with open(os.path.join(os.path.join(self.file_data.e_m_mesh_file)), "w") as mesh_file:
+                mesh_file.write(mesh_data)
+
     def single_simulation(self, freq: float, current: List[float], phi_deg: List[float] = None,
-                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True):
+                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
+                          benchmark: bool = False):
         """
         Start a _single_ electromagnetic ONELAB simulation.
 
@@ -843,30 +963,58 @@ class MagneticComponent:
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
         # there is another ValueError rising inside excitation()-method for safety (but after meshing).
+        if type(current) is not list:
+            raise Exception("The current must be given in a list.")
         for current_value in current:
             if current_value < 0:
                 raise ValueError(
                     "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
 
-
         phi_deg = phi_deg or []
+        if benchmark:
+            start_time = time.time()
+            self.mesh.generate_electro_magnetic_mesh()
+            generate_electro_magnetic_mesh_time = time.time() - start_time
 
-        self.mesh.generate_electro_magnetic_mesh()
-        self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
-        self.check_model()
-        self.file_communication()
-        self.pre_simulate()
-        self.simulate()
-        self.calculate_and_write_log()  # TODO: reuse center tapped
-        if show_fem_simulation_results:
-            self.visualize()
+            start_time = time.time()
+            self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
+                            plot_interpolation=plot_interpolation)  # frequency and current
+            self.check_model_mqs_condition()
+            self.write_simulation_parameters_to_pro_files()
+            self.generate_load_litz_approximation_parameters()
+
+            prepare_simulation_time = time.time() - start_time
+
+            start_time = time.time()
+            self.simulate()
+            real_simulation_time = time.time() - start_time
+
+            start_time = time.time()
+            self.calculate_and_write_log()  # TODO: reuse center tapped
+            logging_time = time.time() - start_time
+            if show_fem_simulation_results:
+                self.visualize()
+
+            return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
+        else:
+            self.mesh.generate_electro_magnetic_mesh()
+            self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
+                            plot_interpolation=plot_interpolation)  # frequency and current
+            self.check_model_mqs_condition()
+            self.write_simulation_parameters_to_pro_files()
+            self.generate_load_litz_approximation_parameters()
+            self.simulate()
+            self.calculate_and_write_log()  # TODO: reuse center tapped
+            if show_fem_simulation_results:
+                self.visualize()
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
-                         show_last_fem_simulation: bool = False, return_results: bool = False,
+                         show_last_fem_simulation: bool = False,
                          excitation_meshing_type: ExcitationMeshingType = None, skin_mesh_factor: float = 0.5,
                          visualize_before: bool = False, save_png: bool = False,
                          color_scheme: Dict = ff.colors_femmt_default,
-                         colors_geometry: Dict = ff.colors_geometry_femmt_default) -> Dict:
+                         colors_geometry: Dict = ff.colors_geometry_femmt_default,
+                         inductance_dict: Dict = None, core_hyst_loss: float = None) -> None:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -895,8 +1043,6 @@ class MagneticComponent:
         :type phi_deg_list_list: List
         :param show_last_fem_simulation: shows last simulation in gmsh if set to True
         :type show_last_fem_simulation: bool
-        :param return_results: returns results in a dictionary
-        :type return_results: bool
         :param visualize_before: show genarated mesh before the simulation is run
         :type visualize_before: bool
         :param color_scheme: colorfile (definition for red, green, blue, ...)
@@ -906,9 +1052,6 @@ class MagneticComponent:
         :param save_png: True to save a .png
         :type save_png: bool
 
-
-        :return: Results in a dictionary
-        :rtype: Dict
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
         # this message appears before meshing and before simulation
@@ -918,11 +1061,6 @@ class MagneticComponent:
                 if current < 0:
                     raise ValueError(
                         "Negative currents are not allowed. Use the phase + 180 degree to generate a negative current.")
-
-
-
-
-
 
         # frequencies = frequencies or []
         # currents = currents or []
@@ -943,16 +1081,18 @@ class MagneticComponent:
                     excitation_meshing_type = ExcitationMeshingType.MeshOnlyLowestFrequency
 
         if excitation_meshing_type == ExcitationMeshingType.MeshEachFrequency:
-            for i in range(0, len(frequency_list)):
-                self.high_level_geo_gen(frequency=frequency_list[i], skin_mesh_factor=skin_mesh_factor)
-                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+            for count_frequency, _ in enumerate(frequency_list):
+                self.high_level_geo_gen(frequency=frequency_list[count_frequency], skin_mesh_factor=skin_mesh_factor)
+                self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before,
+                                               save_png=save_png)
                 self.mesh.generate_electro_magnetic_mesh()
 
-                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
-                                    phase_deg_list=phi_deg_list_list[i])  # frequency and current
-                self.check_model()
-                self.file_communication()
-                self.pre_simulate()
+                self.excitation(frequency=frequency_list[count_frequency],
+                                amplitude_list=current_list_list[count_frequency],
+                                phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
+                if count_frequency == 0: self.check_model_mqs_condition()
+                self.write_simulation_parameters_to_pro_files()
+                self.generate_load_litz_approximation_parameters()
                 self.simulate()
         else:
             if excitation_meshing_type == ExcitationMeshingType.MeshOnlyHighestFrequency:
@@ -961,34 +1101,383 @@ class MagneticComponent:
                 self.high_level_geo_gen(frequency=min(frequency_list), skin_mesh_factor=skin_mesh_factor)
             else:
                 raise Exception(f"Unknown excitation meshing type {excitation_meshing_type}")
-            self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before, save_png=save_png)
+            self.mesh.generate_hybrid_mesh(color_scheme, colors_geometry, visualize_before=visualize_before,
+                                           save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            for i in range(0, len(frequency_list)):
-                self.excitation(frequency=frequency_list[i], amplitude_list=current_list_list[i],
-                                phase_deg_list=phi_deg_list_list[i])  # frequency and current
-                self.check_model()
-                self.file_communication()
-                self.pre_simulate()
+            check_model_mqs_condition_already_performerd = False
+            for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
+                self.excitation(frequency=frequency_list[count_frequency],
+                                amplitude_list=current_list_list[count_frequency],
+                                phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
+                if value_frequency != 0 and not check_model_mqs_condition_already_performerd:
+                    self.check_model_mqs_condition()
+                    check_model_mqs_condition_already_performerd = True
+                self.write_simulation_parameters_to_pro_files()
+                self.generate_load_litz_approximation_parameters()
                 self.simulate()
                 # self.visualize()
 
-        self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list, frequencies=frequency_list)
+        self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list,
+                                     frequencies=frequency_list, inductance_dict=inductance_dict,
+                                     core_hyst_losses=core_hyst_loss)
 
         if show_last_fem_simulation:
-            self.file_communication()
+            self.write_simulation_parameters_to_pro_files()
             self.visualize()
 
-        if return_results:
-            # Return a Dictionary with the results
-            results = {"j2F": self.load_result("j2F", len(frequency_list), "real"),
-                       "j2H": self.load_result("j2H", len(frequency_list), "real"),
-                       "p_hyst": self.load_result("p_hyst", len(frequency_list), "real")}
-            return results
+    def component_study(self, time_current_vectors: List[List[List[float]]]):
+
+        # winding losses
+        frequency_current_phase_deg_list = []
+
+        # collect simulation input parameters from time_current_vectors
+        hyst_loss_amplitudes = []
+        hyst_loss_phases_deg = []
+        hyst_frequency = 1 / (time_current_vectors[0][0][-1])
+        for time_current_vector in time_current_vectors:
+            # collect winding losses simulation input parameters
+            [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time')
+            phi_deg = np.rad2deg(phi_rad)
+            frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
+
+            # collect hysteresis loss simulation input parameters
+            hyst_loss_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
+            hyst_loss_phases_deg.append(
+                fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
+
+        # check if all frequency vectors include the same frequencies
+        for count in range(len(frequency_current_phase_deg_list) - 1):
+            if not np.array_equal(frequency_current_phase_deg_list[count][0],
+                                  frequency_current_phase_deg_list[count + 1][0]):
+                raise ValueError("Frequency vectors for different currents are not the same!")
+
+        # transfer format from fft()-output to excitation_sweep()-input
+        current_list_list = []
+        phi_deg_list_list = []
+        for count_frequency, frequency in enumerate(frequency_list):
+            currents_single_frequency = []
+            phi_deg_single_frequency = []
+            for count_current, _ in enumerate(time_current_vectors):
+                currents_single_frequency.append(frequency_current_phase_deg_list[count_current][1][count_frequency])
+                phi_deg_single_frequency.append(frequency_current_phase_deg_list[count_current][2][count_frequency])
+            current_list_list.append(currents_single_frequency)
+            phi_deg_list_list.append(phi_deg_single_frequency)
+
+        # get the inductance
+        inductance_dict = self.get_inductances(I0=1, op_frequency=hyst_frequency, skin_mesh_factor=1)
+
+        # calculate hysteresis losses
+        # use a single simulation
+        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes,
+                        phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
+        self.check_model_mqs_condition()
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_log()  # TODO: reuse center tapped
+        [p_hyst] = self.load_result(res_name="p_hyst")
+
+        # calculate the winding losses
+        self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
+                              core_hyst_loss=float(p_hyst))
+
+    def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False) \
+            -> Dict:
+        """
+        As magnetizing currents are often non-sinusoidal, some corrections in the simulation current waveforms
+        are needed. This function calculates the new current waveforms for the center tapped study to get
+        inductance values and so on.
+
+        :param time_current_vectors: time-current vectors for primary and secondary
+        :type time_current_vectors: List[List[List[float]]]
+        :param plot_waveforms: True to watch the pre-calculated waveforms
+        :type plot_waveforms: bool
+        :return: new current waveform vector
+        :rtype: Dict
+
+        return dict:
+        center_tapped_study_excitation = {
+            "hysteresis": {
+                "frequency": None,
+                "transformer": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                },
+                "choke": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                }
+            },
+            "linear_losses": {
+                "frequencies": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            }
+        }
+        """
+
+        def hysteresis_loss_excitation(input_time_current_vectors):
+            # collect simulation input parameters from time_current_vectors
+            hyst_loss_amplitudes = []
+            hyst_loss_phases_deg = []
+            hyst_frequency = 1 / (input_time_current_vectors[0][0][-1])
+            for time_current_vector in input_time_current_vectors:
+                # collect hysteresis loss simulation input parameters
+                hyst_loss_amplitudes.append(fr.max_value_from_value_vec(time_current_vector[1])[0])
+                hyst_loss_phases_deg.append(
+                    fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
+            return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
+
+        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg):
+            # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
+            hyst_loss_amplitudes[-1] = hyst_loss_amplitudes[-1] / 2
+            hyst_loss_amplitudes.append(hyst_loss_amplitudes[-1])
+            hyst_loss_phases_deg.append(hyst_loss_phases_deg[-1])
+            # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
+            return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
+
+        def split_time_current_vectors_center_tapped(time_current_vectors: List[List[List[float]]]):
+            # print(f"{time_current_vectors = }")
+            positive_secondary_current = np.copy(time_current_vectors[1][1])
+            positive_secondary_current[positive_secondary_current < 0] = 0
+            # print(f"{positive_secondary_current = }")
+            negative_secondary_current = np.copy(time_current_vectors[1][1])
+            negative_secondary_current[negative_secondary_current > 0] = 0
+            # print(f"{negative_secondary_current = }")
+
+            center_tapped_time_current_vectors = [time_current_vectors[0],
+                                                  [time_current_vectors[1][0], positive_secondary_current],
+                                                  [time_current_vectors[1][0], negative_secondary_current]]
+
+            if plot_waveforms:
+                plt.plot(time_current_vectors[1][0], negative_secondary_current, label="negative_secondary_current")
+                plt.plot(time_current_vectors[1][0], positive_secondary_current, label="positive_secondary_current")
+                plt.plot(time_current_vectors[0][0], time_current_vectors[0][1], label="primary_current")
+                plt.xlabel("time / s")
+                plt.ylabel("current / A")
+                plt.grid()
+                plt.legend()
+                plt.show()
+
+            return center_tapped_time_current_vectors
+
+        def linear_loss_excitation(time_current_vectors: List[List[List[float]]]):
+            """
+            Perform FFT to get the primary and secondary currents to calculate the wire losses.
+            These losses can be 'linear added' to get the total winding losses.
+
+            :param time_current_vectors: primary and secondary current waveforms over time
+            :type time_current_vectors: List[List[List[float]]]
+            """
+            # winding losses
+            frequency_current_phase_deg_list = []
+            # collect winding losses simulation input parameters
+            for time_current_vector in time_current_vectors:
+                [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time')
+                phi_deg = np.rad2deg(phi_rad)
+                frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
+
+            # check if all frequency vectors include the same frequencies
+            # WORKAROUND: if any frequency is not included in one of the vectors it is added with amplitude  = 0 and phase = 0
+            # TODO: recalculate the fft at the "missing frequencies and add their values...
+            all_frequencies = set()
+            for count in range(len(frequency_current_phase_deg_list) - 1):
+                if not np.array_equal(frequency_current_phase_deg_list[count][0],
+                                      frequency_current_phase_deg_list[count + 1][0]):
+                    # raise ValueError("Frequency vectors for different currents are not the same!")
+                    # print("Frequency vectors for different currents are not the same!")
+                    all_frequencies = all_frequencies | set(frequency_current_phase_deg_list[count][0]) | set(
+                        frequency_current_phase_deg_list[count + 1][0])
+                    # print(f"Original: {frequency_current_phase_deg_list = }")
+
+            for frequency in list(all_frequencies):
+                for count in range(0, len(frequency_current_phase_deg_list)):
+                    if frequency not in frequency_current_phase_deg_list[count][0]:
+                        ii = np.searchsorted(frequency_current_phase_deg_list[count][0], frequency)
+                        frequency_current_phase_deg_list[count][0] = np.insert(
+                            frequency_current_phase_deg_list[count][0], ii, frequency)
+                        frequency_current_phase_deg_list[count][1] = np.insert(
+                            frequency_current_phase_deg_list[count][1], ii, 0)
+                        frequency_current_phase_deg_list[count][2] = np.insert(
+                            frequency_current_phase_deg_list[count][2], ii, 0)
+            # print(f"Corrected: {frequency_current_phase_deg_list = }")
+            return frequency_list, frequency_current_phase_deg_list
+
+        center_tapped_study_excitation = {
+            "hysteresis": {
+                "frequency": None,
+                "transformer": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                },
+                "choke": {
+                    "current_amplitudes": None,
+                    "current_phases_deg": None
+                }
+            },
+            "linear_losses": {
+                "frequencies": None,
+                "current_amplitudes": None,
+                "current_phases_deg": None
+            }
+        }
+
+        # Hysteresis Loss Excitation
+        time_current_vectors[1][1] = time_current_vectors[1][1] * (-1)
+        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = hysteresis_loss_excitation(time_current_vectors)
+        hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = split_hysteresis_loss_excitation_center_tapped(
+            hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg)
+        center_tapped_study_excitation["hysteresis"]["frequency"] = hyst_frequency
+
+        if plot_waveforms:
+            i_1 = hyst_loss_amplitudes[0] * np.cos(
+                time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
+            i_2 = hyst_loss_amplitudes[1] * np.cos(
+                time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
+            plt.plot(time_current_vectors[0][0], i_1, label="i_1")
+            plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
+            plt.xlabel("time / s")
+            plt.ylabel("current / A")
+            plt.grid()
+            plt.legend()
+            plt.show()
+
+        # calculate hysteresis losses in the xfmr
+        xfmr_scale = 1.7
+        center_tapped_study_excitation["hysteresis"]["transformer"]["current_amplitudes"] = list(
+            np.array(hyst_loss_amplitudes) * xfmr_scale)
+        center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"] = hyst_loss_phases_deg
+
+        # calculate hysteresis losses in the choke
+        choke_hyst_loss_amplitudes = hyst_loss_amplitudes
+        choke_hyst_loss_amplitudes[1] = choke_hyst_loss_amplitudes[0] * 7
+        choke_hyst_loss_amplitudes[2] = choke_hyst_loss_amplitudes[0] * 7
+        center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"] = choke_hyst_loss_amplitudes
+        center_tapped_study_excitation["hysteresis"]["choke"]["current_phases_deg"] = [0, 180, 180]
+
+        # Linear Loss Excitation
+        time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
+        frequency_list, frequency_current_phase_deg_list = linear_loss_excitation(time_current_vectors)
+
+        if plot_waveforms:
+            i_1 = hyst_loss_amplitudes[0] * np.cos(
+                time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[0]))
+            i_2 = hyst_loss_amplitudes[1] * np.cos(
+                time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[1]))
+            i_3 = hyst_loss_amplitudes[2] * np.cos(
+                time_current_vectors[0][0] * 2 * np.pi * hyst_frequency - np.deg2rad(hyst_loss_phases_deg[2]))
+            plt.plot(time_current_vectors[0][0], i_1, label="i_1")
+            plt.plot(time_current_vectors[0][0], i_2, "-", label="i_2")
+            plt.plot(time_current_vectors[0][0], i_3, "--", label="i_3")
+            plt.xlabel("time / s")
+            plt.ylabel("current / A")
+            plt.grid()
+            plt.legend()
+            plt.show()
+
+        # transfer format from fft()-output to excitation_sweep()-input
+        current_list_list = []
+        phi_deg_list_list = []
+        for count_frequency, frequency in enumerate(frequency_list):
+            currents_single_frequency = []
+            phi_deg_single_frequency = []
+            for count_current, _ in enumerate(time_current_vectors):
+                currents_single_frequency.append(frequency_current_phase_deg_list[count_current][1][count_frequency])
+                phi_deg_single_frequency.append(frequency_current_phase_deg_list[count_current][2][count_frequency])
+            current_list_list.append(currents_single_frequency)
+            phi_deg_list_list.append(phi_deg_single_frequency)
+        center_tapped_study_excitation["linear_losses"]["frequencies"] = list(frequency_list)
+        center_tapped_study_excitation["linear_losses"]["current_amplitudes"] = current_list_list
+        center_tapped_study_excitation["linear_losses"]["current_phases_deg"] = phi_deg_list_list
+
+        return center_tapped_study_excitation
+
+    def stacked_core_center_tapped_study(self, center_tapped_study_excitation, number_primary_coil_turns: int = None,
+                                         non_sine_hysteresis_correction: bool = False):
+        """
+        Comprehensive component analysis for center tapped transformers with dedicated choke.
+
+        :param non_sine_hysteresis_correction: True to enable the non-sinusoidal hysteresis correction factor
+        :param center_tapped_study_excitation:
+        :param number_primary_coil_turns: number of primary coil turns. Needed due to a special trick to get the transformer losses without effect of the choke
+        :type number_primary_coil_turns: int
+        :return:
+        """
+
+        def factor_triangular_hysteresis_loss_iGSE(D, alpha):
+            nominator = 2 * (D ** (1 - alpha) + (1 - D) ** (1 - alpha))
+            theta = np.linspace(0, 2 * np.pi, 100)
+            integrant = np.abs(np.cos(theta)) ** alpha
+            denominator = np.pi ** (alpha - 1) * np.trapz(integrant, x=theta)
+            return nominator / denominator
+
+        # get the inductance
+        inductance_dict = self.get_inductances(I0=1, skin_mesh_factor=1,
+                                               op_frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
+                                               silent=self.silent)
+
+        # Initialize the hysteresis losses with zero
+        p_hyst = 0
+        # print(f"{p_hyst = }")
+
+        ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
+        self.overwrite_conductors_with_air(ps_primary_coil_turns)
+        self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
+                        amplitude_list=center_tapped_study_excitation["hysteresis"]["transformer"][
+                            "current_amplitudes"],
+                        phase_deg_list=center_tapped_study_excitation["hysteresis"]["transformer"][
+                            "current_phases_deg"],
+                        plot_interpolation=False)
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_log()  # TODO: reuse center tapped
+
+        log = self.read_log()
+        for i in [1, 2, 3, 4]:
+            res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
+            # print(f"core_part_{i} = {res}")
+            p_hyst += res
+        # print(f"{p_hyst = }")
+
+        if non_sine_hysteresis_correction:
+            # Correct the hysteresis loss for the triangular shaped flux density waveform
+            # alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
+            #                                                               datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
+            # p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
+            # print(f"{p_hyst = }")
+
+            ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
+
+        self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns) + 1000000))
+        self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
+                        amplitude_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"],
+                        phase_deg_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_phases_deg"],
+                        plot_interpolation=False)
+        self.write_simulation_parameters_to_pro_files()
+        self.generate_load_litz_approximation_parameters()
+        self.simulate()
+        self.calculate_and_write_log()  # TODO: reuse center tapped
+
+        log = self.read_log()
+        for i in [3, 4, 5]:
+            res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
+            # print(f"core_part_{i} = {res}")
+            p_hyst += res
+
+        # print(f"{p_hyst = }")
+
+        # calculate the winding losses # TODO: avoid meshing twice
+        self.excitation_sweep(center_tapped_study_excitation["linear_losses"]["frequencies"],
+                              center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
+                              center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
+                              inductance_dict=inductance_dict, core_hyst_loss=float(p_hyst))
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
-    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1, visualize_last_fem_simulation: bool = False):
+    def get_inductances(self, I0: float, op_frequency: float = 0, skin_mesh_factor: float = 1,
+                        visualize_last_fem_simulation: bool = False, silent: bool = False):
         """
         Performs 'open' simulations with input current for each winding and calculates the inductance matrix and
         the primary concentrated equivalent circuit.
@@ -1005,322 +1494,200 @@ class MagneticComponent:
         :type visualize_last_fem_simulation: bool
         :param skin_mesh_factor:
         :type skin_mesh_factor: bool
-        :param I0: exciting peak current in A
+        :param I0: exciting peak current in A. For all transformers, this value is used in all windings.
         :type I0: float
         :param op_frequency: operating frequency in Hz
         :type op_frequency: float
+        :param silent: True for not terminal output
+        :type silent: bool
         """
-        if len(self.windings) == 2:
-            # 2 winding transformer
-            # Remove "old" Inductance Logs
-            try:
-                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat"))
-                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat"))
-            except OSError:
-                pass
+        if len(self.windings) == 1:
+            raise NotImplementedError(
+                "For inductor, this function will not be implemented. See 'flux_over_current' in 'log_electro_magnetic.json' ")
 
-            # -- Inductance Estimation --
+        else:
+            # Data-generation with FEM simulations
             self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
-            # self.mesh.mesh(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
-            # self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
-            # self.mesh.generate_mesh()
+            frequencies, currents, phases = ff.create_open_circuit_excitation_sweep(I0, len(self.windings),
+                                                                                    op_frequency)
+            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases,
+                                  show_last_fem_simulation=visualize_last_fem_simulation)
 
-            frequencies = [op_frequency] * 2
-            currents = [[I0, 0], [0, I0]]
-            phases = [[0, 180], [0, 180]]
+            # Post-Processing
+            log = self.read_log()
+            self_inductances = ff.get_self_inductances_from_log(log)
+            flux_linkages = ff.get_flux_linkages_from_log(log)
+            coupling_matrix = ff.get_coupling_matrix(flux_linkages)
+            mean_coupling_factors = ff.get_mean_coupling_factors(coupling_matrix)
+            inductance_matrix = ff.get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matrix)
 
-            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last_fem_simulation=visualize_last_fem_simulation)
+            if not silent:
+                ff.visualize_self_inductances(self_inductances, flux_linkages, silent=self.silent)
+                ff.visualize_self_resistances(self_inductances, flux_linkages, op_frequency, silent=self.silent)
+                ff.visualize_flux_linkages(flux_linkages, silent=self.silent)
+                # visualize_coupling_factors(coupling_matrix)
+                ff.visualize_mean_coupling_factors(mean_coupling_factors, silent=self.silent)
+                # visualize_mean_mutual_inductances(inductance_matrix)
+                # visualize_mutual_inductances(self_inductances, coupling_matrix)
+                ff.visualize_inductance_matrix(inductance_matrix, silent=self.silent)
+                # print(np.array(inductance_matrix).real)
+                # print("")
+                # print(np.array(inductance_matrix).imag)
 
-            ff.femmt_print(f"\n"
-                           f"                             == Inductances ==                             \n")
-
-            # Read the logged Flux_Linkages
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_1.dat")) as fd:
-                line = fd.readlines()[-2:]
-                # Fluxes induced in Winding 1
-                Phi_11 = float(line[0].split(sep=' ')[2])
-                Phi_12 = float(line[1].split(sep=' ')[2])
-
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_2.dat")) as fd:
-                line = fd.readlines()[-2:]
-                # Fluxes induced in Winding 2
-                Phi_21 = float(line[0].split(sep=' ')[2])
-                Phi_22 = float(line[1].split(sep=' ')[2])
-
-            ff.femmt_print(f"\n"
-                           f"Fluxes: \n"
-                           f"Phi_11 = {Phi_11}     Induced by I_1 in Winding1 \n"
-                           f"Phi_21 = {Phi_21}     Induced by I_1 in Winding2 \n"
-                           f"Phi_12 = {Phi_12}     Induced by I_2 in Winding1 \n"
-                           f"Phi_22 = {Phi_22}     Induced by I_2 in Winding2 \n")
-
-            """
-            # Old way
-            # Calculation of inductance matrix
-            L_s1 = 0.5*(L_1_1-sum(self.turns[0])**2/sum(self.turns)[1]**2*L_2_2+L_k1)
-            L_m1 = L_1_1 - L_s1
-            L_m = sum(self.turns[1])/sum(self.turns[0])*L_m1
-            L_m2 = sum(self.turns[1])/sum(self.turns[0])*L_m
-            L_s2 = L_2_2 - L_m2
-            """
-            # Turns Ratio n=N1/N2 with relative winding sense
-            primary_turns = 0
-            secondary_turns = 0
-            for ww in self.winding_windows:
-                for vww in ww.virtual_winding_windows:
-                    primary_turns += vww.turns[0]
-                    secondary_turns += vww.turns[1]
-
-            if phases[0][0] == phases[0][1]:
-                n = primary_turns / secondary_turns
-            else:
-                n = -1 * primary_turns / secondary_turns
-
-            ff.femmt_print(f"\n"
-                           f"Turns Ratio:\n"
-                           f"n = {n}\n"
-                           )
-
-            # Coupling Factors
-            K_21 = Phi_21 / Phi_11
-            K_12 = Phi_12 / Phi_22
-            k = n / np.abs(n) * (K_21 * K_12) ** 0.5
-            ff.femmt_print(f"Coupling Factors:\n"
-                           f"K_12 = Phi_12 / Phi_22 = {K_12}\n"
-                           f"K_21 = Phi_21 / Phi_11 = {K_21}\n"
-                           f"k = Sqrt(K_12 * K_21) = M / Sqrt(L_1_1 * L_2_2) = {k}\n"
-                           )
-
-            # Read the logged inductance values
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat")) as fd:
-                line = fd.readlines()[-1]
-                words = line.split(sep=' ')
-                self.L_1_1 = float(words[2])
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat")) as fd:
-                line = fd.readlines()[-1]
-                words = line.split(sep=' ')
-                self.L_2_2 = float(words[2])
-            ff.femmt_print(f"\n"
-                           f"Self Inductances:\n"
-                           f"L_1_1 = {self.L_1_1}\n"
-                           f"L_2_2 = {self.L_2_2}\n"
-                           )
+        if len(self.windings) == 2:
+            # Self inductances
+            self.L_1_1 = self_inductances[0].real
+            self.L_2_2 = self_inductances[1].real
 
             # Main/Counter Inductance
-            self.M = k * (self.L_1_1 * self.L_2_2) ** 0.5
-            M_ = self.L_1_1 * K_21  # Only to proof correctness - ideally: M = M_ = M__
-            M__ = self.L_2_2 * K_12  # Only to proof correctness - ideally: M = M_ = M__
-            ff.femmt_print(f"\n"
-                           f"Main/Counter Inductance:\n"
-                           f"M = k * Sqrt(L_1_1 * L_2_2) = {self.M}\n"
-                           f"M_ = L_1_1 * K_21 = {M_}\n"
-                           f"M__ = L_2_2 * K_12 = {M__}\n"
-                           )
+            self.M = inductance_matrix[0][1].real
 
-            # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n
-            l_s1 = self.L_1_1 - self.M * n
-            l_s2 = self.L_2_2 - self.M / n
-            l_h = self.M * n
-            ff.femmt_print(f"\n"
-                           f"T-ECD (primary side transformed):\n"
-                           f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
-                           f"    - Transformation Ratio: n\n"
-                           f"    - Primary Side Stray Inductance: L_s1\n"
-                           f"    - Secondary Side Stray Inductance: L_s2\n"
-                           f"    - Primary Side Main Inductance: L_h\n"
-                           f"n := n = {n}\n"
-                           f"L_s1 = L_1_1 - M * n = {l_s1}\n"
-                           f"L_s2 = L_2_2 - M / n = {l_s2}\n"
-                           f"L_h = M * n = {l_h}\n"
-                           )
+            # Mean coupling factor
+            k = mean_coupling_factors[0][1]
+
+            # # 2 winding transformer
+            # # Turns Ratio n=N1/N2
+            # primary_turns = 0
+            # secondary_turns = 0
+            # for ww in self.winding_windows:
+            #     for vww in ww.virtual_winding_windows:
+            #         primary_turns += vww.turns[0]
+            #         secondary_turns += vww.turns[1]
+            # n = primary_turns / secondary_turns
+            #
+            # self.femmt_print(f"\n"
+            #                f"Turns Ratio:\n"
+            #                f"n = {n}\n"
+            #                )
+            #
+            #
+            # l_s1 = self.L_1_1 - self.M * n
+            # l_s2 = self.L_2_2 - self.M / n
+            # l_h = self.M * n
+            # self.femmt_print(f"\n"
+            #                f"T-ECD (primary side transformed):\n"
+            #                f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+            #                f"    - Transformation Ratio: n\n"
+            #                f"    - Primary Side Stray Inductance: L_s1\n"
+            #                f"    - Secondary Side Stray Inductance: L_s2\n"
+            #                f"    - Primary Side Main Inductance: L_h\n"
+            #                f"n := n = {n}\n"
+            #                f"L_s1 = L_1_1 - M * n = {l_s1}\n"
+            #                f"L_s2 = L_2_2 - M / n = {l_s2}\n"
+            #                f"L_h = M * n = {l_h}\n"
+            #                )
 
             # Stray Inductance concentrated on Primary Side
             self.n_conc = self.M / self.L_2_2
             self.L_s_conc = (1 - k ** 2) * self.L_1_1
             self.L_h_conc = self.M ** 2 / self.L_2_2
 
-            ff.femmt_print(f"\n"
-                           f"T-ECD (primary side concentrated):\n"
-                           f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
-                           f"    - Transformation Ratio: n\n"
-                           f"    - (Primary) Stray Inductance: L_s1\n"
-                           f"    - Primary Side Main Inductance: L_h\n"
-                           f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
-                           f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
-                           f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
-                           )
+            self.femmt_print(f"\n"
+                             f"T-ECD (primary side concentrated):\n"
+                             f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                             f"    - Transformation Ratio: n\n"
+                             f"    - (Primary) Stray Inductance: L_s1\n"
+                             f"    - Primary Side Main Inductance: L_h\n"
+                             f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
+                             f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
+                             f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
+                             )
+
+            inductance = TransformerInductance(
+                l_h_conc=self.L_h_conc,
+                l_s_conc=self.L_s_conc,
+                n_conc=self.n_conc,
+                M=self.M,
+                L_1_1=self.L_1_1,
+                L_2_2=self.L_2_2,
+            )
+
+            return dataclasses.asdict(inductance)
 
         if len(self.windings) == 3:
-            # Three winding transformer
-            # Remove "old" Inductance Logs
-            try:
-                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat"))
-                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat"))
-                os.remove(os.path.join(self.file_data.e_m_values_folder_path, "L_3_3.dat"))
-            except OSError:
-                pass
-
-             # -- Inductance Estimation --
-            self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
-            #self.mesh.mesh(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
-            #self.high_level_geo_gen(frequency=op_frequency, skin_mesh_factor=skin_mesh_factor)
-            #self.mesh.generate_mesh()
-
-            frequencies = [op_frequency] * 3
-            currents = [[I0, 0, 0], [0, I0, 0], [0, 0, I0]]
-            phases = [[0, 180, 180], [0, 180, 180], [0, 180, 180]]
-
-            self.excitation_sweep(frequency_list=frequencies, current_list_list=currents, phi_deg_list_list=phases, show_last_fem_simulation=visualize_last_fem_simulation)
-
-            ff.femmt_print(f"\n"
-              f"                             == Inductances ==                             \n")
-
-            # Read the logged Flux_Linkages
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_1.dat")) as fd:
-                line = fd.readlines()[-3:]
-                # Fluxes induced in Winding 1
-                Phi_11 = float(line[0].split(sep=' ')[2])
-                Phi_12 = float(line[1].split(sep=' ')[2])
-                Phi_13 = float(line[2].split(sep=' ')[2])
-
-
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_2.dat")) as fd:
-                line = fd.readlines()[-3:]
-                # Fluxes induced in Winding 2
-                Phi_21 = float(line[0].split(sep=' ')[2])
-                Phi_22 = float(line[1].split(sep=' ')[2])
-                Phi_23 = float(line[2].split(sep=' ')[2])
-
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "Flux_Linkage_3.dat")) as fd:
-                line = fd.readlines()[-3:]
-                # Fluxes induced in Winding 3
-                Phi_31 = float(line[0].split(sep=' ')[2])
-                Phi_32 = float(line[1].split(sep=' ')[2])
-                Phi_33 = float(line[2].split(sep=' ')[2])
-            ff.femmt_print(f"\n"
-              f"Fluxes: \n"
-              f"Phi_11 = {Phi_11}     Induced by I_1 in Winding1 \n"
-              f"Phi_21 = {Phi_21}     Induced by I_1 in Winding2 \n"
-              f"Phi_31 = {Phi_31}     Induced by I_1 in Winding3 \n"
-              f"Phi_12 = {Phi_12}     Induced by I_2 in Winding1 \n"
-              f"Phi_22 = {Phi_22}     Induced by I_2 in Winding2 \n"
-              f"Phi_13 = {Phi_32}     Induced by I_2 in Winding3 \n"
-              f"Phi_13 = {Phi_13}     Induced by I_3 in Winding1 \n"
-              f"Phi_23 = {Phi_23}     Induced by I_3 in Winding2 \n"
-              f"Phi_33 = {Phi_33}     Induced by I_3 in Winding3 \n")
-            """
-            #Old way
-            #Calculation of inductance matrix
-            L_s1 = 0.5*(L_1_1-sum(self.turns[0])**2/sum(self.turns)[1]**2*L_2_2+L_k1)
-            L_m1 = L_1_1 - L_s1
-            L_m = sum(self.turns[1])/sum(self.turns[0])*L_m1
-            L_m2 = sum(self.turns[1])/sum(self.turns[0])*L_m
-            L_s2 = L_2_2 - L_m2
-            """
-
-
-            # Coupling Factors
-            K_21 = Phi_21 / Phi_11
-            K_31 = Phi_31 / Phi_11
-            K_12 = Phi_12 / Phi_22
-            K_32 = Phi_32 / Phi_22
-            K_13 = Phi_13 / Phi_33
-            K_23 = Phi_23 / Phi_33
-
-            k_1 = (K_21 * K_12) ** 0.5
-            k_2 =  (K_31 * K_13) ** 0.5
-            k_3 =  (K_23 * K_32) ** 0.5
-            ff.femmt_print(f"Coupling Factors:\n"
-                f"K_21 = Phi_21 / Phi_11 = {K_21}\n"
-                f"K_31 = Phi_31 / Phi_11 = {K_31}\n"
-                f"K_12 = Phi_12 / Phi_22 = {K_12}\n"
-                f"K_32 = Phi_32 / Phi_22 = {K_32}\n"
-                f"K_13 = Phi_13 / Phi_33 = {K_13}\n"
-                f"K_23 = Phi_23 / Phi_33 = {K_23}\n"
-                f"k_1 = Sqrt(K_12 * K_21) = M_12 / Sqrt(L_1_1 * L_2_2) = {k_1}\n"
-                f"k_2 = Sqrt(K_31 * K_13) = M_13 / Sqrt(L_1_1 * L_3_3) = {k_2}\n"
-                f"k_3 = Sqrt(K_23 * K_32) = M_23 / Sqrt(L_2_2 * L_3_3) = {k_3}\n"
-                )
-
-            # Read the logged inductance values
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_1_1.dat")) as fd:
-                line = fd.readlines()[-1]
-                words = line.split(sep=' ')
-                self.L_1_1 = float(words[2])
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_2_2.dat")) as fd:
-                line = fd.readlines()[-1]
-                words = line.split(sep=' ')
-                self.L_2_2 = float(words[2])
-            with open(os.path.join(self.file_data.e_m_values_folder_path, "L_3_3.dat")) as fd:
-                line = fd.readlines()[-1]
-                words = line.split(sep=' ')
-                self.L_3_3 = float(words[2])
-            ff.femmt_print(f"\n"
-                f"Self Inductances:\n"
-                f"L_1_1 = {self.L_1_1}\n"
-                f"L_2_2 = {self.L_2_2}\n"
-                f"L_3_3 = {self.L_3_3}\n"
-                )
+            # Self inductances
+            self.L_1_1 = self_inductances[0].real
+            self.L_2_2 = self_inductances[1].real
+            self.L_3_3 = self_inductances[2].real
 
             # Main/Counter Inductance
-            self.M_12 = k_1 * (self.L_1_1 * self.L_2_2) ** 0.5
-            self.M_13 = k_2 * (self.L_1_1 * self.L_3_3) ** 0.5
-            self.M_23 = k_3 * (self.L_2_2 * self.L_3_3) ** 0.5
-            M_12 = self.L_1_1 * K_21  # Only to proof correctness - ideally: M_12 = M_21
-            M_21 = self.L_2_2 * K_12  # Only to proof correctness - ideally: M_21 = M_12
-            M_13 = self.L_1_1 * K_31  # Only to proof correctness - ideally: M_13 = M_31
-            M_31 = self.L_3_3 * K_13  # Only to proof correctness - ideally: M_31 = M_13
-            M_23 = self.L_2_2 * K_32  # Only to proof correctness - ideally: M_23 = M_32
-            M_32 = self.L_3_3 * K_23  # Only to proof correctness - ideally: M_32 = M_23
-            ff.femmt_print(f"\n"
-                f"Main/Counter Inductance:\n"
-                # f"M = k * Sqrt(L_1_1 * L_2_2) = {self.M}\n"
-                f"M_12 = L_1_1 * K_21 = {M_12}\n"
-                f"M_21 = L_2_2 * K_21 = {M_21}\n"
-                f"M_13 = L_1_1 * K_31 = {M_13}\n"
-                f"M_31 = L_3_3 * K_13 = {M_31}\n"
-                f"M_23 = L_2_2 * K_32 = {M_23}\n"
-                f"M_32 = L_3_3 * K_23 = {M_32}\n"
-                )
+            self.M_12 = inductance_matrix[0][1].real
+            self.M_13 = inductance_matrix[0][2].real
+            self.M_23 = inductance_matrix[1][2].real
 
             # Stray Inductance with 'Turns Ratio' n as 'Transformation Ratio' n2 and n3
             self.L_s1 = self.L_1_1 - (self.M_12 * self.M_13) / self.M_23
             self.L_s2 = self.L_2_2 - (self.M_12 * self.M_23) / self.M_13
             self.L_s3 = self.L_3_3 - (self.M_13 * self.M_23) / self.M_12
             self.L_h = (self.M_12 * self.M_13) / self.M_23
-            self.n_12 = np.sqrt(self.L_1_1/self.L_2_2)  # self.M_13 / self.M_23
-            self.n_13 = np.sqrt(self.L_1_1/self.L_3_3)  # self.M_12 / self.M_23
-            self.n_23 = np.sqrt(self.L_2_2/self.L_3_3)
+            self.n_12 = np.sqrt(self.L_1_1 / self.L_2_2)  # self.M_13 / self.M_23
+            self.n_13 = np.sqrt(self.L_1_1 / self.L_3_3)  # self.M_12 / self.M_23
+            self.n_23 = np.sqrt(self.L_2_2 / self.L_3_3)
 
             # Shortcut Inductances
-            self.L_s12 = self.L_s1 + self.n_12**2 * self.L_s2
-            self.L_s13 = self.L_s1 + self.n_13**2 * self.L_s3
-            self.L_s23 = self.L_s2 + (self.n_13/self.n_12)**2 * self.L_s3
+            self.L_s12 = self.L_s1 + self.n_12 ** 2 * self.L_s2
+            self.L_s13 = self.L_s1 + self.n_13 ** 2 * self.L_s3
+            self.L_s23 = self.L_s2 + (self.n_13 / self.n_12) ** 2 * self.L_s3
 
-            ff.femmt_print(f"\n"
-                f"T-ECD (Lh on primary side):\n"
-                f"    - Primary Side Stray Inductance: L_s1\n"
-                f"    - Secondary Side Stray Inductance: L_s2\n"
-                f"    - Tertiary Side Stray Inductance: L_s3\n"        
-                f"    - Transformation Ratio with respect to the primary and the Secondary: n2\n"
-                f"    - Transformation Ratio with respect to the primary and the Tertiary: n3\n"
-                f"    - Primary Side Main Inductance: L_h\n"        
-                f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {self.L_s1}\n"
-                f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {self.L_s2}\n"
-                f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {self.L_s3}\n"         
-                f"n_12 = np.sqrt(self.L_1_1/self.L_2_2) = {self.n_12}\n"         
-                f"n_13 = np.sqrt(self.L_1_1/self.L_3_3) = {self.n_13}\n"
-                f"n_23 = np.sqrt(self.L_2_2/self.L_3_3) = {self.n_23}\n"         
-                f"L_h = M_12 * M_13 / M_23 = {self.L_h}\n\n"
-                f"Shortcut Inductances L_snm measured on winding n with short applied to winding m\n"
-                f"L_s12 = L_s1 + n_12**2 * L_s2 = {self.L_s12}\n"
-                f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
-                f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
+            self.femmt_print(f"\n"
+                             f"T-ECD (Lh on primary side):\n"
+                             f"    - Primary Side Stray Inductance: L_s1\n"
+                             f"    - Secondary Side Stray Inductance: L_s2\n"
+                             f"    - Tertiary Side Stray Inductance: L_s3\n"
+                             f"    - Transformation Ratio with respect to the primary and the Secondary: n2\n"
+                             f"    - Transformation Ratio with respect to the primary and the Tertiary: n3\n"
+                             f"    - Primary Side Main Inductance: L_h\n"
+                             f"L_s1 = L_1_1 - M_12 * M_13 / M_23 = {self.L_s1}\n"
+                             f"L_s2 = L_2_2 - M_12 * M_23 / M_13 = {self.L_s2}\n"
+                             f"L_s3 = L_3_3 - M_13 * M_23 / M_12 = {self.L_s3}\n"
+                             f"n_12 = np.sqrt(self.L_1_1/self.L_2_2) = {self.n_12}\n"
+                             f"n_13 = np.sqrt(self.L_1_1/self.L_3_3) = {self.n_13}\n"
+                             f"n_23 = np.sqrt(self.L_2_2/self.L_3_3) = {self.n_23}\n"
+                             f"L_h = M_12 * M_13 / M_23 = {self.L_h}\n\n"
+                             f"Shortcut Inductances L_snm measured on winding n with short applied to winding m\n"
+                             f"L_s12 = L_s1 + n_12**2 * L_s2 = {self.L_s12}\n"
+                             f"L_s13 = L_s1 + n_13**2 * L_s3 = {self.L_s13}\n"
+                             f"L_s23 = L_s2 + (n_13/n_12)**2 * L_s3 = {self.L_s23}\n"
+                             )
+            """
+            # Stray Inductance concentrated on Primary Side
+            self.n_conc = self.M / self.L_2_2
+            self.L_s_conc = (1 - k ** 2) * self.L_1_1
+            self.L_h_conc = self.M ** 2 / self.L_2_2
+
+            self.femmt_print(f"\n"
+                f"T-ECD (primary side concentrated):\n"
+                f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                f"    - Transformation Ratio: n\n"
+                f"    - (Primary) Stray Inductance: L_s1\n"
+                f"    - Primary Side Main Inductance: L_h\n"
+                f"n := M / L_2_2 = k * Sqrt(L_1_1 / L_2_2) = {self.n_conc}\n"
+                f"L_s1 = (1 - k^2) * L_1_1 = {self.L_s_conc}\n"
+                f"L_h = M^2 / L_2_2 = k^2 * L_1_1 = {self.L_h_conc}\n"
                 )
+            """
+
+            inductances = ThreeWindingTransformerInductance(
+                M_12=self.M_12,
+                M_13=self.M_13,
+                M_23=self.M_23,
+                L_s1=self.L_s1,
+                L_s2=self.L_s2,
+                L_s3=self.L_s3,
+                L_h=self.L_h,
+                n_12=self.n_12,
+                n_13=self.n_13,
+                n_23=self.n_23,
+                L_s12=self.L_s12,
+                L_s13=self.L_s13,
+                L_s23=self.L_s23
+            )
+            return dataclasses.asdict(inductances)
 
         # self.visualize()
 
-    def get_steinmetz_loss(self, peak_current: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2, t_rise: float = 3e-6, t_fall: float = 3e-6,
+    def get_steinmetz_loss(self, peak_current: float = None, ki: float = 1, alpha: float = 1.2, beta: float = 2.2,
+                           t_rise: float = 3e-6, t_fall: float = 3e-6,
                            f_switch: float = 100000, skin_mesh_factor: float = 0.5):
 
         """
@@ -1352,9 +1719,10 @@ class MagneticComponent:
         # Call Simulation
         # self.high_level_geo_gen(frequency=0, skin_mesh_factor=skin_mesh_factor)
         # self.mesh.generate_mesh()
-        self.excitation(frequency=f_switch, amplitude_list=peak_current, phase_deg_list=[0, 180])  # frequency and current
-        self.check_model()
-        self.file_communication()
+        self.excitation(frequency=f_switch, amplitude_list=peak_current,
+                        phase_deg_list=[0, 180])  # frequency and current
+        self.check_model_mqs_condition()
+        self.write_simulation_parameters_to_pro_files()
 
     def write_electro_magnetic_parameter_pro(self):
         """
@@ -1369,13 +1737,11 @@ class MagneticComponent:
         if self.component_type == ComponentType.Inductor:
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
 
-
         if self.component_type == ComponentType.Transformer:
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
 
         if self.component_type == ComponentType.IntegratedTransformer:
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
-
 
         # Frequency
         text_file.write("Freq = %s;\n" % self.frequency)
@@ -1391,7 +1757,8 @@ class MagneticComponent:
                 # TODO: Make following definition general
                 # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
                 self.core.sigma = 1 / 6
-            text_file.write(f"sigma_core = {self.core.sigma};\n")
+            text_file.write(f"sigma_core = {self.core.sigma.real};\n")
+            text_file.write(f"sigma_core_imag = {self.core.sigma.imag};\n")
         else:
             text_file.write(f"Flag_Conducting_Core = 0;\n")
 
@@ -1405,80 +1772,74 @@ class MagneticComponent:
             text_file.write(f"f_switch = {self.f_switch};\n")
 
         # Conductor specific definitions
-        for num in range(len(self.windings)):
+        for winding_number in range(len(self.windings)):
             # -- Control Flags --
             if self.flag_excitation_type == 'current':
                 text_file.write(f"Flag_ImposedVoltage = 0;\n")
             if self.flag_excitation_type == 'voltage':
                 text_file.write(f"Flag_ImposedVoltage = 1;\n")
-            if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                text_file.write(f"Flag_HomogenisedModel_{num + 1} = 1;\n")
+            if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
+                text_file.write(f"Flag_HomogenisedModel_{winding_number + 1} = 1;\n")
             else:
-                text_file.write(f"Flag_HomogenisedModel_{num + 1} = 0;\n")
+                text_file.write(f"Flag_HomogenisedModel_{winding_number + 1} = 0;\n")
 
             # -- Geometry --
-            # Number of turns per conductor
-            turns = 0
-            for ww in self.winding_windows:
-                for vww in ww.virtual_winding_windows:
-                    for index, winding in enumerate(self.windings):
-                        if winding.winding_number == num:
-                            # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
-                            try:
-                                turns += vww.turns[index]
-                            except:
-                                pass
+            # Core Parts
+            text_file.write(f"nCoreParts = {len(self.mesh.plane_surface_core)};\n")
 
-            if self.windings[num].parallel:
-                text_file.write(f"NbrCond_{num + 1} = 1;\n")
-                text_file.write(f"AreaCell_{num + 1} = {self.windings[num].a_cell*turns};\n")
+            turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                      winding_number=winding_number)
 
+            if self.windings[winding_number].parallel:
+                text_file.write(f"NbrCond_{winding_number + 1} = 1;\n")
+                text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell * turns};\n")
             else:
-                text_file.write(f"NbrCond_{num + 1} = {turns};\n")
-                text_file.write(f"AreaCell_{num + 1} = {self.windings[num].a_cell};\n")
-
+                text_file.write(f"NbrCond_{winding_number + 1} = {turns};\n")
+                text_file.write(f"AreaCell_{winding_number + 1} = {self.windings[winding_number].a_cell};\n")
 
             # For stranded Conductors:
             # text_file.write(f"NbrstrandedCond = {self.turns};\n")  # redundant
-            if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                text_file.write(f"NbrStrands_{num + 1} = {self.windings[num].n_strands};\n")
-                text_file.write(f"Fill_{num + 1} = {self.windings[num].ff};\n")
+            if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
+                text_file.write(f"NbrStrands_{winding_number + 1} = {self.windings[winding_number].n_strands};\n")
+                text_file.write(f"Fill_{winding_number + 1} = {self.windings[winding_number].ff};\n")
                 # ---
                 # Litz Approximation Coefficients were created with 4 layers
                 # That's why here a hard-coded 4 is implemented
                 # text_file.write(f"NbrLayers{num+1} = {self.n_layers[num]};\n")
-                text_file.write(f"NbrLayers_{num + 1} = 4;\n")
+                text_file.write(f"NbrLayers_{winding_number + 1} = 4;\n")
 
-            text_file.write(f"Rc_{num + 1} = {self.windings[num].conductor_radius};\n")
+            text_file.write(f"Rc_{winding_number + 1} = {self.windings[winding_number].conductor_radius};\n")
 
             # -- Excitation --
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
-                text_file.write(f"Val_EE_{num + 1} = {abs(self.current[num])};\n")
-                text_file.write(f"Phase_{num + 1} = {np.deg2rad(self.phase_deg[num])};\n")
-                text_file.write(f"Parallel_{num + 1} = {int(self.windings[num].parallel==True)};\n")
+                text_file.write(f"Val_EE_{winding_number + 1} = {abs(self.current[winding_number])};\n")
+                text_file.write(f"Phase_{winding_number + 1} = {np.deg2rad(self.phase_deg[winding_number])};\n")
+                text_file.write(
+                    f"Parallel_{winding_number + 1} = {int(self.windings[winding_number].parallel == True)};\n")
 
             if self.flag_excitation_type == 'current_density':
-                text_file.write(f"Val_EE_{num + 1} = {self.current_density[num]};\n")
+                text_file.write(f"Val_EE_{winding_number + 1} = {self.current_density[winding_number]};\n")
                 raise NotImplementedError
 
             if self.flag_excitation_type == 'voltage':
-                text_file.write(f"Val_EE_{num + 1} = {self.voltage[num]};\n")
+                text_file.write(f"Val_EE_{winding_number + 1} = {self.voltage[winding_number]};\n")
                 raise NotImplementedError
 
-            ff.femmt_print(f"Cell surface area: {self.windings[num].a_cell} \n"
-                  f"Reduced frequency: {self.red_freq[num]}")
+            self.femmt_print(f"Cell surface area: {self.windings[winding_number].a_cell} \n"
+                             f"Reduced frequency: {self.red_freq[winding_number]}")
 
-            if self.red_freq[num] > 1.25 and self.windings[num].conductor_type == ConductorType.RoundLitz:
+            if self.red_freq[winding_number] > 1.25 and self.windings[
+                winding_number].conductor_type == ConductorType.RoundLitz:
                 # TODO: Allow higher reduced frequencies
-                ff.femmt_print(f"Litz Coefficients only implemented for X<=1.25")
+                self.femmt_print(f"Litz Coefficients only implemented for X<=1.25")
                 raise Warning
             # Reduced Frequency
-            text_file.write(f"Rr_{num + 1} = {self.red_freq[num]};\n")
+            text_file.write(f"Rr_{winding_number + 1} = {self.red_freq[winding_number]};\n")
 
             # Material Properties
             # Conductor Material
-            text_file.write(f"sigma_winding_{num + 1} = {self.windings[num].cond_sigma};\n")
+            text_file.write(f"sigma_winding_{winding_number + 1} = {self.windings[winding_number].cond_sigma};\n")
 
         # -- Materials --
 
@@ -1493,7 +1854,8 @@ class MagneticComponent:
         # if self.frequency == 0:
         if self.core.non_linear:
             text_file.write(f"Flag_NL = 1;\n")
-            text_file.write(f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime            text_file.write(f"Flag_NL = 0;\n")
+            text_file.write(
+                f"Core_Material = {self.core.material};\n")  # relative permeability is defined at simulation runtime            text_file.write(f"Flag_NL = 0;\n")
         else:
             text_file.write(f"Flag_NL = 0;\n")
             text_file.write(f"mur = {self.core.mu_r_abs};\n")  # mur is predefined to a fixed value
@@ -1502,12 +1864,17 @@ class MagneticComponent:
             else:
                 text_file.write(f"Flag_Permeability_From_Data = 0;\n")  # mur is predefined to a fixed value
             if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-                text_file.write(f"phi_mu_deg = {self.core.phi_mu_deg};\n")  # loss angle for complex representation of hysteresis loss
-                text_file.write(f"mur_real = {self.core.mu_r_abs * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")  # Real part of complex permeability
-                text_file.write(f"mur_imag = {self.core.mu_r_abs * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")  # Imaginary part of complex permeability
-                text_file.write(f"Flag_Fixed_Loss_Angle = 1;\n")  # loss angle for complex representation of hysteresis loss
+                text_file.write(
+                    f"phi_mu_deg = {self.core.phi_mu_deg};\n")  # loss angle for complex representation of hysteresis loss
+                text_file.write(
+                    f"mur_real = {self.core.mu_r_abs * np.cos(np.deg2rad(self.core.phi_mu_deg))};\n")  # Real part of complex permeability
+                text_file.write(
+                    f"mur_imag = {self.core.mu_r_abs * np.sin(np.deg2rad(self.core.phi_mu_deg))};\n")  # Imaginary part of complex permeability
+                text_file.write(
+                    f"Flag_Fixed_Loss_Angle = 1;\n")  # loss angle for complex representation of hysteresis loss
             else:
-                text_file.write(f"Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
+                text_file.write(
+                    f"Flag_Fixed_Loss_Angle = 0;\n")  # loss angle for complex representation of hysteresis loss
 
         # if self.frequency != 0:
         #    text_file.write(f"Flag_NL = 0;\n")
@@ -1526,13 +1893,17 @@ class MagneticComponent:
         text_file.write(f"DirRes = \"{self.file_data.results_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"DirResFields = \"{self.file_data.e_m_fields_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"DirResVals = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/\";\n")
-        #text_file.write(f"DirResValsPrimary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Primary/\";\n")
+        text_file.write(
+            f"DirResValsCore = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/core_parts/\";\n")
         for i in range(1, len(self.windings) + 1):
-            text_file.write(f"DirResValsWinding_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/\";\n")
-            #text_file.write(f"DirResValsSecondary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
-            #text_file.write(f"DirResValsTertiary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Tertiary/\";\n")
+            text_file.write(
+                f"DirResValsWinding_{i} = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Winding_{i}/\";\n")
+            # text_file.write(f"DirResValsSecondary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Secondary/\";\n")
+            # text_file.write(f"DirResValsTertiary = \"{self.file_data.e_m_values_folder_path.replace(backslash, '/')}/Tertiary/\";\n")
         text_file.write(f"DirResCirc = \"{self.file_data.e_m_circuit_folder_path.replace(backslash, '/')}/\";\n")
         text_file.write(f"OptionPos = \"{self.file_data.results_folder_path.replace(backslash, '/')}/option.pos\";\n")
+        text_file.write(
+            f"DirStrandCoeff = \"{self.file_data.e_m_strands_coefficients_folder_path.replace(backslash, '/')}/\";\n")
 
         # Visualisation
         if self.plot_fields == "standard":
@@ -1542,14 +1913,28 @@ class MagneticComponent:
 
         text_file.close()
 
-    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
+    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None,
+                                inductance_dict: dict = None, core_hyst_losses: float = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
-        them in a dictionary. Additionally, the input settings which are used in order to create the simulation are also printed.
-        From this data type a JSON log file is created.
+        them in a result dictionary (JSON log file).
+
+        This file includes:
+         * results (losses, ...) of the simulation
+         * geometry parameters of the given simulation
+         * optional parameters can be added to the log, like the inductance values or the core hysteresis losses from
+                    external simulations
+
         :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
+        :type sweep_number: int
         :param currents: Current values of the sweep iterations. Not needed for single simulation
+        :type currents: list
         :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
+        :type frequencies: list
+        :param inductance_dict: Optional inductance dict to include in the logfile.
+        :type inductance_dict: dict
+        :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given, the external value is used in the result-log. Otherwise, the hysteresis losses of the fundamental frequency is used
+        :type core_hyst_losses: float
         """
         # ---- Print simulation results ----
 
@@ -1582,7 +1967,7 @@ class MagneticComponent:
             # Winding names are needed to find the logging path
             winding_name = ["Winding_" + str(i) for i in range(1, len(self.windings) + 1)]
 
-            for winding in range(len(self.windings)):
+            for winding_number in range(len(self.windings)):
 
                 # Create empty winding dictionary
                 # create dictionary winding_dict with 'turn_losses' as list of the j=number_turns turn losses.
@@ -1594,50 +1979,56 @@ class MagneticComponent:
                                 "V": []}
 
                 # Number turns
-                turns = 0
-                for ww in self.winding_windows:
-                    for vww in ww.virtual_winding_windows:
-                        for conductor in vww.windings:
-                            if conductor.winding_number == winding:
-                                turns += vww.turns[conductor.winding_number]
+                turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
+                                                          winding_number=winding_number)
 
                 winding_dict["number_turns"] = turns
 
                 # Currents
                 if sweep_number > 1:
                     # sweep_simulation -> get currents from passed currents
-                    complex_current_phasor = currents[sweep_run][winding]
+                    complex_current_phasor = currents[sweep_run][winding_number]
                 else:
                     # single_simulation -> get current from instance variable
-                    complex_current_phasor = self.current[winding]
+                    complex_current_phasor = self.current[winding_number]
 
                 # Store complex value as list in json (because json is not natively capable of complex values)
                 winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
 
-
                 # Case litz: Load homogenized results
-                if self.windings[winding].conductor_type == ConductorType.RoundLitz:
-                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
+                if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
+                    winding_dict["winding_losses"] = \
+                    self.load_result(res_name=f"j2H_{winding_number + 1}", last_n=sweep_number)[sweep_run]
                     for turn in range(0, winding_dict["number_turns"]):
-                        winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+                        winding_dict["turn_losses"].append(
+                            self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{turn + 1}",
+                                             last_n=sweep_number)[sweep_run])
 
                 # Case Solid: Load results, (pitfall for parallel windings results are only stored in one turn!)
                 else:
-                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
-                    if self.windings[winding].parallel:
-                         winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{1}", last_n=sweep_number)[sweep_run])
+                    winding_dict["winding_losses"] = \
+                    self.load_result(res_name=f"j2F_{winding_number + 1}", last_n=sweep_number)[sweep_run]
+                    if self.windings[winding_number].parallel:
+                        winding_dict["turn_losses"].append(
+                            self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{1}",
+                                             last_n=sweep_number)[sweep_run])
                     else:
                         for turn in range(0, winding_dict["number_turns"]):
-                            winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
-
+                            winding_dict["turn_losses"].append(
+                                self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{turn + 1}",
+                                                 last_n=sweep_number)[sweep_run])
 
                 # Magnetic Field Energy
                 # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
                 # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Voltage
-                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["V"].append(
+                    self.load_result(res_name=f"Voltage_{winding_number + 1}", part="real", last_n=sweep_number)[
+                        sweep_run])
+                winding_dict["V"].append(
+                    self.load_result(res_name=f"Voltage_{winding_number + 1}", part="imaginary", last_n=sweep_number)[
+                        sweep_run])
                 complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
 
                 # Inductance
@@ -1645,18 +2036,23 @@ class MagneticComponent:
                 # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
                 # Inductance from voltage
 
-                if self.current[winding] != 0: # if-statement to avoid div by zero error
-                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).real)
-                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).imag)
-                else:
+                if complex_current_phasor == 0 or sweep_dict["f"] == 0:  # if-statement to avoid div by zero error
                     winding_dict["flux_over_current"] = [0, 0]
+                else:
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (
+                                complex(0, 1) * 2 * np.pi * complex_current_phasor * sweep_dict["f"])).real)
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (
+                                complex(0, 1) * 2 * np.pi * complex_current_phasor * sweep_dict["f"])).imag)
 
                 # Flux
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                winding_dict["flux"].append(
+                    self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", last_n=sweep_number)[sweep_run])
+                winding_dict["flux"].append(
+                    self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", part="imaginary",
+                                     last_n=sweep_number)[sweep_run])
                 # Flux from voltage
-                #winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).real)  # (L*I).real
-                #winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).imag)  # (L*I).imag
+                # winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).real)  # (L*I).real
+                # winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).imag)  # (L*I).imag
 
                 # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
@@ -1664,14 +2060,37 @@ class MagneticComponent:
                 winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
                 winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
 
-                sweep_dict[f"winding{winding+1}"] = winding_dict
+                sweep_dict[f"winding{winding_number + 1}"] = winding_dict
 
             # Core losses TODO: Choose between Steinmetz or complex core losses
-            sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run]
+            sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[
+                sweep_run]
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
 
+            # Core Part losses
+            if len(self.mesh.plane_surface_core) > 1:
+                sweep_dict["core_parts"] = {}
+                for i in range(0, len(self.mesh.plane_surface_core)):
+                    sweep_dict["core_parts"][f"core_part_{i + 1}"] = {}
+                    sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"] = \
+                    self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{i + 1}", last_n=sweep_number)[
+                        sweep_run]
+                    sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"] = \
+                    self.load_result(res_name=f"core_parts/p_hyst_{i + 1}", last_n=sweep_number)[sweep_run]
+                    # finding the total losses for every core_part
+                    eddy = sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"]
+                    hyst = sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"]
+                    sweep_dict["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy + hyst
+
+            else:
+                # if I have only one core_part
+                sweep_dict["core_parts"] = {}  # parent dictionary is initialized first
+                sweep_dict["core_parts"]["core_part_1"] = {}
+                sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"] = sweep_dict["core_eddy_losses"] + sweep_dict["core_hyst_losses"]
+
             # Sum losses of all windings of one single run
-            sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(len(self.windings)))
+            sweep_dict["all_winding_losses"] = sum(
+                sweep_dict[f"winding{d + 1}"]["winding_losses"] for d in range(len(self.windings)))
 
             log_dict["single_sweeps"].append(sweep_dict)
 
@@ -1680,49 +2099,72 @@ class MagneticComponent:
         # Also needed as excitation for steady state thermal simulations
 
         # Single Windings
-        for winding in range(len(self.windings)):
+        for winding_number in range(len(self.windings)):
             # Number of turns per conductor
             turns = 0
             for ww in self.winding_windows:
                 for vww in ww.virtual_winding_windows:
                     for conductor in vww.windings:
-                        if conductor.winding_number == winding:
+                        if conductor.winding_number == winding_number:
                             turns += vww.turns[conductor.winding_number]
 
-            log_dict["total_losses"][f"winding{winding + 1}"] = {
-                "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
+            log_dict["total_losses"][f"winding{winding_number + 1}"] = {
+                "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding_number + 1}"]["turn_losses"]) for d in
+                             range(len(log_dict["single_sweeps"]))),
                 "turns": []
             }
-            if self.windings[winding].parallel:
-                log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(
-                    sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][0] for d in range(len(log_dict["single_sweeps"]))))
+            if self.windings[winding_number].parallel:
+                log_dict["total_losses"][f"winding{winding_number + 1}"]["turns"].append(
+                    sum(log_dict["single_sweeps"][d][f"winding{winding_number + 1}"]["turn_losses"][0] for d in
+                        range(len(log_dict["single_sweeps"]))))
             else:
                 for turn in range(0, turns):
-                    log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(
-                        sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
+                    log_dict["total_losses"][f"winding{winding_number + 1}"]["turns"].append(
+                        sum(log_dict["single_sweeps"][d][f"winding{winding_number + 1}"]["turn_losses"][turn] for d in
+                            range(len(log_dict["single_sweeps"]))))
 
         # Winding (all windings)
-        log_dict["total_losses"]["all_windings"] = sum(log_dict["single_sweeps"][d]["all_winding_losses"] for d in range(len(log_dict["single_sweeps"])))
+        log_dict["total_losses"]["all_windings"] = sum(
+            log_dict["single_sweeps"][d]["all_winding_losses"] for d in range(len(log_dict["single_sweeps"])))
 
         # Core
-        log_dict["total_losses"]["eddy_core"] = sum(log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
-        # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frequency is at [0]
-        # => just an approximation for excitation sweeps!
-        log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
+        log_dict["total_losses"]["eddy_core"] = sum(
+            log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
+        # setting the total for every core_part in total losses dict
+        if len(self.mesh.plane_surface_core) > 1:
+            for i in range(len(self.mesh.plane_surface_core)):
+                log_dict["total_losses"][f"total_core_part_{i + 1}"] = sweep_dict["core_parts"][f"core_part_{i + 1}"][
+                    f"total_core_part_{i + 1}"]
+        if len(self.mesh.plane_surface_core) == 1: # core and core_part_1 will be the same
+
+            log_dict["total_losses"]["total_core_part_1"] = sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"]
+
+
+        if isinstance(core_hyst_losses, float) or isinstance(core_hyst_losses, int):
+            log_dict["total_losses"]["hyst_core_fundamental_freq"] = core_hyst_losses
+        elif core_hyst_losses is not None:
+            raise ValueError("External core hysteresis losses are given in non-float format")
+        else:
+            log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index][
+                "core_hyst_losses"]
 
         # Total losses of inductive component according to single or sweep simulation
-        log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
-        log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"]["all_windings"]
+        log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
+                                           log_dict["total_losses"]["eddy_core"]
+
+        log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
+                                                   log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"][
+                                                       "all_windings"]
 
         # ---- Introduce calculations for writing the misc-dict into the result-log ----
         wire_type_list = []
-        for winding in self.windings:
-            wire_type_list.append(winding.conductor_type.name)
+        for winding_number in self.windings:
+            wire_type_list.append(winding_number.conductor_type.name)
 
         single_strand_cross_section_list = []
-        for winding in self.windings:
-            if winding.strand_radius:
-                single_strand_cross_section = winding.strand_radius ** 2 * np.pi
+        for winding_number in self.windings:
+            if winding_number.strand_radius:
+                single_strand_cross_section = winding_number.strand_radius ** 2 * np.pi
                 single_strand_cross_section_list.append(single_strand_cross_section)
             else:
                 single_strand_cross_section_list.append(None)
@@ -1733,18 +2175,26 @@ class MagneticComponent:
         # ---- Miscellaneous ----
         log_dict["misc"] = {
             "core_2daxi_volume": self.calculate_core_volume(),
-            "core_2daxi_total_volume":self.calculate_core_volume_with_air(),
+            "core_2daxi_total_volume": self.calculate_core_volume_with_air(),
             "core_2daxi_weight": core_weight,
             "wire_lengths": self.calculate_wire_lengths(),
             "wire_volumes": self.calculate_wire_volumes(),
             "wire_weight": wire_weight_list,
-            "core_cost": ff.cost_function_core(core_weight, core_type = "ferrite"),
-            "winding_cost": ff.cost_function_winding(wire_weight_list= wire_weight_list, wire_type_list= wire_type_list, single_strand_cross_section_list = single_strand_cross_section_list),
-            "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite", wire_weight_list= wire_weight_list, wire_type_list=wire_type_list, single_strand_cross_section_list = single_strand_cross_section_list)
+            "core_cost": ff.cost_function_core(core_weight, core_type="ferrite"),
+            "winding_cost": ff.cost_function_winding(wire_weight_list=wire_weight_list, wire_type_list=wire_type_list,
+                                                     single_strand_cross_section_list=single_strand_cross_section_list),
+            "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite",
+                                                             wire_weight_list=wire_weight_list,
+                                                             wire_type_list=wire_type_list,
+                                                             single_strand_cross_section_list=single_strand_cross_section_list)
         }
 
         # ---- Print current configuration ----
         log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
+
+        if isinstance(inductance_dict, Dict):
+            log_dict["inductances"] = inductance_dict
+
         # ====== save data as JSON ======
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
@@ -1768,8 +2218,8 @@ class MagneticComponent:
         - For example current density, ohmic losses or the magnetic field density can be visualized
         """
         # ---------------------------------------- Visualization in gmsh ---------------------------------------
-        ff.femmt_print(f"\n---\n"
-              f"Visualize fields in GMSH front end:\n")
+        self.femmt_print(f"\n---\n"
+                         f"Visualize fields in GMSH front end:\n")
 
         # gmsh.initialize()
         epsilon = 1e-9
@@ -1803,7 +2253,7 @@ class MagneticComponent:
             gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
             gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
-            ff.femmt_print(gmsh.option.getNumber(f"View[{view}].Max"))
+            self.femmt_print(gmsh.option.getNumber(f"View[{view}].Max"))
             view += 1
 
         if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
@@ -1869,10 +2319,12 @@ class MagneticComponent:
             data = list(reader)
         return data[-last_n_values:-1] + [data[-1]]
 
-    def load_result(self, res_name: str, res_type: str = "value", last_n: int = 1, part:str = "real", position: int = 0):
+    def load_result(self, res_name: str, res_type: str = "value", last_n: int = 1, part: str = "real",
+                    position: int = 0):
         """
         Loads the "last_n" parameters from a result file of the scalar quantity "res_name".
         Either the real or imaginary part can be chosen.
+
         :param part: "real" or "imaginary" part can be chosen
         :param res_name: name of the quantity
         :param res_type: type of the quantity: "value" or "circuit"
@@ -1880,27 +2332,29 @@ class MagneticComponent:
         :return: last_n entries of the chosen result file
         :rtype: list
         """
-        if res_type=="value":
-            res_path=self.file_data.e_m_values_folder_path
-        if res_type=="circuit":
-            res_path=self.file_data.e_m_circuit_folder_path
-
+        if res_type == "value":
+            res_path = self.file_data.e_m_values_folder_path
+        if res_type == "circuit":
+            res_path = self.file_data.e_m_circuit_folder_path
 
         with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
             lines = fd.readlines()[-last_n:]
 
             if part == "real":
-                result = [float(line.split(sep=' ')[1 + 2*position + 1]) for n, line in enumerate(lines)]
+                result = [float(line.split(sep=' ')[1 + 2 * position + 1]) for n, line in enumerate(lines)]
             if part == "imaginary":
-                result = [float(line.split(sep=' ')[2 + 2*position + 1]) for n, line in enumerate(lines)]
+                result = [float(line.split(sep=' ')[2 + 2 * position + 1]) for n, line in enumerate(lines)]
 
             return result
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Litz Approximation [internal methods]
-    def pre_simulate(self):
+    def generate_load_litz_approximation_parameters(self):
         """
         Used to determine the litz-approximation coefficients.
+
+        Checks if litz-approximation parameters exists. In case of non-existing litz-parameters for the certain
+        litz, the litz parameters are generated directly
         """
         for num in range(len(self.windings)):
             if self.windings[num].conductor_type == ConductorType.RoundLitz:
@@ -1909,14 +2363,15 @@ class MagneticComponent:
                 # That's why here a hard-coded 4 is implemented
                 # if os.path.isfile(self.path +
                 # f"/Strands_Coefficients/coeff/pB_RS_la{self.windings[num].ff}_{self.n_layers[num]}layer.dat"):
-                if os.path.exists(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "coeff", f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
-                    ff.femmt_print("Coefficients for stands approximation are found.")
+                if os.path.exists(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "coeff",
+                                               f"pB_RS_la{self.windings[num].ff}_4layer.dat")):
+                    self.femmt_print("Coefficients for stands approximation are found.")
 
                 else:
                     # Rounding X to fit it with corresponding parameters from the database
                     X = self.red_freq[num]
                     X = np.around(X, decimals=3)
-                    ff.femmt_print(f"Rounded Reduced frequency X = {X}")
+                    self.femmt_print(f"Rounded Reduced frequency X = {X}")
                     self.create_strand_coeff(num)
 
     def create_strand_coeff(self, winding_number: int) -> None:
@@ -1932,10 +2387,10 @@ class MagneticComponent:
         :param winding_number: Winding number
         :type winding_number: int
         """
-        ff.femmt_print(f"\n"
-              f"Pre-Simulation\n"
-              f"-----------------------------------------\n"
-              f"Create coefficients for strands approximation\n")
+        self.femmt_print(f"\n"
+                         f"Pre-Simulation\n"
+                         f"-----------------------------------------\n"
+                         f"Create coefficients for strands approximation\n")
 
         text_file = open(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "PreParameter.pro"), "w")
 
@@ -1948,7 +2403,7 @@ class MagneticComponent:
         text_file.close()
         cell_geo = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.geo")
 
-        verbose = "-verbose 1" if ff.silent else "-verbose 5"
+        verbose = "-verbose 1" if self.silent else "-verbose 5"
 
         # Run gmsh as a sub client
         gmsh_client = os.path.join(self.file_data.onelab_folder_path, "gmsh")
@@ -1959,7 +2414,8 @@ class MagneticComponent:
         for mode in modes:
             for rf in reduced_frequencies:
                 # -- Pre-Simulation Settings --
-                text_file = open(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "PreParameter.pro"), "w")
+                text_file = open(os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "PreParameter.pro"),
+                                 "w")
                 text_file.write(f"Rr_cell = {rf};\n")
                 text_file.write(f"Mode = {mode};\n")
                 # Litz Approximation Coefficients are created with 4 layers
@@ -1967,17 +2423,18 @@ class MagneticComponent:
                 # text_file.write(f"NbrLayers = {self.n_layers[num]};\n")
                 text_file.write(f"NbrLayers = 4;\n")
                 text_file.write(f"Fill = {self.windings[winding_number].ff};\n")
-                text_file.write(f"Rc = {self.windings[winding_number].strand_radius};\n")  # double named!!! must be changed
+                text_file.write(
+                    f"Rc = {self.windings[winding_number].strand_radius};\n")  # double named!!! must be changed
                 text_file.close()
 
                 # get model file names with correct path
                 input_file = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell_dat.pro")
                 cell = os.path.join(self.file_data.e_m_strands_coefficients_folder_path, "cell.pro")
 
-
                 # Run simulations as sub clients
                 mygetdp = os.path.join(self.file_data.onelab_folder_path, "getdp")
-                self.onelab_client.runSubClient("myGetDP", mygetdp + " " + cell + " -input " + input_file + " -solve MagDyn_a " + verbose)
+                self.onelab_client.runSubClient("myGetDP",
+                                                mygetdp + " " + cell + " -input " + input_file + " -solve MagDyn_a " + verbose)
 
         # Formatting stuff
         # Litz Approximation Coefficients are created with 4 layers
@@ -2037,7 +2494,6 @@ class MagneticComponent:
             raise Exception('You are using a computer that is not running windows. '
                             'This command is only executable on Windows computers.')
 
-
         self.file_data.create_folders(self.file_data.femm_folder_path)
 
         sign = sign or [1]
@@ -2060,114 +2516,117 @@ class MagneticComponent:
                 # self.core.sigma = 2 * np.pi * self.frequency * epsilon_0 * f_N95_er_imag(f=self.frequency) + 1 / 6
                 self.core.sigma = 1 / 6
 
-
-        ff.femmt_print(f"{self.core.permeability_type=}, {self.core.sigma=}")
+        self.femmt_print(f"{self.core.permeability_type=}, {self.core.sigma=}")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
-            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1,
+                                0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         elif self.core.permeability_type == PermeabilityType.RealValue:
-            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1, 0, self.core.phi_mu_deg, self.core.phi_mu_deg)
+            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1,
+                                0, self.core.phi_mu_deg, self.core.phi_mu_deg)
         else:
-            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1, 0, 0, 0)
+            femm.mi_addmaterial('Ferrite', self.core.mu_r_abs, self.core.mu_r_abs, 0, 0, self.core.sigma / 1e6, 0, 0, 1,
+                                0, 0, 0)
         femm.mi_addmaterial('Air', 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0)
 
         for i in range(0, len(self.windings)):
             if self.windings[i].conductor_type == ConductorType.RoundLitz:
-                femm.mi_addmaterial('Litz', 1, 1, 0, 0, self.windings[i].cond_sigma/1e6, 0, 0, 1, 5, 0, 0, self.windings[i].n_strands, 2 * 1000 * self.windings[i].strand_radius)  # type := 5. last argument
-                ff.femmt_print(f"Number of strands: {self.windings[i].n_strands}")
-                ff.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
+                femm.mi_addmaterial('Litz', 1, 1, 0, 0, self.windings[i].cond_sigma / 1e6, 0, 0, 1, 5, 0, 0,
+                                    self.windings[i].n_strands,
+                                    2 * 1000 * self.windings[i].strand_radius)  # type := 5. last argument
+                self.femmt_print(f"Number of strands: {self.windings[i].n_strands}")
+                self.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
             if self.windings[i].conductor_type == ConductorType.RoundSolid:
-                femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[i].cond_sigma/1e6, 0, 0, 1, 0, 0, 0, 0, 0)
+                femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[i].cond_sigma / 1e6, 0, 0, 1, 0, 0, 0, 0, 0)
 
         # == Circuit ==
         # coil as seen from the terminals.
         for i in range(len(self.windings)):
             femm.mi_addcircprop('Winding' + str(i + 1), current[i] * sign[i], int(not self.windings[i].parallel))
 
-
         # == Geometry ==
         # Add core
         if self.air_gaps.number == 0:
             femm.mi_drawline(self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1],
-                            self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1])
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
             femm.mi_drawline(self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1],
-                            self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1])
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
             femm.mi_drawline(self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1],
-                            self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1])
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
             femm.mi_drawline(self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1],
-                            self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1])
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_outer[2, 1],
-                            self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1])
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
             femm.mi_drawline(self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1],
-                            self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1])
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
             femm.mi_drawline(self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1],
-                            0,
-                            self.two_d_axi.p_outer[0, 1])
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_outer[0, 1],
-                            0,
-                            self.two_d_axi.p_outer[2, 1])
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
         elif self.air_gaps.number > 0:
             femm.mi_drawline(0,
-                            self.two_d_axi.p_air_gaps[0, 1],
-                            self.two_d_axi.p_air_gaps[1, 0],
-                            self.two_d_axi.p_air_gaps[1, 1])
+                             self.two_d_axi.p_air_gaps[0, 1],
+                             self.two_d_axi.p_air_gaps[1, 0],
+                             self.two_d_axi.p_air_gaps[1, 1])
             femm.mi_drawline(self.two_d_axi.p_air_gaps[1, 0],
-                            self.two_d_axi.p_air_gaps[1, 1],
-                            self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1])
+                             self.two_d_axi.p_air_gaps[1, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
             femm.mi_drawline(self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1],
-                            self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1])
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
             femm.mi_drawline(self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1],
-                            self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1])
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
             femm.mi_drawline(self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1],
-                            self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1])
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
             femm.mi_drawline(self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1],
-                            self.two_d_axi.p_air_gaps[3, 0],
-                            self.two_d_axi.p_air_gaps[3, 1])
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_air_gaps[3, 0],
+                             self.two_d_axi.p_air_gaps[3, 1])
             femm.mi_drawline(self.two_d_axi.p_air_gaps[3, 0],
-                            self.two_d_axi.p_air_gaps[3, 1],
-                            0,
-                            self.two_d_axi.p_air_gaps[2, 1])
+                             self.two_d_axi.p_air_gaps[3, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[2, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_air_gaps[2, 1],
-                            0,
-                            self.two_d_axi.p_outer[2, 1])
+                             self.two_d_axi.p_air_gaps[2, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_outer[2, 1],
-                            self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1])
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
             femm.mi_drawline(self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1],
-                            self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1])
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
             femm.mi_drawline(self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1],
-                            0,
-                            self.two_d_axi.p_outer[0, 1])
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
             femm.mi_drawline(0,
-                            self.two_d_axi.p_outer[0, 1],
-                            0,
-                            self.two_d_axi.p_air_gaps[0, 1])
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[0, 1])
         else:
             raise Exception("Negative air gap number is not allowed")
         # Add Coil
@@ -2195,22 +2654,21 @@ class MagneticComponent:
                                     self.two_d_axi.p_conductor[num][5 * i + 3][0],
                                     self.two_d_axi.p_conductor[num][5 * i + 3][1], 180, 2.5)
                     femm.mi_addarc(self.two_d_axi.p_conductor[num][5 * i + 3][0],
-                                self.two_d_axi.p_conductor[num][5 * i + 3][1],
-                                self.two_d_axi.p_conductor[num][5 * i + 1][0],
-                                self.two_d_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
+                                   self.two_d_axi.p_conductor[num][5 * i + 3][1],
+                                   self.two_d_axi.p_conductor[num][5 * i + 1][0],
+                                   self.two_d_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
                     femm.mi_addblocklabel(self.two_d_axi.p_conductor[num][5 * i][0],
+                                          self.two_d_axi.p_conductor[num][5 * i][1])
+                    femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0],
                                         self.two_d_axi.p_conductor[num][5 * i][1])
-                    femm.mi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
-
 
                     winding_name = 'Winding' + str(num + 1)
                     if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                       femm.mi_setblockprop('Litz', 1, 0, winding_name, 0, num + 2, 1)
+                        femm.mi_setblockprop('Litz', 1, 0, winding_name, 0, num + 2, 1)
                     else:
-                       femm.mi_setblockprop('Copper', 1, 0, winding_name, 0, num + 2, 1)
+                        femm.mi_setblockprop('Copper', 1, 0, winding_name, 0, num + 2, 1)
 
                     femm.mi_clearselected()
-
 
         # Define an "open" boundary condition using the built-in function:
         femm.mi_makeABC()
@@ -2263,9 +2721,9 @@ class MagneticComponent:
         # If we were interested in the flux density at specific positions,
         # we could inquire at specific points directly:
         b0 = femm.mo_getb(0, 0)
-        ff.femmt_print('Flux density at the center of the bar is %g T' % np.abs(b0[1]))
+        self.femmt_print('Flux density at the center of the bar is %g T' % np.abs(b0[1]))
         b1 = femm.mo_getb(0.01, 0.05)
-        ff.femmt_print(f"Flux density at r=1cm, z=5cm is {np.abs(b1[1])} T")
+        self.femmt_print(f"Flux density at r=1cm, z=5cm is {np.abs(b1[1])} T")
 
         # The program will report the terminal properties of the circuit:
         # current, voltage, and flux linkage
@@ -2277,7 +2735,7 @@ class MagneticComponent:
         # If we were interested in inductance, it could be obtained by
         # dividing flux linkage by current
         L = 1000 * np.abs(vals[2]) / np.abs(vals[0])
-        ff.femmt_print('The self-inductance of the coil is %g mH' % L)
+        self.femmt_print('The self-inductance of the coil is %g mH' % L)
 
         # Or we could, for example, plot the results along a line using
         zee = []
@@ -2296,8 +2754,6 @@ class MagneticComponent:
         # When the analysis is completed, FEMM can be shut down.
         # femm.closefemm()
 
-
-
     def write_femm_log(self):
         """TODO Doc
         """
@@ -2314,11 +2770,11 @@ class MagneticComponent:
 
         log = {}
 
-        # ff.femmt_print(hyst_loss)
+        # self.femmt_print(hyst_loss)
         # tmp = femm.mo_getcircuitproperties('Primary')
-        # ff.femmt_print(tmp)
+        # self.femmt_print(tmp)
         # self.tot_loss_femm = 0.5 * tmp[0] * tmp[1]
-        # ff.femmt_print(self.tot_loss_femm)
+        # self.femmt_print(self.tot_loss_femm)
 
         # Write Circuit Properties
         # log["Circuit Properties"] = femm.mo_getcircuitproperties('Primary')
@@ -2334,15 +2790,15 @@ class MagneticComponent:
         log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
         log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
         log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
-                                        circuit_properties_primary[2].imag / circuit_properties_primary[0]]
-        log["Primary Mean Power"] = [0.5*circuit_properties_primary[1].real*circuit_properties_primary[0],
-                                    0.5*circuit_properties_primary[1].imag*circuit_properties_primary[0]]
+                                          circuit_properties_primary[2].imag / circuit_properties_primary[0]]
+        log["Primary Mean Power"] = [0.5 * circuit_properties_primary[1].real * circuit_properties_primary[0],
+                                     0.5 * circuit_properties_primary[1].imag * circuit_properties_primary[0]]
         for i in range(len(self.windings)):
             circuit_properties = femm.mo_getcircuitproperties('Winding' + str(i + 1))
             log["Winding" + str(i + 1) + " Current"] = circuit_properties[0]
             log["Winding" + str(i + 1) + " Voltage"] = [circuit_properties[1].real, circuit_properties[1].imag]
             log["Winding" + str(i + 1) + " Flux"] = [circuit_properties[2].real, circuit_properties[2].imag]
-            if circuit_properties[0] != 0:  # added by Othman
+            if circuit_properties[0] != 0:
                 log["Winding" + str(i + 1) + " Self Inductance"] = [circuit_properties[2].real / circuit_properties[0],
                                                                     circuit_properties[2].imag / circuit_properties[0]]
             else:
@@ -2354,7 +2810,6 @@ class MagneticComponent:
             femm.mo_groupselectblock(i + 2)
             log["Winding" + str(i + 1) + " Losses"] = femm.mo_blockintegral(6).real
             femm.mo_clearblock()
-
 
         json.dump(log, file, indent=2, ensure_ascii=False)
         file.close()
@@ -2377,7 +2832,8 @@ class MagneticComponent:
         # TODO Move to femmt_functions
         return (x1 + x2) / 2, (y1 + y2) / 2
 
-    def femm_thermal_validation(self, thermal_conductivity_dict: Dict, boundary_temperature: Dict, case_gap_top: float, case_gap_right: float, case_gap_bot: float):
+    def femm_thermal_validation(self, thermal_conductivity_dict: Dict, boundary_temperature: Dict, case_gap_top: float,
+                                case_gap_right: float, case_gap_bot: float):
         """Creates a thermal model in femm and simulates it with the given thermal conductivities
 
         :param thermal_conductivity_dict: Dict containing conductivities for air, winding, case, core
@@ -2400,7 +2856,7 @@ class MagneticComponent:
                 self.femm_is_imported = True
         else:
             raise Exception('You are using a computer that is not running windows. '
-                'This command is only executable on Windows computers.')
+                            'This command is only executable on Windows computers.')
 
         # Get paths
         femm_model_file_path = os.path.join(self.file_data.femm_folder_path, "thermal-validation.FEH")
@@ -2437,7 +2893,8 @@ class MagneticComponent:
         c_wire = 0
 
         # Case
-        k_case = thermal_conductivity_dict["case"]["top"] # Does not matter when the regions all have the same thermal conductivity.
+        k_case = thermal_conductivity_dict["case"][
+            "top"]  # Does not matter when the regions all have the same thermal conductivity.
         q_vol_case = 0
         # c_case = 0.01
         c_case = 0
@@ -2467,7 +2924,9 @@ class MagneticComponent:
         for winding_index, winding in enumerate(winding_losses_list):
             for i in range(len(winding)):
                 # Add a new material to FEMM with Litz conductor properties
-                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire, calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index], wire_distances[winding_index][i]), c_wire)
+                femm.hi_addmaterial(f'Wire_{winding_index}_{i}', k_wire, k_wire,
+                                    calculate_heat_flux_round_wire(winding[i], wire_radii[winding_index],
+                                                                   wire_distances[winding_index][i]), c_wire)
         femm.hi_addmaterial('Case', k_case, k_case, q_vol_case, c_case)
 
         # Add boundary condition
@@ -2479,121 +2938,131 @@ class MagneticComponent:
         # Add core
         if self.air_gaps.number == 0:
             femm.hi_drawline(self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1],
-                            self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1])
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
             femm.hi_drawline(self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1],
-                            self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1])
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
             femm.hi_drawline(self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1],
-                            self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1])
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
             femm.hi_drawline(self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1],
-                            self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1])
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_outer[2, 1],
-                            self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1])
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
             femm.hi_drawline(self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1],
-                            self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1])
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
             femm.hi_drawline(self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1],
-                            0,
-                            self.two_d_axi.p_outer[0, 1])
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_outer[0, 1],
-                            0,
-                            self.two_d_axi.p_outer[2, 1])
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
         elif self.air_gaps.number > 0:
             femm.hi_drawline(0,
-                            self.two_d_axi.p_air_gaps[0, 1],
-                            self.two_d_axi.p_air_gaps[1, 0],
-                            self.two_d_axi.p_air_gaps[1, 1])
+                             self.two_d_axi.p_air_gaps[0, 1],
+                             self.two_d_axi.p_air_gaps[1, 0],
+                             self.two_d_axi.p_air_gaps[1, 1])
             femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0],
-                            self.two_d_axi.p_air_gaps[1, 1],
-                            self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1])
+                             self.two_d_axi.p_air_gaps[1, 1],
+                             self.two_d_axi.p_window[4, 0],
+                             self.two_d_axi.p_window[4, 1])
             femm.hi_drawline(self.two_d_axi.p_window[4, 0],
-                            self.two_d_axi.p_window[4, 1],
-                            self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1])
+                             self.two_d_axi.p_window[4, 1],
+                             self.two_d_axi.p_window[5, 0],
+                             self.two_d_axi.p_window[5, 1])
             femm.hi_drawline(self.two_d_axi.p_window[5, 0],
-                            self.two_d_axi.p_window[5, 1],
-                            self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1])
+                             self.two_d_axi.p_window[5, 1],
+                             self.two_d_axi.p_window[7, 0],
+                             self.two_d_axi.p_window[7, 1])
             femm.hi_drawline(self.two_d_axi.p_window[7, 0],
-                            self.two_d_axi.p_window[7, 1],
-                            self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1])
+                             self.two_d_axi.p_window[7, 1],
+                             self.two_d_axi.p_window[6, 0],
+                             self.two_d_axi.p_window[6, 1])
             femm.hi_drawline(self.two_d_axi.p_window[6, 0],
-                            self.two_d_axi.p_window[6, 1],
-                            self.two_d_axi.p_air_gaps[3, 0],
-                            self.two_d_axi.p_air_gaps[3, 1])
+                             self.two_d_axi.p_window[6, 1],
+                             self.two_d_axi.p_air_gaps[3, 0],
+                             self.two_d_axi.p_air_gaps[3, 1])
             femm.hi_drawline(self.two_d_axi.p_air_gaps[3, 0],
-                            self.two_d_axi.p_air_gaps[3, 1],
-                            0,
-                            self.two_d_axi.p_air_gaps[2, 1])
+                             self.two_d_axi.p_air_gaps[3, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[2, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_air_gaps[2, 1],
-                            0,
-                            self.two_d_axi.p_outer[2, 1])
+                             self.two_d_axi.p_air_gaps[2, 1],
+                             0,
+                             self.two_d_axi.p_outer[2, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_outer[2, 1],
-                            self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1])
+                             self.two_d_axi.p_outer[2, 1],
+                             self.two_d_axi.p_outer[3, 0],
+                             self.two_d_axi.p_outer[3, 1])
             femm.hi_drawline(self.two_d_axi.p_outer[3, 0],
-                            self.two_d_axi.p_outer[3, 1],
-                            self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1])
+                             self.two_d_axi.p_outer[3, 1],
+                             self.two_d_axi.p_outer[1, 0],
+                             self.two_d_axi.p_outer[1, 1])
             femm.hi_drawline(self.two_d_axi.p_outer[1, 0],
-                            self.two_d_axi.p_outer[1, 1],
-                            0,
-                            self.two_d_axi.p_outer[0, 1])
+                             self.two_d_axi.p_outer[1, 1],
+                             0,
+                             self.two_d_axi.p_outer[0, 1])
             femm.hi_drawline(0,
-                            self.two_d_axi.p_outer[0, 1],
-                            0,
-                            self.two_d_axi.p_air_gaps[0, 1])
+                             self.two_d_axi.p_outer[0, 1],
+                             0,
+                             self.two_d_axi.p_air_gaps[0, 1])
 
             # In order for the simulation to work the air_gap must be closed:
             femm.hi_drawline(0, self.two_d_axi.p_air_gaps[0, 1], 0, self.two_d_axi.p_air_gaps[2, 1])
 
             # Close air gap to separate from air
             femm.hi_drawline(self.two_d_axi.p_air_gaps[1, 0], self.two_d_axi.p_air_gaps[1, 1],
-                                self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
+                             self.two_d_axi.p_air_gaps[3, 0], self.two_d_axi.p_air_gaps[3, 1])
         else:
             raise Exception("Negative air gap number is not allowed")
 
         # Add case
-        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + case_gap_top)  # Top left line
-        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top)  # Top line
-        femm.hi_drawline(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top, self.two_d_axi.p_outer[1, 0] + case_gap_right,
-                        self.two_d_axi.p_outer[1, 1] - case_gap_bot)  # Right line
-        femm.hi_drawline(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0, self.two_d_axi.p_outer[0, 1] - case_gap_bot)  # Bottom line
-        femm.hi_drawline(0, self.two_d_axi.p_outer[0, 1] - case_gap_bot, 0, self.two_d_axi.p_outer[0, 1])  # Bottom right line
+        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1], 0,
+                         self.two_d_axi.p_outer[2, 1] + case_gap_top)  # Top left line
+        femm.hi_drawline(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right,
+                         self.two_d_axi.p_outer[3, 1] + case_gap_top)  # Top line
+        femm.hi_drawline(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top,
+                         self.two_d_axi.p_outer[1, 0] + case_gap_right,
+                         self.two_d_axi.p_outer[1, 1] - case_gap_bot)  # Right line
+        femm.hi_drawline(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0,
+                         self.two_d_axi.p_outer[0, 1] - case_gap_bot)  # Bottom line
+        femm.hi_drawline(0, self.two_d_axi.p_outer[0, 1] - case_gap_bot, 0,
+                         self.two_d_axi.p_outer[0, 1])  # Bottom right line
 
         # Create boundary
         # femm.hi_selectsegment(*self.calculatePointAverage(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + caseGapTop))
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(0, self.two_d_axi.p_outer[2, 1] + case_gap_top, self.two_d_axi.p_outer[3, 0] + case_gap_right,
-                                                                        self.two_d_axi.p_outer[3, 1] + case_gap_top))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(0, self.two_d_axi.p_outer[2, 1] + case_gap_top,
+                                                                         self.two_d_axi.p_outer[3, 0] + case_gap_right,
+                                                                         self.two_d_axi.p_outer[3, 1] + case_gap_top))
         femm.hi_setsegmentprop("NeumannBoundary", 0, 1, 0, 2, "<None>")
         femm.hi_clearselected()
 
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[3, 0] + case_gap_right, self.two_d_axi.p_outer[3, 1] + case_gap_top,
-                                                                        self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot))
-        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[1, 0] + case_gap_right, self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0,
-                                                                        self.two_d_axi.p_outer[0, 1] - case_gap_bot))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[3, 0] + case_gap_right,
+                                                                         self.two_d_axi.p_outer[3, 1] + case_gap_top,
+                                                                         self.two_d_axi.p_outer[1, 0] + case_gap_right,
+                                                                         self.two_d_axi.p_outer[1, 1] - case_gap_bot))
+        femm.hi_selectsegment(*MagneticComponent.calculate_point_average(self.two_d_axi.p_outer[1, 0] + case_gap_right,
+                                                                         self.two_d_axi.p_outer[1, 1] - case_gap_bot, 0,
+                                                                         self.two_d_axi.p_outer[0, 1] - case_gap_bot))
         # femm.hi_selectsegment(*self.calculatePointAverage(0, self.two_d_axi.p_outer[0, 1] - caseGapBot, 0, self.two_d_axi.p_outer[0, 1]))
         femm.hi_setsegmentprop("Boundary", 0, 1, 0, 2, "<None>")
         femm.hi_clearselected()
 
         # Add case material
-        material_x, material_y = self.calculate_point_average(0, self.two_d_axi.p_outer[2, 1], 0, self.two_d_axi.p_outer[2, 1] + case_gap_top)
+        material_x, material_y = self.calculate_point_average(0, self.two_d_axi.p_outer[2, 1], 0,
+                                                              self.two_d_axi.p_outer[2, 1] + case_gap_top)
         femm.hi_addblocklabel(material_x + 0.001, material_y)
         femm.hi_selectlabel(material_x + 0.001, material_y)
         femm.hi_setblockprop('Case', 1, 0, 0)
@@ -2608,12 +3077,13 @@ class MagneticComponent:
                                 self.two_d_axi.p_conductor[num][5 * i + 3][0],
                                 self.two_d_axi.p_conductor[num][5 * i + 3][1], 180, 2.5)
                 femm.hi_addarc(self.two_d_axi.p_conductor[num][5 * i + 3][0],
-                            self.two_d_axi.p_conductor[num][5 * i + 3][1],
-                            self.two_d_axi.p_conductor[num][5 * i + 1][0],
-                            self.two_d_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
+                               self.two_d_axi.p_conductor[num][5 * i + 3][1],
+                               self.two_d_axi.p_conductor[num][5 * i + 1][0],
+                               self.two_d_axi.p_conductor[num][5 * i + 1][1], 180, 2.5)
                 femm.hi_addblocklabel(self.two_d_axi.p_conductor[num][5 * i][0],
+                                      self.two_d_axi.p_conductor[num][5 * i][1])
+                femm.hi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0],
                                     self.two_d_axi.p_conductor[num][5 * i][1])
-                femm.hi_selectlabel(self.two_d_axi.p_conductor[num][5 * i][0], self.two_d_axi.p_conductor[num][5 * i][1])
                 if num == 0:
                     femm.hi_setblockprop(f'Wire_{num}_{i}', 1, 0, 1)
                 if num == 1:
@@ -2717,8 +3187,8 @@ class MagneticComponent:
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
             core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                            window_w=settings["core"]["window_w"],
-                                                            window_h=settings["core"]["window_h"])
+                                                   window_w=settings["core"]["window_w"],
+                                                   window_h=settings["core"]["window_h"])
 
             core = Core(core_dimensions=core_dimensions, **settings["core"])
             geo.set_core(core)
@@ -2726,13 +3196,15 @@ class MagneticComponent:
             if "air_gaps" in settings:
                 air_gaps = AirGaps(AirGapMethod[settings["air_gaps"]["method"]], core)
                 for air_gap in settings["air_gaps"]["air_gaps"]:
-                    air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["height"], air_gap["position_value"],)
+                    air_gaps.add_air_gap(AirGapLegPosition[air_gap["leg_position"]], air_gap["height"],
+                                         air_gap["position_value"], )
                 geo.set_air_gaps(air_gaps)
 
             if "insulation" in settings:
                 insulation = Insulation()
                 insulation.add_core_insulations(*settings["insulation"]["core_insulations"])
-                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"], settings["insulation"]["vww_insulation"])
+                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"],
+                                                   settings["insulation"]["vww_insulation"])
                 geo.set_insulation(insulation)
 
             if "stray_path" in settings:
@@ -2754,22 +3226,28 @@ class MagneticComponent:
                         elif conductor_type == ConductorType.RoundLitz:
                             # 3 of 4 wire preferences are allowed, so fill-factor is set to None, even the value is known from the log.
                             conductor.set_litz_round_conductor(winding["conductor_radius"], winding["number_strands"],
-                            winding["strand_radius"], None, ConductorArrangement[winding["conductor_arrangement"]])
+                                                               winding["strand_radius"], None,
+                                                               ConductorArrangement[winding["conductor_arrangement"]])
                         elif conductor_type == ConductorType.RoundSolid:
-                            conductor.set_solid_round_conductor(winding["conductor_radius"], ConductorArrangement[winding["conductor_arrangement"]])
+                            conductor.set_solid_round_conductor(winding["conductor_radius"],
+                                                                ConductorArrangement[winding["conductor_arrangement"]])
                         else:
                             raise Exception(f"Unknown conductor type {conductor_type.name}")
 
                         conductors.append(conductor)
 
-                    new_vww = VirtualWindingWindow(vww["bot_bound"], vww["top_bound"], vww["left_bound"], vww["right_bound"])
+                    new_vww = VirtualWindingWindow(vww["bot_bound"], vww["top_bound"], vww["left_bound"],
+                                                   vww["right_bound"])
                     winding_type = WindingType[vww["winding_type"]]
                     if winding_type == WindingType.Single:
-                        winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] is not None else None
+                        winding_scheme = WindingScheme[vww["winding_scheme"]] if vww[
+                                                                                     "winding_scheme"] is not None else None
                         wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
                         new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
                     elif winding_type == WindingType.TwoInterleaved:
-                        new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1], InterleavedWindingScheme[vww["winding_scheme"]], vww["winding_insulation"])
+                        new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1],
+                                                        InterleavedWindingScheme[vww["winding_scheme"]],
+                                                        vww["winding_insulation"])
                     else:
                         raise Exception(f"Winding type {winding_type} is not implemented")
                     new_virtual_winding_windows.append(new_vww)
@@ -2784,7 +3262,6 @@ class MagneticComponent:
             return geo
 
         raise Exception(f"Couldn't extract settings from file {log_file_path}")
-
 
 
 

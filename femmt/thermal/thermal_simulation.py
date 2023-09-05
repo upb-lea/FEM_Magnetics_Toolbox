@@ -65,28 +65,38 @@ def create_background(background_tag, k_air, function_pro: FunctionPro, group_pr
     group_pro.add_regions({"air": background_tag})
 
 
-def create_core_and_air_gaps(core_tag, k_core, core_area, core_losses, air_gaps_tag, k_air_gaps,
+def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, air_gaps_tag, k_air_gaps,
                              function_pro: FunctionPro, group_pro: GroupPro):
-    heat_flux = core_losses / core_area
-    print(heat_flux)
+
+
+    q_vol = {}  # Dictionary to hold volumetric heat flux for each core part
+    k = {}  # Dictionary to hold thermal conductivity for each core part
+    regions = {}  # Dictionary to hold regions for each core part
+    core_total_str = "{"
+
+
+    for index, tag in enumerate(core_tags):
+        name = f"core_part_{index + 1}"  # Create a name for the core part based on its position
+        core_total_str += f"{name}, "
+
+        # Compute the heat flux for the core part using its loss and area
+        q_vol[name] = core_parts_losses[index] / core_area[index] # TODO Core_area should be calculated for every core_part
+
+        # Store the thermal conductivity of the core part
+        k[name] = k_core
+
+        # Associate the core part name with its tag
+        regions[name] = tag  # This makes it a list
+
     if air_gaps_tag is not None:
-        k = {
-            "core": k_core,
-            "air_gaps": k_air_gaps
-        }
-        q_vol = {
-            "core": heat_flux
-        }
-        group_pro.add_regions({
-            "core": core_tag,
-            "air_gaps": air_gaps_tag
-        })
-        function_pro.add_dicts(k, q_vol)
-    else:
-        k = {"core": k_core}
-        q_vol = {"core": heat_flux}
-        group_pro.add_regions({"core": core_tag})
-        function_pro.add_dicts(k, q_vol)
+        k["air_gaps"] = k_air_gaps
+        regions["air_gaps"] = air_gaps_tag
+
+    regions["core_total"] = core_total_str[:-2] + "}"
+    # Update the function_pro and group_pro objects with the newly computed dictionaries
+    group_pro.add_regions(regions)
+    function_pro.add_dicts(k, q_vol)
+
 
 
 def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, wire_distances,
@@ -104,9 +114,8 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
         if winding is not None and len(winding) > 0:
             if winding is not None and len(winding) > 0:
                 original_winding = winding[:]
-                #winding = list(set(winding))  # Remove duplicates from winding
+
                 if len(original_winding) > len(winding_losses[winding_index]):
-                    # Distribute the loss of the single physical turn equally over each geometric turn for parallel windings (need to be reviewd))
                     winding_losses[winding_index] = [winding_losses[winding_index][0] / len(original_winding) for _ in range(len(original_winding))]
 
 
@@ -125,7 +134,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
                 else:
                     tag_counters[tag] += 1
                 regions[name] = tag + tag_counters[tag]
-                #regions[name] = tag
+
 
 
     # Needs to be added. [:-2] removes the last ', '
@@ -136,7 +145,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
 
 
 def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_material_file_path, sensor_points_file,
-                          core_file, insulation_file, winding_file, windings, print_sensor_values,
+                          core_file, insulation_file, winding_file, windings, core_parts, print_sensor_values,
                           post_operation_pro: PostOperationPro, flag_insulation):
     # Add pos file generation
     post_operation_pro.add_on_elements_of_statement("T", "Total", thermal_file_path)
@@ -165,14 +174,20 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
                                                   "air_gap_lower", True)
 
     # Add regions
-    post_operation_pro.add_on_elements_of_statement("T", "core", core_file, "SimpleTable", 0)
+    #core file will be GmshParsed file as we have many core parts
+    for core_index, core_part in enumerate(core_parts):  # Assuming core_tags is a list of core tags
+        name = f"core_part_{core_index + 1}"
+        post_operation_pro.add_on_elements_of_statement("T", name, core_file, "GmshParsed", 0, name, True)
+
+
+
     if flag_insulation:
         post_operation_pro.add_on_elements_of_statement("T", "insulation", insulation_file, "SimpleTable", 0)
 
     append = False
     for winding_index, winding in enumerate(windings):
         if winding is not None and len(winding) > 0:
-            #winding = list(set(winding))  # Remove duplicates from region of parallel windings
+              # Remove duplicates from region of parallel windings
             for index, tag in enumerate(winding):
                 name = f"winding_{winding_index}_{index}"
                 post_operation_pro.add_on_elements_of_statement("T", name, winding_file, "GmshParsed", 0, name, append)
@@ -254,6 +269,7 @@ def parse_gmsh_parsed(file_path: str):
             else:
                 raise Exception(f"Unknown line: {line}")
 
+
     return value_dict
 
 
@@ -284,10 +300,35 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
 
     # Extract min/max/averages from core, insulations and windings (and air?)
     # core
-    core_values = parse_simple_table(core_file)
-    core_min = core_values.min()
-    core_max = core_values.max()
-    core_mean = core_values.mean()
+    core_values = parse_gmsh_parsed(core_file) # TODO : need to be reviewd as with the first run (file results are deleted), ["mean": mean_sum / len(core_values.keys())] will have (division by zero)
+    core_parts = {}
+
+    core_part_min = float('inf')
+    core_part_max = -float('inf')
+    mean_sum = 0
+
+
+    for core_items, core_value in core_values.items():
+        current_min = core_value.min()
+        current_max = core_value.max()
+        current_mean = core_value.mean()
+        core_parts[core_items] = {
+            "min": current_min,
+            "max": current_max,
+            "mean": current_mean
+        }
+        if current_min < core_part_min:
+            core_part_min = current_min
+
+        if current_max > core_part_max:
+            core_part_max = current_max
+
+        mean_sum += current_mean
+    core_parts["total"] = {
+        "min": core_part_min,
+        "max": core_part_max,
+        "mean": mean_sum / len(core_values.keys())
+    }
 
     # windings
     winding_values = parse_gmsh_parsed(winding_file)
@@ -328,11 +369,7 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
     }
     # Fill data for json file
     data = {
-        "core": {
-            "min": core_min,
-            "max": core_max,
-            "mean": core_mean
-        },
+        "core_parts": core_parts,
         "windings": windings,
         "misc": misc
     }
@@ -362,7 +399,7 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
 
 
 def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict,
-                boundary_flags: Dict, boundary_physical_groups: Dict, core_area: float, conductor_radii: float,
+                boundary_flags: Dict, boundary_physical_groups: Dict, core_area: List, conductor_radii: float,
                 wire_distances: float, case_volume: float,
                 show_thermal_fem_results: bool, print_sensor_values: bool, silent: bool, flag_insulation: bool = True):
     """
@@ -441,31 +478,38 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
 
 
 
+    # Extract core_parts losses as a list
+    core_parts_losses = []
 
-    core_losses = losses["core"]
+    core_part_keys = [key for key in losses.keys() if key.startswith("total_core_part_")]
+    for key in core_part_keys:
+        core_parts_losses.append(losses[key])
+
+
+
+
 
     # TODO All those pro classes could be used as global variables
     create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags,
                 thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)
     create_background(tags_dict["background_tag"], thermal_conductivity_dict["air"], function_pro, group_pro)
-    create_core_and_air_gaps(tags_dict["core_tag"], thermal_conductivity_dict["core"], core_area, core_losses,
+    print(tags_dict)
+    create_core_and_air_gaps(tags_dict["core_tags"], thermal_conductivity_dict["core"], core_area, core_parts_losses,
                              tags_dict["air_gaps_tag"],
                              thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
     create_windings(tags_dict["winding_tags"], thermal_conductivity_dict["winding"], winding_losses, conductor_radii,
                     wire_distances, function_pro, group_pro)
 
-
     create_insulation(tags_dict["insulations_tag"], thermal_conductivity_dict["insulation"], function_pro, group_pro) if flag_insulation else None
-    # create_post_operation(map_pos_file.replace("\\", "/"), influx_pos_file.replace("\\", "/"), material_pos_file.replace("\\", "/"), sensor_points_file, core_file,
-    #    insulation_file, winding_file, tags_dict["winding_tags"], post_operation_pro)
 
     create_post_operation(map_pos_file, influx_pos_file, material_pos_file, sensor_points_file, core_file,
-                          insulation_file, winding_file, tags_dict["winding_tags"], print_sensor_values,
+                          insulation_file, winding_file, tags_dict["winding_tags"], tags_dict["core_tags"], print_sensor_values,
                           post_operation_pro, flag_insulation)
 
     # Create files
     parameters_pro.create_file(parameters_file)
     function_pro.create_file(function_file)
+
     group_pro.create_file(group_file, tags_dict["air_gaps_tag"] is not None, tags_dict["insulations_tag"] is not None)
     constraint_pro.create_file(constraint_file)
     post_operation_pro.create_file(post_operation_file)

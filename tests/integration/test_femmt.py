@@ -11,6 +11,10 @@ import femmt.examples.basic_transformer_integrated
 import femmt.examples.basic_transformer_center_tapped
 import femmt.examples.basic_transformer_stacked
 import femmt.examples.basic_transformer_stacked_center_tapped
+import femmt.examples.basic_inductor_foil_vertical
+import femmt.examples.basic_transformer_n_winding
+import femmt.examples.advanced_indutor_sweep
+import materialdatabase as mdb
 
 
 def compare_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
@@ -74,7 +78,10 @@ def temp_folder():
         os.mkdir(temp_folder_path)
 
     # Get onelab path
-    onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
+    if os.path.isdir(os.path.join(os.path.dirname(__file__), "..", "..", "onelab")):
+        onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
+    else:
+        onelab_path = None
 
     # Test
     yield temp_folder_path, onelab_path
@@ -90,7 +97,7 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
             os.mkdir(working_directory)
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True, is_gui=True)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -98,10 +105,11 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
         core_db = fmt.core_database()["PQ 40/40"]
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                         window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"])
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions, material="N95", temperature=25, frequency=100000,
+                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25, frequency=100000,
                         permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
                         permittivity_datasource=fmt.MaterialDataSource.ManufacturerDatasheet)
         geo.set_core(core)
@@ -172,6 +180,105 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
 
 
 @pytest.fixture
+def femmt_simulation_inductor_core_material_database_measurement(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
+
+        core = fmt.Core(core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions, material=mdb.Material.N95, temperature=25, frequency=100000,
+                        permeability_datasource=fmt.MaterialDataSource.Measurement,
+                        permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                        permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                        permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                        permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                        permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK)
+        geo.set_core(core)
+
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 10)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
+        geo.set_air_gaps(air_gaps)
+
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+        insulation.add_winding_insulations([[0.0005]])
+        geo.set_insulation(insulation)
+
+        winding_window = fmt.WindingWindow(core, insulation)
+        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding.set_solid_round_conductor(conductor_radius=0.0013,
+                                          conductor_arrangement=fmt.ConductorArrangement.Square)
+
+        vww.set_winding(winding, 9, None)
+        geo.set_winding_windows([winding_window])
+
+        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
+
+        geo.single_simulation(freq=100000, current=[4.5], show_fem_simulation_results=False)
+
+        """
+        Currently only the magnetics simulation is tested
+
+        thermal_conductivity_dict = {
+                "air": 0.0263,
+                "case": 0.3,
+                "core": 5,
+                "winding": 400,
+                "air_gaps": 180
+        }
+        case_gap_top = 0.0015
+        case_gap_right = 0.0025
+        case_gap_bot = 0.002
+        boundary_temperatures = {
+            "value_boundary_top": 293,
+            "value_boundary_top_right": 293,
+            "value_boundary_right_top": 293,
+            "value_boundary_right": 293,
+            "value_boundary_right_bottom": 293,
+            "value_boundary_bottom_right": 293,
+            "value_boundary_bottom": 293
+        }
+        boundary_flags = {
+            "flag_boundary_top": 1,
+            "flag_boundary_top_right": 1,
+            "flag_boundary_right_top": 1,
+            "flag_boundary_right": 1,
+            "flag_boundary_right_bottom": 1,
+            "flag_boundary_bottom_right": 1,
+            "flag_boundary_bottom": 1
+        }
+
+        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, show_results=False)
+        """
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    return os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+
+
+@pytest.fixture
 def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
 
@@ -183,7 +290,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    silent=True, is_gui=True)
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -191,7 +298,8 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
         core_db = fmt.core_database()["PQ 40/40"]
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                         window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"])
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
@@ -241,7 +349,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    silent=True, is_gui=True)
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -249,7 +357,8 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
         core_db = fmt.core_database()["PQ 40/40"]
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                         window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"])
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
@@ -300,7 +409,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    silent=True, is_gui=True)
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -308,7 +417,8 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
         core_db = fmt.core_database()["PQ 40/40"]
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                         window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"])
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
@@ -361,7 +471,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder)
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                    silent=True, is_gui=True)
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -369,7 +479,8 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder)
         core_db = fmt.core_database()["PQ 40/40"]
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                         window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"])
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
@@ -419,7 +530,7 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                    silent=True, is_gui=True)
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -427,7 +538,8 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
 
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
                                                         window_w=0.012,
-                                                        window_h=0.0295)
+                                                        window_h=0.0295,
+                                                        core_h=0.05)
 
 
 
@@ -487,14 +599,15 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                    silent=True, is_gui=True)
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
                                                         window_w=0.012,
-                                                        window_h=0.0295)
+                                                        window_h=0.0295,
+                                                        core_h=0.05)
 
 
 
@@ -554,7 +667,7 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
         # 1. chose simulation type
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                    working_directory=working_directory, silent=True, is_gui=True)
+                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -562,7 +675,8 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02,
                                                         window_w=0.011,
-                                                        window_h=0.03)
+                                                        window_h=0.03,
+                                                        core_h=0.05)
 
 
 
@@ -628,7 +742,7 @@ def thermal_simulation(temp_folder):
             os.mkdir(working_directory)
 
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
-                                    working_directory=working_directory, silent=True, is_gui=True)
+                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -636,7 +750,8 @@ def thermal_simulation(temp_folder):
         core_db = fmt.core_database()["PQ 40/40"]
         core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                         window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"])
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
                         sigma=0.,
@@ -748,6 +863,23 @@ def test_inductor_core_material_database(femmt_simulation_inductor_core_material
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_material.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
+def test_inductor_core_material_database_measurement(femmt_simulation_inductor_core_material_database_measurement):
+    """
+    The first idea was to compare the simulated meshes with test meshes simulated manually.
+    It turns out that the meshes cannot be compared because even slightly differences in the mesh,
+    can cause to a test failure, because the meshes are binary files.
+    Those differences could even occur when running the simulation on different machines
+    -> This was observed when creating a docker image and running the tests.
+
+    Now as an example only the result log will be checked.
+    """
+    test_result_log = femmt_simulation_inductor_core_material_database_measurement
+
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+    # e_m mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_material_measurement.json")
+    compare_result_logs(test_result_log, fixture_result_log)
 
 def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_loss_angle):
     test_result_log = femmt_simulation_inductor_core_fixed_loss_angle
@@ -938,3 +1070,24 @@ def test_basic_example_transformer_stacked_center_tapped(temp_folder):
     femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(onelab_folder=onelab_folder,
                                                                                                            show_visual_outputs=False,
                                                                                                            is_test=True)
+
+def test_basic_example_inductor_foil_vertical(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_foil_vertical.basic_example_inductor_foil_vertical(onelab_folder=onelab_folder,
+                                                                                                           show_visual_outputs=False,
+                                                                                                           is_test=True)
+
+
+def test_basic_example_transformer_n_winding(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_n_winding.basic_example_transformer_n_winding(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                   is_test=True)
+
+
+def test_advanced_example_inductor_sweep(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.advanced_indutor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                   is_test=True)
+

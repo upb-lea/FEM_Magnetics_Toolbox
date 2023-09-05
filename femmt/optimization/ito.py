@@ -1186,7 +1186,7 @@ class IntegratedTransformerOptimization:
             :rtype: List[ItoSingleResultFile]
             """
             integrated_transformer_reluctance_model_results_directory = os.path.join(working_directory, "01_reluctance_model_results")
-            ff.femmt_print(f"Read results from {integrated_transformer_reluctance_model_results_directory}")
+            print(f"Read results from {integrated_transformer_reluctance_model_results_directory}")
             return femmt.IntegratedTransformerOptimization.ReluctanceModel.load_list(integrated_transformer_reluctance_model_results_directory)
 
         @staticmethod
@@ -1200,7 +1200,7 @@ class IntegratedTransformerOptimization:
             :rtype: List[ItoSingleResultFile]
             """
             integrated_transformer_reluctance_model_results_directory = os.path.join(working_directory, "01_reluctance_model_results_filtered")
-            ff.femmt_print(f"Read results from {integrated_transformer_reluctance_model_results_directory}")
+            print(f"Read results from {integrated_transformer_reluctance_model_results_directory}")
             return femmt.IntegratedTransformerOptimization.ReluctanceModel.load_list(integrated_transformer_reluctance_model_results_directory)
 
     class FemSimulation:

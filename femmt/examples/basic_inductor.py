@@ -1,8 +1,9 @@
 import femmt as fmt
+import materialdatabase as mdb
 import os
 
 def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    def example_thermal_simulation(show_visual_outputs: bool = True, flag_insulation: bool =True):
+    def example_thermal_simulation(show_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -22,7 +23,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
             "core": 5,  # ferrite
             "winding": 400,  # copper
             "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42 if flag_insulation else None # polyethylen
+            "insulation": 0.42  if flag_insulation else None # polyethylen
         }
 
         # Here the case size can be determined
@@ -65,7 +66,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=fmt.colors_ba_jonas,
-                               colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation= flag_insulation)
+                               colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
 
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -79,7 +80,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                silent=True, is_gui=is_test)
+                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
@@ -90,18 +91,20 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"])
+                                                    window_h=core_db["window_h"],
+                                                    core_h=core_db["core_h"])
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material="N49", temperature=45, frequency=inductor_frequency,
+                    detailed_core_model=False,
+                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup="LEA_LK",
+                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup="LEA_LK")
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
     # mu_rel=3000, phi_mu_deg=10,
     # sigma=0.5)
     geo.set_core(core)
@@ -151,7 +154,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation= False)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
 
 if __name__ == "__main__":
     basic_example_inductor(show_visual_outputs=True)

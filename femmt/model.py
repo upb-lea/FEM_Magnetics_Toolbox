@@ -124,13 +124,6 @@ class Conductor:
         self.n_layers = ff.litz_calculate_number_layers(number_strands)
         self.a_cell = self.n_strands * self.strand_radius ** 2 * np.pi / self.ff
 
-        ff.femmt_print(f"Updated Litz Configuration: \n"
-                       f" ff: {self.ff} \n"
-                       f" Number of layers/strands: {self.n_layers}/{self.n_strands} \n"
-                       f" Strand radius: {self.strand_radius} \n"
-                       f" Conductor radius: {self.conductor_radius}\n"
-                       f"---")
-
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
@@ -169,7 +162,7 @@ class Core:
     phi_mu_deg: float  # mu_complex = mu_r_abs * exp(j*phi_mu_deg)
 
     # Permitivity - [Conductivity in a magneto-quasistatic sense]
-    sigma: float  # Imaginary part of complex equivalent permittivity [frequency-dependent]
+    sigma: complex  # complex equivalent permittivity [frequency-dependent], real and imaginary part
 
     steinmetz_loss: int = 0
     generalized_steinmetz_loss: int = 0
@@ -185,11 +178,13 @@ class Core:
 
     file_path_to_solver_folder: str  # location to create temporary pro file
 
+    mdb_verbosity: Verbosity
+
     def __init__(self,
                  # dimensions
                  core_type: CoreType = CoreType.Single,
                  core_dimensions=None,
-                 correct_outer_leg: bool = False,
+                 detailed_core_model: bool = False,
 
                  # material data
                  material: str = "custom",
@@ -208,10 +203,11 @@ class Core:
                  permittivity_datasource: str = None,
                  permittivity_datatype: str = None,
                  permittivity_measurement_setup: str = None,
-                 sigma: float = None,
+                 sigma: complex = None,
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
-                 **kwargs):
+                 mdb_verbosity: Verbosity = Verbosity.Silent,
+                 **kwargs): # TODO Is this kwargs really needed? Can this be removed?
         """TODO Doc
 
         :param core_inner_diameter: diameter of the inner core
@@ -230,22 +226,25 @@ class Core:
         :type sigma: float, optional
         :param non_linear: _description_, defaults to False
         :type non_linear: bool, optional
-        :param correct_outer_leg: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
-        :type correct_outer_leg: bool, optional
+        :param detailed_core_model: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
+        :type detailed_core_model: bool, optional
         """
+        self.mdb_verbosity = mdb_verbosity
+
         # Set parameters
         self.core_type = core_type  # Basic shape of magnetic conductor
 
         # Geometric Parameters
         self.core_inner_diameter = core_dimensions.core_inner_diameter
         self.window_w = core_dimensions.window_w
-        self.correct_outer_leg = correct_outer_leg
+        self.correct_outer_leg = detailed_core_model
         self.r_inner = self.window_w + self.core_inner_diameter / 2
 
         if self.core_type == CoreType.Single:
             self.window_h = core_dimensions.window_h
             self.number_core_windows = 2
-            self.core_h = self.window_h + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
+            self.core_h = self.window_h + self.core_inner_diameter / 2
+            self.core_h_center_leg = self.window_h + self.core_inner_diameter / 2  # per default
         if self.core_type == CoreType.Stacked:
             self.window_h_bot = core_dimensions.window_h_bot
             self.window_h_top = core_dimensions.window_h_top
@@ -253,12 +252,21 @@ class Core:
             self.core_h = self.window_h_bot + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
             self.number_core_windows = 4
 
-        if correct_outer_leg:
-            # hard-coded case for PQ 40/40-cores:
-            # the outer cross-section differs from inner cross-section and is corrected here.
-            # Note: for PQ 40/40 cores only!!
-            A_out = 200 * 10 ** -6
-            self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
+        if detailed_core_model:
+            # Definition of the center core height
+            self.core_h_center_leg = core_dimensions.core_h  # Directly taken from core database
+
+            # Calculation of the outer core radius  TODO: additional value from core specification needed
+            # self.r_outer = np.sqrt(A_out / np.pi + self.r_inner ** 2)  # Hardcode for PQ 40/40
+            self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
+
+            # Calculation of the outer core height TODO:additional value from core specification needed
+            width_meas = 23e-3  # for PQ4040
+            h_meas = 5.2e-3  # for PQ4040
+            alpha = np.arcsin((width_meas / 2) / (self.core_inner_diameter / 2 + self.window_w))
+            h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))  # Areal leg
+            self.core_h = self.window_h + 2 * h_outer
+
         else:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
             # this is the recommended default-case
@@ -267,7 +275,7 @@ class Core:
         # Material Parameters
         # General
         # Initialize database
-        self.material_database = mdb.MaterialDatabase(ff.silent)
+        self.material_database = mdb.MaterialDatabase(self.mdb_verbosity == Verbosity.Silent)
         self.material = material
         self.file_path_to_solver_folder = None
         self.temperature = temperature
@@ -305,7 +313,6 @@ class Core:
                 self.ki = steinmetz_parameter[0]
                 self.alpha = steinmetz_parameter[1]
                 self.beta = steinmetz_parameter[2]
-                ff.femmt_print(f"{self.ki, self.alpha, self.beta = }")
             else:
                 raise Exception(f"When steinmetz losses are set a material needs to be set as well.")
         # if loss_approach == LossApproach.Generalized_Steinmetz:
@@ -376,23 +383,22 @@ class Core:
             epsilon_r, phi_epsilon_deg = self.material_database.get_permittivity(temperature=self.temperature,
                                                                                  frequency=frequency,
                                                                                  material_name=self.material,
-                                                                                 datasource=self.permittivity[
-                                                                                     "datasource"],
-                                                                                 measurement_setup=self.permittivity[
-                                                                                     "measurement_setup"],
+                                                                                 datasource=self.permittivity["datasource"],
+                                                                                 measurement_setup=self.permittivity["measurement_setup"],
                                                                                  datatype=self.permittivity["datatype"])
-            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)),
-                                                                        np.sin(np.deg2rad(phi_epsilon_deg)))
-            self.sigma = 2 * np.pi * frequency * self.complex_permittivity.imag
+            self.complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(phi_epsilon_deg)), np.sin(np.deg2rad(phi_epsilon_deg)))
+            self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag, self.complex_permittivity.real)
+            # self.sigma = 2 * np.pi * frequency * complex(self.complex_permittivity.imag, 0)
+            # self.sigma = complex(1/10, 0)
 
         if self.permittivity["datasource"] == MaterialDataSource.ManufacturerDatasheet:
-            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material,
-                                                                           attribute="resistivity")
+            self.sigma = 1 / self.material_database.get_material_attribute(material_name=self.material, attribute="resistivity")
 
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         # This function is needed to update the pro file for the solver depending on the frequency of the
         # upcoming simulation
-        ff.femmt_print(f"{self.permeability['datasource'] = }")
+        if self.mdb_verbosity == Verbosity.ToConsole:
+            print(f"{self.permeability['datasource'] = }")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
                                                              datasource=self.permeability["datasource"],
@@ -412,7 +418,7 @@ class Core:
                 "loss_approach": self.loss_approach.name,
                 "mu_r_abs": self.mu_r_abs,
                 "phi_mu_deg": self.phi_mu_deg,
-                "sigma": self.sigma,
+                "sigma": [self.sigma.real, self.sigma.imag],
                 "non_linear": self.non_linear,
                 "correct_outer_leg": self.correct_outer_leg,
                 "temperature": self.temperature,
@@ -434,7 +440,7 @@ class Core:
                 "loss_approach": self.loss_approach.name,
                 "mu_r_abs": self.mu_r_abs,
                 "phi_mu_deg": self.phi_mu_deg,
-                "sigma": self.sigma,
+                "sigma": [self.sigma.real, self.sigma.imag],
                 "non_linear": self.non_linear,
                 "correct_outer_leg": self.correct_outer_leg,
                 "temperature": self.temperature,
@@ -1186,3 +1192,61 @@ class WindingWindow:
         self.virtual_winding_windows.append(new_vww)
 
         return new_vww
+
+    def NHorizontalSplit(self, horizontal_split_factors: list[float] = None, vertical_split_factors: list[float] = None):
+        if vertical_split_factors == None:
+            vertical_split_factors = [None] * (len(horizontal_split_factors)+1)
+
+        # Convert horizontal_split_factors to a numpy array
+        horizontal_split_factors = np.array(horizontal_split_factors)
+        if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
+            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
+            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
+            max_pos = max(air_gap_2_position, air_gap_1_position)
+            min_pos = min(air_gap_2_position, air_gap_1_position)
+            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
+            # TODO: should be changed to the core-cond isolation
+            horizontal_splits = min_pos + distance / 2
+            vertical_split = self.max_left_bound + (
+                    self.max_right_bound - self.max_left_bound) * vertical_split_factor
+            split_distance = distance  # here, the distance between the two vwws is set automatically
+        else:
+            horizontal_splits = [self.max_left_bound]
+            horizontal_splits = horizontal_splits + list(self.max_left_bound + (self.max_right_bound-self.max_left_bound) * horizontal_split_factors)
+            horizontal_splits.append(self.max_right_bound)
+            print(f"{horizontal_split_factors = }")
+            print(f"{horizontal_splits = }")
+            print(f"{self.max_left_bound = }")
+
+        # Initialize lists for cells and virtual_winding_windows
+        self.cells = []
+        self.virtual_winding_windows = []
+
+        # Create the remaining pairs of virtual winding windows
+        for i in range(0, len(horizontal_splits)-1):
+            if vertical_split_factors[i] != None:
+                self.cells.append(VirtualWindingWindow(
+                    bot_bound=self.max_bot_bound,
+                    top_bound=self.max_top_bound - (self.max_top_bound - self.max_bot_bound) * vertical_split_factors[i],
+                    left_bound=horizontal_splits[i],
+                    right_bound=horizontal_splits[i+1]))
+                self.cells.append(VirtualWindingWindow(
+                    bot_bound=self.max_top_bound - (self.max_top_bound - self.max_bot_bound) * vertical_split_factors[i],
+                    top_bound=self.max_top_bound,
+                    left_bound=horizontal_splits[i],
+                    right_bound=horizontal_splits[i+1]))
+            else:
+                self.cells.append(VirtualWindingWindow(
+                    bot_bound=self.max_bot_bound,
+                    top_bound=self.max_top_bound,
+                    left_bound=horizontal_splits[i],
+                    right_bound=horizontal_splits[i+1]))
+
+        # Loop through the number of horizontal splits (plus one to account for the last cells)
+        # Append each pair of left and right cells to the virtual_winding_windows list.
+        # This creates a list of all virtual winding windows in the sequence: Left, Right, Left, Right, ...
+        for i in range(0, len(self.cells)):
+            self.virtual_winding_windows.append(self.cells[i])
+        # Instead of returning the separate lists of Left_cells and Right_cells,
+        # we return the combined list of all virtual winding windows.
+        return self.virtual_winding_windows

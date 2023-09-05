@@ -5,17 +5,18 @@ from typing import List
 # 3rd party libraries
 import numpy as np
 from materialdatabase.dtos import MaterialCurve
+from femmt.enumerations import *
 
 @dataclass
 class StoInsulation:
     iso_top_core: float
     iso_bot_core: float
-    iso_left_core: float
+    iso_left_core_min: float
     iso_right_core: float
     iso_primary_to_primary: float
     iso_secondary_to_secondary: float
     iso_primary_to_secondary: float
-    iso_primary_additional: float
+    iso_primary_inner_bobbin: float
 
 @dataclass
 class StoSingleInputConfig:
@@ -36,6 +37,7 @@ class StoSingleInputConfig:
     temperature: float
 
     # sweep parameters: geometry and materials
+    primary_coil_turns_min_max_list: list
     material_list: list
     core_inner_diameter_min_max_list: list
     window_w_min_max_list: list
@@ -43,6 +45,8 @@ class StoSingleInputConfig:
     max_transformer_total_height: float
     primary_litz_wire_list: list
     metal_sheet_thickness_list: list
+    interleaving_scheme_list: list
+    interleaving_type_list: list
 
     # fix parameters: insulations
     insulations: StoInsulation
@@ -50,6 +54,13 @@ class StoSingleInputConfig:
     # misc
     working_directory: str
 
+    # data sources
+    permeability_datasource: MaterialDataSource
+    permeability_datatype: MeasurementDataType
+    permeability_measurement_setup: MeasurementSetup
+    permittivity_datasource: MaterialDataSource
+    permittivity_datatype: MeasurementDataType
+    permittivity_measurement_setup: MeasurementSetup
 
 
 @dataclass

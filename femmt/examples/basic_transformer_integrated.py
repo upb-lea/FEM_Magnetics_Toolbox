@@ -2,7 +2,7 @@ import femmt as fmt
 import os
 
 def basic_example_transformer_intergrated(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    def example_thermal_simulation(show_visual_outputs: bool = True):
+    def example_thermal_simulation(show_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -22,7 +22,7 @@ def basic_example_transformer_intergrated(onelab_folder: str = None, show_visual
             "core": 5,  # ferrite
             "winding": 400,  # copper
             "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42  # polyethylen
+            "insulation": 0.42 if flag_insulation else None # polyethylen
         }
 
         # Here the case size can be determined
@@ -65,7 +65,7 @@ def basic_example_transformer_intergrated(onelab_folder: str = None, show_visual
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=fmt.colors_ba_jonas,
-                               colors_geometry=fmt.colors_geometry_ba_jonas)
+                               colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
 
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -78,13 +78,13 @@ def basic_example_transformer_intergrated(onelab_folder: str = None, show_visual
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                working_directory=working_directory, silent=True, is_gui=is_test)
+                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.011, window_h=0.03)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.02, window_w=0.011, window_h=0.03, core_h = 0.08)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=0.6,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom)
@@ -103,7 +103,7 @@ def basic_example_transformer_intergrated(onelab_folder: str = None, show_visual
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation()
+    insulation = fmt.Insulation(flag_insulation=False)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
@@ -134,6 +134,7 @@ def basic_example_transformer_intergrated(onelab_folder: str = None, show_visual
     # other simulation options:
     # -------------------------
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
 
 
 if __name__ == "__main__":
