@@ -432,6 +432,14 @@ class StackedTransformerOptimization:
                 else:
                     raise ValueError("Invalid objective number.")
 
+            # introduce study in storage, e.g. sqlite or mysql
+            if storage == 'sqlite':
+                # Note: for sqlite operation, there needs to be three slashes '///' even before the path '/home/...'
+                # Means, in total there are four slashes including the path itself '////home/.../database.sqlite3'
+                storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
+            elif storage == 'mysql':
+                storage = "mysql://monty@localhost/mydb",
+
             target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
             # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
