@@ -511,7 +511,8 @@ class StackedTransformerOptimization:
 
             geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
                                           working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
-                                          verbosity=femmt.Verbosity.Silent, simulation_name=f"Single_Case_{loaded_trial._trial_id}")
+                                          verbosity=femmt.Verbosity.Silent, simulation_name=f"Single_Case_{loaded_trial._trial_id - 1}")
+            # Note: The _trial_id starts counting from 1, while the normal cases count from zero. So a correction needs to be made
 
             core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                window_h_top=window_h_top, window_h_bot=window_h_bot)
