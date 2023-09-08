@@ -60,6 +60,8 @@ dab_transformer_config = fmt.StoSingleInputConfig(
 
     # misc
     working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_stacked_transformer_optimization"),
+    fft_filter_value_factor=0.05,
+    mesh_accuracy=0.8,
 
     permeability_datasource=fmt.MaterialDataSource.Measurement,
     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
@@ -69,11 +71,11 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK
 )
 
-study_name = "2023-08-30"
+study_name = "2023-09-01"
 
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
     fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 10,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler(), show_geometries=False)
-    # fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 100, percent_error_difference_l_s12=100)
-    # fmt.StackedTransformerOptimization.FemSimulation.re_simulate_single_result(study_name, dab_transformer_config, 6)
+    #fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 100, percent_error_difference_l_s12=100)
+    #fmt.StackedTransformerOptimization.FemSimulation.re_simulate_single_result(study_name, dab_transformer_config, 6)
