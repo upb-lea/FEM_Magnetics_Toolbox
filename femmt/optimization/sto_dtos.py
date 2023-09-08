@@ -53,6 +53,7 @@ class StoSingleInputConfig:
 
     # misc
     working_directory: str
+    fft_filter_value_factor: float
 
     # data sources
     permeability_datasource: MaterialDataSource
