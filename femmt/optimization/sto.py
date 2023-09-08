@@ -100,7 +100,7 @@ class StackedTransformerOptimization:
         @staticmethod
         def objective(trial, config: StoSingleInputConfig,
                       target_and_fixed_parameters: StoTargetAndFixedParameters,
-                      number_objectives: int, show_geometries: bool = False):
+                      number_objectives: int, show_geometries: bool = False, process_number: int = 1):
             """
             Objective for optuna optimization.
 
@@ -169,8 +169,10 @@ class StackedTransformerOptimization:
                 else:
                     verbosity = femmt.Verbosity.Silent
 
+                working_directory_process = os.path.join(target_and_fixed_parameters.working_directories.fem_working_directory, f"process_{process_number}")
+
                 geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
-                                              working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
+                                              working_directory=working_directory_process,
                                               verbosity=verbosity, simulation_name=f"Case_{trial.number}")
 
                 core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
@@ -244,8 +246,8 @@ class StackedTransformerOptimization:
 
                 # copy result files to result-file folder
                 source_json_file = os.path.join(
-                    target_and_fixed_parameters.working_directories.fem_working_directory, "results",
-                    "log_electro_magnetic.json")
+                    target_and_fixed_parameters.working_directories.fem_working_directory, f'process_{process_number}',
+                    "results", "log_electro_magnetic.json")
                 destination_json_file = os.path.join(
                     target_and_fixed_parameters.working_directories.fem_simulation_results_directory,
                     f'case_{trial.number}.json')
@@ -361,7 +363,7 @@ class StackedTransformerOptimization:
             elif end_time < datetime.datetime.now() + datetime.timedelta(seconds=10):
                 print("start simulation")
                 # in case of no given end_time, the end_time is one second after now.
-                end_time = datetime.datetime.now() + datetime.timedelta(seconds=1)
+                end_time = datetime.datetime.now() + datetime.timedelta(seconds=0.001)
             else:
                 pass
 
@@ -383,6 +385,98 @@ class StackedTransformerOptimization:
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
+
+        @staticmethod
+        def proceed_multi_core_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
+                                end_time: datetime.datetime = datetime.datetime.now(),
+                                number_objectives: int = None,
+                                storage: str = "mysql://monty@localhost/mydb",
+                                sampler=optuna.samplers.NSGAIISampler(),
+                                show_geometries: bool = False,
+                                process_number: int = 1,
+                                ) -> None:
+            """
+            Proceed a study which can be paralleled. It is highly recommended to use a mysql-database (or mariadb).
+
+            :param study_name: Name of the study
+            :type study_name: str
+            :param config: Simulation configuration
+            :type config: ItoSingleInputConfig
+            :param number_trials: Number of trials adding to the existing study
+            :type number_trials: int
+            :param number_objectives: number of objectives, e.g. 3 or 4
+            :type number_objectives: int
+            :param storage: storage database, e.g. 'sqlite' or mysql-storage, e.g. "mysql://monty@localhost/mydb"
+            :type storage: str
+            :param sampler: optuna.samplers.NSGAIISampler() or optuna.samplers.NSGAIIISampler(). Note about the brackets () !!
+            :type sampler: optuna.sampler-object
+            :param show_geometries: True to show the geometry of each suggestion (with valid geometry data)
+            :type show_geometries: bool
+            :param end_time: datetime object with the end time of simulation. If the end_time is not reached, a new simulation with number_objectives is started, e.g. datetime.datetime(2023,9,1,13,00) 2023-09-01, 13.00
+            :type end_time: datetime.datetime
+            :type process_number: number of the process, mandatory to split this up for several processes, because they use the same simulation result folder!
+            :param process_number: int
+            """
+            def objective_directions(number_objectives: int):
+                """
+                Checks if the number of objectives is correct and returns the minimizing targets
+                :param number_objectives: number of objectives
+                :type number_objectives: int
+                :returns: objective targets and optimization function
+                """
+                if number_objectives == 3:
+                    # Wrap the objective inside a lambda and call objective inside it
+                    return ["minimize", "minimize", "minimize"]
+                if number_objectives == 4:
+                    return ["minimize", "minimize", "minimize", 'minimize']
+                else:
+                    raise ValueError("Invalid objective number.")
+
+            target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+
+            # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
+            # .INFO: all messages (default)
+            # .WARNING: fails and warnings
+            # .ERROR: only errors
+            #optuna.logging.set_verbosity(optuna.logging.ERROR)
+
+            directions = objective_directions(number_objectives)
+
+            func = lambda \
+                   trial: femmt.optimization.StackedTransformerOptimization.FemSimulation.objective(
+                   trial, config,
+                   target_and_fixed_parameters, number_objectives, show_geometries, process_number)
+
+            if (end_time + datetime.timedelta(seconds=10)) < datetime.datetime.now():
+                raise ValueError("May wrong set end time?"
+                                 f"\nCurrent time: {datetime.datetime.now()}"
+                                 f"\nEnd time: {end_time}")
+            elif end_time < datetime.datetime.now() + datetime.timedelta(seconds=10):
+                print("start simulation")
+                # in case of no given end_time, the end_time is one second after now.
+                end_time = datetime.datetime.now() + datetime.timedelta(seconds=1)
+            else:
+                pass
+
+
+            while datetime.datetime.now() < end_time:
+                print(f"current time: {datetime.datetime.now()}")
+                print(f"end time: {end_time}")
+                print(f"Performing another {number_trials} trials.")
+
+                study_in_database = optuna.create_study(study_name=study_name,
+                                                       storage=storage,
+                                                       directions=directions,
+                                                       load_if_exists=True, sampler=sampler)
+
+
+
+
+
+                study_in_database.optimize(func, n_trials=number_trials, show_progress_bar=True)
+
+
+
 
         @staticmethod
         def show_study_results(study_name: str, config: StoSingleInputConfig,
@@ -418,7 +512,7 @@ class StackedTransformerOptimization:
 
         @staticmethod
         def show_study_results3(study_name: str, config: StoSingleInputConfig,
-                                error_difference_inductance_sum) -> None:
+                                error_difference_inductance_sum, storage: str = 'sqlite') -> None:
             """
             Show the results of a study.
 
@@ -430,11 +524,18 @@ class StackedTransformerOptimization:
             :type error_difference_inductance_sum: float
 
             """
+            if storage == 'sqlite':
+                storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
+
+
+
+
             study = optuna.create_study(study_name=study_name,
-                                        storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
+                                        storage=storage,
                                         load_if_exists=True)
 
             # Order: total_volume, total_loss, difference_l_h, difference_l_s
+            print(f"Loaded study {study_name} contains {len(study.trials)} trials.")
 
             print(f"{error_difference_inductance_sum = }")
 

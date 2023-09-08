@@ -64,7 +64,20 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
         fem_thermal_filtered_simulation_results_directory = os.path.join(working_directory, "03_fem_thermal_simulation_results_filtered"),
     )
 
+    process_1 = os.path.join(working_directories.fem_working_directory, "process_1")
+    process_2 = os.path.join(working_directories.fem_working_directory, "process_2")
+    process_3 = os.path.join(working_directories.fem_working_directory, "process_3")
+    process_4 = os.path.join(working_directories.fem_working_directory, "process_4")
+    process_5 = os.path.join(working_directories.fem_working_directory, "process_5")
+    process_6 = os.path.join(working_directories.fem_working_directory, "process_6")
+
     os.makedirs(working_directories.fem_working_directory, exist_ok=True)
+    os.makedirs(process_1, exist_ok=True)
+    os.makedirs(process_2, exist_ok=True)
+    os.makedirs(process_3, exist_ok=True)
+    os.makedirs(process_4, exist_ok=True)
+    os.makedirs(process_5, exist_ok=True)
+    os.makedirs(process_6, exist_ok=True)
     os.makedirs(working_directories.fem_simulation_results_directory, exist_ok=True)
     os.makedirs(working_directories.fem_simulation_filtered_results_directory, exist_ok=True)
     os.makedirs(working_directories.reluctance_model_results_directory, exist_ok=True)
