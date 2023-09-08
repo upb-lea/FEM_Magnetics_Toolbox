@@ -227,7 +227,7 @@ class StackedTransformerOptimization:
                     winding_temperature=config.temperature)
 
                 geo.set_insulation(insulation)
-                geo.set_winding_windows([coil_window, transformer_window])
+                geo.set_winding_windows([coil_window, transformer_window], config.mesh_accuracy)
 
                 geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=show_geometries)
 
@@ -443,10 +443,14 @@ class StackedTransformerOptimization:
             fig.show()
 
         @staticmethod
-        def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number_trial: int):
+        def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number_trial: int,
+                                      fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
             """
             Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
             number_trial design inside the study 'study_name'.
+
+            Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
+            The values are given separate. In case of re-simulation, you may want to have more accurate results.
 
             :param study_name: name of the study
             :type study_name: str
@@ -454,6 +458,10 @@ class StackedTransformerOptimization:
             :type config: StoSingleInputConfig
             :param number_trial: number of trial to simulate
             :type number_trial: int
+            :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+            :type fft_filter_value_factor: float
+            :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+            :type mesh_accuracy: float
             """
             target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
@@ -569,7 +577,7 @@ class StackedTransformerOptimization:
                 winding_temperature=config.temperature)
 
             geo.set_insulation(insulation)
-            geo.set_winding_windows([coil_window, transformer_window])
+            geo.set_winding_windows([coil_window, transformer_window], mesh_accuracy=mesh_accuracy)
 
             geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
@@ -583,7 +591,7 @@ class StackedTransformerOptimization:
                                        target_and_fixed_parameters.current_extracted_1_vec],
                                       [target_and_fixed_parameters.time_extracted_vec,
                                        target_and_fixed_parameters.current_extracted_2_vec]],
-                fft_filter_value_factor=config.fft_filter_value_factor)
+                fft_filter_value_factor=fft_filter_value_factor)
 
             geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
                                                  number_primary_coil_turns=primary_coil_turns)

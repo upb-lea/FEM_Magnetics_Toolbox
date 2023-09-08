@@ -61,6 +61,7 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     # misc
     working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_stacked_transformer_optimization"),
     fft_filter_value_factor=0.05,
+    mesh_accuracy=0.8,
 
     permeability_datasource=fmt.MaterialDataSource.Measurement,
     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,

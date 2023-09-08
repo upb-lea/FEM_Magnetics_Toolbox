@@ -406,7 +406,7 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_winding_windows(self, winding_windows: list[WindingWindow]):
+    def set_winding_windows(self, winding_windows: list[WindingWindow], mesh_accuracy: float = 0.5):
         """
         Adds the winding windows to the model. Creates the windings list, which contains the conductors
         from the virtual winding windows but sorted by the winding_number (ascending).
@@ -414,6 +414,8 @@ class MagneticComponent:
 
         :param winding_windows: List of WindingWindow objects
         :type winding_windows: list[WindingWindow]
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :type mesh_accuracy: float
         """
         self.winding_windows = winding_windows
         windings = []
@@ -458,7 +460,7 @@ class MagneticComponent:
                         vww.turns.append(0)
 
         # Default values for global_accuracy and padding
-        self.mesh_data = MeshData(0.5, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
+        self.mesh_data = MeshData(mesh_accuracy, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
 
     def set_core(self, core: Core):
         """Adds the core to the model

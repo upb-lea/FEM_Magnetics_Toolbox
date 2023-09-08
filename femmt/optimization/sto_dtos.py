@@ -54,6 +54,7 @@ class StoSingleInputConfig:
     # misc
     working_directory: str
     fft_filter_value_factor: float
+    mesh_accuracy: float
 
     # data sources
     permeability_datasource: MaterialDataSource
