@@ -381,7 +381,7 @@ class StackedTransformerOptimization:
                 study_in_memory.add_trials(study_in_storage.trials)
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
-                study_in_storage.add_trials(study_in_memory.trials[(-number_trials - 1):-1])
+                study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
 
         @staticmethod
         def show_study_results(study_name: str, config: StoSingleInputConfig,
