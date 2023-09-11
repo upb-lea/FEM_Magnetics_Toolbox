@@ -369,8 +369,6 @@ class StackedTransformerOptimization:
 
 
             while datetime.datetime.now() < end_time:
-                print(f"current time: {datetime.datetime.now()}")
-                print(f"end time: {end_time}")
                 print(f"Performing another {number_trials} trials.")
 
                 study_in_storage = optuna.create_study(study_name=study_name,
@@ -385,6 +383,9 @@ class StackedTransformerOptimization:
                 study_in_memory.optimize(func, n_trials=number_trials, show_progress_bar=True)
 
                 study_in_storage.add_trials(study_in_memory.trials[-number_trials:])
+                print(f"Finished {number_trials} trials.")
+                print(f"current time: {datetime.datetime.now()}")
+                print(f"end time: {end_time}")
 
         @staticmethod
         def proceed_multi_core_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
