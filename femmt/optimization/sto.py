@@ -539,9 +539,8 @@ class StackedTransformerOptimization:
 
 
 
-            study = optuna.create_study(study_name=study_name,
-                                        storage=storage,
-                                        load_if_exists=True)
+            study = optuna.load_study(study_name=study_name,
+                                        storage=storage)
 
             # Order: total_volume, total_loss, difference_l_h, difference_l_s
             print(f"Loaded study {study_name} contains {len(study.trials)} trials.")
