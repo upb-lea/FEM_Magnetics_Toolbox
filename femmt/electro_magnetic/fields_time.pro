@@ -44,6 +44,7 @@ PostOperation Map_local UsingPost MagDyn_a {
   //Print[ Mag_b_imag,  OnElementsOf Domain,  File StrCat[DirResFields, "Mag_b_imag", ExtGmsh],  LastTimeStepOnly] ;
   If(Flag_show_standard_fields)
      Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh]];
+     //Print[ Magb,  OnElementsOf Domain, Name "Magnitude B-Field / T" , File StrCat[DirResFields, "Magb", ExtGmsh], LastTimeStepOnly];  // for  compute command -v2
   EndIf
   //  , StoreInVariable $Magb maybe use this for Core Loss
 
@@ -61,24 +62,26 @@ PostOperation Map_local UsingPost MagDyn_a {
 
   // Ohmic Loss
   If(Flag_show_standard_fields)
-    //Print[ j2F, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current losses / W", File StrCat[DirResFields, "j2F", ExtGmsh], LastTimeStepOnly ] ;
-    Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh], LastTimeStepOnly ] ;
+    // to show the losses in every step
+    Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh]] ;
+    // it can be like this
+    //Print[ j2F_density, OnElementsOf Region[{DomainC}], Name "Solid wire and core eddy current loss density / W/m^3", File StrCat[DirResFields, "j2F_density", ExtGmsh, LastTimeStepOnly ] ;
   EndIf
   If(Flag_show_standard_fields)
     //Print[ j2H, OnElementsOf DomainS, Name "Litz wire losses / W" , File StrCat[DirResFields,"jH",ExtGmsh] ] ;
-    Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"jH_density",ExtGmsh] ] ;
+    Print[ j2H_density, OnElementsOf DomainS, Name "Litz wire loss density / W/m^3", File StrCat[DirResFields,"j2H_density",ExtGmsh]] ;
   EndIf
   //Print[ j2Hprox,   OnElementsOf DomainS, File StrCat[DirResFields,"jHprox",ExtGmsh] ] ;
   //Print[ j2Hskin,   OnElementsOf DomainS, File StrCat[DirResFields,"jHskin",ExtGmsh] ] ;
 
 
   // Settings
-  Echo[ Str["View[PostProcessing.NbViews-1].Light=0;
-             View[PostProcessing.NbViews-1].LineWidth = 2;
-             View[PostProcessing.NbViews-1].RangeType=3;
-             View[PostProcessing.NbViews-1].IntervalsType=1;
-             View[PostProcessing.NbViews-1].NbIso = 25;"],
-           File OptionPos];
+  Echo[Str[ "For k In {0:PostProcessing.NbViews-1}",
+      "View[k].RangeType = 3;" ,// per timestep
+      "View[k].NbIso = 25;",
+      "View[k].IntervalsType = 3;",
+      "EndFor"// iso values
+    ], File "option.pos"];
   // RangeType = 1; // Value scale range type (1=default, 2=custom, 3=per time step)
   // IntervalsType = 2; // Type of interval display (1=iso, 2=continuous, 3=discrete, 4=numeric)
 

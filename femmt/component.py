@@ -38,7 +38,7 @@ class MagneticComponent:
 
     onelab_folder_path = None
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
+    def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
                  silent: bool = False, is_gui: bool = False, simulation_name: Optional[str] = None):
         """
         :param component_type: Available options:
@@ -79,6 +79,7 @@ class MagneticComponent:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Component Geometry
         self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" (or "three-phase-transformer")
+        self.simulation_type = simulation_type
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
@@ -428,7 +429,7 @@ class MagneticComponent:
                         vww.turns.append(0)
 
         # Default values for global_accuracy and padding
-        self.mesh_data = MeshData(0.5, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
+        self.mesh_data = MeshData(0.9, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
 
     def set_core(self, core: Core):
         """Adds the core to the model
@@ -781,18 +782,37 @@ class MagneticComponent:
         gmsh.clear()
 
         # get model file names with correct path
-        solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
+        if self.simulation_type == SimulationType.FreqDomain:
+            solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
+        else:
+            solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_time.pro")
 
         os.chdir(self.file_data.working_directory)
+        if self.simulation_type == SimulationType.FreqDomain:
 
-        if ff.silent:
-            verbose = "-verbose 1"
-        else:
-            verbose = "-verbose 5"
+            if ff.silent:
+                verbose = "-verbose 1"
+            else:
+                verbose = "-verbose 5"
+        if self.simulation_type == SimulationType.TimeDomain:
+            if ff.silent:
+                verbose = "-verbose 1"
+            else:
+                verbose = "-verbose 5"
+
 
         # Run simulations as sub clients (non-blocking??)
-        getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
-        self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose)
+        if self.simulation_type == SimulationType.FreqDomain:
+            getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
+            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2" + verbose)
+        if self.simulation_type == SimulationType.TimeDomain:
+            getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
+            # the two commands work but some changes should be done in fields_time.pro
+            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -pos Map_local -pos Get_global  " + verbose)
+            #self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose) #freeing solutions
+
+
+
 
     def pre_simulation(self):
         """
@@ -1368,6 +1388,16 @@ class MagneticComponent:
         if self.component_type == ComponentType.IntegratedTransformer:
             text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
 
+        if self.simulation_type == SimulationType.FreqDomain:
+            text_file.write(f"Flag_Freq_Domain = 1;\n")
+            text_file.write(f"Flag_Time_Domain = 0;\n")
+            text_file.write(f"Flag_Static = 0;\n")
+
+        if self.simulation_type == SimulationType.TimeDomain:
+            text_file.write(f"Flag_Time_Domain = 1;\n")
+            text_file.write(f"Flag_Freq_Domain = 0;\n")
+            text_file.write(f"Flag_Static = 0;\n")
+
 
         # Frequency
         text_file.write("Freq = %s;\n" % self.frequency)
@@ -1659,7 +1689,8 @@ class MagneticComponent:
 
             # Core losses TODO: Choose between Steinmetz or complex core losses
             sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run]
-            sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
+            if self.simulation_type == SimulationType.FreqDomain:
+                sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
 
             # Sum losses of all windings of one single run
             sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(len(self.windings)))
@@ -1699,11 +1730,12 @@ class MagneticComponent:
         log_dict["total_losses"]["eddy_core"] = sum(log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
         # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frequency is at [0]
         # => just an approximation for excitation sweeps!
-        log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
+        if self.simulation_type == SimulationType.FreqDomain:
+            log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
 
         # Total losses of inductive component according to single or sweep simulation
-        log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
-        log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"]["all_windings"]
+            log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
+            log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"]["all_windings"]
 
         # ---- Introduce calculations for writing the misc-dict into the result-log ----
         wire_type_list = []
@@ -1759,10 +1791,11 @@ class MagneticComponent:
         - For example current density, ohmic losses or the magnetic field density can be visualized
         """
         # ---------------------------------------- Visualization in gmsh ---------------------------------------
-        ff.femmt_print(f"\n---\n"
-              f"Visualize fields in GMSH front end:\n")
 
-        # gmsh.initialize()
+        ff.femmt_print(f"\n---\n"
+            f"Visualize fields in GMSH front end:\n")
+
+        #gmsh.initialize()
         epsilon = 1e-9
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1780,8 +1813,8 @@ class MagneticComponent:
 
         # Mesh
         gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
+        #if self.simulation_type == SimulationType.FreqDomain:
         view = 0
-
         if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
             # Ohmic losses (weighted effective value of current density)
             gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
@@ -1799,7 +1832,7 @@ class MagneticComponent:
 
         if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
             # Ohmic losses (weighted effective value of current density)
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "jH_density.pos"))
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
             gmsh.option.setNumber(f"View[{view}].RangeType", 2)
             gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
@@ -1823,6 +1856,148 @@ class MagneticComponent:
         gmsh.option.setNumber(f"View[{view}].NbIso", 40)
         view += 1
 
+        # if self.simulation_type == SimulationType.TimeDomain:
+        #     # merge view files
+        #     gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2F_density.pos'))
+        #     gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2H_density.pos'))
+        #     gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'Magb.pos'))
+        #
+        #     # We then set some general options:
+        #     gmsh.option.setNumber("General.Trackball", 0)
+        #     gmsh.option.setNumber("General.RotationX", 0)
+        #     gmsh.option.setNumber("General.RotationY", 0)
+        #     gmsh.option.setNumber("General.RotationZ", 0)
+        #
+        #     white = (255, 255, 255)
+        #     black = (0, 0, 0)
+        #
+        #     # Color options are special
+        #     # Setting a color option of "X.Y" actually sets the option "X.Color.Y"
+        #     # Sets "General.Color.Background", etc.
+        #     gmsh.option.setColor("General.Background", white[0], white[1], white[2])
+        #     gmsh.option.setColor("General.Foreground", black[0], black[1], black[2])
+        #     gmsh.option.setColor("General.Text", black[0], black[1], black[2])
+        #
+        #     gmsh.option.setNumber("General.Orthographic", 0)
+        #     gmsh.option.setNumber("General.Axes", 0)
+        #     gmsh.option.setNumber("General.SmallAxes", 0)
+        #     # functions.
+        #     v = gmsh.view.getTags()
+        #     # We set some options for each post-processing view:
+        #
+        #     if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+        #         # Ohmic losses (weighted effective value of current density)
+        #         #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
+        #         gmsh.option.setNumber(f"View[{v[0]}].ScaleType", 2)
+        #         gmsh.option.setNumber(f"View[{v[0]}].RangeType", 2)
+        #         gmsh.option.setNumber(f"View[{v[0]}].SaturateValues", 1)
+        #         gmsh.option.setNumber(f"View[{v[0]}].CustomMin", gmsh.option.getNumber(f"View[{v[0]}].Min") + epsilon)
+        #         gmsh.option.setNumber(f"View[{v[0]}].CustomMax", gmsh.option.getNumber(f"View[{v[0]}].Max"))
+        #         gmsh.option.setNumber(f"View[{v[0]}].ColormapNumber", 1)
+        #         gmsh.option.setNumber(f"View[{v[0]}].IntervalsType", 2)
+        #         gmsh.option.setNumber(f"View[{v[0]}].NbIso", 40)
+        #         gmsh.option.setNumber(f"View[{v[0]}].ShowTime", 1)
+        #         # gmsh.view.option.setString(v[0], "Name", "j2F Losses")
+        #         #
+        #         # gmsh.view.option.setNumber(v[0], "Axes", 1)
+        #         # gmsh.view.option.setNumber(v[0], "IntervalsType", 2)
+        #         # gmsh.view.option.setNumber(v[0], "Type", 2)
+        #         # gmsh.view.option.setNumber(v[0], "AutoPosition", 0)
+        #         # gmsh.view.option.setNumber(v[0], "PositionX", 85)
+        #         # gmsh.view.option.setNumber(v[0], "PositionY", 50)
+        #         # gmsh.view.option.setNumber(v[0], "Width", 200)
+        #         # gmsh.view.option.setNumber(v[0], "Height", 130)
+        #
+        #         #ff.femmt_print(gmsh.option.getNumber(f"View[{v[0]}].Max"))
+        #
+        #
+        #         if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
+        #             # Ohmic losses (weighted effective value of current density)
+        #             #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
+        #             gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
+        #             gmsh.option.setNumber(f"View[{v[1]}].RangeType", 2)
+        #             gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
+        #             gmsh.option.setNumber(f"View[{v[1]}].CustomMin",
+        #                                   gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
+        #             gmsh.option.setNumber(f"View[{v[1]}].CustomMax", gmsh.option.getNumber(f"View[{v[1]}].Max"))
+        #             gmsh.option.setNumber(f"View[{v[1]}].ColormapNumber", 1)
+        #             gmsh.option.setNumber(f"View[{v[1]}].IntervalsType", 2)
+        #             gmsh.option.setNumber(f"View[{v[1]}].NbIso", 40)
+        #             gmsh.option.setNumber(f"View[{v[1]}].ShowTime", 1)
+        #             #ff.femmt_print(gmsh.option.getNumber(f"View[{v[1]}].Max"))
+        #
+        #
+        #         # Magnetic flux density
+        #         #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+        #         gmsh.option.setNumber(f"View[{v[2]}].ScaleType", 1)
+        #         gmsh.option.setNumber(f"View[{v[2]}].RangeType", 1)
+        #         gmsh.option.setNumber(f"View[{v[2]}].CustomMin", gmsh.option.getNumber(f"View[{v[2]}].Min") + epsilon)
+        #         gmsh.option.setNumber(f"View[{v[2]}].CustomMax", gmsh.option.getNumber(f"View[{v[2]}].Max"))
+        #         gmsh.option.setNumber(f"View[{v[2]}].ColormapNumber", 1)
+        #         gmsh.option.setNumber(f"View[{v[2]}].IntervalsType", 2)
+        #         gmsh.option.setNumber(f"View[{v[2]}].ShowTime", 1)
+        #         gmsh.option.setNumber(f"View[{v[2]}].NbIso", 40)
+        #
+        #         # Initialize timestep
+        #         t = 0
+        #         #max_timesteps = 200  # set time step
+        #         max_available_steps = int(gmsh.view.option.getNumber(v[0], "NbTimeStep")) -1
+        #         max_timesteps = min(200,max_available_steps)  # take the minimum of your desired max (200) and the available max
+        #
+        #         for num in range(1, max_timesteps):
+        #             # Set the current timestep for all views
+        #             for vv in v:
+        #                 gmsh.view.option.setNumber(vv, "TimeStep", t)
+        #
+        #             current_step = gmsh.view.option.getNumber(v[0], "TimeStep")
+        #             max_step = max_available_steps
+        #             if current_step < max_step:
+        #                 t = t + 1
+        #             else:
+        #                 t = 0
+
+                    # frames = 50
+                    # for num2 in range(frames):
+                    #     # Incrementally rotate the scene
+                    #     gmsh.option.setNumber("General.RotationX",
+                    #                           gmsh.option.getNumber("General.RotationX") + 10)
+                    #     gmsh.option.setNumber("General.RotationY",
+                    #                           gmsh.option.getNumber("General.RotationX") / 3)
+                    #     gmsh.option.setNumber("General.RotationZ",
+                    #                           gmsh.option.getNumber("General.RotationZ") + 0.1)
+                    #
+                    #     # Draw the scene
+                    #     gmsh.graphics.draw()
+
+                    # gmsh.view.option.setNumber(v[0], "RaiseZ",
+                    #                            gmsh.view.option.getNumber(v[0], "RaiseZ") +
+                    #                            0.01 / gmsh.view.option.getNumber(v[0], "Max") * t)
+                    # #t += 1  # Increment timestep
+                    # if num == 5:
+                    #     # Resize the graphics when num == 3, to create 640x480 frames
+                    #     gmsh.option.setNumber("General.GraphicsWidth",
+                    #                           gmsh.option.getNumber("General.MenuWidth") + 640)
+                    #     gmsh.option.setNumber("General.GraphicsHeight", 480)
+                    # frames = 50
+                    # for num2 in range(frames):
+                    #     # Incrementally rotate the scene
+                    #     gmsh.option.setNumber("General.RotationX",
+                    #                           gmsh.option.getNumber("General.RotationX") + 10)
+                    #     gmsh.option.setNumber("General.RotationY",
+                    #                           gmsh.option.getNumber("General.RotationX") / 3)
+                    #     gmsh.option.setNumber("General.RotationZ",
+                    #                           gmsh.option.getNumber("General.RotationZ") + 0.1)
+                    #
+                    #     # Draw the scene
+                    #     gmsh.graphics.draw()
+
+
+
+
+
+
+
+
         """
         # Vector Potential
         gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "raz.pos"))
@@ -1837,7 +2012,7 @@ class MagneticComponent:
         """
 
         gmsh.fltk.run()
-        # gmsh.finalize()
+        #gmsh.finalize()
 
     def get_loss_data(self, last_n_values: int, loss_type: str = 'litz_loss'):
         """
@@ -1879,13 +2054,18 @@ class MagneticComponent:
 
         with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
             lines = fd.readlines()[-last_n:]
+            if self.simulation_type == SimulationType.FreqDomain:
 
-            if part == "real":
+                if part == "real":
+                    result = [float(line.split(sep=' ')[1 + 2*position + 1]) for n, line in enumerate(lines)]
+                if part == "imaginary":
+                    result = [float(line.split(sep=' ')[2 + 2*position + 1]) for n, line in enumerate(lines)]
+
+
+
+            elif self.simulation_type == SimulationType.TimeDomain:
                 result = [float(line.split(sep=' ')[1 + 2*position + 1]) for n, line in enumerate(lines)]
-            if part == "imaginary":
-                result = [float(line.split(sep=' ')[2 + 2*position + 1]) for n, line in enumerate(lines)]
-
-            return result
+        return result
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Litz Approximation [internal methods]
