@@ -77,6 +77,8 @@ class MagneticComponent:
         self.verbosity = verbosity
         self.logger = logging.getLogger("FEMMTLogger")
         self.logger.setLevel(logging.INFO)
+        if not gmsh.isInitialized():
+            gmsh.initialize()
 
         if not verbosity == Verbosity.ToConsole:
             gmsh.option.setNumber("General.Terminal", 0)
