@@ -169,11 +169,18 @@ class StackedTransformerOptimization:
                 else:
                     verbosity = femmt.Verbosity.Silent
 
-                working_directory_process = os.path.join(target_and_fixed_parameters.working_directories.fem_working_directory, f"process_{process_number}")
+                working_directory_single_process = os.path.join(target_and_fixed_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
                 geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
-                                              working_directory=working_directory_process,
+                                              working_directory=working_directory_single_process,
                                               verbosity=verbosity, simulation_name=f"Case_{trial.number}")
+
+                electro_magnetic_directory_single_process = os.path.join(working_directory_single_process, "electro_magnetic")
+                strands_coefficients_folder_single_process = os.path.join(electro_magnetic_directory_single_process, "Strands_Coefficients")
+
+                # Update directories for each model
+                geo.file_data.update_paths(working_directory_single_process, electro_magnetic_directory_single_process,
+                                             strands_coefficients_folder_single_process)
 
                 core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                    window_h_top=window_h_top, window_h_bot=window_h_bot)
