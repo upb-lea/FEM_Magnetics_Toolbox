@@ -102,7 +102,7 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation(flag_insulation=True)
+    insulation = fmt.Insulation(flag_insulation=False)
     # insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)  # TODO: needed for upper and lower winding window?
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)  # [bot, top, left, right]
     insulation.add_winding_insulations([[0.0002, 0.001],
@@ -136,7 +136,7 @@ def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_out
     # -------------------------
     # geo.get_inductances(I0=10, op_frequency=100000, skin_mesh_factor=0.5)
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
 
 if __name__ == "__main__":
     basic_example_transformer_stacked(show_visual_outputs=True)

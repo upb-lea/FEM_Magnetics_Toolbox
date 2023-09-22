@@ -258,7 +258,8 @@ class MagneticComponent:
 
         # Core area -> Is needed to estimate the heat flux
         # Power density for volumes W/m^3
-        core_area = [self.calculate_core_volume()] # TODO Core area should be calculated for every core_part as needed in Thermal
+        #core_area = self.calculate_core_volume()
+        core_area = self.calculate_core_parts_volume()
 
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
@@ -602,8 +603,8 @@ class MagneticComponent:
             core_height = self.core.window_h + self.core.core_inner_diameter / 2
             winding_height = self.core.window_h
         elif self.core.core_type == CoreType.Stacked:
-            core_height = self.core.window_h_bot + self.core.window_h_top + self.core.core_inner_diameter * 3 / 4  # TODO: could also be done arbitrarily
-            winding_height = self.core.window_h_bot + self.core.window_h_top  # TODO: could also be done arbitrarily
+             core_height = self.core.window_h_bot + self.core.window_h_top + self.core.core_inner_diameter * 3 / 4  # TODO: could also be done arbitrarily
+             winding_height = self.core.window_h_bot + self.core.window_h_top  # TODO: could also be done arbitrarily
 
         core_width = self.core.r_outer
 
@@ -611,13 +612,14 @@ class MagneticComponent:
 
         air_gap_volume = 0
         inner_leg_width = self.core.r_inner - winding_width
-        for leg_position, position_value, height in self.air_gaps.midpoints:
-            width = 0
+        if self.core.core_type == CoreType.Single:
+            for leg_position, position_value, height in self.air_gaps.midpoints:
+                width = 0
 
             if leg_position == AirGapLegPosition.LeftLeg.value:
-                # left leg
-                # TODO this is wrong since the air gap is not centered on the y axis
-                width = core_width - self.core.r_inner
+                    # left leg
+                    # TODO this is wrong since the air gap is not centered on the y axis
+                    width = core_width - self.core.r_inner
             elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
@@ -631,7 +633,85 @@ class MagneticComponent:
             air_gap_volume += np.pi * width ** 2 * height
 
         return np.pi * (core_width ** 2 * core_height - (
-                    inner_leg_width + winding_width) ** 2 * winding_height + inner_leg_width ** 2 * winding_height) - air_gap_volume
+                inner_leg_width + winding_width) ** 2 * winding_height + inner_leg_width ** 2 * winding_height) - air_gap_volume
+
+    def calculate_core_parts_volume(self) -> list:
+
+        """Calculates the volume of the core excluding air.
+
+                :return: Volume of the core.
+                :rtype: list
+                """
+
+        heights = [point[2] for point in self.air_gaps.midpoints]
+
+        if self.core.core_type == CoreType.Single:
+            return [self.calculate_core_volume()]
+
+        elif self.core.core_type == CoreType.Stacked:
+
+            core_part_volume = []
+            # core_part_1
+            # core_part_1 is divided into 3 subparts
+            # subpart_1
+            subpart1_1_height = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4 - heights[0] / 2
+            subpart1_1_width = self.core.core_inner_diameter / 2
+            subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
+
+            # subpart_2
+            subpart1_2_height = self.core.core_inner_diameter / 4
+            subpart1_2_width = self.core.window_w
+            subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
+
+            # subpart 3
+            subpart1_3_height = self.core.window_h_bot + self.core.core_inner_diameter / 4
+            subpart1_3_width = self.core.r_outer - self.core.r_inner
+            subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height
+
+            core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume
+            core_part_volume.append(core_part_1_volume)
+
+            # core_part_2
+            core_part_2_height = self.core.window_h_bot / 2 - heights[0] / 2
+            core_part_2_width = self.core.core_inner_diameter / 2
+            core_part_2_volume = np.pi * core_part_2_width ** 2 * core_part_2_height
+            core_part_volume.append(core_part_2_volume)
+
+            # core_part_3
+            core_part_3_height = self.core.core_inner_diameter / 4
+            core_part_3_width = self.core.r_inner
+            core_part_3_volume = np.pi * core_part_3_width ** 2 * core_part_3_height
+            core_part_volume.append(core_part_3_volume)
+
+            # core_part_4
+            core_part_4_height = self.core.core_inner_diameter / 4
+            core_part_4_width = self.core.r_outer - self.core.r_inner
+            core_part_4_volume = np.pi * core_part_4_width ** 2 * core_part_4_height
+            core_part_volume.append(core_part_4_volume)
+
+            # core_part_5
+            # core_part_5 is divided into 3 parts
+            # subpart_1
+            subpart5_1_height = self.core.window_h_top + self.core.core_inner_diameter / 4 - heights[1] / 2
+            subpart5_1_width = self.core.r_inner - self.core.window_w
+            subpart5_1_volume = np.pi * subpart5_1_width ** 2 * subpart5_1_height
+
+            # subpart_2
+            subpart5_2_height = self.core.core_inner_diameter / 4
+            subpart5_2_width = self.core.window_w
+            subpart5_2_volume = np.pi * subpart5_2_width ** 2 * subpart5_2_height
+
+            # subpart 3
+            subpart5_3_height = self.core.window_h_top + self.core.core_inner_diameter / 4
+            subpart5_3_width = self.core.r_outer - self.core.r_inner
+            subpart5_3_volume = np.pi * subpart5_3_width ** 2 * subpart5_3_height
+
+            core_part_5_volume = subpart5_1_volume + subpart5_2_volume + subpart5_3_volume
+            core_part_volume.append(core_part_5_volume)
+
+            return core_part_volume
+
+
 
     def calculate_core_weight(self) -> float:
         """
@@ -645,7 +725,10 @@ class MagneticComponent:
         else:
             volumetric_mass_density = self.core.material_database.get_material_attribute(
                 material_name=self.core.material, attribute="volumetric_mass_density")
+            #core_parts_volumes = self.calculate_core_parts_volume()
+            #core_parts_weights = [v * volumetric_mass_density for v in core_parts_volumes]
         return self.calculate_core_volume() * volumetric_mass_density
+        #return core_parts_weights
 
     def get_wire_distances(self) -> List[List[float]]:
         """Helper function which returns the distance (radius) of each conductor to the y-axis
@@ -2174,7 +2257,7 @@ class MagneticComponent:
 
         # ---- Miscellaneous ----
         log_dict["misc"] = {
-            "core_2daxi_volume": self.calculate_core_volume(),
+            "core_2daxi_volume": self.calculate_core_volume(), #self.calculate_core_volume(),
             "core_2daxi_total_volume": self.calculate_core_volume_with_air(),
             "core_2daxi_weight": core_weight,
             "wire_lengths": self.calculate_wire_lengths(),
