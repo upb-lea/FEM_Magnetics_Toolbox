@@ -1131,6 +1131,7 @@ class MagneticComponent:
 
         # calculate hysteresis losses
         # use a single simulation
+        self.generate_load_litz_approximation_parameters()
         self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
