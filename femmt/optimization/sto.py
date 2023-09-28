@@ -555,12 +555,15 @@ class StackedTransformerOptimization:
             print(f"{error_difference_inductance_sum = }")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if error_difference_inductance_sum > t.values[2] else None, t.values[1] if error_difference_inductance_sum > t.values[2] else None), target_names=["volume", "loss"])
+            #fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume", "loss"])
+
             # fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[2] if True else None, t.values[1] if True else None), target_names=["inductance_error_normalized", "loss"])
             fig.show()
 
         @staticmethod
         def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number_trial: int,
-                                      fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
+                                      fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
+                                      storage: str = "sqlite"):
             """
             Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
             number_trial design inside the study 'study_name'.
@@ -581,8 +584,12 @@ class StackedTransformerOptimization:
             """
             target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
+            if storage == "sqlite":
+                storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
+
+
             loaded_study = optuna.create_study(study_name=study_name,
-                                               storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
+                                               storage=storage,
                                                load_if_exists=True)
 
             loaded_trial = loaded_study.trials[number_trial]
