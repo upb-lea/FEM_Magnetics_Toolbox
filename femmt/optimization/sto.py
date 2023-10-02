@@ -501,6 +501,8 @@ class StackedTransformerOptimization:
             """
             Show the results of a study.
 
+            A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
+
             :param study_name: Name of the study
             :type study_name: str
             :param config: Integrated transformer configuration file
@@ -524,6 +526,8 @@ class StackedTransformerOptimization:
             print(f"{l_s_absolute_error = }")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None, t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume", "loss"])
+            fig.write_html(
+                f"{config.working_directory}/{study_name}_error_lh_{l_h_absolute_error}_error_ls_{l_s_absolute_error}_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
 
         @staticmethod
@@ -531,6 +535,8 @@ class StackedTransformerOptimization:
                                 error_difference_inductance_sum, storage: str = 'sqlite') -> None:
             """
             Show the results of a study.
+
+            A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
 
             :param study_name: Name of the study
             :type study_name: str
@@ -555,9 +561,8 @@ class StackedTransformerOptimization:
             print(f"{error_difference_inductance_sum = }")
 
             fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if error_difference_inductance_sum > t.values[2] else None, t.values[1] if error_difference_inductance_sum > t.values[2] else None), target_names=["volume", "loss"])
-            #fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0], t.values[1]), target_names=["volume", "loss"])
 
-            # fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[2] if True else None, t.values[1] if True else None), target_names=["inductance_error_normalized", "loss"])
+            fig.write_html(f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum}_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
 
         @staticmethod
