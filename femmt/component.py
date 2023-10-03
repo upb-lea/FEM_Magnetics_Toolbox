@@ -408,14 +408,14 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_winding_windows(self, winding_windows: list[WindingWindow], mesh_accuracy: float = 0.5):
+    def set_winding_windows(self, winding_windows: List[WindingWindow], mesh_accuracy: float = 0.5):
         """
         Adds the winding windows to the model. Creates the windings list, which contains the conductors
         from the virtual winding windows but sorted by the winding_number (ascending).
         Sets empty lists for excitation parameters
 
         :param winding_windows: List of WindingWindow objects
-        :type winding_windows: list[WindingWindow]
+        :type winding_windows: List[WindingWindow]
         :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         """
@@ -2225,6 +2225,7 @@ class MagneticComponent:
             res_path=self.file_data.e_m_values_folder_path
         if res_type=="circuit":
             res_path=self.file_data.e_m_circuit_folder_path
+
 
 
         with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
