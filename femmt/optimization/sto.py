@@ -697,10 +697,10 @@ class StackedTransformerOptimization:
                 bobbin_coil_left=config.insulations.iso_primary_inner_bobbin,
                 bobbin_coil_right=config.insulations.iso_right_core,
                 center_foil_additional_bobbin=0e-3,
-                interleaving_scheme=femmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
+                interleaving_scheme=InterleavingSchemesFoilLitz(loaded_trial_params['interleaving_scheme']),
 
                 # misc
-                interleaving_type=femmt.CenterTappedInterleavingType.TypeC,
+                interleaving_type=CenterTappedInterleavingType(loaded_trial_params['interleaving_type']),
                 primary_coil_turns=primary_coil_turns,
                 winding_temperature=config.temperature)
 
