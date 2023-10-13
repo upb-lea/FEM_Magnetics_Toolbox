@@ -101,7 +101,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulation
-    insulation = fmt.Insulation(flag_insulation=False)
+    insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.001],
                                         [0.001, 0.0002]])
@@ -135,7 +135,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180], show_fem_simulation_results=show_visual_outputs)
 
-    example_thermal_simulation(show_visual_outputs, flag_insulation= False)
+    example_thermal_simulation(show_visual_outputs, flag_insulation= True)
 
 
 if __name__ == "__main__":

@@ -74,8 +74,9 @@ def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, ai
     regions = {}  # Dictionary to hold regions for each core part
     core_total_str = "{"
 
-
+    core_tags = [[tag] for tag in core_tags]
     for index, tag in enumerate(core_tags):
+        #tag = tag_list[0]
         name = f"core_part_{index + 1}"  # Create a name for the core part based on its position
         core_total_str += f"{name}, "
 
@@ -86,7 +87,7 @@ def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, ai
         k[name] = k_core
 
         # Associate the core part name with its tag
-        regions[name] = tag  # This makes it a list
+        regions[name] = tag[0]  # as Tag is list of list
 
     if air_gaps_tag is not None:
         k["air_gaps"] = k_air_gaps
@@ -175,9 +176,19 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
 
     # Add regions
     #core file will be GmshParsed file as we have many core parts
-    for core_index, core_part in enumerate(core_parts):  # Assuming core_tags is a list of core tags
-        name = f"core_part_{core_index + 1}"
-        post_operation_pro.add_on_elements_of_statement("T", name, core_file, "GmshParsed", 0, name, True)
+    # for core_index, core_part in enumerate(core_parts):  # Assuming core_tags is a list of core tags
+    #     name = f"core_part_{core_index + 1}"
+    #     post_operation_pro.add_on_elements_of_statement("T", name, core_file, "GmshParsed", 0, name, True)
+    core_parts = [[part] for part in core_parts]
+    core_append = False  # Initialize the append flag for core parts
+    for core_index, core_part in enumerate(core_parts):
+        if core_part is not None and len(core_part) > 0:
+            #core_part_value = core_part[0]
+
+            name = f"core_part_{core_index + 1}"
+            post_operation_pro.add_on_elements_of_statement("T", name, core_file, "GmshParsed", 0, name, core_append)
+            if not core_append:
+                core_append = True
 
 
 
@@ -300,7 +311,10 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
 
     # Extract min/max/averages from core, insulations and windings (and air?)
     # core
-    core_values = parse_gmsh_parsed(core_file) # TODO : need to be reviewd as with the first run (file results are deleted), ["mean": mean_sum / len(core_values.keys())] will have (division by zero)
+    print("Before parsing:", core_file)
+    core_values = parse_gmsh_parsed(core_file)
+    print("After parsing:", core_values)
+    #core_values = parse_gmsh_parsed(core_file) # TODO : need to be reviewd as with the first run (file results are deleted), ["mean": mean_sum / len(core_values.keys())] will have (division by zero)
     core_parts = {}
 
     core_part_min = float('inf')
@@ -329,7 +343,7 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
         "max": core_part_max,
         "mean": mean_sum / len(core_values.keys())
     }
-
+    print(len(core_values.keys()))
     # windings
     winding_values = parse_gmsh_parsed(winding_file)
     windings = {}
@@ -362,7 +376,7 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
         "max": winding_max,
         "mean": mean_sum / len(winding_values.keys())
     }
-
+    print(len(winding_values.keys()))
     misc = {
         "case_volume": case_volume,
         "case_weight": -1,

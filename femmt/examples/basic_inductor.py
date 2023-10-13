@@ -116,7 +116,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation(flag_insulation=False)
+    insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
     insulation.add_winding_insulations([[0.0005]])
     geo.set_insulation(insulation)
@@ -154,7 +154,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 if __name__ == "__main__":
     basic_example_inductor(show_visual_outputs=True)
