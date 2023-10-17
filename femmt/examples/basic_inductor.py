@@ -12,7 +12,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
         # The case parameter sets the thermal conductivity for a case which will be set around the core.
         # This could model some case in which the transformer is placed in together with a set potting material.
         thermal_conductivity_dict = {
-            "air": 1.54,
+            "air": 0.0263,
             "case": {  # epoxy resign
                 "top": 1.54,
                 "top_right": 1.54,
@@ -133,7 +133,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 9, None)
+    vww.set_winding(winding, 7, None)
     geo.set_winding_windows([winding_window])
 
     # 8. create the model

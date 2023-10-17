@@ -2251,8 +2251,7 @@ class MagneticComponent:
                 for i in range(0, len(self.mesh.plane_surface_core)):
                     sweep_dict["core_parts"][f"core_part_{i + 1}"] = {}
                     sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"] = \
-                    self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{i + 1}", last_n=sweep_number)[
-                        sweep_run]
+                    self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{i + 1}", last_n=sweep_number)[sweep_run]
                     sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"] = \
                     self.load_result(res_name=f"core_parts/p_hyst_{i + 1}", last_n=sweep_number)[sweep_run]
                     # finding the total losses for every core_part

@@ -13,7 +13,7 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
         # The case parameter sets the thermal conductivity for a case which will be set around the core.
         # This could model some case in which the transformer is placed in together with a set potting material.
         thermal_conductivity_dict = {
-            "air": 1.54,
+            "air": 0.0263,
             "case": {  # epoxy resign
                 "top": 1.54,
                 "top_right": 1.54,

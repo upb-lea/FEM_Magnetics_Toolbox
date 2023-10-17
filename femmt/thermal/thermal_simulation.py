@@ -280,6 +280,12 @@ def parse_gmsh_parsed(file_path: str):
             else:
                 raise Exception(f"Unknown line: {line}")
 
+        # Append the last set of current_values to value_dict after the loop ends
+        if current_values:
+            if len(current_values) == 1:
+                value_dict[current_key] = current_values[0]
+            else:
+                value_dict[current_key] = np.array(current_values)
 
     return value_dict
 
@@ -311,10 +317,7 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
 
     # Extract min/max/averages from core, insulations and windings (and air?)
     # core
-    print("Before parsing:", core_file)
     core_values = parse_gmsh_parsed(core_file)
-    print("After parsing:", core_values)
-    #core_values = parse_gmsh_parsed(core_file) # TODO : need to be reviewd as with the first run (file results are deleted), ["mean": mean_sum / len(core_values.keys())] will have (division by zero)
     core_parts = {}
 
     core_part_min = float('inf')
@@ -507,7 +510,7 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
     create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags,
                 thermal_conductivity_dict["case"], function_pro, parameters_pro, group_pro, constraint_pro)
     create_background(tags_dict["background_tag"], thermal_conductivity_dict["air"], function_pro, group_pro)
-    print(tags_dict)
+
     create_core_and_air_gaps(tags_dict["core_tags"], thermal_conductivity_dict["core"], core_area, core_parts_losses,
                              tags_dict["air_gaps_tag"],
                              thermal_conductivity_dict["air_gaps"], function_pro, group_pro)
