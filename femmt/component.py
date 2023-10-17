@@ -601,6 +601,8 @@ class MagneticComponent:
         :return: Volume of the core.
         :rtype: float
         """
+        core_height = None
+        winding_height = None
         if self.core.core_type == CoreType.Single:
             core_height = self.core.window_h + self.core.core_inner_diameter / 2
             winding_height = self.core.window_h
@@ -615,24 +617,25 @@ class MagneticComponent:
         air_gap_volume = 0
         inner_leg_width = self.core.r_inner - winding_width
 
+
         for leg_position, position_value, height in self.air_gaps.midpoints:
             width = 0
 
-        if leg_position == AirGapLegPosition.LeftLeg.value:
-                # left leg
+            if leg_position == AirGapLegPosition.LeftLeg.value:
+                    # left leg
+                    # TODO this is wrong since the air gap is not centered on the y axis
+                    width = core_width - self.core.r_inner
+            elif leg_position == AirGapLegPosition.CenterLeg.value:
+                # center leg
+                width = inner_leg_width
+            elif leg_position == AirGapLegPosition.RightLeg.value:
+                # right leg
                 # TODO this is wrong since the air gap is not centered on the y axis
                 width = core_width - self.core.r_inner
-        elif leg_position == AirGapLegPosition.CenterLeg.value:
-            # center leg
-            width = inner_leg_width
-        elif leg_position == AirGapLegPosition.RightLeg.value:
-            # right leg
-            # TODO this is wrong since the air gap is not centered on the y axis
-            width = core_width - self.core.r_inner
-        else:
-            raise Exception(f"Invalid leg position tag {leg_position} used for an air gap.")
+            else:
+                raise Exception(f"Invalid leg position tag {leg_position} used for an air gap.")
 
-        air_gap_volume += np.pi * width ** 2 * height
+            air_gap_volume += np.pi * width ** 2 * height
 
         return np.pi * (core_width ** 2 * core_height - (
                 inner_leg_width + winding_width) ** 2 * winding_height + inner_leg_width ** 2 * winding_height) - air_gap_volume
@@ -820,10 +823,8 @@ class MagneticComponent:
         else:
             volumetric_mass_density = self.core.material_database.get_material_attribute(
                 material_name=self.core.material, attribute="volumetric_mass_density")
-            #core_parts_volumes = self.calculate_core_parts_volume()
-            #core_parts_weights = [v * volumetric_mass_density for v in core_parts_volumes]
         return self.calculate_core_volume() * volumetric_mass_density
-        #return core_parts_weights
+
 
     def get_wire_distances(self) -> List[List[float]]:
         """Helper function which returns the distance (radius) of each conductor to the y-axis
