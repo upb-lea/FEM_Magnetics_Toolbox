@@ -72,6 +72,8 @@ class MagneticComponent:
 
         # Create file paths class in order to handle all paths
         self.file_data = FileData(working_directory)
+        # Clear result folder structure in case of missing
+        self.file_data.clear_previous_simulation_results()
 
         # Variable to set silent mode
         self.verbosity = verbosity

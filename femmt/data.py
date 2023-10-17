@@ -1,8 +1,11 @@
 # Python standard libraries
 import os
+import shutil
+
 import numpy as np
 from typing import List
 
+import femmt
 # Local libraries
 from femmt.enumerations import ConductorType
 from femmt.model import Conductor
@@ -22,6 +25,24 @@ class FileData:
         for folder in list(args):
             if not os.path.exists(folder):
                 os.mkdir(folder)
+
+    def clear_previous_simulation_results(self):
+        self.clean_folder_structure(self.results_folder_path)
+
+    @staticmethod
+    def clean_folder_structure(folder_path: str):
+        """
+        Cleans all files from a folder structure. The folder structure remains intact.
+        """
+        try:
+            for root, dirs, files in os.walk(folder_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    os.remove(file_path)
+                    # print(f"remove {file_path}")
+            print("All simulation results from previous simulations have been deleted successfully.")
+        except OSError:
+            print("Error occurred while deleting files and subdirectories.")
 
     def update_paths(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None) -> None:
         """Sets the local path based on the given working directory
