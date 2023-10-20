@@ -82,8 +82,10 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
 
     os.makedirs(working_directories.fem_working_directory, exist_ok=True)
 
-    # generate 20 folders for 20 possible parallel calculations
-    for process_number in list(range(1,21)):
+    # generate 50 folders for 50 possible parallel calculations
+    number_of_processes = 50
+
+    for process_number in list(range(1,number_of_processes+1)):
         single_process_directory = os.path.join(working_directories.fem_working_directory, f"process_{process_number}")
         os.makedirs(single_process_directory, exist_ok=True)
 
@@ -96,7 +98,7 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
     if not os.path.isdir(working_directory):
         os.mkdir(working_directory)
 
-    for process_number in list(range(1,21)):
+    for process_number in list(range(1,number_of_processes+1)):
         # Setup necessary files and directories
         single_process_directory = os.path.join(working_directories.fem_working_directory, f"process_{process_number}")
         electro_magnetic_directory_single_process = os.path.join(single_process_directory, "electro_magnetic")
