@@ -78,6 +78,8 @@ class MagneticComponent:
         self.verbosity = verbosity
         self.logger = logging.getLogger("FEMMTLogger")
         self.logger.setLevel(logging.INFO)
+        if not gmsh.isInitialized():
+            gmsh.initialize()
 
         if not verbosity == Verbosity.ToConsole:
             gmsh.option.setNumber("General.Terminal", 0)
@@ -412,7 +414,7 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_winding_windows(self, winding_windows: list[WindingWindow]):
+    def set_winding_windows(self, winding_windows: list[WindingWindow], mesh_accuracy: float = 0.5):
         """
         Adds the winding windows to the model. Creates the windings list, which contains the conductors
         from the virtual winding windows but sorted by the winding_number (ascending).
@@ -420,6 +422,8 @@ class MagneticComponent:
 
         :param winding_windows: List of WindingWindow objects
         :type winding_windows: list[WindingWindow]
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :type mesh_accuracy: float
         """
         self.winding_windows = winding_windows
         windings = []
@@ -464,7 +468,7 @@ class MagneticComponent:
                         vww.turns.append(0)
 
         # Default values for global_accuracy and padding
-        self.mesh_data = MeshData(0.5, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
+        self.mesh_data = MeshData(mesh_accuracy, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
 
     def set_core(self, core: Core):
         """Adds the core to the model
@@ -1305,7 +1309,11 @@ class MagneticComponent:
             self.write_simulation_parameters_to_pro_files()
             self.visualize()
 
-    def component_study(self, time_current_vectors: List[List[List[float]]]):
+    def component_study(self, time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
+        """
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :type fft_filter_value_factor: float
+        """
 
         # winding losses
         frequency_current_phase_deg_list = []
@@ -1316,7 +1324,7 @@ class MagneticComponent:
         hyst_frequency = 1 / (time_current_vectors[0][0][-1])
         for time_current_vector in time_current_vectors:
             # collect winding losses simulation input parameters
-            [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time')
+            [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time', filter_value_factor=fft_filter_value_factor)
             phi_deg = np.rad2deg(phi_rad)
             frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
 
@@ -1348,8 +1356,8 @@ class MagneticComponent:
 
         # calculate hysteresis losses
         # use a single simulation
-        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes,
-                        phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
+        self.generate_load_litz_approximation_parameters()
+        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
@@ -1361,8 +1369,8 @@ class MagneticComponent:
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
                               core_hyst_loss=float(p_hyst))
 
-    def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False) \
-            -> Dict:
+    def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
+                                fft_filter_value_factor: float = 0.01) -> Dict:
         """
         As magnetizing currents are often non-sinusoidal, some corrections in the simulation current waveforms
         are needed. This function calculates the new current waveforms for the center tapped study to get
@@ -1372,6 +1380,8 @@ class MagneticComponent:
         :type time_current_vectors: List[List[List[float]]]
         :param plot_waveforms: True to watch the pre-calculated waveforms
         :type plot_waveforms: bool
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :type fft_filter_value_factor: float
         :return: new current waveform vector
         :rtype: Dict
 
@@ -1441,19 +1451,21 @@ class MagneticComponent:
 
             return center_tapped_time_current_vectors
 
-        def linear_loss_excitation(time_current_vectors: List[List[List[float]]]):
+        def linear_loss_excitation(time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
             """
             Perform FFT to get the primary and secondary currents to calculate the wire losses.
             These losses can be 'linear added' to get the total winding losses.
 
             :param time_current_vectors: primary and secondary current waveforms over time
             :type time_current_vectors: List[List[List[float]]]
+            :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+            :type fft_filter_value_factor: float
             """
             # winding losses
             frequency_current_phase_deg_list = []
             # collect winding losses simulation input parameters
             for time_current_vector in time_current_vectors:
-                [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time')
+                [frequency_list, amplitude, phi_rad] = ff.fft(time_current_vector, mode='time', filter_value_factor=fft_filter_value_factor)
                 phi_deg = np.rad2deg(phi_rad)
                 frequency_current_phase_deg_list.append([frequency_list, amplitude, phi_deg])
 
@@ -1537,7 +1549,7 @@ class MagneticComponent:
 
         # Linear Loss Excitation
         time_current_vectors = split_time_current_vectors_center_tapped(time_current_vectors)
-        frequency_list, frequency_current_phase_deg_list = linear_loss_excitation(time_current_vectors)
+        frequency_list, frequency_current_phase_deg_list = linear_loss_excitation(time_current_vectors, fft_filter_value_factor)
 
         if plot_waveforms:
             i_1 = hyst_loss_amplitudes[0] * np.cos(
