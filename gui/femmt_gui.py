@@ -2044,7 +2044,7 @@ class MainWindow(QMainWindow):
         :rtype: None
         """
         md_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
-        md_core_material_options = ['N95']
+        md_core_material_options = ['N95', 'N49', 'N87']
         md_winding_material_options = [key for key in fmt.wire_material_database()]
         md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         md_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
@@ -2218,9 +2218,9 @@ class MainWindow(QMainWindow):
             self.md_winding1_radius_lineEdit.setText(str(litz["conductor_radii"]))
             self.md_winding1_fill_factor_lineEdit.setText(str(litz["ff"]))
 
-            for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
-                if value == litz["implicit"]:
-                    self.md_winding1_implicit_litz_comboBox.setCurrentIndex(key)
+            # for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
+            #     if value == litz["implicit"]:
+            #         self.md_winding1_implicit_litz_comboBox.setCurrentIndex(key)
 
             self.md_winding1_radius_lineEdit.setEnabled(False)
             self.md_winding1_implicit_litz_comboBox.setEnabled(False)
@@ -2890,15 +2890,29 @@ class MainWindow(QMainWindow):
 
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
                                         working_directory=self.md_working_directory_lineEdit.text(),
-                                        silent=False)
+                                        verbosity=fmt.Verbosity.ToConsole)
 
-            core_db = fmt.core_database()["PQ 40/40"]
 
-            core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"],
-                            window_h=core_db["window_h"],
-                            material=self.md_core_material_comboBox.currentText(),
-                            temperature=25, frequency=int(self.md_base_frequency_lineEdit.text()),
-                            datasource="manufacturer_datasheet")
+
+            core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
+                                                            window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
+                                                            window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
+                                                            core_h=1)
+
+            material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
+
+            core = fmt.Core(core_type=fmt.CoreType.Single,
+                           core_dimensions=core_dimensions,
+                           detailed_core_model=False,
+                           material=material_enum, temperature=45, frequency=int(self.md_base_frequency_lineEdit.text()),
+                           # permeability_datasource="manufacturer_datasheet",
+                           permeability_datasource=fmt.MaterialDataSource.Measurement,
+                           permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                           permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                           permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                           permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                           permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+
 
             geo.set_core(core)
 
@@ -3007,8 +3021,7 @@ class MainWindow(QMainWindow):
                                             comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            insulation.add_winding_insulations([comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text())],
-                                               0.0001)
+            insulation.add_winding_insulations([[comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text())]])
             geo.set_insulation(insulation)
 
             # ---------------------------------------------------------
@@ -3022,7 +3035,14 @@ class MainWindow(QMainWindow):
             # Create conductor and set parameters: use solid wires
             # -----------------------------------------------------------
 
-            winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+
+            winding_material_name = self.md_winding1_material_comboBox.currentText()
+            if winding_material_name == 'Copper':
+                winding_material_enum = fmt.Conductivity.Copper
+            elif winding_material_name == 'Aluminium':
+                winding_material_enum = fmt.Conductivity.Aluminium
+
+            winding = fmt.Conductor(0, winding_material_enum)
             if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding.set_solid_round_conductor(
                     conductor_radius=comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()),
@@ -3038,8 +3058,8 @@ class MainWindow(QMainWindow):
             # ----------------------------------------------------------------------
             # 7. add conductor to vww and add winding window to MagneticComponent
             # ----------------------------------------------------------------------
-            vww.set_winding(winding, 9, None)
-            geo.set_winding_window(winding_window)
+            vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
+            geo.set_winding_windows([winding_window])
 
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
