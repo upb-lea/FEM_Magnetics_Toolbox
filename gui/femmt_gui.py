@@ -1620,7 +1620,7 @@ class MainWindow(QMainWindow):
         mat_name = self.dat_core_material_comboBox.currentText()
 
         database.compare_core_loss_flux_datasheet_measurement(matplotlib_widget, material=mat_name,
-                                                              temperature_list=[mat_dat_temp, mat_meas_temp])
+                                                              temperature_list=[mat_dat_temp, mat_meas_temp], measurement_name=fmt.MeasurementSetup.LEA_LK)
 
         matplotlib_widget.axis.grid()
         matplotlib_widget.figure.canvas.draw_idle()
@@ -2009,7 +2009,8 @@ class MainWindow(QMainWindow):
 
         get_temp1_list = []
         if mat_text1:
-            get_temp1_list = database.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True)
+            get_temp1_list = database.drop_down_list(material_name=mat_text1, comparison_type="dvd", temperature=True,
+                                                     datatype="datasheet", measurement_name=None)
         aut_temp_options1 = get_temp1_list
 
         temp_str = [f'{item:.2f}' for item in aut_temp_options1]
@@ -2026,7 +2027,8 @@ class MainWindow(QMainWindow):
 
         get_temp1_list = []
         if mat_text1:
-            get_temp1_list = database.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True)
+            get_temp1_list = database.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True,
+                                                     datatype=fmt.MeasurementDataType.ComplexPermeability, measurement_name=fmt.MeasurementSetup.LEA_LK)
         aut_temp_options1 = get_temp1_list
 
         temp_str = [f'{item:.2f}' for item in aut_temp_options1]
