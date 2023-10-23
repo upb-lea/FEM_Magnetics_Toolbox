@@ -262,7 +262,7 @@ class MagneticComponent:
         # Power density for volumes W/m^3
         #core_area = self.calculate_core_volume()
         core_area = self.calculate_core_parts_volume()
-        #core_area = ff.calculate_cylinder_volume()
+
 
 
         # Set wire radii
@@ -647,15 +647,18 @@ class MagneticComponent:
 
     def calculate_core_parts_volume(self) -> list:
 
-        """Calculates the volume of the core excluding air.
+        """Calculates the volume of the part core excluding air.
 
                 :return: Volume of the core.
                 :rtype: list
                 """
+        # Extract heights from the midpoints of air gaps
         heights = [point[2] for point in self.air_gaps.midpoints]
         core_part_volume = []
 
+        # Helper function to calculate width based on part number and stray path
         def get_width(part_number):
+            """ If there is a stray path, calculate width based on its starting index and part number"""
             if self.stray_path:
                 if self.stray_path.start_index == 0:
                     if part_number == 2:
@@ -667,9 +670,11 @@ class MagneticComponent:
                         return  self.stray_path.length
                     elif part_number == 3:
                         return self.core.core_inner_diameter / 2
+            # Default width calculation
             return self.core.core_inner_diameter / 2
 
         if self.core.core_type == CoreType.Single:
+            # For single core type and integrated transformer component type
             if  self.component_type == ComponentType.IntegratedTransformer:
 
                 # Calculate heights dynamically
@@ -688,7 +693,7 @@ class MagneticComponent:
                 third_topmost_airgap_height = sorted_midpoints[-3][2]
 
 
-
+                #subpart1
                 subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2 + self.core.core_inner_diameter / 4
                 subpart1_1_width = self.core.core_inner_diameter / 2
                 subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
@@ -708,15 +713,17 @@ class MagneticComponent:
                 subpart1_4_width = self.core.window_w
                 subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
 
-                #subpart1_5_height = self.air_gaps.midpoints[self.stray_path.start_index+1][1] - self.air_gaps.midpoints[self.stray_path.start_index+1][2] / 2
+                #subpart5
                 subpart1_5_height = self.core.window_h / 2 - topmost_airgap_position - topmost_airgap_height / 2 + self.core.core_inner_diameter / 4
                 subpart1_5_width = self.core.core_inner_diameter / 2
                 subpart1_5_volume = np.pi * subpart1_5_width ** 2 * subpart1_5_height
 
+                # Calculate the volume of core part 1 by summing up subpart volumes
                 core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume + subpart1_4_volume + subpart1_5_volume
                 core_part_volume.append(core_part_1_volume)
 
                 # #core_part_2
+                # If there are multiple sorted midpoints, calculate the volume of core part 2
                 if len(sorted_midpoints) > 1:
                     core_part_2_height = topmost_airgap_position - topmost_airgap_height / 2 - (second_topmost_airgap_position + second_topmost_airgap_height / 2)
                     core_part_2_width = get_width(2)
@@ -725,6 +732,7 @@ class MagneticComponent:
                     core_part_volume.append(core_part_2_volume)
 
                 #core_part_3
+                # If there are more than two sorted midpoints, calculate the volume of core part 3
                 if len(sorted_midpoints) > 2:
                     core_part_3_height = second_topmost_airgap_position - second_topmost_airgap_height / 2 - (third_topmost_airgap_position + third_topmost_airgap_height / 2)
                     core_part_3_width =  get_width(3)
@@ -732,18 +740,22 @@ class MagneticComponent:
                     core_part_3_volume = np.pi * core_part_3_width ** 2 * core_part_3_height
                     core_part_volume.append(core_part_3_volume)
 
-
+                # Return the total core part volume
                 return core_part_volume
 
 
             else:
+                # In case of non-integrated transformer components, the core volume is calculated directly without
+                # considering individual core parts. It uses the 'calculate_core_volume' method to compute the total core volume. (for thermal simulation)
                 return [self.calculate_core_volume()]
 
         elif self.core.core_type == CoreType.Stacked:
 
+            # For stacked core types, the volume is divided into different core parts, each of which is further
+            # divided into subparts to calculate the total volume of each core part.
 
-            # core_part_1
-            # core_part_1 is divided into 3 subparts
+            # Core Part 1 Calculation
+            # Core part 1 is calculated as the sum of three different subparts
             # subpart_1
             subpart1_1_height = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4 - heights[0] / 2
             subpart1_1_width = self.core.core_inner_diameter / 2
@@ -759,6 +771,7 @@ class MagneticComponent:
             subpart1_3_width = self.core.r_outer - self.core.r_inner
             subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height
 
+            # Summing up the volumes of the subparts to get the total volume of core part 1
             core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume
             core_part_volume.append(core_part_1_volume)
 
@@ -796,24 +809,13 @@ class MagneticComponent:
             subpart5_3_height = self.core.window_h_top + self.core.core_inner_diameter / 4
             subpart5_3_width = self.core.r_outer - self.core.r_inner
             subpart5_3_volume = np.pi * subpart5_3_width ** 2 * subpart5_3_height
-
+            # Summing up the volumes of the subparts to get the total volume of core_part_5
             core_part_5_volume = subpart5_1_volume + subpart5_2_volume + subpart5_3_volume
             core_part_volume.append(core_part_5_volume)
 
+            # Returning the final list of core part volumes
             return core_part_volume
-        # if self.core.core_type == CoreType.Single:
-        #     cylinder_height = self.core.window_h + self.core.core_inner_diameter / 2
-        # elif self.core.core_type == CoreType.Stacked:
-        #     cylinder_height = self.core.window_h_bot + self.core.window_h_top + self.core.core_inner_diameter * 3 / 4
-        # cylinder_diameter = self.core.r_outer
-        #
-        # core_volumes = []  # Initialize list to store each volume
-        #
-        # for _ in self.mesh.plane_surface_core:
-        #     volume = ff.calculate_cylinder_volume(cylinder_diameter, cylinder_height)
-        #     core_volumes.append(volume)
-        #
-        # return core_volumes  # Return the list of volumes
+
 
     def calculate_core_weight(self) -> float:
         """
@@ -2259,6 +2261,8 @@ class MagneticComponent:
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
 
             # Core Part losses
+            # If there are multiple core parts, calculate losses for each part individually
+            # the core losses are caluclated by summing the eddy and hyst losses
             if len(self.mesh.plane_surface_core) > 1:
                 sweep_dict["core_parts"] = {}
                 for i in range(0, len(self.mesh.plane_surface_core)):
@@ -2272,6 +2276,7 @@ class MagneticComponent:
                     hyst = sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"]
                     sweep_dict["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy + hyst
 
+            # For a single core part, total losses are simply the sum of eddy and hysteresis losses
             else:
                 # if I have only one core_part
                 sweep_dict["core_parts"] = {}  # parent dictionary is initialized first
@@ -2320,12 +2325,13 @@ class MagneticComponent:
         # Core
         log_dict["total_losses"]["eddy_core"] = sum(
             log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
-        # setting the total for every core_part in total losses dict
+        # In the total losses calculation, individual core part losses are also accounted for
         if len(self.mesh.plane_surface_core) > 1:
             for i in range(len(self.mesh.plane_surface_core)):
                 log_dict["total_losses"][f"total_core_part_{i + 1}"] = sweep_dict["core_parts"][f"core_part_{i + 1}"][
                     f"total_core_part_{i + 1}"]
-        if len(self.mesh.plane_surface_core) == 1: # core and core_part_1 will be the same
+        # If there is only one core part, set its total losses directly
+        if len(self.mesh.plane_surface_core) == 1:
 
             log_dict["total_losses"]["total_core_part_1"] = sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"]
 
