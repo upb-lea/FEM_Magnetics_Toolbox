@@ -1015,7 +1015,7 @@ class WindingWindow:
         else:
             raise Exception(f"Winding window split type {split_type} not found")
 
-    def NCellsSplit(self, split_distance: float = 0, horizontal_split_factors: list[float] = None,
+    def NCellsSplit(self, split_distance: float = 0, horizontal_split_factors: List[float] = None,
                     vertical_split_factor: float = 0.5):
         self.vertical_split_factor = vertical_split_factor
         # Convert horizontal_split_factors to a numpy array
@@ -1193,7 +1193,7 @@ class WindingWindow:
 
         return new_vww
 
-    def NHorizontalSplit(self, horizontal_split_factors: list[float] = None, vertical_split_factors: list[float] = None):
+    def NHorizontalSplit(self, horizontal_split_factors: List[float] = None, vertical_split_factors: List[float] = None):
         if vertical_split_factors == None:
             vertical_split_factors = [None] * (len(horizontal_split_factors)+1)
 
