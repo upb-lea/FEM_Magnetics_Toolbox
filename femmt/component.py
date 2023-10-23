@@ -3070,6 +3070,7 @@ class MagneticComponent:
                                                             core_h=settings["core"]["core_h"])
 
             core = Core(core_dimensions=core_dimensions, **settings["core"])
+            core.sigma = complex(core.sigma[0], core.sigma[1])
             geo.set_core(core)
 
             if "air_gaps" in settings:
@@ -3096,6 +3097,7 @@ class MagneticComponent:
                     turns = vww["turns"]
                     conductors = []
                     for winding in vww["windings"]:
+                        winding_number = winding["winding_number"]
                         conductor = Conductor(winding["winding_number"], Conductivity[winding["conductivity"]])
                         conductor_type = ConductorType[winding["conductor_type"]]
                         if conductor_type == ConductorType.RectangularSolid:
@@ -3116,7 +3118,8 @@ class MagneticComponent:
                     if winding_type == WindingType.Single:
                         winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] is not None else None
                         wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
-                        new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
+                        new_vww.set_winding(conductors[0], turns[winding_number], winding_scheme, wrap_para_type)
+                        print(turns[0])
                     elif winding_type == WindingType.TwoInterleaved:
                         new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1], InterleavedWindingScheme[vww["winding_scheme"]], vww["winding_insulation"])
                     else:
