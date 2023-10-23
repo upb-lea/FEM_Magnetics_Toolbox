@@ -3037,7 +3037,7 @@ class MagneticComponent:
         return content
 
     @staticmethod
-    def decode_settings_from_log(log_file_path: str, working_directory: str = None, silent: bool = False):
+    def decode_settings_from_log(log_file_path: str, working_directory: str = None, verbosity: bool = False):
         """
         Reads the given log and returns the magnetic component from th elog.
 
@@ -3060,12 +3060,14 @@ class MagneticComponent:
 
         if settings is not None:
             cwd = working_directory if working_directory is not None else settings["working_directory"]
-            geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
+            geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd,
+                                    verbosity = 2)
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
             core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
                                                             window_w=settings["core"]["window_w"],
-                                                            window_h=settings["core"]["window_h"])
+                                                            window_h=settings["core"]["window_h"],
+                                                            core_h=settings["core"]["core_h"])
 
             core = Core(core_dimensions=core_dimensions, **settings["core"])
             geo.set_core(core)
@@ -3079,7 +3081,7 @@ class MagneticComponent:
             if "insulation" in settings:
                 insulation = Insulation()
                 insulation.add_core_insulations(*settings["insulation"]["core_insulations"])
-                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"], settings["insulation"]["vww_insulation"])
+                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"])
                 geo.set_insulation(insulation)
 
             if "stray_path" in settings:
@@ -3124,9 +3126,6 @@ class MagneticComponent:
             winding_window = WindingWindow(core, insulation)
             winding_window.virtual_winding_windows = new_virtual_winding_windows
             geo.set_winding_windows([winding_window])
-
-            # Variable to set silent mode
-            ff.set_silent_status(silent)
 
             return geo
 

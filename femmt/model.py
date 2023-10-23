@@ -412,6 +412,7 @@ class Core:
         if self.core_type == CoreType.Single:
             return {
                 "core_inner_diameter": self.core_inner_diameter,
+                "core_h": self.core_h,
                 "window_w": self.window_w,
                 "window_h": self.window_h,
                 "material": self.material,
