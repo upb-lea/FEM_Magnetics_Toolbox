@@ -6,8 +6,12 @@ import gmsh
 import json
 import warnings
 import inspect
+import re
+import matplotlib.pyplot as plt
+import pandas as pd
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
+from scipy.integrate import quadrature
 
 # Third party libraries
 from onelab import onelab
@@ -102,6 +106,14 @@ class MagneticComponent:
         self.current = []                       # Defined for every conductor
         self.current_density = []               # Defined for every conductor
         self.voltage = []                       # Defined for every conductor
+        self.time = []                          # Defined for time domain simulation
+        self.average_currents = []              #Definded for average currents for every winding
+        self.rms_currents = []                  #definded for rms currents for every winding
+        self.delta_time = None
+        self.time_period = None
+        self.initial_time = None
+        self.maxtime = None
+        self.Nb_steps = None
         self.frequency = None
         self.phase_deg = None                   # Default is zero, Defined for every conductor
         self.red_freq = None                    # [] * self.n_windings  # Defined for every conductor
@@ -716,7 +728,7 @@ class MagneticComponent:
 
         for num in range(len(self.windings)):
 
-            # Imposed current
+        # Imposed current
             if self.flag_excitation_type == 'current':
                 if len(phase_deg_list) == 0:
                     if self.component_type == ComponentType.Inductor:
@@ -732,7 +744,161 @@ class MagneticComponent:
                     self.current[num] = complex(amplitude_list[num]*np.cos(np.deg2rad(phase_deg_list[num])),
                                                 amplitude_list[num]*np.sin(np.deg2rad(phase_deg_list[num])))
 
-        # Imposed current density
+
+
+                            # Imposed current density
+        if self.flag_excitation_type == 'current_density':
+            raise NotImplementedError
+
+        # Imposed voltage
+        if self.flag_excitation_type == 'voltage':
+            raise NotImplementedError
+
+
+        # -- Frequency --
+
+        self.frequency = frequency  # in Hz
+
+        # Define reduced frequency (used for homogenization technique)
+        # self.red_freq = np.empty(2)
+        self.red_freq = []
+        for num in range(len(self.windings)):
+            self.red_freq.append([])
+
+        if self.frequency != 0:
+            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * mu_0))  # TODO: distinguish between material conductivities
+            for num in range(len(self.windings)):
+                if self.windings[num].conductor_type == ConductorType.RoundLitz:
+                    self.red_freq[num] = self.windings[num].strand_radius / self.delta
+                elif self.windings[num].conductor_type == ConductorType.RoundSolid:
+                    self.red_freq[num] = self.windings[num].conductor_radius / self.delta
+                else:
+                    ff.femmt_print("Reduced Frequency does not have a physical value here")
+                    ff.femmt_print(self.windings[num].conductor_type)
+                    self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
+        else:
+            # DC case
+            self.delta = 1e20  # random huge value
+            self.red_freq[num] = 0
+
+    def excitation_time_domain(self, frequency: float, current_list: List[List[float]], time_list: List[float], time_period: float, initial_time: float, timemax : float, NbSteps: int, delta_time: float, phase_deg_list: List = None, ex_type: str = 'current',
+                   plot_interpolation: bool = False, imposed_red_f=0):
+        """
+         Excites the electromagnetic problem in the time domain with specified current and time settings.
+
+        Parameters:
+        - frequency (float): The frequency of the excitation in Hz.
+        - current_list (List[List[float]]): A nested list containing current values for each time step and winding.
+        - time_list (List[List[float]]): A nested list containing the corresponding time values for each current value.
+        - time_period (float): The total time period of the excitation in seconds.
+        - initial_time (float): The starting time of the excitation in seconds of simulation.
+        - timemax (float): The maximum time for the excitation in seconds of simulation.
+        - NbSteps (int): The total number of time steps within the provided time period of simulation.
+        - delta_time (float): The time interval between each time step in seconds.
+         time_list : List[List[float]], time_period: float,
+        :param plot_interpolation:
+        :param frequency: Frequency
+        :type frequency: float
+        :param time_period : time period
+        :type time_period : float
+        :param initial_time : initial time
+        :type initial_time : float
+        :param timemax : time max
+        :type timemax : float
+        :param NbSteps : Number of steps
+        :type NbSteps : float
+        :param delta_time : dt
+        :type delta_time : float
+        :param current_list : A nested list containing current values for each time step and winding
+        :type current_list : (List[List[float]]) as for every winding
+        :param time_list : A nested list containing the corresponding time values for each current value.
+        :type time_list : (List[List[float]]) as for every winding
+        :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
+        :type phase_deg_list: List
+        :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
+        :type ex_type: str
+        :param imposed_red_f:
+        :type imposed_red_f:
+
+        """
+        # if len(current_list) != len(time_list):
+        #     raise ValueError("The length of the current_list does not match the length of the time_list.")
+
+        ff.femmt_print(f"\n---\n"
+              f"Excitation: \n"
+              f"Frequency: {frequency}\n"
+              f"Time_Period(sec): {time_period}\n"
+              f"Initial_time(sec): {initial_time}\n"      
+              f"Maximum Time(sec): {timemax}\n"
+              f"NumberofSteps: {NbSteps}\n"
+              f"delta_time(sec): {delta_time}\n"
+              f"Current(s): {current_list}\n"
+              f"Time(s): {time_list}\n"
+              f"Phase(s): {phase_deg_list}\n")
+
+
+        # -- Excitation --
+        self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
+        if self.core.permeability["datasource"] != MaterialDataSource.Custom:
+            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path, plot_interpolation)  # frequency update to core class
+        if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
+            self.core.update_sigma(frequency)
+        # Has the user provided a list of phase angles?
+        phase_deg_list = phase_deg_list or []
+        # phase_deg_list = np.asarray(phase_deg_list)
+        self.initial_time = initial_time
+        self.time_period = time_period
+        #self.time_period = 1 / self.frequency
+        self.Nb_steps = NbSteps
+        self.timemax = timemax
+        self.delta_time = delta_time
+
+        for num in range(len(self.windings)):
+
+            if self.flag_excitation_type == 'current':
+                if self.flag_excitation_type == 'current':
+                    #if len(phase_deg_list) == 0:
+                        #if self.component_type == ComponentType.Inductor:
+                            # Define complex current phasor as real value
+                            # self.current[num] = current_list[num]
+                            # self.time[num] = time_list[num]
+                            self.current[num] = current_list[num]
+                            #self.delta_time = 1/len(self.current[num])
+                            #self.time[num] = time_list[num]
+                            #self.time.append(time_list[num])
+                            self.time = time_list
+                            #self.delta_time = self.time_period / self.Nb_steps
+                            #time_values = [i * self.time_period for i in range(len(self.current[num]))]
+                            #time_values = [self.initial_time + i * self.delta_time for i in
+                                          #range(int((self.timemax - self.initial_time) / self.delta_time))]
+                            # time_values = np.linspace(self.initial_time, self.time_period, len(self.current[num]))
+                            # self.time.append(time_values)
+                            #time_values = [i * self.delta_time for i in range(self.Nb_steps)]
+
+                            #print(len(time_values))
+                            #self.current.append(current_list[num])
+
+                            #phase_deg_list.append(0)  # set to zero
+                        #else:
+                            #raise ValueError("Missing phases inside excitation, e.g. 'phase_deg_list = [0, 180]'. ")
+                    #else:
+                        #self.current[num] = current_list[num]
+                        #self.time[num] = time_list
+                        #self.time.append(time_list[num])
+                        #self.time[num] = time_list[num]
+                        #self.time.append(time_list[num])
+                        # self.delta_time = 1/len(self.current[num])
+                        #self.delta_time = self.time_period / self.Nb_steps
+                        # time_values = np.linspace(self.initial_time, self.time_period, len(self.current[num]))
+                        # self.time.append(time_values)
+                        #time_values = [i * self.delta_time for i in range(len(self.current[num]))]
+                        #self.time.append(time_values)
+                        #self.time.append(time_list[num])
+
+
+
+
+                            # Imposed current density
         if self.flag_excitation_type == 'current_density':
             raise NotImplementedError
 
@@ -806,9 +972,12 @@ class MagneticComponent:
             getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
             self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2" + verbose)
         if self.simulation_type == SimulationType.TimeDomain:
+            # Clear necessary files
+            # files = ["j2f."]
+            # self.clear_getdp_files()
             getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
             # the two commands work but some changes should be done in fields_time.pro
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -pos Map_local -pos Get_global  " + verbose)
+            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -pos Map_local -pos Get_global " + verbose)
             #self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose) #freeing solutions
 
 
@@ -864,14 +1033,58 @@ class MagneticComponent:
         phi_deg = phi_deg or []
 
         self.mesh.generate_electro_magnetic_mesh()
+
         self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)  # frequency and current
+
         self.check_model()
         self.file_communication()
         self.pre_simulate()
         self.simulate()
-        self.calculate_and_write_log()  # TODO: reuse center tapped
+
+        #self.calculate_and_write_log()
+        self.calculate_and_write_log_try()
+        # TODO: reuse center tapped
         if show_fem_simulation_results:
             self.visualize()
+
+    def time_domain_simulation(self, freq: float, current: List[List[float]], time: List[float], time_period: float, initial_time: float, timemax : float, NbSteps: int, delta_time: float,  phi_deg: List[float] = None,
+                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True, show_rolling_average: bool = True, rolling_avg_window_size: int = 5 ):
+        """
+        Start a time_domain  electromagnetic ONELAB simulation.
+
+        :param plot_interpolation:
+        :param freq: frequency to simulate
+        :type freq: float
+        :param current: current to simulate
+        :param phi_deg: phase angle in degree
+        :type phi_deg: List[float]
+        :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
+        :type show_fem_simulation_results: bool
+        """
+
+
+
+        phi_deg = phi_deg or []
+
+        self.mesh.generate_electro_magnetic_mesh()
+        self.excitation_time_domain(frequency=freq, current_list=current, time_list=time, time_period=time_period, initial_time=initial_time, timemax=timemax, NbSteps=NbSteps, delta_time=delta_time, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)
+        self.check_model()
+        self.file_communication()
+        self.pre_simulate()
+        self.simulate()
+        self.calculate_average_files()
+        self.calculate_and_write_log_try()
+
+
+
+        #self.calculate_and_write_log()  # TODO: reuse center tapped
+        if show_fem_simulation_results:
+            self.visualize()
+        if show_rolling_average:
+            self.get_rolling_average(window_size = rolling_avg_window_size)
+
+
+
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last_fem_simulation: bool = False, return_results: bool = False,
@@ -990,6 +1203,7 @@ class MagneticComponent:
         if show_last_fem_simulation:
             self.file_communication()
             self.visualize()
+
 
         if return_results:
             # Return a Dictionary with the results
@@ -1425,6 +1639,15 @@ class MagneticComponent:
             text_file.write(f"t_rise = {self.t_rise};\n")
             text_file.write(f"t_fall = {self.t_fall};\n")
             text_file.write(f"f_switch = {self.f_switch};\n")
+        # time domain parameters
+        if self.simulation_type == SimulationType.TimeDomain:
+            text_file.write(f"T = {self.time_period};\n")
+            text_file.write(f"time0 = {self.initial_time};\n")
+            text_file.write(f"timemax = {self.timemax};\n")
+            text_file.write(f"NbSteps = {self.Nb_steps};\n")
+            text_file.write(f"delta_time = {self.delta_time};\n")
+            time_values_str = ', '.join(map(str, self.time))
+            text_file.write(f"TimeList = {{{time_values_str}}};\n") # TimeList is interpolated with current lists in the solver
 
         # Conductor specific definitions
         for num in range(len(self.windings)):
@@ -1475,7 +1698,14 @@ class MagneticComponent:
             # -- Excitation --
             # Imposed current, current density or voltage
             if self.flag_excitation_type == 'current':
-                text_file.write(f"Val_EE_{num + 1} = {abs(self.current[num])};\n")
+                if self.simulation_type == SimulationType.FreqDomain:
+                    text_file.write(f"Val_EE_{num + 1} = {abs(self.current[num])};\n")
+                if self.simulation_type == SimulationType.TimeDomain:
+                    current_values_str = ', '.join(map(str, self.current[num]))
+                    text_file.write(f"CurrentList_{num + 1} = {{{current_values_str}}};\n")
+                    text_file.write(f"Val_EE_{num + 1} = 1;\n")
+
+
                 text_file.write(f"Phase_{num + 1} = {np.deg2rad(self.phase_deg[num])};\n")
                 text_file.write(f"Parallel_{num + 1} = {int(self.windings[num].parallel==True)};\n")
 
@@ -1563,6 +1793,51 @@ class MagneticComponent:
 
         text_file.close()
 
+    # def get_common_log_content(self):
+    #     # ---- Introduce calculations for writing the misc-dict into the result-log ----
+    #     wire_type_list = []
+    #     for winding in self.windings:
+    #         wire_type_list.append(winding.conductor_type.name)
+    #
+    #     single_strand_cross_section_list = []
+    #     for winding in self.windings:
+    #         if winding.strand_radius:
+    #             single_strand_cross_section = winding.strand_radius ** 2 * np.pi
+    #             single_strand_cross_section_list.append(single_strand_cross_section)
+    #         else:
+    #             single_strand_cross_section_list.append(None)
+    #
+    #     wire_weight_list = self.calculate_wire_weight()
+    #     core_weight = self.calculate_core_weight()
+    #
+    #     # ---- Miscellaneous ----
+    #     miscellaneous = {
+    #         "core_2daxi_volume": self.calculate_core_volume(),
+    #         "core_2daxi_total_volume": self.calculate_core_volume_with_air(),
+    #         "core_2daxi_weight": core_weight,
+    #         "wire_lengths": self.calculate_wire_lengths(),
+    #         "wire_volumes": self.calculate_wire_volumes(),
+    #         "wire_weight": wire_weight_list,
+    #         "core_cost": ff.cost_function_core(core_weight, core_type="ferrite"),
+    #         "winding_cost": ff.cost_function_winding(wire_weight_list=wire_weight_list, wire_type_list=wire_type_list,
+    #                                                  single_strand_cross_section_list=single_strand_cross_section_list),
+    #         "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite",
+    #                                                          wire_weight_list=wire_weight_list,
+    #                                                          wire_type_list=wire_type_list,
+    #                                                          single_strand_cross_section_list=single_strand_cross_section_list)
+    #     }
+    #
+    #     # ---- Print current configuration ----
+    #     simulation_settings = MagneticComponent.encode_settings(self)
+    #
+    #     return miscellaneous, simulation_settings
+    #
+    # def calculate_and_write_time_domain_log(self):
+    #    pass
+    #
+    # def calculate_and_write_frequency_domain_log(self):
+    #     # Add Frequency specific things
+    #     pass
     def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
@@ -1633,8 +1908,11 @@ class MagneticComponent:
                     complex_current_phasor = self.current[winding]
 
                 # Store complex value as list in json (because json is not natively capable of complex values)
-                winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
-
+                if self.simulation_type == SimulationType.FreqDomain:
+                    winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
+                elif self.simulation_type == SimulationType.TimeDomain:
+                #     # In the time domain, only real values are stored
+                     winding_dict["I"] = [complex_current_phasor.real]
 
                 # Case litz: Load homogenized results
                 if self.windings[winding].conductor_type == ConductorType.RoundLitz:
@@ -1657,33 +1935,66 @@ class MagneticComponent:
                 # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
 
                 # Voltage
-                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
-                complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
+                #if self.component_type == SimulationType.FreqDomain:
+                if self.simulation_type == SimulationType.FreqDomain:
+                    winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                    winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                    complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
+                if self.simulation_type == SimulationType.TimeDomain:
+                    winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                    complex_voltage_phasor = complex(winding_dict["V"][0])
+                    #winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", last_n=sweep_number)[sweep_run])
+
 
                 # Inductance
                 # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
                 # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
                 # Inductance from voltage
 
-                if self.current[winding] != 0: # if-statement to avoid div by zero error
+                #if self.current[winding] != 0: # if-statement to avoid div by zero error
+                #if self.simulation_type == SimulationType.FreqDomain:
+                if self.simulation_type == SimulationType.FreqDomain:
                     winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).real)
                     winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).imag)
-                else:
-                    winding_dict["flux_over_current"] = [0, 0]
+                if self.simulation_type == SimulationType.TimeDomain:
+                    # Flux over current in the time domain
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).real)
+                    #winding_dict["flux_over_current"].append(winding_dict["V"][0] / (2 * np.pi * self.current[winding] * self.frequency)) #review
 
                 # Flux
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
-                winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                #if self.simulation_type == SimulationType.FreqDomain:
+                if self.simulation_type == SimulationType.FreqDomain:
+                    winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
+                    winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                if self.simulation_type == SimulationType.TimeDomain:
+                    # Flux in the time domain
+                    winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
+
                 # Flux from voltage
                 #winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).real)  # (L*I).real
                 #winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).imag)  # (L*I).imag
 
                 # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
-                winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
-                winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
-                winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
+                #if self.simulation_type == SimulationType.FreqDomain:
+                    winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
+                    winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
+                    winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
+                # if self.simulation_type == SimulationType.TimeDomain:
+                #     # Instantaneous power in the time domain
+                #     # Average real power with average voltage and current
+                #     #winding_dict["P"] = winding_dict["V"] * winding_dict["I"]
+                #
+                #     winding_dict["P"] = winding_dict["V"][0] * winding_dict["I"][0]
+                #
+                #     # Average apparent power
+                #     winding_dict["S"] = winding_dict["V"][0] * winding_dict["I"][0]
+                #
+                #     # Power factor with average values
+                #     winding_dict["PF"] = winding_dict["P"] / winding_dict["S"] if winding_dict["S"] != 0 else 0
+                #
+                #     # Average reactive power with average values
+                #     winding_dict["Q"] = np.sqrt(abs(winding_dict["S"] ** 2 - winding_dict["P"] ** 2))
 
                 sweep_dict[f"winding{winding+1}"] = winding_dict
 
@@ -1772,6 +2083,411 @@ class MagneticComponent:
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
 
+    def calculate_and_write_log_try(self):
+        """
+        Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
+        them in a dictionary. Additionally, the input settings which are used in order to create the simulation are also printed.
+        From this data type a JSON log file is created.
+        :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
+        :param currents: Current values of the sweep iterations. Not needed for single simulation
+        :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
+        """
+        if self.simulation_type == SimulationType.FreqDomain:
+            log_dict = {"single_sweeps": [], "total_losses": {}, "simulation_settings": {}}
+        elif self.simulation_type == SimulationType.TimeDomain:
+            log_dict = {"time_domain_simulation": [], "average_losses": {}, "total_losses": {}, "simulation_settings": {}}
+        def freq_domain_log(sweep_number: int = 1, currents: List = None, frequencies: List = None):
+            # ---- Print simulation results ----
+
+            fundamental_index = 0  # index of the fundamental frequency
+
+            # create the dictionary used to log the result data
+            #   - 'single_sweeps' contains a list of n=sweep_number sweep_dicts
+            #   - 'total_losses' contains the sums of all sweeps
+            #       - in case complex core parameters are used:
+            #           - hysteresis losses are taken only from fundamental frequency
+            #               - fundamental frequency is the smallest frequency != 0
+            #   - 'simulation_settings' contains the simulation configuration (for more info see encode_settings())
+
+            for sweep_run in range(0, sweep_number):
+                # create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
+                # Single values, received during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
+                sweep_dict = {}
+
+                # Frequencies
+                if sweep_number > 1:
+                    # sweep_simulation -> get frequencies from passed currents
+                    sweep_dict["f"] = frequencies[sweep_run]
+                    fundamental_index = np.argmin(np.ma.masked_where(np.array(frequencies) == 0, np.array(frequencies)))
+                else:
+                    # single_simulation -> get frequency from instance variable
+                    sweep_dict["f"] = self.frequency
+
+                # Winding names are needed to find the logging path
+                winding_name = ["Winding_" + str(i) for i in range(1, len(self.windings) + 1)]
+
+                for winding in range(len(self.windings)):
+
+                    # Create empty winding dictionary
+                    # create dictionary winding_dict with 'turn_losses' as list of the j=number_turns turn losses.
+                    # Single values related to one winding are added as 'winding_losses' etc.
+                    winding_dict = {"turn_losses": [],
+                                    "flux": [],
+                                    "flux_over_current": [],
+                                    # "mag_field_energy": [],
+                                    "V": []}
+
+                    # Number turns
+                    turns = 0
+                    for ww in self.winding_windows:
+                        for vww in ww.virtual_winding_windows:
+                            for conductor in vww.windings:
+                                if conductor.winding_number == winding:
+                                    turns += vww.turns[conductor.winding_number]
+
+                    winding_dict["number_turns"] = turns
+
+                    # Currents
+                    if sweep_number > 1:
+                        # sweep_simulation -> get currents from passed currents
+                        complex_current_phasor = currents[sweep_run][winding]
+                    else:
+                        # single_simulation -> get current from instance variable
+                        complex_current_phasor = self.current[winding]
+
+                    # Store complex value as list in json (because json is not natively capable of complex values)
+
+                    winding_dict["I"] = [complex_current_phasor.real, complex_current_phasor.imag]
+
+
+                    # Case litz: Load homogenized results
+                    if self.windings[winding].conductor_type == ConductorType.RoundLitz:
+                        winding_dict["winding_losses"] = self.load_result(res_name=f"j2H_{winding + 1}", last_n=sweep_number)[sweep_run]
+                        for turn in range(0, winding_dict["number_turns"]):
+                            winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+
+                    # Case Solid: Load results, (pitfall for parallel windings results are only stored in one turn!)
+                    else:
+                        winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding + 1}", last_n=sweep_number)[sweep_run]
+                        if self.windings[winding].parallel:
+                            winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{1}", last_n=sweep_number)[sweep_run])
+                        else:
+                            for turn in range(0, winding_dict["number_turns"]):
+                                winding_dict["turn_losses"].append(self.load_result(res_name=winding_name[winding] + f"/Losses_turn_{turn + 1}", last_n=sweep_number)[sweep_run])
+
+
+                    # Magnetic Field Energy
+                    # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
+                    # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
+
+                    # Voltage
+
+                    winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                    winding_dict["V"].append(self.load_result(res_name=f"Voltage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                    complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
+
+
+
+
+                    # Inductance
+                    # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
+                    # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+                    # Inductance from voltage
+
+                    #if self.current[winding] != 0: # if-statement to avoid div by zero error
+                    #if self.simulation_type == SimulationType.FreqDomain:
+
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).real)
+                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (complex(0, 1) * 2*np.pi*self.current[winding] * self.frequency)).imag)
+
+                    # Flux
+                    #if self.simulation_type == SimulationType.FreqDomain:
+
+                    winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", last_n=sweep_number)[sweep_run])
+                    winding_dict["flux"].append(self.load_result(res_name=f"Flux_Linkage_{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
+
+
+                    # Flux from voltage
+                    #winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).real)  # (L*I).real
+                    #winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).imag)  # (L*I).imag
+
+                    # Power
+                    # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
+                    #if self.simulation_type == SimulationType.FreqDomain:
+                    winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
+                    winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
+                    winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
+
+
+                    sweep_dict[f"winding{winding+1}"] = winding_dict
+
+                # Core losses TODO: Choose between Steinmetz or complex core losses
+                sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[sweep_run]
+
+                sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
+
+                # Sum losses of all windings of one single run
+                sweep_dict["all_winding_losses"] = sum(sweep_dict[f"winding{d+1}"]["winding_losses"] for d in range(len(self.windings)))
+
+                log_dict["single_sweeps"].append(sweep_dict)
+
+            # Total losses of excitation sweep
+            # Sum losses of all sweep runs. For core losses just use hyst_losses of the fundamental frequency.
+            # Also needed as excitation for steady state thermal simulations
+
+            # Single Windings
+            for winding in range(len(self.windings)):
+                # Number of turns per conductor
+                turns = 0
+                for ww in self.winding_windows:
+                    for vww in ww.virtual_winding_windows:
+                        for conductor in vww.windings:
+                            if conductor.winding_number == winding:
+                                turns += vww.turns[conductor.winding_number]
+
+
+                log_dict["total_losses"][f"winding{winding + 1}"] = {
+                    "total": sum(sum(log_dict["single_sweeps"][d][f"winding{winding+1}"]["turn_losses"]) for d in range(len(log_dict["single_sweeps"]))),
+                    "turns": []
+                }
+                if self.windings[winding].parallel:
+                    log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(
+                        sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][0] for d in range(len(log_dict["single_sweeps"]))))
+                else:
+                    for turn in range(0, turns):
+                        log_dict["total_losses"][f"winding{winding + 1}"]["turns"].append(
+                            sum(log_dict["single_sweeps"][d][f"winding{winding + 1}"]["turn_losses"][turn] for d in range(len(log_dict["single_sweeps"]))))
+
+            # Winding (all windings)
+            log_dict["total_losses"]["all_windings"] = sum(log_dict["single_sweeps"][d]["all_winding_losses"] for d in range(len(log_dict["single_sweeps"])))
+
+            # Core
+            log_dict["total_losses"]["eddy_core"] = sum(log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
+            # For core losses just use hyst_losses of the fundamental frequency. When using single_simulation, the fundamental frequency is at [0]
+            # => just an approximation for excitation sweeps!
+            log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index]["core_hyst_losses"]
+
+            # Total losses of inductive component according to single or sweep simulation
+            log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"]
+            log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"]["all_windings"]
+
+        def time_domain_log():
+
+            #log_dict = {"time_steps": []}
+
+            # Flatten the self.time
+            # Winding names are needed to find the logging path
+            winding_name = ["Winding_" + str(i) for i in range(1, len(self.windings) + 1)]
+            #flat_time = [item for sublist in self.time for item in sublist]
+
+            # Some important parameters in log file
+            Time_domain_data_dict = {}
+            Time_domain_data_dict["f"] = self.frequency
+            Time_domain_data_dict["T"] = self.time_period
+            Time_domain_data_dict["Timemax"] = self.timemax
+            Time_domain_data_dict["number_of_steps"] = self.Nb_steps
+            Time_domain_data_dict["dt"] = self.delta_time
+            log_dict["time_domain_simulation"].append(Time_domain_data_dict)
+
+            # time_step_n log
+            # indide every time_step_n, there are windings log such that I, V, Flux are shown in every winding (winding1, winding2, .. )
+            for t in range(0, self.Nb_steps):
+                time_step_dict = {
+                    "windings": {}
+                }
+
+                for winding_num in range(len(self.windings)):
+                    winding_dict = {
+                        "number_turns": 0,
+                        "flux": [],
+                        "V": []
+                    }
+
+                    # Number of turns
+                    turns = 0
+                    for ww in self.winding_windows:
+                        for vww in ww.virtual_winding_windows:
+                            for conductor in vww.windings:
+                                if conductor.winding_number == winding_num:
+                                    turns += vww.turns[conductor.winding_number]
+
+                    winding_dict["number_turns"] = turns
+
+                    # voltage
+                    voltage = self.load_result(res_name=f"Voltage_{winding_num + 1}", res_type="value", average=False)
+                    winding_dict["V"] = voltage[t]
+
+                    # Flux
+                    flux = self.load_result(res_name=f"Flux_Linkage_{winding_num + 1}", res_type="value", average=False)
+                    winding_dict["flux"] = flux[t]
+
+                    # Current
+                    winding_dict["I"] = self.current[winding_num][t] if winding_num < len(self.current) and t < len(
+                        self.current[winding_num]) else None
+
+
+
+                    time_step_dict["windings"][f"winding{winding_num + 1}"] = winding_dict
+                log_dict["time_domain_simulation"].append({f"step_{t + 1}": time_step_dict})
+
+                # average CoreEddyLosses
+                log_dict["average_losses"]["core_eddy_losses"] = \
+                    self.load_result(res_name="CoreEddyCurrentLosses", average=True)
+
+                log_dict["average_losses"]["core_hyst_losses"] = [0]  # until the hystersis losses are correctly defined in time_domain
+                #average winding losses, turns_losses, current, volatge, power losses, ..etc
+                for winding_num in range(len(self.windings)):
+                    losses_dict = {
+                        "turn_losses": [],
+                        "winding_losses": [],
+                        "flux_over_current": [],
+                        "average_current": [],
+                        "average_voltage": [],
+                        "rms_current": [],
+                        "rms_voltage": [],
+                        "P": [],
+                        "S":[],
+                        "Q":[]
+                    }
+                    # Number of turns
+                    turns = 0
+                    for ww in self.winding_windows:
+                        for vww in ww.virtual_winding_windows:
+                            for conductor in vww.windings:
+                                if conductor.winding_number == winding_num:
+                                    turns += vww.turns[conductor.winding_number]
+
+                    losses_dict["number_turns"] = turns
+
+                    #current_average for every winding
+                    #if winding_num < len(self.average_currents):
+                    losses_dict["average_current"] = [self.average_currents[winding_num]]
+                    losses_dict["rms_current"] = [self.rms_currents[winding_num]]
+                    #voltage_average for every winding
+                    # losses_dict["average_voltage"].append(self.load_result(res_name=f"Voltage_{winding_num + 1}", res_type="value", average=True))
+                    losses_dict["average_voltage"] = self.load_result(res_name=f"Voltage_{winding_num + 1}", res_type="value", average=True)
+                    #rms_voltage for every winding
+                    # rms_voltage for every winding
+                    losses_dict["rms_voltage"] = self.load_result(res_name=f"Voltage_{winding_num + 1}", res_type="value", rms=True)
+
+                    #compute average power for every winding
+                    losses_dict["P"] = losses_dict["average_current"][0] * losses_dict["average_voltage"][0]
+                    #comput apparent power for every winding
+                    losses_dict["S"] = losses_dict["rms_current"][0] * losses_dict["rms_voltage"][0]
+                    # Compute reactive power for every winding using the square roots of S and P
+                    losses_dict["Q"] = np.sqrt(abs(losses_dict["S"] ** 2 - losses_dict["P"] ** 2))
+
+                    # Flux over Current
+                    losses_dict["flux_over_current"] = self.load_result(res_name=f"L_{winding_num + 1}_{winding_num+1}", res_type="value", average=True)
+
+                    # losses_averages
+                    if self.windings[winding_num].conductor_type == ConductorType.RoundLitz:
+                        losses_dict["winding_losses"] = \
+                            self.load_result(res_name=f"j2H_{winding_num + 1}", res_type="value", average=True)
+
+                        if losses_dict["winding_losses"]:
+                            losses_dict["winding_losses"] = losses_dict["winding_losses"][0]
+
+                        for turn in range(0, losses_dict["number_turns"]):
+                            turn_loss = self.load_result(res_name=f"{winding_name[winding_num]}/Losses_turn_{turn + 1}", average=True)
+                            losses_dict["turn_losses"].append(turn_loss[0])
+
+                    # Case Solid: Load results, (pitfall for parallel windings results are only stored in one turn!)
+                    else:
+                        losses_dict["winding_losses"] = \
+                            self.load_result(res_name=f"j2F_{winding_num + 1}", average=True)
+
+                        if losses_dict["winding_losses"]:losses_dict["winding_losses"] = losses_dict["winding_losses"][0]
+
+                        if self.windings[winding_num].parallel:
+                            turn_loss = self.load_result(res_name=winding_name[winding_num] + f"/Losses_turn_{1}",average=True)
+                            losses_dict["turn_losses"].append(turn_loss[0])
+
+                        else:
+                            for turn in range(0, losses_dict["number_turns"]): # loop need to be checked
+                                turn_loss = self.load_result(res_name=winding_name[winding_num] + f"/Losses_turn_{turn + 1}", average=True)
+
+                                losses_dict["turn_losses"].append(turn_loss[0])
+
+                    log_dict["average_losses"][f"winding{winding_num + 1}"] = {
+                        "winding_losses": losses_dict["winding_losses"],
+                        "turn_losses": losses_dict["turn_losses"],
+                        "flux_over_current": losses_dict["flux_over_current"],
+                        "average_current": losses_dict["average_current"],
+                        "average_voltage": losses_dict["average_voltage"],
+                        "P": losses_dict["P"],
+                        "S": losses_dict["S"],
+                        "Q": losses_dict["Q"]
+                    }
+
+                    # Winding (all windings)
+                    log_dict["total_losses"]["all_windings_losses"] = sum(winding_info["winding_losses"] for winding_info in log_dict["average_losses"].values() if "winding_losses" in winding_info)
+                    #cores
+                    log_dict["total_losses"]["eddy_core"] = log_dict["average_losses"]["core_eddy_losses"][0] + log_dict["average_losses"]["core_hyst_losses"][0]
+                    log_dict["total_losses"]["hyst_core_fundamental_freq"] = 0 # it is here 0 until the hystersis losses can be defined correctly in the solver
+                    log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
+                                                       log_dict["total_losses"]["eddy_core"]
+                    log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
+                                                               log_dict["total_losses"]["eddy_core"] + \
+                                                               log_dict["total_losses"]["all_windings_losses"]
+
+
+
+
+            #return log_dict
+
+
+
+        def common_log():
+
+
+
+            wire_type_list = []
+            for winding in self.windings:
+                wire_type_list.append(winding.conductor_type.name)
+
+            single_strand_cross_section_list = []
+            for winding in self.windings:
+                if winding.strand_radius:
+                    single_strand_cross_section = winding.strand_radius ** 2 * np.pi
+                    single_strand_cross_section_list.append(single_strand_cross_section)
+                else:
+                    single_strand_cross_section_list.append(None)
+
+            wire_weight_list = self.calculate_wire_weight()
+            core_weight = self.calculate_core_weight()
+
+            log_dict["misc"] = {
+                "core_2daxi_volume": self.calculate_core_volume(),
+                "core_2daxi_total_volume": self.calculate_core_volume_with_air(),
+                "core_2daxi_weight": core_weight,
+                "wire_lengths": self.calculate_wire_lengths(),
+                "wire_volumes": self.calculate_wire_volumes(),
+                "wire_weight": wire_weight_list,
+                "core_cost": ff.cost_function_core(core_weight, core_type="ferrite"),
+                "winding_cost": ff.cost_function_winding(wire_weight_list=wire_weight_list,
+                                                         wire_type_list=wire_type_list,
+                                                         single_strand_cross_section_list=single_strand_cross_section_list),
+                "total_cost_incl_margin": ff.cost_function_total(core_weight, core_type="ferrite",
+                                                                 wire_weight_list=wire_weight_list,
+                                                                 wire_type_list=wire_type_list,
+                                                                 single_strand_cross_section_list=single_strand_cross_section_list)
+            }
+            log_dict["simulation_settings"] = MagneticComponent.encode_settings(self)
+
+        if self.simulation_type == SimulationType.FreqDomain:
+            freq_domain_log()
+        elif self.simulation_type == SimulationType.TimeDomain:
+            time_domain_log()
+
+        common_log()
+
+        with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(log_dict, outfile, indent=2, ensure_ascii=False)
+
+
+
+
     def read_log(self) -> Dict:
         """
         Read results from electromagnetic simulation
@@ -1783,6 +2499,9 @@ class MagneticComponent:
             log = content
 
         return log
+
+
+
 
     def visualize(self):
         """
@@ -1813,185 +2532,109 @@ class MagneticComponent:
 
         # Mesh
         gmsh.option.setNumber("Mesh.SurfaceEdges", 0)
-        #if self.simulation_type == SimulationType.FreqDomain:
-        view = 0
-        if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
-            # Ohmic losses (weighted effective value of current density)
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
-            gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
-            gmsh.option.setNumber(f"View[{view}].RangeType", 2)
-            gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+        if self.simulation_type == SimulationType.FreqDomain:
+            view = 0
+            if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+                # Ohmic losses (weighted effective value of current density)
+                gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
+                gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+                gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+                gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+                gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+                ff.femmt_print(gmsh.option.getNumber(f"View[{view}].Max"))
+                view += 1
+
+            if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
+                # Ohmic losses (weighted effective value of current density)
+                gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
+                gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
+                gmsh.option.setNumber(f"View[{view}].RangeType", 2)
+                gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
+                gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
+                gmsh.option.setNumber(f"View[{view}].NbIso", 40)
+                view += 1
+
+            # Magnetic flux density
+            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+            gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
+            gmsh.option.setNumber(f"View[{view}].RangeType", 1)
             gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
             gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
             gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
             gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
-            gmsh.option.setNumber(f"View[{view}].NbIso", 40)
-            gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
-            ff.femmt_print(gmsh.option.getNumber(f"View[{view}].Max"))
-            view += 1
-
-        if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
-            # Ohmic losses (weighted effective value of current density)
-            gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
-            gmsh.option.setNumber(f"View[{view}].ScaleType", 2)
-            gmsh.option.setNumber(f"View[{view}].RangeType", 2)
-            gmsh.option.setNumber(f"View[{view}].SaturateValues", 1)
-            gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
-            gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
-            gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
-            gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
             gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
             gmsh.option.setNumber(f"View[{view}].NbIso", 40)
             view += 1
 
-        # Magnetic flux density
-        gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
-        gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
-        gmsh.option.setNumber(f"View[{view}].RangeType", 1)
-        gmsh.option.setNumber(f"View[{view}].CustomMin", gmsh.option.getNumber(f"View[{view}].Min") + epsilon)
-        gmsh.option.setNumber(f"View[{view}].CustomMax", gmsh.option.getNumber(f"View[{view}].Max"))
-        gmsh.option.setNumber(f"View[{view}].ColormapNumber", 1)
-        gmsh.option.setNumber(f"View[{view}].IntervalsType", 2)
-        gmsh.option.setNumber(f"View[{view}].ShowTime", 0)
-        gmsh.option.setNumber(f"View[{view}].NbIso", 40)
-        view += 1
-
-        # if self.simulation_type == SimulationType.TimeDomain:
-        #     # merge view files
-        #     gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2F_density.pos'))
-        #     gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2H_density.pos'))
-        #     gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'Magb.pos'))
-        #
-        #     # We then set some general options:
-        #     gmsh.option.setNumber("General.Trackball", 0)
-        #     gmsh.option.setNumber("General.RotationX", 0)
-        #     gmsh.option.setNumber("General.RotationY", 0)
-        #     gmsh.option.setNumber("General.RotationZ", 0)
-        #
-        #     white = (255, 255, 255)
-        #     black = (0, 0, 0)
-        #
-        #     # Color options are special
-        #     # Setting a color option of "X.Y" actually sets the option "X.Color.Y"
-        #     # Sets "General.Color.Background", etc.
-        #     gmsh.option.setColor("General.Background", white[0], white[1], white[2])
-        #     gmsh.option.setColor("General.Foreground", black[0], black[1], black[2])
-        #     gmsh.option.setColor("General.Text", black[0], black[1], black[2])
-        #
-        #     gmsh.option.setNumber("General.Orthographic", 0)
-        #     gmsh.option.setNumber("General.Axes", 0)
-        #     gmsh.option.setNumber("General.SmallAxes", 0)
-        #     # functions.
-        #     v = gmsh.view.getTags()
-        #     # We set some options for each post-processing view:
-        #
-        #     if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
-        #         # Ohmic losses (weighted effective value of current density)
-        #         #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
-        #         gmsh.option.setNumber(f"View[{v[0]}].ScaleType", 2)
-        #         gmsh.option.setNumber(f"View[{v[0]}].RangeType", 2)
-        #         gmsh.option.setNumber(f"View[{v[0]}].SaturateValues", 1)
-        #         gmsh.option.setNumber(f"View[{v[0]}].CustomMin", gmsh.option.getNumber(f"View[{v[0]}].Min") + epsilon)
-        #         gmsh.option.setNumber(f"View[{v[0]}].CustomMax", gmsh.option.getNumber(f"View[{v[0]}].Max"))
-        #         gmsh.option.setNumber(f"View[{v[0]}].ColormapNumber", 1)
-        #         gmsh.option.setNumber(f"View[{v[0]}].IntervalsType", 2)
-        #         gmsh.option.setNumber(f"View[{v[0]}].NbIso", 40)
-        #         gmsh.option.setNumber(f"View[{v[0]}].ShowTime", 1)
-        #         # gmsh.view.option.setString(v[0], "Name", "j2F Losses")
-        #         #
-        #         # gmsh.view.option.setNumber(v[0], "Axes", 1)
-        #         # gmsh.view.option.setNumber(v[0], "IntervalsType", 2)
-        #         # gmsh.view.option.setNumber(v[0], "Type", 2)
-        #         # gmsh.view.option.setNumber(v[0], "AutoPosition", 0)
-        #         # gmsh.view.option.setNumber(v[0], "PositionX", 85)
-        #         # gmsh.view.option.setNumber(v[0], "PositionY", 50)
-        #         # gmsh.view.option.setNumber(v[0], "Width", 200)
-        #         # gmsh.view.option.setNumber(v[0], "Height", 130)
-        #
-        #         #ff.femmt_print(gmsh.option.getNumber(f"View[{v[0]}].Max"))
-        #
-        #
-        #         if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
-        #             # Ohmic losses (weighted effective value of current density)
-        #             #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
-        #             gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
-        #             gmsh.option.setNumber(f"View[{v[1]}].RangeType", 2)
-        #             gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
-        #             gmsh.option.setNumber(f"View[{v[1]}].CustomMin",
-        #                                   gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
-        #             gmsh.option.setNumber(f"View[{v[1]}].CustomMax", gmsh.option.getNumber(f"View[{v[1]}].Max"))
-        #             gmsh.option.setNumber(f"View[{v[1]}].ColormapNumber", 1)
-        #             gmsh.option.setNumber(f"View[{v[1]}].IntervalsType", 2)
-        #             gmsh.option.setNumber(f"View[{v[1]}].NbIso", 40)
-        #             gmsh.option.setNumber(f"View[{v[1]}].ShowTime", 1)
-        #             #ff.femmt_print(gmsh.option.getNumber(f"View[{v[1]}].Max"))
-        #
-        #
-        #         # Magnetic flux density
-        #         #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
-        #         gmsh.option.setNumber(f"View[{v[2]}].ScaleType", 1)
-        #         gmsh.option.setNumber(f"View[{v[2]}].RangeType", 1)
-        #         gmsh.option.setNumber(f"View[{v[2]}].CustomMin", gmsh.option.getNumber(f"View[{v[2]}].Min") + epsilon)
-        #         gmsh.option.setNumber(f"View[{v[2]}].CustomMax", gmsh.option.getNumber(f"View[{v[2]}].Max"))
-        #         gmsh.option.setNumber(f"View[{v[2]}].ColormapNumber", 1)
-        #         gmsh.option.setNumber(f"View[{v[2]}].IntervalsType", 2)
-        #         gmsh.option.setNumber(f"View[{v[2]}].ShowTime", 1)
-        #         gmsh.option.setNumber(f"View[{v[2]}].NbIso", 40)
-        #
-        #         # Initialize timestep
-        #         t = 0
-        #         #max_timesteps = 200  # set time step
-        #         max_available_steps = int(gmsh.view.option.getNumber(v[0], "NbTimeStep")) -1
-        #         max_timesteps = min(200,max_available_steps)  # take the minimum of your desired max (200) and the available max
-        #
-        #         for num in range(1, max_timesteps):
-        #             # Set the current timestep for all views
-        #             for vv in v:
-        #                 gmsh.view.option.setNumber(vv, "TimeStep", t)
-        #
-        #             current_step = gmsh.view.option.getNumber(v[0], "TimeStep")
-        #             max_step = max_available_steps
-        #             if current_step < max_step:
-        #                 t = t + 1
-        #             else:
-        #                 t = 0
-
-                    # frames = 50
-                    # for num2 in range(frames):
-                    #     # Incrementally rotate the scene
-                    #     gmsh.option.setNumber("General.RotationX",
-                    #                           gmsh.option.getNumber("General.RotationX") + 10)
-                    #     gmsh.option.setNumber("General.RotationY",
-                    #                           gmsh.option.getNumber("General.RotationX") / 3)
-                    #     gmsh.option.setNumber("General.RotationZ",
-                    #                           gmsh.option.getNumber("General.RotationZ") + 0.1)
-                    #
-                    #     # Draw the scene
-                    #     gmsh.graphics.draw()
-
-                    # gmsh.view.option.setNumber(v[0], "RaiseZ",
-                    #                            gmsh.view.option.getNumber(v[0], "RaiseZ") +
-                    #                            0.01 / gmsh.view.option.getNumber(v[0], "Max") * t)
-                    # #t += 1  # Increment timestep
-                    # if num == 5:
-                    #     # Resize the graphics when num == 3, to create 640x480 frames
-                    #     gmsh.option.setNumber("General.GraphicsWidth",
-                    #                           gmsh.option.getNumber("General.MenuWidth") + 640)
-                    #     gmsh.option.setNumber("General.GraphicsHeight", 480)
-                    # frames = 50
-                    # for num2 in range(frames):
-                    #     # Incrementally rotate the scene
-                    #     gmsh.option.setNumber("General.RotationX",
-                    #                           gmsh.option.getNumber("General.RotationX") + 10)
-                    #     gmsh.option.setNumber("General.RotationY",
-                    #                           gmsh.option.getNumber("General.RotationX") / 3)
-                    #     gmsh.option.setNumber("General.RotationZ",
-                    #                           gmsh.option.getNumber("General.RotationZ") + 0.1)
-                    #
-                    #     # Draw the scene
-                    #     gmsh.graphics.draw()
+        if self.simulation_type == SimulationType.TimeDomain:
+            # merge view files
+            gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2F_density.pos'))
+            gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2H_density.pos'))
+            gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'Magb.pos'))
 
 
+            v = gmsh.view.getTags()
+            # We set some options for each post-processing view:
+
+            if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
+                # Ohmic losses (weighted effective value of current density)
+                #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
+                gmsh.option.setNumber(f"View[{v[0]}].ScaleType", 2)
+                gmsh.option.setNumber(f"View[{v[0]}].RangeType", 3)
+                gmsh.option.setNumber(f"View[{v[0]}].SaturateValues", 1)
+                gmsh.option.setNumber(f"View[{v[0]}].CustomMin", gmsh.option.getNumber(f"View[{v[0]}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{v[0]}].CustomMax", gmsh.option.getNumber(f"View[{v[0]}].Max"))
+                gmsh.option.setNumber(f"View[{v[0]}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{v[0]}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{v[0]}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{v[0]}].ShowTime", 4)
+                gmsh.option.setNumber(f"View[{v[0]}].TimeStep", 1)
+                gmsh.option.setNumber(f"View[{v[0]}].Time", 1)
+                gmsh.option.setNumber(f"View[{v[0]}].NbTimeStep", 1)
+
+
+
+                if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
+                    # Ohmic losses (weighted effective value of current density)
+                    #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
+                    gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
+                    gmsh.option.setNumber(f"View[{v[1]}].RangeType", 3)
+                    gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
+                    gmsh.option.setNumber(f"View[{v[1]}].CustomMin",
+                                          gmsh.option.getNumber(f"View[{v[1]}].Min") + epsilon)
+                    gmsh.option.setNumber(f"View[{v[1]}].CustomMax", gmsh.option.getNumber(f"View[{v[1]}].Max"))
+                    gmsh.option.setNumber(f"View[{v[1]}].ColormapNumber", 1)
+                    gmsh.option.setNumber(f"View[{v[1]}].IntervalsType", 2)
+                    gmsh.option.setNumber(f"View[{v[1]}].NbIso", 40)
+                    gmsh.option.setNumber(f"View[{v[1]}].ShowTime", 4)
+                    gmsh.option.setNumber(f"View[{v[1]}].TimeStep", 1)
+                    gmsh.option.setNumber(f"View[{v[1]}].Time", 1)
+                    gmsh.option.setNumber(f"View[{v[1]}].NbTimeStep", 1)
+                    #ff.femmt_print(gmsh.option.getNumber(f"View[{v[1]}].Max"))
+
+
+                # Magnetic flux density
+                #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+                gmsh.option.setNumber(f"View[{v[2]}].ScaleType", 1)
+                gmsh.option.setNumber(f"View[{v[2]}].RangeType", 3)
+                gmsh.option.setNumber(f"View[{v[2]}].CustomMin", gmsh.option.getNumber(f"View[{v[2]}].Min") + epsilon)
+                gmsh.option.setNumber(f"View[{v[2]}].CustomMax", gmsh.option.getNumber(f"View[{v[2]}].Max"))
+                gmsh.option.setNumber(f"View[{v[2]}].ColormapNumber", 1)
+                gmsh.option.setNumber(f"View[{v[2]}].IntervalsType", 2)
+                gmsh.option.setNumber(f"View[{v[2]}].ShowTime", 4)
+                gmsh.option.setNumber(f"View[{v[2]}].NbIso", 40)
+                gmsh.option.setNumber(f"View[{v[2]}].TimeStep", 1)
+                gmsh.option.setNumber(f"View[{v[2]}].Time", 1)
+                gmsh.option.setNumber(f"View[{v[2]}].NbTimeStep", 1)
 
 
 
@@ -2035,7 +2678,203 @@ class MagneticComponent:
             data = list(reader)
         return data[-last_n_values:-1] + [data[-1]]
 
-    def load_result(self, res_name: str, res_type: str = "value", last_n: int = 1, part:str = "real", position: int = 0):
+    def get_rolling_average(self, window_size):
+        """
+        Computes the rolling average for each result file and plots the original data
+        alongside the rolling average if show_rolling_average is True.
+        """
+
+        def rolling_calculation(res_name: str, res_path: str):
+            timesteps = []
+            data = []
+            # Reading data from the file
+            with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
+                lines = fd.readlines()
+            # Extracting timesteps and data values from the file
+            for line in lines:
+                line_values = line.split()
+                if len(line_values) == 2:
+                    timesteps.append(float(line_values[0]))
+                    data.append(float(line_values[1]))
+            # Error handling: Raising error if window size is greater than the number of data points
+            if window_size > len(data):
+                raise ValueError("The window size should not be greater than the total number of data points.")
+            # Creating a pandas DataFrame and computing the rolling average
+            df = pd.DataFrame({'data': data})
+            df['rolling_avg'] = df['data'].rolling(window_size, min_periods=1).mean()
+            rolling_averages = df['rolling_avg'].tolist()
+
+            # Plotting data with rolling average
+            plt.figure(figsize=(10, 5))
+            plt.plot(timesteps, data, label='Original Data')
+            plt.plot(timesteps, rolling_averages, label=f'Rolling Average (Window Size: {window_size})')
+            plt.xlabel('Time')
+            plt.ylabel(res_name)
+            plt.title(f'{res_name} with Rolling Average')
+            plt.legend()
+            plt.grid(True)
+            plt.show()
+
+        result_types = ["value"]  # can be extended as needed
+        # Looping through each result type to process the files
+        for res_type in result_types:
+            res_path = self.file_data.e_m_values_folder_path if res_type == "value" else self.file_data.e_m_circuit_folder_path
+            #some files are not needed for calculation /for ex. average files), so they are excluded
+            all_files = os.listdir(res_path)
+            dat_files = [file for file in all_files if
+                         file.endswith('.dat') and not file.endswith('_average.dat') and not file.endswith('_rms.dat')]
+
+            for dat_file in dat_files:
+                res_name = dat_file.replace('.dat', '')
+                rolling_calculation(res_name, res_path)
+            # Processing files in the winding-specific subdirectories, if they exist
+            for index, winding in enumerate(self.windings, start=1):
+                winding_folder_path = os.path.join(res_path, f"winding_{index}")
+                # some files are not needed for calculation /for ex. average files) in sub winding files, so they are excluded
+                if os.path.isdir(winding_folder_path):
+                    winding_files = os.listdir(winding_folder_path)
+                    winding_dat_files = [file for file in winding_files if
+                                         file.endswith('.dat') and not file.endswith('_average.dat')]
+
+                    for winding_dat_file in winding_dat_files:
+                        res_name = winding_dat_file.replace('.dat', '')
+                        rolling_calculation(res_name, winding_folder_path)
+    def calculate_average_files(self):
+        """
+        This function loops through each file in the specified result types directory, calculates the
+        average value of the data over time using the quadrature integral method, and writes this average
+        value to a new file. It handles both the main directory and subdirectories associated with specific
+        windings.
+
+        It performs the following steps:
+        1. Iterates over all specified result types (e.g., "value").
+        2. For each result type, it gathers all .dat files (excluding those already averaged) in the directory.
+        3. Calculates the quadrature integral and average of each file’s data.
+        4. Writes the average value to a new file with an '_average.dat' suffix.
+        5. Repeats the process for all .dat files in the winding-specific subdirectories.
+        """
+
+        def calculate_quadrature_integral(timesteps, data):
+            """
+            This sub-function calculates the integral of given data over specific timesteps using the quadrature method
+            """
+            func = lambda x: np.interp(x, timesteps, data)
+            return quadrature(func, timesteps[0], timesteps[-1])[0]
+        def calculate_squared_quadrature_integral(timesteps, data):
+            """
+            This sub-function calculates the integral of given data over specific timesteps using the quadrature method
+            """
+            func = lambda x: np.interp(x, timesteps, data)**2
+            return quadrature(func, timesteps[0], timesteps[-1])[0]
+
+        def calculate_average(integral, timesteps):
+            """
+            This function calculates the average in general
+            """
+            total_time = timesteps[-1] - timesteps[0]
+            if total_time == 0:
+                raise ValueError("Total time cannot be zero.")
+            return integral / total_time
+
+        def calculate_rms(squared_integral, timesteps):
+            """
+            This function calculates the RMS value in general
+            """
+            total_time = timesteps[-1] - timesteps[0]
+            if total_time == 0:
+                raise ValueError("Total time cannot be zero.")
+
+            mean_square = squared_integral / total_time  # Calculate the mean of the square of the data
+            return np.sqrt(mean_square)  # Take the square root to get RMS value
+
+
+        def calculate_average_time_domain_result(res_name, res_type):
+            """
+            Calculate the average value of a result in time domain simulation.
+            This function reads data from a specified result file, calculates the quadrature integral over time steps,
+            and then computes the average value over the total time period.
+
+            :param res_name: The name of the result parameter to be loaded.
+            :param res_type: The type of the result parameter, either "value" or "circuit".
+            :return: The average value of the result parameter over the time domain.
+            """
+
+            if res_type == "value":
+                res_path = self.file_data.e_m_values_folder_path
+            elif res_type == "circuit":
+                res_path = self.file_data.e_m_circuit_folder_path
+            else:
+                res_path = res_type
+
+            timesteps = []
+            data = []
+            # Reading data from the file
+            with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
+                lines = fd.readlines()
+            # Extracting timesteps and data values from the file
+            for line in lines:
+                line_values = line.split()
+                if len(line_values) == 2:
+                    timesteps.append(float(line_values[0]))
+                    data.append(float(line_values[1]))
+            #finding the integral, and then calculating the average (integral(data)/T)
+            integral = calculate_quadrature_integral(timesteps, data)
+            average = calculate_average(integral, timesteps)
+            #write average files
+            output_filename = os.path.join(res_path, f"{res_name}_average.dat")
+
+
+            #writing files for average values
+            with open(output_filename, 'w') as file:
+                file.write(str(average))
+            #finding the rms only for volate_\d+.dat file, like (voltage_1, voltage_2 and so on)
+            if re.match(r'Voltage_\d+', res_name):
+                integral_squared = calculate_squared_quadrature_integral(timesteps, data)
+                rms = calculate_rms(integral_squared, timesteps)
+                rms_output_filename = os.path.join(res_path, f"{res_name}_rms.dat")
+                with open(rms_output_filename, 'w') as file:
+                    file.write(str(rms))
+
+        # finding the average and RMS of current to use in log function
+            for num in range(len(self.windings)):
+                if self.current[num]:
+                    # sum the currents for every winding
+                    sum_current = sum(self.current[num])
+                    #finding the average of current for every winding and add it to list to use it in write_log function
+                    average = sum_current / len(self.current[num])
+                    self.average_currents.append(average)
+                    #find the rms for current [sqrt(integral(data)²/T]
+                    squared_integral = calculate_squared_quadrature_integral(self.time, self.current[num])
+                    #finding the rms of current for every winding and add it to list to use it in write_log function
+                    I_rms = calculate_rms(squared_integral, self.time)
+                    self.rms_currents.append(I_rms)
+
+
+        result_types = ["value"]  # can be extended as needed in future
+        # Looping through each result type to process the files
+        for res_type in result_types:
+            res_path = self.file_data.e_m_values_folder_path if res_type == "value" else None
+            # some files are not needed for calculation /for ex. average files), so they are excluded
+            all_files = os.listdir(res_path)
+            dat_files = [file for file in all_files if file.endswith('.dat') and not file.endswith('_average.dat') and not file.endswith('_rms.dat')]
+
+            for dat_file in dat_files:
+                res_name = dat_file.replace('.dat', '')
+                calculate_average_time_domain_result(res_name, res_type)
+            # Processing files in the winding-specific subdirectories, if they exist
+            for index, winding in enumerate(self.windings, start=1):
+                winding_folder_path = os.path.join(res_path, f"winding_{index}")
+                # some files are not needed for calculation /for ex. average files), so they are excluded
+                if os.path.isdir(winding_folder_path):
+                    winding_files = os.listdir(winding_folder_path)
+                    winding_dat_files = [file for file in winding_files if
+                                         file.endswith('.dat') and not file.endswith('_average.dat')]
+
+                    for winding_dat_file in winding_dat_files:
+                        res_name = winding_dat_file.replace('.dat', '')
+                        calculate_average_time_domain_result(res_name, winding_folder_path)
+
+    def load_result(self, res_name: str, res_type: str = "value", last_n: int = 1, part:str = "real", position: int = 0, average: bool = False, rms: bool = False):
         """
         Loads the "last_n" parameters from a result file of the scalar quantity "res_name".
         Either the real or imaginary part can be chosen.
@@ -2046,26 +2885,52 @@ class MagneticComponent:
         :return: last_n entries of the chosen result file
         :rtype: list
         """
-        if res_type=="value":
-            res_path=self.file_data.e_m_values_folder_path
-        if res_type=="circuit":
-            res_path=self.file_data.e_m_circuit_folder_path
+        #losses = [] # Initialize the result list
+        if res_type == "value":
+            res_path = self.file_data.e_m_values_folder_path
+        if res_type == "circuit":
+            res_path = self.file_data.e_m_circuit_folder_path
 
 
-        with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
-            lines = fd.readlines()[-last_n:]
-            if self.simulation_type == SimulationType.FreqDomain:
+        if self.simulation_type == SimulationType.FreqDomain:
 
+            with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
+                lines = fd.readlines()[-last_n:]
                 if part == "real":
-                    result = [float(line.split(sep=' ')[1 + 2*position + 1]) for n, line in enumerate(lines)]
+                    result = [float(line.split(sep=' ')[1 + 2 * position + 1]) for n, line in enumerate(lines)]
                 if part == "imaginary":
-                    result = [float(line.split(sep=' ')[2 + 2*position + 1]) for n, line in enumerate(lines)]
+                    result = [float(line.split(sep=' ')[2 + 2 * position + 1]) for n, line in enumerate(lines)]
 
+        elif self.simulation_type == SimulationType.TimeDomain:
 
+            if average:
 
-            elif self.simulation_type == SimulationType.TimeDomain:
-                result = [float(line.split(sep=' ')[1 + 2*position + 1]) for n, line in enumerate(lines)]
+                with open(os.path.join(res_path, f"{res_name}_average.dat")) as fd:
+                    line = fd.readline().strip()
+                    result = [float(line)]
+
+            elif rms:
+                with open(os.path.join(res_path, f"{res_name}_rms.dat")) as fd:
+                    line = fd.readline().strip()
+                    result = [float(line)]
+
+            else:
+
+                #timesteps = []  # Initializing
+                data = []
+                with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
+                    lines = fd.readlines()
+
+                    for line in lines:
+                        line_values = line.split()
+                        if len(line_values) == 2:
+                            #timesteps.append(float(line_values[0]))
+                            data.append(float(line_values[1]))
+
+                result = list(zip(data))  # Returns list of (time, data) pairs
+
         return result
+
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Litz Approximation [internal methods]

@@ -11,6 +11,7 @@ PostOperation Get_global UsingPost MagDyn_a {
   //Print[ SoF[ DomainC ], OnGlobal, Format TimeTable,  File > Sprintf("results/SF_iron.dat")] ; // TODO: Complex power
   //Print[ j2F[ Winding~{1} ], OnGlobal, Format TimeTable, File > StrCat[DirResVals, "j2F_1.dat"]] ;
 
+  
   For n In {1:n_windings}
       Print[ j2F[ Winding~{n} ], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n], LastTimeStepOnly, StoreInVariable $j2F, SendToServer StrCat[po,"j2F[J]"],  Color "LightYellow" ];
   EndFor
@@ -58,6 +59,9 @@ PostOperation Get_global UsingPost MagDyn_a {
 
   // Eddy Current Losses according to sigma in core/iron
   Print[ j2F[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"CoreEddyCurrentLosses.dat"], LastTimeStepOnly, StoreInVariable $j2F] ;
+ // Hysteresis Losses according to complex permeability in Core
+  // Hysteresis Losses according to complex permeability in core/iron (not true in time domain)
+  //Print[ p_hyst[ Iron ], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"p_hyst.dat"], LastTimeStepOnly] ;// Core losses
 
   // Steinmetz Core Losses
   If(Flag_Generalized_Steinmetz_loss)
@@ -73,21 +77,7 @@ PostOperation Get_global UsingPost MagDyn_a {
 
   // Stored Energy
   Print[ MagEnergy[Domain], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy, SendToServer StrCat[po,"ME"],  Color "LightYellow"];
-//  Print[ JouleLosses[DomainC], OnGlobal, Format TimeTable,
-//    File > StrCat[Dir,"JouleLosses",ExtGnuplot], LastTimeStepOnly, StoreInVariable $JouleLosses,
-//    SendToServer StrCat[po,"JouleLosses[J]"],  Color "LightYellow" ];
-  // Print[ MagEnergy[Iron], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_iron.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
-  // Print[ MagEnergy[Air], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_air.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
-  // Print[ MagEnergy[Winding1], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"ME_winding1.dat"], LastTimeStepOnly, StoreInVariable $MagEnergy];
 
-  // Flux (Linkage)
-
-  //Print[ Flux_Linkage~{1}[DomainCond~{1}], OnGlobal, Format Table, File > StrCat[DirResVals,"Flux_Linkage_1.dat"]];
-  // Print[ Flux_Linkage_1[DomainCond1], OnGlobal, Format Table];
-
-  //For n In {1:n_windings}
-      //Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table, File > Sprintf[StrCat[DirResVals,"Flux_Linkage_%g.dat"], n]];
-      //Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table];
   //EndFor
    For n In {1:n_windings}
       Print[ Flux_Linkage~{n}[DomainCond~{n}], OnGlobal, Format Table, File > Sprintf[StrCat[DirResVals,"Flux_Linkage_%g.dat"], n], LastTimeStepOnly, StoreInVariable $Flux,
@@ -103,12 +93,18 @@ PostOperation Get_global UsingPost MagDyn_a {
       EndIf
   EndFor
 
+
   // Voltage
   //Print[ Voltage~{1}[DomainCond~{1}], OnGlobal, Format TimeTable, File > StrCat[DirResVals,"Voltage_1.dat"]];
 
   For n In {1:n_windings}
       Print[ Voltage~{n}[DomainCond~{n}], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"Voltage_%g.dat"], n], LastTimeStepOnly];
   EndFor
+
+
+//  For n In {1:n_windings}
+//      Print[ Current~{n}[DomainCond~{n}], OnGlobal, Format TimeTable, File > Sprintf[StrCat[DirResVals,"Current_%g.dat"], n], LastTimeStepOnly];
+//  EndFor
 
   // Circuit Quantities
 
@@ -144,4 +140,12 @@ PostOperation Get_global UsingPost MagDyn_a {
   EndIf
 
 }
+//PostOperation {
+//  { Name T_resampled; NameOfPostProcessing The; ResampleTime[time0, timemax, dtResample];
+//    Operation {
+//      Print[ j2F, OnElementsOf Winding~{n} , File "j2F.dat"];
+//    }
+//  }
+//}
+
 

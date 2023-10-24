@@ -1,3 +1,5 @@
+import numpy as np
+
 import femmt as fmt
 import os
 
@@ -151,6 +153,11 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 6.a. start simulation
+    # t_exemplary = np.linspace(0, 2, 200) * 1/inductor_frequency
+    # i_exemplary = 4.5*np.cos(2*np.pi*t_exemplary*inductor_frequency)
+    # from matplotlib import pyplot as plt
+    # plt.plot(t_exemplary, i_exemplary)
+    # plt.show()
     geo.single_simulation(freq=inductor_frequency, current=[4.5],
                           plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
 

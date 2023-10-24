@@ -16,12 +16,13 @@ Nb_max_iter             = 20;
 relaxation_factor       = 1.;
 stop_criterion          = 1e-8;
 Flag_Circuit            = Flag_ImposedVoltage;
-T = 1/Freq;
-time0 = 0;
+//T = 1/Freq;
+//time0 = 0;
 NbT = 1;
-timemax = 3*NbT*T;
-NbSteps = 50;
-delta_time = 3*T/NbSteps;
+//timemax = NbT*T;
+//NbSteps = 10;
+//delta_time = T/NbSteps;
+//dtResample=0.5
 //delta_time = timemax/NbSteps;
 // ----------------------
 // half inductor with axisymmetry
@@ -176,15 +177,15 @@ Group{
 // ----------------------
 Function {
 
-  DefineConstant[
-    Freq = { 50., Min 0, Max 1e3, Step 1,
-      Name "Input/21Frequency [Hz]", Highlight "AliceBlue"},
-    Irms = { Val_EE_1/Sqrt[2], Min 1, Max 4*Val_EE_1/Sqrt[2], Step 2,
-      Name "Input/4Coil Parameters/0Current (rms) [A]", Highlight "AliceBlue"},
-    NbWires = { n_windings,
-      Name "Input/4Coil Parameters/1Number of windings", Highlight "AliceBlue"}___
-
-  ];
+//  DefineConstant[
+//    Freq = { 50., Min 0, Max 1e3, Step 1,
+//      Name "Input/21Frequency [Hz]", Highlight "AliceBlue"},
+//    Irms = { Val_EE_1/Sqrt[2], Min 1, Max 4*Val_EE_1/Sqrt[2], Step 2,
+//      Name "Input/4Coil Parameters/0Current (rms) [A]", Highlight "AliceBlue"},
+//    NbWires = { n_windings,
+//      Name "Input/4Coil Parameters/1Number of windings", Highlight "AliceBlue"}___
+//
+//  ];
 
   //SurfCoil[] = AreaCell[]{#(Winding~{n})} ;
   //AreaCell[#{Winding~{n}}]     =  1. ;
@@ -238,13 +239,12 @@ Function {
   //mu_imag[ #{Iron} ] = mu0 * f_mu_imag[$1, $2];
 
   If(!Flag_NL)
-    If(Flag_Fixed_Loss_Angle)
-        mu[#{Iron}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
-        nu[#{Iron}]   = 1/mu[$1, $2] ;
-    ElseIf(Flag_Permeability_From_Data)
-        //mu[#{Iron}]   = Complex[mu0*(mur^2-f_mu_imag[$1, $2]^2)^(0.5), mu0*f_mu_imag[$1, $2]] ;  // TODO
-        mu[#{Iron}]   = Complex[mu0*f_mu_real[$1], -mu0*f_mu_imag[$1]] ;
-        nu[#{Iron}]   = 1/mu[$1, $2] ;
+    If(Flag_Fixed_Loss_Angle) //should be changed here for time_domain
+        mu[#{Iron}]   = mu0*mur_real;
+        nu[#{Iron}]   = 1/mu[$1] ;
+    ElseIf(Flag_Permeability_From_Data) //should be changed here for time_domain
+        mu[#{Iron}]   = mu0*f_mu_real[$1];
+        nu[#{Iron}]   = 1/mu[$1] ;
     Else
         mu[#{Iron}]   = mu0*mur ;
         nu[#{Iron}]   = 1/mu[] ;
@@ -266,9 +266,10 @@ Function {
 
   // Excitation Current
 
-  Val_EE_1 = Irms * Sqrt[2];
+  //Val_EE_1 = Irms * Sqrt[2];
   For n In {1:n_windings}
-      FSinusoidal~{n}[] = F_Cos_wt_p[]{2*Pi*Freq, Phase~{n}}; //Complex_MH[1,0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
+      //FSinusoidal~{n}[] = F_Cos_wt_p[]{2*Pi*Freq, Phase~{n}}; //Complex_MH[1,0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
+      FSinusoidal~{n}[] = InterpolationLinear[$Time]{ListAlt[TimeList, CurrentList~{n}]};
       Fct_Src~{n}[] = FSinusoidal~{n}[];
       Signn~{n} = (Phase~{n}==Pi) ? -1 : 1;
   EndFor
@@ -418,6 +419,25 @@ Resolution {
 
       For n In {1:n_windings}
           CreateDir[DirResValsWinding~{n}];
+          //Before starting a new time domain simulation, it's essential to ensure that there's no lingering data from previous runs.
+          //The following lines remove files related to past simulations to guarantee that when averages are calculated, they are based on the data from the current simulation.
+          DeleteFile[Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n]];
+          DeleteFile[StrCat[DirResVals,"CoreEddyCurrentLosses.dat"]];
+          DeleteFile[StrCat[DirResVals,"p_hyst.dat"]];
+          DeleteFile[StrCat[DirResVals,"piGSE.dat"]];
+          DeleteFile[StrCat[DirResVals,"pSE.dat"]];
+          DeleteFile[StrCat[DirResVals,"ME.dat"]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"Flux_Linkage_%g.dat"], n]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"L_%g_%g.dat"], n, n]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"LFromMagEnergy_%g_%g.dat"], n, n]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"Voltage_%g.dat"], n]];
+          For isF In {1:nbturns~{n}}
+            DeleteFile[Sprintf[StrCat[DirResValsWinding~{n},"Losses_turn_%g.dat"], isF]];
+          EndFor
+          DeleteFile[StrCat[DirResFields, "Magb"]];
+          DeleteFile[StrCat[DirResFields, "j2F_density"]] ;
+          DeleteFile[StrCat[DirResFields, "j2H_density"]] ;
       EndFor
       InitSolution[A] ;
       TimeLoopTheta[time0, timemax, delta_time, 1.]{ // Implicit Euler (theta=1)
@@ -430,10 +450,11 @@ Resolution {
         EndIf
         SaveSolution[A] ;
 
-
         PostOperation[Map_local] ;
         Test[ $TimeStep > 1 ]{
             PostOperation[Get_global];
+
+      //PostOperation[T_resampled];
         }
       }
     }// Operation
@@ -489,14 +510,14 @@ PostProcessing {
       // ------------------------------------------------------------------------------------------------
       // Permeability Plot
 
-      { Name nur ; Value { Term { [ Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      //{ Name nur ; Value { Term { [ Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       //{ Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-      { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name mur_im ; Value { Term { [ Norm [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
-      { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_im / (mur_re^2 + mur_im^2)
+//      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
+//      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
+//      { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+//      { Name mur_im ; Value { Term { [ Norm [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ] ; In Domain ; Jacobian Vol ; } } }
+//      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
+//      { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_im / (mur_re^2 + mur_im^2)
 
 
       // ------------------------------------------------------------------------------------------------
@@ -541,17 +562,22 @@ PostProcessing {
       { Name j2F_density ; Value { Integral {
              [ CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
              In DomainC ; Jacobian Vol ; Integration II ; } } }
+//     { Name Average_j2F ; Value { Integral {
+//            [ $j2F/T ]  ;
+//            In DomainC ; Jacobian Vol ; Integration II ; } } }
+
+      //{ Name Average_j2F ; Value { Term { Type Global; [ $j2F / T ] ; In DomainDummy ; } } }
 
 
       // DomainS (Stranded Conductors)
 
 
       { Name j2H ; Value { Integral {
-           [ CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
+           [ CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
            In DomainS ; Jacobian Vol ; Integration II ; } } }
 
       { Name j2H_density ; Value { Integral {
-           [ CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
+           [ CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
            In DomainS ; Jacobian Vol ; Integration II ; } } }
 
       { Name j2Hprox ; Value { Integral {
@@ -590,6 +616,19 @@ PostProcessing {
         { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
                                      ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
       EndIf
+
+      // hysteresis losses need to be studied in time domain simulation
+      // Hysteresis Losses (According To Complex Core Parameters)
+      // not true in time_domain
+//      { Name p_hyst ; Value { Integral {
+//        // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
+//        [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
+//        In Iron ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
+//
+//      { Name p_hyst_density ; Value { Integral {
+//        [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
+//        In Iron ; Jacobian Vol ; Integration II ;} } }
+
 
       // ------------------------------------------------------------------------------------------------
       // Energy
@@ -641,6 +680,12 @@ PostProcessing {
       EndFor
 
       // ------------------------------------------------------------------------------------------------
+      // Current (Current_i = 1/nu0 integral B dl)
+//       For n In {1:n_windings}
+//           { Name Current~{n} ; Value { Integral { [ CoefGeo / (AreaCell~{n} * nu0) ] ; In DomainCond~{n} ; Jacobian Vol; Integration II; }}}
+//       EndFor
+
+      // ------------------------------------------------------------------------------------------------
       // Flux (Linkage)
 
       For n In {1:n_windings}
@@ -660,6 +705,14 @@ PostProcessing {
           EndIf
       EndFor
 
+
+
+//      For n In {1:n_windings}
+//          If(Val_EE~{n}!=0)
+//              { Name L~{n}~{n} ; Value { Term { Type Global; [ $Flux_Linkage * 1e3/Val_EE~{n} ] ; In DomainDummy ; } } }
+//              { Name LFromMagEnergy~{n}~{n} ; Value { Term { Type Global; [ 2 * $MagEnergy * 1e3/(Val_EE~{n}*Val_EE~{n}) ] ; In DomainDummy ; } } }
+//          EndIf
+//      EndFor
 
       // Circuit Quantities
       { Name U ; Value {

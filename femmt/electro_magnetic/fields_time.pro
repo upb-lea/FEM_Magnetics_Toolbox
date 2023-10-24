@@ -1,3 +1,5 @@
+
+
 // === Field Quantities ===
 
 PostOperation Map_local UsingPost MagDyn_a {
@@ -80,6 +82,7 @@ PostOperation Map_local UsingPost MagDyn_a {
       "View[k].RangeType = 3;" ,// per timestep
       "View[k].NbIso = 25;",
       "View[k].IntervalsType = 3;",
+      "View[k].AutoPosition = 3",
       "EndFor"// iso values
     ], File "option.pos"];
   // RangeType = 1; // Value scale range type (1=default, 2=custom, 3=per time step)

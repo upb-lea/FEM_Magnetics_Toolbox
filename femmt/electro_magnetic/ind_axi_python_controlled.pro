@@ -389,7 +389,10 @@ Resolution {
 
     Operation {
 
-
+      //Before starting a new time simulation, it's essential to ensure that there's no lingering data from previous runs.
+      //The following lines remove files related to past simulations to guarantee that when averages in time_domain simulation are calculated, they are based on the data from the current simulation.
+      //it is also needed here as when you run a freq domain simulation, then you run the time domain simulation,
+      //the DeleteFiles commands in ind_axi_python_controlled_time.pro will not delete the values of freq domain results!!
       For n In {1:n_windings}
           CreateDir[DirResValsWinding~{n}];
       EndFor
