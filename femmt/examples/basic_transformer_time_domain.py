@@ -1,4 +1,5 @@
 import femmt as fmt
+import materialdatabase as mdb
 import os
 
 def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
@@ -17,25 +18,23 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                silent=False, is_gui=is_test)
+                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295,core_h=0.04)
     # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
     #                 permeability_datasource=fmt.MaterialDataSource.Custom,
     #                 permittivity_datasource=fmt.MaterialDataSource.Custom)
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material="N49", temperature=45, frequency=200000,
-                    # permeability_datasource="manufacturer_datasheet",
+                    material=mdb.Material.N49, temperature=45, frequency=200000,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
-                    # permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
                     mu_r_abs=3000, phi_mu_deg=0,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    # permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    mdb_verbosity=fmt.Verbosity.Silent,
                     sigma=1)
     geo.set_core(core)
 
@@ -78,7 +77,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     from matplotlib import pyplot as plt
     import numpy as np
     # t = np.linspace(0, 2, 30) * 1/inductor_frequency
-    t = np.linspace(0, 2 / 200000, 100)
+    t = np.linspace(0, 2 / 200000, 5)
     t_list = [float(x) for x in t.tolist()]
     # # Current values
     current_values_1 = 2 * np.cos(2 * np.pi * 200000 * t)
@@ -119,10 +118,12 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
                                time_period=1 / 200000,
                                initial_time=0,
                                timemax=1 / 200000,
-                               NbSteps=100,
-                               delta_time=((1 / 200000) / 100),
+                               NbSteps=5,
+                               delta_time=((1 / 200000) / 5),
                                plot_interpolation=False,
-                               show_fem_simulation_results=True)
+                               show_fem_simulation_results=True,
+                               show_rolling_average=True,
+                               rolling_avg_window_size=5)
 
 
 

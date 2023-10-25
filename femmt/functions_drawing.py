@@ -1,6 +1,7 @@
 from femmt import *
 from femmt.dtos import *
 import copy
+import numpy as np
 
 def number_of_rows(row: ConductorRow):
     """
@@ -209,9 +210,106 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     # print(f"{insulation_stack = }")
     # print(f"{insulation_tags = }")
 
+
+def get_set_of_integers_from_string_list(string_list):
+    integer_list = []
+    for string in string_list:
+        try:
+            if int(string) not in integer_list:
+                integer_list.append(int(string))
+        except:
+            pass
+    return integer_list
+
+
+def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingSchemesFoilLitz, stack_order, primary_additional_bobbin, center_foil_additional_bobbin,
+                                         primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow, isolations: ThreeWindingIsolation):
+
+    # Init the winding counters (needed for vertical insulation adjustments)
+    number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = 0, 0, 0
+
+    # Split the interleaving scheme directive to obtain the single stacked winding parts
+    string_stack_order = interleaving_scheme.split(sep="_")
+
+    # Needed to shift all other primary rows half a position to the right (quasi hexagonal)
+    max_primary_conductors_per_row = max(get_set_of_integers_from_string_list(string_stack_order))
+
+    # Iterate over the stack
+    for no_element, element in enumerate(string_stack_order):
+
+        # Foil windings are handled first: Secondary and Tertiary (usually symmetric)
+        if element == "sec" or element == "ter":
+            if element == "sec":
+                temp_row = secondary_row
+                number_of_secondary_rows += 1
+            elif element == "ter":
+                temp_row = tertiary_row
+                number_of_tertiary_rows += 1
+
+            # Stacking of the foils does not depend on secondary and tertiary
+            # center_foil_additional_bobbin affects only, if the foil is in the inner 50 % of all rows (close to the air gap)
+            center_interval = 0.5
+            if no_element < len(string_stack_order)*(center_interval/2) or no_element >= len(string_stack_order)*(1/2+center_interval/2):
+                stack_order.append(temp_row)
+            else:
+                center_temp_row = copy.deepcopy(temp_row)
+                center_temp_row.additional_bobbin += center_foil_additional_bobbin
+                stack_order.append(center_temp_row)
+
+        # Primary litz wire is handled secondly
+        else:
+            temp_row = copy.deepcopy(primary_row)
+            temp_row.number_of_conds_per_row = int(element)
+            temp_row.additional_bobbin = primary_additional_bobbin
+
+            if temp_row.number_of_conds_per_row < max_primary_conductors_per_row:
+                temp_row.additional_bobbin += temp_row.row_height/2 + isolations.primary_to_primary/2
+            stack_order.append(temp_row)
+            number_of_primary_rows += 1
+
+    return number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows
+
+
+def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_row, secondary_row, tertiary_row,
+                                                   primary_additional_bobbin, center_foil_additional_bobbin,
+                                                   isolations, available_height):
+    # Initial stacking with predefined minimum insulations
+    initial_stack_order = []
+
+    number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = \
+        stack_order_from_interleaving_scheme(interleaving_scheme, initial_stack_order, primary_additional_bobbin, center_foil_additional_bobbin,
+                                             primary_row, secondary_row, tertiary_row, isolations)
+
+    insulation_tags = insert_insulations_to_stack(initial_stack_order, isolations)
+    number_of_insulations_primary_to_primary = insulation_tags.count("primary_to_primary")
+    number_of_insulations_primary_to_secondary = insulation_tags.count("primary_to_secondary") + insulation_tags.count("secondary_to_primary") + \
+                                                 insulation_tags.count("primary_to_tertiary") + insulation_tags.count("tertiary_to_primary")
+    number_of_insulations_secondary_to_secondary = insulation_tags.count("secondary_to_secondary") + insulation_tags.count("tertiary_to_tertiary") + \
+                                                   insulation_tags.count("secondary_to_tertiary") + insulation_tags.count("tertiary_to_secondary")
+
+    # 1
+    minimum_needed_height = number_of_primary_rows * primary_row.row_height + \
+                            number_of_secondary_rows * secondary_row.row_height + \
+                            number_of_tertiary_rows * secondary_row.row_height + \
+                            number_of_insulations_primary_to_primary * isolations.primary_to_primary + \
+                            number_of_insulations_secondary_to_secondary * isolations.secondary_to_tertiary + \
+                            number_of_insulations_primary_to_secondary * isolations.primary_to_secondary
+
+    # 2
+    new_iso_parameter = np.round((available_height - minimum_needed_height +
+                                  number_of_insulations_primary_to_secondary * isolations.primary_to_secondary) /
+                                 number_of_insulations_primary_to_secondary, 9) - 1e-9
+    if new_iso_parameter > isolations.primary_to_secondary:
+        isolations.primary_to_secondary = new_iso_parameter
+        isolations.primary_to_tertiary = new_iso_parameter
+        isolations.tertiary_to_primary = new_iso_parameter
+        isolations.secondary_to_primary = new_iso_parameter
+
+
 def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow,
-                                    available_height: float, isolations: ThreeWindingIsolation, interleaving_type: CenterTappedInterleavingType,
-                                    primary_additional_bobbin):
+                                    isolations: ThreeWindingIsolation, available_height: float,
+                                    interleaving_type: CenterTappedInterleavingType, interleaving_scheme: InterleavingSchemesFoilLitz,
+                                    primary_additional_bobbin: float, center_foil_additional_bobbin: float):
     """Defines the vertical stacking of previously defined ConductorRows.
     IMPORTANT DEFINITION: the rows are calculated without taking into account
     any vertical insulation. Only the horizontal insulation from conductors
@@ -282,90 +380,24 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
 
     elif interleaving_type == CenterTappedInterleavingType.TypeC:
-        number_of_single_rows = None
 
-        # Define Row with 4 conductors
-        rowA = copy.deepcopy(primary_row)
-        rowA.number_of_conds_per_row = 4
-        rowA.additional_bobbin = primary_additional_bobbin
+        # Implicit usage of the available height to ensure symmetrical placement of secondary and tertiary winding
+        adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_row, secondary_row, tertiary_row,
+                                                       primary_additional_bobbin, center_foil_additional_bobbin,
+                                                       isolations, available_height)
 
-        # Define Row with 3 conductors
-        rowB = copy.deepcopy(primary_row)
-        rowB.number_of_conds_per_row = 3
-        rowB.additional_bobbin = primary_additional_bobbin
-
-        def stack_TypeC(stack_order):
-
-            # Stack the predefined rows
-            stack_order.append(tertiary_row)
-            stack_order.append(rowB)
-            stack_order.append(rowA)
-            stack_order.append(secondary_row)
-            stack_order.append(tertiary_row)
-            stack_order.append(rowA)
-            stack_order.append(rowB)
-            stack_order.append(secondary_row)
-
-
-
-        # Initial stacking with predefined minimum insulations
-        initial_stack_order = []
-        stack_TypeC(initial_stack_order)
-        insulation_tags = insert_insulations_to_stack(initial_stack_order, isolations)
-        # print(f"{insulation_tags = }")
-
-
-        number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = 0, 0, 0
-        number_of_primary_rows = 4
-        number_of_secondary_rows = 2
-        number_of_tertiary_rows = 2
-
-        number_of_insulations_primary_to_primary = insulation_tags.count("primary_to_primary")
-        number_of_insulations_primary_to_secondary = insulation_tags.count("primary_to_secondary") + insulation_tags.count("secondary_to_primary") + \
-                                                     insulation_tags.count("primary_to_tertiary") + insulation_tags.count("tertiary_to_primary")
-        number_of_insulations_secondary_to_secondary = insulation_tags.count("secondary_to_secondary") + insulation_tags.count("tertiary_to_tertiary") + \
-                                                       insulation_tags.count("secondary_to_tertiary") + insulation_tags.count("tertiary_to_secondary")
-
-
-
-        # 1 benötigte Höhe inklusive der mindest isolation 1 und 2/3 berechnen (könnte man auch nach Stack the predefined rows ausführen, dann spart man sich die Hardcodes)
-        # 2 CHECK: Der Abstand (isolation/bobbin,  zwischen 1 und 2/3 muss mindestens dem vorgegebenen Wert entsprechen)
-        # 3 falls bestanden: isolation/abstand so wählen, dass benötigte Höhe = verfügbare Höhe
-
-        # 1
-        minimum_needed_height = number_of_primary_rows * primary_row.row_height + \
-                                number_of_secondary_rows * secondary_row.row_height + \
-                                number_of_tertiary_rows * secondary_row.row_height + \
-                                number_of_insulations_primary_to_primary * isolations.primary_to_primary + \
-                                number_of_insulations_secondary_to_secondary * isolations.secondary_to_tertiary + \
-                                number_of_insulations_primary_to_secondary * isolations.primary_to_secondary
-
-        # 2
-        # print(f"{isolations = }")
-        import numpy as np
-        new_iso_parameter = np.round((available_height - minimum_needed_height +
-                                      number_of_insulations_primary_to_secondary * isolations.primary_to_secondary) /
-                                     number_of_insulations_primary_to_secondary, 9) - 1e-9
-        if new_iso_parameter > isolations.primary_to_secondary:
-            isolations.primary_to_secondary = new_iso_parameter
-            isolations.primary_to_tertiary = new_iso_parameter
-            isolations.tertiary_to_primary = new_iso_parameter
-            isolations.secondary_to_primary = new_iso_parameter
-
-        # print(f"{available_height = }")
-        # print(f"{minimum_needed_height = }")
-
-        # 3
-        # print(f"{isolations = }")
-
+        # Placing with adjusted isolation
         stack_order = []
-        stack_TypeC(stack_order)
+        stack_order_from_interleaving_scheme(interleaving_scheme, stack_order,
+                                             primary_additional_bobbin, center_foil_additional_bobbin,
+                                             primary_row, secondary_row, tertiary_row,
+                                             isolations)
 
         # Add insulations afterwards
         insert_insulations_to_stack(stack_order, isolations)
 
         # Create the complete ConductorStack from the stack_order
-        return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
+        return ConductorStack(number_of_groups=0, number_of_single_rows=None, order=stack_order)
 
     elif interleaving_type == CenterTappedInterleavingType.TypeD:
         number_of_single_rows = None

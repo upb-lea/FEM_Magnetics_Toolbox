@@ -37,7 +37,8 @@ n_windings = Number_of_Windings;  //added by Othman
 OUTBND              = 111111;
 AIR                 = 110000;
 AIR_EXT             = 110001;
-IRON                = 120000;
+AIR_COND            = 1000000;
+CORE_PN             = 120000;
 
 //physical numbers of conductors in n transformer
 For n In {1:n_windings}
@@ -56,49 +57,63 @@ Group{
   // Physical Domains
   // ----------------------
   Air  = Region[{AIR, AIR_EXT}];
-  Iron = Region[{IRON}];
+
+  Core = Region[{}];
+  // Core Domain
+  For n In {1:nCoreParts}
+    CorePart~{n} = Region[{(CORE_PN+n-1)}];
+    Core += Region[{(CORE_PN+n-1)}];
+  EndFor
+
+
+  // Current Conducting Domains
+  // Create a region for the winding
+  For n In {1:n_windings} // loop over each winding
+      Winding~{n} = Region[{}]; // create a region for the winding
+      StrandedWinding~{n} = Region[{}]; // create a region for the stranded winding
+  EndFor
+
+
+  // Loop over each winding
+  For winding_number In {1:n_windings}
+      nbturns~{winding_number} = NbrCond~{winding_number} / SymFactor;
+       // Loop over each turn in this winding to create a region for turns and then adding it to the winding
+      For turn_number In {1:nbturns~{winding_number}}
+        // Solid
+        Turn~{winding_number}~{turn_number} = Region[{(iCOND~{winding_number}+turn_number-1)}];
+        Winding~{winding_number} += Region[{(iCOND~{winding_number}+turn_number-1)}];
+        Air += Region[{(AIR_COND+iCOND~{winding_number}+turn_number-1)}];
+        // Stranded
+        TurnStrand~{winding_number}~{turn_number} = Region[{(istrandedCOND~{winding_number}+turn_number-1)}];
+        StrandedWinding~{winding_number} += Region[{(istrandedCOND~{winding_number}+turn_number-1)}];
+        Air += Region[{(AIR_COND+istrandedCOND~{winding_number}+turn_number-1)}];
+      EndFor
+  EndFor
+
 
   // Non Conducting Domain:
   // Initialize the core-shell domain region to air
   DomainCC = Region[{Air}];
 
-  // Add the iron region to the core-shell domain region
+  // Add the Core region to the core-shell domain region
   If(!Flag_Conducting_Core)
-    DomainCC += Region[{Iron}];
+    DomainCC += Region[{Core}];
   EndIf
 
   // Boundary Conditions
   // including symmetry
   OuterBoundary = Region[{OUTBND}];
 
-  // Current Conducting Domains
-  // Create a region for the winding
-  For n In {1:n_windings} // loop over each winding //added by Othman
-      Winding~{n} = Region[{}]; // create a region for the winding
-      StrandedWinding~{n} = Region[{}]; // create a region for the stranded winding
-  EndFor
-
-  // Loop over each winding
-  For n In {1:n_windings}
-      nbturns~{n} = NbrCond~{n} / SymFactor;
-       // Loop over each turn in this winding to create a region for turns and then adding it to the winding
-      For winding_number In {1:nbturns~{n}}
-        Turn~{n}~{winding_number} = Region[{(iCOND~{n}+winding_number-1)}];
-        Winding~{n} += Region[{(iCOND~{n}+winding_number-1)}];
-        TurnStrand~{n}~{winding_number} = Region[{(istrandedCOND~{n}+winding_number-1)}];
-        StrandedWinding~{n} += Region[{(istrandedCOND~{n}+winding_number-1)}];
-      EndFor
-  EndFor
-   // Add this winding to the core domain region
+   // Add the winding to the core domain region
   For n In {1:n_windings}
       DomainC += Region[{Winding~{n}}] ;
   EndFor
-   // Add the iron region to the core domain region
+   // Add the Core region to the core domain region
   If(Flag_Conducting_Core)
-    DomainC         += Region[{Iron}] ;
+    DomainC += Region[{Core}];
   EndIf
    // Add this stranded winding to the shell domain region
-  For n In {1:n_windings} //added by Othman
+  For n In {1:n_windings}
       DomainS += Region[{StrandedWinding~{n}}] ;
   EndFor
   // Add the shell domain to the core-shell domain region
@@ -111,20 +126,20 @@ Group{
         Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
     EndFor
     Domain_Lin_NoJs = Region[{Air}];
-    Domain_NonLin   = Region[{Iron}];
+    Domain_NonLin   = Region[{Core}];
   Else
-    Domain_Lin      = Region[{Air, Iron}];
+    Domain_Lin      = Region[{Air, Core}];
     For n In {1:n_windings}
         Domain_Lin += Region[{Winding~{n}, StrandedWinding~{n}}];
     EndFor
-    Domain_Lin_NoJs = Region[{Air, Iron}];
+    Domain_Lin_NoJs = Region[{Air, Core}];
     Domain_NonLin   = Region[{}];
   EndIf
   // Initialize the main domain to the core and core-shell domains
   Domain = Region[{DomainC, DomainCC}] ;
 
  // Loop over each winding and add its regions to the corresponding conductor domain
-  For n In {1:n_windings} // added by Othman
+  For n In {1:n_windings}
       DomainCond~{n} += Region[{Winding~{n}, StrandedWinding~{n}}] ;
   EndFor
 
@@ -132,6 +147,11 @@ Group{
   // Dummy region number for postpro with functions
   DomainDummy = Region[ 12345 ] ;
 
+
+  // Dummy region number for postpro with functions
+  DomainDummy = Region[ 12345 ] ;
+
+  // ----------------------
   // ----------------------
   // Circuit Domains
   // ----------------------
@@ -154,7 +174,7 @@ Group{
 
   Inductance_Cir  = Region[ {} ];
 
-  For n In {1:n_windings}   //added by Othman
+  For n In {1:n_windings}
       Capacitance_Cir~{n} = Region[{}] ;
   EndFor
   Capacitance_Cir = {};
@@ -187,10 +207,7 @@ Function {
 //
 //  ];
 
-  //SurfCoil[] = AreaCell[]{#(Winding~{n})} ;
-  //AreaCell[#{Winding~{n}}]     =  1. ;
-  //AreaCell[#{(Winding~{n}+1)}] = -1. ;
-  //vDir[]   = Vector[ 0, 0, AreaCell[]] ;
+
 
   // Strand sizes
 
@@ -200,7 +217,7 @@ Function {
 
   // in non-stranded domains, def. AreaCell to 1 (neutral element of mutiplication)
 
-  AreaCell[#{Air, Iron}] = 1.;
+  AreaCell[#{Air, Core}] = 1.;
   For n In {1:n_windings}
       AreaCell[#{Winding~{n}}] = 1.;
   EndFor
@@ -216,11 +233,11 @@ Function {
   EndFor
 
   If(Flag_Conducting_Core)
-    sigma[#{Iron}] = sigma_core;
+    sigma[#{Core}] = Complex[sigma_core, sigma_core_imag];
     sigma[#{Air}] = 0.;
   EndIf
   If(!Flag_Conducting_Core)
-    sigma[#{Air, Iron}] = 0.;
+    sigma[#{Air, Core}] = 0.;
   EndIf
 
   // nu: reluctivity
@@ -236,32 +253,32 @@ Function {
   // Hysteresis Loss
   // Imaginary Part Of Permeability
   // Liste von Lukas hinterlegen
-  //mu_imag[ #{Iron} ] = mu0 * f_mu_imag[$1, $2];
+  //mu_imag[ #{Core} ] = mu0 * f_mu_imag[$1, $2];
 
   If(!Flag_NL)
     If(Flag_Fixed_Loss_Angle) //should be changed here for time_domain
-        mu[#{Iron}]   = mu0*mur_real;
-        nu[#{Iron}]   = 1/mu[$1] ;
+        mu[#{Core}]   = mu0*mur_real;
+        nu[#{Core}]   = 1/mu[$1] ;
     ElseIf(Flag_Permeability_From_Data) //should be changed here for time_domain
-        mu[#{Iron}]   = mu0*f_mu_real[$1];
-        nu[#{Iron}]   = 1/mu[$1] ;
+        mu[#{Core}]   = mu0*f_mu_real[$1];
+        nu[#{Core]   = 1/mu[$1] ;
     Else
-        mu[#{Iron}]   = mu0*mur ;
-        nu[#{Iron}]   = 1/mu[] ;
+        mu[#{Core}]   = mu0*mur ;
+        nu[#{Core}]   = 1/mu[] ;
     EndIf
 
   Else
-    //nu[ #{Iron} ] = nu_3kW[$1] ;
-    //h[ #{Iron} ]  = h_3kW[$1];
-    //dhdb_NL[ #{Iron} ]= dhdb_3kW_NL[$1] ;
-    //dhdb[ #{Iron} ]   = dhdb_3kW[$1] ;
+    //nu[ #{Core} ] = nu_3kW[$1] ;
+    //h[ #{Core} ]  = h_3kW[$1];
+    //dhdb_NL[ #{Core} ]= dhdb_3kW_NL[$1] ;
+    //dhdb[ #{Core} ]   = dhdb_3kW[$1] ;
 
-    //nu[ #{Iron} ] = nu_N95[$1] ;
-    nu[ #{Iron} ] = nu~{Core_Material}[$1] ;
-    h[ #{Iron} ]  = h~{Core_Material}[$1];
-    //dhdb_NL[ #{Iron} ]= dhdb_95_NL[$1] ;
-    dhdb_NL[ #{Iron} ]= dhdb_95100_NL[$1] ;
-    dhdb[ #{Iron} ]   = dhdb~{Core_Material}[$1] ;
+    //nu[ #{Core} ] = nu_N95[$1] ;
+    nu[ #{Core} ] = nu~{Core_Material}[$1] ;
+    h[ #{Core} ]  = h~{Core_Material}[$1];
+    //dhdb_NL[ #{Core} ]= dhdb_95_NL[$1] ;
+    dhdb_NL[ #{Core} ]= dhdb_95100_NL[$1] ;
+    dhdb[ #{Core} ]   = dhdb~{Core_Material}[$1] ;
   EndIf
 
   // Excitation Current
@@ -278,7 +295,7 @@ Function {
   //nuOm[#{Air}] = nu[]*Complex[0.,1.];
   nuOm[#{Air}] = nu[] ;
   //nuOm[#{Iron}] = -nu[$1]*Complex[0.,1.];
-  nuOm[#{Iron}] = -nu[$1] ;
+  nuOm[#{Core}] = -nu[$1] ;
   //nuOm[#{Winding1, Winding2, Winding3}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
 
 
@@ -354,7 +371,7 @@ Constraint {
   { Name Voltage_2D ;
     Case{
       If(Flag_Conducting_Core)
-        { Region Iron ; Value 0; }
+        { Region Core ; Value 0; }
       EndIf
     }
   }
@@ -512,8 +529,8 @@ PostProcessing {
 
       //{ Name nur ; Value { Term { [ Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       //{ Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-//      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
-//      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Iron ; Jacobian Vol ; } } }
+//      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Core ; Jacobian Vol ; } } }
+//      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Core ; Jacobian Vol ; } } }
 //      { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
 //      { Name mur_im ; Value { Term { [ Norm [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ] ; In Domain ; Jacobian Vol ; } } }
 //      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
@@ -606,15 +623,15 @@ PostProcessing {
                                         ((Norm[{d a}]*2 / t_fall )^alpha) * t_fall
                                         // 10 abschnitte reinbauen
                                         // python überprüfung + vorfaktoren zu NULL
-                                   ) ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+                                   ) ] ; In Core ; Jacobian Vol ; Integration II ;} } }
       EndIf
 
       If(Flag_Steinmetz_loss)
         { Name pSE ; Value { Integral { [ CoefGeo * ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+                                     ] ; In Core ; Jacobian Vol ; Integration II ;} } }
 
         { Name pSE_density ; Value { Integral { [ CoefGeo* ki * Freq^alpha * (Norm[{d a}])^beta
-                                     ] ; In Iron ; Jacobian Vol ; Integration II ;} } }
+                                     ] ; In Core ; Jacobian Vol ; Integration II ;} } }
       EndIf
 
       // hysteresis losses need to be studied in time domain simulation
@@ -623,11 +640,11 @@ PostProcessing {
 //      { Name p_hyst ; Value { Integral {
 //        // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
 //        [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
-//        In Iron ; Jacobian Vol ; Integration II ;} } }          // TODO: mur 2350 | general mur; multiplication at simulation begin with loss angle
+//        In Core ; Jacobian Vol ; Integration II ;} } }
 //
 //      { Name p_hyst_density ; Value { Integral {
 //        [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
-//        In Iron ; Jacobian Vol ; Integration II ;} } }
+//        In Core ; Jacobian Vol ; Integration II ;} } }
 
 
       // ------------------------------------------------------------------------------------------------

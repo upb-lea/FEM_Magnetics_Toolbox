@@ -24,7 +24,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
             "core": 5,  # ferrite
             "winding": 400,  # copper
             "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42 if flag_insulation else None # polyethylen
+            "insulation": 0.42  if flag_insulation else None # polyethylen
         }
 
         # Here the case size can be determined
@@ -67,7 +67,7 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=fmt.colors_ba_jonas,
-                               colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
+                               colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation= flag_insulation)
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
@@ -81,27 +81,18 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                silent=True, is_gui=is_test)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
-    # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
-    #                 permeability_datasource=fmt.MaterialDataSource.Custom,
-    #                 permittivity_datasource=fmt.MaterialDataSource.Custom)
-    core = fmt.Core(core_type=fmt.CoreType.Single,
-                    core_dimensions=core_dimensions,
-                    material="N49", temperature=45, frequency=200000,
-                    # permeability_datasource="manufacturer_datasheet",
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.04)
+    core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    mu_r_abs=3000, phi_mu_deg=0,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    sigma=1)
+                    detailed_core_model=True)
     geo.set_core(core)
 
     # 3. set air gap parameters
@@ -136,15 +127,15 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding1, 10, None)
-    top.set_winding(winding2, 12, None)
+    bot.set_winding(winding2, 10, None)
+    top.set_winding(winding1, 10, None)
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(freq=200000, current=[2, 2], phi_deg=[0, 180], show_fem_simulation_results=show_visual_outputs)
 
-    #example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    example_thermal_simulation(show_visual_outputs, flag_insulation= True)
 
 
 if __name__ == "__main__":

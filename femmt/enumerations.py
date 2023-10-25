@@ -1,5 +1,13 @@
 from enum import IntEnum, Enum
 
+class Verbosity(IntEnum):
+    """State of verbosity
+    """
+    # TODO Currently in ToFile the FEMMT console outputs are just supressed not written to a file
+    # TODO Add Verbosity for materialdatabase
+    Silent = 1 # No outputs
+    ToConsole = 2 # Outputs to console
+    ToFile = 3 # Outputs to file
 
 class WindingTag(IntEnum):
     """Names of windings
@@ -30,7 +38,10 @@ class WindingWindowSplit(IntEnum):
     TenCells_Split = 6
     """The winding window is split into 2x5 virtual winding windows
     """
-    NoSplitWithBobbin = 7
+    NCells_Split = 7
+    """The winding window is split into 2xN/2 virtual winding windows
+    """
+    NoSplitWithBobbin = 8
     """Acts like "NoSplit", but takes bobbin geometry instead of core-cond insulation to define the virtual winding window.
     """
 
@@ -173,6 +184,26 @@ class CenterTappedInterleavingType(IntEnum):
     TypeC = 4
 
 
+class InterleavingSchemesFoilLitz(str, Enum):
+    """
+    ----sec---
+    ooo-primary-ooo
+    ooo-primary-ooo
+    ---ter---
+    ---sec---
+    ooo-primary-ooo
+    ooo-primary-ooo
+    ---ter---
+    """
+    ter_3_4_ter_sec_4_3_sec = "ter_3_4_ter_sec_4_3_sec"
+    ter_4_3_ter_sec_3_4_sec = "ter_4_3_ter_sec_3_4_sec"
+    ter_3_4_sec_ter_4_3_sec = "ter_3_4_sec_ter_4_3_sec"
+    ter_4_3_sec_ter_3_4_sec = "ter_4_3_sec_ter_3_4_sec"
+    ter_sec_3_4_4_3_sec_ter = "ter_sec_3_4_4_3_ter_sec"
+    ter_sec_4_3_3_4_sec_ter = "ter_sec_4_3_3_4_ter_sec"
+    _4_3_ter_sec__sec_ter_3_4 = "4_3_ter_sec_sec_ter_3_4"
+
+
 class ConductorType(IntEnum):
     """Sets the type of the conductor.
     """
@@ -239,3 +270,24 @@ class MeasurementDataType(str, Enum):
     ComplexPermeability = "complex_permeability"
     ComplexPermittivity = "complex_permittivity"
     Steinmetz = "Steinmetz"
+
+class MeasurementSetup(str, Enum):
+    """Sets the source from where data is taken.
+    """
+    LEA_MTB = "LEA_MTB"
+    LEA_MTB_small_signal = "LEA_MTB_small_signal"
+    LEA_LK = "LEA_LK"
+
+class Material(str, Enum):
+    """
+    Sets the name of the core material as enums.
+    """
+
+    N49 = "N49"
+    N87 = "N87"
+    N95 = "N95"
+    PC200 = "PC200"
+    custom_material = "custom_material"
+    DMR96A = "DMR96A"
+    DMR96A2 = "DMR96A2"
+    DMR96A2_test = "DMR96A2_test"

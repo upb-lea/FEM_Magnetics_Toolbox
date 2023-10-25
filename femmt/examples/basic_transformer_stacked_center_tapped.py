@@ -5,7 +5,7 @@ import os
 def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
 
 
-    def example_thermal_simulation(show_visual_outputs: bool = True):
+    def example_thermal_simulation(show_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -25,7 +25,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
             "core": 5,  # ferrite
             "winding": 400,  # copper
             "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42  # polyethylen
+            "insulation": 0.42  if flag_insulation else None# polyethylen
         }
 
         # Here the case size can be determined
@@ -68,7 +68,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=fmt.colors_ba_jonas,
-                               colors_geometry=fmt.colors_geometry_ba_jonas)
+                               colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
 
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -81,7 +81,7 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
         os.mkdir(working_directory)
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
-                                working_directory=working_directory, silent=False, is_gui=is_test)
+                                working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
@@ -115,9 +115,12 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
                                                                                                       iso_secondary_to_secondary=2e-4,
                                                                                                       iso_primary_to_secondary=4e-4,
                                                                                                       interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
+                                                                                                      interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
                                                                                                       primary_coil_turns=3,
                                                                                                       primary_additional_bobbin=1e-3,
-                                                                                                      winding_temperature=100)
+                                                                                                      winding_temperature=100,
+                                                                                                      bobbin_coil_left=3e-3,
+                                                                                                      center_foil_additional_bobbin=0e-3)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])
@@ -127,6 +130,8 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
     geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_fem_simulation_results=show_visual_outputs)
 
     geo.get_inductances(I0=1, op_frequency=200000)
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
 
 if __name__ == "__main__":
     basic_example_transformer_stacked_center_tapped(show_visual_outputs=True)

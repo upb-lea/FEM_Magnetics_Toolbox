@@ -388,12 +388,12 @@ def max_value_from_value_vec(*args):
     """
     Returns the peak values from the vectors
 
-    :param args: vector
+    :param args: value_vector
     :return: peak_value_from_vector
     """
     peak_list = []
-    for vector in args:
-        peak = max([abs(timestep) for timestep in vector])
+    for value_vector in args:
+        peak = max([abs(value) for value in value_vector])
         peak_list.append(peak)
 
     return tuple(peak_list)

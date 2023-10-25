@@ -1,5 +1,6 @@
 # Python standard libraries
 import numpy as np
+from logging import Logger
 from typing import List
 
 # Local libraries
@@ -25,6 +26,8 @@ class TwoDaxiSymmetric:
     component_type: ComponentType
     mesh_data: MeshData
     number_of_windings: int
+    verbosity: Verbosity
+    logger: Logger
 
     # List of points which represent the model
     # Every List is a List of 4 Points: x, y, z, mesh_factor
@@ -37,7 +40,7 @@ class TwoDaxiSymmetric:
     p_iso_pri_sec: List[List[float]]
 
     def __init__(self, core: Core, mesh_data: MeshData, air_gaps: AirGaps, winding_windows: List[WindingWindow],
-                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int):
+                 stray_path: StrayPath, insulation: Insulation, component_type: ComponentType, number_of_windings: int, verbosity: Verbosity, logger: Logger):
         self.core = core
         self.mesh_data = mesh_data
         self.winding_windows = winding_windows
@@ -46,6 +49,8 @@ class TwoDaxiSymmetric:
         self.stray_path = stray_path
         self.insulation = insulation
         self.number_of_windings = number_of_windings
+        self.verbosity = verbosity
+        self.logger = logger
 
         # -- Arrays for geometry data -- 
         # TODO Is the zero initialization necessary?
@@ -65,7 +70,11 @@ class TwoDaxiSymmetric:
             self.p_conductor.insert(i, [])
 
         self.r_inner = core.r_inner
-        self.r_outer = core.r_outer
+        self.r_outer = core.r_outer    
+        
+    def femmt_print(self, text: str):
+        if not self.verbosity == Verbosity.Silent:
+            self.logger.info(text)
 
     def draw_outer(self):
         """
@@ -965,7 +974,7 @@ class TwoDaxiSymmetric:
                                             0,
                                             self.mesh_data.c_conductor[num]])
                                         i += 1
-                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # one step from left to right
+                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # TODO: anisotrop insulation  # one step from left to right
                                     y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # bot to top
                                     x = left_bound + winding.conductor_radius  # always the same
 
@@ -1097,36 +1106,34 @@ class TwoDaxiSymmetric:
                     else:
                         raise Exception(f"Unknown winding type {virtual_winding_window.winding_type}")
 
-        # Checking the Conductors
+    def check_number_of_drawn_conductors(self):
+        needed_number_of_turns = 0
+        all_windings = []
+
         for winding_window in self.winding_windows:
             for vww in winding_window.virtual_winding_windows:
                 for index, winding in enumerate(vww.windings):
-                    num = winding.winding_number
 
-                    # Convert to numpy
-                    # Check if all Conductors could be resolved
-                    self.p_conductor[num] = np.asarray(self.p_conductor[num])
+                    if winding not in all_windings:
+                        all_windings.append(winding)
 
-                    # TODO:CHECKS for rect. conductors
-                    """ CHECK: rectangle conductors with 4 points
-                    if self.component.windings[num].conductor_type == "full" or 
-                            self.component.windings[num].conductor_type == "stacked" or \
-                            self.component.windings[num].conductor_type == "foil":
-                        if int(self.p_conductor[num].shape[0]/4) < self.component.windings[num].turns:
-                            warnings.warn("Too many turns that do not fit in the winding window.")
-                            # self.component.windings[num].turns = int(self.p_conductor[num].shape[0]/4)
-                            self.component.valid = None
-                    """
+                needed_number_of_turns += sum(vww.turns)
 
-                    # CHECK: round conductors with 5 points
-                    if winding.conductor_type in [ConductorType.RoundSolid, ConductorType.RoundLitz]:
-                        if int(self.p_conductor[num].shape[0] / 5) < vww.turns[index]:
-                            # Set valid to False, so that geometry is to be neglected in geometry sweep
-                            # self.valid = False
-                            # if not ff.pass_geometry_exceptions:
-                            #     # TODO Tell the user which winding window
-                            #     raise Exception(f"Too many turns that do not fit in the winding window {str(vww)}")
-                            raise Exception(f"Too many turns that do not fit in the winding window {str(vww)}")
+        drawn_number_of_turns = 0
+
+        for winding in all_windings:
+            # Convert to numpy
+            self.p_conductor[winding.winding_number] = np.asarray(self.p_conductor[winding.winding_number])
+
+            if winding.conductor_type in [ConductorType.RoundSolid, ConductorType.RoundLitz]:
+                drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 5)  # round conductors
+            else:
+                drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 4)  # rectangular conductors
+
+        if drawn_number_of_turns != needed_number_of_turns:
+            self.femmt_print(f"{drawn_number_of_turns = }")
+            self.femmt_print(f"{needed_number_of_turns = }")
+            raise Exception(f"Winding mismatch. Probably too many turns that do not fit in the winding window")
 
     def draw_region_single(self):
             # Region for Boundary Condition
@@ -1164,7 +1171,7 @@ class TwoDaxiSymmetric:
         if self.component_type == ComponentType.IntegratedTransformer:
             # TODO: insulations implement for integrated_transformers
             # TODO Change back to warnings?
-            ff.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
+            self.femmt_print("Insulations are not set because they are not implemented for integrated transformers.")
         else:
             window_h = self.core.window_h
             iso = self.insulation
@@ -1373,8 +1380,6 @@ class TwoDaxiSymmetric:
                     print("No insulations for winding type {vww.winding_type.name}")
             """
 
-
-
     def draw_model(self):
         self.draw_outer()
         if self.core.core_type == CoreType.Single:
@@ -1383,6 +1388,7 @@ class TwoDaxiSymmetric:
         if self.core.core_type == CoreType.Stacked:
             self.draw_stacked_windows()
         self.draw_conductors()
+        self.check_number_of_drawn_conductors()
 
         if self.insulation.flag_insulation:  # check flag before drawing insulations
             self.draw_insulations()

@@ -39,9 +39,9 @@ dab_transformer_config = fmt.ItoSingleInputConfig(
 )
 
 
-#task = 'start_study'
+task = 'start_study'
 #task = 'filter_reluctance_model'
-task = 'fem_simulation_from_filtered_reluctance_model_results'
+# task = 'fem_simulation_from_filtered_reluctance_model_results'
 #task = 'plot_study_results'
 
 study_name = "workflow_2023-04-15"

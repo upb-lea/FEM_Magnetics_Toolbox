@@ -1,4 +1,5 @@
 import femmt as fmt
+import materialdatabase as mdb
 import os
 
 def basic_example_transformer_three_winding(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
@@ -15,25 +16,22 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                silent=False, is_gui=is_test)
+                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015)
-    # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.06, window_w=0.03, core_inner_diameter=0.015,core_h=0.08)    # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
     #                 permeability_datasource=fmt.MaterialDataSource.Custom,
     #                 permittivity_datasource=fmt.MaterialDataSource.Custom)
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material="N49", temperature=45, frequency=200000,
-                    # permeability_datasource="manufacturer_datasheet",
+                    material=mdb.Material.N49, temperature=45, frequency=200000,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
-                    # permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
                     mu_r_abs=3000, phi_mu_deg=0,
                     permittivity_datasource=fmt.MaterialDataSource.Custom,
-                    # permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    mdb_verbosity=fmt.Verbosity.Silent,
                     sigma=1)
     geo.set_core(core)
 
@@ -81,10 +79,12 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
     t = np.linspace(0, 2 / 250000, 5)
     t_list = [float(x) for x in t.tolist()]
     # # Current values
-    current_values_1 = 2 * np.cos(2 * np.pi * 250000 * t)
-    current_values_2 = 2 * np.cos(2 * np.pi * 250000 * t + np.pi)
+    current_values_1 = 4 * np.cos(2 * np.pi * 250000 * t)
+    current_values_2 = 4 * np.cos(2 * np.pi * 250000 * t + np.pi)
+    current_values_3 = 4 * np.cos(2 * np.pi * 250000 * t)
     current_values_list_1 = current_values_1.tolist()
     current_values_list_2 = current_values_2.tolist()
+    current_values_list_3 = current_values_3.tolist()
 
     print(t_list)
     print(current_values_list_1)
@@ -92,6 +92,7 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
     # time_list = [0, 2, 4, 6, 8]
     plt.plot(t_list, current_values_list_1)
     plt.plot(t_list, current_values_list_2)
+    plt.plot(t_list, current_values_list_3)
     plt.xlabel('Time (s)')
     plt.ylabel('Current (A)')
     plt.title(f'Cos wave: {250000} Hz, {4.5} A amplitude')
@@ -110,7 +111,7 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
     # For instance, 'delta_time' can be adapted as (2 * time_period / NbSteps) to maintain the simulation's resolution.
     # Failing to do so, the solver will automatically double 'NbSteps', potentially increasing the computational load.
     geo.time_domain_simulation(freq=250000,
-                               current=[current_values_list_1, current_values_list_2, current_values_list_1],
+                               current=[current_values_list_1, current_values_list_2, current_values_list_3],
                                time=t_list,
                                time_period=1 / 250000,
                                initial_time=0,
@@ -118,7 +119,9 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
                                NbSteps=5,
                                delta_time=((1 / 250000) / 5),
                                plot_interpolation=False,
-                               show_fem_simulation_results=True)
+                               show_fem_simulation_results=True,
+                               show_rolling_average=False,
+                               rolling_avg_window_size=5)
 
 
 if __name__ == "__main__":
