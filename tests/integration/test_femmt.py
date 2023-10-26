@@ -1149,6 +1149,146 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
     return electromagnetoquasistatic_result, thermal_result
 
+
+@pytest.fixture
+def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # 1. chose simulation type
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
+                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent,
+                                    is_gui=True)
+
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005,
+                                                         window_h_bot=0.017)
+        core = fmt.Core(core_type=fmt.CoreType.Stacked, core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12,
+                        sigma=1.2,
+                        permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+        geo.set_core(core)
+
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Stacked, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.002, stacked_position=fmt.StackedPosition.Top)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.001, stacked_position=fmt.StackedPosition.Bot)
+        geo.set_air_gaps(air_gaps)
+
+        # set_center_tapped_windings() automatically places the condu
+        insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
+                                                                                                          primary_turns=14,
+                                                                                                          primary_radius=1.1e-3,
+                                                                                                          primary_number_strands=50,
+                                                                                                          primary_strand_radius=0.00011,
+                                                                                                          secondary_parallel_turns=2,
+                                                                                                          secondary_thickness_foil=1e-3,
+                                                                                                          iso_top_core=0.001,
+                                                                                                          iso_bot_core=0.001,
+                                                                                                          iso_left_core=0.002,
+                                                                                                          iso_right_core=0.001,
+                                                                                                          iso_primary_to_primary=2e-4,
+                                                                                                          iso_secondary_to_secondary=2e-4,
+                                                                                                          iso_primary_to_secondary=4e-4,
+                                                                                                          interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
+                                                                                                          interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
+                                                                                                          primary_coil_turns=3,
+                                                                                                          primary_additional_bobbin=1e-3,
+                                                                                                          winding_temperature=100,
+                                                                                                          bobbin_coil_left=3e-3,
+                                                                                                          center_foil_additional_bobbin=0e-3)
+
+        geo.set_insulation(insulation)
+        geo.set_winding_windows([coil_window, transformer_window])
+
+        geo.create_model(freq=200000, pre_visualize_geometry=False)
+
+        geo.single_simulation(freq=200000, current=[20, 120, 120], phi_deg=[0, 180, 180], show_fem_simulation_results=False)
+
+        geo.get_inductances(I0=1, op_frequency=200000)
+
+        # Thermal simulation:
+        # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
+        # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
+        # which will be applied on the boundary of the simulation (dirichlet boundary condition).
+
+        # The case parameter sets the thermal conductivity for a case which will be set around the core.
+        # This could model some case in which the transformer is placed in together with a set potting material.
+        thermal_conductivity_dict = {
+            "air": 0.0263,
+            "case": {  # epoxy resign
+                "top": 1.54,
+                "top_right": 1.54,
+                "right": 1.54,
+                "bot_right": 1.54,
+                "bot": 1.54
+            },
+            "core": 5,  # ferrite
+            "winding": 400,  # copper
+            "air_gaps": 180,  # aluminiumnitride
+            "insulation": 0.42  # polyethylen
+        }
+
+        # Here the case size can be determined
+        case_gap_top = 0.002
+        case_gap_right = 0.0025
+        case_gap_bot = 0.002
+
+        # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
+        # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
+        boundary_temperatures = {
+            "value_boundary_top": 20,
+            "value_boundary_top_right": 20,
+            "value_boundary_right_top": 20,
+            "value_boundary_right": 20,
+            "value_boundary_right_bottom": 20,
+            "value_boundary_bottom_right": 20,
+            "value_boundary_bottom": 20
+        }
+
+        # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
+        # Currently only one temperature can be applied which will be set on every boundary site.
+        femm_boundary_temperature = 20
+
+        # Here the boundary sides can be turned on (1) or off (0)
+        # By turning off the flag a neumann boundary will be applied at this point with heat flux = 0
+        boundary_flags = {
+            "flag_boundary_top": 0,
+            "flag_boundary_top_right": 0,
+            "flag_boundary_right_top": 1,
+            "flag_boundary_right": 1,
+            "flag_boundary_right_bottom": 1,
+            "flag_boundary_bottom_right": 1,
+            "flag_boundary_bottom": 1
+        }
+
+        # In order for the thermal simulation to work an electro_magnetic simulation has to run before.
+        # The em-simulation will create a file containing the losses.
+        # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
+        # order for the thermal simulation to work (geo.single_simulation is not needed).
+        # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
+        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                               case_gap_right, case_gap_bot, show_thermal_simulation_results=False, color_scheme=fmt.colors_ba_jonas,
+                           colors_geometry=fmt.colors_geometry_ba_jonas)
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+    thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+
+    return electromagnetoquasistatic_result, thermal_result
+
+
+
 def test_inductor_core_material_database(femmt_simulation_inductor_core_material_database):
     """
     The first idea was to compare the simulated meshes with test meshes simulated manually.
@@ -1297,6 +1437,24 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
     #assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     #fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_integrated_core_fixed_loss_angle.json")
     #compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+
+
+
+def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transformer_stacked_center_tapped):
+    test_result_log, thermal_result_log = femmt_simulation_transformer_stacked_center_tapped
+
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+    # e_m mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "transformer_stacked_center_tapped.json")
+    compare_result_logs(test_result_log, fixture_result_log)
+
+    # check thermal simulation results
+    #assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
+    #fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_stacked_center_tapped.json")
+    #compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+
+
 
 def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
                     femmt_simulation_inductor_core_fixed_loss_angle,
