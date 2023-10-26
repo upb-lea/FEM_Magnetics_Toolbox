@@ -56,11 +56,13 @@
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2023-08-25 10:55:48",
+    "date": "2023-10-26 10:53:47",
     "component_type": "Inductor",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
+      "core_type": 1,
       "core_inner_diameter": 0.0149,
+      "core_h": 0.03695,
       "window_w": 0.01105,
       "window_h": 0.0295,
       "material": "custom",

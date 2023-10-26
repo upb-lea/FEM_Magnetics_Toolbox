@@ -64,10 +64,11 @@
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2023-10-23 08:40:57",
+    "date": "2023-10-23 19:21:16",
     "component_type": "Inductor",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/femmt/examples/example_results/inductor",
     "core": {
+      "core_type": 1,
       "core_inner_diameter": 0.0149,
       "core_h": 0.03695,
       "window_w": 0.01105,
