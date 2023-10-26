@@ -1006,7 +1006,7 @@ class MagneticComponent:
 
         for num in range(len(self.windings)):
 
-        # Imposed current
+            # Imposed current
             if self.flag_excitation_type == 'current':
                 if len(phase_deg_list) == 0:
                     if self.component_type == ComponentType.Inductor:
@@ -1022,16 +1022,13 @@ class MagneticComponent:
                     self.current[num] = complex(amplitude_list[num] * np.cos(np.deg2rad(phase_deg_list[num])),
                                                 amplitude_list[num] * np.sin(np.deg2rad(phase_deg_list[num])))
 
-
-
-                            # Imposed current density
+        # Imposed current density
         if self.flag_excitation_type == 'current_density':
             raise NotImplementedError
 
         # Imposed voltage
         if self.flag_excitation_type == 'voltage':
             raise NotImplementedError
-
 
         # -- Frequency --
 
@@ -1044,20 +1041,23 @@ class MagneticComponent:
             self.red_freq.append([])
 
         if self.frequency != 0:
-            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[0].cond_sigma * mu_0))  # TODO: distinguish between material conductivities
+            self.delta = np.sqrt(2 / (2 * self.frequency * np.pi * self.windings[
+                0].cond_sigma * mu_0))  # TODO: distinguish between material conductivities
             for num in range(len(self.windings)):
                 if self.windings[num].conductor_type == ConductorType.RoundLitz:
                     self.red_freq[num] = self.windings[num].strand_radius / self.delta
                 elif self.windings[num].conductor_type == ConductorType.RoundSolid:
                     self.red_freq[num] = self.windings[num].conductor_radius / self.delta
                 else:
-                    ff.femmt_print("Reduced Frequency does not have a physical value here")
-                    ff.femmt_print(self.windings[num].conductor_type)
-                    self.red_freq[num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
+                    self.femmt_print("Reduced Frequency does not have a physical value here")
+                    self.femmt_print(self.windings[num].conductor_type)
+                    self.red_freq[
+                        num] = 1  # TODO: doesn't make sense like this -> rewrite fore conductor windings shape
         else:
             # DC case
             self.delta = 1e20  # random huge value
-            self.red_freq[num] = 0
+            for num in range(len(self.windings)):
+                self.red_freq[num] = 0
 
     def excitation_time_domain(self, frequency: float, current_list: List[List[float]], time_list: List[float], time_period: float, initial_time: float, timemax : float, NbSteps: int, delta_time: float, phase_deg_list: List = None, ex_type: str = 'current',
                    plot_interpolation: bool = False, imposed_red_f=0):
@@ -1235,25 +1235,17 @@ class MagneticComponent:
 
         os.chdir(self.file_data.working_directory)
 
-        if self.simulation_type == SimulationType.FreqDomain:
 
-            if self.verbosity == Verbosity.Silent:
-                verbose = "-verbose 1"
-            else:
-                verbose = "-verbose 5"
 
-            to_file_str = ""
-            if self.verbosity == Verbosity.ToFile:
-                to_file_str = " > " + self.file_data.getdp_log
-        if self.simulation_type == SimulationType.TimeDomain:
-            if self.verbosity == Verbosity.Silent:
-                verbose = "-verbose 1"
-            else:
-                verbose = "-verbose 5"
+        if self.verbosity == Verbosity.Silent:
+            verbose = "-verbose 1"
+        else:
+            verbose = "-verbose 5"
 
-            to_file_str = ""
-            if self.verbosity == Verbosity.ToFile:
-                to_file_str = " > " + self.file_data.getdp_log
+        to_file_str = ""
+        if self.verbosity == Verbosity.ToFile:
+            to_file_str = " > " + self.file_data.getdp_log
+
 
 
         # Run simulations as sub clients (non-blocking??)
@@ -1261,9 +1253,6 @@ class MagneticComponent:
             getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
             self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
         if self.simulation_type == SimulationType.TimeDomain:
-            # Clear necessary files
-            # files = ["j2f."]
-            # self.clear_getdp_files()
             getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
             # the two commands work but some changes should be done in fields_time.pro
             self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -pos Map_local -pos Get_global " + verbose +  to_file_str)
@@ -1271,20 +1260,6 @@ class MagneticComponent:
 
 
 
-
-#     def pre_simulation(self):
-#         """
-#         - Complete "pre-simulation" call
-#         """
-#         self.high_level_geo_gen()
-#         self.excitation(frequency=100000, amplitude_list=1)  # arbitrary values: frequency and current
-#         self.file_communication()
-#         self.pre_simulate()
-# =======
-#         getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
-#         self.onelab_client.runSubClient("myGetDP",
-#                                         getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
-# >>>>>>> main
 
     def write_simulation_parameters_to_pro_files(self):
         """
@@ -1391,6 +1366,7 @@ class MagneticComponent:
 
             start_time = time.time()
             self.calculate_and_write_log()  # TODO: reuse center tapped
+            #self.calculate_and_write_log_try()
             logging_time = time.time() - start_time
             if show_fem_simulation_results:
                 self.visualize()
@@ -1405,6 +1381,7 @@ class MagneticComponent:
             self.generate_load_litz_approximation_parameters()
             self.simulate()
             self.calculate_and_write_log()  # TODO: reuse center tapped
+            #self.calculate_and_write_log_try()
             if show_fem_simulation_results:
                 self.visualize()
 
@@ -2757,7 +2734,7 @@ class MagneticComponent:
             #               - fundamental frequency is the smallest frequency != 0
             #   - 'simulation_settings' contains the simulation configuration (for more info see encode_settings())
 
-            log_dict = {"single_sweeps": [], "total_losses": {}, "simulation_settings": {}}
+
 
             for sweep_run in range(0, sweep_number):
                 # create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
@@ -3308,7 +3285,7 @@ class MagneticComponent:
                 gmsh.option.setNumber(f"View[{view}].NbIso", 40)
                 view += 1
 
-                # Magnetic flux density
+            # Magnetic flux density
             gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
             gmsh.option.setNumber(f"View[{view}].ScaleType", 1)
             gmsh.option.setNumber(f"View[{view}].RangeType", 1)
