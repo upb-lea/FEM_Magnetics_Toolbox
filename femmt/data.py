@@ -40,7 +40,7 @@ class FileData:
                     file_path = os.path.join(root, file)
                     os.remove(file_path)
                     # print(f"remove {file_path}")
-            print("All simulation results from previous simulations have been deleted successfully.")
+            # print("All simulation results from previous simulations have been deleted successfully.")
         except OSError:
             print("Error occurred while deleting files and subdirectories.")
 

@@ -525,7 +525,9 @@ class StackedTransformerOptimization:
             print(f"{config.l_s12_target = }")
             print(f"{l_s_absolute_error = }")
 
-            fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None, t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume", "loss"])
+            fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None, t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume in m³", "loss in W"])
+            fig.update_layout(
+                title=f"{study_name}: Filtering l_h_absolute_error = {l_h_absolute_error * 100} %, l_s_absolute_error = {l_s_absolute_error * 100} %.")
             fig.write_html(
                 f"{config.working_directory}/{study_name}_error_lh_{l_h_absolute_error}_error_ls_{l_s_absolute_error}_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
@@ -549,18 +551,23 @@ class StackedTransformerOptimization:
             if storage == 'sqlite':
                 storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
 
-
-
-
+            time_start = datetime.datetime.now()
+            print(f"Start loading study {study_name} from database")
             study = optuna.load_study(study_name=study_name,
                                         storage=storage)
 
-            # Order: total_volume, total_loss, difference_l_h, difference_l_s
             print(f"Loaded study {study_name} contains {len(study.trials)} trials.")
+            time_stop = datetime.datetime.now()
+            print(f"Finished loading study {study_name} from database in time: {time_stop - time_start}")
 
             print(f"{error_difference_inductance_sum = }")
 
-            fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if error_difference_inductance_sum > t.values[2] else None, t.values[1] if error_difference_inductance_sum > t.values[2] else None), target_names=["volume", "loss"])
+            time_start = datetime.datetime.now()
+            print(f"start generating Pareto front....")
+            fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if error_difference_inductance_sum > t.values[2] else None, t.values[1] if error_difference_inductance_sum > t.values[2] else None), target_names=["volume in m³", "loss in W"])
+            fig.update_layout(title=f"{study_name}: Filtering {error_difference_inductance_sum * 100} % of |err(Ls_12)| + |err(L_h)|")
+            time_stop = datetime.datetime.now()
+            print(f"Finished generating Pareto front in time: {time_stop - time_start}")
 
             fig.write_html(f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum}_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
             fig.show()
@@ -592,10 +599,15 @@ class StackedTransformerOptimization:
             if storage == "sqlite":
                 storage = f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3"
 
-
+            time_start = datetime.datetime.now()
+            print(f"Start loading study {study_name} from database")
             loaded_study = optuna.create_study(study_name=study_name,
                                                storage=storage,
                                                load_if_exists=True)
+
+            print(f"Loaded study {study_name} contains {len(loaded_study.trials)} trials.")
+            time_stop = datetime.datetime.now()
+            print(f"Finished loading study {study_name} from database in time: {time_stop - time_start}")
 
             loaded_trial = loaded_study.trials[number_trial]
             loaded_trial_params = loaded_trial.params
