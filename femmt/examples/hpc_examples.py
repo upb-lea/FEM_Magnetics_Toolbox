@@ -172,8 +172,14 @@ if __name__ == "__main__":
 
     if execution_type == "default_example":
         example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+        if not os.path.exists(example_results_folder):
+            os.mkdir(example_results_folder)
         parallel_results_folder = os.path.join(example_results_folder, "parallel")
+        if not os.path.exists(parallel_results_folder):
+            os.mkdir(parallel_results_folder)
         working_directory = os.path.join(parallel_results_folder, "default")
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
 
         number_of_models = 10
         number_of_processes = 5
@@ -198,8 +204,14 @@ if __name__ == "__main__":
 
     elif execution_type == "custom_hpc":
         example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+        if not os.path.exists(example_results_folder):
+            os.mkdir(example_results_folder)
         parallel_results_folder = os.path.join(example_results_folder, "parallel")
+        if not os.path.exists(parallel_results_folder):
+            os.mkdir(parallel_results_folder)
         working_directory = os.path.join(parallel_results_folder, "default")
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
 
         number_of_models = 8
         number_of_processes = 4
@@ -223,6 +235,16 @@ if __name__ == "__main__":
         print(f"Execution time: {execution_time}")
 
     elif execution_type == "parallel_study":
+        example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
+        if not os.path.exists(example_results_folder):
+            os.mkdir(example_results_folder)
+        parallel_results_folder = os.path.join(example_results_folder, "parallel")
+        if not os.path.exists(parallel_results_folder):
+            os.mkdir(parallel_results_folder)
+        working_directory = os.path.join(parallel_results_folder, "default")
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
         parallel_simulation_study(3)
     else:
         raise Exception(f"Execution type {execution_type} not found.")
