@@ -307,7 +307,7 @@ def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_
 
 
 def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow,
-                                    available_height: float, isolations: ThreeWindingIsolation,
+                                    isolations: ThreeWindingIsolation, available_height: float,
                                     interleaving_type: CenterTappedInterleavingType, interleaving_scheme: InterleavingSchemesFoilLitz,
                                     primary_additional_bobbin: float, center_foil_additional_bobbin: float):
     """Defines the vertical stacking of previously defined ConductorRows.

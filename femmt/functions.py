@@ -1106,6 +1106,20 @@ def point_is_in_rect(x, y, rect):
     return False
 
 
+def get_number_of_turns_of_winding(winding_windows, windings: List, winding_number: int):
+    turns = 0
+    for ww in winding_windows:
+        for vww in ww.virtual_winding_windows:
+            for index, winding in enumerate(windings):
+                if winding.winding_number == winding_number:
+                    # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
+                    try:
+                        turns += vww.turns[index]
+                    except:
+                        pass
+    return turns
+
+
 def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     """
     Calculates core material costs depending on material and weight.

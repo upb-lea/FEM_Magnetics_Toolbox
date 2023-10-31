@@ -9,8 +9,6 @@ import optuna.samplers
 
 #femmt libraries
 import femmt as fmt
-import materialdatabase as mdb
-
 
 
 core_database = fmt.core_database()
@@ -26,12 +24,12 @@ i_2 = [[0.0, 3.265248131976911e-07, 2.5e-06, 2.8265248131976912e-06, 5e-06], [-0
 sto_insulations = fmt.StoInsulation(
     iso_top_core=0.001,
     iso_bot_core=0.001,
-    iso_left_core=0.002,
+    iso_left_core_min=0.5e-3,
     iso_right_core=0.001,
     iso_primary_to_primary=2e-4,
     iso_secondary_to_secondary=2e-4,
     iso_primary_to_secondary=4e-4,
-    iso_primary_additional=1e-3
+    iso_primary_inner_bobbin=2e-3
 )
 
 dab_transformer_config = fmt.StoSingleInputConfig(
@@ -46,7 +44,7 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     temperature=100,
 
     # sweep parameters: geometry and material
-    material_list = [mdb.Material.N95],
+    material_list = [fmt.Material.N95],
     core_inner_diameter_min_max_list= [18e-3, 22e-3],
     window_w_min_max_list= [10e-3, 14e-3],
     window_h_bot_min_max_list= [13e-3, 15e-3],
@@ -54,20 +52,30 @@ dab_transformer_config = fmt.StoSingleInputConfig(
     primary_litz_wire_list= ["1.71x140x0.1"],
     metal_sheet_thickness_list= [0.5e-3, 1.5e-3],
     primary_coil_turns_min_max_list = [1,5],
+    interleaving_type_list=[fmt.CenterTappedInterleavingType.TypeC],
+    interleaving_scheme_list=[fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec],
 
     # fix parameters
     insulations=sto_insulations,
 
     # misc
-    working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_stacked_transformer_optimization")
+    working_directory=os.path.join(os.path.dirname(__file__), "example_results", "optuna_stacked_transformer_optimization"),
+    fft_filter_value_factor=0.05,
+    mesh_accuracy=0.8,
+
+    permeability_datasource=fmt.MaterialDataSource.Measurement,
+    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK
 )
 
-study_name = "2023-07-05"
+study_name = "2023-09-01"
 
 if __name__ == '__main__':
     time_start = datetime.datetime.now()
 
-    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 1000,
-                                                                                number_objectives=4,
-                                                                                sampler=optuna.samplers.NSGAIIISampler())
-    #fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config)
+    fmt.StackedTransformerOptimization.FemSimulation.start_proceed_study(study_name, dab_transformer_config, 10,  number_objectives=4, sampler=optuna.samplers.NSGAIIISampler(), show_geometries=False)
+    #fmt.StackedTransformerOptimization.FemSimulation.show_study_results(study_name, dab_transformer_config, percent_error_difference_l_h = 100, percent_error_difference_l_s12=100)
+    #fmt.StackedTransformerOptimization.FemSimulation.re_simulate_single_result(study_name, dab_transformer_config, 6)
