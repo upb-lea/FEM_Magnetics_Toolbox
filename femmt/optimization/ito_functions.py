@@ -12,6 +12,22 @@ import femmt.functions_reluctance as fr
 import femmt.functions as ff
 import femmt as fmt
 
+def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
+    """Inner function. Needed in order to appropriately run parallel simulations since some GetDP files are changed in every simulation instance
+
+    :param src_folder: Path to the base electro_magnetic folder
+    :type src_folder: str
+    :param dest_folder: Path to the folder where the necessary files shall be stored. The "new" electro_magnetic folder for the corresponding simulation.
+    :type dest_folder: str
+    """
+    files = ["fields.pro", "ind_axi_python_controlled.pro", "solver.pro", "values.pro"]
+
+    for file in files:
+        from_path = os.path.join(src_folder, file)
+        to_path = os.path.join(dest_folder, file)
+        shutil.copy(from_path, to_path)
+
+
 def dto_list_to_vec(dto_list: List[ItoSingleResultFile]) -> Tuple:
     """
     Brings a list of dto-objects to two lists
@@ -65,6 +81,40 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
     )
 
     os.makedirs(working_directories.fem_working_directory, exist_ok=True)
+
+    # generate 50 folders for 50 possible parallel calculations
+    number_of_processes = 50
+
+    for process_number in list(range(1,number_of_processes+1)):
+        single_process_directory = os.path.join(working_directories.fem_working_directory, f"process_{process_number}")
+        os.makedirs(single_process_directory, exist_ok=True)
+
+    electro_magnetic_folder_general = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "electro_magnetic"))
+    strands_coefficients_folder_general = os.path.join(electro_magnetic_folder_general, "Strands_Coefficients")
+
+    print(f"{electro_magnetic_folder_general = }")
+    print(f"{strands_coefficients_folder_general = }")
+
+    if not os.path.isdir(working_directory):
+        os.mkdir(working_directory)
+
+    for process_number in list(range(1,number_of_processes+1)):
+        # Setup necessary files and directories
+        single_process_directory = os.path.join(working_directories.fem_working_directory, f"process_{process_number}")
+        electro_magnetic_directory_single_process = os.path.join(single_process_directory, "electro_magnetic")
+        strands_coefficients_directory_single_process = os.path.join(electro_magnetic_directory_single_process, 'Strands_Coefficients')
+        if not os.path.isdir(single_process_directory):
+            os.mkdir(single_process_directory)
+        if not os.path.isdir(electro_magnetic_directory_single_process):
+            os.mkdir(electro_magnetic_directory_single_process)
+        if not os.path.isdir(strands_coefficients_directory_single_process):
+            os.mkdir(strands_coefficients_directory_single_process)
+
+        _copy_electro_magnetic_necessary_files(electro_magnetic_folder_general, electro_magnetic_directory_single_process)
+        shutil.copytree(strands_coefficients_folder_general, strands_coefficients_directory_single_process, dirs_exist_ok=True)
+
+
+
     os.makedirs(working_directories.fem_simulation_results_directory, exist_ok=True)
     os.makedirs(working_directories.fem_simulation_filtered_results_directory, exist_ok=True)
     os.makedirs(working_directories.reluctance_model_results_directory, exist_ok=True)

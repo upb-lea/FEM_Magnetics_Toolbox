@@ -2,7 +2,7 @@ import femmt as fmt
 import os
 
 def basic_example_transformer_three_winding(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    def example_thermal_simulation(show_visual_outputs: bool = True):
+    def example_thermal_simulation(show_visual_outputs: bool = True, flag_insulation: bool =True):
 
 
         # Thermal simulation:
@@ -24,7 +24,7 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
             "core": 5,  # ferrite
             "winding": 400,  # copper
             "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42  # polyethylen
+            "insulation": 0.42  if flag_insulation else None # polyethylen
         }
 
         # Here the case size can be determined
@@ -67,7 +67,7 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=fmt.colors_ba_jonas,
-                               colors_geometry=fmt.colors_geometry_ba_jonas)
+                               colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
 
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -99,7 +99,7 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulation
-    insulation = fmt.Insulation()
+    insulation = fmt.Insulation(flag_insulation=False)
     insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
     insulation.add_winding_insulations([[0.0002, 0.0004, 0.0004],
                                         [0.0004, 0.0002, 0.0004],
@@ -130,6 +130,9 @@ def basic_example_transformer_three_winding(onelab_folder: str = None, show_visu
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=250000, pre_visualize_geometry=show_visual_outputs)
     geo.single_simulation(freq=250000, current=[4, 4, 4], phi_deg=[0, 180, 0], show_fem_simulation_results=show_visual_outputs)
+
+    # 7. prepare and start thermal simulation
+    example_thermal_simulation(show_visual_outputs, flag_insulation=False)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,6 @@ from femmt.functions_drawing import *
 from femmt.functions_model import define_center_tapped_insulation
 
 
-
 def create_stacked_winding_windows(core, insulation):
     """
 
@@ -41,18 +40,66 @@ def create_stacked_winding_windows(core, insulation):
     return winding_window_top, winding_window_bot
 
 
-def place_windings(vwws, winding_scheme_type, transformer_stack, primary_turns,
-                   winding1, winding2, winding3, winding_isolations):
+def check_if_primary_conductor_row_fits_in_vww(vww, row_element: ConductorRow, winding_element, winding_insulations):
+    """
+
+    :param vww:
+    :param row_element:
+    :return:
+    """
+    if row_element.row_height > np.round(vww.top_bound-vww.bot_bound, 6):
+        raise Exception(f"Row is too high!")
+    elif row_element.number_of_conds_per_row * winding_element.conductor_radius*2 + (row_element.number_of_conds_per_row-1)*winding_insulations.primary_to_primary >= vww.right_bound-vww.left_bound:
+        # remark: additional bobbin is already included into the vww!
+        raise Exception(f"Row does not fit into virtual winding window!")
+
+
+def place_center_tapped_conductor_row(vwws, row_element, row_winding_scheme_type, no_vww, primary_conductors_to_be_placed,
+                                      winding1, winding2, winding3, winding_insulations):
+    """
+
+    :param vwws: list of virtual winding windows
+    :param row_element: row element to be placed in vwws
+    :param row_winding_scheme_type:
+    :param no_vww:
+    :param primary_conductors_to_be_placed:
+    :param winding1:
+    :param winding2:
+    :param winding3:
+    :return:
+    """
+    if row_element.winding_tag == WindingTag.Primary:
+        check_if_primary_conductor_row_fits_in_vww(vww=vwws[no_vww], row_element=row_element, winding_element=winding1, winding_insulations=winding_insulations)
+        primary_conductors_to_be_placed -= row_element.number_of_conds_per_row
+        if primary_conductors_to_be_placed >= 0:
+            vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row, row_winding_scheme_type)
+        elif primary_conductors_to_be_placed < 0:
+            # In the last row,only th rest shall be placed
+            vwws[no_vww].set_winding(winding1, row_element.number_of_conds_per_row + primary_conductors_to_be_placed, row_winding_scheme_type)
+            primary_conductors_to_be_placed = 0
+
+    elif row_element.winding_tag == WindingTag.Secondary:
+        vwws[no_vww].set_winding(winding2, row_element.number_of_conds_per_row, row_winding_scheme_type)
+
+    elif row_element.winding_tag == WindingTag.Tertiary:
+        vwws[no_vww].set_winding(winding3, row_element.number_of_conds_per_row, row_winding_scheme_type)
+
+    return primary_conductors_to_be_placed
+
+
+def place_windings_in_vwws(vwws, winding_scheme_type, transformer_stack, primary_turns,
+                           winding1, winding2, winding3, winding_insulations):
     """
 
     :param vwws:
-    :param winding_scheme_type:
+    :param winding_scheme_type: list with the winding schemes according to the transformer stack
+                                !explicitly does not contain the insulations!
     :param transformer_stack:
     :param primary_turns:
     :param winding1:
     :param winding2:
     :param winding3:
-    :param winding_isolations:
+    :param winding_insulations:
     :return:
     """
     # Count how many virtual winding windows were set
@@ -65,24 +112,13 @@ def place_windings(vwws, winding_scheme_type, transformer_stack, primary_turns,
 
     # Iterate over the rows and place them
     for row_element in transformer_stack.order:
-
         if type(row_element) == StackIsolation:
             pass
 
         elif type(row_element) == ConductorRow:
-            # TODO: kann man sicher viel eleganter lösen ...
-            if row_element.winding_tag == WindingTag.Primary:
-                primary_conductors_to_be_placed -= row_element.number_of_conds_per_row
-                if primary_conductors_to_be_placed >= 0:
-                    vwws[set_vwws].set_winding(winding1, row_element.number_of_conds_per_row, winding_scheme_type[set_vwws])
-                elif primary_conductors_to_be_placed < 0:
-                    # In the last row,only th rest shall be placed
-                    vwws[set_vwws].set_winding(winding1, row_element.number_of_conds_per_row + primary_conductors_to_be_placed, winding_scheme_type[set_vwws])
-                    primary_conductors_to_be_placed = 0
-            elif row_element.winding_tag == WindingTag.Secondary:
-                vwws[set_vwws].set_winding(winding2, row_element.number_of_conds_per_row, winding_scheme_type[set_vwws])
-            elif row_element.winding_tag == WindingTag.Tertiary:
-                vwws[set_vwws].set_winding(winding3, row_element.number_of_conds_per_row, winding_scheme_type[set_vwws])
+            primary_conductors_to_be_placed = place_center_tapped_conductor_row(vwws=vwws, row_element=row_element, row_winding_scheme_type=winding_scheme_type[set_vwws],
+                                                                                no_vww=set_vwws, primary_conductors_to_be_placed=primary_conductors_to_be_placed,
+                                                                                winding1=winding1, winding2=winding2, winding3=winding3, winding_insulations=winding_insulations)
             set_vwws += 1
 
         elif type(row_element) == CenterTappedGroup:
@@ -103,11 +139,11 @@ def place_windings(vwws, winding_scheme_type, transformer_stack, primary_turns,
                         turns2 += row.number_of_conds_per_row
 
             vwws[set_vwws].set_center_tapped_winding(conductor1=winding1, turns1=turns1,
-                                                                conductor2=winding2, turns2=turns2,
-                                                                conductor3=winding3, turns3=turns2,
-                                                                isolation_primary_to_primary=winding_isolations.primary_to_primary,
-                                                                isolation_secondary_to_secondary=winding_isolations.secondary_to_secondary,
-                                                                isolation_primary_to_secondary=winding_isolations.primary_to_secondary)
+                                                     conductor2=winding2, turns2=turns2,
+                                                     conductor3=winding3, turns3=turns2,
+                                                     isolation_primary_to_primary=winding_insulations.primary_to_primary,
+                                                     isolation_secondary_to_secondary=winding_insulations.secondary_to_secondary,
+                                                     isolation_primary_to_secondary=winding_insulations.primary_to_secondary)
 
             set_vwws += 1
 
@@ -153,7 +189,7 @@ def set_center_tapped_windings(core,
     :return:
     """
     def define_insulations():
-        insulation = Insulation()
+        insulation = Insulation(flag_insulation=False)
         insulation.add_core_insulations(iso_top_core, iso_bot_core, iso_left_core, iso_right_core)
         insulation.add_winding_insulations([[iso_primary_to_primary, iso_primary_to_secondary, iso_primary_to_secondary],
                                             [iso_primary_to_secondary, iso_secondary_to_secondary, iso_primary_to_secondary],
@@ -161,9 +197,9 @@ def set_center_tapped_windings(core,
         return insulation
     insulation = define_insulations()
     # TODO: the following statement does not provide any new information to the model at the moment -> MERGE both insulation concepts together (FEMMT globally)
-    winding_isolations = define_center_tapped_insulation(primary_to_primary=iso_primary_to_primary,
-                                                         secondary_to_secondary=iso_secondary_to_secondary,
-                                                         primary_to_secondary=iso_primary_to_secondary)
+    winding_insulations = define_center_tapped_insulation(primary_to_primary=iso_primary_to_primary,
+                                                          secondary_to_secondary=iso_secondary_to_secondary,
+                                                          primary_to_secondary=iso_primary_to_secondary)
 
     def define_windings(winding_temperature: float):
         winding1 = Conductor(0, Conductivity.Copper, winding_material_temperature=winding_temperature)
@@ -211,7 +247,8 @@ def set_center_tapped_windings(core,
         raise Exception(f"Unknown core type {core.core_type}")
 
     # Define the transformer winding stack
-    transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row, available_height=available_height, isolations=winding_isolations,
+    transformer_stack = stack_center_tapped_transformer(primary_row, secondary_row, tertiary_row,
+                                                        isolations=winding_insulations, available_height=available_height,
                                                         interleaving_type=interleaving_type, interleaving_scheme=interleaving_scheme,
                                                         primary_additional_bobbin=primary_additional_bobbin, center_foil_additional_bobbin=center_foil_additional_bobbin)
 
@@ -219,7 +256,7 @@ def set_center_tapped_windings(core,
     vwws_bot, winding_scheme_type = ww_bot.split_with_stack(transformer_stack)
 
     # Place the windings in the virtual winding windows
-    vwws_bot = place_windings(vwws_bot, winding_scheme_type, transformer_stack, primary_turns, winding1, winding2, winding3, winding_isolations)
+    vwws_bot = place_windings_in_vwws(vwws_bot, winding_scheme_type, transformer_stack, primary_turns, winding1, winding2, winding3, winding_insulations)
 
     # If "stacked-core", also set primary coil turns
     if core.core_type == CoreType.Stacked:
