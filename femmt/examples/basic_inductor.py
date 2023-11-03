@@ -3,7 +3,7 @@ import materialdatabase as mdb
 import os
 
 def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    def example_thermal_simulation(show_visual_outputs: bool = True):
+    def example_thermal_simulation(show_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -23,7 +23,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
             "core": 5,  # ferrite
             "winding": 400,  # copper
             "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42  # polyethylen
+            "insulation": 0.42  if flag_insulation else None # polyethylen
         }
 
         # Here the case size can be determined
@@ -66,7 +66,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=fmt.colors_ba_jonas,
-                               colors_geometry=fmt.colors_geometry_ba_jonas)
+                               colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
 
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -116,7 +116,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulations
-    insulation = fmt.Insulation()
+    insulation = fmt.Insulation(flag_insulation=True)
     insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
     insulation.add_winding_insulations([[0.0005]])
     geo.set_insulation(insulation)
@@ -133,7 +133,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 9, None)
+    vww.set_winding(winding, 7, None)
     geo.set_winding_windows([winding_window])
 
     # 8. create the model
@@ -154,7 +154,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 9. start simulation
 
     # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs)
+    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
 
 if __name__ == "__main__":
     basic_example_inductor(show_visual_outputs=True)

@@ -45,7 +45,7 @@ class GroupPro:
                 insulation = ", insulation"
 
             fd.write(f"\tCold = Region[{{air, case_top, case_top_right, case_right, case_bot_right, case_bot{air_gaps}{insulation}}}];\n")
-            fd.write("\tWarm = Region[{core, windings_total}];\n")
+            fd.write("\tWarm = Region[{core_total, windings_total}];\n")
             fd.write("\tTotal = Region[{Warm, Cold}];\n")
             fd.write("}")
 

@@ -1415,83 +1415,164 @@ class Mesh:
             with open(self.gmsh_log, "w") as fd:
                 fd.write(text)
 
-    def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before):
+    def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot,  color_scheme, colors_geometry, visualize_before):
         self.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")
 
         gmsh.open(self.model_geo_file)
 
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
         # Create case around the core
-
-        # Core point and line tags
-        core_point_tags = []
-        core_line_tags = []
-        if self.model.air_gaps.number == 0:  # TODO...
-            core_point_tags = [4, 3, 2, 1]
-            core_line_tags = [4, 3, 2]
-        else:
-            core_point_tags = [7, 6, 5, 4, 3, 2]
-            core_line_tags = [7, 6, 5, 4, 3]
-
-        tl_point = core_point_tags[0]  # Top left - default 5
-        tr_point = core_point_tags[2]  # Top right - default 4
-        br_point = core_point_tags[3]  # Bottom right - default 3
-        bl_point = core_point_tags[5]  # Bottom left - default 2
-
-        top_lines = [core_line_tags[0], core_line_tags[1]]  # default 4
-        right_line = core_line_tags[2]  # default 3
-        bottom_lines = [core_line_tags[3], core_line_tags[4]]   # default 2
-
-        # Get positions from points
-        tl_point_pos = gmsh.model.getValue(0, tl_point, [])
-        tr_point_pos = gmsh.model.getValue(0, tr_point, [])
-        br_point_pos = gmsh.model.getValue(0, br_point, [])
-        bl_point_pos = gmsh.model.getValue(0, bl_point, [])
-
-        mesh = self.mesh_data.c_core * 4  # It typically does not need to be the same size as c_core, but it shouldn't be too big either
-
-        # Create 5 new areas: top, top right, right, bottom right, bottom
-        # top
-        top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh)
-        top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
-        top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
-        top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
-        top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
-        top_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_left_line, top_case_top_line, top_case_right_line]+top_lines)
-        top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
+        if self.model.core.core_type == CoreType.Single:
 
 
-        # top right
-        top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
-        top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh)
-        top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
-        top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
-        top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
-        top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
-        top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
+            # Core point and line tags
+            core_point_tags = []
+            core_line_tags = []
+            if self.model.air_gaps.number == 0:  # TODO...
+                core_point_tags = [4, 3, 2, 1]
+                core_line_tags = [4, 3, 2]
+            else:
+                core_point_tags = [7, 6, 5, 4, 3, 2]
+                core_line_tags = [7, 6, 5, 4, 3]
 
-        # right
-        right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh)
-        right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
-        right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
-        right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
-        right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
+            tl_point = core_point_tags[0]  # Top left - default 5
+            tr_point = core_point_tags[2]  # Top right - default 4
+            br_point = core_point_tags[3]  # Bottom right - default 3
+            bl_point = core_point_tags[5]  # Bottom left - default 2
 
-        # bottom right
-        bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
-        bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
-        bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
-        bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
-        bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
-        bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line, bottom_right_case_right_line])
-        bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
+            top_lines = [core_line_tags[0], core_line_tags[1]]  # default 4
+            right_line = core_line_tags[2]  # default 3
+            bottom_lines = [core_line_tags[3], core_line_tags[4]]  # default 2
 
-        # bottom
-        bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh)
-        bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
-        bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
-        bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_right_case_left_line]+bottom_lines)
-        bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
+            # Get positions from points
+            tl_point_pos = gmsh.model.getValue(0, tl_point, [])
+            tr_point_pos = gmsh.model.getValue(0, tr_point, [])
+            br_point_pos = gmsh.model.getValue(0, br_point, [])
+            bl_point_pos = gmsh.model.getValue(0, bl_point, [])
+
+            mesh = self.mesh_data.c_core * 4  # It typically does not need to be the same size as c_core, but it shouldn't be too big either
+
+            # Create 5 new areas: top, top right, right, bottom right, bottom
+            # top
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top,tl_point_pos[2], mesh)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top,tr_point_pos[2], mesh)
+            top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
+            top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
+            top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
+            top_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_left_line, top_case_top_line, top_case_right_line] + top_lines)
+            top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
+
+            # top right
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right,tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1],tr_point_pos[2], mesh)
+            top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
+            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point,top_right_case_top_right_point)
+            top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
+            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
+            top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
+
+            # right
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1],br_point_pos[2], mesh)
+            right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
+            right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
+            right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
+            right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
+
+            # bottom right
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right,br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot,br_point_pos[2], mesh)
+            bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
+            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point,bottom_right_case_bottom_right_point)
+            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point,right_case_bottom_point)
+            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line,bottom_right_case_right_line])
+            bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
+
+            # bottom
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot,bl_point_pos[2], mesh)
+            bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
+            bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
+            bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_right_case_left_line] + bottom_lines)
+            bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
+
+
+
+
+
+
+        elif self.model.core.core_type == CoreType.Stacked:
+            # Core point and line tags
+            core_point_tags = []
+            core_line_tags = []
+            if self.model.air_gaps.number == 0:  # TODO...
+                core_point_tags = [11, 10, 9, 4, 3, 2]
+                core_line_tags = [6, 5, 4, 3, 2]
+            else:
+                core_point_tags = [11, 10, 9, 4, 3, 2]
+                core_line_tags = [6, 5, 4, 3, 2]
+
+            tl_point = core_point_tags[0]  # Top left default 11
+            tr_point = core_point_tags[1]  # Top right default 10
+            br_point = core_point_tags[4]  # Bottom right default 3
+            bl_point = core_point_tags[5]  # Bottom left default 2
+
+            top_lines = core_line_tags[0]  # default 6
+            right_line = [core_line_tags[1], core_line_tags[2], core_line_tags[3]]  # default 5 +4 +3
+            bottom_lines = core_line_tags[4]  # default 2
+
+            # Get positions from points
+            tl_point_pos = gmsh.model.getValue(0, tl_point, [])
+            tr_point_pos = gmsh.model.getValue(0, tr_point, [])
+            br_point_pos = gmsh.model.getValue(0, br_point, [])
+            bl_point_pos = gmsh.model.getValue(0, bl_point, [])
+
+            mesh = self.mesh_data.c_core * 4
+            # Create 5 new areas: top, top right, right, bottom right, bottom
+            # top
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top,tl_point_pos[2], mesh)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top,tr_point_pos[2], mesh)
+            top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
+            top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
+            top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
+            top_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_left_line, top_case_top_line, top_case_right_line, top_lines])
+            top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
+
+            # top right
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right,tr_point_pos[1] + case_gap_top, tr_point_pos[2],mesh)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1],tr_point_pos[2], mesh)
+            top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
+            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point,top_right_case_top_right_point)
+            top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
+            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
+            top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
+
+            # right
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh)
+            right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
+            right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
+            right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line] + right_line)
+            right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
+
+            # bottom right
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right,br_point_pos[1] - case_gap_bot,br_point_pos[2], mesh)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot,br_point_pos[2], mesh)
+            bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
+            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point,bottom_right_case_bottom_right_point)
+            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point,right_case_bottom_point)
+            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line,bottom_right_case_right_line])
+            bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
+
+            # bottom
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot,bl_point_pos[2], mesh)
+            bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point,bottom_case_bottom_left_point)
+            bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
+            bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_right_case_left_line, bottom_lines])
+            bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
+
+
+
+
 
         gmsh.model.geo.synchronize()
 
@@ -1499,7 +1580,10 @@ class Mesh:
         # Define physical Surfaces and Curves
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Core
-        self.ps_core = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_core, tag=120000)  # TODO: for stacked (modular) core geometry
+        self.ps_core = []
+        for i in range(0, len(self.plane_surface_core)):
+            self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=120000+i))
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
@@ -1512,7 +1596,10 @@ class Mesh:
         for ww in self.model.winding_windows:
             for vww in ww.virtual_winding_windows:
                 for index, winding in enumerate(self.windings):
-                    flattened_turns[winding.winding_number] += vww.turns[index]
+                    try:
+                        flattened_turns[winding.winding_number] += vww.turns[index]
+                    except:
+                        pass
 
         for winding in self.windings:
             winding_number = winding.winding_number
@@ -1533,17 +1620,18 @@ class Mesh:
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
 
 
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Air
-        self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=110000)
+
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Air gaps
+        # air and Air gaps
         if self.model.core.core_type == CoreType.Single:
+            self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=110000)
             self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001) #trying by Othman for stacked transformer
         elif self.model.core.core_type == CoreType.Stacked:
             air_total = self.plane_surface_air_bot + self.plane_surface_air_top
             self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=110001)
+
+
 
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1552,7 +1640,7 @@ class Mesh:
         self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
 
 
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
         self.thermal_boundary_region_tags = {
             "BOUNDARY_TOP": top_case_top_line,
@@ -1565,7 +1653,9 @@ class Mesh:
         }
 
         for key in self.thermal_boundary_region_tags:
-            self.thermal_boundary_region_tags[key] = ff.create_physical_group(1, [self.thermal_boundary_region_tags[key]], key)
+            self.thermal_boundary_region_tags[key] = ff.create_physical_group(1,
+                                                                              [self.thermal_boundary_region_tags[key]],
+                                                                              key)
 
         # Add surface physical groups
         # INFO: The physical groups are not created in the createRectWithPhysicalGroup because it causes a bug with the index counter when
@@ -1573,16 +1663,17 @@ class Mesh:
         top_surface_physical_group = ff.create_physical_group(2, [top_case_surface], "TopCase")
         top_right_surface_physical_group = ff.create_physical_group(2, [top_right_case_surface], "TopRightCase")
         right_surface_physical_group = ff.create_physical_group(2, [right_case_surface], "RightCase")
-        bottom_right_surface_physical_group = ff.create_physical_group(2, [bottom_right_case_surface], "BottomRightCase")
+        bottom_right_surface_physical_group = ff.create_physical_group(2, [bottom_right_case_surface],
+                                                                       "BottomRightCase")
         bottom_surface_physical_group = ff.create_physical_group(2, [bottom_case_surface], "BottomCase")
 
         self.thermal_boundary_ps_groups = [top_surface_physical_group, top_right_surface_physical_group,
-                                           right_surface_physical_group, bottom_right_surface_physical_group, bottom_surface_physical_group]
-
+                                           right_surface_physical_group, bottom_right_surface_physical_group,
+                                           bottom_surface_physical_group]
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]
-        for i in range(0, len(self.plane_surface_core)):
-            gmsh.model.setPhysicalName(2, self.ps_core, f"CORE")  # TODO: for stacked (modular) core geometry
+        for i in range(len(self.plane_surface_core)):
+            gmsh.model.setPhysicalName(2, self.ps_core[i], f"CORE{i+1}")
         for num in range(len(self.windings)):
             for i in range(len(self.ps_cond[num])):
                 gmsh.model.setPhysicalName(2, self.ps_cond[num][i], f"COND{num + 1}")
@@ -1602,7 +1693,8 @@ class Mesh:
 
         # Set case color to core color
         for sf in [top_case_surface, top_right_case_surface, right_case_surface, bottom_right_case_surface, bottom_case_surface]:
-            gmsh.model.setColor([(2, sf)], color_case[0], color_case[1], color_case[2], recursive=True)
+             gmsh.model.setColor([(2, sf)], color_case[0], color_case[1], color_case[2], recursive=True)
+
 
         # core color
         for i in range(len(self.plane_surface_core)):
@@ -1615,7 +1707,8 @@ class Mesh:
                                 color_air_gap[2], recursive=True)
 
         # air/potting-material inside core window
-        gmsh.model.setColor([(2, self.plane_surface_air[0])], color_background[0], color_background[1], color_background[2], recursive=True)
+        if self.model.core.core_type == CoreType.Single:
+            gmsh.model.setColor([(2, self.plane_surface_air[0])], color_background[0], color_background[1], color_background[2], recursive=True)
 
         # winding colors
         for winding_number in range(len(self.windings)):

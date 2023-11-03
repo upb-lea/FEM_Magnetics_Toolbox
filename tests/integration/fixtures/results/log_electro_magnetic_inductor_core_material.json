@@ -41,11 +41,13 @@
       "core_parts": {
         "core_part_1": {
           "eddy_losses": 0.002189318573992297,
-          "hyst_losses": 0.1365566551601681
+          "hyst_losses": 0.1365566551601681,
+          "total_core_part_1": 0.1387459737341604
         },
         "core_part_2": {
           "eddy_losses": 0.003048953538549063,
-          "hyst_losses": 0.06260077528157174
+          "hyst_losses": 0.06260077528157174,
+          "total_core_part_2": 0.0656497288201208
         }
       },
       "all_winding_losses": 0.4706851404414779
@@ -68,17 +70,21 @@
     },
     "all_windings": 0.4706851404414779,
     "eddy_core": 0.005238272112541359,
+    "total_core_part_1": 0.1387459737341604,
+    "total_core_part_2": 0.0656497288201208,
     "hyst_core_fundamental_freq": 0.1991574304417403,
     "core": 0.20439570255428166,
     "total_losses": 0.6750808429957595
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2023-08-25 10:50:33",
+    "date": "2023-11-03 14:32:22",
     "component_type": "Inductor",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
+      "core_type": 1,
       "core_inner_diameter": 0.0149,
+      "core_h": 0.03695,
       "window_w": 0.01105,
       "window_h": 0.0295,
       "material": "N95",
