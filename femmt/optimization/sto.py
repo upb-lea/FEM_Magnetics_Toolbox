@@ -593,6 +593,8 @@ class StackedTransformerOptimization:
             :type fft_filter_value_factor: float
             :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
             :type mesh_accuracy: float
+            :param storage: storage of the study
+            :type storage: str
             """
             target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 

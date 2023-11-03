@@ -265,7 +265,7 @@ class MagneticComponent:
         # Power density for volumes W/m^3
         #core_area = self.calculate_core_volume()
         core_area = self.calculate_core_parts_volume()
-        #core_area = ff.calculate_cylinder_volume()
+
 
 
         # Set wire radii
@@ -647,176 +647,160 @@ class MagneticComponent:
         return np.pi * (core_width ** 2 * core_height - (
                 inner_leg_width + winding_width) ** 2 * winding_height + inner_leg_width ** 2 * winding_height) - air_gap_volume
 
-
     def calculate_core_parts_volume(self) -> list:
 
-        """Calculates the volume of the core excluding air.
+        """Calculates the volume of the part core excluding air.
 
-                :return: Volume of the core.
+                :return: Volume of the core part.
                 :rtype: list
                 """
+        # Extract heights from the midpoints of air gaps
         heights = [point[2] for point in self.air_gaps.midpoints]
-        core_part_volume = []
+        core_parts_volumes = []
 
         def get_width(part_number):
-            if self.stray_path:
-                if self.stray_path.start_index == 0:
-                    if part_number == 2:
-                        return self.core.core_inner_diameter / 2
-                    elif part_number == 3:
-                        return  self.stray_path.length
-                elif self.stray_path.start_index == 1:
-                    if part_number == 2:
-                        return  self.stray_path.length
-                    elif part_number == 3:
-                        return self.core.core_inner_diameter / 2
+            """
+            If there is a stray path, calculate width based on its starting index and part number.
+            part_number is the core_part_i+2; means that if the start_index is 0, the stray path is in core_part_2
+            if the start_index is 1, the stray path is in core_part_3 and so on
+
+            """
+
+            if self.stray_path and part_number == self.stray_path.start_index + 2:
+                return self.stray_path.length
             return self.core.core_inner_diameter / 2
 
+        # if single core
         if self.core.core_type == CoreType.Single:
-            if  self.component_type == ComponentType.IntegratedTransformer:
+            # For single core type and many core_parts (due to multiple airgaps)
+            if len(self.mesh.plane_surface_core) > 1:
 
-                # Calculate heights dynamically
+                # For single core and more than one core_part, volume for every core part is calculated
+                # # Sorting air gaps from lower to upper
                 sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1])
-                #finding position of first airgap
+                # Finding position of first airgap
                 bottommost_airgap_position = sorted_midpoints[0][1]
                 bottommost_airgap_height = sorted_midpoints[0][2]
-                #finding position of last airgap
+                # Finding position of last airgap
                 topmost_airgap_position = sorted_midpoints[-1][1]
                 topmost_airgap_height = sorted_midpoints[-1][2]
-                # finding position to get the distance between two airgaps
-                second_topmost_airgap_position = sorted_midpoints[-2][1]
-                second_topmost_airgap_height = sorted_midpoints[-2][2]
-                # finding position to get the distance between two airgaps
-                third_topmost_airgap_position = sorted_midpoints[-3][1]
-                third_topmost_airgap_height = sorted_midpoints[-3][2]
 
-
-
+                # core_part_1 is divided into subparts cores
+                # subpart1: bottom left subpart
                 subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2 + self.core.core_inner_diameter / 4
                 subpart1_1_width = self.core.core_inner_diameter / 2
                 subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
-                #subpart2
+                # subpart2: bottom mid subpart
                 subpart1_2_height = self.core.core_inner_diameter / 4
                 subpart1_2_width = self.core.window_w
                 subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
 
-                #subpart2
+                # subpart3: right subpart
                 subpart1_3_height = self.core.window_h + self.core.core_inner_diameter / 2
                 subpart1_3_width = self.core.r_outer - self.core.r_inner
                 subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height
 
-                #subpart4
+                # subpart4: top mid subpart
                 subpart1_4_height = self.core.core_inner_diameter / 4
                 subpart1_4_width = self.core.window_w
                 subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
 
-                #subpart1_5_height = self.air_gaps.midpoints[self.stray_path.start_index+1][1] - self.air_gaps.midpoints[self.stray_path.start_index+1][2] / 2
+                # subpart5: top left subpart
                 subpart1_5_height = self.core.window_h / 2 - topmost_airgap_position - topmost_airgap_height / 2 + self.core.core_inner_diameter / 4
                 subpart1_5_width = self.core.core_inner_diameter / 2
                 subpart1_5_volume = np.pi * subpart1_5_width ** 2 * subpart1_5_height
 
+                # Calculate the volume of core part 1 by summing up subpart volumes
                 core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume + subpart1_4_volume + subpart1_5_volume
-                core_part_volume.append(core_part_1_volume)
+                core_parts_volumes.append(core_part_1_volume)
 
-                # #core_part_2
-                if len(sorted_midpoints) > 1:
-                    core_part_2_height = topmost_airgap_position - topmost_airgap_height / 2 - (second_topmost_airgap_position + second_topmost_airgap_height / 2)
-                    core_part_2_width = get_width(2)
+                # Calculate the volumes of the core parts between the air gaps
+                for i in range(len(sorted_midpoints) - 1):
+                    air_gap_1_position = sorted_midpoints[i][1]
+                    air_gap_1_height = sorted_midpoints[i][2]
+                    air_gap_2_position = sorted_midpoints[i + 1][1]
+                    air_gap_2_height = sorted_midpoints[i + 1][2]
+                    # calculate the height based on airgap positions and heights, and the width
+                    core_part_height = air_gap_2_position - air_gap_2_height / 2 - (
+                            air_gap_1_position + air_gap_1_height / 2)
+                    core_part_width = get_width(i + 2)
+                    # calculate the volume
+                    core_part_volume = np.pi * core_part_width ** 2 * core_part_height
+                    core_parts_volumes.append(core_part_volume)
 
-                    core_part_2_volume = np.pi * core_part_2_width ** 2 * core_part_2_height
-                    core_part_volume.append(core_part_2_volume)
-
-                #core_part_3
-                if len(sorted_midpoints) > 2:
-                    core_part_3_height = second_topmost_airgap_position - second_topmost_airgap_height / 2 - (third_topmost_airgap_position + third_topmost_airgap_height / 2)
-                    core_part_3_width =  get_width(3)
-
-                    core_part_3_volume = np.pi * core_part_3_width ** 2 * core_part_3_height
-                    core_part_volume.append(core_part_3_volume)
-
-
-                return core_part_volume
-
-
+                # Return the total core part volume
+                return core_parts_volumes
+            # for single core and only one core part
             else:
                 return [self.calculate_core_volume()]
 
         elif self.core.core_type == CoreType.Stacked:
 
+            # For stacked core types, the volume is divided into different core parts, each of which is further
+            # divided into subparts to calculate the total volume of each core part.
 
-            # core_part_1
-            # core_part_1 is divided into 3 subparts
-            # subpart_1
+            # Core Part 1 Calculation
+            # Core part 1 is calculated as the sum of three different subparts
+            # subpart_1: bottom left subpart
             subpart1_1_height = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4 - heights[0] / 2
             subpart1_1_width = self.core.core_inner_diameter / 2
             subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
-            # subpart_2
+            # subpart_2 : bottom mid subpart
             subpart1_2_height = self.core.core_inner_diameter / 4
             subpart1_2_width = self.core.window_w
             subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
 
-            # subpart 3
+            # subpart_3: bottom right subpart
             subpart1_3_height = self.core.window_h_bot + self.core.core_inner_diameter / 4
             subpart1_3_width = self.core.r_outer - self.core.r_inner
             subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height
 
+            # Summing up the volumes of the subparts to get the total volume of core part 1
             core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume
-            core_part_volume.append(core_part_1_volume)
+            core_parts_volumes.append(core_part_1_volume)
 
-            # core_part_2
+            # core_part_2 : core part between the bottom airgap and subpart_1 of core_part_1
             core_part_2_height = self.core.window_h_bot / 2 - heights[0] / 2
             core_part_2_width = self.core.core_inner_diameter / 2
             core_part_2_volume = np.pi * core_part_2_width ** 2 * core_part_2_height
-            core_part_volume.append(core_part_2_volume)
+            core_parts_volumes.append(core_part_2_volume)
 
-            # core_part_3
+            # core_part_3 : left mid core part (stacked)
             core_part_3_height = self.core.core_inner_diameter / 4
             core_part_3_width = self.core.r_inner
             core_part_3_volume = np.pi * core_part_3_width ** 2 * core_part_3_height
-            core_part_volume.append(core_part_3_volume)
+            core_parts_volumes.append(core_part_3_volume)
 
-            # core_part_4
+            # core_part_4: right mid core part
             core_part_4_height = self.core.core_inner_diameter / 4
             core_part_4_width = self.core.r_outer - self.core.r_inner
             core_part_4_volume = np.pi * core_part_4_width ** 2 * core_part_4_height
-            core_part_volume.append(core_part_4_volume)
+            core_parts_volumes.append(core_part_4_volume)
 
             # core_part_5
             # core_part_5 is divided into 3 parts
-            # subpart_1
+            # subpart_1: top right subpart
             subpart5_1_height = self.core.window_h_top + self.core.core_inner_diameter / 4 - heights[1] / 2
-            subpart5_1_width = self.core.r_inner - self.core.window_w
+            subpart5_1_width = self.core.core_inner_diameter / 2
             subpart5_1_volume = np.pi * subpart5_1_width ** 2 * subpart5_1_height
 
-            # subpart_2
+            # subpart_2: mid top subpart
             subpart5_2_height = self.core.core_inner_diameter / 4
             subpart5_2_width = self.core.window_w
             subpart5_2_volume = np.pi * subpart5_2_width ** 2 * subpart5_2_height
 
-            # subpart 3
+            # subpart 3: left top subpart
             subpart5_3_height = self.core.window_h_top + self.core.core_inner_diameter / 4
             subpart5_3_width = self.core.r_outer - self.core.r_inner
             subpart5_3_volume = np.pi * subpart5_3_width ** 2 * subpart5_3_height
-
+            # Summing up the volumes of the subparts to get the total volume of core_part_5
             core_part_5_volume = subpart5_1_volume + subpart5_2_volume + subpart5_3_volume
-            core_part_volume.append(core_part_5_volume)
+            core_parts_volumes.append(core_part_5_volume)
 
-            return core_part_volume
-        # if self.core.core_type == CoreType.Single:
-        #     cylinder_height = self.core.window_h + self.core.core_inner_diameter / 2
-        # elif self.core.core_type == CoreType.Stacked:
-        #     cylinder_height = self.core.window_h_bot + self.core.window_h_top + self.core.core_inner_diameter * 3 / 4
-        # cylinder_diameter = self.core.r_outer
-        #
-        # core_volumes = []  # Initialize list to store each volume
-        #
-        # for _ in self.mesh.plane_surface_core:
-        #     volume = ff.calculate_cylinder_volume(cylinder_diameter, cylinder_height)
-        #     core_volumes.append(volume)
-        #
-        # return core_volumes  # Return the list of volumes
+            # Returning the final list of core part volumes
+            return core_parts_volumes
 
     def calculate_core_weight(self) -> float:
         """
@@ -2262,6 +2246,8 @@ class MagneticComponent:
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
 
             # Core Part losses
+            # If there are multiple core parts, calculate losses for each part individually
+            # the core losses are caluclated by summing the eddy and hyst losses
             if len(self.mesh.plane_surface_core) > 1:
                 sweep_dict["core_parts"] = {}
                 for i in range(0, len(self.mesh.plane_surface_core)):
@@ -2275,6 +2261,7 @@ class MagneticComponent:
                     hyst = sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"]
                     sweep_dict["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy + hyst
 
+            # For a single core part, total losses are simply the sum of eddy and hysteresis losses
             else:
                 # if I have only one core_part
                 sweep_dict["core_parts"] = {}  # parent dictionary is initialized first
@@ -2323,12 +2310,13 @@ class MagneticComponent:
         # Core
         log_dict["total_losses"]["eddy_core"] = sum(
             log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
-        # setting the total for every core_part in total losses dict
+        # In the total losses calculation, individual core part losses are also accounted for
         if len(self.mesh.plane_surface_core) > 1:
             for i in range(len(self.mesh.plane_surface_core)):
                 log_dict["total_losses"][f"total_core_part_{i + 1}"] = sweep_dict["core_parts"][f"core_part_{i + 1}"][
                     f"total_core_part_{i + 1}"]
-        if len(self.mesh.plane_surface_core) == 1: # core and core_part_1 will be the same
+        # If there is only one core part, set its total losses directly
+        if len(self.mesh.plane_surface_core) == 1:
 
             log_dict["total_losses"]["total_core_part_1"] = sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"]
 
@@ -3354,7 +3342,7 @@ class MagneticComponent:
         return content
 
     @staticmethod
-    def decode_settings_from_log(log_file_path: str, working_directory: str = None, silent: bool = False):
+    def decode_settings_from_log(log_file_path: str, working_directory: str = None, verbosity: bool = False):
         """
         Reads the given log and returns the magnetic component from th elog.
 
@@ -3377,12 +3365,43 @@ class MagneticComponent:
 
         if settings is not None:
             cwd = working_directory if working_directory is not None else settings["working_directory"]
-            geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
+            geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd,
+                                    verbosity = 2)
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
-            core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                   window_w=settings["core"]["window_w"],
-                                                   window_h=settings["core"]["window_h"])
+            core_type = settings["core"]["core_type"]
+            #print(core_type)
+            if core_type == CoreType.Single:
+                core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
+                                                                window_w=settings["core"]["window_w"],
+                                                                window_h=settings["core"]["window_h"],
+                                                                core_h=settings["core"]["core_h"])
+
+            elif core_type == CoreType.Stacked:
+                core_dimensions = StackedCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
+                                                                window_w=settings["core"]["window_w"],
+                                                                window_h_bot=settings["core"]["window_h_bot"],
+                                                                window_h_top=settings["core"]["window_h_top"])
+                                                                #ToDo: core_h not implemented yet.
+                                                                #core_h=settings["core"]["core_h"])
+            else:
+                raise ValueError("unknown core_type for decoding from result_log.")
+
+
+            if isinstance(settings["core"]["sigma"], List):
+                # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
+                settings["core"]["sigma"] = complex(settings["core"]["sigma"][0], settings["core"]["sigma"][1])
+
+            if settings["core"]["material"] != 'custom':
+                # a custom core does not need a material, measurement_setup and _datatype
+                settings["core"]["material"] = Material(settings["core"]["material"])
+                settings["core"]["permeability_measurement_setup"] = MeasurementSetup(settings["core"]["permeability_measurement_setup"])
+                settings["core"]["permeability_datatype"] = MeasurementDataType(settings["core"]["permeability_datatype"])
+                settings["core"]["permittivity_measurement_setup"] = MeasurementSetup(settings["core"]["permittivity_measurement_setup"])
+                settings["core"]["permittivity_datatype"] = MeasurementDataType(settings["core"]["permittivity_datatype"])
+
+            settings["core"]["permeability_datasource"] = MaterialDataSource(settings["core"]["permeability_datasource"])
+            settings["core"]["permittivity_datasource"] = MaterialDataSource(settings["core"]["permittivity_datasource"])
 
             core = Core(core_dimensions=core_dimensions, **settings["core"])
             geo.set_core(core)
@@ -3397,8 +3416,7 @@ class MagneticComponent:
             if "insulation" in settings:
                 insulation = Insulation()
                 insulation.add_core_insulations(*settings["insulation"]["core_insulations"])
-                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"],
-                                                   settings["insulation"]["vww_insulation"])
+                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"])
                 geo.set_insulation(insulation)
 
             if "stray_path" in settings:
@@ -3413,6 +3431,7 @@ class MagneticComponent:
                     turns = vww["turns"]
                     conductors = []
                     for winding in vww["windings"]:
+                        winding_number = winding["winding_number"]
                         conductor = Conductor(winding["winding_number"], Conductivity[winding["conductivity"]])
                         conductor_type = ConductorType[winding["conductor_type"]]
                         if conductor_type == ConductorType.RectangularSolid:
@@ -3434,10 +3453,11 @@ class MagneticComponent:
                                                    vww["right_bound"])
                     winding_type = WindingType[vww["winding_type"]]
                     if winding_type == WindingType.Single:
-                        winding_scheme = WindingScheme[vww["winding_scheme"]] if vww[
-                                                                                     "winding_scheme"] is not None else None
+                        print(f"Winding Type Single")
+                        winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] is not None else None
                         wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
-                        new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
+                        new_vww.set_winding(conductors[0], turns[winding_number], winding_scheme, wrap_para_type)
+                        print(turns[0])
                     elif winding_type == WindingType.TwoInterleaved:
                         new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1],
                                                         InterleavedWindingScheme[vww["winding_scheme"]],
@@ -3449,9 +3469,6 @@ class MagneticComponent:
             winding_window = WindingWindow(core, insulation)
             winding_window.virtual_winding_windows = new_virtual_winding_windows
             geo.set_winding_windows([winding_window])
-
-            # Variable to set silent mode
-            ff.set_silent_status(silent)
 
             return geo
 
