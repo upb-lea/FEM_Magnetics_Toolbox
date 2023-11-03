@@ -430,10 +430,11 @@
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2023-10-31 11:53:45",
+    "date": "2023-11-03 14:39:56",
     "component_type": "IntegratedTransformer",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
+      "core_type": 2,
       "core_inner_diameter": 0.02,
       "window_w": 0.015,
       "window_h_bot": 0.017,

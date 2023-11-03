@@ -3341,7 +3341,7 @@ class MagneticComponent:
         return content
 
     @staticmethod
-    def decode_settings_from_log(log_file_path: str, working_directory: str = None, silent: bool = False):
+    def decode_settings_from_log(log_file_path: str, working_directory: str = None, verbosity: bool = False):
         """
         Reads the given log and returns the magnetic component from th elog.
 
@@ -3364,12 +3364,43 @@ class MagneticComponent:
 
         if settings is not None:
             cwd = working_directory if working_directory is not None else settings["working_directory"]
-            geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd)
+            geo = MagneticComponent(component_type=ComponentType[settings["component_type"]], working_directory=cwd,
+                                    verbosity = 2)
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
-            core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                   window_w=settings["core"]["window_w"],
-                                                   window_h=settings["core"]["window_h"])
+            core_type = settings["core"]["core_type"]
+            #print(core_type)
+            if core_type == CoreType.Single:
+                core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
+                                                                window_w=settings["core"]["window_w"],
+                                                                window_h=settings["core"]["window_h"],
+                                                                core_h=settings["core"]["core_h"])
+
+            elif core_type == CoreType.Stacked:
+                core_dimensions = StackedCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
+                                                                window_w=settings["core"]["window_w"],
+                                                                window_h_bot=settings["core"]["window_h_bot"],
+                                                                window_h_top=settings["core"]["window_h_top"])
+                                                                #ToDo: core_h not implemented yet.
+                                                                #core_h=settings["core"]["core_h"])
+            else:
+                raise ValueError("unknown core_type for decoding from result_log.")
+
+
+            if isinstance(settings["core"]["sigma"], List):
+                # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
+                settings["core"]["sigma"] = complex(settings["core"]["sigma"][0], settings["core"]["sigma"][1])
+
+            if settings["core"]["material"] != 'custom':
+                # a custom core does not need a material, measurement_setup and _datatype
+                settings["core"]["material"] = Material(settings["core"]["material"])
+                settings["core"]["permeability_measurement_setup"] = MeasurementSetup(settings["core"]["permeability_measurement_setup"])
+                settings["core"]["permeability_datatype"] = MeasurementDataType(settings["core"]["permeability_datatype"])
+                settings["core"]["permittivity_measurement_setup"] = MeasurementSetup(settings["core"]["permittivity_measurement_setup"])
+                settings["core"]["permittivity_datatype"] = MeasurementDataType(settings["core"]["permittivity_datatype"])
+
+            settings["core"]["permeability_datasource"] = MaterialDataSource(settings["core"]["permeability_datasource"])
+            settings["core"]["permittivity_datasource"] = MaterialDataSource(settings["core"]["permittivity_datasource"])
 
             core = Core(core_dimensions=core_dimensions, **settings["core"])
             geo.set_core(core)
@@ -3384,8 +3415,7 @@ class MagneticComponent:
             if "insulation" in settings:
                 insulation = Insulation()
                 insulation.add_core_insulations(*settings["insulation"]["core_insulations"])
-                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"],
-                                                   settings["insulation"]["vww_insulation"])
+                insulation.add_winding_insulations(settings["insulation"]["inner_winding_insulations"])
                 geo.set_insulation(insulation)
 
             if "stray_path" in settings:
@@ -3400,6 +3430,7 @@ class MagneticComponent:
                     turns = vww["turns"]
                     conductors = []
                     for winding in vww["windings"]:
+                        winding_number = winding["winding_number"]
                         conductor = Conductor(winding["winding_number"], Conductivity[winding["conductivity"]])
                         conductor_type = ConductorType[winding["conductor_type"]]
                         if conductor_type == ConductorType.RectangularSolid:
@@ -3421,10 +3452,11 @@ class MagneticComponent:
                                                    vww["right_bound"])
                     winding_type = WindingType[vww["winding_type"]]
                     if winding_type == WindingType.Single:
-                        winding_scheme = WindingScheme[vww["winding_scheme"]] if vww[
-                                                                                     "winding_scheme"] is not None else None
+                        print(f"Winding Type Single")
+                        winding_scheme = WindingScheme[vww["winding_scheme"]] if vww["winding_scheme"] is not None else None
                         wrap_para_type = WrapParaType[vww["wrap_para"]] if vww["wrap_para"] is not None else None
-                        new_vww.set_winding(conductors[0], turns[0], winding_scheme, wrap_para_type)
+                        new_vww.set_winding(conductors[0], turns[winding_number], winding_scheme, wrap_para_type)
+                        print(turns[0])
                     elif winding_type == WindingType.TwoInterleaved:
                         new_vww.set_interleaved_winding(conductors[0], turns[0], conductors[1], turns[1],
                                                         InterleavedWindingScheme[vww["winding_scheme"]],
@@ -3436,9 +3468,6 @@ class MagneticComponent:
             winding_window = WindingWindow(core, insulation)
             winding_window.virtual_winding_windows = new_virtual_winding_windows
             geo.set_winding_windows([winding_window])
-
-            # Variable to set silent mode
-            ff.set_silent_status(silent)
 
             return geo
 
