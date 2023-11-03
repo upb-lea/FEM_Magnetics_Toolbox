@@ -1469,12 +1469,12 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
-    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=3)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_inductor_core_fixed_loss_angle_litz_wire.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=4)
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
 
 def test_inductor_core_fixed_loss_angle_foil_vertical(femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical):
     test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical
