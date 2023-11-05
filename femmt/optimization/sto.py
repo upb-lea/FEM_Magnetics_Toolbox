@@ -6,6 +6,7 @@ import datetime
 
 # 3rd party libraries
 import optuna
+import pandas as pd
 
 # FEMMT and materialdatabase libraries
 from femmt.optimization.sto_dtos import *
@@ -113,6 +114,8 @@ class StackedTransformerOptimization:
             :type number_objectives: int
             :param show_geometries: True to display the geometries
             :type show_geometries: bool
+            :param process_number: process number. Important for parallel computing, each simulation works in a separate folder
+            :type process_number: int
             """
             # suggest core geometry
             core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0], config.core_inner_diameter_min_max_list[1])
@@ -180,7 +183,7 @@ class StackedTransformerOptimization:
 
                 # Update directories for each model
                 geo.file_data.update_paths(working_directory_single_process, electro_magnetic_directory_single_process,
-                                             strands_coefficients_folder_single_process)
+                                           strands_coefficients_folder_single_process)
 
                 core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                                    window_h_top=window_h_top, window_h_bot=window_h_bot)
@@ -292,8 +295,6 @@ class StackedTransformerOptimization:
                 elif number_objectives == 4:
                     return float('nan'), float('nan'), float('nan'), float('nan')
 
-
-
         @staticmethod
         def start_proceed_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
                                 end_time: datetime.datetime = datetime.datetime.now(),
@@ -354,7 +355,7 @@ class StackedTransformerOptimization:
             # .INFO: all messages (default)
             # .WARNING: fails and warnings
             # .ERROR: only errors
-            #optuna.logging.set_verbosity(optuna.logging.ERROR)
+            # optuna.logging.set_verbosity(optuna.logging.ERROR)
 
             directions = objective_directions(number_objectives)
 
@@ -374,7 +375,6 @@ class StackedTransformerOptimization:
             else:
                 pass
 
-
             while datetime.datetime.now() < end_time:
                 print(f"Performing another {number_trials} trials.")
 
@@ -382,7 +382,6 @@ class StackedTransformerOptimization:
                                                        storage=storage,
                                                        directions=directions,
                                                        load_if_exists=True, sampler=sampler)
-
 
                 study_in_memory = optuna.create_study(directions=directions, study_name=study_name, sampler=sampler)
                 print(f"Sampler is {study_in_memory.sampler.__class__.__name__}")
@@ -396,13 +395,13 @@ class StackedTransformerOptimization:
 
         @staticmethod
         def proceed_multi_core_study(study_name: str, config: StoSingleInputConfig, number_trials: int,
-                                end_time: datetime.datetime = datetime.datetime.now(),
-                                number_objectives: int = None,
-                                storage: str = "mysql://monty@localhost/mydb",
-                                sampler=optuna.samplers.NSGAIISampler(),
-                                show_geometries: bool = False,
-                                process_number: int = 1,
-                                ) -> None:
+                                     end_time: datetime.datetime = datetime.datetime.now(),
+                                     number_objectives: int = None,
+                                     storage: str = "mysql://monty@localhost/mydb",
+                                     sampler=optuna.samplers.NSGAIISampler(),
+                                     show_geometries: bool = False,
+                                     process_number: int = 1,
+                                    ) -> None:
             """
             Proceed a study which can be paralleled. It is highly recommended to use a mysql-database (or mariadb).
 
@@ -454,7 +453,7 @@ class StackedTransformerOptimization:
             # .INFO: all messages (default)
             # .WARNING: fails and warnings
             # .ERROR: only errors
-            #optuna.logging.set_verbosity(optuna.logging.ERROR)
+            # optuna.logging.set_verbosity(optuna.logging.ERROR)
 
             directions = objective_directions(number_objectives)
 
@@ -474,7 +473,6 @@ class StackedTransformerOptimization:
             else:
                 pass
 
-
             while datetime.datetime.now() < end_time:
                 print(f"current time: {datetime.datetime.now()}")
                 print(f"end time: {end_time}")
@@ -485,14 +483,7 @@ class StackedTransformerOptimization:
                                                        directions=directions,
                                                        load_if_exists=True, sampler=sampler)
 
-
-
-
-
                 study_in_database.optimize(func, n_trials=number_trials, show_progress_bar=True)
-
-
-
 
         @staticmethod
         def show_study_results(study_name: str, config: StoSingleInputConfig,
@@ -517,7 +508,7 @@ class StackedTransformerOptimization:
                                         load_if_exists=True)
 
             # Order: total_volume, total_loss, difference_l_h, difference_l_s
-            l_h_absolute_error =  percent_error_difference_l_h / 100 * config.l_h_target
+            l_h_absolute_error = percent_error_difference_l_h / 100 * config.l_h_target
             print(f"{config.l_h_target = }")
             print(f"{l_h_absolute_error = }")
 
@@ -546,6 +537,8 @@ class StackedTransformerOptimization:
             :type config: ItoSingleInputConfig
             :param error_difference_inductance_sum: e.g. 0.05 for 5%
             :type error_difference_inductance_sum: float
+            :param storage: storage, e.g. 'sqlite' or path to postgresql-database
+            :type storage: str
 
             """
             if storage == 'sqlite':
@@ -554,7 +547,7 @@ class StackedTransformerOptimization:
             time_start = datetime.datetime.now()
             print(f"Start loading study {study_name} from database")
             study = optuna.load_study(study_name=study_name,
-                                        storage=storage)
+                                      storage=storage)
 
             print(f"Loaded study {study_name} contains {len(study.trials)} trials.")
             time_stop = datetime.datetime.now()
@@ -739,7 +732,7 @@ class StackedTransformerOptimization:
                                                  number_primary_coil_turns=primary_coil_turns)
 
         @staticmethod
-        def re_simulate_from_df(df, config: StoSingleInputConfig, number_trial: int,
+        def re_simulate_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int,
                                 fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
                                 permeability_measurement_setup=femmt.MeasurementSetup.LEA_MTB,):
             """
@@ -749,8 +742,8 @@ class StackedTransformerOptimization:
             Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
             The values are given separate. In case of re-simulation, you may want to have more accurate results.
 
-            :param study_name: name of the study
-            :type study_name: str
+            :param df: pandas dataframe with the loaded study
+            :type df: pandas dataframe
             :param config: stacked transformer configuration file
             :type config: StoSingleInputConfig
             :param number_trial: number of trial to simulate
@@ -759,8 +752,8 @@ class StackedTransformerOptimization:
             :type fft_filter_value_factor: float
             :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
             :type mesh_accuracy: float
-            :param storage: storage of the study
-            :type storage: str
+            :param permeability_measurement_setup:
+            :type permeability_measurement_setup: femmt.MeasurementSetup
             """
             target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
@@ -876,9 +869,9 @@ class StackedTransformerOptimization:
             geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
             geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
-                                   current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
-                                   phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
-                                   show_fem_simulation_results=False)
+                                  current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
+                                  phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
+                                  show_fem_simulation_results=False)
 
             # center_tapped_study_excitation = geo.center_tapped_pre_study(
             #     time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
