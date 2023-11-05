@@ -7,6 +7,7 @@ import numpy as np
 from materialdatabase.dtos import MaterialCurve
 from femmt.enumerations import *
 
+
 @dataclass
 class StoInsulation:
     iso_top_core: float
@@ -17,6 +18,7 @@ class StoInsulation:
     iso_secondary_to_secondary: float
     iso_primary_to_secondary: float
     iso_primary_inner_bobbin: float
+
 
 @dataclass
 class StoSingleInputConfig:
@@ -76,6 +78,7 @@ class WorkingDirectories:
     fem_simulation_filtered_results_directory: str
     fem_thermal_simulation_results_directory: str
     fem_thermal_filtered_simulation_results_directory: str
+
 
 @dataclass
 class StoTargetAndFixedParameters:

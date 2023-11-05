@@ -882,3 +882,84 @@ class StackedTransformerOptimization:
             #
             # geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
             #                                      number_primary_coil_turns=primary_coil_turns)
+
+            return geo
+
+        @staticmethod
+        def thermal_simulation_from_geo(geo, flag_insulation: bool = False, show_visual_outputs: bool = True):
+            """
+            Performs the thermal simulation for the transformer.
+
+            :param geo: geometry object
+            :type geo: femmt.Component
+            :param flag_insulation: True to simulate insulations. As insulations are not fully supported yet,
+                 the insulation is set to false
+            :type flag_insulation: bool
+            :param show_visual_outputs: True to show visual simulation result
+            :type show_visual_outputs: bool
+
+            """
+            # Thermal simulation:
+            # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of
+            # the given magnetic component. In order to use the thermal simulation, thermal conductivities for each
+            # material can be entered as well as a boundary temperature which will be applied on the boundary of
+            # the simulation (dirichlet boundary condition).
+
+            # The case parameter sets the thermal conductivity for a case which will be set around the core.
+            # This could model some case in which the transformer is placed in together with a set potting material.
+            thermal_conductivity_dict = {
+                "air": 0.0263,
+                "case": {  # epoxy resign
+                    "top": 1.54,
+                    "top_right": 1.54,
+                    "right": 1.54,
+                    "bot_right": 1.54,
+                    "bot": 1.54
+                },
+                "core": 5,  # ferrite
+                "winding": 400,  # copper
+                "air_gaps": 180,  # aluminiumnitride
+                "insulation": 0.42 if flag_insulation else None  # polyethylen
+            }
+
+            # Here the case size can be determined
+            case_gap_top = 0.002
+            case_gap_right = 0.0025
+            case_gap_bot = 0.002
+
+            # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
+            # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
+            boundary_temperatures = {
+                "value_boundary_top": 20,
+                "value_boundary_top_right": 20,
+                "value_boundary_right_top": 20,
+                "value_boundary_right": 20,
+                "value_boundary_right_bottom": 20,
+                "value_boundary_bottom_right": 20,
+                "value_boundary_bottom": 20
+            }
+
+            # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
+            # Currently only one temperature can be applied which will be set on every boundary site.
+            femm_boundary_temperature = 20
+
+            # Here the boundary sides can be turned on (1) or off (0)
+            # By turning off the flag a neumann boundary will be applied at this point with heat flux = 0
+            boundary_flags = {
+                "flag_boundary_top": 0,
+                "flag_boundary_top_right": 0,
+                "flag_boundary_right_top": 1,
+                "flag_boundary_right": 1,
+                "flag_boundary_right_bottom": 1,
+                "flag_boundary_bottom_right": 1,
+                "flag_boundary_bottom": 1
+            }
+
+            # In order for the thermal simulation to work an electro_magnetic simulation has to run before.
+            # The em-simulation will create a file containing the losses.
+            # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
+            # order for the thermal simulation to work (geo.single_simulation is not needed).
+            # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
+            geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                                   case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=femmt.colors_ba_jonas,
+                                   colors_geometry=femmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
