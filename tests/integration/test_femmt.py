@@ -1487,6 +1487,7 @@ def test_inductor_core_fixed_loss_angle_foil_vertical(femmt_simulation_inductor_
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
+
     #assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     #fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_inductor_core_fixed_loss_angle_foil_vertical.json")
     #compare_thermal_result_logs(thermal_result_log, fixture_result_log)
