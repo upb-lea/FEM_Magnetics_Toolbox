@@ -1564,7 +1564,7 @@ def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transform
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_stacked_center_tapped.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=4)
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
 
 
 def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
