@@ -7,6 +7,7 @@ import datetime
 # 3rd party libraries
 import optuna
 import pandas as pd
+from matplotlib import pyplot as plt
 
 # FEMMT and materialdatabase libraries
 from femmt.optimization.sto_dtos import *
@@ -249,8 +250,7 @@ class StackedTransformerOptimization:
 
                 geo.stacked_core_center_tapped_study(center_tapped_study_excitation, number_primary_coil_turns=primary_coil_turns)
 
-
-                #geo.stacked_core_center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
+                # geo.stacked_core_center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
                 #                                              [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
                 #                        plot_waveforms=False)
 
@@ -734,7 +734,8 @@ class StackedTransformerOptimization:
         @staticmethod
         def re_simulate_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int,
                                 fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
-                                permeability_measurement_setup=femmt.MeasurementSetup.LEA_MTB,):
+                                permeability_measurement_setup=femmt.MeasurementSetup.LEA_MTB,
+                                show_simulation_results: bool = False):
             """
             Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
             number_trial design inside the study 'study_name'. Loads from a pandas dataframe and is very fast.
@@ -866,22 +867,22 @@ class StackedTransformerOptimization:
             geo.set_insulation(insulation)
             geo.set_winding_windows([coil_window, transformer_window], mesh_accuracy=mesh_accuracy)
 
-            geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
+            geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=show_simulation_results)
 
-            geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
-                                  current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
-                                  phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
-                                  show_fem_simulation_results=False)
+            #geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
+            #                      current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
+            #                      phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
+            #                      show_fem_simulation_results=show_simulation_results)
 
-            # center_tapped_study_excitation = geo.center_tapped_pre_study(
-            #     time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
-            #                            target_and_fixed_parameters.current_extracted_1_vec],
-            #                           [target_and_fixed_parameters.time_extracted_vec,
-            #                            target_and_fixed_parameters.current_extracted_2_vec]],
-            #     fft_filter_value_factor=fft_filter_value_factor)
-            #
-            # geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
-            #                                      number_primary_coil_turns=primary_coil_turns)
+            center_tapped_study_excitation = geo.center_tapped_pre_study(
+                time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
+                                       target_and_fixed_parameters.current_extracted_1_vec],
+                                      [target_and_fixed_parameters.time_extracted_vec,
+                                       target_and_fixed_parameters.current_extracted_2_vec]],
+                fft_filter_value_factor=fft_filter_value_factor)
+
+            geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
+                                                 number_primary_coil_turns=primary_coil_turns)
 
             return geo
 
@@ -963,3 +964,120 @@ class StackedTransformerOptimization:
             geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                    case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=femmt.colors_ba_jonas,
                                    colors_geometry=femmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
+
+        @staticmethod
+        def df_plot_pareto_front(df: pd.DataFrame, sum_inductance_error: float):
+            """
+            Plots an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
+
+            :param df: Dataframe, generated from an optuna study (exported by optuna)
+            :type df: pd.Dataframe
+            :param sum_inductance_error: maximum allowed error of |error(L_s12)| + |error(L_h)|
+            :type sum_inductance_error: float
+            """
+
+            print(df.head())
+            df_pareto = df[df["values_2"] < sum_inductance_error]
+
+            names = df_pareto["number"].to_numpy()
+            fig, ax = plt.subplots()
+            sc = plt.scatter(df_pareto["values_0"], df_pareto["values_1"], s=10)
+
+            annot = ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                                bbox=dict(boxstyle="round", fc="w"),
+                                arrowprops=dict(arrowstyle="->"))
+            annot.set_visible(False)
+
+            def update_annot(ind):
+                pos = sc.get_offsets()[ind["ind"][0]]
+                annot.xy = pos
+                text = f"{[names[n] for n in ind['ind']]}"
+                annot.set_text(text)
+                annot.get_bbox_patch().set_alpha(0.4)
+
+            def hover(event):
+                vis = annot.get_visible()
+                if event.inaxes == ax:
+                    cont, ind = sc.contains(event)
+                    if cont:
+                        update_annot(ind)
+                        annot.set_visible(True)
+                        fig.canvas.draw_idle()
+                    else:
+                        if vis:
+                            annot.set_visible(False)
+                            fig.canvas.draw_idle()
+
+            fig.canvas.mpl_connect("motion_notify_event", hover)
+
+            plt.xlabel('Volume in m³')
+            plt.ylabel('Losses in W')
+            plt.title(f"|error(L_s12)| +  |error(L_h)| < {sum_inductance_error} %")
+            plt.grid()
+            plt.show()
+
+        @staticmethod
+        def create_full_report(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig,
+                               current_waveforms_operating_points: List[CurrentWorkingPoint]):
+            """
+            Creates for several geometries and several working points a report.
+            Simulates magnetoquasistatic and thermal for all given geometries and current working points.
+            Summarizes the losses and temperatures for every working point and geometry.
+
+            :param df: Dataframe, generated from an optuna study (exported by optuna)
+            :type df: pd.Dataframe
+            :param trials_numbers: List of trial numbers to re-simulate
+            :type trials_numbers: List[int]
+            :param config: stacked transformer optimization configuration file
+            :type config: StoSingleInputConfig
+            :param current_waveforms_operating_points: Trial numbers in a list to re-simulate
+            :type current_waveforms_operating_points: List[int]
+            """
+
+            report_df = pd.DataFrame()
+
+            for trial_number in trials_numbers:
+                simulation_waveforms_dict = {"trial": trial_number}
+
+                for count_current_waveform, current_waveform in enumerate(current_waveforms_operating_points):
+
+
+                    # update currents in the config file
+                    config.time_current_1_vec = current_waveforms_operating_points[
+                        count_current_waveform].time_current_1_vec
+                    config.time_current_2_vec = current_waveforms_operating_points[
+                        count_current_waveform].time_current_2_vec
+
+                    # perform the electromagnetic simulation
+                    geo_sim = femmt.StackedTransformerOptimization.FemSimulation.re_simulate_from_df(df, config,
+                                                                                                     number_trial=trial_number,
+                                                                                                     permeability_measurement_setup=femmt.MeasurementSetup.LEA_MTB,
+                                                                                                     show_simulation_results=False,
+                                                                                                     fft_filter_value_factor= 0.05, mesh_accuracy= 0.8)
+                    # perform the thermal simulation
+                    femmt.StackedTransformerOptimization.FemSimulation.thermal_simulation_from_geo(geo_sim, show_visual_outputs=False)
+
+
+                    electromagnetoquasistatic_result_dict = geo_sim.read_log()
+                    thermal_result_dict = geo_sim.read_thermal_log()
+
+                    simulation_waveform_dict = {f"total_loss_{current_waveform.name}": electromagnetoquasistatic_result_dict["total_losses"]["total_losses"],
+                                                f"max_temp_core_{current_waveform.name}": thermal_result_dict["core_parts"]["total"]["max"],
+                                                f"max_temp_winding_{current_waveform.name}": thermal_result_dict["windings"]["total"]["max"],
+                                                "volume": electromagnetoquasistatic_result_dict["misc"]["core_2daxi_total_volume"]
+                                                }
+
+                    print(f"{simulation_waveform_dict = }")
+
+                    simulation_waveforms_dict.update(simulation_waveform_dict)
+
+                print(f"{simulation_waveforms_dict = }")
+                simulation_df = pd.DataFrame(data=simulation_waveforms_dict, index=[0])
+                print(f"{simulation_df.head() = }")
+
+
+                report_df = pd.concat([report_df, simulation_df], axis=0, ignore_index=True)
+
+
+            print(f"{report_df = }")
+            report_df.to_csv(f'{config.working_directory}/summary.csv')

@@ -2391,6 +2391,18 @@ class MagneticComponent:
 
         return log
 
+    def read_thermal_log(self) -> Dict:
+        """
+        Read results from electromagnetic simulation
+        :return: Logfile as a dictionary
+        :rtype: Dict
+        """
+        with open(os.path.join(self.file_data.results_folder_path, "results_thermal.json"), "r") as fd:
+            content = json.loads(fd.read())
+            log = content
+
+        return log
+
     def visualize(self):
         """
         - a post simulation viewer

@@ -99,3 +99,13 @@ class StoTargetAndFixedParameters:
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
+
+
+@dataclass
+class CurrentWorkingPoint:
+    """
+    Stores the working point of currents together with a human-readable name
+    """
+    name: str
+    time_current_1_vec: np.ndarray | list
+    time_current_2_vec: np.ndarray | list
