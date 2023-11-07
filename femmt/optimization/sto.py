@@ -733,7 +733,6 @@ class StackedTransformerOptimization:
     @staticmethod
     def re_simulate_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int,
                             fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
-                            permeability_measurement_setup=femmt.MeasurementSetup.LEA_MTB,
                             show_simulation_results: bool = False):
         """
         Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
@@ -752,8 +751,6 @@ class StackedTransformerOptimization:
         :type fft_filter_value_factor: float
         :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
-        :param permeability_measurement_setup:
-        :type permeability_measurement_setup: femmt.MeasurementSetup
         """
         target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
 
@@ -818,7 +815,7 @@ class StackedTransformerOptimization:
                           frequency=target_and_fixed_parameters.fundamental_frequency,
                           permeability_datasource=config.permeability_datasource,
                           permeability_datatype=config.permeability_datatype,
-                          permeability_measurement_setup=permeability_measurement_setup,
+                          permeability_measurement_setup=config.permeability_measurement_setup,
                           permittivity_datasource=config.permittivity_datasource,
                           permittivity_datatype=config.permittivity_datatype,
                           permittivity_measurement_setup=config.permittivity_measurement_setup)
@@ -1017,7 +1014,8 @@ class StackedTransformerOptimization:
 
     @staticmethod
     def create_full_report(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig,
-                           current_waveforms_operating_points: List[CurrentWorkingPoint]):
+                           current_waveforms_operating_points: List[CurrentWorkingPoint],
+                           fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
         """
         Creates for several geometries and several working points a report.
         Simulates magnetoquasistatic and thermal for all given geometries and current working points.
@@ -1031,6 +1029,10 @@ class StackedTransformerOptimization:
         :type config: StoSingleInputConfig
         :param current_waveforms_operating_points: Trial numbers in a list to re-simulate
         :type current_waveforms_operating_points: List[int]
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :type fft_filter_value_factor: float
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :type mesh_accuracy: float
         """
 
         report_df = pd.DataFrame()
@@ -1049,10 +1051,9 @@ class StackedTransformerOptimization:
 
                 # perform the electromagnetic simulation
                 geo_sim = femmt.StackedTransformerOptimization.re_simulate_from_df(df, config,
-                                                                                                 number_trial=trial_number,
-                                                                                                 permeability_measurement_setup=femmt.MeasurementSetup.LEA_MTB,
-                                                                                                 show_simulation_results=False,
-                                                                                                 fft_filter_value_factor= 0.05, mesh_accuracy= 0.8)
+                                                                                   number_trial=trial_number,
+                                                                                   show_simulation_results=False,
+                                                                                   fft_filter_value_factor=fft_filter_value_factor, mesh_accuracy=mesh_accuracy)
                 # perform the thermal simulation
                 femmt.StackedTransformerOptimization.thermal_simulation_from_geo(geo_sim, show_visual_outputs=False)
 
