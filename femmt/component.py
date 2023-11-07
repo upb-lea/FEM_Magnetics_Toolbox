@@ -267,6 +267,7 @@ class MagneticComponent:
 
 
 
+
         # Set wire radii
         wire_radii = [winding.conductor_radius for winding in self.windings]
 
@@ -650,9 +651,9 @@ class MagneticComponent:
 
         """Calculates the volume of the part core excluding air.
 
-                :return: Volume of the core part.
-                :rtype: list
-                """
+                        :return: Volume of the core part.
+                        :rtype: list
+                        """
         # Extract heights from the midpoints of air gaps
         heights = [point[2] for point in self.air_gaps.midpoints]
         core_parts_volumes = []
@@ -669,101 +670,101 @@ class MagneticComponent:
                 return self.stray_path.length
             return self.core.core_inner_diameter / 2
 
+        # # Sorting air gaps from lower to upper
+        sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1])
+        # Finding position of first airgap
+        bottommost_airgap_position = sorted_midpoints[0][1]
+        bottommost_airgap_height = sorted_midpoints[0][2]
+        # Finding position of last airgap
+        topmost_airgap_position = sorted_midpoints[-1][1]
+        topmost_airgap_height = sorted_midpoints[-1][2]
+
         # if single core
         if self.core.core_type == CoreType.Single:
-            # For single core type and many core_parts (due to multiple airgaps)
-            if len(self.mesh.plane_surface_core) > 1:
 
-                # For single core and more than one core_part, volume for every core part is calculated
-                # # Sorting air gaps from lower to upper
-                sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1])
-                # Finding position of first airgap
-                bottommost_airgap_position = sorted_midpoints[0][1]
-                bottommost_airgap_height = sorted_midpoints[0][2]
-                # Finding position of last airgap
-                topmost_airgap_position = sorted_midpoints[-1][1]
-                topmost_airgap_height = sorted_midpoints[-1][2]
+            # For single core and more than one core_part, volume for every core part is calculated
 
-                # core_part_1 is divided into subparts cores
-                # subpart1: bottom left subpart
-                subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2 + self.core.core_inner_diameter / 4
-                subpart1_1_width = self.core.core_inner_diameter / 2
-                subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
-                # subpart2: bottom mid subpart
-                subpart1_2_height = self.core.core_inner_diameter / 4
-                subpart1_2_width = self.core.window_w
-                subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
+            # core_part_1 is divided into subparts cores
+            # # subpart1: bottom left subpart
+            subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2
+            subpart1_1_width = self.core.core_inner_diameter / 2
+            subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
-                # subpart3: right subpart
-                subpart1_3_height = self.core.window_h + self.core.core_inner_diameter / 2
-                subpart1_3_width = self.core.r_outer - self.core.r_inner
-                subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height
+            # # subpart2: bottom mid subpart
+            subpart1_2_height = self.core.core_inner_diameter / 4
+            subpart1_2_width = self.core.r_outer
+            subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
 
-                # subpart4: top mid subpart
-                subpart1_4_height = self.core.core_inner_diameter / 4
-                subpart1_4_width = self.core.window_w
-                subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
 
-                # subpart5: top left subpart
-                subpart1_5_height = self.core.window_h / 2 - topmost_airgap_position - topmost_airgap_height / 2 + self.core.core_inner_diameter / 4
-                subpart1_5_width = self.core.core_inner_diameter / 2
-                subpart1_5_volume = np.pi * subpart1_5_width ** 2 * subpart1_5_height
+            # subpart3: right subpart
+            subpart1_3_height = self.core.window_h
+            subpart1_3_width = self.core.r_outer
+            subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height - (
+                        np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
 
-                # Calculate the volume of core part 1 by summing up subpart volumes
-                core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume + subpart1_4_volume + subpart1_5_volume
-                core_parts_volumes.append(core_part_1_volume)
+            # subpart4: top mid subpart
+            subpart1_4_height = self.core.core_inner_diameter / 4
+            subpart1_4_width = self.core.r_outer
+            subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
 
-                # Calculate the volumes of the core parts between the air gaps
-                for i in range(len(sorted_midpoints) - 1):
-                    air_gap_1_position = sorted_midpoints[i][1]
-                    air_gap_1_height = sorted_midpoints[i][2]
-                    air_gap_2_position = sorted_midpoints[i + 1][1]
-                    air_gap_2_height = sorted_midpoints[i + 1][2]
-                    # calculate the height based on airgap positions and heights, and the width
-                    core_part_height = air_gap_2_position - air_gap_2_height / 2 - (
-                            air_gap_1_position + air_gap_1_height / 2)
-                    core_part_width = get_width(i + 2)
-                    # calculate the volume
-                    core_part_volume = np.pi * core_part_width ** 2 * core_part_height
-                    core_parts_volumes.append(core_part_volume)
+            # subpart5: top left subpart
+            subpart1_5_height = self.core.window_h / 2 - topmost_airgap_position - topmost_airgap_height / 2
+            subpart1_5_width = self.core.core_inner_diameter / 2
+            subpart1_5_volume = np.pi * subpart1_5_width ** 2 * subpart1_5_height
 
-                # Return the total core part volume
-                return core_parts_volumes
-            # for single core and only one core part
-            else:
-                return [self.calculate_core_volume()]
+            # Calculate the volume of core part 1 by summing up subpart volumes
+            core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume + subpart1_4_volume + subpart1_5_volume
+            core_parts_volumes.append(core_part_1_volume)
+
+            # Calculate the volumes of the core parts between the air gaps
+            for i in range(len(sorted_midpoints) - 1):
+                air_gap_1_position = sorted_midpoints[i][1]
+                air_gap_1_height = sorted_midpoints[i][2]
+                air_gap_2_position = sorted_midpoints[i + 1][1]
+                air_gap_2_height = sorted_midpoints[i + 1][2]
+                # calculate the height based on airgap positions and heights, and the width
+                core_part_height = air_gap_2_position - air_gap_2_height / 2 - (
+                        air_gap_1_position + air_gap_1_height / 2)
+                core_part_width = get_width(i + 2)
+                # calculate the volume
+                core_part_volume = np.pi * core_part_width ** 2 * core_part_height
+                core_parts_volumes.append(core_part_volume)
+
+            # Return the total core part volume
+            #return core_parts_volumes
 
         elif self.core.core_type == CoreType.Stacked:
 
-            # For stacked core types, the volume is divided into different core parts, each of which is further
+            # For stacked core types, the volume is divided into different core  * parts, each of which is further
             # divided into subparts to calculate the total volume of each core part.
+
+            # core_part_2 : core part between the bottom airgap and subpart_1 of core_part_1
+            core_part_1_height = self.core.window_h_bot / 2 - heights[0] / 2
+            core_part_1_width = self.core.core_inner_diameter / 2
+            core_part_1_volume = np.pi * core_part_1_width ** 2 * core_part_1_height
+            core_parts_volumes.append(core_part_1_volume)
 
             # Core Part 1 Calculation
             # Core part 1 is calculated as the sum of three different subparts
             # subpart_1: bottom left subpart
-            subpart1_1_height = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4 - heights[0] / 2
-            subpart1_1_width = self.core.core_inner_diameter / 2
-            subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
+            subpart2_1_height = self.core.window_h_bot / 2 - heights[0] / 2
+            subpart2_1_width = self.core.core_inner_diameter / 2
+            subpart2_1_volume = np.pi * subpart2_1_width ** 2 * subpart2_1_height
 
             # subpart_2 : bottom mid subpart
-            subpart1_2_height = self.core.core_inner_diameter / 4
-            subpart1_2_width = self.core.window_w
-            subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
+            subpart2_2_height = self.core.core_inner_diameter / 4
+            subpart2_2_width = self.core.r_outer
+            subpart2_2_volume = np.pi * subpart2_2_width ** 2 * subpart2_2_height
 
             # subpart_3: bottom right subpart
-            subpart1_3_height = self.core.window_h_bot + self.core.core_inner_diameter / 4
-            subpart1_3_width = self.core.r_outer - self.core.r_inner
-            subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height
+            subpart2_3_height = self.core.window_h_bot
+            subpart2_3_width = self.core.r_outer
+            subpart2_3_volume = np.pi * (subpart2_3_width ** 2 * subpart2_3_height) - np.pi * ((self.core.window_w + self.core.core_inner_diameter/2) ** 2 * self.core.window_h_bot)
+
 
             # Summing up the volumes of the subparts to get the total volume of core part 1
-            core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume
-            core_parts_volumes.append(core_part_1_volume)
-
-            # core_part_2 : core part between the bottom airgap and subpart_1 of core_part_1
-            core_part_2_height = self.core.window_h_bot / 2 - heights[0] / 2
-            core_part_2_width = self.core.core_inner_diameter / 2
-            core_part_2_volume = np.pi * core_part_2_width ** 2 * core_part_2_height
+            core_part_2_volume = subpart2_1_volume + subpart2_2_volume + subpart2_3_volume
             core_parts_volumes.append(core_part_2_volume)
 
             # core_part_3 : left mid core part (stacked)
@@ -774,32 +775,49 @@ class MagneticComponent:
 
             # core_part_4: right mid core part
             core_part_4_height = self.core.core_inner_diameter / 4
-            core_part_4_width = self.core.r_outer - self.core.r_inner
-            core_part_4_volume = np.pi * core_part_4_width ** 2 * core_part_4_height
+            core_part_4_width = self.core.r_outer
+            core_part_4_volume = np.pi * core_part_4_width ** 2 * core_part_4_height - core_part_3_volume
             core_parts_volumes.append(core_part_4_volume)
 
             # core_part_5
             # core_part_5 is divided into 3 parts
-            # subpart_1: top right subpart
-            subpart5_1_height = self.core.window_h_top + self.core.core_inner_diameter / 4 - heights[1] / 2
+            # subpart_1: left top subpart
+            subpart5_1_height = self.core.window_h_top - heights[1] / 2
             subpart5_1_width = self.core.core_inner_diameter / 2
             subpart5_1_volume = np.pi * subpart5_1_width ** 2 * subpart5_1_height
 
             # subpart_2: mid top subpart
             subpart5_2_height = self.core.core_inner_diameter / 4
-            subpart5_2_width = self.core.window_w
+            subpart5_2_width = self.core.r_outer
             subpart5_2_volume = np.pi * subpart5_2_width ** 2 * subpart5_2_height
 
-            # subpart 3: left top subpart
-            subpart5_3_height = self.core.window_h_top + self.core.core_inner_diameter / 4
-            subpart5_3_width = self.core.r_outer - self.core.r_inner
-            subpart5_3_volume = np.pi * subpart5_3_width ** 2 * subpart5_3_height
+            # subpart 3: top right subpart
+            subpart5_3_height = self.core.window_h_top
+            subpart5_3_width = self.core.r_outer
+            subpart5_3_volume = np.pi * (subpart5_3_width ** 2 * subpart5_3_height) - np.pi * ((self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h_top)
+
             # Summing up the volumes of the subparts to get the total volume of core_part_5
             core_part_5_volume = subpart5_1_volume + subpart5_2_volume + subpart5_3_volume
             core_parts_volumes.append(core_part_5_volume)
 
-            # Returning the final list of core part volumes
-            return core_parts_volumes
+        # Core Volume Consistency Check
+        # Sum all the core part volumes
+        total_parts_volume = sum(core_parts_volumes)
+
+        # Calculate the whole core volume
+        whole_core_volume = self.calculate_core_volume()
+
+        # Define a margin of error
+        margin_of_error = 1e-5
+
+        # Check if the volumes are equal within the margin of error
+        if not (abs(whole_core_volume - total_parts_volume) <= margin_of_error):
+            error_message = (f"Sum of core parts ({total_parts_volume}) does not equal "
+                             f"the whole core volume ({whole_core_volume}) within the margin of error ({margin_of_error}).")
+            raise ValueError(error_message)
+
+        # Returning the final list of core part volumes
+        return core_parts_volumes
 
     def calculate_core_weight(self) -> float:
         """
