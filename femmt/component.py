@@ -2273,25 +2273,18 @@ class MagneticComponent:
             # Core Part losses
             # If there are multiple core parts, calculate losses for each part individually
             # the core losses are caluclated by summing the eddy and hyst losses
-            if len(self.mesh.plane_surface_core) > 1:
-                sweep_dict["core_parts"] = {}
-                for i in range(0, len(self.mesh.plane_surface_core)):
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"] = {}
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"] = \
-                    self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{i + 1}", last_n=number_frequency_simulations)[single_simulation]
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"] = \
-                    self.load_result(res_name=f"core_parts/p_hyst_{i + 1}", last_n=number_frequency_simulations)[single_simulation]
-                    # finding the total losses for every core_part
-                    eddy = sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"]
-                    hyst = sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"]
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy + hyst
 
-            # For a single core part, total losses are simply the sum of eddy and hysteresis losses
-            else:
-                # if I have only one core_part
-                sweep_dict["core_parts"] = {}  # parent dictionary is initialized first
-                sweep_dict["core_parts"]["core_part_1"] = {}
-                sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"] = sweep_dict["core_eddy_losses"] + sweep_dict["core_hyst_losses"]
+            sweep_dict["core_parts"] = {}
+            for i in range(0, len(self.mesh.plane_surface_core)):
+                sweep_dict["core_parts"][f"core_part_{i + 1}"] = {}
+                sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"] = \
+                self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{i + 1}", last_n=number_frequency_simulations)[single_simulation]
+                sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"] = \
+                self.load_result(res_name=f"core_parts/p_hyst_{i + 1}", last_n=number_frequency_simulations)[single_simulation]
+                # finding the total losses for every core_part
+                eddy = sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"]
+                hyst = sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"]
+                sweep_dict["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy + hyst
 
             # Sum losses of all windings of one single run
             sweep_dict["all_winding_losses"] = sum(
@@ -2336,29 +2329,22 @@ class MagneticComponent:
         log_dict["total_losses"]["eddy_core"] = sum(
             log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
         # In the total losses calculation, individual core part losses are also accounted for
-        if len(self.mesh.plane_surface_core) > 1:
-            # initialize the total_losses dicts
+        for i in range(len(self.mesh.plane_surface_core)):
+            log_dict["total_losses"][f"total_core_part_{i + 1}"] = 0
+            log_dict["total_losses"][f"total_eddy_core_part_{i + 1}"] = 0
+            log_dict["total_losses"][f"total_hyst_core_part_{i + 1}"] = 0
+
+        # sweep through all frequency simulations and sum up the core_part_x losses
+        for single_simulation in range(0, number_frequency_simulations):
             for i in range(len(self.mesh.plane_surface_core)):
-                log_dict["total_losses"][f"total_core_part_{i + 1}"] = 0
-                log_dict["total_losses"][f"total_eddy_core_part_{i + 1}"] = 0
-                log_dict["total_losses"][f"total_hyst_core_part_{i + 1}"] = 0
-
-            # sweep through all frequency simulations and sum up the core_part_x losses
-            for single_simulation in range(0, number_frequency_simulations):
-                for i in range(len(self.mesh.plane_surface_core)):
-                    log_dict["total_losses"][f"total_core_part_{i + 1}"] += log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{i + 1}"][
-                        f"total_core_part_{i + 1}"]
-                    log_dict["total_losses"][f"total_eddy_core_part_{i + 1}"] += \
-                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{i + 1}"][
-                            f"eddy_losses"]
-                    log_dict["total_losses"][f"total_hyst_core_part_{i + 1}"] += \
-                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{i + 1}"][
-                            f"hyst_losses"]
-        # If there is only one core part, set its total losses directly
-        if len(self.mesh.plane_surface_core) == 1:
-
-            log_dict["total_losses"]["total_core_part_1"] = sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"]
-
+                log_dict["total_losses"][f"total_core_part_{i + 1}"] += log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{i + 1}"][
+                    f"total_core_part_{i + 1}"]
+                log_dict["total_losses"][f"total_eddy_core_part_{i + 1}"] += \
+                    log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{i + 1}"][
+                        f"eddy_losses"]
+                log_dict["total_losses"][f"total_hyst_core_part_{i + 1}"] += \
+                    log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{i + 1}"][
+                        f"hyst_losses"]
 
         if isinstance(core_hyst_losses, float) or isinstance(core_hyst_losses, int):
             log_dict["total_losses"]["hyst_core_fundamental_freq"] = core_hyst_losses
