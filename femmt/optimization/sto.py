@@ -883,12 +883,15 @@ class StackedTransformerOptimization:
         return geo
 
     @staticmethod
-    def thermal_simulation_from_geo(geo, flag_insulation: bool = False, show_visual_outputs: bool = True):
+    def thermal_simulation_from_geo(geo, thermal_config: ThermalConfig, flag_insulation: bool = False,
+                                    show_visual_outputs: bool = True):
         """
         Performs the thermal simulation for the transformer.
 
         :param geo: geometry object
         :type geo: femmt.Component
+        :param thermal_config: thermal configuration file
+        :type thermal_config: ThermalConfig
         :param flag_insulation: True to simulate insulations. As insulations are not fully supported yet,
              the insulation is set to false
         :type flag_insulation: bool
@@ -896,69 +899,10 @@ class StackedTransformerOptimization:
         :type show_visual_outputs: bool
 
         """
-        # Thermal simulation:
-        # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of
-        # the given magnetic component. In order to use the thermal simulation, thermal conductivities for each
-        # material can be entered as well as a boundary temperature which will be applied on the boundary of
-        # the simulation (dirichlet boundary condition).
-
-        # The case parameter sets the thermal conductivity for a case which will be set around the core.
-        # This could model some case in which the transformer is placed in together with a set potting material.
-        thermal_conductivity_dict = {
-            "air": 0.0263,
-            "case": {  # epoxy resign
-                "top": 1.54,
-                "top_right": 1.54,
-                "right": 1.54,
-                "bot_right": 1.54,
-                "bot": 1.54
-            },
-            "core": 5,  # ferrite
-            "winding": 400,  # copper
-            "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42 if flag_insulation else None  # polyethylen
-        }
-
-        # Here the case size can be determined
-        case_gap_top = 0.002
-        case_gap_right = 0.0025
-        case_gap_bot = 0.002
-
-        # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
-        # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
-        boundary_temperatures = {
-            "value_boundary_top": 20,
-            "value_boundary_top_right": 20,
-            "value_boundary_right_top": 20,
-            "value_boundary_right": 20,
-            "value_boundary_right_bottom": 20,
-            "value_boundary_bottom_right": 20,
-            "value_boundary_bottom": 20
-        }
-
-        # In order to compare the femmt thermal simulation with a femm heat flow simulation the same boundary temperature should be applied.
-        # Currently only one temperature can be applied which will be set on every boundary site.
-        femm_boundary_temperature = 20
-
-        # Here the boundary sides can be turned on (1) or off (0)
-        # By turning off the flag a neumann boundary will be applied at this point with heat flux = 0
-        boundary_flags = {
-            "flag_boundary_top": 0,
-            "flag_boundary_top_right": 0,
-            "flag_boundary_right_top": 1,
-            "flag_boundary_right": 1,
-            "flag_boundary_right_bottom": 1,
-            "flag_boundary_bottom_right": 1,
-            "flag_boundary_bottom": 1
-        }
-
-        # In order for the thermal simulation to work an electro_magnetic simulation has to run before.
-        # The em-simulation will create a file containing the losses.
-        # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
-        # order for the thermal simulation to work (geo.single_simulation is not needed).
-        # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
-        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                               case_gap_right, case_gap_bot, show_visual_outputs, color_scheme=femmt.colors_ba_jonas,
+        geo.thermal_simulation(thermal_config.thermal_conductivity_dict, thermal_config.boundary_temperatures,
+                               thermal_config.boundary_flags, thermal_config.case_gap_top,
+                               thermal_config.case_gap_right, thermal_config.case_gap_bot,
+                               show_visual_outputs, color_scheme=femmt.colors_ba_jonas,
                                colors_geometry=femmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
 
     @staticmethod
@@ -1014,6 +958,7 @@ class StackedTransformerOptimization:
 
     @staticmethod
     def create_full_report(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig,
+                           thermal_config: ThermalConfig,
                            current_waveforms_operating_points: List[CurrentWorkingPoint],
                            fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
         """
@@ -1042,7 +987,6 @@ class StackedTransformerOptimization:
 
             for count_current_waveform, current_waveform in enumerate(current_waveforms_operating_points):
 
-
                 # update currents in the config file
                 config.time_current_1_vec = current_waveforms_operating_points[
                     count_current_waveform].time_current_1_vec
@@ -1055,7 +999,7 @@ class StackedTransformerOptimization:
                                                                                    show_simulation_results=False,
                                                                                    fft_filter_value_factor=fft_filter_value_factor, mesh_accuracy=mesh_accuracy)
                 # perform the thermal simulation
-                femmt.StackedTransformerOptimization.thermal_simulation_from_geo(geo_sim, show_visual_outputs=False)
+                femmt.StackedTransformerOptimization.thermal_simulation_from_geo(geo_sim, thermal_config, show_visual_outputs=False)
 
 
                 electromagnetoquasistatic_result_dict = geo_sim.read_log()
@@ -1067,20 +1011,14 @@ class StackedTransformerOptimization:
                                             "volume": electromagnetoquasistatic_result_dict["misc"]["core_2daxi_total_volume"]
                                             }
 
-                print(f"{simulation_waveform_dict = }")
-
                 simulation_waveforms_dict.update(simulation_waveform_dict)
 
-            print(f"{simulation_waveforms_dict = }")
             simulation_df = pd.DataFrame(data=simulation_waveforms_dict, index=[0])
-            print(f"{simulation_df.head() = }")
-
 
             report_df = pd.concat([report_df, simulation_df], axis=0, ignore_index=True)
 
-
-        print(f"{report_df = }")
         report_df.to_csv(f'{config.working_directory}/summary.csv')
+        print(f"Report exported to {config.working_directory}/summary.csv")
 
     @staticmethod
     def study_to_df(study_name: str, database_url: str):

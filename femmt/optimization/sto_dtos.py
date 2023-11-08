@@ -68,6 +68,16 @@ class StoSingleInputConfig:
 
 
 @dataclass
+class ThermalConfig:
+    thermal_conductivity_dict: dict
+    case_gap_top: float
+    case_gap_right: float
+    case_gap_bot: float
+    boundary_temperatures: dict
+    boundary_flags: dict
+
+
+@dataclass
 class WorkingDirectories:
     """
     Working directories for an integrated transformer optimization
