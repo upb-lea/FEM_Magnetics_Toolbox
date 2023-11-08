@@ -76,7 +76,7 @@
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2023-11-03 14:37:10",
+    "date": "2023-11-08 12:49:22",
     "component_type": "Inductor",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
@@ -169,18 +169,18 @@
     "core_2daxi_total_volume": 4.61718454654407e-05,
     "core_2daxi_weight": 0.0,
     "wire_lengths": [
-      0.7367034772668065
+      0.7125132138341651
     ],
     "wire_volumes": [
-      8.140573423798213e-06
+      7.873271012867525e-06
     ],
     "wire_weight": [
-      0.07261391494028006
+      0.07022957743477833
     ],
     "core_cost": 0.0,
     "winding_cost": [
-      6.9688731079695225
+      6.887805632782463
     ],
-    "total_cost_incl_margin": 9.29183081062603
+    "total_cost_incl_margin": 9.18374084370995
   }
 }
