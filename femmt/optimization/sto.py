@@ -1081,3 +1081,17 @@ class StackedTransformerOptimization:
 
         print(f"{report_df = }")
         report_df.to_csv(f'{config.working_directory}/summary.csv')
+
+    @staticmethod
+    def study_to_df(study_name: str, database_url: str):
+        """
+        Creates a dataframe from a study.
+
+        :param study_name: name of study
+        :type study_name: str
+        :param database_url: url of database
+        :type database_url: str
+        """
+        loaded_study = optuna.create_study(study_name=study_name, storage=database_url, load_if_exists=True)
+        df = loaded_study.trials_dataframe()
+        df.to_csv()
