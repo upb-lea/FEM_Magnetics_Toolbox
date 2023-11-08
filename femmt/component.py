@@ -1622,9 +1622,12 @@ class MagneticComponent:
                                                silent=self.silent)
 
         # Initialize the hysteresis losses with zero
+        # Note: To calculate the hysteresis losses, two steps are performed:
+        #       * transformer loss calculation (therefore, the current in the inductor is set to zero).
+        #       * inductor loss calculation
         p_hyst = 0
-        # print(f"{p_hyst = }")
 
+        # From here, the hysteresis of transformer is calculated
         ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
         self.overwrite_conductors_with_air(ps_primary_coil_turns)
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
@@ -1638,22 +1641,23 @@ class MagneticComponent:
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
 
+        # read the log of the transformer losses
         log = self.read_log()
         for i in [1, 2, 3, 4]:
             res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
-            # print(f"core_part_{i} = {res}")
             p_hyst += res
-        # print(f"{p_hyst = }")
+        # Now, p_hyst includes the full transformer losses.
 
         if non_sine_hysteresis_correction:
+            pass
             # Correct the hysteresis loss for the triangular shaped flux density waveform
             # alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
             #                                                               datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
             # p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
             # print(f"{p_hyst = }")
 
-            ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
-
+        # From here on, inductor losses are calculated
+        # Therefore, the first done overwrite of inductor conductors is restored
         self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns) + 1000000))
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"],
@@ -1664,15 +1668,17 @@ class MagneticComponent:
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
 
+        # read the log of the inductor losses
         log = self.read_log()
         for i in [3, 4, 5]:
             res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
-            # print(f"core_part_{i} = {res}")
             p_hyst += res
-
-        # print(f"{p_hyst = }")
+        # p_hyst includes now the transformer losses and the inductor losses
 
         # calculate the winding losses # TODO: avoid meshing twice
+        # Note: As the result log is now re-written, the before calculated p_hyst is added into this result-log
+        # also the inductance dict is externally inserted into the final result log.
+        # The final result log is written after this simulation
         self.excitation_sweep(center_tapped_study_excitation["linear_losses"]["frequencies"],
                               center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
                               center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
