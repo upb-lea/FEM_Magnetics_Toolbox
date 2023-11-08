@@ -834,6 +834,8 @@ class MagneticComponent:
         return self.calculate_core_volume() * volumetric_mass_density
 
 
+
+
     def get_wire_distances(self) -> List[List[float]]:
         """Helper function which returns the distance (radius) of each conductor to the y-axis
 
@@ -854,8 +856,8 @@ class MagneticComponent:
 
         wire_distance = []
         for num, conductor in enumerate(self.two_d_axi.p_conductor):
-            # Check if the winding is parallel and calculate points accordingly
-            if self.windings[num].parallel:  # as in center_tapped transformer, RectangularSolid is used in parallel winding
+            # If the conductor is of type RectangularSolid, it is represented by 4 points (the corners of the rectangle)
+            if self.windings[num].conductor_type == ConductorType.RectangularSolid:
                 num_points = len(conductor)
                 num_turns = num_points // 4
                 point_increment = 4
@@ -870,6 +872,13 @@ class MagneticComponent:
             wire_distance.append(winding_list)
 
         return wire_distance
+
+
+
+
+
+
+
 
 
 
