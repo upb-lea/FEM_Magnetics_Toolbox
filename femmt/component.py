@@ -866,15 +866,9 @@ class MagneticComponent:
 
         wire_distance = []
         for num, conductor in enumerate(self.two_d_axi.p_conductor):
-            # If the conductor is of type RectangularSolid, it is represented by 4 points (the corners of the rectangle)
-            if self.windings[num].conductor_type == ConductorType.RectangularSolid:
-                num_points = len(conductor)
-                num_turns = num_points // 4
-                point_increment = 4
-            else:
-                num_points = len(conductor)
-                num_turns = num_points // 5
-                point_increment = 5
+            num_points = len(conductor)
+            num_turns = num_points // 5
+            point_increment = 5
 
             winding_list = []
             for i in range(num_turns):
