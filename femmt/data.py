@@ -95,23 +95,37 @@ class MeshData:
     Is updated by high_level_geo_gen.
     """
 
-    global_accuracy: float  # Parameter for mesh-accuracy
     padding: float           # > 1
     skin_mesh_factor: float
     c_core : float
     c_window: float
     c_conductor = List[float]
     c_center_conductor = List[float]
+    c_air_gaps: float
+    
+    center_factor: int
 
     mu0: float
     core_w: float
     window_w: float
     windings: List["Conductor"] # This is written as string because it is a forward import
 
-    def __init__(self, global_accuracy: float, padding: float, mu0: float, core_w: float, window_w: float, windings: List["Conductor"]):
-        self.global_accuracy = global_accuracy
+    def __init__(self, mesh_accuracy_core: float,
+                 mesh_accuracy_window: float,
+                 mesh_accuracy_conductor: float,
+                 mesh_accuracy_air_gaps: float,
+                 padding: float,
+                 mu0: float):
+        self.mesh_accuracy_core = mesh_accuracy_core
+        self.mesh_accuracy_window = mesh_accuracy_window
+        self.mesh_accuracy_conductor = mesh_accuracy_conductor
+        self.mesh_accuracy_air_gaps = mesh_accuracy_air_gaps
         self.padding = padding
         self.mu0 = mu0
+
+        self.center_factor = 1 # TODO This value should be set from user/outside?
+
+    def update_spatial_data(self, core_w: float, window_w: float, windings: List["Conductor"]):
         self.core_w = core_w
         self.window_w = window_w
         self.windings = windings
@@ -119,6 +133,10 @@ class MeshData:
         # Empty lists
         self.c_conductor = [None] * len(windings)
         self.c_center_conductor = [None] * len(windings)
+
+        self.c_core = core_w / 10 * self.mesh_accuracy_core
+        self.c_window = window_w / 30 * self.mesh_accuracy_window
+        self.c_air_gaps = window_w / 20 * self.mesh_accuracy_air_gaps
 
     def update_data(self, frequency: float, skin_mesh_factor: float) -> None:
         """Updates the mesh data according to the given frequency and skin_mesh_factor.
@@ -129,9 +147,6 @@ class MeshData:
         :type skin_mesh_factor: float
         """
 
-        # Mesh-Parameters must be updated depending on geometry size
-        self.c_core = self.core_w / 10. * self.global_accuracy
-        self.c_window = self.window_w / 30 * self.global_accuracy
         self.skin_mesh_factor = skin_mesh_factor
 
         # Update Skin Depth (needed for meshing)
@@ -142,11 +157,12 @@ class MeshData:
                 self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
             for i in range(len(self.windings)):
                 if self.windings[i].conductor_type == ConductorType.RoundSolid:
-                    self.c_conductor[i] = min([self.delta * self.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.global_accuracy]) #* self.mesh.skin_mesh_factor])
-                    self.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.global_accuracy  # * self.mesh.skin_mesh_factor
+                    self.c_conductor[i] = min([self.delta * self.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor]) #* self.mesh.skin_mesh_factor])
+                    self.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor  # * self.mesh.skin_mesh_factor
                 elif self.windings[i].conductor_type == ConductorType.RoundLitz:
-                    self.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.global_accuracy
-                    self.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.global_accuracy
+                    self.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor
+                    self.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor
                 else:
-                    self.c_conductor[i] = 0.0001  # TODO: dynamic implementation
+                    self.c_conductor[i] = self.windings[i].thickness / 4 * self.mesh_accuracy_conductor  # TODO: dynamic implementation
+                    self.c_center_conductor[i] = self.center_factor * self.windings[i].thickness / 4 * self.mesh_accuracy_conductor
 

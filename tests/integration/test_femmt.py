@@ -77,10 +77,16 @@ def temp_folder():
     if not os.path.exists(temp_folder_path):
         os.mkdir(temp_folder_path)
 
-    # Get onelab path
-    if os.path.isdir(os.path.join(os.path.dirname(__file__), "..", "..", "onelab")):
+    config_path = os.path.join(os.path.dirname(__file__), "..", "config.json")
+    if os.path.exists(config_path):
+        with open(config_path, "r") as fd:
+            content = json.load(fd)
+            onelab_path = content["onelab"]
+    elif os.path.isdir(os.path.join(os.path.dirname(__file__), "..", "..", "onelab")):
         onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
     else:
+        print("FEMMT Simulations will not work without onelab path, which is not set yet. In order to \
+              run the tests please first specify a onelab path by creating a config.json in the tests folder.")
         onelab_path = None
 
     # Test
@@ -1418,6 +1424,8 @@ def test_inductor_core_material_database(femmt_simulation_inductor_core_material
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_material.json")
+    print(test_result_log)
+    print(fixture_result_log)
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
