@@ -92,9 +92,6 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
     electro_magnetic_folder_general = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "electro_magnetic"))
     strands_coefficients_folder_general = os.path.join(electro_magnetic_folder_general, "Strands_Coefficients")
 
-    print(f"{electro_magnetic_folder_general = }")
-    print(f"{strands_coefficients_folder_general = }")
-
     if not os.path.isdir(working_directory):
         os.mkdir(working_directory)
 
