@@ -79,9 +79,13 @@ def temp_folder():
 
     # Get onelab path
     if os.path.isdir(os.path.join(os.path.dirname(__file__), "..", "..", "onelab")):
+        # Case: test server
         onelab_path = os.path.join(os.path.dirname(__file__), "..", "..", "onelab")
     else:
-        onelab_path = None
+        # Case: local FEMMT installation
+        with open(os.path.join(os.path.dirname(__file__), "..", "..", "femmt", "config.json")) as json_file:
+            data = json.load(json_file)
+            onelab_path = data["onelab"]
 
     # Test
     yield temp_folder_path, onelab_path
