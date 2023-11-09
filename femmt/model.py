@@ -1018,9 +1018,16 @@ class WindingWindow:
         else:
             raise Exception(f"Winding window split type {split_type} not found")
 
-    def NCellsSplit(self, split_distance: float = 0, horizontal_split_factors: List[float] = None,
-                    vertical_split_factors: float = 0.5):
-        self.vertical_split_factor = vertical_split_factors
+    def NCellsSplit(self, split_distance: float = 0, horizontal_split_factors: List[float] = None, vertical_split_factor: float = 0.5):
+        """
+        This function splits a winding window into N columns (horizontal).
+        Optionally the N columns can be splitted into two rows each.
+        :param split_distance: sets the distance between the vwws
+        :param horizontal_split_factors: sets the borders between the columns
+        :param vertical_split_factor: sets the height of where the rows are splitted
+        :return:
+        """
+        self.vertical_split_factor = vertical_split_factor
         # Convert horizontal_split_factors to a numpy array
         horizontal_split_factors = np.array(horizontal_split_factors)
         if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
@@ -1032,7 +1039,7 @@ class WindingWindow:
             # TODO: should be changed to the core-cond isolation
             horizontal_splits = min_pos + distance / 2
             vertical_split = self.max_left_bound + (
-                    self.max_right_bound - self.max_left_bound) * vertical_split_factors
+                    self.max_right_bound - self.max_left_bound) * vertical_split_factor
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
             horizontal_splits = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * np.array(
@@ -1040,7 +1047,7 @@ class WindingWindow:
             # horizontal_splits = self.max_top_bound - np.abs(self.max_bot_bound - self.max_top_bound) * np.array(horizontal_split_factors)
 
             vertical_split = self.max_left_bound + (
-                    self.max_right_bound - self.max_left_bound) * vertical_split_factors
+                    self.max_right_bound - self.max_left_bound) * vertical_split_factor
         # Initialize lists for Left_cells, Right_cells and virtual_winding_windows
         self.Left_cells = []
         self.Right_cells = []
@@ -1199,8 +1206,8 @@ class WindingWindow:
     def NHorizontalAndVerticalSplit(self, horizontal_split_factors: list[float] = None, vertical_split_factors: list[list[float]] = None):
         """
         This function splits a winding window into N columns (horizontal) with each M_N according rows (vertical)
-        :param horizontal_split_factors:
-        :param vertical_split_factors:
+        :param horizontal_split_factors: position of borders between columns
+        :param vertical_split_factors: position of borders between rows per column
         :return:
         """
         if vertical_split_factors == None:
