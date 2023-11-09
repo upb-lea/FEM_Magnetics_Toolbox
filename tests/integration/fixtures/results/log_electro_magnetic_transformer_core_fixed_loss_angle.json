@@ -76,6 +76,8 @@
       "core_hyst_losses": 0.0302902495099854,
       "core_parts": {
         "core_part_1": {
+          "eddy_losses": 0.003742574947502717,
+          "hyst_losses": 0.0302902495099854,
           "total_core_part_1": 0.03403282445748812
         }
       },
@@ -116,13 +118,15 @@
     "all_windings": 6.80486776861339,
     "eddy_core": 0.003742574947502717,
     "total_core_part_1": 0.03403282445748812,
+    "total_eddy_core_part_1": 0.003742574947502717,
+    "total_hyst_core_part_1": 0.0302902495099854,
     "hyst_core_fundamental_freq": 0.0302902495099854,
     "core": 0.03403282445748812,
     "total_losses": 6.8389005930708775
   },
   "simulation_settings": {
     "simulation_name": null,
-    "date": "2023-11-03 14:37:40",
+    "date": "2023-11-08 19:09:03",
     "component_type": "Transformer",
     "working_directory": "/home/nikolasf/Dokumente/01_git/30_Python/FEMMT/tests/integration/temp",
     "core": {
