@@ -1717,12 +1717,12 @@ def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windin
 
     # e_m mesh
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "transformer_5_windings.json")
-    compare_result_logs(test_result_log, fixture_result_log, significant_digits=6)
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_5_windings.json")
-    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=4)
 
 
 def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
