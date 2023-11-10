@@ -1075,6 +1075,9 @@ class TwoDaxiSymmetric:
                                     high,
                                     0,
                                     self.mesh_data.c_conductor[num]])
+                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
 
                         # use y for next winding in stack
                         bot_bound = high + self.insulation.cond_cond[1][1]
@@ -1113,6 +1116,9 @@ class TwoDaxiSymmetric:
                                     high,
                                     0,
                                     self.mesh_data.c_conductor[num]])
+                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
 
                     else:
                         raise Exception(f"Unknown winding type {virtual_winding_window.winding_type}")

@@ -1,6 +1,6 @@
 # python libraries
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 
 # 3rd party libraries
 import numpy as np
@@ -117,5 +117,5 @@ class CurrentWorkingPoint:
     Stores the working point of currents together with a human-readable name
     """
     name: str
-    time_current_1_vec: np.ndarray | list
-    time_current_2_vec: np.ndarray | list
+    time_current_1_vec: Union[np.ndarray, list]
+    time_current_2_vec: Union[np.ndarray, list]
