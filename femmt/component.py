@@ -3485,7 +3485,7 @@ class MagneticComponent:
             return quadrature(func, timesteps[0], timesteps[-1])[0]
         def calculate_squared_quadrature_integral(timesteps, data):
             """
-            This sub-function calculates the integral of given data over specific timesteps using the quadrature method
+            This sub-function calculates Compute the integral of the square of the provided dataset across the specified timesteps.
             """
             func = lambda x: np.interp(x, timesteps, data)**2
             return quadrature(func, timesteps[0], timesteps[-1])[0]

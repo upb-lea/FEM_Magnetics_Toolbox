@@ -130,15 +130,15 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.time_domain_simulation(freq=inductor_frequency,
                                current=[current_values_list],
                                time=t_list,
-                               time_period=1 / inductor_frequency,
+                               time_period=1 / inductor_frequency, #hide it
                                initial_time=0,
                                timemax=2 / inductor_frequency,
                                NbSteps=50,
-                               delta_time=(2 / inductor_frequency) / 50,
+                               delta_time=(2 / inductor_frequency) / 50, #hide it
                                plot_interpolation=False,
                                show_fem_simulation_results=True,
                                show_rolling_average=True,
-                               rolling_avg_window_size=13)
+                               rolling_avg_window_size=50)
 
 if __name__ == "__main__":
     basic_example_inductor(show_visual_outputs=True)
