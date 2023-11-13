@@ -67,16 +67,28 @@ def create_background(background_tag, k_air, function_pro: FunctionPro, group_pr
 
 def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, air_gaps_tag, k_air_gaps,
                              function_pro: FunctionPro, group_pro: GroupPro):
+    """
+        Creates core and air gaps configurations with associated thermal properties.
 
-
+        :param core_tags: Tags identifying different parts of the core.
+        :param k_core: Thermal conductivity of the core.
+        :param core_area: Areas of different core parts.
+        :param core_parts_losses: losses in different core parts.
+        :param air_gaps_tag: Tag identifying the air gaps.
+        :param k_air_gaps: Thermal conductivity of the air gaps.
+        :param function_pro: Object to manage function properties.
+        :param group_pro: Object to manage group properties.
+        """
+    # Initialize dictionaries for volumetric heat flux, thermal conductivity, and region
     q_vol = {}  # Dictionary to hold volumetric heat flux for each core part
     k = {}  # Dictionary to hold thermal conductivity for each core part
     regions = {}  # Dictionary to hold regions for each core part
     core_total_str = "{"
 
+    # Convert core tags to a list of lists for consistency
     core_tags = [[tag] for tag in core_tags]
     for index, tag in enumerate(core_tags):
-        #tag = tag_list[0]
+        # Create a unique name for each core part based on its index
         name = f"core_part_{index + 1}"  # Create a name for the core part based on its position
         core_total_str += f"{name}, "
 
@@ -89,6 +101,7 @@ def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, ai
         # Associate the core part name with its tag
         regions[name] = tag[0]  # as Tag is list of list
 
+    # If air gaps are defined, assign thermal conductivity and tag
     if air_gaps_tag is not None:
         k["air_gaps"] = k_air_gaps
         regions["air_gaps"] = air_gaps_tag
@@ -148,6 +161,14 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
 def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_material_file_path, sensor_points_file,
                           core_file, insulation_file, winding_file, windings, core_parts, print_sensor_values,
                           post_operation_pro: PostOperationPro, flag_insulation):
+    """
+        Configures post-operation properties for a thermal simulation.
+
+        :param ...: (Include detailed description for each parameter as needed)
+        :param post_operation_pro: Object to manage post-operation properties.
+        :param flag_insulation: Flag indicating the presence of insulation.
+        """
+
     # Add pos file generation
     post_operation_pro.add_on_elements_of_statement("T", "Total", thermal_file_path)
     post_operation_pro.add_on_elements_of_statement("influx", "Warm", thermal_influx_file_path)
@@ -176,9 +197,7 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
 
     # Add regions
     #core file will be GmshParsed file as we have many core parts
-    # for core_index, core_part in enumerate(core_parts):  # Assuming core_tags is a list of core tags
-    #     name = f"core_part_{core_index + 1}"
-    #     post_operation_pro.add_on_elements_of_statement("T", name, core_file, "GmshParsed", 0, name, True)
+    # Adding temperature post-operation statements for each core part if they are defined
     core_parts = [[part] for part in core_parts]
     core_append = False  # Initialize the append flag for core parts
     for core_index, core_part in enumerate(core_parts):
@@ -191,10 +210,11 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
                 core_append = True
 
 
-
+    # Adding temperature post-operation statement for insulation if insulation is present
     if flag_insulation:
         post_operation_pro.add_on_elements_of_statement("T", "insulation", insulation_file, "SimpleTable", 0)
 
+    # Adding temperature post-operation statements for each winding, considering the case of parallel windings
     append = False
     for winding_index, winding in enumerate(windings):
         if winding is not None and len(winding) > 0:

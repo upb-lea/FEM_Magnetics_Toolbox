@@ -7,6 +7,7 @@ import numpy as np
 from materialdatabase.dtos import MaterialCurve
 from femmt.enumerations import *
 
+
 @dataclass
 class StoInsulation:
     iso_top_core: float
@@ -17,6 +18,7 @@ class StoInsulation:
     iso_secondary_to_secondary: float
     iso_primary_to_secondary: float
     iso_primary_inner_bobbin: float
+
 
 @dataclass
 class StoSingleInputConfig:
@@ -66,6 +68,16 @@ class StoSingleInputConfig:
 
 
 @dataclass
+class ThermalConfig:
+    thermal_conductivity_dict: dict
+    case_gap_top: float
+    case_gap_right: float
+    case_gap_bot: float
+    boundary_temperatures: dict
+    boundary_flags: dict
+
+
+@dataclass
 class WorkingDirectories:
     """
     Working directories for an integrated transformer optimization
@@ -76,6 +88,7 @@ class WorkingDirectories:
     fem_simulation_filtered_results_directory: str
     fem_thermal_simulation_results_directory: str
     fem_thermal_filtered_simulation_results_directory: str
+
 
 @dataclass
 class StoTargetAndFixedParameters:
@@ -96,3 +109,13 @@ class StoTargetAndFixedParameters:
     fundamental_frequency: float
     target_inductance_matrix: np.ndarray
     working_directories: WorkingDirectories
+
+
+@dataclass
+class CurrentWorkingPoint:
+    """
+    Stores the working point of currents together with a human-readable name
+    """
+    name: str
+    time_current_1_vec: np.ndarray | list
+    time_current_2_vec: np.ndarray | list
