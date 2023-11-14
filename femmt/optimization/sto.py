@@ -116,6 +116,11 @@ class StackedTransformerOptimization:
         :type show_geometries: bool
         :param process_number: process number. Important for parallel computing, each simulation works in a separate folder
         :type process_number: int
+        :return: returns volume, loss and absolute error of inductances in %
+            if number_objectives == 3:
+                total_volume, total_loss, 100 * (abs(difference_l_h / config.l_h_target) + abs(difference_l_s12 / config.l_s12_target))
+            elif number_objectives == 4:
+                return total_volume, total_loss, 100 * abs(difference_l_h), 100 * abs(difference_l_s12)
         """
         # suggest core geometry
         core_inner_diameter = trial.suggest_float("core_inner_diameter", config.core_inner_diameter_min_max_list[0], config.core_inner_diameter_min_max_list[1])
@@ -282,10 +287,10 @@ class StackedTransformerOptimization:
             # norm_total_loss, norm_difference_l_h, norm_difference_l_s12 = total_loss/10, abs(difference_l_h/config.l_h_target), abs(difference_l_s12/config.l_s12_target)
             # return norm_total_loss, norm_difference_l_h, norm_difference_l_s12
             if number_objectives == 3:
-                return total_volume, total_loss, abs(difference_l_h / config.l_h_target) + abs(
-                    difference_l_s12 / config.l_s12_target)
+                return total_volume, total_loss, 100 * (abs(difference_l_h / config.l_h_target) + abs(
+                    difference_l_s12 / config.l_s12_target))
             elif number_objectives == 4:
-                return total_volume, total_loss, abs(difference_l_h), abs(difference_l_s12)
+                return total_volume, total_loss, 100 * abs(difference_l_h), 100 * abs(difference_l_s12)
 
         except Exception as e:
             print(e)
@@ -524,7 +529,7 @@ class StackedTransformerOptimization:
 
     @staticmethod
     def show_study_results3(study_name: str, config: StoSingleInputConfig,
-                            error_difference_inductance_sum, storage: str = 'sqlite') -> None:
+                            error_difference_inductance_sum_percent, storage: str = 'sqlite') -> None:
         """
         Show the results of a study.
 
@@ -534,8 +539,8 @@ class StackedTransformerOptimization:
         :type study_name: str
         :param config: Integrated transformer configuration file
         :type config: ItoSingleInputConfig
-        :param error_difference_inductance_sum: e.g. 0.05 for 5%
-        :type error_difference_inductance_sum: float
+        :param error_difference_inductance_sum_percent: |err(L_s12) + err(L_h)| in %
+        :type error_difference_inductance_sum_percent: float
         :param storage: storage, e.g. 'sqlite' or path to postgresql-database
         :type storage: str
 
@@ -552,16 +557,16 @@ class StackedTransformerOptimization:
         time_stop = datetime.datetime.now()
         print(f"Finished loading study {study_name} from database in time: {time_stop - time_start}")
 
-        print(f"{error_difference_inductance_sum = }")
+        print(f"{error_difference_inductance_sum_percent = }")
 
         time_start = datetime.datetime.now()
         print(f"start generating Pareto front....")
-        fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if error_difference_inductance_sum > t.values[2] else None, t.values[1] if error_difference_inductance_sum > t.values[2] else None), target_names=["volume in m³", "loss in W"])
-        fig.update_layout(title=f"{study_name}: Filtering {error_difference_inductance_sum * 100} % of |err(Ls_12)| + |err(L_h)|")
+        fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (t.values[0] if error_difference_inductance_sum_percent > t.values[2] else None, t.values[1] if error_difference_inductance_sum_percent > t.values[2] else None), target_names=["volume in m³", "loss in W"])
+        fig.update_layout(title=f"{study_name}: Filtering {error_difference_inductance_sum_percent} % of |err(Ls_12)| + |err(L_h)|")
         time_stop = datetime.datetime.now()
         print(f"Finished generating Pareto front in time: {time_stop - time_start}")
 
-        fig.write_html(f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum}_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
+        fig.write_html(f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum_percent}%_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
         fig.show()
 
     @staticmethod
@@ -906,18 +911,18 @@ class StackedTransformerOptimization:
                                colors_geometry=femmt.colors_geometry_ba_jonas, flag_insulation=flag_insulation)
 
     @staticmethod
-    def df_plot_pareto_front(df: pd.DataFrame, sum_inductance_error: float):
+    def df_plot_pareto_front(df: pd.DataFrame, sum_inductance_error_percent: float):
         """
         Plots an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
 
         :param df: Dataframe, generated from an optuna study (exported by optuna)
         :type df: pd.Dataframe
-        :param sum_inductance_error: maximum allowed error of |error(L_s12)| + |error(L_h)|
-        :type sum_inductance_error: float
+        :param sum_inductance_error_percent: maximum allowed error of |error(L_s12)| + |error(L_h)| in %
+        :type sum_inductance_error_percent: float
         """
 
         print(df.head())
-        df_pareto = df[df["values_2"] < sum_inductance_error]
+        df_pareto = df[df["values_2"] < sum_inductance_error_percent]
 
         names = df_pareto["number"].to_numpy()
         fig, ax = plt.subplots()
@@ -952,7 +957,7 @@ class StackedTransformerOptimization:
 
         plt.xlabel('Volume in m³')
         plt.ylabel('Losses in W')
-        plt.title(f"|error(L_s12)| +  |error(L_h)| < {sum_inductance_error} %")
+        plt.title(f"|error(L_s12)| +  |error(L_h)| < {sum_inductance_error_percent} %")
         plt.grid()
         plt.show()
 
