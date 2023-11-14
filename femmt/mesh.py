@@ -10,9 +10,9 @@ import gmsh
 
 # Local libraries
 import femmt.functions as ff
-from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType, Verbosity
+from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType, Verbosity, WindingScheme
 from femmt.data import FileData
-from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation
+from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation, WindingWindow
 from femmt.drawing import TwoDaxiSymmetric
 
 
@@ -26,6 +26,7 @@ class Mesh:
     insulation: Insulation
     component_type: ComponentType
     windings: List[Conductor]
+    winding_windows: List[WindingWindow]
     air_gaps: List[AirGaps]
     correct_outer_leg: bool
     region: bool
@@ -39,15 +40,18 @@ class Mesh:
 
     verbosity: Verbosity
     logger: Logger
+    wwr_enabled: bool
 
     # Additionally there are all the needed lists for points, lines, curve_loops and plane_surfaces
     # See set_empty_lists()
 
-    def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], correct_outer_leg: bool,
-                 file_paths: FileData, verbosity: Verbosity, logger: Logger, region: bool = None):
+    def __init__(self, model: TwoDaxiSymmetric, windings: List[Conductor], winding_windows: List[WindingWindow], correct_outer_leg: bool,
+                 file_paths: FileData, verbosity: Verbosity, logger: Logger, region: bool = None, wwr_enabled: bool = True):
 
         self.verbosity = verbosity
         self.logger = logger
+        self.wwr_enabled = wwr_enabled
+        self.winding_windows = winding_windows
 
         # Initialize gmsh once
         if not gmsh.isInitialized():
@@ -254,7 +258,7 @@ class Mesh:
             p_core.append(gmsh.model.geo.addPoint(self.model.p_air_gaps[1][0],
                                                   self.model.p_air_gaps[1][1],
                                                   self.model.p_air_gaps[1][2],
-                                                  self.mesh_data.c_window))
+                                                  self.model.p_air_gaps[1][3]))
         else:
             p_core.append(None)  # dummy filled for no air gap special case
 
@@ -850,15 +854,29 @@ class Mesh:
     def conductors(self, p_cond: list, l_cond: list, curve_loop_cond: list):
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
+        p_cond_center = [] # List for center points which are later embed in the model
+
         # Points of Conductors
         for num in range(len(self.windings)):
+            current_center_points = []
             for i in range(self.model.p_conductor[num].shape[0]):
-                p_cond[num].append(
-                    gmsh.model.geo.addPoint(
-                        self.model.p_conductor[num][i][0],
-                        self.model.p_conductor[num][i][1],
-                        0,
-                        self.model.p_conductor[num][i][3]))
+                point = gmsh.model.geo.addPoint(
+                    self.model.p_conductor[num][i][0],
+                    self.model.p_conductor[num][i][1],
+                    0,
+                    self.model.p_conductor[num][i][3])
+                
+                if self.windings[num].conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
+                    p_cond[num].append(point)
+                elif self.windings[num].conductor_type == ConductorType.RectangularSolid:
+                    if not ((i + 1) % 5 == 0): # Skip the center points
+                        p_cond[num].append(point)
+                    else:
+                        current_center_points.append(point)
+                else:
+                    raise Exception(f"ConductorType {self.windings[num].conductor_type} is not implemented")
+                
+            p_cond_center.append(current_center_points)
 
             # Curves of Conductors
             if self.windings[num].conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
@@ -888,7 +906,7 @@ class Mesh:
                         l_cond[num][i * 4 + 3]]))
                     self.plane_surface_cond[num].append(
                         gmsh.model.geo.addPlaneSurface([curve_loop_cond[num][i]]))
-            else:
+            elif self.windings[num].conductor_type == ConductorType.RectangularSolid:
                 # Rectangle conductor cut
                 for i in range(int(len(p_cond[num]) / 4)):
                     l_cond[num].append(gmsh.model.geo.addLine(p_cond[num][4 * i + 0],
@@ -906,6 +924,13 @@ class Mesh:
                                                                              l_cond[num][i * 4 + 3]]))
                     self.plane_surface_cond[num].append(
                         gmsh.model.geo.addPlaneSurface([curve_loop_cond[num][i]]))
+                    
+        gmsh.model.geo.synchronize()
+
+        # Embed center points so the mesh will adapt to it
+        for num, center_points in enumerate(p_cond_center):
+            for i, center_point in enumerate(center_points):
+                gmsh.model.mesh.embed(0, [center_point], 2, self.plane_surface_cond[num][i])
 
     def insulations_core_cond(self, p_iso_core: list):
         """
@@ -1275,6 +1300,9 @@ class Mesh:
 
         self.visualize(visualize_before, save_png)
 
+        # If rectangular conductors are set, here additional points are added to make them more coarse in the center
+        if any([x.conductor_type == ConductorType.RectangularSolid for x in self.windings]):
+            self.rectangular_conductor_center_points()
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # TODO The following algorithms try to modify the mesh in order to reduce the runtime. But maybe the synchronize() calls
@@ -1790,7 +1818,32 @@ class Mesh:
         """In this function multiple techniques in order to raise the mesh density at certain points are applied.
         :return:
         """
-        def rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound):
+        def point_is_in_rect(x, y, left, top, right, bottom):
+            return x > left and x < right and y > bottom and y < top
+
+        def point_is_in_rect_conductor(x, y, center_x, center_y, winding_scheme, thickness, width, height):
+            # Each type needs different handling:
+            if winding_scheme == WindingScheme.FoilHorizontal:
+                # Thickness represents height (y direction), width is defined by winding window width
+                width = width
+                height = thickness 
+            elif winding_scheme == WindingScheme.FoilVertical:
+                # Thickness represents width (x direction), height is defined by winding window height
+                width = thickness
+                height = height
+            elif winding_scheme == WindingScheme.Full:
+                # Winding window is filled by conductor: No free space left
+                return True
+            else:
+                print(f"Winding window rasterization not implemented for rectangular conductors with winding scheme {winding_scheme}.")
+
+            left = center_x - width/2
+            top = center_y + height/2
+            right = center_x + width/2
+            bottom = center_y - height/2
+            return point_is_in_rect(x, y, left, top, right, bottom)
+
+        def rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound, winding_scheme):
 
             # Winding window rasterization:
             # In order adjust the mesh density in empty parts of the winding window a grid of possible points
@@ -1798,8 +1851,8 @@ class Mesh:
             # Every remaining point is added to the mesh with a higher mesh density
 
             # min_distance = max([winding.conductor_radius for winding in self.windings]) + max(self.insulation.inner_winding_insulations)
-            # min_distance = max(self.insulation.inner_winding_insulations)
-            min_distance = 0  # TODO: MA Project?
+            # min_distance = self.windings[0].conductor_radius
+            # min_distance = 0  # TODO: MA Project?
 
             width = right_bound - left_bound
             height = top_bound - bot_bound
@@ -1818,13 +1871,21 @@ class Mesh:
                 for j in range(number_rows + 1):
                     possible_points.append([x + i * cell_width, y + j * cell_height])
 
-            fixed_points = []
+            fixed_points = [] # Points from the conductors which should be avoided by this method
             conductors = self.model.p_conductor
-            for winding in range(len(self.windings)):
-                for i in range(len(conductors[winding]) // 5):
-                    point = conductors[winding][i * 5]
-                    fixed_points.append([point[0], point[1]])
+            for winding_number, winding in enumerate(self.windings):
+                for i in range(len(conductors[winding_number]) // 5):
+                    if winding.conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
+                        center_point = conductors[winding_number][i * 5] # Gets the center point of the conductor
+                        fixed_points.append([center_point[0], center_point[1], winding_number])
+                    elif winding.conductor_type == ConductorType.RectangularSolid:
+                        center = conductors[winding_number][i*5+4]
 
+                        fixed_points.append([center[0], center[1], winding_number])
+                    else:
+                        print(f"Winding window rasterization skipped becuase ConductorType {winding_number.conductor_type} is not supported.")
+                        return
+                
             # Because the points need to be embed into the right surface. The points now will be split between different insulations and the air in the winding window.
             # TODO Currently primary secondary insulation is not considered
             left_iso = []
@@ -1849,15 +1910,27 @@ class Mesh:
                 # Check collision with fixed points
                 valid = True
                 for fixed_point in fixed_points:
-                    dist = np.sqrt((fixed_point[0] - x) ** 2 + (fixed_point[1] - y) ** 2)
-                    if dist < min_distance:
-                        valid = False
-                        break
+                    winding = self.windings[fixed_point[2]]
+                    if winding.conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
+                        current_min_distance = winding.conductor_radius
+                        dist = np.sqrt((fixed_point[0] - x) ** 2 + (fixed_point[1] - y) ** 2)
+                        if dist < current_min_distance:
+                            valid = False
+                            break
+                    elif winding.conductor_type == ConductorType.RectangularSolid:
+                        # TODO Add a padding around the rect conductor so that the points cannot be arbitrarily near the conductor
+                        if point_is_in_rect_conductor(x, y, fixed_point[0], fixed_point[1], winding_scheme, winding.thickness, 
+                                                      abs(right_bound-left_bound), abs(top_bound-bot_bound)):
+                            valid = False
+                            break
+                    else:
+                        print(f"Winding window rasterization skipped becuase ConductorType {winding.conductor_type.name} is not supported.")
+                        return
 
                 if not valid:
                     continue
 
-                # Check if point is in stray_path
+                # Check if point is in stray_path, skip if yes
                 if self.component_type == ComponentType.IntegratedTransformer and self.core.core_type == CoreType.Single:
                     start_index = self.stray_path.start_index
                     stray_path_top_bound = self.air_gaps.midpoints[start_index + 1][1] - self.air_gaps.midpoints[start_index + 1][2] / 2
@@ -1869,75 +1942,141 @@ class Mesh:
                         continue
 
                 # Point seems to be valid. Now find out in which surface the point belongs
-                point = gmsh.model.geo.addPoint(x, y, 0, 1 * self.mesh_data.c_window)
+                center_point = gmsh.model.geo.addPoint(x, y, 0, 10 * self.mesh_data.c_window)
 
                 if self.component_type != ComponentType.IntegratedTransformer:
                     if self.model.p_iso_core: # check if list is not empty
                         if ff.point_is_in_rect(x, y, iso_core_left):
                             # Left iso
-                            left_iso.append(point)
+                            left_iso.append(center_point)
                         elif ff.point_is_in_rect(x, y, iso_core_top):
                             # Top iso
-                            top_iso.append(point)
+                            top_iso.append(center_point)
                         elif ff.point_is_in_rect(x, y, iso_core_right):
                             # Right iso
-                            right_iso.append(point)
+                            right_iso.append(center_point)
                         elif ff.point_is_in_rect(x, y, iso_core_bot):
                             # Bot iso
-                            bot_iso.append(point)
+                            bot_iso.append(center_point)
                         else:
                             # Air
-                            air.append(point)
+                            air.append(center_point)
                 else:
-                    air.append(point)
+                    air.append(center_point)
             # Call synchronize so the points will be added to the model
             gmsh.model.geo.synchronize()
 
             # Embed points into surfaces
-            # if self.component_type != ComponentType.IntegratedTransformer:
-            #     gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
-            #     gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
-            #     gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
-            #     gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
+            if self.component_type != ComponentType.IntegratedTransformer and self.insulation.flag_insulation:
+                gmsh.model.mesh.embed(0, left_iso, 2, self.plane_surface_iso_core[0])
+                gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
+                gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
+                gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
             return air
 
+        
         if self.core.core_type == CoreType.Single:
             # Inter Conductors
             self.inter_conductor_meshing(p_cond)
 
-            left_bound = self.core.core_inner_diameter / 2
-            right_bound = self.model.r_inner
-            top_bound = self.core.window_h / 2
-            bot_bound = -self.core.window_h / 2
-
-            air_tags = rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound)
-            gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air[0])
+            # Iterate over every winding window (typically one) and then iterate over every virtual winding window
+            if self.wwr_enabled:
+                for winding_window in self.winding_windows:
+                    for vww in winding_window.virtual_winding_windows:
+                        air_tags = rasterize_winding_window(vww.left_bound, vww.right_bound, vww.bot_bound, vww.top_bound, vww.winding_scheme)
+                        if air_tags is None or air_tags == []:
+                            return
+                        gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air[0])
 
         if self.core.core_type == CoreType.Stacked:
             # Inter Conductors
             self.inter_conductor_meshing(p_cond)
 
-            # Top Window
-            top_bound = self.model.p_window_top[2][1]  # y component of top window
-            bot_bound = self.model.p_window_top[0][1]  # y component of bot window
-            left_bound = self.core.core_inner_diameter / 2
-            right_bound = self.model.r_inner
+            if self.wwr_enabled:
+                # Winding Windows list has exactly two winding windows: top and bot: 
+                if len(self.winding_windows) != 2:
+                    print(f"Winding Window Rasterization is only implemented for stacked core with exactly 2 winding windows. {len(self.winding_windows)} winding windows were given.")
+                    gmsh.model.geo.synchronize()
+                    return
 
-            air_tags = rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound)
-            gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_top[0])
+                # Top window
+                for vww in self.winding_windows[0].virtual_winding_windows:
+                    air_tags = rasterize_winding_window(vww.left_bound, vww.right_bound, vww.bot_bound, vww.top_bound, vww.winding_scheme)
+                    if air_tags is None or air_tags == []:
+                        return
+                    gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_top[0])
 
-            # Bot Window
-            top_bound = self.model.p_window_bot[2][1]  # y component of top window
-            bot_bound = self.model.p_window_bot[0][1]  # y component of bot window
-            left_bound = self.core.core_inner_diameter / 2
-            right_bound = self.model.r_inner
-
-            air_tags = rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound)
-            gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_bot[0])
+                for vww in self.winding_windows[1].virtual_winding_windows:
+                    air_tags = rasterize_winding_window(vww.left_bound, vww.right_bound, vww.bot_bound, vww.top_bound, vww.winding_scheme)
+                    if air_tags is None or air_tags == []:
+                        return
+                    gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_bot[0])
 
         # self.visualize(visualize_before=True, save_png=False)
 
         # Synchronize again
         gmsh.model.geo.synchronize()
 
+    def rectangular_conductor_center_points(self):
+        def calculate_center_points(left_bound, right_bound, top_bound, bottom_bound, center_point, min_distance):
 
+            # As upper bound use a maximum of 10 points per direction
+            number_of_points_left = int(abs(center_point[0] - left_bound)/min_distance)
+            number_of_points_right = int(abs(right_bound - center_point[0])/min_distance)
+            number_of_points_top = int(abs(top_bound - center_point[1])/min_distance)
+            number_of_points_bottom = int(abs(center_point[1] - bottom_bound)/min_distance)
+
+            distance_left = min_distance
+            distance_right = min_distance
+            distance_top = min_distance
+            distance_bottom = min_distance
+
+            # If this upper bound is reached scale the points along the whole length
+            if number_of_points_left > 10:
+                number_of_points_left = 10
+                distance_left = (center_point[0] - left_bound)/10
+            if number_of_points_right > 10:
+                number_of_points_right = 10
+                distance_right = (right_bound - center_point[0])/10
+            if number_of_points_top > 10:
+                number_of_points_top = 10
+                distance_top = (top_bound - center_point[1])/10
+            if number_of_points_bottom > 10:
+                number_of_points_bottom = 10
+                distance_bottom = (center_point[1] - bottom_bound)/10
+
+            new_points = []
+            for i in range(1, number_of_points_left):
+                new_points.append([center_point[0]-i*distance_left, center_point[1]])
+            for i in range(1, number_of_points_right):
+                new_points.append([center_point[0]+i*distance_right, center_point[1]])
+            for i in range(1, number_of_points_top):
+                new_points.append([center_point[0], center_point[1]+i*distance_top])
+            for i in range(1, number_of_points_bottom):
+                new_points.append([center_point[0], center_point[1]-i*distance_bottom])
+
+            return new_points
+
+        # For every rectangular conductor take the corner points and the center, calculate the new points in the center and add them to a list
+        # called new_gmsh_center_points which later will be added to the mesh
+        new_gmsh_center_points = []
+        for winding_number, winding in enumerate(self.model.p_conductor):
+            center_points_mesh_size = self.mesh_data.c_center_conductor[winding_number]
+            new_gmsh_winding_center_points = []
+            for idx in range(0, len(winding), 5):
+                turn_points = winding[idx:idx+5]
+                new_center_points = calculate_center_points(turn_points[0][0], turn_points[1][0], turn_points[0][1], turn_points[3][1], turn_points[4], center_points_mesh_size)
+                new_gmsh_winding_center_points.append([gmsh.model.geo.addPoint(x[0], x[1], 0, center_points_mesh_size) for x in new_center_points])
+
+            new_gmsh_center_points.append(new_gmsh_winding_center_points)
+
+        # Call synchronize so the points will be added to the model
+        gmsh.model.geo.synchronize()
+        
+        # Embed new points into mesh
+        for winding_number, winding_center_points in enumerate(new_gmsh_center_points):
+            for turn_number, turn_center_points in enumerate(winding_center_points):
+                gmsh.model.mesh.embed(0, turn_center_points, 2, self.plane_surface_cond[winding_number][turn_number])
+
+        # Synchronize again
+        gmsh.model.geo.synchronize()

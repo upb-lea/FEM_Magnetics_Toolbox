@@ -199,8 +199,6 @@ class TwoDaxiSymmetric:
         #   - c_air_gap: mesh accuracy factor
         # at this point the 4 corner points of each air gap are generated out of "air_gaps"
 
-        mesh_accuracy = self.core.window_w / 20 * self.mesh_data.global_accuracy
-
         for i in range(0, self.air_gaps.number):
 
             # # Left leg (-1)
@@ -256,28 +254,28 @@ class TwoDaxiSymmetric:
                                                 air_gap_y_position -
                                                 air_gap_height / 2,
                                                 0,
-                                                self.mesh_data.c_core]
+                                                self.mesh_data.c_air_gaps]
 
                 # Bottom right
                 self.p_air_gaps[i * 4 + 1] = [air_gap_length_bot,
                                                 air_gap_y_position -
                                                 air_gap_height / 2,
                                                 0,
-                                                mesh_accuracy]
+                                                self.mesh_data.c_air_gaps]
 
                 # Top left
                 self.p_air_gaps[i * 4 + 2] = [0,
                                                 air_gap_y_position +
                                                 air_gap_height / 2,
                                                 0,
-                                                self.mesh_data.c_core]
+                                                self.mesh_data.c_air_gaps]
 
                 # Top right
                 self.p_air_gaps[i * 4 + 3] = [air_gap_length_top,
                                                 air_gap_y_position +
                                                 air_gap_height / 2,
                                                 0,
-                                                mesh_accuracy]
+                                                self.mesh_data.c_air_gaps]
 
         # In order to close the air gap when a stray_path is added, additional points need to be added
         if self.component_type == ComponentType.IntegratedTransformer:
@@ -285,12 +283,12 @@ class TwoDaxiSymmetric:
                          self.air_gaps.midpoints[self.stray_path.start_index+1][1] -
                          self.air_gaps.midpoints[self.stray_path.start_index+1][2] / 2,
                          0,
-                         mesh_accuracy]
+                         self.mesh_data.c_air_gaps]
             bot_point = [self.core.core_inner_diameter / 2,
                          self.air_gaps.midpoints[self.stray_path.start_index][1] +
                          self.air_gaps.midpoints[self.stray_path.start_index][2] / 2,
                          0,
-                         mesh_accuracy]
+                         self.mesh_data.c_air_gaps]
             self.p_close_air_gaps = [top_point, bot_point]
 
     def draw_conductors(self, draw_top_down=True):
@@ -765,6 +763,10 @@ class TwoDaxiSymmetric:
                                     top_bound,
                                     0,
                                     self.mesh_data.c_conductor[num]])
+                                center_point = self.get_center_of_rect([left_bound, bot_bound],
+                                                                        [right_bound, bot_bound], [left_bound, top_bound],
+                                                                        [right_bound, top_bound])
+                                self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
                             elif winding_scheme == WindingScheme.FoilVertical:
                                 # TODO Add check if turns do not fit in winding window
                                 # Foil conductors where each conductor is very high and the conductors are expanding in the x-direction
@@ -795,6 +797,9 @@ class TwoDaxiSymmetric:
                                                 top_bound,
                                                 0,
                                                 self.mesh_data.c_conductor[num]])
+                                            center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                                                                   self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                            self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
                                 elif virtual_winding_window.wrap_para == WrapParaType.Interpolate:
                                     # Fill the allowed space in the Winding Window with a chosen number of turns
                                     x_interpol = np.linspace(left_bound, right_bound + self.insulation.cond_cond[num][num], turns + 1)
@@ -820,6 +825,9 @@ class TwoDaxiSymmetric:
                                             top_bound,
                                             0,
                                             self.mesh_data.c_conductor[num]])
+                                        center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                        self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
                                 else:
                                     raise Exception(f"Unknown wrap para type {virtual_winding_window.wrap_para}")
                             elif winding_scheme == WindingScheme.FoilHorizontal:
@@ -850,6 +858,9 @@ class TwoDaxiSymmetric:
                                             bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num],
                                             0,
                                             self.mesh_data.c_conductor[num]])
+                                        center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                        self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
                             else:
                                 raise Exception(f"Winding scheme {winding_scheme.name} is not implemented.")
 
@@ -1064,6 +1075,9 @@ class TwoDaxiSymmetric:
                                     high,
                                     0,
                                     self.mesh_data.c_conductor[num]])
+                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
 
                         # use y for next winding in stack
                         bot_bound = high + self.insulation.cond_cond[1][1]
@@ -1102,6 +1116,9 @@ class TwoDaxiSymmetric:
                                     high,
                                     0,
                                     self.mesh_data.c_conductor[num]])
+                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
 
                     else:
                         raise Exception(f"Unknown winding type {virtual_winding_window.winding_type}")
@@ -1128,7 +1145,7 @@ class TwoDaxiSymmetric:
             if winding.conductor_type in [ConductorType.RoundSolid, ConductorType.RoundLitz]:
                 drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 5)  # round conductors
             else:
-                drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 4)  # rectangular conductors
+                drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 5)  # rectangular conductors
 
         if drawn_number_of_turns != needed_number_of_turns:
             self.femmt_print(f"{drawn_number_of_turns = }")
@@ -1186,7 +1203,13 @@ class TwoDaxiSymmetric:
             # Using the delta the lines and points from the insulation and the core/windings are not overlapping
             # which makes creating the mesh more simpler
             # Insulation between winding and core
-            insulation_delta = self.insulation.insulation_delta
+            # Since an aspect ratio is given the insulation delta is calculated using the length of the longest side of the triangle,
+            # which is always smaller than c_window.
+            if self.insulation.max_aspect_ratio == 0:
+                # If no aspect ratio is set insulations wont be drawn
+                return
+            else:
+                insulation_delta = self.mesh_data.c_window/self.insulation.max_aspect_ratio
 
             self.p_iso_core = []  # Order: Left, Top, Right, Bot
             self.p_iso_pri_sec = []
@@ -1399,3 +1422,9 @@ class TwoDaxiSymmetric:
         # if self.core.core_type == CoreType.Stacked:
         #     self.draw_region_stacked()
 
+    @staticmethod
+    def get_center_of_rect(p1: List[float], p2: List[float], p3: List[float], p4: List[float]):
+        x_list = [p1[0], p2[0], p3[0], p4[0]]
+        y_list = [p1[1], p2[1], p3[1], p4[1]]
+
+        return np.mean(x_list), np.mean(y_list)
