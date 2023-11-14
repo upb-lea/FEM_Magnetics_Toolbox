@@ -146,8 +146,8 @@ class MagneticComponent:
         # MeshData to store the mesh size for different points
         # Object is added in set_core
         padding = 1.5
-        global_accurtacy = 0.5
-        self.mesh_data = MeshData(global_accurtacy, global_accurtacy, global_accurtacy, global_accurtacy, padding, mu_0)
+        global_accuracy = 0.5
+        self.mesh_data = MeshData(global_accuracy, global_accuracy, global_accuracy, global_accuracy, padding, mu_0)
         self.mesh = None
         self.two_d_axi = None
 
