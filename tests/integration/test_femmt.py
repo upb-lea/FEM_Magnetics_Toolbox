@@ -1287,9 +1287,6 @@ def femmt_simulation_transformer_5_windings(temp_folder):
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
 
-        # This line is for automated pytest running on github only. Please ignore this line!
-        if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
-
         # 2. set core parameters
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                         core_inner_diameter=12e-3, core_h=22e-3)
@@ -1416,119 +1413,7 @@ def femmt_simulation_transformer_5_windings(temp_folder):
                                case_gap_right, case_gap_bot, show_thermal_simulation_results=False,
                                color_scheme=fmt.colors_ba_jonas,
                                colors_geometry=fmt.colors_geometry_ba_jonas,
-                               flag_insulation=False)
-
-    except Exception as e:
-        print("An error occurred while creating the femmt mesh files:", e)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt..")
-
-    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
-    thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
-
-    return electromagnetoquasistatic_result, thermal_result
-
-
-@pytest.fixture
-def thermal_simulation(temp_folder):
-    temp_folder_path, onelab_folder = temp_folder
-
-    # Create new temp folder, build model and simulate
-    try:
-        working_directory = temp_folder_path
-        if not os.path.exists(working_directory):
-            os.mkdir(working_directory)
-
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor,
-                                    working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
-
-        # Set onelab path manually
-        geo.file_data.onelab_folder_path = onelab_folder
-
-        core_db = fmt.core_database()["PQ 40/40"]
-        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                        window_w=core_db["window_w"],
-                                                        window_h=core_db["window_h"],
-                                                        core_h=core_db["core_h"])
-        core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=0.,
-                        non_linear=False,
-                        permeability_datasource=fmt.MaterialDataSource.Custom,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom
-                        )
-        geo.set_core(core)
-
-        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005)
-        geo.set_air_gaps(air_gaps)
-
-        insulation = fmt.Insulation()
-        insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-        insulation.add_winding_insulations([[0.0001]])
-        geo.set_insulation(insulation)
-
-        winding_window = fmt.WindingWindow(core, insulation)
-        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
-
-        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
-        winding.set_solid_round_conductor(conductor_radius=0.0015,
-                                          conductor_arrangement=fmt.ConductorArrangement.Square)
-
-        vww.set_winding(winding, 8, None)
-        geo.set_winding_windows([winding_window])
-
-        geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
-        geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=False)
-
-        thermal_conductivity_dict = {
-            "air": 1.57,  # potting epoxy resign
-            "case": {
-                "top": 1.57,
-                "top_right": 1.57,
-                "right": 1.57,
-                "bot_right": 1.57,
-                "bot": 1.57
-            },
-            "core": 5,  # ferrite
-            "winding": 400,  # copper
-            "air_gaps": 1.57,
-            "insulation": 1.57
-        }
-
-        case_gap_top = 0.002
-        case_gap_right = 0.0025
-        case_gap_bot = 0.002
-
-        boundary_temperatures = {
-            "value_boundary_top": 20,
-            "value_boundary_top_right": 20,
-            "value_boundary_right_top": 20,
-            "value_boundary_right": 20,
-            "value_boundary_right_bottom": 20,
-            "value_boundary_bottom_right": 20,
-            "value_boundary_bottom": 20
-        }
-
-        boundary_flags = {
-            "flag_boundary_top": 1,
-            "flag_boundary_top_right": 1,
-            "flag_boundary_right_top": 1,
-            "flag_boundary_right": 1,
-            "flag_boundary_right_bottom": 1,
-            "flag_boundary_bottom_right": 1,
-            "flag_boundary_bottom": 1
-        }
-
-        # color_scheme = fmt.colors_ba_jonas
-        # colors_geometry = fmt.colors_geometry_ba_jonas
-        color_scheme = fmt.colors_ba_jonas
-        colors_geometry = fmt.colors_geometry_draw_only_lines
-
-        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                               case_gap_right,
-                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False, color_scheme=color_scheme,
-                               colors_geometry=colors_geometry)
+                               flag_insulation=True)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -1726,7 +1611,7 @@ def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windin
     # check thermal simulation results
     # assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
     # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_5_windings.json")
-    # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
+    # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
 
 
 def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
