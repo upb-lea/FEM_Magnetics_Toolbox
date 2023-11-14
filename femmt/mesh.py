@@ -1374,9 +1374,6 @@ class Mesh:
 
         set_physical_surface_conductor()
 
-
-
-
         def set_physical_surface_air():
             if self.model.core.core_type == CoreType.Single:
                 # These three areas self.plane_surface_air + self.plane_surface_air_gaps + self.plane_surface_iso_core
@@ -1931,7 +1928,10 @@ class Mesh:
                 # Point seems to be valid. Now find out in which surface the point belongs
                 center_point = gmsh.model.geo.addPoint(x, y, 0, 10 * self.mesh_data.c_window)
 
-                if self.component_type != ComponentType.IntegratedTransformer:
+                if self.component_type == ComponentType.IntegratedTransformer or not self.insulation.flag_insulation:
+                    air.append(center_point)
+                
+                if self.insulation.flag_insulation:
                     if self.model.p_iso_core: # check if list is not empty
                         if ff.point_is_in_rect(x, y, iso_core_left):
                             # Left iso
@@ -1948,8 +1948,7 @@ class Mesh:
                         else:
                             # Air
                             air.append(center_point)
-                else:
-                    air.append(center_point)
+
             # Call synchronize so the points will be added to the model
             gmsh.model.geo.synchronize()
 
@@ -1959,6 +1958,7 @@ class Mesh:
                 gmsh.model.mesh.embed(0, top_iso, 2, self.plane_surface_iso_core[1])
                 gmsh.model.mesh.embed(0, right_iso, 2, self.plane_surface_iso_core[2])
                 gmsh.model.mesh.embed(0, bot_iso, 2, self.plane_surface_iso_core[3])
+
             return air
 
         
@@ -1990,13 +1990,13 @@ class Mesh:
                 for vww in self.winding_windows[0].virtual_winding_windows:
                     air_tags = rasterize_winding_window(vww.left_bound, vww.right_bound, vww.bot_bound, vww.top_bound)
                     if air_tags is None or air_tags == []:
-                        return
+                        continue
                     gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_top[0])
 
                 for vww in self.winding_windows[1].virtual_winding_windows:
-                    air_tags = rasterize_winding_window(vww.left_bound, vww.right_bound, vww.bot_bound, vww.top_bound, vww.winding_scheme, vww.winding_type)
+                    air_tags = rasterize_winding_window(vww.left_bound, vww.right_bound, vww.bot_bound, vww.top_bound)
                     if air_tags is None or air_tags == []:
-                        return
+                        continue
                     gmsh.model.mesh.embed(0, air_tags, 2, self.plane_surface_air_bot[0])
 
         # self.visualize(visualize_before=True, save_png=False)
@@ -2054,7 +2054,7 @@ class Mesh:
                 for idx in range(0, len(winding), 5):
                     turn_points = winding[idx:idx+5]
                     new_center_points = calculate_center_points(turn_points[0][0], turn_points[1][0], turn_points[0][1], turn_points[3][1], turn_points[4], center_points_mesh_size)
-                    new_gmsh_winding_center_points.append([gmsh.model.geo.addPoint(x[0], x[1], 0, center_points_mesh_size) for x in new_center_points])
+                    new_gmsh_winding_center_points.append([winding_number, [gmsh.model.geo.addPoint(x[0], x[1], 0, center_points_mesh_size) for x in new_center_points]])
 
                 new_gmsh_center_points.append(new_gmsh_winding_center_points)
 
@@ -2062,9 +2062,10 @@ class Mesh:
         gmsh.model.geo.synchronize()
         
         # Embed new points into mesh
-        for winding_number, winding_center_points in enumerate(new_gmsh_center_points):
+        for winding_center_points in new_gmsh_center_points:
             for turn_number, turn_center_points in enumerate(winding_center_points):
-                gmsh.model.mesh.embed(0, turn_center_points, 2, self.plane_surface_cond[winding_number][turn_number])
+                winding_number = turn_center_points[0]
+                gmsh.model.mesh.embed(0, turn_center_points[1], 2, self.plane_surface_cond[winding_number][turn_number])
 
         # Synchronize again
         gmsh.model.geo.synchronize()
