@@ -183,7 +183,7 @@ class StackedTransformerOptimization:
                                           working_directory=working_directory_single_process,
                                           verbosity=verbosity, simulation_name=f"Case_{trial.number}")
 
-            geo.update_mesh_accuracies(mesh_accuracy_air_gaps=0.5, mesh_accuracy_core=0.5, mesh_accuracy_window=0.5, mesh_accuracy_conductor=0.5)
+            geo.update_mesh_accuracies(config.mesh_accuracy, config.mesh_accuracy, config.mesh_accuracy, config.mesh_accuracy)
 
             electro_magnetic_directory_single_process = os.path.join(working_directory_single_process, "electro_magnetic")
             strands_coefficients_folder_single_process = os.path.join(electro_magnetic_directory_single_process, "Strands_Coefficients")
@@ -664,8 +664,7 @@ class StackedTransformerOptimization:
                                       verbosity=femmt.Verbosity.Silent, simulation_name=f"Single_Case_{loaded_trial._trial_id - 1}")
         # Note: The _trial_id starts counting from 1, while the normal cases count from zero. So a correction needs to be made
 
-        geo.update_mesh_accuracies(mesh_accuracy_air_gaps=mesh_accuracy, mesh_accuracy_core=mesh_accuracy,
-                                   mesh_accuracy_window=mesh_accuracy, mesh_accuracy_conductor=mesh_accuracy)
+        geo.update_mesh_accuracies(mesh_accuracy, mesh_accuracy, mesh_accuracy, mesh_accuracy)
 
         core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                            window_h_top=window_h_top, window_h_bot=window_h_bot)
@@ -818,6 +817,8 @@ class StackedTransformerOptimization:
 
         geo.update_mesh_accuracies(mesh_accuracy_air_gaps=mesh_accuracy, mesh_accuracy_core=mesh_accuracy,
                                    mesh_accuracy_window=mesh_accuracy, mesh_accuracy_conductor=mesh_accuracy)
+
+        geo.update_mesh_accuracies(mesh_accuracy, mesh_accuracy, mesh_accuracy, mesh_accuracy)
 
         core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                            window_h_top=window_h_top, window_h_bot=window_h_bot)
