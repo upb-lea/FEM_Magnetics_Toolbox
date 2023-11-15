@@ -103,7 +103,7 @@ class MeshData:
     c_center_conductor = List[float]
     c_air_gaps: float
     
-    center_factor: int
+    center_factor: float
 
     mu0: float
     core_w: float
@@ -123,7 +123,9 @@ class MeshData:
         self.padding = padding
         self.mu0 = mu0
 
-        self.center_factor = 1 # TODO This value should be set from user/outside?
+        # TODO This value should be set from user/outside?
+        # The value 4 has good impact on the runtime and does not affect the simulation results too much.
+        self.center_factor = 4
 
     def update_spatial_data(self, core_w: float, window_w: float, windings: List["Conductor"]):
         self.core_w = core_w

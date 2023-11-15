@@ -166,12 +166,12 @@ def create_model(working_directory, mesh_accuracies = None, aspect_ratio = 10, w
 
     return geo
 
-def create_rectangular_conductor_model(working_directory, mesh_accuracies, thickness, center_factor, left_bound_delta = None):
+def create_rectangular_conductor_model(working_directory, mesh_accuracies, thickness, center_factor, left_bound_delta = None, wwr_enabled = True, aspect_ratio = 10):
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
     inductor_frequency = 270000
     
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.Silent, wwr_enabled=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
@@ -213,7 +213,7 @@ def create_rectangular_conductor_model(working_directory, mesh_accuracies, thick
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
     geo.set_air_gaps(air_gaps)
-    insulation = fmt.Insulation(10, not left_bound_delta)
+    insulation = fmt.Insulation(aspect_ratio, not left_bound_delta)
     if left_bound_delta:
         insulation.add_core_insulations(0.001, 0.001, 0, 0)
     else:
@@ -639,6 +639,7 @@ def benchmark_mesh_accuracy(folder: str):
     axis[2].set_ylabel("Execution time", fontsize=font_size_default)
     axis[2].set_xlabel("Mesh accuracy", fontsize=font_size_default)
     axis[2].set_xticks(mesh_accuracies, fontsize=font_size_default)
+    axis[2].set_yscale("log", base=2)
     axis[2].grid()
     plt.legend()
     plt.show()
@@ -713,6 +714,63 @@ def benchmark_winding_window_rasterization(folder):
     plt.legend(fontsize=font_size_default)
     plt.show()
 
+def general_comparison(folder):
+    mesh_accuracies = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    #mesh_accuracies = [0.4, 0.5, 1]
+    frequency = 270000
+
+    font_size_default = 15
+    markersize = 7
+    font_size_title = 20
+
+    all_on = []
+    for mesh_accuracy in mesh_accuracies:
+        working_directory = os.path.join(folder, f"{mesh_accuracy}_all_on")
+        model = create_rectangular_conductor_model(working_directory, mesh_accuracy, 0.0015, 4, None, True, 1)
+        benchmark = SingleBenchmark(working_directory, model)
+        benchmark.benchmark_simulation(frequency)
+        all_on.append(benchmark)
+        
+    all_off = []
+    for mesh_accuracy in mesh_accuracies:
+        working_directory = os.path.join(folder, f"{mesh_accuracy}_all_off")
+        model = create_rectangular_conductor_model(working_directory, mesh_accuracy, 0.0015, 1, None, False, 15)
+        benchmark = SingleBenchmark(working_directory, model)
+        benchmark.benchmark_simulation(frequency)
+        all_off.append(benchmark)
+
+    total_losses_all_on = [bm.total_losses for bm in all_on]
+    self_inductance_all_on = [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in all_on]
+    execution_time_all_on = [bm.execution_time for bm in all_on]
+
+    total_losses_all_off = [bm.total_losses for bm in all_off]
+    self_inductance_all_off = [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in all_off]
+    execution_time_all_off = [bm.execution_time for bm in all_off]
+
+    figure, axis = plt.subplots(3, sharex=True)
+
+    figure.suptitle("Comparison with and without meshing techniques", fontsize=font_size_title)
+    axis[0].plot(mesh_accuracies, total_losses_all_on, "bo", label="With meshing techniques", markersize=markersize)
+    axis[0].plot(mesh_accuracies, total_losses_all_off, "ro", label="Without meshing techniques", markersize=markersize)
+    axis[0].set_ylabel("Total losses", fontsize=font_size_default)
+    axis[0].set_xticks(mesh_accuracies, fontsize=font_size_default)
+    axis[0].grid()
+
+    axis[1].plot(mesh_accuracies, self_inductance_all_on, "bo", label="With meshing techniques", markersize=markersize)
+    axis[1].plot(mesh_accuracies, self_inductance_all_off, "ro", label="Without meshing techniques", markersize=markersize)
+    axis[1].set_ylabel("|Self inductance|", fontsize=font_size_default)
+    axis[1].set_xticks(mesh_accuracies, fontsize=font_size_default)
+    axis[1].grid()
+    
+    axis[2].plot(mesh_accuracies, execution_time_all_on, "bo", label="With meshing techniques", markersize=markersize)
+    axis[2].plot(mesh_accuracies, execution_time_all_off, "ro", label="Without meshing techniques", markersize=markersize)
+    axis[2].set_ylabel("Execution time", fontsize=font_size_default)
+    axis[2].set_xlabel("Mesh accuracy", fontsize=font_size_default)
+    axis[2].set_xticks(mesh_accuracies, fontsize=font_size_default)
+    axis[2].set_yscale("log")
+    axis[2].grid()
+    plt.legend()
+    plt.show()
 
 if __name__ == "__main__":
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -724,6 +782,7 @@ if __name__ == "__main__":
     benchmark_rect_conductor_folder = os.path.join(benchmark_results_folder, "benchmark_rect_conductor")
     benchmark_rect_conductor_offset_folder = os.path.join(benchmark_results_folder, "benchmark_rect_conductor_offset")
     benchmark_winding_window_rasterization_folder = os.path.join(benchmark_results_folder, "benchmark_winding_window_rasterization")
+    general_comparison_folder = os.path.join(benchmark_results_folder, "general_comparison")
 
     if not os.path.exists(benchmark_results_folder):
         os.mkdir(benchmark_results_folder)
@@ -739,11 +798,14 @@ if __name__ == "__main__":
         os.mkdir(benchmark_rect_conductor_offset_folder)
     if not os.path.exists(benchmark_winding_window_rasterization_folder):
         os.mkdir(benchmark_winding_window_rasterization_folder)
+    if not os.path.exists(general_comparison_folder):
+        os.mkdir(general_comparison_folder)
 
     #single_benchmark(benchmark_single_results_folder, 270000)
-    benchmark_mesh_accuracy(benchmark_accuracy_results_folder)
+    #benchmark_mesh_accuracy(benchmark_accuracy_results_folder)
     #benchmark_aspect_ratios(benchmark_aspect_ratio_folder)
     #benchmark_different_mesh_accuracies(benchmark_different_accuracy_folder)
     #benchmark_rectangular_conductor(benchmark_rect_conductor_folder)
     #benchmark_rectangular_conductor_offset(benchmark_rect_conductor_offset_folder)
     #benchmark_winding_window_rasterization(benchmark_winding_window_rasterization_folder)
+    general_comparison(general_comparison_folder)
