@@ -183,6 +183,8 @@ class StackedTransformerOptimization:
                                           working_directory=working_directory_single_process,
                                           verbosity=verbosity, simulation_name=f"Case_{trial.number}")
 
+            geo.update_mesh_accuracies(config.mesh_accuracy, config.mesh_accuracy, config.mesh_accuracy, config.mesh_accuracy)
+
             electro_magnetic_directory_single_process = os.path.join(working_directory_single_process, "electro_magnetic")
             strands_coefficients_folder_single_process = os.path.join(electro_magnetic_directory_single_process, "Strands_Coefficients")
 
@@ -244,7 +246,7 @@ class StackedTransformerOptimization:
                 winding_temperature=config.temperature)
 
             geo.set_insulation(insulation)
-            geo.set_winding_windows([coil_window, transformer_window], config.mesh_accuracy)
+            geo.set_winding_windows([coil_window, transformer_window])
 
             geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=show_geometries)
 
