@@ -3,6 +3,7 @@ import os
 import shutil
 import json
 import datetime
+import gc
 
 # 3rd party libraries
 import optuna
@@ -490,6 +491,12 @@ class StackedTransformerOptimization:
                                                    load_if_exists=True, sampler=sampler)
 
             study_in_database.optimize(func, n_trials=number_trials, show_progress_bar=True)
+
+            if process_number == 1:
+                # referring to https://docs.python.org/3/library/gc.html#gc.collect there should be run only one
+                # gc.collect() at the same time. Also, it has some disadvantages in performance. So the garbage
+                # collector is only run once if process 1 (by default after 1000 trials) has finished.
+                gc.collect()
 
     @staticmethod
     def show_study_results(study_name: str, config: StoSingleInputConfig,
