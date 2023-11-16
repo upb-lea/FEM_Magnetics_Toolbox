@@ -365,6 +365,9 @@ class MagneticComponent:
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
         """
+        # Default values for global_accuracy and padding
+        self.mesh_data.update_spatial_data(self.core.core_inner_diameter, self.core.window_w, self.windings)
+
         # Update mesh data
         self.mesh_data.update_data(frequency, skin_mesh_factor)
 
@@ -480,8 +483,6 @@ class MagneticComponent:
                     for i in range(0, zeros_to_append):
                         vww.turns.append(0)
 
-        # Default values for global_accuracy and padding
-        self.mesh_data.update_spatial_data(self.core.core_inner_diameter, self.core.window_w, self.windings)
 
     def set_core(self, core: Core):
         """Adds the core to the model
