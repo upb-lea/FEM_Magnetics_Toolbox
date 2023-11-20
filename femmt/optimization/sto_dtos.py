@@ -44,11 +44,14 @@ class StoSingleInputConfig:
     core_inner_diameter_min_max_list: list
     window_w_min_max_list: list
     window_h_bot_min_max_list: list
-    max_transformer_total_height: float
     primary_litz_wire_list: list
     metal_sheet_thickness_list: list
     interleaving_scheme_list: list
     interleaving_type_list: list
+
+    # maximum limitation for transformer total height and core volume
+    max_transformer_total_height: float
+    max_core_volume: float
 
     # fix parameters: insulations
     insulations: StoInsulation

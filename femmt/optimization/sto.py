@@ -183,6 +183,13 @@ class StackedTransformerOptimization:
             else:
                 verbosity = femmt.Verbosity.Silent
 
+            # calculate core volume for stacked core type. Check if this volume is smaller than the given limit
+            core_height = window_h_bot + window_h_top + core_inner_diameter * 3 / 4
+            r_outer = fr.calculate_r_outer(core_inner_diameter, window_w)
+            core_volume = np.pi * r_outer ** 2 * core_height
+            if core_volume > config.max_core_volume:
+                raise ValueError(f"Core volume of {core_volume} > {config.max_core_volume}.")
+
             working_directory_single_process = os.path.join(
                 target_and_fixed_parameters.working_directories.fem_working_directory, f"process_{process_number}")
 
