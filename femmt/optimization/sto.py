@@ -486,11 +486,13 @@ class StackedTransformerOptimization:
 
     @staticmethod
     def run_garbage_collector(study: optuna.Study, _):
-        if len(study.trials) % 100000 == 0:
+        if len(study.trials) % 10000 == 0:
             # Run the garbage collector to prevent high memory consumption.
             # as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
-            # the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate. So the default
-            # runtime for the garbage collector is all 100.000 trials.
+            # the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate.
+            # in case of running 10 or more cores, the garbage collector will run each 10.000 trial
+            # There could be an improvement to run the garbage collector on every process in future.
+            # Now, it is random on which of the processes the garbage collector runs.
             # Learn about the garbage collector https://docs.python.org/3/library/gc.html#gc.collect
             # Every process runs its own garbage collector. So there is no difference between multiple processes
             # https://stackoverflow.com/questions/23272943/how-does-garbage-collection-work-with-multiple-running-processes-threads
