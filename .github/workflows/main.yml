@@ -25,6 +25,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - name: check linting using pycodestyle
+        run: |
+            pip install pycodestyle
+            pycodestyle femmt/constants.py
+
       - name: install femmt package
         run: |
             sudo apt-get update
