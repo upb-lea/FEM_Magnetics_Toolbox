@@ -1072,4 +1072,4 @@ class StackedTransformerOptimization:
         """
         loaded_study = optuna.create_study(study_name=study_name, storage=database_url, load_if_exists=True)
         df = loaded_study.trials_dataframe()
-        df.to_csv()
+        df.to_csv(f'{study_name}.csv')

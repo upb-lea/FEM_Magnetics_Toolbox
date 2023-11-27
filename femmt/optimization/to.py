@@ -201,7 +201,7 @@ class TransformerOptimization:
             geo.set_core(core)
 
             air_gaps = femmt.AirGaps(femmt.AirGapMethod.Percent, core)
-            air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer)
+            air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer, 50)
             geo.set_air_gaps(air_gaps)
 
             # set_center_tapped_windings() automatically places the condu
@@ -1059,4 +1059,4 @@ class TransformerOptimization:
         """
         loaded_study = optuna.create_study(study_name=study_name, storage=database_url, load_if_exists=True)
         df = loaded_study.trials_dataframe()
-        df.to_csv()
+        df.to_csv(f'{study_name}.csv')
