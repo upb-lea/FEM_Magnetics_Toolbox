@@ -1215,8 +1215,8 @@ def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
             },
             "core": 5,  # ferrite
             "winding": 400,  # copper
-            "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42  # polyethylen
+            "air_gaps": 180,  # aluminium nitride
+            "insulation": 0.42  # polyethylene
         }
 
         # Here the case size can be determined
@@ -1371,8 +1371,8 @@ def femmt_simulation_transformer_5_windings(temp_folder):
             },
             "core": 5,  # ferrite
             "winding": 400,  # copper
-            "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42  # polyethylen
+            "air_gaps": 180,  # aluminium nitride
+            "insulation": 0.42  # polyethylene
         }
 
         # Here the case size can be determined
@@ -1701,9 +1701,9 @@ def test_basic_example_transformer_three_winding(temp_folder):
 
 def test_basic_example_transformer_integrated(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_integrated.basic_example_transformer_intergrated(onelab_folder=onelab_folder,
-                                                                                      show_visual_outputs=False,
-                                                                                      is_test=True)
+    femmt.examples.basic_transformer_integrated.basic_example_transformer_integrated(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                     is_test=True)
 
 
 def test_basic_example_transformer_center_tapped(temp_folder):
