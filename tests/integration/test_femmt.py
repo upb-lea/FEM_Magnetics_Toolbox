@@ -13,7 +13,7 @@ import femmt.examples.basic_transformer_stacked
 import femmt.examples.basic_transformer_stacked_center_tapped
 import femmt.examples.basic_inductor_foil_vertical
 import femmt.examples.basic_transformer_n_winding
-import femmt.examples.advanced_indutor_sweep
+import femmt.examples.advanced_inductor_sweep
 import femmt.examples.basic_transformer_5_windings
 import materialdatabase as mdb
 
@@ -36,10 +36,12 @@ def compare_result_logs(first_log_filepath, second_log_filepath, significant_dig
         if "working_directory" in second_content["simulation_settings"]:
             del second_content["simulation_settings"]["working_directory"]
 
-    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=significant_digits)
+    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
+                                   significant_digits=significant_digits)
     print(f"{difference = }")
 
-    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=significant_digits)
+    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
+                                 significant_digits=significant_digits)
     # made several tests with the deepdiff command:
     # tried adding not existing keys in one of the dicts: results as expected in an error
     # changed values in very nested dict: results as expected in an error
@@ -54,10 +56,12 @@ def compare_thermal_result_logs(first_log_filepath, second_log_filepath, signifi
     with open(second_log_filepath, "r") as fd:
         second_content = json.loads(fd.read())
 
-    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=significant_digits)
+    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
+                                   significant_digits=significant_digits)
     print(f"{difference = }")
 
-    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True, significant_digits=significant_digits)
+    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
+                                 significant_digits=significant_digits)
     # made several tests with the deepdiff command:
     # tried adding not existing keys in one of the dicts: results as expected in an error
     # changed values in very nested dict: results as expected in an error
@@ -99,7 +103,8 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
             os.mkdir(working_directory)
 
         # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
-        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.Silent, is_gui=True)
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
 
         # Set onelab path manually
         geo.file_data.onelab_folder_path = onelab_folder
@@ -130,7 +135,8 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
         vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
         winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
-        winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+        winding.set_solid_round_conductor(conductor_radius=0.0013,
+                                          conductor_arrangement=fmt.ConductorArrangement.Square)
 
         vww.set_winding(winding, 9, None)
         geo.set_winding_windows([winding_window])
@@ -185,8 +191,8 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
 
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right,
-                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False, color_scheme=color_scheme,
-                               colors_geometry=colors_geometry)
+                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False,
+                               color_scheme=color_scheme, colors_geometry=colors_geometry)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -302,8 +308,8 @@ def femmt_simulation_inductor_core_material_database_measurement(temp_folder):
 
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right,
-                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False, color_scheme=color_scheme,
-                               colors_geometry=colors_geometry)
+                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False,
+                               color_scheme=color_scheme, colors_geometry=colors_geometry)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -341,7 +347,8 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
 
         core = fmt.Core(core_type=fmt.CoreType.Single,
                         core_dimensions=core_dimensions,
-                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -413,8 +420,8 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
 
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right,
-                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False, color_scheme=color_scheme,
-                               colors_geometry=colors_geometry)
+                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False,
+                               color_scheme=color_scheme, colors_geometry=colors_geometry)
 
     except Exception as e:
         print("An error occurred while creating the femmt mesh files:", e)
@@ -451,7 +458,8 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
                                                         core_h=core_db["core_h"])
 
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -566,7 +574,8 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
 
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
@@ -792,7 +801,8 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
         # 2. set core parameters
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=1.2, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        sigma=1.2, permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -911,7 +921,9 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
 
         # 2. set core parameters
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                        non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
+                        permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         # 3. set air gap parameters
@@ -1030,7 +1042,8 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
         # 2. set core parameters
         core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                         mu_r_abs=3100, phi_mu_deg=12,
-                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom)
+                        sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom)
         geo.set_core(core)
 
         # 2.1 set stray path parameters
@@ -1165,27 +1178,28 @@ def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
         geo.set_air_gaps(air_gaps)
 
         # set_center_tapped_windings() automatically places the condu
-        insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
-                                                                                                          primary_turns=14,
-                                                                                                          primary_radius=1.1e-3,
-                                                                                                          primary_number_strands=50,
-                                                                                                          primary_strand_radius=0.00011,
-                                                                                                          secondary_parallel_turns=2,
-                                                                                                          secondary_thickness_foil=1e-3,
-                                                                                                          iso_top_core=0.001,
-                                                                                                          iso_bot_core=0.001,
-                                                                                                          iso_left_core=0.002,
-                                                                                                          iso_right_core=0.001,
-                                                                                                          iso_primary_to_primary=2e-4,
-                                                                                                          iso_secondary_to_secondary=2e-4,
-                                                                                                          iso_primary_to_secondary=4e-4,
-                                                                                                          interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
-                                                                                                          interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
-                                                                                                          primary_coil_turns=3,
-                                                                                                          primary_additional_bobbin=1e-3,
-                                                                                                          winding_temperature=100,
-                                                                                                          bobbin_coil_left=3e-3,
-                                                                                                          center_foil_additional_bobbin=0e-3)
+        insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(
+            core=core,
+            primary_turns=14,
+            primary_radius=1.1e-3,
+            primary_number_strands=50,
+            primary_strand_radius=0.00011,
+            secondary_parallel_turns=2,
+            secondary_thickness_foil=1e-3,
+            iso_top_core=0.001,
+            iso_bot_core=0.001,
+            iso_left_core=0.002,
+            iso_right_core=0.001,
+            iso_primary_to_primary=2e-4,
+            iso_secondary_to_secondary=2e-4,
+            iso_primary_to_secondary=4e-4,
+            interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
+            interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
+            primary_coil_turns=3,
+            primary_additional_bobbin=1e-3,
+            winding_temperature=100,
+            bobbin_coil_left=3e-3,
+            center_foil_additional_bobbin=0e-3)
 
         geo.set_insulation(insulation)
         geo.set_winding_windows([coil_window, transformer_window])
@@ -1198,8 +1212,10 @@ def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
         geo.get_inductances(I0=1, op_frequency=200000)
 
         # Thermal simulation:
-        # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
-        # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
+        # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given
+        # magnetic component
+        # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a
+        # boundary temperature
         # which will be applied on the boundary of the simulation (dirichlet boundary condition).
 
         # The case parameter sets the thermal conductivity for a case which will be set around the core.
@@ -1215,8 +1231,8 @@ def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
             },
             "core": 5,  # ferrite
             "winding": 400,  # copper
-            "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42  # polyethylen
+            "air_gaps": 180,  # aluminium nitride
+            "insulation": 0.42  # polyethylene
         }
 
         # Here the case size can be determined
@@ -1225,7 +1241,8 @@ def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
         case_gap_bot = 0.002
 
         # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
-        # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
+        # This does not change the results of the simulation (at least when every boundary is set equally) but will set
+        # the temperature offset.
         boundary_temperatures = {
             "value_boundary_top": 20,
             "value_boundary_top_right": 20,
@@ -1250,9 +1267,11 @@ def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
 
         # In order for the thermal simulation to work an electro_magnetic simulation has to run before.
         # The em-simulation will create a file containing the losses.
-        # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
+        # When the losses file is already created and contains the losses for the current model, it is
+        # enough to run geo.create_model in
         # order for the thermal simulation to work (geo.single_simulation is not needed).
-        # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
+        # Obviously when the model is modified and the losses can be out of date and therefore the
+        # geo.single_simulation needs to run again.
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, show_thermal_simulation_results=False,
                                color_scheme=fmt.colors_ba_jonas,
@@ -1308,7 +1327,6 @@ def femmt_simulation_transformer_5_windings(temp_folder):
         # 4. set insulation
         insulation = fmt.Insulation()
         insulation.add_core_insulations(0.0008, 0.0008, 0.001, 0.0001)
-        # insulation.add_winding_insulations([0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002], 0.0005)
         iso_self = 0.0001
         iso_against = 0.0002
         insulation.add_winding_insulations(
@@ -1354,9 +1372,10 @@ def femmt_simulation_transformer_5_windings(temp_folder):
                               phi_deg=[0, 180, 180, 90, 89], show_fem_simulation_results=False)
 
         # Thermal simulation:
-        # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
-        # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
-        # which will be applied on the boundary of the simulation (dirichlet boundary condition).
+        # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the
+        # given magnetic component. In order to use the thermal simulation, thermal conductivities for each material
+        # can be entered as well as a boundary temperature which will be applied on the boundary
+        # of the simulation (dirichlet boundary condition).
 
         # The case parameter sets the thermal conductivity for a case which will be set around the core.
         # This could model some case in which the transformer is placed in together with a set potting material.
@@ -1371,8 +1390,8 @@ def femmt_simulation_transformer_5_windings(temp_folder):
             },
             "core": 5,  # ferrite
             "winding": 400,  # copper
-            "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42  # polyethylen
+            "air_gaps": 180,  # aluminium nitride
+            "insulation": 0.42  # polyethylene
         }
 
         # Here the case size can be determined
@@ -1381,7 +1400,8 @@ def femmt_simulation_transformer_5_windings(temp_folder):
         case_gap_bot = 0.002
 
         # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
-        # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
+        # This does not change the results of the simulation (at least when every boundary is set equally) but will
+        # set the temperature offset.
         boundary_temperatures = {
             "value_boundary_top": 20,
             "value_boundary_top_right": 20,
@@ -1406,9 +1426,10 @@ def femmt_simulation_transformer_5_windings(temp_folder):
 
         # In order for the thermal simulation to work an electro_magnetic simulation has to run before.
         # The em-simulation will create a file containing the losses.
-        # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
-        # order for the thermal simulation to work (geo.single_simulation is not needed).
-        # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
+        # When the losses file is already created and contains the losses for the current model, it is enough to run
+        # geo.create_model in order for the thermal simulation to work (geo.single_simulation is not needed).
+        # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation
+        # needs to run again.
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, show_thermal_simulation_results=False,
                                color_scheme=fmt.colors_ba_jonas,
@@ -1441,14 +1462,16 @@ def test_inductor_core_material_database(femmt_simulation_inductor_core_material
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_material.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "log_electro_magnetic_inductor_core_material.json")
     print(test_result_log)
     print(fixture_result_log)
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_inductor_core_material_database.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_inductor_core_material_database.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
@@ -1467,12 +1490,14 @@ def test_inductor_core_material_database_measurement(femmt_simulation_inductor_c
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_material_measurement.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "log_electro_magnetic_inductor_core_material_measurement.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_inductor_core_material_database_measurement.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_inductor_core_material_database_measurement.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
@@ -1482,12 +1507,14 @@ def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_los
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_inductor_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_inductor_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
@@ -1497,12 +1524,14 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=3)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_inductor_core_fixed_loss_angle_litz_wire.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_inductor_core_fixed_loss_angle_litz_wire.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
 
 
@@ -1519,11 +1548,13 @@ def test_inductor_core_fixed_loss_angle_foil_vertical(femmt_simulation_inductor_
     # check thermal simulation results
 
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_inductor_core_fixed_loss_angle_foil_vertical.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_inductor_core_fixed_loss_angle_foil_vertical.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
-def test_inductor_core_fixed_loss_angle_foil_horizontal(femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal):
+def test_inductor_core_fixed_loss_angle_foil_horizontal(
+        femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal):
     test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1535,7 +1566,8 @@ def test_inductor_core_fixed_loss_angle_foil_horizontal(femmt_simulation_inducto
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_inductor_core_fixed_loss_angle_foil_horizontal.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_inductor_core_fixed_loss_angle_foil_horizontal.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
@@ -1545,12 +1577,14 @@ def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fix
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_transformer_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
@@ -1560,12 +1594,14 @@ def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transfor
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_interleaved_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_transformer_interleaved_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
@@ -1575,12 +1611,14 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_integrated_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_transformer_integrated_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
@@ -1590,12 +1628,14 @@ def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transform
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "transformer_stacked_center_tapped.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "transformer_stacked_center_tapped.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_stacked_center_tapped.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "thermal_transformer_stacked_center_tapped.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
 
 
@@ -1605,12 +1645,14 @@ def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windin
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "transformer_5_windings.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "transformer_5_windings.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
     # assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results", "thermal_transformer_5_windings.json")
+    # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    #                                   "thermal_transformer_5_windings.json")
     # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
 
 
@@ -1648,12 +1690,18 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
 
         result_log_filepath_direction = os.path.join(os.path.dirname(__file__), "fixtures", "results")
 
-        # femmt_simulation_inductor_core_material_database = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_material.json")
-        # femmt_simulation_inductor_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
-        # femmt_simulation_inductor_core_fixed_loss_angle_litz_wire = os.path.join(result_log_filepath_direction, "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
-        # femmt_simulation_transformer_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
-        # femmt_simulation_transformer_interleaved_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
-        # femmt_simulation_transformer_integrated_core_fixed_loss_angle = os.path.join(result_log_filepath_direction, "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
+        # femmt_simulation_inductor_core_material_database = os.path.join(result_log_filepath_direction,
+        # "log_electro_magnetic_inductor_core_material.json")
+        # femmt_simulation_inductor_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
+        # "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
+        # femmt_simulation_inductor_core_fixed_loss_angle_litz_wire = os.path.join(result_log_filepath_direction,
+        # "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
+        # femmt_simulation_transformer_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
+        # "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
+        # femmt_simulation_transformer_interleaved_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
+        # "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
+        # femmt_simulation_transformer_integrated_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
+        # "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
         #
         #
         # fixture_log_filepath_list = []
@@ -1663,7 +1711,7 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
 
             assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
-            #compare_result_logs(test_result_log, fixture_result_log)
+            # compare_result_logs(test_result_log, fixture_result_log)
 
 ##############################
 # Basic example tests
@@ -1701,9 +1749,9 @@ def test_basic_example_transformer_three_winding(temp_folder):
 
 def test_basic_example_transformer_integrated(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_integrated.basic_example_transformer_intergrated(onelab_folder=onelab_folder,
-                                                                                      show_visual_outputs=False,
-                                                                                      is_test=True)
+    femmt.examples.basic_transformer_integrated.basic_example_transformer_integrated(onelab_folder=onelab_folder,
+                                                                                     show_visual_outputs=False,
+                                                                                     is_test=True)
 
 
 def test_basic_example_transformer_center_tapped(temp_folder):
@@ -1722,16 +1770,15 @@ def test_basic_example_transformer_stacked(temp_folder):
 
 def test_basic_example_transformer_stacked_center_tapped(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(onelab_folder=onelab_folder,
-                                                                                                           show_visual_outputs=False,
-                                                                                                           is_test=True)
+    femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(
+        onelab_folder=onelab_folder, show_visual_outputs=False, is_test=True)
 
 
 def test_basic_example_inductor_foil_vertical(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_inductor_foil_vertical.basic_example_inductor_foil_vertical(onelab_folder=onelab_folder,
-                                                                                                           show_visual_outputs=False,
-                                                                                                           is_test=True)
+                                                                                     show_visual_outputs=False,
+                                                                                     is_test=True)
 
 
 def test_basic_example_transformer_n_winding(temp_folder):
@@ -1750,6 +1797,6 @@ def test_basic_example_transformer_5_windings(temp_folder):
 
 def test_advanced_example_inductor_sweep(temp_folder):
     temp_folder_path, onelab_folder = temp_folder
-    femmt.examples.advanced_indutor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
-                                                                          show_visual_outputs=False,
-                                                                          is_test=True)
+    femmt.examples.advanced_inductor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
+                                                                           show_visual_outputs=False,
+                                                                           is_test=True)

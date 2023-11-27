@@ -25,6 +25,32 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - name: check linting using pycodestyle
+        run: |
+            pip install pycodestyle
+          
+            # code
+            pycodestyle femmt/constants.py
+            pycodestyle femmt/logparser.py
+            pycodestyle femmt/enumerations.py
+            pycodestyle femmt/dtos.py
+          
+            # example files
+            pycodestyle femmt/examples/advanced_inductor_sweep.py
+            pycodestyle femmt/examples/advanced_sto.py
+            pycodestyle femmt/examples/basic_inductor.py
+            pycodestyle femmt/examples/basic_inductor_foil_vertical.py
+            pycodestyle femmt/examples/basic_transformer.py
+            pycodestyle femmt/examples/basic_transformer_5_windings.py
+            pycodestyle femmt/examples/basic_transformer_center_tapped.py
+            pycodestyle femmt/examples/basic_transformer_integrated.py
+            pycodestyle femmt/examples/basic_transformer_interleaved.py
+            pycodestyle femmt/examples/basic_transformer_n_winding.py
+            pycodestyle femmt/examples/basic_transformer_stacked.py
+            pycodestyle femmt/examples/basic_transformer_stacked_center_tapped.py
+            pycodestyle femmt/examples/basic_transformer_three_winding.py
+            pycodestyle tests/integration/test_femmt.py
+
       - name: install femmt package
         run: |
             sudo apt-get update

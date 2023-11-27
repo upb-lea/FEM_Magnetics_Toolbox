@@ -56,8 +56,6 @@ class MagneticComponent:
         :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
-        :param silent: True to reduce onelab simulation outputs in command line. False to see full command line output.
-        :type silent: bool
         :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line. Defaults to 'False' in command-line-mode.
         :type is_gui: bool
         :param simulation_name: name without any effect. Will just be displayed in the result-log file
@@ -365,6 +363,9 @@ class MagneticComponent:
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
         """
+        # Default values for global_accuracy and padding
+        self.mesh_data.update_spatial_data(self.core.core_inner_diameter, self.core.window_w, self.windings)
+
         # Update mesh data
         self.mesh_data.update_data(frequency, skin_mesh_factor)
 
@@ -435,8 +436,6 @@ class MagneticComponent:
 
         :param winding_windows: List of WindingWindow objects
         :type winding_windows: List[WindingWindow]
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
-        :type mesh_accuracy: float
         """
         self.winding_windows = winding_windows
         windings = []
@@ -480,8 +479,6 @@ class MagneticComponent:
                     for i in range(0, zeros_to_append):
                         vww.turns.append(0)
 
-        # Default values for global_accuracy and padding
-        self.mesh_data.update_spatial_data(self.core.core_inner_diameter, self.core.window_w, self.windings)
 
     def set_core(self, core: Core):
         """Adds the core to the model
@@ -639,9 +636,9 @@ class MagneticComponent:
             width = 0
 
             if leg_position == AirGapLegPosition.LeftLeg.value:
-                    # left leg
-                    # TODO this is wrong since the air gap is not centered on the y axis
-                    width = core_width - self.core.r_inner
+                # left leg
+                # TODO this is wrong since the air gap is not centered on the y axis
+                width = core_width - self.core.r_inner
             elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
@@ -694,7 +691,6 @@ class MagneticComponent:
 
             # For single core and more than one core_part, volume for every core part is calculated
 
-
             # core_part_1 is divided into subparts cores
             # # subpart1: bottom left subpart
             subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2
@@ -706,14 +702,13 @@ class MagneticComponent:
             subpart1_2_width = self.core.r_outer
             subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
 
-
             # subpart3: right subpart
             subpart1_3_height = self.core.window_h
             subpart1_3_width = self.core.r_outer
             subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height - (
                         np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
 
-            # subpart4: top mid subpart
+            # subpart4: top mid-subpart
             subpart1_4_height = self.core.core_inner_diameter / 4
             subpart1_4_width = self.core.r_outer
             subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
@@ -749,7 +744,7 @@ class MagneticComponent:
             # For stacked core types, the volume is divided into different core  * parts, each of which is further
             # divided into subparts to calculate the total volume of each core part.
 
-            # core_part_2 : core part between the bottom airgap and subpart_1 of core_part_1
+            # core_part_2 : core part between the bottom air gap and subpart_1 of core_part_1
             core_part_1_height = self.core.window_h_bot / 2 - heights[0] / 2
             core_part_1_width = self.core.core_inner_diameter / 2
             core_part_1_volume = np.pi * core_part_1_width ** 2 * core_part_1_height
@@ -844,8 +839,6 @@ class MagneticComponent:
         return self.calculate_core_volume() * volumetric_mass_density
 
 
-
-
     def get_wire_distances(self) -> List[List[float]]:
         """Helper function which returns the distance (radius) of each conductor to the y-axis
 
@@ -876,14 +869,6 @@ class MagneticComponent:
             wire_distance.append(winding_list)
 
         return wire_distance
-
-
-
-
-
-
-
-
 
 
     def calculate_wire_lengths(self) -> List[float]:
@@ -1309,14 +1294,14 @@ class MagneticComponent:
                                            save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            check_model_mqs_condition_already_performerd = False
+            check_model_mqs_condition_already_performed = False
             for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency],
                                 amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if value_frequency != 0 and not check_model_mqs_condition_already_performerd:
+                if value_frequency != 0 and not check_model_mqs_condition_already_performed:
                     self.check_model_mqs_condition()
-                    check_model_mqs_condition_already_performerd = True
+                    check_model_mqs_condition_already_performed = True
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1378,7 +1363,8 @@ class MagneticComponent:
         # calculate hysteresis losses
         # use a single simulation
         self.generate_load_litz_approximation_parameters()
-        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
+        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes,
+                        phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
@@ -1785,7 +1771,7 @@ class MagneticComponent:
             # l_h = self.M * n
             # self.femmt_print(f"\n"
             #                f"T-ECD (primary side transformed):\n"
-            #                f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+            #                f"[Under-determined System: 'Transformation Ratio' := 'Turns Ratio']\n"
             #                f"    - Transformation Ratio: n\n"
             #                f"    - Primary Side Stray Inductance: L_s1\n"
             #                f"    - Secondary Side Stray Inductance: L_s2\n"
@@ -1803,7 +1789,7 @@ class MagneticComponent:
 
             self.femmt_print(f"\n"
                              f"T-ECD (primary side concentrated):\n"
-                             f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                             f"[Under-determined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
                              f"    - Transformation Ratio: n\n"
                              f"    - (Primary) Stray Inductance: L_s1\n"
                              f"    - Primary Side Main Inductance: L_h\n"
@@ -3458,23 +3444,21 @@ class MagneticComponent:
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
             core_type = settings["core"]["core_type"]
-            #print(core_type)
             if core_type == CoreType.Single:
                 core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                                window_w=settings["core"]["window_w"],
-                                                                window_h=settings["core"]["window_h"],
-                                                                core_h=settings["core"]["core_h"])
+                                                       window_w=settings["core"]["window_w"],
+                                                       window_h=settings["core"]["window_h"],
+                                                       core_h=settings["core"]["core_h"])
 
             elif core_type == CoreType.Stacked:
                 core_dimensions = StackedCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                                window_w=settings["core"]["window_w"],
-                                                                window_h_bot=settings["core"]["window_h_bot"],
-                                                                window_h_top=settings["core"]["window_h_top"])
-                                                                #ToDo: core_h not implemented yet.
-                                                                #core_h=settings["core"]["core_h"])
+                                                        window_w=settings["core"]["window_w"],
+                                                        window_h_bot=settings["core"]["window_h_bot"],
+                                                        window_h_top=settings["core"]["window_h_top"])
+                                                        # ToDo: core_h not implemented yet.
+                                                        # core_h=settings["core"]["core_h"])
             else:
                 raise ValueError("unknown core_type for decoding from result_log.")
-
 
             if isinstance(settings["core"]["sigma"], List):
                 # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
@@ -3561,7 +3545,3 @@ class MagneticComponent:
             return geo
 
         raise Exception(f"Couldn't extract settings from file {log_file_path}")
-
-
-
-

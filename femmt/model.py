@@ -80,7 +80,7 @@ class Conductor:
         self.a_cell = None  # can only be set after the width is determined
         self.conductor_radius = 1  # Revisit
 
-    def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: ConductorArrangement):
+    def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: Optional[ConductorArrangement]):
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 

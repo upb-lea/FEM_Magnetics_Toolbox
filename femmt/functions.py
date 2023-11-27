@@ -6,13 +6,11 @@ import pkg_resources
 import subprocess
 import sys
 import os
-import time
 import warnings
 from typing import Union, List, Tuple, Dict
 
 # Third parry libraries
 import gmsh
-import pandas as pd
 from matplotlib import pyplot as plt
 import numpy.typing as npt
 import numpy as np
@@ -710,7 +708,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
         raise ValueError("if mode is 'rad' or 'deg', a fundamental frequency f0 must be set")
     # check for input is list. Convert to numpy-array
     if isinstance(period_vector_t_i, list):
-        if plot != 'no' and plot != False:
+        if plot != 'no' and plot is not False:
             print("Input is list, convert to np.array()")
         period_vector_t_i = np.array(period_vector_t_i)
 
@@ -766,7 +764,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
         raise ValueError(
             f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
 
-    if plot != 'no' and plot != False:
+    if plot != 'no' and plot is not False:
         print(f"{title = }")
         print(f"{t[-1] = }")
         print(f"{f0 = }")
@@ -845,7 +843,7 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
     # plt.show()
 
 
-def compare_fft_list(input_data_list: list, sample_factor: float = 1000, mode: str = 'rad',
+def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str = 'rad',
                      f0: Union[float, None] = None) -> None:
     """
     generate fft curves from input curves and compare them to each other
@@ -856,13 +854,14 @@ def compare_fft_list(input_data_list: list, sample_factor: float = 1000, mode: s
     >>> example_waveform_2 = np.array([[0, 0.55, 3.14, 3.69, 6.28],[-138.37, 257.58, 138.37, -257.58, -138.37]])
     >>> compare_fft_list([example_waveform, example_waveform_2], mode='rad', f0=25000)
 
-    :param input_data_list: list of fft-compatible numpy-arrays [element, element, ... ], each element format like [[time-vector[,[current-vector]]. One period only
+    :param input_data_list: list of fft-compatible numpy-arrays [element, element, ... ], each element format
+        like [[time-vector[,[current-vector]]. One period only
     :param mode: 'rad'[default]: full period is 2*pi, 'deg': full period is 360°, 'time': time domain.
     :type mode: str
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :type f0: float
     :param sample_factor: samle factor, defaults to 1000
-    :type sample_factor: float
+    :type sample_factor: int
 
     :return: plot
 
@@ -1142,7 +1141,8 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
     """
     Calculates single winding material and fabrication costs depending on winding-type and weight
 
-    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converters"
+    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations
+    of Switched-Mode Power Converters"
 
     :param wire_weight_list: winding weight in kg in list-form
     :type wire_weight_list: List[float]
@@ -1539,8 +1539,11 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
 def visualize_mutual_inductances(self_inductances: List, coupling_factors: List, silent: bool):
     """
     Print the mutal inductances to the terminal (or file-) output
-    :param inductance_matrix: inductance matrix
-    :type inductance_matrix: np.array
+
+    :param self_inductances: Matrix with self inductances
+    :type self_inductances: List
+    :param coupling_factors: Matrix with coupling factors
+    :type coupling_factors: List
     :param silent: True for no output
     :type silent: bool
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
