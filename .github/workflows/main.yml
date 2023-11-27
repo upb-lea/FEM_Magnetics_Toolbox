@@ -49,6 +49,7 @@ jobs:
             pycodestyle femmt/examples/basic_transformer_stacked.py
             pycodestyle femmt/examples/basic_transformer_stacked_center_tapped.py
             pycodestyle femmt/examples/basic_transformer_three_winding.py
+            pycodestyle tests/integration/test_femmt.py
 
       - name: install femmt package
         run: |
