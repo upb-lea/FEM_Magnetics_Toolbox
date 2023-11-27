@@ -61,7 +61,7 @@ class FEMMTLogParser:
         for name, file_path in file_paths_dict.items():
             if not os.path.isfile(file_path):
                 raise Exception(f"File {file_path} does not exist.")
-        
+
             self.data[name] = self.parse_file(file_path, SweepTypes.SingleSweep)
 
     def plot_frequency_sweep_losses(self, data_names: List[str], loss_parameter: str, plot_label: str = "") -> None:
@@ -119,7 +119,7 @@ class FEMMTLogParser:
                     raise Exception(f"Winding number {winding_number} is too high for the data")
                 
                 data_value = getattr(sweep.windings[0], winding_parameter)
-                if type(data_value) == complex:
+                if isinstance(data_value, complex):
                     data_value = abs(data_value)
 
                 freq_data.append([sweep.frequency, data_value])
