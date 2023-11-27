@@ -29,6 +29,8 @@ jobs:
         run: |
             pip install pycodestyle
             pycodestyle femmt/constants.py
+            pycodestyle femmt/logparser.py
+            pycodestyle femmt/functions.py
 
       - name: install femmt package
         run: |
