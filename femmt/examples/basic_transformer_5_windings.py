@@ -2,9 +2,8 @@ import femmt as fmt
 import os
 
 
-def basic_example_inductor_foil_vertical(onelab_folder: str = None, show_visual_outputs: bool = True,
+def basic_example_transformer_5_windings(onelab_folder: str = None, show_visual_outputs: bool = True,
                                          is_test: bool = False):
-
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the
@@ -75,57 +74,86 @@ def basic_example_inductor_foil_vertical(onelab_folder: str = None, show_visual_
         os.mkdir(example_results_folder)
 
     # Example for a transformer with multiple virtual winding windows.
-    working_directory = os.path.join(example_results_folder, "inductor_foil_vertical")
+    working_directory = os.path.join(example_results_folder, "n-horizontal-split")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
-    # Choose wrap para type
-    wrap_para_type = fmt.WrapParaType.FixedThickness
-
-    # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+    # 1. chose simulation type
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    core_db = fmt.core_database()["PQ 40/40"]
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                    window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"],
-                                                    core_h=core_db["core_h"])
-
-    core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
-                    mu_r_abs=3100, phi_mu_deg=12,
-                    sigma=0.6, permeability_datasource=fmt.MaterialDataSource.Custom,
-                    permittivity_datasource=fmt.MaterialDataSource.Custom)
+    # 2. set core parameters
+    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
+                                                    core_inner_diameter=12e-3, core_h=22e-3)
+    core = fmt.Core(core_dimensions=core_dimensions, material=fmt.Material.N95, temperature=60, frequency=100000,
+                    # permeability_datasource="manufacturer_datasheet",
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK)
     geo.set_core(core)
 
-    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Center, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005)
+    # 3. set air gap parameters
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.00016, 50)
     geo.set_air_gaps(air_gaps)
 
+    # 4. set insulation
     insulation = fmt.Insulation()
-    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
-    insulation.add_winding_insulations([[0.0005]])
+    insulation.add_core_insulations(0.0008, 0.0008, 0.001, 0.0001)
+    iso_self = 0.0001
+    iso_against = 0.0002
+    insulation.add_winding_insulations(
+        [[iso_self, iso_against, iso_against, iso_against, iso_against],
+         [iso_against, iso_self, iso_against, iso_against, iso_against],
+         [iso_against, iso_against, iso_self, iso_against, iso_against],
+         [iso_against, iso_against, iso_self, iso_against, iso_against],
+         [iso_against, iso_against, iso_against, iso_against, iso_self]])
     geo.set_insulation(insulation)
 
+    # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.48, 0.75],
+                                                       vertical_split_factors=[None, [0.5, 0.85], None])
 
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
-    winding.set_rectangular_conductor(thickness=1e-3)
+    # 6. create windings and assign conductors
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1.set_litz_round_conductor(0.85e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
-    vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, wrap_para_type)
+    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2.set_litz_round_conductor(1.0e-3 / 2, 60, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+    winding4.set_litz_round_conductor(0.95e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    winding5 = fmt.Conductor(4, fmt.Conductivity.Copper)
+    winding5.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    # 7. assign windings to virtual winding windows (cells)
+    cells[0].set_winding(winding1, 22, fmt.WindingType.Single)
+    cells[1].set_winding(winding2, 6, fmt.WindingType.Single)
+    cells[2].set_winding(winding3, 6, fmt.WindingType.Single)
+    cells[3].set_winding(winding4, 1, fmt.WindingType.Single)
+    cells[4].set_winding(winding5, 2, fmt.WindingType.Single)
     geo.set_winding_windows([winding_window])
 
-    geo.create_model(freq=100000, pre_visualize_geometry=show_visual_outputs, save_png=False)
+    # 8. perform an FEM simulation
+    geo.create_model(freq=100000, pre_visualize_geometry=show_visual_outputs)
+    geo.single_simulation(freq=100000, current=[1.625, 6.9, 4.9, 0.5, 1],
+                          phi_deg=[0, 180, 180, 90, 89], show_fem_simulation_results=show_visual_outputs)
 
-    geo.single_simulation(freq=100000, current=[3], show_fem_simulation_results=show_visual_outputs)
-
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # 9. prepare and start thermal simulation
+    example_thermal_simulation(show_thermal_visual_outputs=show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":
-    basic_example_inductor_foil_vertical(show_visual_outputs=True)
+    basic_example_transformer_5_windings(show_visual_outputs=True)

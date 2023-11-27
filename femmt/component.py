@@ -45,8 +45,9 @@ class MagneticComponent:
     onelab_folder_path: str = None
     silent: bool = False
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None, clean_previous_results: bool = True,
-                 verbosity: Verbosity = 2, is_gui: bool = False, simulation_name: Optional[str] = None):
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
+                 clean_previous_results: bool = True, verbosity: Verbosity = 2, is_gui: bool = False,
+                 simulation_name: Optional[str] = None, wwr_enabled = True):
         # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         :param component_type: Available options:
@@ -56,8 +57,6 @@ class MagneticComponent:
         :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
-        :param silent: True to reduce onelab simulation outputs in command line. False to see full command line output.
-        :type silent: bool
         :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line. Defaults to 'False' in command-line-mode.
         :type is_gui: bool
         :param simulation_name: name without any effect. Will just be displayed in the result-log file
@@ -93,6 +92,8 @@ class MagneticComponent:
             fh.setLevel(logging.INFO)
             self.logger.addHandler(fh)
             self.silent = True
+
+        self.wwr_enabled = wwr_enabled
 
         self.femmt_print(f"\n"
                          f"Initialized a new Magnetic Component of type {component_type.name}\n"
@@ -144,7 +145,9 @@ class MagneticComponent:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # MeshData to store the mesh size for different points
         # Object is added in set_core
-        self.mesh_data = None
+        padding = 1.5
+        global_accuracy = 0.5
+        self.mesh_data = MeshData(global_accuracy, global_accuracy, global_accuracy, global_accuracy, padding, mu_0)
         self.mesh = None
         self.two_d_axi = None
 
@@ -190,6 +193,12 @@ class MagneticComponent:
     def femmt_print(self, text: str):
         if self.verbosity != Verbosity.Silent:
             self.logger.info(text)
+
+    def update_mesh_accuracies(self, mesh_accuracy_core: float, mesh_accuracy_window: float, mesh_accuracy_conductor, mesh_accuracy_air_gaps: float):
+        self.mesh_data.mesh_accuracy_core = mesh_accuracy_core
+        self.mesh_data.mesh_accuracy_window = mesh_accuracy_window
+        self.mesh_data.mesh_accuracy_conductor = mesh_accuracy_conductor
+        self.mesh_data.mesh_accuracy_air_gaps = mesh_accuracy_air_gaps
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
@@ -265,6 +274,7 @@ class MagneticComponent:
         # Power density for volumes W/m^3
         #core_area = self.calculate_core_volume()
         core_area = self.calculate_core_parts_volume()
+
 
 
 
@@ -355,6 +365,9 @@ class MagneticComponent:
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
         """
+        # Default values for global_accuracy and padding
+        self.mesh_data.update_spatial_data(self.core.core_inner_diameter, self.core.window_w, self.windings)
+
         # Update mesh data
         self.mesh_data.update_data(frequency, skin_mesh_factor)
 
@@ -366,8 +379,8 @@ class MagneticComponent:
         self.two_d_axi.draw_model()
 
         # Create mesh
-        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, self.verbosity,
-                         self.logger, None)
+        self.mesh = Mesh(self.two_d_axi, self.windings, self.winding_windows, self.core.correct_outer_leg, self.file_data, self.verbosity,
+                         self.logger, None, self.wwr_enabled)
         # self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
@@ -417,7 +430,7 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_winding_windows(self, winding_windows: List[WindingWindow], mesh_accuracy: float = 0.5):
+    def set_winding_windows(self, winding_windows: List[WindingWindow]):
         """
         Adds the winding windows to the model. Creates the windings list, which contains the conductors
         from the virtual winding windows but sorted by the winding_number (ascending).
@@ -425,8 +438,6 @@ class MagneticComponent:
 
         :param winding_windows: List of WindingWindow objects
         :type winding_windows: List[WindingWindow]
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
-        :type mesh_accuracy: float
         """
         self.winding_windows = winding_windows
         windings = []
@@ -470,8 +481,6 @@ class MagneticComponent:
                     for i in range(0, zeros_to_append):
                         vww.turns.append(0)
 
-        # Default values for global_accuracy and padding
-        self.mesh_data = MeshData(mesh_accuracy, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
 
     def set_core(self, core: Core):
         """Adds the core to the model
@@ -629,9 +638,9 @@ class MagneticComponent:
             width = 0
 
             if leg_position == AirGapLegPosition.LeftLeg.value:
-                    # left leg
-                    # TODO this is wrong since the air gap is not centered on the y axis
-                    width = core_width - self.core.r_inner
+                # left leg
+                # TODO this is wrong since the air gap is not centered on the y axis
+                width = core_width - self.core.r_inner
             elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
@@ -651,9 +660,9 @@ class MagneticComponent:
 
         """Calculates the volume of the part core excluding air.
 
-                :return: Volume of the core part.
-                :rtype: list
-                """
+                        :return: Volume of the core part.
+                        :rtype: list
+                        """
         # Extract heights from the midpoints of air gaps
         heights = [point[2] for point in self.air_gaps.midpoints]
         core_parts_volumes = []
@@ -670,101 +679,99 @@ class MagneticComponent:
                 return self.stray_path.length
             return self.core.core_inner_diameter / 2
 
+        # # Sorting air gaps from lower to upper
+        sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1])
+        # Finding position of first airgap
+        bottommost_airgap_position = sorted_midpoints[0][1]
+        bottommost_airgap_height = sorted_midpoints[0][2]
+        # Finding position of last airgap
+        topmost_airgap_position = sorted_midpoints[-1][1]
+        topmost_airgap_height = sorted_midpoints[-1][2]
+
         # if single core
         if self.core.core_type == CoreType.Single:
-            # For single core type and many core_parts (due to multiple airgaps)
-            if len(self.mesh.plane_surface_core) > 1:
 
-                # For single core and more than one core_part, volume for every core part is calculated
-                # # Sorting air gaps from lower to upper
-                sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1])
-                # Finding position of first airgap
-                bottommost_airgap_position = sorted_midpoints[0][1]
-                bottommost_airgap_height = sorted_midpoints[0][2]
-                # Finding position of last airgap
-                topmost_airgap_position = sorted_midpoints[-1][1]
-                topmost_airgap_height = sorted_midpoints[-1][2]
+            # For single core and more than one core_part, volume for every core part is calculated
 
-                # core_part_1 is divided into subparts cores
-                # subpart1: bottom left subpart
-                subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2 + self.core.core_inner_diameter / 4
-                subpart1_1_width = self.core.core_inner_diameter / 2
-                subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
+            # core_part_1 is divided into subparts cores
+            # # subpart1: bottom left subpart
+            subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2
+            subpart1_1_width = self.core.core_inner_diameter / 2
+            subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
-                # subpart2: bottom mid subpart
-                subpart1_2_height = self.core.core_inner_diameter / 4
-                subpart1_2_width = self.core.window_w
-                subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
+            # # subpart2: bottom mid subpart
+            subpart1_2_height = self.core.core_inner_diameter / 4
+            subpart1_2_width = self.core.r_outer
+            subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
 
-                # subpart3: right subpart
-                subpart1_3_height = self.core.window_h + self.core.core_inner_diameter / 2
-                subpart1_3_width = self.core.r_outer - self.core.r_inner
-                subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height
+            # subpart3: right subpart
+            subpart1_3_height = self.core.window_h
+            subpart1_3_width = self.core.r_outer
+            subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height - (
+                        np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
 
-                # subpart4: top mid subpart
-                subpart1_4_height = self.core.core_inner_diameter / 4
-                subpart1_4_width = self.core.window_w
-                subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
+            # subpart4: top mid-subpart
+            subpart1_4_height = self.core.core_inner_diameter / 4
+            subpart1_4_width = self.core.r_outer
+            subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
 
-                # subpart5: top left subpart
-                subpart1_5_height = self.core.window_h / 2 - topmost_airgap_position - topmost_airgap_height / 2 + self.core.core_inner_diameter / 4
-                subpart1_5_width = self.core.core_inner_diameter / 2
-                subpart1_5_volume = np.pi * subpart1_5_width ** 2 * subpart1_5_height
+            # subpart5: top left subpart
+            subpart1_5_height = self.core.window_h / 2 - topmost_airgap_position - topmost_airgap_height / 2
+            subpart1_5_width = self.core.core_inner_diameter / 2
+            subpart1_5_volume = np.pi * subpart1_5_width ** 2 * subpart1_5_height
 
-                # Calculate the volume of core part 1 by summing up subpart volumes
-                core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume + subpart1_4_volume + subpart1_5_volume
-                core_parts_volumes.append(core_part_1_volume)
+            # Calculate the volume of core part 1 by summing up subpart volumes
+            core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume + subpart1_4_volume + subpart1_5_volume
+            core_parts_volumes.append(core_part_1_volume)
 
-                # Calculate the volumes of the core parts between the air gaps
-                for i in range(len(sorted_midpoints) - 1):
-                    air_gap_1_position = sorted_midpoints[i][1]
-                    air_gap_1_height = sorted_midpoints[i][2]
-                    air_gap_2_position = sorted_midpoints[i + 1][1]
-                    air_gap_2_height = sorted_midpoints[i + 1][2]
-                    # calculate the height based on airgap positions and heights, and the width
-                    core_part_height = air_gap_2_position - air_gap_2_height / 2 - (
-                            air_gap_1_position + air_gap_1_height / 2)
-                    core_part_width = get_width(i + 2)
-                    # calculate the volume
-                    core_part_volume = np.pi * core_part_width ** 2 * core_part_height
-                    core_parts_volumes.append(core_part_volume)
+            # Calculate the volumes of the core parts between the air gaps
+            for i in range(len(sorted_midpoints) - 1):
+                air_gap_1_position = sorted_midpoints[i][1]
+                air_gap_1_height = sorted_midpoints[i][2]
+                air_gap_2_position = sorted_midpoints[i + 1][1]
+                air_gap_2_height = sorted_midpoints[i + 1][2]
+                # calculate the height based on airgap positions and heights, and the width
+                core_part_height = air_gap_2_position - air_gap_2_height / 2 - (
+                        air_gap_1_position + air_gap_1_height / 2)
+                core_part_width = get_width(i + 2)
+                # calculate the volume
+                core_part_volume = np.pi * core_part_width ** 2 * core_part_height
+                core_parts_volumes.append(core_part_volume)
 
-                # Return the total core part volume
-                return core_parts_volumes
-            # for single core and only one core part
-            else:
-                return [self.calculate_core_volume()]
+            # Return the total core part volume
+            #return core_parts_volumes
 
         elif self.core.core_type == CoreType.Stacked:
 
-            # For stacked core types, the volume is divided into different core parts, each of which is further
+            # For stacked core types, the volume is divided into different core  * parts, each of which is further
             # divided into subparts to calculate the total volume of each core part.
+
+            # core_part_2 : core part between the bottom air gap and subpart_1 of core_part_1
+            core_part_1_height = self.core.window_h_bot / 2 - heights[0] / 2
+            core_part_1_width = self.core.core_inner_diameter / 2
+            core_part_1_volume = np.pi * core_part_1_width ** 2 * core_part_1_height
+            core_parts_volumes.append(core_part_1_volume)
 
             # Core Part 1 Calculation
             # Core part 1 is calculated as the sum of three different subparts
             # subpart_1: bottom left subpart
-            subpart1_1_height = self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4 - heights[0] / 2
-            subpart1_1_width = self.core.core_inner_diameter / 2
-            subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
+            subpart2_1_height = self.core.window_h_bot / 2 - heights[0] / 2
+            subpart2_1_width = self.core.core_inner_diameter / 2
+            subpart2_1_volume = np.pi * subpart2_1_width ** 2 * subpart2_1_height
 
             # subpart_2 : bottom mid subpart
-            subpart1_2_height = self.core.core_inner_diameter / 4
-            subpart1_2_width = self.core.window_w
-            subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
+            subpart2_2_height = self.core.core_inner_diameter / 4
+            subpart2_2_width = self.core.r_outer
+            subpart2_2_volume = np.pi * subpart2_2_width ** 2 * subpart2_2_height
 
             # subpart_3: bottom right subpart
-            subpart1_3_height = self.core.window_h_bot + self.core.core_inner_diameter / 4
-            subpart1_3_width = self.core.r_outer - self.core.r_inner
-            subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height
+            subpart2_3_height = self.core.window_h_bot
+            subpart2_3_width = self.core.r_outer
+            subpart2_3_volume = np.pi * (subpart2_3_width ** 2 * subpart2_3_height) - np.pi * ((self.core.window_w + self.core.core_inner_diameter/2) ** 2 * self.core.window_h_bot)
+
 
             # Summing up the volumes of the subparts to get the total volume of core part 1
-            core_part_1_volume = subpart1_1_volume + subpart1_2_volume + subpart1_3_volume
-            core_parts_volumes.append(core_part_1_volume)
-
-            # core_part_2 : core part between the bottom airgap and subpart_1 of core_part_1
-            core_part_2_height = self.core.window_h_bot / 2 - heights[0] / 2
-            core_part_2_width = self.core.core_inner_diameter / 2
-            core_part_2_volume = np.pi * core_part_2_width ** 2 * core_part_2_height
+            core_part_2_volume = subpart2_1_volume + subpart2_2_volume + subpart2_3_volume
             core_parts_volumes.append(core_part_2_volume)
 
             # core_part_3 : left mid core part (stacked)
@@ -775,32 +782,49 @@ class MagneticComponent:
 
             # core_part_4: right mid core part
             core_part_4_height = self.core.core_inner_diameter / 4
-            core_part_4_width = self.core.r_outer - self.core.r_inner
-            core_part_4_volume = np.pi * core_part_4_width ** 2 * core_part_4_height
+            core_part_4_width = self.core.r_outer
+            core_part_4_volume = np.pi * core_part_4_width ** 2 * core_part_4_height - core_part_3_volume
             core_parts_volumes.append(core_part_4_volume)
 
             # core_part_5
             # core_part_5 is divided into 3 parts
-            # subpart_1: top right subpart
-            subpart5_1_height = self.core.window_h_top + self.core.core_inner_diameter / 4 - heights[1] / 2
+            # subpart_1: left top subpart
+            subpart5_1_height = self.core.window_h_top - heights[1] / 2
             subpart5_1_width = self.core.core_inner_diameter / 2
             subpart5_1_volume = np.pi * subpart5_1_width ** 2 * subpart5_1_height
 
             # subpart_2: mid top subpart
             subpart5_2_height = self.core.core_inner_diameter / 4
-            subpart5_2_width = self.core.window_w
+            subpart5_2_width = self.core.r_outer
             subpart5_2_volume = np.pi * subpart5_2_width ** 2 * subpart5_2_height
 
-            # subpart 3: left top subpart
-            subpart5_3_height = self.core.window_h_top + self.core.core_inner_diameter / 4
-            subpart5_3_width = self.core.r_outer - self.core.r_inner
-            subpart5_3_volume = np.pi * subpart5_3_width ** 2 * subpart5_3_height
+            # subpart 3: top right subpart
+            subpart5_3_height = self.core.window_h_top
+            subpart5_3_width = self.core.r_outer
+            subpart5_3_volume = np.pi * (subpart5_3_width ** 2 * subpart5_3_height) - np.pi * ((self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h_top)
+
             # Summing up the volumes of the subparts to get the total volume of core_part_5
             core_part_5_volume = subpart5_1_volume + subpart5_2_volume + subpart5_3_volume
             core_parts_volumes.append(core_part_5_volume)
 
-            # Returning the final list of core part volumes
-            return core_parts_volumes
+        # Core Volume Consistency Check
+        # Sum all the core part volumes
+        total_parts_volume = sum(core_parts_volumes)
+
+        # Calculate the whole core volume
+        whole_core_volume = self.calculate_core_volume()
+
+        # Define a margin of error
+        margin_of_error = 1e-5
+
+        # Check if the volumes are equal within the margin of error
+        if not (abs(whole_core_volume - total_parts_volume) <= margin_of_error):
+            error_message = (f"Sum of core parts ({total_parts_volume}) does not equal "
+                             f"the whole core volume ({whole_core_volume}) within the margin of error ({margin_of_error}).")
+            raise ValueError(error_message)
+
+        # Returning the final list of core part volumes
+        return core_parts_volumes
 
     def calculate_core_weight(self) -> float:
         """
@@ -837,15 +861,9 @@ class MagneticComponent:
 
         wire_distance = []
         for num, conductor in enumerate(self.two_d_axi.p_conductor):
-            # Check if the winding is parallel and calculate points accordingly
-            if self.windings[num].parallel:  # as in center_tapped transformer, RectangularSolid is used in parallel winding
-                num_points = len(conductor)
-                num_turns = num_points // 4
-                point_increment = 4
-            else:
-                num_points = len(conductor)
-                num_turns = num_points // 5
-                point_increment = 5
+            num_points = len(conductor)
+            num_turns = num_points // 5
+            point_increment = 5
 
             winding_list = []
             for i in range(num_turns):
@@ -853,7 +871,6 @@ class MagneticComponent:
             wire_distance.append(winding_list)
 
         return wire_distance
-
 
 
     def calculate_wire_lengths(self) -> List[float]:
@@ -1184,7 +1201,7 @@ class MagneticComponent:
                          visualize_before: bool = False, save_png: bool = False,
                          color_scheme: Dict = ff.colors_femmt_default,
                          colors_geometry: Dict = ff.colors_geometry_femmt_default,
-                         inductance_dict: Dict = None, core_hyst_loss: float = None) -> None:
+                         inductance_dict: Dict = None, core_hyst_loss: List[float] = None) -> None:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -1221,6 +1238,10 @@ class MagneticComponent:
         :type colors_geometry: Dict
         :param save_png: True to save a .png
         :type save_png: bool
+        :param inductance_dict: result dictionary from get_inductances()-function
+        :type inductance_dict: Dict
+        :param core_hyst_loss: List with hysteresis list. If given, the hysteresis losses in this function be overwritten in the result log.
+        :type core_hyst_loss: List
 
         """
         # negative currents are not allowed and lead to wrong simulation results. Check for this.
@@ -1275,20 +1296,20 @@ class MagneticComponent:
                                            save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            check_model_mqs_condition_already_performerd = False
+            check_model_mqs_condition_already_performed = False
             for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency],
                                 amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if value_frequency != 0 and not check_model_mqs_condition_already_performerd:
+                if value_frequency != 0 and not check_model_mqs_condition_already_performed:
                     self.check_model_mqs_condition()
-                    check_model_mqs_condition_already_performerd = True
+                    check_model_mqs_condition_already_performed = True
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
                 # self.visualize()
 
-        self.calculate_and_write_log(sweep_number=len(frequency_list), currents=current_list_list,
+        self.calculate_and_write_log(number_frequency_simulations=len(frequency_list), currents=current_list_list,
                                      frequencies=frequency_list, inductance_dict=inductance_dict,
                                      core_hyst_losses=core_hyst_loss)
 
@@ -1344,7 +1365,8 @@ class MagneticComponent:
         # calculate hysteresis losses
         # use a single simulation
         self.generate_load_litz_approximation_parameters()
-        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
+        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes,
+                        phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
@@ -1596,9 +1618,13 @@ class MagneticComponent:
                                                silent=self.silent)
 
         # Initialize the hysteresis losses with zero
-        p_hyst = 0
-        # print(f"{p_hyst = }")
+        # Note: To calculate the hysteresis losses, two steps are performed:
+        #       * transformer loss calculation (therefore, the current in the inductor is set to zero).
+        #       * inductor loss calculation
 
+        p_hyst_core_parts = [0, 0, 0, 0, 0]
+
+        # From here, the hysteresis of transformer is calculated
         ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
         self.overwrite_conductors_with_air(ps_primary_coil_turns)
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
@@ -1612,22 +1638,23 @@ class MagneticComponent:
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
 
+        # read the log of the transformer losses
         log = self.read_log()
-        for i in [1, 2, 3, 4]:
-            res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
-            # print(f"core_part_{i} = {res}")
-            p_hyst += res
-        # print(f"{p_hyst = }")
+        for core_part in [1, 2, 3, 4]:
+            core_part_hyst_loss = log['single_sweeps'][0]['core_parts'][f'core_part_{core_part}']['hyst_losses']
+            p_hyst_core_parts[core_part - 1] += core_part_hyst_loss
+        # Now, p_hyst_core_parts includes the full transformer losses.
 
         if non_sine_hysteresis_correction:
+            pass
             # Correct the hysteresis loss for the triangular shaped flux density waveform
             # alpha_from_db, beta_from_db, k_from_db = mdb.MaterialDatabase(ff.silent).get_steinmetz(temperature=self.core.temperature, material_name=self.core.material, datasource="measurements",
             #                                                               datatype=mdb.MeasurementDataType.Steinmetz, measurement_setup="LEA_LK",interpolation_type="linear")
-            # p_hyst = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst
-            # print(f"{p_hyst = }")
+            # p_hyst_core_parts = factor_triangular_hysteresis_loss_iGSE(D=0.5, alpha=alpha_from_db) * p_hyst_core_parts
+            # print(f"{p_hyst_core_parts = }")
 
-            ps_primary_coil_turns = [150000 + i for i in range(number_primary_coil_turns)]
-
+        # From here on, inductor losses are calculated
+        # Therefore, the first done overwrite of inductor conductors is restored
         self.overwrite_air_conductors_with_conductors(list(np.array(ps_primary_coil_turns) + 1000000))
         self.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
                         amplitude_list=center_tapped_study_excitation["hysteresis"]["choke"]["current_amplitudes"],
@@ -1638,19 +1665,21 @@ class MagneticComponent:
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
 
+        # read the log of the inductor losses
         log = self.read_log()
-        for i in [3, 4, 5]:
-            res = log['single_sweeps'][0]['core_parts'][f'core_part_{i}']['hyst_losses']
-            # print(f"core_part_{i} = {res}")
-            p_hyst += res
-
-        # print(f"{p_hyst = }")
+        for core_part in [3, 4, 5]:
+            core_part_hyst_loss = log['single_sweeps'][0]['core_parts'][f'core_part_{core_part}']['hyst_losses']
+            p_hyst_core_parts[core_part - 1] += core_part_hyst_loss
+        # p_hyst_core_parts includes now the transformer losses and the inductor losses
 
         # calculate the winding losses # TODO: avoid meshing twice
+        # Note: As the result log is now re-written, the before calculated p_hyst_core_parts is added into this result-log
+        # also the inductance dict is externally inserted into the final result log.
+        # The final result log is written after this simulation
         self.excitation_sweep(center_tapped_study_excitation["linear_losses"]["frequencies"],
                               center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
                               center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
-                              inductance_dict=inductance_dict, core_hyst_loss=float(p_hyst))
+                              inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
@@ -1744,7 +1773,7 @@ class MagneticComponent:
             # l_h = self.M * n
             # self.femmt_print(f"\n"
             #                f"T-ECD (primary side transformed):\n"
-            #                f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+            #                f"[Under-determined System: 'Transformation Ratio' := 'Turns Ratio']\n"
             #                f"    - Transformation Ratio: n\n"
             #                f"    - Primary Side Stray Inductance: L_s1\n"
             #                f"    - Secondary Side Stray Inductance: L_s2\n"
@@ -1762,7 +1791,7 @@ class MagneticComponent:
 
             self.femmt_print(f"\n"
                              f"T-ECD (primary side concentrated):\n"
-                             f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                             f"[Under-determined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
                              f"    - Transformation Ratio: n\n"
                              f"    - (Primary) Stray Inductance: L_s1\n"
                              f"    - Primary Side Main Inductance: L_h\n"
@@ -2091,8 +2120,8 @@ class MagneticComponent:
 
         text_file.close()
 
-    def calculate_and_write_log(self, sweep_number: int = 1, currents: List = None, frequencies: List = None,
-                                inductance_dict: dict = None, core_hyst_losses: float = None):
+    def calculate_and_write_log(self, number_frequency_simulations: int = 1, currents: List = None, frequencies: List = None,
+                                inductance_dict: dict = None, core_hyst_losses: List[float] = None):
         """
         Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
         them in a result dictionary (JSON log file).
@@ -2103,8 +2132,14 @@ class MagneticComponent:
          * optional parameters can be added to the log, like the inductance values or the core hysteresis losses from
                     external simulations
 
-        :param sweep_number: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
-        :type sweep_number: int
+        An inductance dictionary is optional, in case of get_inductance() has been calculated before. In this case,
+        the get_inductance()-results can be given to this function to be included into the result-log.
+
+        In case of separate calculated hysteresis losses (e.g. triangular magnetization current), this value can be
+        given as a parameter and will overwrite the hysteresis-loss result.
+
+        :param number_frequency_simulations: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
+        :type number_frequency_simulations: int
         :param currents: Current values of the sweep iterations. Not needed for single simulation
         :type currents: list
         :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
@@ -2112,31 +2147,22 @@ class MagneticComponent:
         :param inductance_dict: Optional inductance dict to include in the logfile.
         :type inductance_dict: dict
         :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given, the external value is used in the result-log. Otherwise, the hysteresis losses of the fundamental frequency is used
-        :type core_hyst_losses: float
+        :type core_hyst_losses: List[float]
         """
-        # ---- Print simulation results ----
 
         fundamental_index = 0  # index of the fundamental frequency
 
-        # create the dictionary used to log the result data
-        #   - 'single_sweeps' contains a list of n=sweep_number sweep_dicts
-        #   - 'total_losses' contains the sums of all sweeps
-        #       - in case complex core parameters are used:
-        #           - hysteresis losses are taken only from fundamental frequency
-        #               - fundamental frequency is the smallest frequency != 0
-        #   - 'simulation_settings' contains the simulation configuration (for more info see encode_settings())
-
         log_dict = {"single_sweeps": [], "total_losses": {}, "simulation_settings": {}}
 
-        for sweep_run in range(0, sweep_number):
+        for single_simulation in range(0, number_frequency_simulations):
             # create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
             # Single values, received during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
             sweep_dict = {}
 
             # Frequencies
-            if sweep_number > 1:
+            if number_frequency_simulations > 1:
                 # sweep_simulation -> get frequencies from passed currents
-                sweep_dict["f"] = frequencies[sweep_run]
+                sweep_dict["f"] = frequencies[single_simulation]
                 fundamental_index = np.argmin(np.ma.masked_where(np.array(frequencies) == 0, np.array(frequencies)))
             else:
                 # single_simulation -> get frequency from instance variable
@@ -2153,19 +2179,17 @@ class MagneticComponent:
                 winding_dict = {"turn_losses": [],
                                 "flux": [],
                                 "flux_over_current": [],
-                                # "mag_field_energy": [],
                                 "V": []}
 
-                # Number turns
                 turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows, windings=self.windings,
                                                           winding_number=winding_number)
 
                 winding_dict["number_turns"] = turns
 
                 # Currents
-                if sweep_number > 1:
+                if number_frequency_simulations > 1:
                     # sweep_simulation -> get currents from passed currents
-                    complex_current_phasor = currents[sweep_run][winding_number]
+                    complex_current_phasor = currents[single_simulation][winding_number]
                 else:
                     # single_simulation -> get current from instance variable
                     complex_current_phasor = self.current[winding_number]
@@ -2176,43 +2200,34 @@ class MagneticComponent:
                 # Case litz: Load homogenized results
                 if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
                     winding_dict["winding_losses"] = \
-                    self.load_result(res_name=f"j2H_{winding_number + 1}", last_n=sweep_number)[sweep_run]
+                    self.load_result(res_name=f"j2H_{winding_number + 1}", last_n=number_frequency_simulations)[single_simulation]
                     for turn in range(0, winding_dict["number_turns"]):
                         winding_dict["turn_losses"].append(
                             self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{turn + 1}",
-                                             last_n=sweep_number)[sweep_run])
+                                             last_n=number_frequency_simulations)[single_simulation])
 
                 # Case Solid: Load results, (pitfall for parallel windings results are only stored in one turn!)
                 else:
-                    winding_dict["winding_losses"] = \
-                    self.load_result(res_name=f"j2F_{winding_number + 1}", last_n=sweep_number)[sweep_run]
+                    winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding_number + 1}",
+                                                                      last_n=number_frequency_simulations)[single_simulation]
                     if self.windings[winding_number].parallel:
                         winding_dict["turn_losses"].append(
                             self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{1}",
-                                             last_n=sweep_number)[sweep_run])
+                                             last_n=number_frequency_simulations)[single_simulation])
                     else:
                         for turn in range(0, winding_dict["number_turns"]):
                             winding_dict["turn_losses"].append(
                                 self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{turn + 1}",
-                                                 last_n=sweep_number)[sweep_run])
-
-                # Magnetic Field Energy
-                # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
-                # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
+                                                 last_n=number_frequency_simulations)[single_simulation])
 
                 # Voltage
                 winding_dict["V"].append(
-                    self.load_result(res_name=f"Voltage_{winding_number + 1}", part="real", last_n=sweep_number)[
-                        sweep_run])
+                    self.load_result(res_name=f"Voltage_{winding_number + 1}", part="real", last_n=number_frequency_simulations)[
+                        single_simulation])
                 winding_dict["V"].append(
-                    self.load_result(res_name=f"Voltage_{winding_number + 1}", part="imaginary", last_n=sweep_number)[
-                        sweep_run])
+                    self.load_result(res_name=f"Voltage_{winding_number + 1}", part="imaginary", last_n=number_frequency_simulations)[
+                        single_simulation])
                 complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
-
-                # Inductance
-                # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
-                # Inductance from voltage
 
                 if complex_current_phasor == 0 or sweep_dict["f"] == 0:  # if-statement to avoid div by zero error
                     winding_dict["flux_over_current"] = [0, 0]
@@ -2224,49 +2239,49 @@ class MagneticComponent:
 
                 # Flux
                 winding_dict["flux"].append(
-                    self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", last_n=sweep_number)[sweep_run])
+                    self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", last_n=number_frequency_simulations)[single_simulation])
                 winding_dict["flux"].append(
                     self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", part="imaginary",
-                                     last_n=sweep_number)[sweep_run])
-                # Flux from voltage
-                # winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).real)  # (L*I).real
-                # winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).imag)  # (L*I).imag
+                                     last_n=number_frequency_simulations)[single_simulation])
 
                 # Power
-                # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
-                winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
-                winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
+                # using 'winding_dict["V"][0]' to get first element (real part) of V.
+                # Use winding_dict["I"][0] to avoid typeerror
+                # As FEMMT uses peak pointers, and the power needs to be halfed.
+                # i_rms * u_rms = i_peak / sqrt(2) * u_peak / sqrt(2) = i_peak * u_peak / 2
+                # Note: For DC-values (frequency = 0), RMS value is same as peak value and so, halve is not allowed.
+                if sweep_dict["f"] == 0.0:
+                    # Power calculation for DC values.
+                    winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate()).real
+                    winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate()).imag
+                else:
+                    # Power calculation for all other AC values
+                    winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
+                    winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
                 winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
 
                 sweep_dict[f"winding{winding_number + 1}"] = winding_dict
 
             # Core losses TODO: Choose between Steinmetz or complex core losses
-            sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[
-                sweep_run]
-            sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
+            sweep_dict["core_eddy_losses"] = self.load_result(res_name="CoreEddyCurrentLosses", last_n=number_frequency_simulations)[
+                single_simulation]
+            sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=number_frequency_simulations)[single_simulation]
 
             # Core Part losses
             # If there are multiple core parts, calculate losses for each part individually
             # the core losses are caluclated by summing the eddy and hyst losses
-            if len(self.mesh.plane_surface_core) > 1:
-                sweep_dict["core_parts"] = {}
-                for i in range(0, len(self.mesh.plane_surface_core)):
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"] = {}
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"] = \
-                    self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{i + 1}", last_n=sweep_number)[sweep_run]
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"] = \
-                    self.load_result(res_name=f"core_parts/p_hyst_{i + 1}", last_n=sweep_number)[sweep_run]
-                    # finding the total losses for every core_part
-                    eddy = sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"]
-                    hyst = sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"]
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy + hyst
 
-            # For a single core part, total losses are simply the sum of eddy and hysteresis losses
-            else:
-                # if I have only one core_part
-                sweep_dict["core_parts"] = {}  # parent dictionary is initialized first
-                sweep_dict["core_parts"]["core_part_1"] = {}
-                sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"] = sweep_dict["core_eddy_losses"] + sweep_dict["core_hyst_losses"]
+            sweep_dict["core_parts"] = {}
+            for core_part in range(0, len(self.mesh.plane_surface_core)):
+                sweep_dict["core_parts"][f"core_part_{core_part + 1}"] = {}
+                sweep_dict["core_parts"][f"core_part_{core_part + 1}"]["eddy_losses"] = \
+                self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{core_part + 1}", last_n=number_frequency_simulations)[single_simulation]
+                sweep_dict["core_parts"][f"core_part_{core_part + 1}"]["hyst_losses"] = \
+                self.load_result(res_name=f"core_parts/p_hyst_{core_part + 1}", last_n=number_frequency_simulations)[single_simulation]
+                # finding the total losses for every core_part
+                eddy = sweep_dict["core_parts"][f"core_part_{core_part + 1}"]["eddy_losses"]
+                hyst = sweep_dict["core_parts"][f"core_part_{core_part + 1}"]["hyst_losses"]
+                sweep_dict["core_parts"][f"core_part_{core_part + 1}"][f"total_core_part_{core_part + 1}"] = eddy + hyst
 
             # Sum losses of all windings of one single run
             sweep_dict["all_winding_losses"] = sum(
@@ -2310,24 +2325,49 @@ class MagneticComponent:
         # Core
         log_dict["total_losses"]["eddy_core"] = sum(
             log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
-        # In the total losses calculation, individual core part losses are also accounted for
-        if len(self.mesh.plane_surface_core) > 1:
-            for i in range(len(self.mesh.plane_surface_core)):
-                log_dict["total_losses"][f"total_core_part_{i + 1}"] = sweep_dict["core_parts"][f"core_part_{i + 1}"][
-                    f"total_core_part_{i + 1}"]
-        # If there is only one core part, set its total losses directly
-        if len(self.mesh.plane_surface_core) == 1:
 
-            log_dict["total_losses"]["total_core_part_1"] = sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"]
-
-
-        if isinstance(core_hyst_losses, float) or isinstance(core_hyst_losses, int):
-            log_dict["total_losses"]["hyst_core_fundamental_freq"] = core_hyst_losses
+        if isinstance(core_hyst_losses, List):
+            # overwrite the hysteresis losses for each core part
+            # Note: This generation MUST BE before summing up the total core losses
+            # 1. set all hysteresis losses for all frequencies to zero
+            # 2. write the external given core_hyst_losses to the fundamental frequency
+            for single_simulation in range(0, number_frequency_simulations):
+                if single_simulation == fundamental_index:
+                    for core_part in range(len(self.mesh.plane_surface_core)):
+                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"]["hyst_losses"] = core_hyst_losses[core_part]
+                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][f"total_core_part_{core_part + 1}"] = core_hyst_losses[core_part] + log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"]["eddy_losses"]
+                    log_dict["single_sweeps"][single_simulation]["core_hyst_losses"] = sum(core_hyst_losses)
+                else:
+                    for core_part in range(len(self.mesh.plane_surface_core)):
+                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"]["hyst_losses"] = 0
+                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][f"total_core_part_{core_part + 1}"] = log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"]["eddy_losses"]
+                    log_dict["single_sweeps"][single_simulation]["core_hyst_losses"] = 0
+            log_dict["total_losses"]["hyst_core_fundamental_freq"] = sum(core_hyst_losses)
         elif core_hyst_losses is not None:
             raise ValueError("External core hysteresis losses are given in non-float format")
         else:
             log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index][
                 "core_hyst_losses"]
+
+
+        # In the total losses calculation, individual core part losses are also accounted for
+        for core_part in range(len(self.mesh.plane_surface_core)):
+            log_dict["total_losses"][f"total_core_part_{core_part + 1}"] = 0
+            log_dict["total_losses"][f"total_eddy_core_part_{core_part + 1}"] = 0
+            log_dict["total_losses"][f"total_hyst_core_part_{core_part + 1}"] = 0
+
+        # sweep through all frequency simulations and sum up the core_part_x losses
+        for single_simulation in range(0, number_frequency_simulations):
+            for core_part in range(len(self.mesh.plane_surface_core)):
+                log_dict["total_losses"][f"total_core_part_{core_part + 1}"] += log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                    f"total_core_part_{core_part + 1}"]
+                log_dict["total_losses"][f"total_eddy_core_part_{core_part + 1}"] += \
+                    log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                        f"eddy_losses"]
+                log_dict["total_losses"][f"total_hyst_core_part_{core_part + 1}"] += \
+                    log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                        f"hyst_losses"]
+
 
         # Total losses of inductive component according to single or sweep simulation
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
@@ -2355,7 +2395,7 @@ class MagneticComponent:
 
         # ---- Miscellaneous ----
         log_dict["misc"] = {
-            "core_2daxi_volume": self.calculate_core_volume(), #self.calculate_core_volume(),
+            "core_2daxi_volume": self.calculate_core_volume(),
             "core_2daxi_total_volume": self.calculate_core_volume_with_air(),
             "core_2daxi_weight": core_weight,
             "wire_lengths": self.calculate_wire_lengths(),
@@ -2387,6 +2427,18 @@ class MagneticComponent:
         :rtype: Dict
         """
         with open(self.file_data.e_m_results_log_path, "r") as fd:
+            content = json.loads(fd.read())
+            log = content
+
+        return log
+
+    def read_thermal_log(self) -> Dict:
+        """
+        Read results from electromagnetic simulation
+        :return: Logfile as a dictionary
+        :rtype: Dict
+        """
+        with open(os.path.join(self.file_data.results_folder_path, "results_thermal.json"), "r") as fd:
             content = json.loads(fd.read())
             log = content
 
@@ -2648,7 +2700,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # FEMM [alternative Solver]
-    def femm_reference(self, freq: float, current: float, sign: bool = None, non_visualize: int = 0):
+    def femm_reference(self, freq: float, current: float, sign: bool = None, non_visualize: int = 0, mesh_size: float = 0.0, mesh_size_conductor: float = 0.0):
         """
         Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
         Helpful to validate changes (especially in the Prolog Code).
@@ -2667,6 +2719,9 @@ class MagneticComponent:
         :param freq:
         :param current:
         """
+        automesh = 1 if mesh_size == 0.0 else 0
+        automesh_conductor = 1 if mesh_size_conductor == 0.0 else 0
+
         if os.name == 'nt':
             ff.install_pyfemm_if_missing()
             if not self.femm_is_imported:
@@ -2717,7 +2772,7 @@ class MagneticComponent:
                                     2 * 1000 * self.windings[i].strand_radius)  # type := 5. last argument
                 self.femmt_print(f"Number of strands: {self.windings[i].n_strands}")
                 self.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
-            if self.windings[i].conductor_type == ConductorType.RoundSolid:
+            if self.windings[i].conductor_type == ConductorType.RoundSolid or self.windings[i].conductor_type == ConductorType.RectangularSolid:
                 femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[i].cond_sigma / 1e6, 0, 0, 1, 0, 0, 0, 0, 0)
 
         # == Circuit ==
@@ -2846,11 +2901,32 @@ class MagneticComponent:
 
                     winding_name = 'Winding' + str(num + 1)
                     if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                        femm.mi_setblockprop('Litz', 1, 0, winding_name, 0, num + 2, 1)
+                        femm.mi_setblockprop('Litz', automesh_conductor, mesh_size_conductor, winding_name, 0, num + 2, 1)
                     else:
-                        femm.mi_setblockprop('Copper', 1, 0, winding_name, 0, num + 2, 1)
+                        femm.mi_setblockprop('Copper', automesh_conductor, mesh_size_conductor, winding_name, 0, num + 2, 1)
 
                     femm.mi_clearselected()
+            elif self.windings[num].conductor_type == ConductorType.RectangularSolid:
+                for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
+                    # 0: left_bottom | 1: right_bottom | 2: left_top | 3: right_top | 4: center
+                    left_bottom = self.two_d_axi.p_conductor[num][5 * i]
+                    right_bottom = self.two_d_axi.p_conductor[num][5 * i + 1]
+                    left_top = self.two_d_axi.p_conductor[num][5 * i + 2]
+                    right_top = self.two_d_axi.p_conductor[num][5 * i + 3]
+                    center = self.two_d_axi.p_conductor[num][5 * i + 4]
+                    femm.mi_drawline(left_bottom[0], left_bottom[1], right_bottom[0], right_bottom[1])
+                    femm.mi_drawline(right_bottom[0], right_bottom[1], right_top[0], right_top[1])
+                    femm.mi_drawline(right_top[0], right_top[1], left_top[0], left_top[1])
+                    femm.mi_drawline(left_top[0], left_top[1], left_bottom[0], left_bottom[1])
+                    femm.mi_addblocklabel(center[0], center[1])
+                    femm.mi_selectlabel(center[0], center[1])
+
+                    winding_name = 'Winding' + str(num + 1)
+                    femm.mi_setblockprop('Copper', automesh_conductor, mesh_size_conductor, winding_name, 0, num + 2, 1)
+
+                    femm.mi_clearselected()
+            else:
+                raise Exception(f"FEMM Simulation not possible since ConductorType {self.windings[num].conductor_type} is not implemented")
 
         # Define an "open" boundary condition using the built-in function:
         femm.mi_makeABC()
@@ -2871,23 +2947,23 @@ class MagneticComponent:
         # Label for core
         femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
         femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
-        femm.mi_setblockprop('Ferrite', 1, 0, '<None>', 0, 0, 0)
+        femm.mi_setblockprop('Ferrite', automesh, mesh_size, '<None>', 0, 0, 0)
         femm.mi_clearselected()
 
         # Labels for air
         if self.air_gaps.number == 0:
             femm.mi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
             femm.mi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
-            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
+            femm.mi_setblockprop('Air', automesh, mesh_size, '<None>', 0, 1, 0)
             femm.mi_clearselected()
         else:
             femm.mi_addblocklabel(0.001, 0)
             femm.mi_selectlabel(0.001, 0)
-            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
+            femm.mi_setblockprop('Air', automesh, mesh_size, '<None>', 0, 1, 0)
             femm.mi_clearselected()
         femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
         femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
-        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
+        femm.mi_setblockprop('Air', automesh, mesh_size, '<None>', 0, 1, 0)
         femm.mi_clearselected()
 
         # Now, the finished input geometry can be displayed.
@@ -2967,14 +3043,14 @@ class MagneticComponent:
         femm.mo_clearblock()
 
         # Primary Winding circuit Properties
-        circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
-        log["Primary Current"] = circuit_properties_primary[0]
-        log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
-        log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
-        log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
-                                          circuit_properties_primary[2].imag / circuit_properties_primary[0]]
-        log["Primary Mean Power"] = [0.5 * circuit_properties_primary[1].real * circuit_properties_primary[0],
-                                     0.5 * circuit_properties_primary[1].imag * circuit_properties_primary[0]]
+        #circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
+        #log["Primary Current"] = circuit_properties_primary[0]
+        #log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
+        #log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
+        #log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
+        #                                  circuit_properties_primary[2].imag / circuit_properties_primary[0]]
+        #log["Primary Mean Power"] = [0.5 * circuit_properties_primary[1].real * circuit_properties_primary[0],
+        #                             0.5 * circuit_properties_primary[1].imag * circuit_properties_primary[0]]
         for i in range(len(self.windings)):
             circuit_properties = femm.mo_getcircuitproperties('Winding' + str(i + 1))
             log["Winding" + str(i + 1) + " Current"] = circuit_properties[0]
@@ -3370,23 +3446,21 @@ class MagneticComponent:
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
             core_type = settings["core"]["core_type"]
-            #print(core_type)
             if core_type == CoreType.Single:
                 core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                                window_w=settings["core"]["window_w"],
-                                                                window_h=settings["core"]["window_h"],
-                                                                core_h=settings["core"]["core_h"])
+                                                       window_w=settings["core"]["window_w"],
+                                                       window_h=settings["core"]["window_h"],
+                                                       core_h=settings["core"]["core_h"])
 
             elif core_type == CoreType.Stacked:
                 core_dimensions = StackedCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                                window_w=settings["core"]["window_w"],
-                                                                window_h_bot=settings["core"]["window_h_bot"],
-                                                                window_h_top=settings["core"]["window_h_top"])
-                                                                #ToDo: core_h not implemented yet.
-                                                                #core_h=settings["core"]["core_h"])
+                                                        window_w=settings["core"]["window_w"],
+                                                        window_h_bot=settings["core"]["window_h_bot"],
+                                                        window_h_top=settings["core"]["window_h_top"])
+                                                        # ToDo: core_h not implemented yet.
+                                                        # core_h=settings["core"]["core_h"])
             else:
                 raise ValueError("unknown core_type for decoding from result_log.")
-
 
             if isinstance(settings["core"]["sigma"], List):
                 # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
@@ -3473,7 +3547,3 @@ class MagneticComponent:
             return geo
 
         raise Exception(f"Couldn't extract settings from file {log_file_path}")
-
-
-
-
