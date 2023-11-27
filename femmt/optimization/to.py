@@ -5,6 +5,7 @@ import json
 import datetime
 import gc
 
+import gmsh
 # 3rd party libraries
 import optuna
 import pandas as pd
@@ -199,7 +200,7 @@ class TransformerOptimization:
 
             geo.set_core(core)
 
-            air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
+            air_gaps = femmt.AirGaps(femmt.AirGapMethod.Percent, core)
             air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer)
             geo.set_air_gaps(air_gaps)
 
@@ -253,13 +254,29 @@ class TransformerOptimization:
 
             inductance_dict = geo.get_inductances(I0=1, op_frequency=target_and_fixed_parameters.fundamental_frequency)
 
+            # calculate hysteresis losses
+            geo.mesh.generate_electro_magnetic_mesh()
+            geo.generate_load_litz_approximation_parameters()
+
+            geo.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"],
+                           amplitude_list=center_tapped_study_excitation["hysteresis"]["transformer"][
+                               "current_amplitudes"],
+                           phase_deg_list=center_tapped_study_excitation["hysteresis"]["transformer"][
+                               "current_phases_deg"],
+                           plot_interpolation=False)
+
+            geo.check_model_mqs_condition()
+            geo.write_simulation_parameters_to_pro_files()
+            geo.generate_load_litz_approximation_parameters()
+            geo.simulate()
+            geo.calculate_and_write_log()  # TODO: reuse center tapped
+            [p_hyst] = geo.load_result(res_name="p_hyst")
+
+            # calculate linear losses for the conductor losses
             geo.excitation_sweep(center_tapped_study_excitation["linear_losses"]["frequencies"],
-                                  center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
-                                  center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
-                                  inductance_dict=inductance_dict,) #core_hyst_loss=p_hyst_core_parts)
-
-
-
+                                 center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
+                                 center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
+                                 inductance_dict=inductance_dict, core_hyst_loss=[p_hyst])
             # geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
             #                                      number_primary_coil_turns=primary_coil_turns)
 
@@ -773,51 +790,22 @@ class TransformerOptimization:
         core_inner_diameter = loaded_trial_params["params_core_inner_diameter"]
         window_w = loaded_trial_params["params_window_w"]
         air_gap_transformer = loaded_trial_params["params_air_gap_transformer"]
-        # inner_coil_insulation = trial_params["inner_coil_insulation"]
         iso_left_core = loaded_trial_params["params_iso_left_core"]
 
         primary_litz_wire = loaded_trial_params["params_primary_litz_wire"]
 
         primary_litz_parameters = ff.litz_database()[primary_litz_wire]
-        primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
-
-        # Will always be calculated from the given parameters
-        available_width = window_w - iso_left_core - config.insulations.iso_right_core
-
-        # Re-calculation of top window coil
-        # Theoretically also 0 coil turns possible (number_rows_coil_winding must then be recalculated to avoid neg. values)
-        primary_coil_turns = int(loaded_trial_params["params_primary_coil_turns"])
-        # Note: int() is used to round down.
-        number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
-        window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
-
-        # Maximum coil air gap depends on the maximum window height top
-        air_gap_coil = loaded_trial_params["params_air_gap_coil"]
 
         # suggest categorical
         core_material = Material(loaded_trial_params["params_material"])
         foil_thickness = loaded_trial_params["params_foil_thickness"]
 
-        if config.max_transformer_total_height is not None:
-            # Maximum transformer height
-            window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
-            window_h_bot_min = config.window_h_bot_min_max_list[0]
-            if window_h_bot_min > window_h_bot_max:
-                print(f"{number_rows_coil_winding = }")
-                print(f"{window_h_top = }")
-                raise ValueError(f"{window_h_bot_min = } > {window_h_bot_max = }")
+        window_h = loaded_trial_params["params_window_h"]
 
-            window_h_bot = loaded_trial_params["params_window_h_bot"]
-
-        else:
-            window_h_bot = loaded_trial_params["params_window_h_bot"]
-
-        geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
-                                      working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
+        geo = femmt.MagneticComponent(component_type=femmt.ComponentType.Transformer,
+                                      working_directory=os.path.join(target_and_fixed_parameters.working_directories.fem_working_directory, 'process_1'),
                                       verbosity=femmt.Verbosity.Silent,
                                       simulation_name=f"Single_Case_{loaded_trial_params['number']}")
 
@@ -826,10 +814,12 @@ class TransformerOptimization:
 
         geo.update_mesh_accuracies(mesh_accuracy, mesh_accuracy, mesh_accuracy, mesh_accuracy)
 
-        core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
-                                                           window_h_top=window_h_top, window_h_bot=window_h_bot)
+        core_h = window_h + core_inner_diameter / 2
 
-        core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
+        core_dimensions = femmt.dtos.SingleCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
+                                                           window_h=window_h, core_h=core_h)
+
+        core = femmt.Core(core_type=femmt.CoreType.Single, core_dimensions=core_dimensions,
                           material=core_material, temperature=config.temperature,
                           frequency=target_and_fixed_parameters.fundamental_frequency,
                           permeability_datasource=config.permeability_datasource,
@@ -841,15 +831,12 @@ class TransformerOptimization:
 
         geo.set_core(core)
 
-        air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
-        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_coil,
-                             stacked_position=femmt.StackedPosition.Top)
-        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer,
-                             stacked_position=femmt.StackedPosition.Bot)
+        air_gaps = femmt.AirGaps(femmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer, position_value=50)
         geo.set_air_gaps(air_gaps)
 
         # set_center_tapped_windings() automatically places the condu
-        insulation, coil_window, transformer_window = femmt.functions_topologies.set_center_tapped_windings(
+        insulation, transformer_window = femmt.functions_topologies.set_center_tapped_windings(
             core=core,
 
             # primary litz
@@ -878,14 +865,13 @@ class TransformerOptimization:
 
             # misc
             interleaving_type=CenterTappedInterleavingType(loaded_trial_params['params_interleaving_type']),
-            primary_coil_turns=primary_coil_turns,
             winding_temperature=config.temperature)
 
         geo.set_insulation(insulation)
-        geo.set_winding_windows([coil_window, transformer_window])
+        geo.set_winding_windows([transformer_window])
 
         geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency,
-                         pre_visualize_geometry=show_simulation_results)
+                         pre_visualize_geometry=False)
 
         center_tapped_study_excitation = geo.center_tapped_pre_study(
             time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
@@ -894,8 +880,28 @@ class TransformerOptimization:
                                    target_and_fixed_parameters.current_extracted_2_vec]],
             fft_filter_value_factor=fft_filter_value_factor)
 
-        geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
-                                             number_primary_coil_turns=primary_coil_turns)
+        inductance_dict = geo.get_inductances(I0=1, op_frequency=target_and_fixed_parameters.fundamental_frequency)
+
+        # calculate hysteresis losses
+        geo.mesh.generate_electro_magnetic_mesh()
+        geo.generate_load_litz_approximation_parameters()
+
+        geo.excitation(frequency=center_tapped_study_excitation["hysteresis"]["frequency"], amplitude_list=center_tapped_study_excitation["hysteresis"]["transformer"][
+                       "current_amplitudes"], phase_deg_list=center_tapped_study_excitation["hysteresis"]["transformer"]["current_phases_deg"],
+                       plot_interpolation=False)
+
+        geo.check_model_mqs_condition()
+        geo.write_simulation_parameters_to_pro_files()
+        geo.generate_load_litz_approximation_parameters()
+        geo.simulate()
+        geo.calculate_and_write_log()  # TODO: reuse center tapped
+        [p_hyst] = geo.load_result(res_name="p_hyst")
+
+        # calculate linear losses for the conductor losses
+        geo.excitation_sweep(center_tapped_study_excitation["linear_losses"]["frequencies"],
+                             center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
+                             center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
+                             inductance_dict=inductance_dict, core_hyst_loss=[p_hyst])
 
         return geo
 
