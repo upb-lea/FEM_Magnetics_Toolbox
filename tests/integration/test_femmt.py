@@ -13,7 +13,7 @@ import femmt.examples.basic_transformer_stacked
 import femmt.examples.basic_transformer_stacked_center_tapped
 import femmt.examples.basic_inductor_foil_vertical
 import femmt.examples.basic_transformer_n_winding
-import femmt.examples.advanced_indutor_sweep
+import femmt.examples.advanced_inductor_sweep
 import femmt.examples.basic_transformer_5_windings
 import materialdatabase as mdb
 
