@@ -21,7 +21,8 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
                                 verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     inductor_frequency = 5e5
 

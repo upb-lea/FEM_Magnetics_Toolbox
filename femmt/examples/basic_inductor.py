@@ -83,7 +83,8 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                                 verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     inductor_frequency = 270000
 

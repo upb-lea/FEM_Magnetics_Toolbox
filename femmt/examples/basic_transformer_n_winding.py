@@ -83,7 +83,8 @@ def basic_example_transformer_n_winding(onelab_folder: str = None, show_visual_o
                                 verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.12, window_w=0.09, core_inner_diameter=0.050, core_h=0.2)

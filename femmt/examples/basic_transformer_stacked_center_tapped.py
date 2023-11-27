@@ -82,7 +82,8 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
                                 working_directory=working_directory, verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     core_dimensions = fmt.dtos.StackedCoreDimensions(core_inner_diameter=0.02, window_w=0.015, window_h_top=0.005,
                                                      window_h_bot=0.017)
@@ -98,27 +99,28 @@ def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, s
     geo.set_air_gaps(air_gaps)
 
     # set_center_tapped_windings() automatically places the condu
-    insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
-                                                                                                      primary_turns=14,
-                                                                                                      primary_radius=1.1e-3,
-                                                                                                      primary_number_strands=50,
-                                                                                                      primary_strand_radius=0.00011,
-                                                                                                      secondary_parallel_turns=2,
-                                                                                                      secondary_thickness_foil=1e-3,
-                                                                                                      iso_top_core=0.001,
-                                                                                                      iso_bot_core=0.001,
-                                                                                                      iso_left_core=0.002,
-                                                                                                      iso_right_core=0.001,
-                                                                                                      iso_primary_to_primary=2e-4,
-                                                                                                      iso_secondary_to_secondary=2e-4,
-                                                                                                      iso_primary_to_secondary=4e-4,
-                                                                                                      interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
-                                                                                                      interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
-                                                                                                      primary_coil_turns=3,
-                                                                                                      primary_additional_bobbin=1e-3,
-                                                                                                      winding_temperature=100,
-                                                                                                      bobbin_coil_left=3e-3,
-                                                                                                      center_foil_additional_bobbin=0e-3)
+    insulation, coil_window, transformer_window = fmt.functions_topologies.set_center_tapped_windings(
+        core=core,
+        primary_turns=14,
+        primary_radius=1.1e-3,
+        primary_number_strands=50,
+        primary_strand_radius=0.00011,
+        secondary_parallel_turns=2,
+        secondary_thickness_foil=1e-3,
+        iso_top_core=0.001,
+        iso_bot_core=0.001,
+        iso_left_core=0.002,
+        iso_right_core=0.001,
+        iso_primary_to_primary=2e-4,
+        iso_secondary_to_secondary=2e-4,
+        iso_primary_to_secondary=4e-4,
+        interleaving_type=fmt.CenterTappedInterleavingType.TypeC,
+        interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
+        primary_coil_turns=3,
+        primary_additional_bobbin=1e-3,
+        winding_temperature=100,
+        bobbin_coil_left=3e-3,
+        center_foil_additional_bobbin=0e-3)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([coil_window, transformer_window])

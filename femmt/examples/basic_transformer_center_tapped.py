@@ -81,7 +81,8 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
                                 verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=0.025, window_w=0.02, core_inner_diameter=0.015,
                                                     core_h=0.05)
@@ -95,25 +96,26 @@ def basic_example_transformer_center_tapped(onelab_folder: str = None, show_visu
     geo.set_air_gaps(air_gaps)
 
     # set_center_tapped_windings() automatically places the conductors
-    insulation, winding_window = fmt.functions_topologies.set_center_tapped_windings(core=core,
-                                                                                     primary_turns=12,
-                                                                                     primary_radius=1.1e-3,
-                                                                                     primary_number_strands=50,
-                                                                                     primary_strand_radius=0.00011,
-                                                                                     secondary_parallel_turns=3,
-                                                                                     secondary_thickness_foil=1e-3,
-                                                                                     iso_top_core=0.001,
-                                                                                     iso_bot_core=0.001,
-                                                                                     iso_left_core=0.002,
-                                                                                     iso_right_core=0.001,
-                                                                                     iso_primary_to_primary=1e-4,
-                                                                                     iso_secondary_to_secondary=2e-4,
-                                                                                     iso_primary_to_secondary=5e-4,
-                                                                                     interleaving_type=fmt.CenterTappedInterleavingType.TypeA,
-                                                                                     interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
-                                                                                     primary_additional_bobbin=100,
-                                                                                     winding_temperature=100,
-                                                                                     center_foil_additional_bobbin=0e-3)
+    insulation, winding_window = fmt.functions_topologies.set_center_tapped_windings(
+        core=core,
+        primary_turns=12,
+        primary_radius=1.1e-3,
+        primary_number_strands=50,
+        primary_strand_radius=0.00011,
+        secondary_parallel_turns=3,
+        secondary_thickness_foil=1e-3,
+        iso_top_core=0.001,
+        iso_bot_core=0.001,
+        iso_left_core=0.002,
+        iso_right_core=0.001,
+        iso_primary_to_primary=1e-4,
+        iso_secondary_to_secondary=2e-4,
+        iso_primary_to_secondary=5e-4,
+        interleaving_type=fmt.CenterTappedInterleavingType.TypeA,
+        interleaving_scheme=fmt.InterleavingSchemesFoilLitz.ter_3_4_sec_ter_4_3_sec,
+        primary_additional_bobbin=100,
+        winding_temperature=100,
+        center_foil_additional_bobbin=0e-3)
 
     geo.set_insulation(insulation)
     geo.set_winding_windows([winding_window])
