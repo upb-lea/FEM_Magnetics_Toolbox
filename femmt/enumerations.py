@@ -79,7 +79,7 @@ class AirGapMethod(IntEnum):
     """
     Stacked = 4
     """
-    Two air gaps can be defined with "bot" (center of lower core) and "top" (between backside of upper core and 
+    Two air gaps can be defined with "bot" (center of lower core) and "top" (between backside of upper core and
     stacked core).
     """
 
@@ -110,7 +110,7 @@ class StackedPosition(IntEnum):
 
 
 class WindingType(IntEnum):
-    """Internally used in VirtualWindingWindow class. 
+    """Internally used in VirtualWindingWindow class.
     """
     TwoInterleaved = 1
     """only two winding (transformer) interleaving
@@ -167,7 +167,7 @@ class ConductorArrangement(IntEnum):
     """Turns are drawn in a grid. First drawn in x-direction then in y-direction .
     """
     Hexagonal = 3
-    """Turns are drawn more compact. The turn of the next line slides in the empty space between two 
+    """Turns are drawn more compact. The turn of the next line slides in the empty space between two
     turns of the previous line. First drawn in y-direction then x-direction.
     """
 
@@ -221,7 +221,7 @@ class WrapParaType(IntEnum):
     """
     Interpolate = 2
     """
-    The foils will have a dynamic thickness. The thickness is chosen in such way that the virtual winding window is 
+    The foils will have a dynamic thickness. The thickness is chosen in such way that the virtual winding window is
     fully occupied. The thickness parameter when creating the conductor is irrelevant.
     """
 
