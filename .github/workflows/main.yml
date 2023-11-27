@@ -32,6 +32,8 @@ jobs:
             # code
             pycodestyle femmt/constants.py
             pycodestyle femmt/logparser.py
+            pycodestyle femmt/enumerations.py
+            pycodestyle femmt/dtos.py
           
             # example files
             pycodestyle femmt/examples/advanced_inductor_sweep.py

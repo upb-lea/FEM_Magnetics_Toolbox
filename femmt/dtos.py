@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from femmt.enumerations import *
+from typing import Optional
 
 
 @dataclass
@@ -21,10 +22,10 @@ class StackedCoreDimensions:
 @dataclass
 class ConductorRow:
     number_of_conds_per_winding: int
-    number_of_conds_per_row: int
-    row_height: float
+    number_of_conds_per_row: Optional[int]
+    row_height: Optional[float]
     winding_tag: WindingTag
-    number_of_rows: int
+    number_of_rows: Optional[int]
     additional_bobbin: float
 
 
@@ -43,17 +44,17 @@ class ThreeWindingIsolation:
 
 @dataclass
 class CenterTappedGroup:
-    primary_number_of_rows: int
-    secondary_number_of_rows: int
-    primary_rest: int
-    secondary_rest: int
+    primary_number_of_rows: Optional[int]
+    secondary_number_of_rows: Optional[int]
+    primary_rest: Optional[int]
+    secondary_rest: Optional[int]
     stack: [WindingTag]
 
 
 @dataclass
 class ConductorStack:
     number_of_groups: int
-    number_of_single_rows: int
+    number_of_single_rows: Optional[int]
     order: [int]
 
 
@@ -71,6 +72,7 @@ class WireMaterial:
     thermal_conductivity: float
     volumetric_mass_density: float
 
+
 @dataclass
 class TransformerInductance:
     l_h_conc: float
@@ -79,6 +81,7 @@ class TransformerInductance:
     M: float
     L_1_1: float
     L_2_2: float
+
 
 @dataclass
 class ThreeWindingTransformerInductance:
