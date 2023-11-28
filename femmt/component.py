@@ -46,7 +46,8 @@ class MagneticComponent:
     silent: bool = False
 
     def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-                 verbosity: Verbosity = 2, is_gui: bool = False, simulation_name: Optional[str] = None, wwr_enabled = True):
+                 clean_previous_results: bool = True, verbosity: Verbosity = 2, is_gui: bool = False,
+                 simulation_name: Optional[str] = None, wwr_enabled = True):
         # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
         """
         :param component_type: Available options:
@@ -72,7 +73,8 @@ class MagneticComponent:
         # Create file paths class in order to handle all paths
         self.file_data = FileData(working_directory)
         # Clear result folder structure in case of missing
-        self.file_data.clear_previous_simulation_results()
+        if clean_previous_results:
+            self.file_data.clear_previous_simulation_results()
 
         # Variable to set silent mode
         self.verbosity = verbosity

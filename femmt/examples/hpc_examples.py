@@ -53,8 +53,8 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     :param inductor_frequency: Frequency for the inductor.
     :type inductor_frequency: int
     """ 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None, # Can be set to None since it will be overwritten anyways
-                                verbosity=fmt.Verbosity.ToFile)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,  # Can be set to None since it will be overwritten anyways
+                                clean_previous_results=False, verbosity=fmt.Verbosity.ToFile)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             geos.append(create_parallel_example_inductor(inductor_frequency))
             simulation_parameters.append({
                 "freq": inductor_frequency,
-                "current": [4.5]
+                "current": [4.5*(1+i/10)]
             })
 
         start_time = time.time()
