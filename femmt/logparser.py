@@ -5,28 +5,31 @@ from typing import List, Dict
 from enum import Enum
 from dataclasses import dataclass
 
+
 class SweepTypes(Enum):
     SingleSweep = "single_sweeps"
+
 
 @dataclass
 class WindingData:
     flux: complex
     turns: int
     self_inductance: complex
-    #magnetic_field_energy: complex # Was removed as the magnetic_field_energy is no more part of the result_log
     voltage: complex
     current: complex
     active_power: float
     reactive_power: float
     apparent_power: float
 
+
 @dataclass
 class SweepData:
-    frequency: int # should be float?
+    frequency: float
     core_eddy_losses: float
     core_hyst_losses: float
     winding_losses: float
     windings: List[WindingData]
+
 
 @dataclass
 class FileData:
@@ -38,6 +41,7 @@ class FileData:
     total_core_losses: float
     core_2daxi_total_volume: float
     total_cost: float
+
 
 class FEMMTLogParser:
     """Class to parse the electromagnetic_results_log file created by FEMMT.
@@ -57,11 +61,13 @@ class FEMMTLogParser:
         for name, file_path in file_paths_dict.items():
             if not os.path.isfile(file_path):
                 raise Exception(f"File {file_path} does not exist.")
-        
+
             self.data[name] = self.parse_file(file_path, SweepTypes.SingleSweep)
 
     def plot_frequency_sweep_losses(self, data_names: List[str], loss_parameter: str, plot_label: str = "") -> None:
-        """Example function for a possible sweep plot. Sweeps over the frequency of different simulations from one or multiple files.
+        """
+        Example function for a possible sweep plot. Sweeps over the frequency of different simulations from
+        one or multiple files.
 
         :param data_names: Name of the data (keys of data dict). If the list is empty every key will be taken.
         :param loss_parameter: Name of the variable from SweepData as str which will be set on the y-axis.
@@ -88,8 +94,11 @@ class FEMMTLogParser:
         plt.ylabel(loss_parameter)
         plt.show()
 
-    def plot_frequency_sweep_winding_params(self, data_names: str, winding_number: int, winding_parameter: str, plot_label: str = "") -> None:
-        """Example function for a possible sweep plot. Sweeps over the frequency of different simulations from one or multiple files.
+    def plot_frequency_sweep_winding_params(self, data_names: str, winding_number: int, winding_parameter: str,
+                                            plot_label: str = "") -> None:
+        """
+        Example function for a possible sweep plot. Sweeps over the frequency of different simulations from
+        one or multiple files.
 
         :param data_names: Name of the data (keys of data dict). If the list is empty every key will be taken.
         :type data_names: str
@@ -99,9 +108,6 @@ class FEMMTLogParser:
         :type plot_label: str
         :param winding_parameter:
         :type winding_parameter: str
-
-        :return: None
-        :rtype: None
         """
         if len(data_names) == 0:
             data_names = self.data.keys()
@@ -113,7 +119,7 @@ class FEMMTLogParser:
                     raise Exception(f"Winding number {winding_number} is too high for the data")
                 
                 data_value = getattr(sweep.windings[0], winding_parameter)
-                if type(data_value) == complex:
+                if isinstance(data_value, complex):
                     data_value = abs(data_value)
 
                 freq_data.append([sweep.frequency, data_value])
@@ -133,8 +139,10 @@ class FEMMTLogParser:
 
     @staticmethod
     def get_log_files_from_working_directories(working_directories: List[str]) -> Dict:
-        """ Returns a dict containing the log files for each given working directory together with the name of the directory as key.
-        For every working directory the local path to the log file is working_directory/results/log_electro_magnetic.json
+        """
+        Returns a dict containing the log files for each given working directory together with the name of the
+        directory as key. For every working directory the local path to the log file
+        is working_directory/results/log_electro_magnetic.json
 
         :param working_directories: Working directories.
         :return: Dictionary with the name of the directory as key and the log.json as value.
@@ -191,7 +199,6 @@ class FEMMTLogParser:
                     "flux": FEMMTLogParser.parse_complex(current_winding["flux"]),
                     "turns": current_winding["number_turns"],
                     "self_inductance": FEMMTLogParser.parse_complex(current_winding["self_inductance"]),
-#                    "magnetic_field_energy": FEMMTLogParser.parse_complex(current_winding["mag_field_energy"]), # Was removed as the magnetic_field_energy is no more part of the result_log
                     "voltage": FEMMTLogParser.parse_complex(current_winding["V"]),
                     "current": FEMMTLogParser.parse_complex(current_winding["I"]),
                     "active_power": current_winding["P"],
@@ -227,4 +234,3 @@ class FEMMTLogParser:
         }
 
         return FileData(**total)
-

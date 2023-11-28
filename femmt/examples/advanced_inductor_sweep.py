@@ -4,6 +4,7 @@ import femmt as fmt
 import materialdatabase as mdb
 import os
 
+
 def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
 
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -19,8 +20,9 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
                                 verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
-    # This line is for automated pytest running on github only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    # This line is for automated pytest running on GitHub only. Please ignore this line!
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     inductor_frequency = 5e5
 
@@ -81,18 +83,16 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
     # geo.single_simulation(freq=inductor_frequency, current=[0.01],
     #                       plot_interpolation=True, show_fem_simulation_results=show_visual_outputs)
 
-
     # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
 
     # # 6.b. Excitation Sweep Example
     # # Perform a sweep using more than one frequency
     fs = list(np.linspace(100e3, 500e3, 5))
-    amplitude_list = [[0.01] for x in range(5)]
+    amplitude_list = [[0.01] for _ in range(5)]
     # currents = np.linspace(0.5, 1/30, 10)
     # amplitude_list = [[x] for x in currents]
-    phase_list = [[0] for x in range(5)]
+    phase_list = [[0] for _ in range(5)]
     geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
-
 
 
 if __name__ == "__main__":

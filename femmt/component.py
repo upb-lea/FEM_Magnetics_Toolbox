@@ -52,8 +52,13 @@ class MagneticComponent:
     onelab_folder_path: str = None
     silent: bool = False
 
-    def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
-                 verbosity: Verbosity = 2, is_gui: bool = False, simulation_name: Optional[str] = None):
+
+
+
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
+                 clean_previous_results: bool = True, verbosity: Verbosity = 2, is_gui: bool = False,
+                 simulation_name: Optional[str] = None, wwr_enabled = True):
+        # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
 
         """
         :param component_type: Available options:
@@ -63,8 +68,6 @@ class MagneticComponent:
         :type component_type: ComponentType
         :param working_directory: Sets the working directory
         :type working_directory: string
-        :param silent: True to reduce onelab simulation outputs in command line. False to see full command line output.
-        :type silent: bool
         :param is_gui: Asks at first startup for onelab-path. Distinction between GUI and command line. Defaults to 'False' in command-line-mode.
         :type is_gui: bool
         :param simulation_name: name without any effect. Will just be displayed in the result-log file
@@ -81,7 +84,8 @@ class MagneticComponent:
         # Create file paths class in order to handle all paths
         self.file_data = FileData(working_directory)
         # Clear result folder structure in case of missing
-        self.file_data.clear_previous_simulation_results()
+        if clean_previous_results:
+            self.file_data.clear_previous_simulation_results()
 
         # Variable to set silent mode
         self.verbosity = verbosity
@@ -99,6 +103,8 @@ class MagneticComponent:
             fh.setLevel(logging.INFO)
             self.logger.addHandler(fh)
             self.silent = True
+
+        self.wwr_enabled = wwr_enabled
 
         self.femmt_print(f"\n"
                          f"Initialized a new Magnetic Component of type {component_type.name}\n"
@@ -162,7 +168,9 @@ class MagneticComponent:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # MeshData to store the mesh size for different points
         # Object is added in set_core
-        self.mesh_data = None
+        padding = 1.5
+        global_accuracy = 0.5
+        self.mesh_data = MeshData(global_accuracy, global_accuracy, global_accuracy, global_accuracy, padding, mu_0)
         self.mesh = None
         self.two_d_axi = None
 
@@ -208,6 +216,12 @@ class MagneticComponent:
     def femmt_print(self, text: str):
         if self.verbosity != Verbosity.Silent:
             self.logger.info(text)
+
+    def update_mesh_accuracies(self, mesh_accuracy_core: float, mesh_accuracy_window: float, mesh_accuracy_conductor, mesh_accuracy_air_gaps: float):
+        self.mesh_data.mesh_accuracy_core = mesh_accuracy_core
+        self.mesh_data.mesh_accuracy_window = mesh_accuracy_window
+        self.mesh_data.mesh_accuracy_conductor = mesh_accuracy_conductor
+        self.mesh_data.mesh_accuracy_air_gaps = mesh_accuracy_air_gaps
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -   -  -  -  -  -  -  -  -  -  -  -
     # Thermal simulation
@@ -374,6 +388,9 @@ class MagneticComponent:
         :param skin_mesh_factor: Used in the mesh density, defaults to None
         :type skin_mesh_factor: float, optional
         """
+        # Default values for global_accuracy and padding
+        self.mesh_data.update_spatial_data(self.core.core_inner_diameter, self.core.window_w, self.windings)
+
         # Update mesh data
         self.mesh_data.update_data(frequency, skin_mesh_factor)
 
@@ -385,8 +402,8 @@ class MagneticComponent:
         self.two_d_axi.draw_model()
 
         # Create mesh
-        self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, self.verbosity,
-                         self.logger, None)
+        self.mesh = Mesh(self.two_d_axi, self.windings, self.winding_windows, self.core.correct_outer_leg, self.file_data, self.verbosity,
+                         self.logger, None, self.wwr_enabled)
         # self.mesh = Mesh(self.two_d_axi, self.windings, self.core.correct_outer_leg, self.file_data, None, ff.silent)
 
     def mesh(self, frequency: float = None, skin_mesh_factor: float = None):
@@ -436,7 +453,7 @@ class MagneticComponent:
 
         self.air_gaps = air_gaps
 
-    def set_winding_windows(self, winding_windows: List[WindingWindow], mesh_accuracy: float = 0.5):
+    def set_winding_windows(self, winding_windows: List[WindingWindow]):
         """
         Adds the winding windows to the model. Creates the windings list, which contains the conductors
         from the virtual winding windows but sorted by the winding_number (ascending).
@@ -444,8 +461,6 @@ class MagneticComponent:
 
         :param winding_windows: List of WindingWindow objects
         :type winding_windows: List[WindingWindow]
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
-        :type mesh_accuracy: float
         """
         self.winding_windows = winding_windows
         windings = []
@@ -488,10 +503,6 @@ class MagneticComponent:
                 else:
                     for i in range(0, zeros_to_append):
                         vww.turns.append(0)
-
-        # Default values for global_accuracy and padding
-
-        self.mesh_data = MeshData(mesh_accuracy, 1.5, mu_0, self.core.core_inner_diameter, self.core.window_w, self.windings)
 
 
     def set_core(self, core: Core):
@@ -650,9 +661,9 @@ class MagneticComponent:
             width = 0
 
             if leg_position == AirGapLegPosition.LeftLeg.value:
-                    # left leg
-                    # TODO this is wrong since the air gap is not centered on the y axis
-                    width = core_width - self.core.r_inner
+                # left leg
+                # TODO this is wrong since the air gap is not centered on the y axis
+                width = core_width - self.core.r_inner
             elif leg_position == AirGapLegPosition.CenterLeg.value:
                 # center leg
                 width = inner_leg_width
@@ -705,7 +716,6 @@ class MagneticComponent:
 
             # For single core and more than one core_part, volume for every core part is calculated
 
-
             # core_part_1 is divided into subparts cores
             # # subpart1: bottom left subpart
             subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2
@@ -717,14 +727,13 @@ class MagneticComponent:
             subpart1_2_width = self.core.r_outer
             subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
 
-
             # subpart3: right subpart
             subpart1_3_height = self.core.window_h
             subpart1_3_width = self.core.r_outer
             subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height - (
                         np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
 
-            # subpart4: top mid subpart
+            # subpart4: top mid-subpart
             subpart1_4_height = self.core.core_inner_diameter / 4
             subpart1_4_width = self.core.r_outer
             subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
@@ -760,7 +769,7 @@ class MagneticComponent:
             # For stacked core types, the volume is divided into different core  * parts, each of which is further
             # divided into subparts to calculate the total volume of each core part.
 
-            # core_part_2 : core part between the bottom airgap and subpart_1 of core_part_1
+            # core_part_2 : core part between the bottom air gap and subpart_1 of core_part_1
             core_part_1_height = self.core.window_h_bot / 2 - heights[0] / 2
             core_part_1_width = self.core.core_inner_diameter / 2
             core_part_1_volume = np.pi * core_part_1_width ** 2 * core_part_1_height
@@ -855,8 +864,6 @@ class MagneticComponent:
         return self.calculate_core_volume() * volumetric_mass_density
 
 
-
-
     def get_wire_distances(self) -> List[List[float]]:
         """Helper function which returns the distance (radius) of each conductor to the y-axis
 
@@ -877,15 +884,9 @@ class MagneticComponent:
 
         wire_distance = []
         for num, conductor in enumerate(self.two_d_axi.p_conductor):
-            # If the conductor is of type RectangularSolid, it is represented by 4 points (the corners of the rectangle)
-            if self.windings[num].conductor_type == ConductorType.RectangularSolid:
-                num_points = len(conductor)
-                num_turns = num_points // 4
-                point_increment = 4
-            else:
-                num_points = len(conductor)
-                num_turns = num_points // 5
-                point_increment = 5
+            num_points = len(conductor)
+            num_turns = num_points // 5
+            point_increment = 5
 
             winding_list = []
             for i in range(num_turns):
@@ -893,14 +894,6 @@ class MagneticComponent:
             wire_distance.append(winding_list)
 
         return wire_distance
-
-
-
-
-
-
-
-
 
 
     def calculate_wire_lengths(self) -> List[float]:
@@ -1585,14 +1578,14 @@ class MagneticComponent:
                                            save_png=save_png)
             self.mesh.generate_electro_magnetic_mesh()
 
-            check_model_mqs_condition_already_performerd = False
+            check_model_mqs_condition_already_performed = False
             for count_frequency, value_frequency in enumerate(range(0, len(frequency_list))):
                 self.excitation(frequency=frequency_list[count_frequency],
                                 amplitude_list=current_list_list[count_frequency],
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
-                if value_frequency != 0 and not check_model_mqs_condition_already_performerd:
+                if value_frequency != 0 and not check_model_mqs_condition_already_performed:
                     self.check_model_mqs_condition()
-                    check_model_mqs_condition_already_performerd = True
+                    check_model_mqs_condition_already_performed = True
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1653,7 +1646,8 @@ class MagneticComponent:
         # calculate hysteresis losses
         # use a single simulation
         self.generate_load_litz_approximation_parameters()
-        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes, phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
+        self.excitation(frequency=hyst_frequency, amplitude_list=hyst_loss_amplitudes,
+                        phase_deg_list=hyst_loss_phases_deg, plot_interpolation=False)  # frequency and current
         self.check_model_mqs_condition()
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
@@ -2061,7 +2055,7 @@ class MagneticComponent:
             # l_h = self.M * n
             # self.femmt_print(f"\n"
             #                f"T-ECD (primary side transformed):\n"
-            #                f"[Underdetermined System: 'Transformation Ratio' := 'Turns Ratio']\n"
+            #                f"[Under-determined System: 'Transformation Ratio' := 'Turns Ratio']\n"
             #                f"    - Transformation Ratio: n\n"
             #                f"    - Primary Side Stray Inductance: L_s1\n"
             #                f"    - Secondary Side Stray Inductance: L_s2\n"
@@ -2079,7 +2073,7 @@ class MagneticComponent:
 
             self.femmt_print(f"\n"
                              f"T-ECD (primary side concentrated):\n"
-                             f"[Underdetermined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
+                             f"[Under-determined System: n := M / L_2_2  -->  L_s2 = L_2_2 - M / n = 0]\n"
                              f"    - Transformation Ratio: n\n"
                              f"    - (Primary) Stray Inductance: L_s1\n"
                              f"    - Primary Side Main Inductance: L_h\n"
@@ -3798,7 +3792,7 @@ class MagneticComponent:
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # FEMM [alternative Solver]
-    def femm_reference(self, freq: float, current: float, sign: bool = None, non_visualize: int = 0):
+    def femm_reference(self, freq: float, current: float, sign: bool = None, non_visualize: int = 0, mesh_size: float = 0.0, mesh_size_conductor: float = 0.0):
         """
         Allows reference simulations with the 2D open source electromagnetic FEM tool FEMM.
         Helpful to validate changes (especially in the Prolog Code).
@@ -3817,6 +3811,9 @@ class MagneticComponent:
         :param freq:
         :param current:
         """
+        automesh = 1 if mesh_size == 0.0 else 0
+        automesh_conductor = 1 if mesh_size_conductor == 0.0 else 0
+
         if os.name == 'nt':
             ff.install_pyfemm_if_missing()
             if not self.femm_is_imported:
@@ -3867,7 +3864,7 @@ class MagneticComponent:
                                     2 * 1000 * self.windings[i].strand_radius)  # type := 5. last argument
                 self.femmt_print(f"Number of strands: {self.windings[i].n_strands}")
                 self.femmt_print(f"Diameter of strands in mm: {2 * 1000 * self.windings[i].strand_radius}")
-            if self.windings[i].conductor_type == ConductorType.RoundSolid:
+            if self.windings[i].conductor_type == ConductorType.RoundSolid or self.windings[i].conductor_type == ConductorType.RectangularSolid:
                 femm.mi_addmaterial('Copper', 1, 1, 0, 0, self.windings[i].cond_sigma / 1e6, 0, 0, 1, 0, 0, 0, 0, 0)
 
         # == Circuit ==
@@ -3996,11 +3993,32 @@ class MagneticComponent:
 
                     winding_name = 'Winding' + str(num + 1)
                     if self.windings[num].conductor_type == ConductorType.RoundLitz:
-                        femm.mi_setblockprop('Litz', 1, 0, winding_name, 0, num + 2, 1)
+                        femm.mi_setblockprop('Litz', automesh_conductor, mesh_size_conductor, winding_name, 0, num + 2, 1)
                     else:
-                        femm.mi_setblockprop('Copper', 1, 0, winding_name, 0, num + 2, 1)
+                        femm.mi_setblockprop('Copper', automesh_conductor, mesh_size_conductor, winding_name, 0, num + 2, 1)
 
                     femm.mi_clearselected()
+            elif self.windings[num].conductor_type == ConductorType.RectangularSolid:
+                for i in range(0, int(self.two_d_axi.p_conductor[num].shape[0] / 5)):
+                    # 0: left_bottom | 1: right_bottom | 2: left_top | 3: right_top | 4: center
+                    left_bottom = self.two_d_axi.p_conductor[num][5 * i]
+                    right_bottom = self.two_d_axi.p_conductor[num][5 * i + 1]
+                    left_top = self.two_d_axi.p_conductor[num][5 * i + 2]
+                    right_top = self.two_d_axi.p_conductor[num][5 * i + 3]
+                    center = self.two_d_axi.p_conductor[num][5 * i + 4]
+                    femm.mi_drawline(left_bottom[0], left_bottom[1], right_bottom[0], right_bottom[1])
+                    femm.mi_drawline(right_bottom[0], right_bottom[1], right_top[0], right_top[1])
+                    femm.mi_drawline(right_top[0], right_top[1], left_top[0], left_top[1])
+                    femm.mi_drawline(left_top[0], left_top[1], left_bottom[0], left_bottom[1])
+                    femm.mi_addblocklabel(center[0], center[1])
+                    femm.mi_selectlabel(center[0], center[1])
+
+                    winding_name = 'Winding' + str(num + 1)
+                    femm.mi_setblockprop('Copper', automesh_conductor, mesh_size_conductor, winding_name, 0, num + 2, 1)
+
+                    femm.mi_clearselected()
+            else:
+                raise Exception(f"FEMM Simulation not possible since ConductorType {self.windings[num].conductor_type} is not implemented")
 
         # Define an "open" boundary condition using the built-in function:
         femm.mi_makeABC()
@@ -4021,23 +4039,23 @@ class MagneticComponent:
         # Label for core
         femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
         femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] - 0.001, self.two_d_axi.p_outer[3, 1] - 0.001)
-        femm.mi_setblockprop('Ferrite', 1, 0, '<None>', 0, 0, 0)
+        femm.mi_setblockprop('Ferrite', automesh, mesh_size, '<None>', 0, 0, 0)
         femm.mi_clearselected()
 
         # Labels for air
         if self.air_gaps.number == 0:
             femm.mi_addblocklabel(self.two_d_axi.r_inner - 0.0001, 0)
             femm.mi_selectlabel(self.two_d_axi.r_inner - 0.001, 0)
-            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
+            femm.mi_setblockprop('Air', automesh, mesh_size, '<None>', 0, 1, 0)
             femm.mi_clearselected()
         else:
             femm.mi_addblocklabel(0.001, 0)
             femm.mi_selectlabel(0.001, 0)
-            femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
+            femm.mi_setblockprop('Air', automesh, mesh_size, '<None>', 0, 1, 0)
             femm.mi_clearselected()
         femm.mi_addblocklabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
         femm.mi_selectlabel(self.two_d_axi.p_outer[3, 0] + 0.001, self.two_d_axi.p_outer[3, 1] + 0.001)
-        femm.mi_setblockprop('Air', 1, 0, '<None>', 0, 1, 0)
+        femm.mi_setblockprop('Air', automesh, mesh_size, '<None>', 0, 1, 0)
         femm.mi_clearselected()
 
         # Now, the finished input geometry can be displayed.
@@ -4117,14 +4135,14 @@ class MagneticComponent:
         femm.mo_clearblock()
 
         # Primary Winding circuit Properties
-        circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
-        log["Primary Current"] = circuit_properties_primary[0]
-        log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
-        log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
-        log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
-                                          circuit_properties_primary[2].imag / circuit_properties_primary[0]]
-        log["Primary Mean Power"] = [0.5 * circuit_properties_primary[1].real * circuit_properties_primary[0],
-                                     0.5 * circuit_properties_primary[1].imag * circuit_properties_primary[0]]
+        #circuit_properties_primary = femm.mo_getcircuitproperties('Primary')
+        #log["Primary Current"] = circuit_properties_primary[0]
+        #log["Primary Voltage"] = [circuit_properties_primary[1].real, circuit_properties_primary[1].imag]
+        #log["Primary Flux"] = [circuit_properties_primary[2].real, circuit_properties_primary[2].imag]
+        #log["Primary Self Inductance"] = [circuit_properties_primary[2].real / circuit_properties_primary[0],
+        #                                  circuit_properties_primary[2].imag / circuit_properties_primary[0]]
+        #log["Primary Mean Power"] = [0.5 * circuit_properties_primary[1].real * circuit_properties_primary[0],
+        #                             0.5 * circuit_properties_primary[1].imag * circuit_properties_primary[0]]
         for i in range(len(self.windings)):
             circuit_properties = femm.mo_getcircuitproperties('Winding' + str(i + 1))
             log["Winding" + str(i + 1) + " Current"] = circuit_properties[0]
@@ -4520,23 +4538,21 @@ class MagneticComponent:
 
             settings["core"]["loss_approach"] = LossApproach[settings["core"]["loss_approach"]]
             core_type = settings["core"]["core_type"]
-            #print(core_type)
             if core_type == CoreType.Single:
                 core_dimensions = SingleCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                                window_w=settings["core"]["window_w"],
-                                                                window_h=settings["core"]["window_h"],
-                                                                core_h=settings["core"]["core_h"])
+                                                       window_w=settings["core"]["window_w"],
+                                                       window_h=settings["core"]["window_h"],
+                                                       core_h=settings["core"]["core_h"])
 
             elif core_type == CoreType.Stacked:
                 core_dimensions = StackedCoreDimensions(core_inner_diameter=settings["core"]["core_inner_diameter"],
-                                                                window_w=settings["core"]["window_w"],
-                                                                window_h_bot=settings["core"]["window_h_bot"],
-                                                                window_h_top=settings["core"]["window_h_top"])
-                                                                #ToDo: core_h not implemented yet.
-                                                                #core_h=settings["core"]["core_h"])
+                                                        window_w=settings["core"]["window_w"],
+                                                        window_h_bot=settings["core"]["window_h_bot"],
+                                                        window_h_top=settings["core"]["window_h_top"])
+                                                        # ToDo: core_h not implemented yet.
+                                                        # core_h=settings["core"]["core_h"])
             else:
                 raise ValueError("unknown core_type for decoding from result_log.")
-
 
             if isinstance(settings["core"]["sigma"], List):
                 # in case of sigma is a complex number, it is given as a list and needs to translated to complex.
@@ -4623,7 +4639,3 @@ class MagneticComponent:
             return geo
 
         raise Exception(f"Couldn't extract settings from file {log_file_path}")
-
-
-
-

@@ -1,13 +1,15 @@
 from enum import IntEnum, Enum
 
+
 class Verbosity(IntEnum):
     """State of verbosity
     """
-    # TODO Currently in ToFile the FEMMT console outputs are just supressed not written to a file
+    # TODO Currently in ToFile the FEMMT console outputs are just suppressed not written to a file
     # TODO Add Verbosity for materialdatabase
-    Silent = 1 # No outputs
-    ToConsole = 2 # Outputs to console
-    ToFile = 3 # Outputs to file
+    Silent = 1  # No outputs
+    ToConsole = 2  # Outputs to console
+    ToFile = 3  # Outputs to file
+
 
 class WindingTag(IntEnum):
     """Names of windings
@@ -42,9 +44,9 @@ class WindingWindowSplit(IntEnum):
     """The winding window is split into 2xN/2 virtual winding windows
     """
     NoSplitWithBobbin = 8
-    """Acts like "NoSplit", but takes bobbin geometry instead of core-cond insulation to define the virtual winding window.
     """
-
+    Acts like "NoSplit", but takes bobbin geometry instead of core-cond insulation to define the virtual winding window.
+    """
 
 
 class ComponentType(IntEnum):
@@ -83,7 +85,9 @@ class AirGapMethod(IntEnum):
     """The vertical position needs to be given manually. In metres.
     """
     Stacked = 4
-    """Two air gaps can be defined with "bot" (center of lower core) and "top" (between backside of upper core and stacked core).
+    """
+    Two air gaps can be defined with "bot" (center of lower core) and "top" (between backside of upper core and
+    stacked core).
     """
 
 
@@ -113,7 +117,7 @@ class StackedPosition(IntEnum):
 
 
 class WindingType(IntEnum):
-    """Internally used in VirtualWindingWindow class. 
+    """Internally used in VirtualWindingWindow class.
     """
     TwoInterleaved = 1
     """only two winding (transformer) interleaving
@@ -170,8 +174,8 @@ class ConductorArrangement(IntEnum):
     """Turns are drawn in a grid. First drawn in x-direction then in y-direction .
     """
     Hexagonal = 3
-    """Turns are drawn more compact. The turn of the next line slides in the empty space between two turns of the previous line.
-    First drawn in y-direction then x-direction.
+    """Turns are drawn more compact. The turn of the next line slides in the empty space between two
+    turns of the previous line. First drawn in y-direction then x-direction.
     """
 
 
@@ -182,6 +186,7 @@ class CenterTappedInterleavingType(IntEnum):
     TypeA = 2
     TypeB = 3
     TypeC = 4
+    TypeD = 5
 
 
 class InterleavingSchemesFoilLitz(str, Enum):
@@ -213,15 +218,18 @@ class ConductorType(IntEnum):
 
 
 class WrapParaType(IntEnum):
-    """Sets the wrap para type. Only necessary for a single conductor in a virtual winding window and a FoilVertical winding scheme.
+    """
+    Sets the wrap para type. Only necessary for a single conductor in a
+    virtual winding window and a FoilVertical winding scheme.
     """
     FixedThickness = 1
     """The foils have a fixed thickness given when creating the conductor. The virtual winding window
     may not be fully occupied.
     """
     Interpolate = 2
-    """The foils will have a dynamic thickness. The thickness is chosen in such way that the virtual winding window is fully occupied.
-    The thickness parameter when creating the conductor is irrelevant.
+    """
+    The foils will have a dynamic thickness. The thickness is chosen in such way that the virtual winding window is
+    fully occupied. The thickness parameter when creating the conductor is irrelevant.
     """
 
 
@@ -271,12 +279,14 @@ class MeasurementDataType(str, Enum):
     ComplexPermittivity = "complex_permittivity"
     Steinmetz = "Steinmetz"
 
+
 class MeasurementSetup(str, Enum):
     """Sets the source from where data is taken.
     """
     LEA_MTB = "LEA_MTB"
     LEA_MTB_small_signal = "LEA_MTB_small_signal"
     LEA_LK = "LEA_LK"
+
 
 class Material(str, Enum):
     """

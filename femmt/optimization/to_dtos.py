@@ -9,7 +9,7 @@ from femmt.enumerations import *
 
 
 @dataclass
-class StoInsulation:
+class ToInsulation:
     iso_top_core: float
     iso_bot_core: float
     iso_left_core_min: float
@@ -21,7 +21,7 @@ class StoInsulation:
 
 
 @dataclass
-class StoSingleInputConfig:
+class ToSingleInputConfig:
     """
     Configuration to simulate a stacked transformer.
 
@@ -39,22 +39,20 @@ class StoSingleInputConfig:
     temperature: float
 
     # sweep parameters: geometry and materials
-    primary_coil_turns_min_max_list: list
     material_list: list
     core_inner_diameter_min_max_list: list
     window_w_min_max_list: list
-    window_h_bot_min_max_list: list
+    window_h_min_max_list: list
     primary_litz_wire_list: list
     metal_sheet_thickness_list: list
     interleaving_scheme_list: list
     interleaving_type_list: list
 
     # maximum limitation for transformer total height and core volume
-    max_transformer_total_height: float
     max_core_volume: float
 
     # fix parameters: insulations
-    insulations: StoInsulation
+    insulations: ToInsulation
 
     # misc
     working_directory: str
@@ -94,7 +92,7 @@ class WorkingDirectories:
 
 
 @dataclass
-class StoTargetAndFixedParameters:
+class ToTargetAndFixedParameters:
     """
     Stacked-transformer optimization target and fixed parameters.
     These parameters are calculated from the stacked-transformer input configuration (StoSingleInputConfig).

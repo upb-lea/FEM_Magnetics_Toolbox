@@ -80,7 +80,7 @@ class Conductor:
         self.a_cell = None  # can only be set after the width is determined
         self.conductor_radius = 1  # Revisit
 
-    def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: ConductorArrangement):
+    def set_solid_round_conductor(self, conductor_radius: float, conductor_arrangement: Optional[ConductorArrangement]):
         if self.conductor_is_set:
             raise Exception("Only one conductor can be set for each winding!")
 
@@ -584,10 +584,10 @@ class Insulation:
     core_cond: List[
         float]  # list with size 4x1, with respectively isolation of cond_n -> [top_core, bot_core, left_core, right_core]
 
-    insulation_delta: float
     flag_insulation: bool = True
+    max_aspect_ratio: float
 
-    def __init__(self, flag_insulation: bool = True):
+    def __init__(self, max_aspect_ratio: float = 10, flag_insulation: bool = True):
         """Creates an insulation object.
 
         Sets an insulation_delta value. In order to simplify the drawing of the isolations between core and winding window the isolation rectangles
@@ -596,8 +596,8 @@ class Insulation:
         """
         # Default value for all insulations
         # If the gaps between insulations and core (or windings) are to big/small just change this value
-        self.insulation_delta = 0.00001
         self.flag_insulation = flag_insulation
+        self.max_aspect_ratio = max_aspect_ratio
 
     def set_flag_insulation(self, flag):  # to differentiate between the simulation with and without insulation
         self.flag_insulation = flag
