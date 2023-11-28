@@ -82,6 +82,7 @@ def run_hpc(n_processes: int, models: List[MagneticComponent], simulation_parame
 
         # Update directories for each model
         model.file_data.update_paths(model_working_directory, model_electro_magnetic_directory, strands_coefficients_folder)
+        model.file_data.clear_previous_simulation_results()
 
     # Create pool of workers and apply _hpc to it
     with Pool(processes=n_processes) as pool:
