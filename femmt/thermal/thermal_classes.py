@@ -1,6 +1,7 @@
 # Python standard libraries
 from typing import List, Tuple
 
+
 class ConstraintPro:
     # For boundary constraints, the tuple contains (key, region, value)
     boundary_constraints: List[Tuple[str, str, str]]
@@ -23,6 +24,7 @@ class ConstraintPro:
                 fd.write(ConstraintPro.create_boundary_if_string(bc[0], bc[1], bc[2]))
             fd.write("\t\t}\n\t}\n}")
 
+
 class GroupPro:
     regions: dict
 
@@ -32,7 +34,7 @@ class GroupPro:
     def add_regions(self, more_regions):
         self.regions.update(more_regions)
 
-    def create_file(self, file_path, air_gaps_enabled = False, insulation_enabled = False):
+    def create_file(self, file_path, air_gaps_enabled=False, insulation_enabled=False):
         with open(file_path, "w") as fd:
             fd.write("Group {\n")
             for key, value in self.regions.items():
@@ -48,6 +50,7 @@ class GroupPro:
             fd.write("\tWarm = Region[{core_total, windings_total}];\n")
             fd.write("\tTotal = Region[{Warm, Cold}];\n")
             fd.write("}")
+
 
 class ParametersPro:
     """
@@ -76,6 +79,7 @@ class ParametersPro:
 
                 fd.write(line + "\n")
 
+
 class FunctionPro:
     """
     For creating a function.pro
@@ -89,11 +93,11 @@ class FunctionPro:
 
     @staticmethod
     def dict_as_function_str(name, dct):
-        str = ""
+        dict_as_str = ""
         for key, value in dct.items():
-            str += f"\t{name}[{key}] = {value};\n"
+            dict_as_str += f"\t{name}[{key}] = {value};\n"
 
-        return str
+        return dict_as_str
 
     def add_dicts(self, k, q_vol):
         """
@@ -111,6 +115,7 @@ class FunctionPro:
             fd.write(FunctionPro.dict_as_function_str("qVol", self.q_vol))
             fd.write("}")
 
+
 class PostOperationPro:
     """
     For creating a post_operation.pro
@@ -120,22 +125,24 @@ class PostOperationPro:
     def __init__(self):
         self.statements = []
 
-    def add_on_point_statement(self, field, x, y, format, file_name, point_name, append = False):
+    def add_on_point_statement(self, field, x, y, formatting, file_name, point_name, append=False):
         format_str = ""
-        if format is not None:
-            format_str = f"Format {format}, "
+        if formatting is not None:
+            format_str = f"Format {formatting}, "
 
         append_str = "> " if append else ""
 
-        self.statements.append(f"Print [ {field}, OnPoint {{{x}, {y}, 0}}, {format_str}Name \"{point_name}\", File {append_str}\"{file_name}\" ];")
+        self.statements.append(
+            f"Print [ {field}, OnPoint {{{x}, {y}, 0}}, {format_str}Name \"{point_name}\", File {append_str}\"{file_name}\" ];")
 
-    def add_on_elements_of_statement(self, field, region, file_name, format = None, depth = None, name = None, append = False):
+    def add_on_elements_of_statement(self, field, region, file_name, formatting=None, depth=None,
+                                     name=None, append=False):
         format_str = ""
         depth_str = ""
         name_str = ""
 
-        if format is not None:
-            format_str = f"Format {format}, "
+        if formatting is not None:
+            format_str = f"Format {formatting}, "
 
         if depth is not None:
             depth_str = f"Depth {depth}, "
@@ -145,7 +152,8 @@ class PostOperationPro:
 
         append_str = "> " if append else ""
 
-        self.statements.append(f"Print [ {field}, OnElementsOf {region}, {format_str}{depth_str}{name_str}File {append_str}\"{file_name}\"];")
+        self.statements.append(
+            f"Print [ {field}, OnElementsOf {region}, {format_str}{depth_str}{name_str}File {append_str}\"{file_name}\"];")
 
     def create_file(self, file_path):
         with open(file_path, 'w') as fd:

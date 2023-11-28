@@ -11,7 +11,7 @@ class OptunaFemmtParser:
     @staticmethod
     def parse(frozen_trial: optuna.trial.FrozenTrial) -> ItoSingleResultFile:
 
-         return ItoSingleResultFile(
+        return ItoSingleResultFile(
             case=frozen_trial.number,
             # geometry parameters
             air_gap_top=frozen_trial.user_attrs["air_gap_top"],
@@ -22,7 +22,7 @@ class OptunaFemmtParser:
             n_s_top=frozen_trial.params["n_s_top"],
             n_s_bot=frozen_trial.params["n_s_bot"],
             window_h_top=frozen_trial.params["window_h_top"],
-            window_h_bot = frozen_trial.params["window_h_bot"],
+            window_h_bot=frozen_trial.params["window_h_bot"],
             window_w=frozen_trial.params["window_w"],
             core_material=frozen_trial.params["material"],
             core_inner_diameter=frozen_trial.params["core_inner_diameter"],

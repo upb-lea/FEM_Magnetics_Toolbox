@@ -118,4 +118,3 @@ class ItoSingleResultFile:
     secondary_litz_wire_loss: float
     core_2daxi_total_volume: float
     total_loss: float
-
