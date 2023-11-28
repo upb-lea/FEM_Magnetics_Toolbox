@@ -30,7 +30,7 @@ jobs:
             pip install pycodestyle
             pip install pytest
             cd tests/integration
-            pytest test_lint.py
+            pytest lint.py
             cd ../..
           
             # code
