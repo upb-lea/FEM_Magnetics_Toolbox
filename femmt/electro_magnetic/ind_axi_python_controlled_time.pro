@@ -21,9 +21,8 @@ Flag_Circuit            = Flag_ImposedVoltage;
 NbT = 1;
 //timemax = NbT*T;
 //NbSteps = 10;
-//delta_time = T/NbSteps;
+//delta_t = T/NbSteps;
 //dtResample=0.5
-//delta_time = timemax/NbSteps;
 // ----------------------
 // half inductor with axisymmetry
 // 1 means full cylinder
@@ -286,8 +285,8 @@ Function {
   //Val_EE_1 = Irms * Sqrt[2];
   For n In {1:n_windings}
       //FSinusoidal~{n}[] = F_Cos_wt_p[]{2*Pi*Freq, Phase~{n}}; //Complex_MH[1,0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
-      FSinusoidal~{n}[] = InterpolationLinear[$Time]{ListAlt[TimeList, CurrentList~{n}]};
-      Fct_Src~{n}[] = FSinusoidal~{n}[];
+      Excitation~{n}[] = InterpolationLinear[$Time]{ListAlt[TimeList, CurrentList~{n}]};
+      Fct_Src~{n}[] = Excitation~{n}[];
       Signn~{n} = (Phase~{n}==Pi) ? -1 : 1;
   EndFor
 
@@ -457,7 +456,7 @@ Resolution {
           DeleteFile[StrCat[DirResFields, "j2H_density"]] ;
       EndFor
       InitSolution[A] ;
-      TimeLoopTheta[time0, timemax, delta_time, 1.]{ // Implicit Euler (theta=1)
+      TimeLoopTheta[time0, timemax, delta_t, 1.]{ // Implicit Euler (theta=1)
         If(!Flag_NL)
             Generate[A] ; Solve[A] ;
         Else

@@ -137,7 +137,7 @@ class MagneticComponent:
         self.time = []                          # Defined for time domain simulation
         self.average_currents = []              #Definded for average currents for every winding
         self.rms_currents = []                  #definded for rms currents for every winding
-        self.delta_time = None
+        self.timesteps_per_periode = None
         self.time_period = None
         self.initial_time = None
         self.maxtime = None
@@ -1070,7 +1070,7 @@ class MagneticComponent:
             for num in range(len(self.windings)):
                 self.red_freq[num] = 0
 
-    def excitation_time_domain(self, frequency: float, current_list: List[List[float]], time_list: List[float], time_period: float, initial_time: float, timemax : float, NbSteps: int, delta_time: float, phase_deg_list: List = None, ex_type: str = 'current',
+    def excitation_time_domain(self, frequency: float, current_list: List[List[float]], time_list: List[float], initial_time: float, number_of_periods : int, NbSteps: int, phase_deg_list: List = None, ex_type: str = 'current',
                    plot_interpolation: bool = False, imposed_red_f=0):
         """
          Excites the electromagnetic problem in the time domain with specified current and time settings.
@@ -1116,11 +1116,11 @@ class MagneticComponent:
         self.femmt_print(f"\n---\n"
               f"Excitation: \n"
               f"Frequency: {frequency}\n"
-              f"Time_Period(sec): {time_period}\n"
+              #f"Time_Period(sec): {time_period}\n"
               f"Initial_time(sec): {initial_time}\n"      
-              f"Maximum Time(sec): {timemax}\n"
+              f"Maximum Time(sec): {number_of_periods}\n"
               f"NumberofSteps: {NbSteps}\n"
-              f"delta_time(sec): {delta_time}\n"
+              #f"delta_time(sec): {delta_time}\n"
               f"Current(s): {current_list}\n"
               f"Time(s): {time_list}\n"
               f"Phase(s): {phase_deg_list}\n")
@@ -1133,14 +1133,15 @@ class MagneticComponent:
         if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
             self.core.update_sigma(frequency)
         # Has the user provided a list of phase angles?
-        phase_deg_list = phase_deg_list or []
+        #phase_deg_list = phase_deg_list or []
         # phase_deg_list = np.asarray(phase_deg_list)
         self.initial_time = initial_time
-        self.time_period = time_period
+        self.frequency = frequency
+        self.time_period = 1 / frequency
         #self.time_period = 1 / self.frequency
         self.Nb_steps = NbSteps
-        self.timemax = timemax
-        self.delta_time = delta_time
+        self.timemax = number_of_periods * self.time_period
+        self.timesteps_per_periode = self.timemax / NbSteps
 
         for num in range(len(self.windings)):
 
@@ -1396,7 +1397,7 @@ class MagneticComponent:
             if show_fem_simulation_results:
                 self.visualize()
 
-    def time_domain_simulation(self, freq: float, current: List[List[float]], time: List[float], time_period: float, initial_time: float, timemax : float, NbSteps: int, delta_time: float,  phi_deg: List[float] = None,
+    def time_domain_simulation(self, freq: float, current_periode_vec: List[List[float]], time_periode_vec: List[float], initial_time: float, number_of_periods : int, NbSteps: int,  phi_deg: List[float] = None,
                           plot_interpolation: bool = False, show_fem_simulation_results: bool = True, show_rolling_average: bool = True, rolling_avg_window_size: int = 5, benchmark: bool = False ):
         """
         Start a time_domain  electromagnetic ONELAB simulation.
@@ -1417,9 +1418,8 @@ class MagneticComponent:
             generate_electro_magnetic_mesh_time = time.time() - start_time
 
             start_time = time.time()
-            self.excitation_time_domain(frequency=freq, current_list=current, time_list=time, time_period=time_period,
-                                        initial_time=initial_time, timemax=timemax, NbSteps=NbSteps,
-                                        delta_time=delta_time, phase_deg_list=phi_deg,
+            self.excitation_time_domain(frequency=freq, current_list=current_periode_vec, time_list=time_periode_vec,
+                                        initial_time=initial_time, number_of_periods=number_of_periods, NbSteps=NbSteps, phase_deg_list=phi_deg,
                                         plot_interpolation=plot_interpolation)
 
             self.check_model_mqs_condition()
@@ -1445,9 +1445,9 @@ class MagneticComponent:
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
             self.mesh.generate_electro_magnetic_mesh()
-            self.excitation_time_domain(frequency=freq, current_list=current, time_list=time, time_period=time_period,
-                                        initial_time=initial_time, timemax=timemax, NbSteps=NbSteps,
-                                        delta_time=delta_time, phase_deg_list=phi_deg,
+            self.excitation_time_domain(frequency=freq, current_list=current_periode_vec, time_list=time_periode_vec,
+                                        initial_time=initial_time, number_of_periods=number_of_periods, NbSteps=NbSteps,
+                                        phase_deg_list=phi_deg,
                                         plot_interpolation=plot_interpolation)
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
@@ -2285,7 +2285,7 @@ class MagneticComponent:
             text_file.write(f"time0 = {self.initial_time};\n")
             text_file.write(f"timemax = {self.timemax};\n")
             text_file.write(f"NbSteps = {self.Nb_steps};\n")
-            text_file.write(f"delta_time = {self.delta_time};\n")
+            text_file.write(f"delta_t = {self.timesteps_per_periode};\n")
             time_values_str = ', '.join(map(str, self.time))
             text_file.write(f"TimeList = {{{time_values_str}}};\n") # TimeList is interpolated with current lists in the solver
 
@@ -3005,7 +3005,7 @@ class MagneticComponent:
             Time_domain_data_dict["T"] = self.time_period
             Time_domain_data_dict["Timemax"] = self.timemax
             Time_domain_data_dict["number_of_steps"] = self.Nb_steps
-            Time_domain_data_dict["dt"] = self.delta_time
+            Time_domain_data_dict["dt"] = self.timesteps_per_periode
             log_dict["time_domain_simulation"].append(Time_domain_data_dict)
 
             # time_step_n log
@@ -3515,139 +3515,103 @@ class MagneticComponent:
                         res_name = winding_dat_file.replace('.dat', '')
                         rolling_calculation(res_name, winding_folder_path)
     def calculate_average_files(self):
-        """
-        This function loops through each file in the specified result types directory, calculates the
-        average value of the data over time using the quadrature integral method, and writes this average
-        value to a new file. It handles both the main directory and subdirectories associated with specific
-        windings.
 
-        It performs the following steps:
-        1. Iterates over all specified result types (e.g., "value").
-        2. For each result type, it gathers all .dat files (excluding those already averaged) in the directory.
-        3. Calculates the quadrature integral and average of each file’s data.
-        4. Writes the average value to a new file with an '_average.dat' suffix.
-        5. Repeats the process for all .dat files in the winding-specific subdirectories.
+        """
+        This function finding the average value of all .dat files within the 'value' directory and each 'Winding_n' subdirectory
+        - For each .dat file, the method reads the time steps and corresponding data points.
+        - Computes the average value by dividing the integral by the total duration of the time steps.
+        - Writes the average value to a new file with the same base name as the input file but with an '_average.dat' suffix.
+        - Repeats the same process for all .dat files within each 'Winding_n' subdirectory.
+        - the method also calculates the RMS value and writes it to a new file with an '_rms.dat' suffix.
+        - The output from this method is a set of new files containing the computed average and RMS values. These files are saved in the same directory as the original data files.
         """
 
-        def calculate_quadrature_integral(timesteps, data):
-            """
-            This sub-function calculates the integral of given data over specific timesteps using the quadrature method
-            """
-            func = lambda x: np.interp(x, timesteps, data)
-            return quadrature(func, timesteps[0], timesteps[-1])[0]
-        def calculate_squared_quadrature_integral(timesteps, data):
-            """
-            This sub-function calculates Compute the integral of the square of the provided dataset across the specified timesteps.
-            """
-            func = lambda x: np.interp(x, timesteps, data)**2
-            return quadrature(func, timesteps[0], timesteps[-1])[0]
-
-        def calculate_average(integral, timesteps):
-            """
-            This function calculates the average in general
-            """
-            total_time = timesteps[-1] - timesteps[0]
-            if total_time == 0:
-                raise ValueError("Total time cannot be zero.")
-            return integral / total_time
-
-        def calculate_rms(squared_integral, timesteps):
-            """
-            This function calculates the RMS value in general
-            """
-            total_time = timesteps[-1] - timesteps[0]
-            if total_time == 0:
-                raise ValueError("Total time cannot be zero.")
-
-            mean_square = squared_integral / total_time  # Calculate the mean of the square of the data
-            return np.sqrt(mean_square)  # Take the square root to get RMS value
 
 
-        def calculate_average_time_domain_result(res_name, res_type):
-            """
-            Calculate the average value of a result in time domain simulation.
-            This function reads data from a specified result file, calculates the quadrature integral over time steps,
-            and then computes the average value over the total time period.
-
-            :param res_name: The name of the result parameter to be loaded.
-            :param res_type: The type of the result parameter, either "value" or "circuit".
-            :return: The average value of the result parameter over the time domain.
-            """
-
-            if res_type == "value":
-                res_path = self.file_data.e_m_values_folder_path
-            elif res_type == "circuit":
-                res_path = self.file_data.e_m_circuit_folder_path
-            else:
-                res_path = res_type
-
-            timesteps = []
-            data = []
-            # Reading data from the file
-            with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
-                lines = fd.readlines()
-            # Extracting timesteps and data values from the file
-            for line in lines:
-                line_values = line.split()
-                if len(line_values) == 2:
-                    timesteps.append(float(line_values[0]))
-                    data.append(float(line_values[1]))
-            #finding the integral, and then calculating the average (integral(data)/T)
-            integral = calculate_quadrature_integral(timesteps, data)
-            average = calculate_average(integral, timesteps)
-            #write average files
-            output_filename = os.path.join(res_path, f"{res_name}_average.dat")
-
-
-            #writing files for average values
-            with open(output_filename, 'w') as file:
-                file.write(str(average))
-            #finding the rms only for volate_\d+.dat file, like (voltage_1, voltage_2 and so on)
-            if re.match(r'Voltage_\d+', res_name):
-                integral_squared = calculate_squared_quadrature_integral(timesteps, data)
-                rms = calculate_rms(integral_squared, timesteps)
-                rms_output_filename = os.path.join(res_path, f"{res_name}_rms.dat")
-                with open(rms_output_filename, 'w') as file:
-                    file.write(str(rms))
-
-        # finding the average and RMS of current to use in log function
-            for num in range(len(self.windings)):
-                if self.current[num]:
-                    # sum the currents for every winding
-                    sum_current = sum(self.current[num])
-                    #finding the average of current for every winding and add it to list to use it in write_log function
-                    average = sum_current / len(self.current[num])
-                    self.average_currents.append(average)
-                    #find the rms for current [sqrt(integral(data)²/T]
-                    squared_integral = calculate_squared_quadrature_integral(self.time, self.current[num])
-                    #finding the rms of current for every winding and add it to list to use it in write_log function
-                    I_rms = calculate_rms(squared_integral, self.time)
-                    self.rms_currents.append(I_rms)
-
-
-        result_types = ["value"]  # can be extended as needed in future
-        # Looping through each result type to process the files
+        result_types = ["value"]
         for res_type in result_types:
             res_path = self.file_data.e_m_values_folder_path if res_type == "value" else None
-            # some files are not needed for calculation /for ex. average files), so they are excluded
+            # .dat files inside the 'value' directory
             all_files = os.listdir(res_path)
-            dat_files = [file for file in all_files if file.endswith('.dat') and not file.endswith('_average.dat') and not file.endswith('_rms.dat')]
-
+            dat_files = [file for file in all_files if file.endswith('.dat')]
+            # finding the average of every .dat files inside the 'value' directory
             for dat_file in dat_files:
                 res_name = dat_file.replace('.dat', '')
-                calculate_average_time_domain_result(res_name, res_type)
-            # Processing files in the winding-specific subdirectories, if they exist
+                timesteps = []
+                data = []
+                # Reading data from the file
+                with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
+                    lines = fd.readlines()
+                # Extracting timesteps and data values from the file
+                for line in lines:
+                    line_values = line.split()
+                    if len(line_values) == 2:
+                        timesteps.append(float(line_values[0]))
+                        data.append(float(line_values[1]))
+                # finding the integral, and then calculating the average (integral(data)/T)
+                integral = ff.calculate_quadrature_integral(timesteps, data)
+                average = ff.calculate_average(integral, timesteps)
+                # write average files
+                output_filename = os.path.join(res_path, f"{res_name}_average.dat")
+
+                # writing files for average values
+                with open(output_filename, 'w') as file:
+                    file.write(str(average))
+                # finding the rms only for volate_\d+.dat file, like (voltage_1, voltage_2 and so on)
+                if re.match(r'Voltage_\d+', res_name):
+                    integral_squared = ff.calculate_squared_quadrature_integral(timesteps, data)
+                    rms = ff.calculate_rms(integral_squared, timesteps)
+                    rms_output_filename = os.path.join(res_path, f"{res_name}_rms.dat")
+                    with open(rms_output_filename, 'w') as file:
+                        file.write(str(rms))
+
+            # 'Winding_n' subdirectory (Winding_1, Winding_2, ...etc)
             for index, winding in enumerate(self.windings, start=1):
                 winding_folder_path = os.path.join(res_path, f"winding_{index}")
-                # some files are not needed for calculation /for ex. average files), so they are excluded
+                # .dat files inside 'Winding_n' subdirectory
                 if os.path.isdir(winding_folder_path):
                     winding_files = os.listdir(winding_folder_path)
-                    winding_dat_files = [file for file in winding_files if
-                                         file.endswith('.dat') and not file.endswith('_average.dat')]
-
+                    winding_dat_files = [file for file in winding_files if file.endswith('.dat')]
+                    # finding the average of every .dat files inside 'Winding_n' subdirectory
                     for winding_dat_file in winding_dat_files:
                         res_name = winding_dat_file.replace('.dat', '')
-                        calculate_average_time_domain_result(res_name, winding_folder_path)
+                        timesteps = []
+                        data = []
+                        # Reading data from the file
+                        with open(os.path.join(winding_folder_path, f"{res_name}.dat")) as fd:
+                            lines = fd.readlines()
+                        # Extracting timesteps and data values from the file
+                        for line in lines:
+                            line_values = line.split()
+                            if len(line_values) == 2:
+                                timesteps.append(float(line_values[0]))
+                                data.append(float(line_values[1]))
+                        #finding the integral, and then calculating the average (integral(data)/T)
+                        integral = ff.calculate_quadrature_integral(timesteps, data)
+                        average = ff.calculate_average(integral, timesteps)
+                        #write average files
+                        output_filename = os.path.join(winding_folder_path, f"{res_name}_average.dat")
+                        #writing files for average values
+                        with open(output_filename, 'w') as file:
+                            file.write(str(average))
+
+
+        # finding the average and RMS of current to use in log function
+        for num in range(len(self.windings)):
+            if self.current[num]:
+                # sum the currents for every winding
+                sum_current = sum(self.current[num])
+                #finding the average of current for every winding and add it to list to use it in write_log function
+                average = sum_current / len(self.current[num])
+                self.average_currents.append(average)
+                #find the rms for current [sqrt(integral(data)²/T]
+                squared_integral = ff.calculate_squared_quadrature_integral(self.time, self.current[num])
+                #finding the rms of current for every winding and add it to list to use it in write_log function
+                I_rms = ff.calculate_rms(squared_integral, self.time)
+                self.rms_currents.append(I_rms)
+
+
+
 
     def load_result(self, res_name: str, res_type: str = "value", last_n: int = 1, part:str = "real", position: int = 0, average: bool = False, rms: bool = False):
 

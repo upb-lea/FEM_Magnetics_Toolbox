@@ -107,38 +107,25 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     plt.show()
 
     # Electromagnetic time-domain simulation
-    #  The 'current' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
-    #  The 'time' parameter accepts a single list representing the time steps for the simulation; this is common for all windings.
-    #  The 'time_period' should be always defind as 1/f.. It's introduced to distinguish it from 'timemax'.
+    #  The 'current_periode_vec' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
+    #  The 'time_periode_vec' parameter accepts a single list representing the time steps for the simulation; this is common for all windings.
     #  The 'initial_time' parameter defines the starting point of the simulation in seconds.
-    #  The 'timemax' parameter defines the end point of the simulation in seconds. It can be set to a value like 2*time_period, depending on the user's needs.
+    #  The 'number_of_periods' parameter defines the number of periods or the simulation duration time internally.
     #  The 'NbSteps' parameter represents the total number of time steps within the provided time period for the simulation.
-    #  The 'delta_time' is the interval between each time step in seconds, often defined as T/NbSteps.
-    # Smaller time steps can capture rapid changes in the system with higher precision, but they also increase the computational load.
-    # Note: If 'timemax' is defined as 2 * time_period, it’s essential to adjust 'delta_time' or 'NbSteps' accordingly.
-    # For instance, 'delta_time' can be adapted as (2 * time_period / NbSteps) to maintain the simulation's resolution.
-    # Failing to do so, the solver will automatically double 'NbSteps', potentially increasing the computational load.
     # The 'show_rolling_average' parameter is a boolean that determines whether to plot the rolling average of the simulation results.
-    #
     # The 'rolling_avg_window_size' parameter is an integer that specifies the window size for calculating the rolling average.
     # It defines the number of data points used in each calculation of the average
     # a too-small window size may not effectively smooth out short-term fluctuations.
-    #
-    # The rolling average is particularly useful for analyzing data that contains noise or fluctuations, allowing for a clearer
-    # visualization of the underlying trends or patterns in the data. When 'show_rolling_average' is set to True, the rolling
-    # average is computed for each result file, and plots displaying both the original data and the rolling average are shown
     geo.time_domain_simulation(freq=inductor_frequency,
-                               current=[current_values_list],
-                               time=t_list,
-                               time_period=1 / inductor_frequency, #hide it
+                               current_periode_vec=[current_values_list],
+                               time_periode_vec=t_list,
                                initial_time=0,
-                               timemax=2 / inductor_frequency,
-                               NbSteps=50,
-                               delta_time=(2 / inductor_frequency) / 50, #hide it
+                               number_of_periods=2,
+                               NbSteps=5,
                                plot_interpolation=False,
                                show_fem_simulation_results=True,
-                               show_rolling_average=True,
-                               rolling_avg_window_size=50)
+                               show_rolling_average=False,
+                               rolling_avg_window_size=5)
 
 if __name__ == "__main__":
     basic_example_inductor(show_visual_outputs=True)

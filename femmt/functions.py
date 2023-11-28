@@ -9,6 +9,8 @@ import os
 import time
 import warnings
 from typing import Union, List, Tuple, Dict
+from scipy.integrate import quadrature
+
 
 # Third parry libraries
 import gmsh
@@ -1587,6 +1589,39 @@ def visualize_inductance_matrix(inductance_matrix, silent: bool):
         print(f"\n"
               f"Inductance Matrix: ")
         print(string_to_print)
+
+def calculate_quadrature_integral(timesteps, data):
+        """
+        This function calculates the integral of given data over specific timesteps using the quadrature method
+        """
+        func = lambda x: np.interp(x, timesteps, data)
+        return quadrature(func, timesteps[0], timesteps[-1])[0]
+def calculate_squared_quadrature_integral(timesteps, data):
+        """
+        This function calculates Compute the integral of the square of the provided dataset across the specified timesteps.
+        """
+        func = lambda x: np.interp(x, timesteps, data)**2
+        return quadrature(func, timesteps[0], timesteps[-1])[0]
+
+def calculate_average(integral, timesteps):
+        """
+        This function calculates the average in general
+        """
+        total_time = timesteps[-1] - timesteps[0]
+        if total_time == 0:
+            raise ValueError("Total time cannot be zero.")
+        return integral / total_time
+
+def calculate_rms(squared_integral, timesteps):
+        """
+        This function calculates the RMS value in general
+        """
+        total_time = timesteps[-1] - timesteps[0]
+        if total_time == 0:
+            raise ValueError("Total time cannot be zero.")
+
+        mean_square = squared_integral / total_time  # Calculate the mean of the square of the data
+        return np.sqrt(mean_square)  # Take the square root to get RMS value
 
 
 if __name__ == '__main__':
