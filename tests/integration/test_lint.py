@@ -22,7 +22,8 @@ def test_files():
              '../../femmt/examples/basic_transformer_stacked_center_tapped.py',
              '../../femmt/examples/basic_transformer_three_winding.py',
              '../../tests/integration/test_femmt.py',
-             'test_lint.py'
+             'test_lint.py',
+             '../../femmt/optimization/functions_optimization.py'
              ]
     style = pycodestyle.StyleGuide(config_file='../../tox.ini')
     result = style.check_files(files)
