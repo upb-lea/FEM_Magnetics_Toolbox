@@ -27,7 +27,7 @@ def test_files():
 
              # tests
              'test_femmt.py',
-             'test_lint.py',
+             'lint.py',
 
              # optimization
              '../../femmt/optimization/sto_dtos.py',
