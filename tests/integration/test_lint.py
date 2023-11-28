@@ -7,6 +7,8 @@ def test_files():
              '../../femmt/logparser.py',
              '../../femmt/enumerations.py',
              '../../femmt/dtos.py',
+             '../../femmt/hpc.py',
+             '../../femmt/functions_reluctance.py',
 
              # examples
              '../../femmt/examples/advanced_inductor_sweep.py',
