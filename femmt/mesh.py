@@ -1238,8 +1238,8 @@ class Mesh:
         # gmsh.option.setNumber("Mesh.SaveAll", 1)
         if save_png:
             gmsh.fltk.initialize()
-
             gmsh.write(self.hybrid_color_png_file)  # save png
+            gmsh.fltk.finalize()
 
     def generate_hybrid_mesh(self, color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default,
                              visualize_before: bool = False,
