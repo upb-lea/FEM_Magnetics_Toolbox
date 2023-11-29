@@ -6,6 +6,8 @@ import time
 import matplotlib.pyplot as plt
 import statistics
 
+# File to generate Testexamples
+import Testdata_Generator
 
 # Local libraries
 import femmt as fmt
@@ -18,15 +20,22 @@ The __name__ == __main__ is necessary for the hpc function to work properly. So 
 called please make sure to also include a __name__ == __main__ otherwise errors will be thrown.
 For more information have a look here: https://docs.python.org/2/library/multiprocessing.html#windows
 """
-
+"""
 # ---- Utility functions ----
 def create_parallel_example_transformer() -> fmt.MagneticComponent:
-    """Creates an example model which is used for the parallel execution example. This does implement a simple transformer.
-    """ 
+    #Creates an example model which is used for the parallel execution example. This does implement a simple transformer.
+     
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, verbosity=fmt.Verbosity.ToFile)
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h = 0.1)
     core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom, mdb_verbosity=fmt.Verbosity.Silent)
+                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+                    #permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom, mdb_verbosity=fmt.Verbosity.Silent)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
@@ -46,14 +55,52 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
     geo.set_winding_windows([winding_window])
 
     return geo
+    """
+def create_parallel_example_transformer() -> fmt.MagneticComponent:
+    """#Creates an example model which is used for the parallel execution example. This does implement a simple transformer.
+    """
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, verbosity=fmt.Verbosity.ToFile)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=Testdata_Generator.corediameter(), window_w=Testdata_Generator.windowwidth(), window_h=Testdata_Generator.windowheight(), core_h= Testdata_Generator.coreheight())
+    core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, correct_outer_leg=True,
+                    material=mdb.Material.N95, temperature=Testdata_Generator.temperature(), frequency=Testdata_Generator.frequency(),
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
 
+    geo.set_core(core)
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, Testdata_Generator.airgapheight(),
+                         Testdata_Generator.airgapposition(1))
+
+    geo.set_air_gaps(air_gaps)
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(Testdata_Generator.coreinsulation())
+    insulation.add_winding_insulations(Testdata_Generator.innerwindinginsulation())
+    geo.set_insulation(insulation)
+    winding_window = fmt.WindingWindow(core, insulation)
+    vww = winding_window.split_window(Testdata_Generator.windingwindowsplit())
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1.set_solid_round_conductor(conductor_radius=Testdata_Generator.conductorradius(),
+                                      conductor_arrangement=None)
+    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2.set_solid_round_conductor(conductor_radius=Testdata_Generator.conductorradius(),
+                                      conductor_arrangement=None )
+    vww.set_interleaved_winding(winding1, Testdata_Generator.windingturns(1), winding2, Testdata_Generator.windingturns(2))
+    geo.set_winding_windows([winding_window])
+
+    return geo
+
+"""
 def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: float = 0.0005, air_gap_position: int = 50) -> fmt.MagneticComponent:
-    """Creates an example model which is used for the parallel execution example. This does implement a simple inductor with given inductor_frequency.
+    #Creates an example model which is used for the parallel execution example. This does implement a simple inductor with given inductor_frequency.
 
-    :param inductor_frequency: Frequency for the inductor.
-    :type inductor_frequency: int
-    """ 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,  # Can be set to None since it will be overwritten anyways
+    #:param inductor_frequency: Frequency for the inductor.
+    #:type inductor_frequency: int
+     
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None, # Can be set to None since it will be overwritten anyways
                                 clean_previous_results=False, verbosity=fmt.Verbosity.ToFile)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
@@ -88,6 +135,61 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
 
     return geo
 
+"""
+def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: float = Testdata_Generator.airgapheight(),
+                                     air_gap_position: int = Testdata_Generator.airgapposition(1)) -> fmt.MagneticComponent:
+    # Creates an example model which is used for the parallel execution example. This does implement a simple inductor with given inductor_frequency.
+
+    #:param inductor_frequency: Frequency for the inductor.
+    #:type inductor_frequency: int
+
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,
+                                # Can be set to None since it will be overwritten anyways
+                                verbosity=fmt.Verbosity.ToFile)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=Testdata_Generator.corediameter(),
+                                                    window_w= Testdata_Generator.windowwidth(),
+                                                    window_h= Testdata_Generator.windowheight(),
+                                                    core_h= Testdata_Generator.coreheight())
+    core = fmt.Core(fmt.CoreType.Single, core_dimensions=core_dimensions,
+                    material=mdb.Material.N95, temperature=Testdata_Generator.temperature(), non_linear=False, correct_outer_leg=True,
+                    frequency=Testdata_Generator.frequency(),
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+
+    geo.set_core(core)
+    air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+    # sets first AirGap
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, Testdata_Generator.airgapheight(),
+                         Testdata_Generator.airgapposition(1))
+    # sets second AirGap
+    if Testdata_Generator.get_value("AirGapNumber") == 2 or Testdata_Generator.get_value("AirGapNumber") == 3:
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, Testdata_Generator.airgapheight(),
+                             Testdata_Generator.airgapposition(2))
+    # sets third AirGap
+    if Testdata_Generator.get_value("AirGapNumber") == 3:
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, Testdata_Generator.airgapheight(),
+                             Testdata_Generator.airgapposition(3))
+    geo.set_air_gaps(air_gaps)
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(Testdata_Generator.coreinsulation()[0],Testdata_Generator.coreinsulation()[1],
+                                    Testdata_Generator.coreinsulation()[2],Testdata_Generator.coreinsulation()[3])
+    insulation.add_winding_insulations([[Testdata_Generator.innerwindinginsulation()]])
+    geo.set_insulation(insulation)
+    winding_window = fmt.WindingWindow(core, insulation)
+    vww = winding_window.split_window(Testdata_Generator.windingwindowsplit())
+    winding = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding.set_solid_round_conductor(conductor_radius=Testdata_Generator.conductorradius(), conductor_arrangement=Testdata_Generator.conductorarrangement())
+    #winding.set_litz_round_conductor(conductor_radius=Testdata_Generator.conductorradius(), number_strands=10, strand_radius=0.0001, fill_factor=None, conductor_arrangement=Testdata_Generator.conductorarrangement())
+    winding.parallel = False
+    vww.set_winding(winding, Testdata_Generator.windingturns(1), None)
+    geo.set_winding_windows([winding_window])
+
+    return geo
+
 def custom_hpc(parameters: Dict):
     """Very simple example for a custom hpc_function which can be given to the hpc.run() function.
 
@@ -107,8 +209,8 @@ def custom_hpc(parameters: Dict):
     current = simulation_parameters["current"]
     phi_deg = simulation_parameters["phi_deg"]
 
-    model.create_model(freq=250000, pre_visualize_geometry=False)
-    model.single_simulation(freq=250000, current=current, phi_deg=phi_deg, show_fem_simulation_results=False)
+    model.create_model(freq=Testdata_Generator.frequency(), pre_visualize_geometry=False)
+    model.single_simulation(freq=Testdata_Generator.frequency(), current=current, phi_deg=phi_deg, show_fem_simulation_results=False)
 
 def parallel_simulation_study(averaging_count):
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -132,7 +234,10 @@ def parallel_simulation_study(averaging_count):
     runtimes = []
 
     for frequency, air_gap_height, air_gap_position in product(frequencies, air_gap_heights, air_gap_positions):
-            models.append(create_parallel_example_inductor(frequency, air_gap_height, air_gap_position))
+            if Testdata_Generator.component == 1:
+                models.append(create_parallel_example_transformer())
+            if Testdata_Generator.component == 2:
+                models.append(create_parallel_example_inductor(frequency, air_gap_height, air_gap_position))
             simulation_parameters.append({
                 "freq": frequency,
                 "current": [1]
@@ -154,7 +259,7 @@ def parallel_simulation_study(averaging_count):
 
     print("Process counts:", process_counts)
     print("Runtimes:", runtimes)
-    
+
     plt.plot(process_counts, runtimes, "bo")
     plt.title(f"Parallel study ({len(models)} different models)")
     plt.xlabel("Number of processes")
@@ -165,10 +270,16 @@ def parallel_simulation_study(averaging_count):
     plt.show()
 
 if __name__ == "__main__":
+
+    # ---- Settings for Simulation loop ----
+    my_instance = Testdata_Generator.SharedSimulationNumber()
+    my_instance.set_shared_value(my_instance.get_shared_value() + 1)
     # ---- Choosing the execution ----
-    execution_type = "default_example"
-    # execution_type = "custom_hpc"
-    # execution_type = "parallel_study"
+    if Testdata_Generator.component == 1:
+        execution_type = "custom_hpc"
+    if Testdata_Generator.component == 2:
+        execution_type = "default_example"
+    #execution_type = "parallel_study"
 
     if execution_type == "default_example":
         example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -184,23 +295,31 @@ if __name__ == "__main__":
         number_of_models = 10
         number_of_processes = 5
 
-        inductor_frequency = 270000
+        #inductor_frequency = 270000
+        inductor_frequency = Testdata_Generator.frequency()
 
         geos = []
         simulation_parameters = []
         working_directories = []
         for i in range(number_of_models):
-            geos.append(create_parallel_example_inductor(inductor_frequency))
+            if Testdata_Generator.component == 1:
+                geos.append(create_parallel_example_transformer())
+            if Testdata_Generator.component == 2:
+                geos.append(create_parallel_example_inductor(inductor_frequency))
             simulation_parameters.append({
                 "freq": inductor_frequency,
+                #"current": Testdata_Generator.current()
                 "current": [4.5*(1+i/10)]
             })
 
         start_time = time.time()
+
         fmt.run_hpc(number_of_processes, geos, simulation_parameters, working_directory)
         execution_time = time.time() - start_time
 
         print(f"Execution time: {execution_time}")
+
+
 
     elif execution_type == "custom_hpc":
         example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
@@ -216,15 +335,18 @@ if __name__ == "__main__":
         number_of_models = 8
         number_of_processes = 4
 
-        inductor_frequency = 270000
+        inductor_frequency = Testdata_Generator.frequency()
 
         geos = []
         simulation_parameters = []
         working_directories = []
         for i in range(number_of_models):
-            geos.append(create_parallel_example_inductor(inductor_frequency))
+            if Testdata_Generator.component == 1:
+                geos.append(create_parallel_example_transformer())
+            if Testdata_Generator.component == 2:
+                geos.append(create_parallel_example_inductor(inductor_frequency))
             simulation_parameters.append({
-                "current": [4, 12],
+                "current": Testdata_Generator.current(),
                 "phi_deg": [0, 180]
             })
 
