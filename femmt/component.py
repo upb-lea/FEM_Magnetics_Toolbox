@@ -55,7 +55,7 @@ class MagneticComponent:
 
 
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
+    def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
                  clean_previous_results: bool = True, verbosity: Verbosity = 2, is_gui: bool = False,
                  simulation_name: Optional[str] = None, wwr_enabled = True):
         # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
@@ -2754,32 +2754,51 @@ class MagneticComponent:
             log_dict = {"single_sweeps": [], "total_losses": {}, "simulation_settings": {}}
         elif self.simulation_type == SimulationType.TimeDomain:
             log_dict = {"time_domain_simulation": [], "average_losses": {}, "total_losses": {}, "simulation_settings": {}}
-        def freq_domain_log(sweep_number: int = 1, currents: List = None, frequencies: List = None,
-                                core_hyst_losses: float = None):
 
-            # ---- Print simulation results ----
+        def freq_domain_log(number_frequency_simulations: int = 1, currents: List = None,
+                                    frequencies: List = None,
+                                    core_hyst_losses: List[float] = None):
+
+            """
+            Method reads back the results from the .dat result files created by the ONELAB simulation client and stores
+            them in a result dictionary (JSON log file).
+
+            This file includes:
+             * results (losses, ...) of the simulation
+             * geometry parameters of the given simulation
+             * optional parameters can be added to the log, like the inductance values or the core hysteresis losses from
+                        external simulations
+
+            An inductance dictionary is optional, in case of get_inductance() has been calculated before. In this case,
+            the get_inductance()-results can be given to this function to be included into the result-log.
+
+            In case of separate calculated hysteresis losses (e.g. triangular magnetization current), this value can be
+            given as a parameter and will overwrite the hysteresis-loss result.
+
+            :param number_frequency_simulations: Number of sweep iterations that were done before. For a single simulation sweep_number = 1
+            :type number_frequency_simulations: int
+            :param currents: Current values of the sweep iterations. Not needed for single simulation
+            :type currents: list
+            :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
+            :type frequencies: list
+            :param inductance_dict: Optional inductance dict to include in the logfile.
+            :type inductance_dict: dict
+            :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given, the external value is used in the result-log. Otherwise, the hysteresis losses of the fundamental frequency is used
+            :type core_hyst_losses: List[float]
+            """
 
             fundamental_index = 0  # index of the fundamental frequency
 
-            # create the dictionary used to log the result data
-            #   - 'single_sweeps' contains a list of n=sweep_number sweep_dicts
-            #   - 'total_losses' contains the sums of all sweeps
-            #       - in case complex core parameters are used:
-            #           - hysteresis losses are taken only from fundamental frequency
-            #               - fundamental frequency is the smallest frequency != 0
-            #   - 'simulation_settings' contains the simulation configuration (for more info see encode_settings())
 
-
-
-            for sweep_run in range(0, sweep_number):
+            for single_simulation in range(0, number_frequency_simulations):
                 # create dictionary sweep_dict with 'Winding' as a list of m=n_windings winding_dicts.
                 # Single values, received during one of the n=sweep_number simulations, are added as 'core_eddy_losses' etc.
                 sweep_dict = {}
 
                 # Frequencies
-                if sweep_number > 1:
+                if number_frequency_simulations > 1:
                     # sweep_simulation -> get frequencies from passed currents
-                    sweep_dict["f"] = frequencies[sweep_run]
+                    sweep_dict["f"] = frequencies[single_simulation]
                     fundamental_index = np.argmin(np.ma.masked_where(np.array(frequencies) == 0, np.array(frequencies)))
                 else:
                     # single_simulation -> get frequency from instance variable
@@ -2796,10 +2815,8 @@ class MagneticComponent:
                     winding_dict = {"turn_losses": [],
                                     "flux": [],
                                     "flux_over_current": [],
-                                    # "mag_field_energy": [],
                                     "V": []}
 
-                    # Number turns
                     turns = ff.get_number_of_turns_of_winding(winding_windows=self.winding_windows,
                                                               windings=self.windings,
                                                               winding_number=winding_number)
@@ -2807,9 +2824,9 @@ class MagneticComponent:
                     winding_dict["number_turns"] = turns
 
                     # Currents
-                    if sweep_number > 1:
+                    if number_frequency_simulations > 1:
                         # sweep_simulation -> get currents from passed currents
-                        complex_current_phasor = currents[sweep_run][winding_number]
+                        complex_current_phasor = currents[single_simulation][winding_number]
                     else:
                         # single_simulation -> get current from instance variable
                         complex_current_phasor = self.current[winding_number]
@@ -2820,44 +2837,38 @@ class MagneticComponent:
                     # Case litz: Load homogenized results
                     if self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
                         winding_dict["winding_losses"] = \
-                            self.load_result(res_name=f"j2H_{winding_number + 1}", last_n=sweep_number)[sweep_run]
+                            self.load_result(res_name=f"j2H_{winding_number + 1}", last_n=number_frequency_simulations)[
+                                single_simulation]
                         for turn in range(0, winding_dict["number_turns"]):
                             winding_dict["turn_losses"].append(
                                 self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{turn + 1}",
-                                                 last_n=sweep_number)[sweep_run])
+                                                 last_n=number_frequency_simulations)[single_simulation])
 
                     # Case Solid: Load results, (pitfall for parallel windings results are only stored in one turn!)
                     else:
-                        winding_dict["winding_losses"] = \
-                            self.load_result(res_name=f"j2F_{winding_number + 1}", last_n=sweep_number)[sweep_run]
+                        winding_dict["winding_losses"] = self.load_result(res_name=f"j2F_{winding_number + 1}",
+                                                                          last_n=number_frequency_simulations)[
+                            single_simulation]
                         if self.windings[winding_number].parallel:
                             winding_dict["turn_losses"].append(
                                 self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{1}",
-                                                 last_n=sweep_number)[sweep_run])
+                                                 last_n=number_frequency_simulations)[single_simulation])
                         else:
                             for turn in range(0, winding_dict["number_turns"]):
                                 winding_dict["turn_losses"].append(
                                     self.load_result(res_name=winding_name[winding_number] + f"/Losses_turn_{turn + 1}",
-                                                     last_n=sweep_number)[sweep_run])
-
-                    # Magnetic Field Energy
-                    # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", last_n=sweep_number)[sweep_run])
-                    # winding_dict["mag_field_energy"].append(self.load_result(res_name=f"ME", part="imaginary", last_n=sweep_number)[sweep_run])
+                                                     last_n=number_frequency_simulations)[single_simulation])
 
                     # Voltage
                     winding_dict["V"].append(
-                        self.load_result(res_name=f"Voltage_{winding_number + 1}", part="real", last_n=sweep_number)[
-                            sweep_run])
+                        self.load_result(res_name=f"Voltage_{winding_number + 1}", part="real",
+                                         last_n=number_frequency_simulations)[
+                            single_simulation])
                     winding_dict["V"].append(
                         self.load_result(res_name=f"Voltage_{winding_number + 1}", part="imaginary",
-                                         last_n=sweep_number)[
-                            sweep_run])
+                                         last_n=number_frequency_simulations)[
+                            single_simulation])
                     complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
-
-                    # Inductance
-                    # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="real", last_n=sweep_number)[sweep_run])
-                    # winding_dict["self_inductance"].append(self.load_result(res_name=f"L_{winding + 1}{winding + 1}", part="imaginary", last_n=sweep_number)[sweep_run])
-                    # Inductance from voltage
 
                     if complex_current_phasor == 0 or sweep_dict["f"] == 0:  # if-statement to avoid div by zero error
                         winding_dict["flux_over_current"] = [0, 0]
@@ -2869,49 +2880,55 @@ class MagneticComponent:
 
                     # Flux
                     winding_dict["flux"].append(
-                        self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", last_n=sweep_number)[sweep_run])
+                        self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}",
+                                         last_n=number_frequency_simulations)[single_simulation])
                     winding_dict["flux"].append(
                         self.load_result(res_name=f"Flux_Linkage_{winding_number + 1}", part="imaginary",
-                                         last_n=sweep_number)[sweep_run])
-                    # Flux from voltage
-                    # winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).real)  # (L*I).real
-                    # winding_dict["flux"].append((complex(winding_dict["self_inductance"][-2], winding_dict["self_inductance"][-1])*self.current[winding]).imag)  # (L*I).imag
+                                         last_n=number_frequency_simulations)[single_simulation])
 
                     # Power
-                    # using 'winding_dict["V"][0]' to get first element (real part) of V. Use winding_dict["I"][0] to avoid typeerror
-                    winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
-                    winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
+                    # using 'winding_dict["V"][0]' to get first element (real part) of V.
+                    # Use winding_dict["I"][0] to avoid typeerror
+                    # As FEMMT uses peak pointers, and the power needs to be halfed.
+                    # i_rms * u_rms = i_peak / sqrt(2) * u_peak / sqrt(2) = i_peak * u_peak / 2
+                    # Note: For DC-values (frequency = 0), RMS value is same as peak value and so, halve is not allowed.
+                    if sweep_dict["f"] == 0.0:
+                        # Power calculation for DC values.
+                        winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate()).real
+                        winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate()).imag
+                    else:
+                        # Power calculation for all other AC values
+                        winding_dict["P"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).real
+                        winding_dict["Q"] = (complex_voltage_phasor * complex_current_phasor.conjugate() / 2).imag
                     winding_dict["S"] = np.sqrt(winding_dict["P"] ** 2 + winding_dict["Q"] ** 2)
 
                     sweep_dict[f"winding{winding_number + 1}"] = winding_dict
 
                 # Core losses TODO: Choose between Steinmetz or complex core losses
                 sweep_dict["core_eddy_losses"] = \
-                self.load_result(res_name="CoreEddyCurrentLosses", last_n=sweep_number)[
-                    sweep_run]
-                sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=sweep_number)[sweep_run]
+                self.load_result(res_name="CoreEddyCurrentLosses", last_n=number_frequency_simulations)[
+                    single_simulation]
+                sweep_dict["core_hyst_losses"] = \
+                self.load_result(res_name="p_hyst", last_n=number_frequency_simulations)[single_simulation]
 
                 # Core Part losses
-                if len(self.mesh.plane_surface_core) > 1:
-                    sweep_dict["core_parts"] = {}
-                    for i in range(0, len(self.mesh.plane_surface_core)):
-                        sweep_dict["core_parts"][f"core_part_{i + 1}"] = {}
-                        sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"] = \
-                            self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{i + 1}", last_n=sweep_number)[
-                                sweep_run]
-                        sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"] = \
-                            self.load_result(res_name=f"core_parts/p_hyst_{i + 1}", last_n=sweep_number)[sweep_run]
-                        # finding the total losses for every core_part
-                        eddy = sweep_dict["core_parts"][f"core_part_{i + 1}"]["eddy_losses"]
-                        hyst = sweep_dict["core_parts"][f"core_part_{i + 1}"]["hyst_losses"]
-                        sweep_dict["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy + hyst
+                # If there are multiple core parts, calculate losses for each part individually
+                # the core losses are caluclated by summing the eddy and hyst losses
 
-                else:
-                    # if I have only one core_part
-                    sweep_dict["core_parts"] = {}  # parent dictionary is initialized first
-                    sweep_dict["core_parts"]["core_part_1"] = {}
-                    sweep_dict["core_parts"]["core_part_1"]["total_core_part_1"] = sweep_dict["core_eddy_losses"] + \
-                                                                                   sweep_dict["core_hyst_losses"]
+                sweep_dict["core_parts"] = {}
+                for core_part in range(0, len(self.mesh.plane_surface_core)):
+                    sweep_dict["core_parts"][f"core_part_{core_part + 1}"] = {}
+                    sweep_dict["core_parts"][f"core_part_{core_part + 1}"]["eddy_losses"] = \
+                        self.load_result(res_name=f"core_parts/CoreEddyCurrentLosses_{core_part + 1}",
+                                         last_n=number_frequency_simulations)[single_simulation]
+                    sweep_dict["core_parts"][f"core_part_{core_part + 1}"]["hyst_losses"] = \
+                        self.load_result(res_name=f"core_parts/p_hyst_{core_part + 1}",
+                                         last_n=number_frequency_simulations)[single_simulation]
+                    # finding the total losses for every core_part
+                    eddy = sweep_dict["core_parts"][f"core_part_{core_part + 1}"]["eddy_losses"]
+                    hyst = sweep_dict["core_parts"][f"core_part_{core_part + 1}"]["hyst_losses"]
+                    sweep_dict["core_parts"][f"core_part_{core_part + 1}"][
+                        f"total_core_part_{core_part + 1}"] = eddy + hyst
 
                 # Sum losses of all windings of one single run
                 sweep_dict["all_winding_losses"] = sum(
@@ -2957,24 +2974,57 @@ class MagneticComponent:
             # Core
             log_dict["total_losses"]["eddy_core"] = sum(
                 log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
-            # setting the total for every core_part in total losses dict
-            if len(self.mesh.plane_surface_core) > 1:
-                for i in range(len(self.mesh.plane_surface_core)):
-                    log_dict["total_losses"][f"total_core_part_{i + 1}"] = \
-                    sweep_dict["core_parts"][f"core_part_{i + 1}"][
-                        f"total_core_part_{i + 1}"]
-            if len(self.mesh.plane_surface_core) == 1:  # core and core_part_1 will be the same
 
-                log_dict["total_losses"]["total_core_part_1"] = sweep_dict["core_parts"]["core_part_1"][
-                    "total_core_part_1"]
-
-            if isinstance(core_hyst_losses, float) or isinstance(core_hyst_losses, int):
-                log_dict["total_losses"]["hyst_core_fundamental_freq"] = core_hyst_losses
+            if isinstance(core_hyst_losses, List):
+                # overwrite the hysteresis losses for each core part
+                # Note: This generation MUST BE before summing up the total core losses
+                # 1. set all hysteresis losses for all frequencies to zero
+                # 2. write the external given core_hyst_losses to the fundamental frequency
+                for single_simulation in range(0, number_frequency_simulations):
+                    if single_simulation == fundamental_index:
+                        for core_part in range(len(self.mesh.plane_surface_core)):
+                            log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                                "hyst_losses"] = core_hyst_losses[core_part]
+                            log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                                f"total_core_part_{core_part + 1}"] = core_hyst_losses[core_part] + \
+                                                                      log_dict["single_sweeps"][single_simulation][
+                                                                          "core_parts"][f"core_part_{core_part + 1}"][
+                                                                          "eddy_losses"]
+                        log_dict["single_sweeps"][single_simulation]["core_hyst_losses"] = sum(core_hyst_losses)
+                    else:
+                        for core_part in range(len(self.mesh.plane_surface_core)):
+                            log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                                "hyst_losses"] = 0
+                            log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                                f"total_core_part_{core_part + 1}"] = \
+                            log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                                "eddy_losses"]
+                        log_dict["single_sweeps"][single_simulation]["core_hyst_losses"] = 0
+                log_dict["total_losses"]["hyst_core_fundamental_freq"] = sum(core_hyst_losses)
             elif core_hyst_losses is not None:
                 raise ValueError("External core hysteresis losses are given in non-float format")
             else:
                 log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index][
                     "core_hyst_losses"]
+
+            # In the total losses calculation, individual core part losses are also accounted for
+            for core_part in range(len(self.mesh.plane_surface_core)):
+                log_dict["total_losses"][f"total_core_part_{core_part + 1}"] = 0
+                log_dict["total_losses"][f"total_eddy_core_part_{core_part + 1}"] = 0
+                log_dict["total_losses"][f"total_hyst_core_part_{core_part + 1}"] = 0
+
+            # sweep through all frequency simulations and sum up the core_part_x losses
+            for single_simulation in range(0, number_frequency_simulations):
+                for core_part in range(len(self.mesh.plane_surface_core)):
+                    log_dict["total_losses"][f"total_core_part_{core_part + 1}"] += \
+                    log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                        f"total_core_part_{core_part + 1}"]
+                    log_dict["total_losses"][f"total_eddy_core_part_{core_part + 1}"] += \
+                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                            f"eddy_losses"]
+                    log_dict["total_losses"][f"total_hyst_core_part_{core_part + 1}"] += \
+                        log_dict["single_sweeps"][single_simulation]["core_parts"][f"core_part_{core_part + 1}"][
+                            f"hyst_losses"]
 
             # Total losses of inductive component according to single or sweep simulation
             log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
