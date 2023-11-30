@@ -43,6 +43,7 @@ setup(
 					  'onelab>=1.0',
 					  'scipy>=1.7.2',
                       'pytest',
+                      'pycodestyle',
                       'PyQt5>=5.15.6',
                       'mplcursors>=0.5.1', # TODO Is this necessary?
                       'deepdiff>=6.2.1', # comparing result dicts for pytests
