@@ -10,6 +10,7 @@ def test_files():
              '../../femmt/hpc.py',
              '../../femmt/functions_reluctance.py',
              '../../femmt/functions.py',
+             '../../femmt/functions_drawing.py',
              '../../femmt/mesh.py',
              '../../femmt/component.py',
              '../../femmt/drawing.py',
