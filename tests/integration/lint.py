@@ -45,6 +45,7 @@ def test_files():
              '../../femmt/optimization/to_dtos.py',
              '../../femmt/optimization/ito_dtos.py',
              '../../femmt/optimization/ito_functions.py',
+             '../../femmt/optimization/ito.py',
 
              # thermal files
              '../../femmt/thermal/thermal_functions.py',
