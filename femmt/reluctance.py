@@ -37,14 +37,12 @@ def plot_limitation():
     width_c = 100
     length_c = 0.5
     height1_c = np.linspace(50, 100, 1000)
-    height2_c =100 - height1_c
+    height2_c = 100 - height1_c
     h_l = height2_c / length
     # print(h_l)
-    r_m1 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
-            1 + np.log(np.pi * height1_c / 4 / length_c))))
+    r_m1 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (1 + np.log(np.pi * height1_c / 4 / length_c))))
 
-    r_m2 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
-            1 + np.log(np.pi * height2_c / 4 / length_c))))
+    r_m2 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (1 + np.log(np.pi * height2_c / 4 / length_c))))
 
     r_m = r_m1 + r_m2
     ratio = r_mx / r_m
@@ -123,8 +121,7 @@ def plot_r_basic():
     plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
 
     for i, wid in enumerate(width):
-        r_m = 1 / (mu_0 * (wid / 2 / length + 2 / np.pi * (
-                1 + np.log(np.pi * height / 4 / length))))
+        r_m = 1 / (mu_0 * (wid / 2 / length + 2 / np.pi * (1 + np.log(np.pi * height / 4 / length))))
 
         combined = np.vstack((h_l, r_m)).T
         # print(combined)
@@ -230,7 +227,7 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
 
     if 1 in clone_n_air_gaps:
         data_matrix = np.zeros((len(core_inner_diameter) * len(no_of_turns) * len(air_gap_h) * len(mu_rel) * (
-                len(air_gap_position) + (len(n_air_gaps) - 1) * len(mult_air_gap_type)), 10))
+            len(air_gap_position) + (len(n_air_gaps) - 1) * len(mult_air_gap_type)), 10))
     else:
         data_matrix = np.zeros(
             (len(core_inner_diameter) * len(no_of_turns) * len(air_gap_h) * len(n_air_gaps) * len(
@@ -413,7 +410,7 @@ class MagneticCircuit:
         """
         The function is used to check the correctness of the inputs provided to class MagneticCircuit
         """
-        if not (len(self.core_inner_diameter) and len(self.window_h) and len(self.window_w) and len(self.no_of_turns)
+        if not (len(self.core_inner_diameter) and len(self.window_h) and len(self.window_w) and len(self.no_of_turns) \
                 and len(self.n_air_gaps) and len(self.mu_r_abs)):
             raise Exception("one of the passed arguments are empty list")
         if not all(isinstance(item, int) for item in self.no_of_turns):
@@ -426,12 +423,11 @@ class MagneticCircuit:
             raise Exception("string value wrong for sim_type argument")
         if not (self.component_type == 'inductor' or self.component_type == 'integrated_transformer'):
             raise Exception("string value wrong for component_type argument")
-        #if any(item > 0.0005 for item in self.air_gap_h):
+        # if any(item > 0.0005 for item in self.air_gap_h):
         #    raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
         if self.sim_type == 'single':
             if not (len(self.core_inner_diameter) == 1 and len(self.window_h) == 1 and len(self.window_w) == 1 and len(
-                    self.no_of_turns) == 1
-                    and len(self.n_air_gaps) == 1 and len(self.mu_r_abs) == 1):
+                    self.no_of_turns) == 1 and len(self.n_air_gaps) == 1 and len(self.mu_r_abs) == 1):
                 raise Exception("single sim_type requires single list elements")
             if not (self.n_air_gaps[0] == len(self.air_gap_h) and self.n_air_gaps[0] == len(self.air_gap_position)):
                 raise Exception("No. of elements of air_gap_h and air_gap_position should match n_air_gaps")
@@ -482,8 +478,7 @@ class MagneticCircuit:
         # Section 1: Inner corner
         s_1 = (self.core_inner_diameter / 2) - (self.core_inner_diameter / (2 * np.sqrt(2)))
         self.length[:, 1] = (np.pi / 4) * (s_1 + (self.core_h_middle / 2))
-        self.area[:, 1] = (np.pi / 2) * ((2 * (self.core_inner_diameter / 2) * self.core_h_middle) +
-                                         ((self.core_inner_diameter / 2) ** 2))
+        self.area[:, 1] = (np.pi / 2) * ((2 * (self.core_inner_diameter / 2) * self.core_h_middle) + ((self.core_inner_diameter / 2) ** 2))
 
         # Section 2: Winding window section
         self.length[:, 2] = self.window_w
@@ -492,8 +487,7 @@ class MagneticCircuit:
         # Section 3: Outer corner
         s_2 = np.sqrt(((self.r_inner ** 2) + (self.r_outer ** 2)) / 2) - self.r_inner
         self.length[:, 3] = (np.pi / 4) * (s_2 + (self.core_h_middle / 2))
-        self.area[:, 3] = (np.pi / 2) * ((2 * self.r_inner * self.core_h_middle) +
-                                         ((self.r_outer ** 2) - (self.r_inner ** 2)))
+        self.area[:, 3] = (np.pi / 2) * ((2 * self.r_inner * self.core_h_middle) + ((self.r_outer ** 2) - (self.r_inner ** 2)))
 
         # Section 4: Outer leg
         self.length[:, 4] = self.window_h
@@ -502,8 +496,7 @@ class MagneticCircuit:
         # Reluctance calculation
         self.reluctance[:, 0] = self.length[:, 0] / (mu_0 * self.mu_r_abs * self.area[:, 0])
         self.reluctance[:, 1] = self.length[:, 1] / (mu_0 * self.mu_r_abs * self.area[:, 1])
-        self.reluctance[:, 2] = ((mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * \
-                                np.log((2 * self.r_inner) / self.core_inner_diameter)
+        self.reluctance[:, 2] = ((mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * np.log((2 * self.r_inner) / self.core_inner_diameter)
         self.reluctance[:, 3] = self.length[:, 3] / (mu_0 * self.mu_r_abs * self.area[:, 3])
         self.reluctance[:, 4] = self.length[:, 4] / (mu_0 * self.mu_r_abs * self.area[:, 4])
 
@@ -524,44 +517,35 @@ class MagneticCircuit:
 
         # Single air-gap reluctance calculations
         self.max_percent_position = ((self.window_h[0:self.single_air_gap_len] - (
-                self.air_gap_h[0:self.single_air_gap_len] / 2)) / self.window_h[0:self.single_air_gap_len]) * 100
-        self.min_percent_position = ((self.air_gap_h[0:self.single_air_gap_len] / 2) / self.window_h[
-                                                                                       0:self.single_air_gap_len]) * 100
-        self.abs_position_air_gap = (self.air_gap_position[0:self.single_air_gap_len] * self.window_h[
-                                                                                                0:self.single_air_gap_len]) / 100  # Convert percent position to absolute value position
+            self.air_gap_h[0:self.single_air_gap_len] / 2)) / self.window_h[0:self.single_air_gap_len]) * 100
+        self.min_percent_position = ((self.air_gap_h[0:self.single_air_gap_len] / 2) / self.window_h[0:self.single_air_gap_len]) * 100
+        # Convert percent position to absolute value position
+        self.abs_position_air_gap = (self.air_gap_position[0:self.single_air_gap_len] * self.window_h[0:self.single_air_gap_len]) / 100
         h = np.zeros((len(self.abs_position_air_gap), 2))
 
         h[:, 0] = np.where((self.air_gap_position[0:self.single_air_gap_len] <= self.min_percent_position) | (
-                self.air_gap_position[0:self.single_air_gap_len] >= self.max_percent_position),
-                           self.window_h[0:self.single_air_gap_len] - self.air_gap_h[0:self.single_air_gap_len],
-                           self.abs_position_air_gap - (self.air_gap_h[0:self.single_air_gap_len] / 2))
+            self.air_gap_position[0:self.single_air_gap_len] >= self.max_percent_position),
+            self.window_h[0:self.single_air_gap_len] - self.air_gap_h[0:self.single_air_gap_len],
+            self.abs_position_air_gap - (self.air_gap_h[0:self.single_air_gap_len] / 2))
         h[:, 1] = np.where((self.air_gap_position[0:self.single_air_gap_len] <= self.min_percent_position) | (
-                self.air_gap_position[0:self.single_air_gap_len] >= self.max_percent_position),
-                           0,
-                           self.window_h[0:self.single_air_gap_len] - self.abs_position_air_gap - (
-                                   self.air_gap_h[0:self.single_air_gap_len] / 2))
+            self.air_gap_position[0:self.single_air_gap_len] >= self.max_percent_position), 0,
+            self.window_h[0:self.single_air_gap_len] - self.abs_position_air_gap - (self.air_gap_h[0:self.single_air_gap_len] / 2))
 
-        self.reluctance[0:self.single_air_gap_len, 5] = np.where(h[:, 1] == 0,
-                                                                 fr.r_air_gap_round_inf(
-                                                                     self.air_gap_h[0:self.single_air_gap_len],
-                                                                     self.core_inner_diameter[
-                                                                     0:self.single_air_gap_len], h[:, 0]),
-                                                                 fr.r_air_gap_round_round(
-                                                                     self.air_gap_h[0:self.single_air_gap_len],
-                                                                     self.core_inner_diameter[
-                                                                     0:self.single_air_gap_len], h[:, 0],
-                                                                     h[:, 1]))
+        self.reluctance[0:self.single_air_gap_len, 5] = np.where(h[:, 1] == 0, fr.r_air_gap_round_inf(
+            self.air_gap_h[0:self.single_air_gap_len], self.core_inner_diameter[0:self.single_air_gap_len],
+            h[:, 0]), fr.r_air_gap_round_round(self.air_gap_h[0:self.single_air_gap_len], self.core_inner_diameter[0:self.single_air_gap_len],
+                                               h[:, 0], h[:, 1]))
 
         # Distributed air-gaps reluctance calculations
         h_multiple = np.where(self.mult_air_gap_type[self.single_air_gap_len:self.data_matrix_len] == 1,
                               (self.window_h[self.single_air_gap_len:self.data_matrix_len] - (
-                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * self.air_gap_h[
-                                                                                                      self.single_air_gap_len:self.data_matrix_len])) / (
-                                      (self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] - 1) * 2),
+                               self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * \
+                               self.air_gap_h[self.single_air_gap_len:self.data_matrix_len])) / (
+                                   (self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] - 1) * 2),
                               (self.window_h[self.single_air_gap_len:self.data_matrix_len] - (
-                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * self.air_gap_h[
-                                                                                                      self.single_air_gap_len:self.data_matrix_len])) / (
-                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] + 1))
+                                  self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * \
+                                  self.air_gap_h[self.single_air_gap_len:self.data_matrix_len])) / (
+                                  self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] + 1))
 
         self.reluctance[self.single_air_gap_len:self.data_matrix_len, 5] = np.where(
             self.mult_air_gap_type[self.single_air_gap_len:self.data_matrix_len] == 1,
@@ -585,12 +569,10 @@ class MagneticCircuit:
         """
         # Single air-gap reluctance calculations
         # Convert percent position to absolute position
-        air_gap_position_absolute = (self.air_gap_position[0:self.single_air_gap_len] / 100) * \
-                                     self.window_h[0:self.single_air_gap_len]
+        air_gap_position_absolute = (self.air_gap_position[0:self.single_air_gap_len] / 100) * self.window_h[0:self.single_air_gap_len]
 
         core_height_lower = air_gap_position_absolute - (self.air_gap_h[0:self.single_air_gap_len] / 2)
-        core_height_upper = self.window_h[0:self.single_air_gap_len] - air_gap_position_absolute - \
-                            (self.air_gap_h[0:self.single_air_gap_len] / 2)
+        core_height_upper = self.window_h[0:self.single_air_gap_len] - air_gap_position_absolute - (self.air_gap_h[0:self.single_air_gap_len] / 2)
 
         core_height_lower = np.where(core_height_lower <= 0, 0, core_height_lower)
         core_height_upper = np.where(core_height_upper <= 0, 0, core_height_upper)
@@ -718,11 +700,8 @@ class MagneticCircuit:
                             flag_2 = 1
 
                         if flag_0 == 0 and flag_1 == 0:
-                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
-                                i] / 2) / 2
-                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 -
-                                  self.air_gap_h[
-                                      i + 1] / 2) / 2
+                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[i] / 2) / 2
+                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[i + 1] / 2) / 2
                             print('No corner air gap detected')
                         elif flag_0 == 1 and flag_1 == 0:
                             h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
@@ -731,11 +710,8 @@ class MagneticCircuit:
                                 i] / 2) / 2
                             print('Lower air gap detected')
                         elif flag_0 == 0 and flag_1 == 1:
-                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
-                                i] / 2) / 2
-                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 -
-                                  self.air_gap_h[
-                                      i + 1] / 2) / 2
+                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[i] / 2) / 2
+                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[i + 1] / 2) / 2
                             print('Upper air gap detected')
                         else:
                             h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
@@ -771,10 +747,8 @@ class MagneticCircuit:
         core_height_lower = np.where(core_height_lower <= 0, 0, core_height_lower)
 
         self.reluctance[:, 5] = np.sum(np.where(core_height_upper * core_height_lower == 0,
-                                         fr.r_air_gap_round_inf(self.air_gap_h, self.core_inner_diameter,
-                                                                core_height_lower + core_height_upper)
-                                         , fr.r_air_gap_round_round(self.air_gap_h, self.core_inner_diameter,
-                                                                    core_height_upper, core_height_lower)))
+                                       fr.r_air_gap_round_inf(self.air_gap_h, self.core_inner_diameter, core_height_lower + core_height_upper),
+                                       fr.r_air_gap_round_round(self.air_gap_h, self.core_inner_diameter, core_height_upper, core_height_lower)))
 
     def calculate_inductance(self):
         """
@@ -808,7 +782,6 @@ if __name__ == '__main__':
                           air_gap_h=[0.0005], air_gap_position=[50], mu_r_abs=[3000],
                           mult_air_gap_type=[1, 2],
                           air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
-
 
     # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9],
     #                       n_air_gaps=[1, 3],

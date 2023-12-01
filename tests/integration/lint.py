@@ -17,6 +17,7 @@ def test_files():
              '../../femmt/drawing.py',
              '../../femmt/data.py',
              '../../femmt/model.py',
+             '../../femmt/reluctance.py',
 
              # examples
              '../../femmt/examples/advanced_inductor_sweep.py',
