@@ -47,7 +47,8 @@ def test_files():
              '../../femmt/optimization/ito_functions.py',
 
              # thermal files
-             '../../femmt/thermal/thermal_functions.py']
+             '../../femmt/thermal/thermal_functions.py',
+             '../../femmt/thermal/thermal_simulation.py']
 
     style = pycodestyle.StyleGuide(config_file='../../tox.ini')
     result = style.check_files(files)
