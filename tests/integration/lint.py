@@ -13,6 +13,7 @@ def test_files():
              '../../femmt/mesh.py',
              '../../femmt/component.py',
              '../../femmt/drawing.py',
+             '../../femmt/data.py',
 
              # examples
              '../../femmt/examples/advanced_inductor_sweep.py',
