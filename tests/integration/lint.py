@@ -40,6 +40,7 @@ def test_files():
 
              # optimization
              '../../femmt/optimization/sto_dtos.py',
+             '../../femmt/optimization/sto.py',
              '../../femmt/optimization/optuna_femmt_parser.py',
              '../../femmt/optimization/to.py',
              '../../femmt/optimization/to_dtos.py',

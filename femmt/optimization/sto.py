@@ -149,9 +149,9 @@ class StackedTransformerOptimization:
                                                config.primary_coil_turns_min_max_list[1])
         # Note: int() is used to round down.
         number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - iso_left_core) / available_width) + 1
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - iso_left_core) / available_width) + 1
         window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                    number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         # Maximum coil air gap depends on the maximum window height top
         air_gap_coil = trial.suggest_float("air_gap_coil", 0.1e-3, window_h_top - 0.1e-3)
@@ -282,10 +282,6 @@ class StackedTransformerOptimization:
             geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
                                                  number_primary_coil_turns=primary_coil_turns)
 
-            # geo.stacked_core_center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
-            #                                              [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
-            #                        plot_waveforms=False)
-
             # copy result files to result-file folder
             source_json_file = os.path.join(
                 target_and_fixed_parameters.working_directories.fem_working_directory, f'process_{process_number}',
@@ -312,7 +308,8 @@ class StackedTransformerOptimization:
             trial.set_user_attr("l_s12", geo.L_s12)
 
             # TODO: Normalize on goal values here or the whole generation on min and max? for each feature inbetween 0 and 1
-            # norm_total_loss, norm_difference_l_h, norm_difference_l_s12 = total_loss/10, abs(difference_l_h/config.l_h_target), abs(difference_l_s12/config.l_s12_target)
+            # norm_total_loss, norm_difference_l_h, norm_difference_l_s12 = total_loss/10, #
+            #     abs(difference_l_h/config.l_h_target), abs(difference_l_s12/config.l_s12_target)
             # return norm_total_loss, norm_difference_l_h, norm_difference_l_s12
             if number_objectives == 3:
                 return total_volume, total_loss, 100 * (abs(difference_l_h / config.l_h_target) + abs(
@@ -390,9 +387,7 @@ class StackedTransformerOptimization:
         directions = objective_directions(number_objectives)
 
         func = lambda \
-            trial: femmt.optimization.StackedTransformerOptimization.objective(
-            trial, config,
-            target_and_fixed_parameters, number_objectives, show_geometries)
+            trial: femmt.optimization.StackedTransformerOptimization.objective(trial, config, target_and_fixed_parameters, number_objectives, show_geometries)
 
         study_in_storage = optuna.create_study(study_name=study_name,
                                                storage=storage,
@@ -471,10 +466,8 @@ class StackedTransformerOptimization:
 
         directions = objective_directions(number_objectives)
 
-        func = lambda \
-                trial: femmt.optimization.StackedTransformerOptimization.objective(
-            trial, config,
-            target_and_fixed_parameters, number_objectives, show_geometries, process_number)
+        func = lambda trial: femmt.optimization.StackedTransformerOptimization.objective(trial, config, target_and_fixed_parameters,
+                                                                                         number_objectives, show_geometries, process_number)
 
         study_in_database = optuna.create_study(study_name=study_name,
                                                 storage=storage,
@@ -532,13 +525,13 @@ class StackedTransformerOptimization:
         print(f"{l_s_absolute_error = }")
 
         fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (
-        t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None,
-        t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None),
-                                                     target_names=["volume in m³", "loss in W"])
+            t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None,
+            t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume in m³", "loss in W"])
         fig.update_layout(
             title=f"{study_name}: Filtering l_h_absolute_error = {l_h_absolute_error * 100} %, l_s_absolute_error = {l_s_absolute_error * 100} %.")
         fig.write_html(
-            f"{config.working_directory}/{study_name}_error_lh_{l_h_absolute_error}_error_ls_{l_s_absolute_error}_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
+            f"{config.working_directory}/{study_name}_error_lh_{l_h_absolute_error}_error_ls_{l_s_absolute_error}"
+            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
         fig.show()
 
     @staticmethod
@@ -577,15 +570,14 @@ class StackedTransformerOptimization:
         print(f"start generating Pareto front....")
         fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (
             t.values[0] if error_difference_inductance_sum_percent > t.values[2] else None,
-            t.values[1] if error_difference_inductance_sum_percent > t.values[2] else None),
-                                                     target_names=["volume in m³", "loss in W"])
-        fig.update_layout(
-            title=f"{study_name}: Filtering {error_difference_inductance_sum_percent} % of |err(Ls_12)| + |err(L_h)|")
+            t.values[1] if error_difference_inductance_sum_percent > t.values[2] else None), target_names=["volume in m³", "loss in W"])
+        fig.update_layout(title=f"{study_name}: Filtering {error_difference_inductance_sum_percent} % of |err(Ls_12)| + |err(L_h)|")
         time_stop = datetime.datetime.now()
         print(f"Finished generating Pareto front in time: {time_stop - time_start}")
 
         fig.write_html(
-            f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum_percent}%_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
+            f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum_percent}%_"
+            f"{datetime.datetime.now().isoformat(timespec='minutes')}.html")
         fig.show()
 
     @staticmethod
@@ -605,9 +597,11 @@ class StackedTransformerOptimization:
         :type config: StoSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of
+            the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
+            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         :param storage: storage of the study
         :type storage: str
@@ -650,9 +644,9 @@ class StackedTransformerOptimization:
         primary_coil_turns = loaded_trial_params["primary_coil_turns"]
         # Note: int() is used to round down.
         number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
         window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
@@ -745,11 +739,6 @@ class StackedTransformerOptimization:
 
         geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
-        # geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
-        #                       current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
-        #                       phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
-        #                       show_fem_simulation_results=False)
-
         center_tapped_study_excitation = geo.center_tapped_pre_study(
             time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
                                    target_and_fixed_parameters.current_extracted_1_vec],
@@ -777,9 +766,11 @@ class StackedTransformerOptimization:
         :type config: StoSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of
+            the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
+            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         :param show_simulation_results: visualize the simulation results of the FEM simulation
         :type show_simulation_results: bool
@@ -808,9 +799,9 @@ class StackedTransformerOptimization:
         primary_coil_turns = int(loaded_trial_params["params_primary_coil_turns"])
         # Note: int() is used to round down.
         number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
         window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
@@ -1012,9 +1003,11 @@ class StackedTransformerOptimization:
         :type thermal_config: ThermalConfig
         :param current_waveforms_operating_points: Trial numbers in a list to re-simulate
         :type current_waveforms_operating_points: List[int]
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
+            amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
+            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         """
 
@@ -1048,8 +1041,7 @@ class StackedTransformerOptimization:
                         "total_losses"],
                     f"max_temp_core_{current_waveform.name}": thermal_result_dict["core_parts"]["total"]["max"],
                     f"max_temp_winding_{current_waveform.name}": thermal_result_dict["windings"]["total"]["max"],
-                    "volume": electromagnetoquasistatic_result_dict["misc"]["core_2daxi_total_volume"]
-                    }
+                    "volume": electromagnetoquasistatic_result_dict["misc"]["core_2daxi_total_volume"]}
 
                 simulation_waveforms_dict.update(simulation_waveform_dict)
 
