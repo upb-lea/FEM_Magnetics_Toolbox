@@ -11,6 +11,7 @@ def test_files():
              '../../femmt/functions_reluctance.py',
              '../../femmt/functions.py',
              '../../femmt/mesh.py',
+             '../../femmt/component.py',
 
              # examples
              '../../femmt/examples/advanced_inductor_sweep.py',

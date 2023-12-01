@@ -470,7 +470,7 @@ class AirGaps:
     # Needed for to_dict
     air_gap_settings: List
 
-    def __init__(self, method: AirGapMethod, core: Core):
+    def __init__(self, method: Optional[AirGapMethod], core: Optional[Core]):
         """Creates an AirGaps object. An AirGapMethod needs to be set. This determines the way the air gap will be added to the model.
         In order to calculate the air gap positions the core object needs to be given.
 
