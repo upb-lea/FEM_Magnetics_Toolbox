@@ -11,6 +11,7 @@ def test_files():
              '../../femmt/functions_reluctance.py',
              '../../femmt/functions.py',
              '../../femmt/functions_drawing.py',
+             '../../femmt/functions_model.py',
              '../../femmt/mesh.py',
              '../../femmt/component.py',
              '../../femmt/drawing.py',
