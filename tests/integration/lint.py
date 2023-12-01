@@ -9,6 +9,8 @@ def test_files():
              '../../femmt/dtos.py',
              '../../femmt/hpc.py',
              '../../femmt/functions_reluctance.py',
+             '../../femmt/functions.py',
+             '../../femmt/mesh.py',
 
              # examples
              '../../femmt/examples/advanced_inductor_sweep.py',
