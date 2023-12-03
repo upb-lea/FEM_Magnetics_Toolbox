@@ -34,6 +34,7 @@ def test_files():
              '../../femmt/examples/basic_transformer_stacked_center_tapped.py',
              '../../femmt/examples/basic_transformer_three_winding.py',
              '../../femmt/examples/hpc_examples.py',
+             '../../femmt/examples/inductor_optimization.py',
 
              # tests
              'test_femmt.py',
