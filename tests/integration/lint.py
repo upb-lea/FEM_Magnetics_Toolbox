@@ -34,6 +34,7 @@ def test_files():
              '../../femmt/examples/basic_transformer_stacked_center_tapped.py',
              '../../femmt/examples/basic_transformer_three_winding.py',
              '../../femmt/examples/excitation_sweep_example.py',
+             '../../femmt/examples/femmt_benchmark.py',
              '../../femmt/examples/hpc_examples.py',
              '../../femmt/examples/inductor_optimization.py',
              '../../femmt/examples/ito_brute_force_example.py',
