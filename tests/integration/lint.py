@@ -37,6 +37,7 @@ def test_files():
              '../../femmt/examples/inductor_optimization.py',
              '../../femmt/examples/ito_brute_force_example.py',
              '../../femmt/examples/ito_optuna_example.py',
+             '../../femmt/examples/parameter_sweep_example.py',
 
              # tests
              'test_femmt.py',

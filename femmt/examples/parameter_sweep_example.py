@@ -50,7 +50,7 @@ if sweep == "air_gap_height":
 
         conductor = fmt.Conductor(0, fmt.Conductivity.Copper)
         conductor.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
-                                            fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+                                           fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
         complete.set_winding(conductor, 9, None)
         geo.set_winding_window(winding_window)
 
