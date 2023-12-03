@@ -12,10 +12,10 @@ def test_fft():
     out_test = np.array([out_f_test, out_x_test, out_phi_test])
     assert out.any() == out_test.any()
 
-    out = femmt.fft(example_waveform, plot='no', mode='rad', f0=25000, title='FFT input current', filter_type='harmonic', filter_value_harmonic = 10)
+    out = femmt.fft(example_waveform, plot='no', mode='rad', f0=25000, title='FFT input current', filter_type='harmonic', filter_value_harmonic=10)
     out_f_test = np.array([0., 25013., 50026.])
-    out_x_test = np.array([0.2, 169.6,   0.2])
-    out_phi_test = np.array([3.1, -2.5,  1.8])
+    out_x_test = np.array([0.2, 169.6, 0.2])
+    out_phi_test = np.array([3.1, -2.5, 1.8])
     out_test = np.array([out_f_test, out_x_test, out_phi_test])
     assert out.any() == out_test.any()
 
@@ -32,8 +32,7 @@ def test_find_common_frequencies():
     phase_1 = [10, 20, 30, 40]
     phase_2 = [50, 60, 70, 80, 90]
 
-    out = femmt.find_common_frequencies(frequency_1, amplitude_1, phase_1, frequency_2,
-                                                                   amplitude_2, phase_2)
+    out = femmt.find_common_frequencies(frequency_1, amplitude_1, phase_1, frequency_2, amplitude_2, phase_2)
     common_f = [50, 100, 150, 200]
     common_a = [[1, 5], [2, 6], [3, 7], [4, 9]]
     common_phase = [[10, 50], [20, 60], [30, 70], [40, 90]]
@@ -44,7 +43,6 @@ def test_cost_function_core():
     assert femmt.cost_function_core(1, "ferrite") == 5.5
     assert femmt.cost_function_core(1.25, "ferrite") == 6.875
     assert femmt.cost_function_core(1.25, "nanocristalline") == 28.75
-
 
 
 def test_phases_deg_from_time_current():
@@ -67,15 +65,16 @@ def test_max_value_from_value_vec():
     assert max_2 == 3
 
 
-
 def test_cost_function_winding():
     assert femmt.cost_function_winding([0.1], [femmt.ConductorType.RoundSolid.name]) == [4.7]
     assert femmt.cost_function_winding([0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == [4.7, 35.1]
     single_strand_cross_section_75um = (75e-6 / 2) ** 2 * np.pi
     assert femmt.cost_function_winding([0.1], [femmt.ConductorType.RoundLitz.name], [single_strand_cross_section_75um]) == [pytest.approx(7, rel=1e-3)]
 
+
 def test_cost_function_total():
-    assert femmt.cost_function_total(1.25, "ferrite" ,[0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == pytest.approx(62.233, rel=1e-3)
+    assert femmt.cost_function_total(1.25, "ferrite", [0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == \
+           pytest.approx(62.233, rel=1e-3)
 
 
 def test_reluctance():

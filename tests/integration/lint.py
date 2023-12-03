@@ -48,6 +48,7 @@ def test_files():
              # tests
              'test_femmt.py',
              'lint.py',
+             '../unit/test_femmt_functions.py',
 
              # optimization
              '../../femmt/optimization/sto_dtos.py',
