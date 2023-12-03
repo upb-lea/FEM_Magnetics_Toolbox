@@ -67,7 +67,8 @@ def test_files():
              '../../femmt/thermal/thermal_classes.py',
 
              # GUI
-             '../../gui/femmt_gui.py']
+             '../../gui/femmt_gui.py',
+             '../../gui/onelab_path_popup.py']
 
     style = pycodestyle.StyleGuide(config_file='../../tox.ini')
     result = style.check_files(files)
