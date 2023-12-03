@@ -39,6 +39,7 @@ def test_files():
              '../../femmt/examples/ito_optuna_example.py',
              '../../femmt/examples/parameter_sweep_example.py',
              '../../femmt/examples/reluctance_example.py',
+             '../../femmt/examples/thermal_examples.py',
 
              # tests
              'test_femmt.py',
