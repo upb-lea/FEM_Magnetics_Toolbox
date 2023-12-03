@@ -40,6 +40,7 @@ def test_files():
              '../../femmt/examples/parameter_sweep_example.py',
              '../../femmt/examples/reluctance_example.py',
              '../../femmt/examples/thermal_examples.py',
+             '../../femmt/examples/Three_Winding_Transformer.py',
 
              # tests
              'test_femmt.py',
