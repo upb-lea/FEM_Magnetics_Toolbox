@@ -27,12 +27,12 @@ import matplotlib.pyplot as plt
 
 from gui.onelab_path_popup import OnelabPathDialog
 
-database = mdb.MaterialDatabase()
-
 from femmt.examples.inductor_optimization import AutomatedDesign
 from femmt.examples.inductor_optimization import load_fem_simulation_results, plot_2d, filter_after_fem
 
 import mplcursors
+
+database = mdb.MaterialDatabase()
 
 float_validator = QDoubleValidator()
 int_validator = QIntValidator()
@@ -134,7 +134,7 @@ class MainWindow(QMainWindow):
         }
         "******** menu bar *********"
 
-        ### Actions for Help
+        # ## Actions for Help
         self.action_contribute.triggered.connect(self.webbrowser_contribute)
         self.action_documentation.triggered.connect(self.webbrowser_documentation)
         self.action_report_bug.triggered.connect(self.webbrowser_bugreport)
@@ -521,7 +521,7 @@ class MainWindow(QMainWindow):
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_meas_input)
 
     #  **************************** Menu bar ************************************************************  #
-    ### Help actions ###
+    # ## Help actions ###
     def webbrowser_contribute(self):
         webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox')
 
@@ -589,7 +589,7 @@ class MainWindow(QMainWindow):
             z_value_str = [str(round(z, 3)) for z in z_value]
 
         if inductance_value is not None:
-            l_value_str = [str(round(l, 6)) for l in inductance_value]
+            l_value_str = [str(round(inductance, 6)) for inductance in inductance_value]
 
         x_value_str = [str(round(x, 6)) for x in x_value]
         y_value_str = [str(round(y, 3)) for y in y_value]
@@ -654,7 +654,7 @@ class MainWindow(QMainWindow):
             param matplotlib_widget: To plot volume vs loss in reluctance models tab
 
         """
-        #########################################   {DESIGN PARAMETERS}   #################################################
+        # ########################################   {DESIGN PARAMETERS}   #################################################
 
         goal_inductance = comma_str_to_point_float(
             self.aut_goal_inductance_val_lineEdit.text())  # Automated design-Reluctacne model-Goal Inductance
@@ -829,7 +829,7 @@ class MainWindow(QMainWindow):
             param matplotlib_widget: To plot volume vs loss in FEM simulations tab
 
         """
-        ###########################################   {FEM_SIMULATION}   ##################################################
+        # ##########################################   {FEM_SIMULATION}   ##################################################
 
         # Run FEM simulation of "self.data_matrix_fem"
         self.ad.fem_simulation()
@@ -991,7 +991,8 @@ class MainWindow(QMainWindow):
                 and self.aut_min_window_height_lineEdit.text() and self.aut_max_window_height_lineEdit.text() and self.aut_step_window_height_lineEdit.text() \
                 and self.aut_min_window_width_lineEdit.text() and self.aut_max_window_width_lineEdit.text() and self.aut_step_window_width_lineEdit.text():
             items.append(
-                f"{self.aut_min_core_width_lineEdit.text()}*{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
+                f"{self.aut_min_core_width_lineEdit.text()}*"
+                f"{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
         itemsTextList = [str(self.aut_core_geometry_manual_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_geometry_manual_basket_listWidget.count())]
         for i in items:
@@ -2757,7 +2758,8 @@ class MainWindow(QMainWindow):
         :rtype: None
         """
 
-        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
+        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
+            winding2_phi_rad_list = self.md_get_frequency_lists()
 
         fmt.plot_fourier_coefficients(winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list,
                                       figure_directory="./md_winding_1.png")
@@ -2781,7 +2783,8 @@ class MainWindow(QMainWindow):
         """
         Read frequency, amplitude and phase depending on the checked frequencies and return it as a list.
 
-        :return: [winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list]
+        :return: [winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list,
+             winding2_amplitude_list, winding2_phi_rad_list]
         :rtype: List
         """
         winding1_frequency_list = []
@@ -2894,8 +2897,6 @@ class MainWindow(QMainWindow):
                                         working_directory=self.md_working_directory_lineEdit.text(),
                                         verbosity=fmt.Verbosity.ToConsole)
 
-
-
             core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                                                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                                                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
@@ -2904,17 +2905,16 @@ class MainWindow(QMainWindow):
             material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
 
             core = fmt.Core(core_type=fmt.CoreType.Single,
-                           core_dimensions=core_dimensions,
-                           detailed_core_model=False,
-                           material=material_enum, temperature=45, frequency=int(self.md_base_frequency_lineEdit.text()),
-                           # permeability_datasource="manufacturer_datasheet",
-                           permeability_datasource=fmt.MaterialDataSource.Measurement,
-                           permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                           permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                           permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                           permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                           permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
-
+                            core_dimensions=core_dimensions,
+                            detailed_core_model=False,
+                            material=material_enum, temperature=45, frequency=int(self.md_base_frequency_lineEdit.text()),
+                            # permeability_datasource="manufacturer_datasheet",
+                            permeability_datasource=fmt.MaterialDataSource.Measurement,
+                            permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                            permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                            permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                            permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                            permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
 
             geo.set_core(core)
 
@@ -2978,8 +2978,7 @@ class MainWindow(QMainWindow):
                                     position_tag=[],
                                     air_gap_position=[])"""
 
-            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict[
-                "percent"] and air_gap_count >= 1:
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
@@ -2996,8 +2995,7 @@ class MainWindow(QMainWindow):
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
 
-            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict[
-                "manually"] and air_gap_count >= 1:
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["manually"] and air_gap_count >= 1:
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 for i in range(1, air_gap_count + 1):
@@ -3037,7 +3035,6 @@ class MainWindow(QMainWindow):
             # Create conductor and set parameters: use solid wires
             # -----------------------------------------------------------
 
-
             winding_material_name = self.md_winding1_material_comboBox.currentText()
             if winding_material_name == 'Copper':
                 winding_material_enum = fmt.Conductivity.Copper
@@ -3062,7 +3059,6 @@ class MainWindow(QMainWindow):
             # ----------------------------------------------------------------------
             vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
             geo.set_winding_windows([winding_window])
-
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
 
@@ -3147,8 +3143,7 @@ class MainWindow(QMainWindow):
                                     position_tag=[],
                                     air_gap_position=[])"""
 
-            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict[
-                "percent"] and air_gap_count >= 1:
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
@@ -3165,8 +3160,7 @@ class MainWindow(QMainWindow):
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
 
-            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict[
-                "manually"] and air_gap_count >= 1:
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["manually"] and air_gap_count >= 1:
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 for i in range(1, air_gap_count + 1):
@@ -3213,7 +3207,6 @@ class MainWindow(QMainWindow):
             right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None)
             geo.set_winding_window(winding_window)
 
-
         elif self.md_simulation_type_comboBox.currentText() == 'integrated transformer':
             pass
 
@@ -3236,7 +3229,8 @@ class MainWindow(QMainWindow):
                          save_png=False)
         # geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
 
-        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
+        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
+            winding2_phi_rad_list = self.md_get_frequency_lists()
 
         if len(winding1_frequency_list) == 1:
             if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
@@ -3247,7 +3241,6 @@ class MainWindow(QMainWindow):
                 geo.single_simulation(freq=winding1_frequency_list[0],
                                       current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
                                       phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
-
 
         else:
 
