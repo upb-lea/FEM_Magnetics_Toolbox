@@ -39,7 +39,3 @@ param = mc.get_parameters_position_dict()
 #                      air_gap_position, mult_air_gap_type, inductance]
 print(f"Total Reluctance:{mc.data_matrix[:, param['no_of_turns']] ** 2 / mc.data_matrix[:, param['inductance']]}")
 print(f"Inductance:{mc.data_matrix[:, param['inductance']]}")
-
-
-
-
