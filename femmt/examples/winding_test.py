@@ -115,7 +115,6 @@ def run_inductor_simulations(working_directory, combinations):
         except Exception as e:
             print(e)
             not_working.append(name + ": " + str(e))
-           
 
         image_path = os.path.join(working_directory, "mesh", "hybrid_color.png")
         os.rename(image_path, os.path.join(working_directory, "..", "images", f"{name}.png"))
@@ -176,12 +175,12 @@ def run_transformer_simulations(working_directory, combinations):
         except Exception as e:
             print(e)
             not_working.append(name + ": " + str(e))
-           
 
         image_path = os.path.join(working_directory, "mesh", "hybrid_color.png")
         os.rename(image_path, os.path.join(working_directory, "..", "images", f"{name}.png"))
 
     print(not_working)
+
 
 if __name__ == "__main__":
     working_directory = os.path.join(os.path.dirname(__file__), "winding_test")

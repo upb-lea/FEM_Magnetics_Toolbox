@@ -41,6 +41,7 @@ def test_files():
              '../../femmt/examples/reluctance_example.py',
              '../../femmt/examples/thermal_examples.py',
              '../../femmt/examples/Three_Winding_Transformer.py',
+             '../../femmt/examples/winding_test.py',
 
              # tests
              'test_femmt.py',
