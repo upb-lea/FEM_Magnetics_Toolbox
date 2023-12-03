@@ -10,8 +10,8 @@ with open('README.rst') as readme_file:
 with open('CHANGELOG.md') as history_file:
     history = history_file.read()
 
-#with open('requirements.txt', 'r') as f:
-#    requirements = f.read().splitlines()
+# with open('requirements.txt', 'r') as f:
+#     requirements = f.read().splitlines()
 
 setup_requirements = ['setuptools_scm']
 
@@ -37,20 +37,19 @@ setup(
     ],
     description="FEM Magnetics Toolbox",
     install_requires=['pandas>=1.2.1',
-					  'numpy>=1.20.3',
-					  'matplotlib>=3.3.4',
-					  'gmsh>=4.9.5',
-					  'onelab>=1.0',
-					  'scipy>=1.7.2',
+                      'numpy>=1.20.3',
+                      'matplotlib>=3.3.4',
+                      'gmsh>=4.9.5',
+                      'onelab>=1.0',
+                      'scipy>=1.7.2',
                       'pytest',
                       'pycodestyle',
                       'PyQt5>=5.15.6',
-                      'mplcursors>=0.5.1', # TODO Is this necessary?
-                      'deepdiff>=6.2.1', # comparing result dicts for pytests
+                      'mplcursors>=0.5.1',  # TODO Is this necessary?
+                      'deepdiff>=6.2.1',  # comparing result dicts for pytests
                       'materialdatabase==0.1.0',
                       'optuna',
-                      'plotly'
-					  ],
+                      'plotly'],
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     long_description_content_type="text/markdown",

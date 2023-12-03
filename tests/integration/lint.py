@@ -18,6 +18,7 @@ def test_files():
              '../../femmt/data.py',
              '../../femmt/model.py',
              '../../femmt/reluctance.py',
+             '../../femmt/__init__.py',
 
              # examples
              '../../femmt/examples/advanced_inductor_sweep.py',
@@ -44,11 +45,16 @@ def test_files():
              '../../femmt/examples/thermal_examples.py',
              '../../femmt/examples/Three_Winding_Transformer.py',
              '../../femmt/examples/winding_test.py',
+             '../../femmt/examples/__init__.py',
+
 
              # tests
              'test_femmt.py',
              'lint.py',
+             '__init__.py',
              '../unit/test_femmt_functions.py',
+             '../unit/__init__.py',
+
 
              # optimization
              '../../femmt/optimization/sto_dtos.py',
@@ -60,15 +66,20 @@ def test_files():
              '../../femmt/optimization/ito_functions.py',
              '../../femmt/optimization/ito.py',
              '../../femmt/optimization/functions_optimization.py',
+             '../../femmt/optimization/__init__.py',
 
              # thermal files
              '../../femmt/thermal/thermal_functions.py',
              '../../femmt/thermal/thermal_simulation.py',
              '../../femmt/thermal/thermal_classes.py',
+             '../../femmt/thermal/__init__.py',
 
              # GUI
              '../../gui/femmt_gui.py',
-             '../../gui/onelab_path_popup.py']
+             '../../gui/onelab_path_popup.py',
+
+             # basic files
+             '../../setup.py']
 
     style = pycodestyle.StyleGuide(config_file='../../tox.ini')
     result = style.check_files(files)
