@@ -41,9 +41,6 @@ def test_files():
              '../../femmt/examples/ito_brute_force_example.py',
              '../../femmt/examples/ito_optuna_example.py',
              '../../femmt/examples/parameter_sweep_example.py',
-             '../../femmt/examples/reluctance_example.py',
-             '../../femmt/examples/thermal_examples.py',
-             '../../femmt/examples/Three_Winding_Transformer.py',
              '../../femmt/examples/winding_test.py',
              '../../femmt/examples/__init__.py',
 
