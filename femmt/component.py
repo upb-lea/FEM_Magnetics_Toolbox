@@ -1206,7 +1206,7 @@ class MagneticComponent:
                          visualize_before: bool = False, save_png: bool = False,
                          color_scheme: Dict = ff.colors_femmt_default,
                          colors_geometry: Dict = ff.colors_geometry_femmt_default,
-                         inductance_dict: Dict = None, core_hyst_loss: List[float] = None) -> None:
+                         inductance_dict: Dict = None, core_hyst_loss: List[float] | np.ndarray = None) -> None:
         """
         Performs a sweep simulation for frequency-current pairs. Both values can
         be passed in lists of the same length. The mesh is only created ones (fast sweep)!
@@ -1383,11 +1383,22 @@ class MagneticComponent:
         self.generate_load_litz_approximation_parameters()
         self.simulate()
         self.calculate_and_write_log()  # TODO: reuse center tapped
-        [p_hyst] = self.load_result(res_name="p_hyst")
+
+        # read the log of the transformer losses
+        log = self.read_log()
+
+        # find out the number of core parts, init core part losses with zeros
+        number_of_core_parts = len(log["single_sweeps"][0]['core_parts'])
+        p_hyst_core_parts = np.zeros(number_of_core_parts)
+
+        for core_part in range(1, number_of_core_parts + 1):
+            core_part_hyst_loss = log['single_sweeps'][0]['core_parts'][f'core_part_{core_part}']['hyst_losses']
+            p_hyst_core_parts[core_part - 1] += core_part_hyst_loss
+        # Now, p_hyst_core_parts includes the full transformer losses.
 
         # calculate the winding losses
         self.excitation_sweep(frequency_list, current_list_list, phi_deg_list_list, inductance_dict=inductance_dict,
-                              core_hyst_loss=float(p_hyst))
+                              core_hyst_loss=p_hyst_core_parts)
 
     def center_tapped_pre_study(self, time_current_vectors: List[List[List[float]]], plot_waveforms: bool = False,
                                 fft_filter_value_factor: float = 0.01) -> Dict:
@@ -2353,7 +2364,7 @@ class MagneticComponent:
         log_dict["total_losses"]["eddy_core"] = sum(
             log_dict["single_sweeps"][d]["core_eddy_losses"] for d in range(len(log_dict["single_sweeps"])))
 
-        if isinstance(core_hyst_losses, List):
+        if isinstance(core_hyst_losses, List) or isinstance(core_hyst_losses, np.ndarray):
             # overwrite the hysteresis losses for each core part
             # Note: This generation MUST BE before summing up the total core losses
             # 1. set all hysteresis losses for all frequencies to zero
@@ -2378,7 +2389,7 @@ class MagneticComponent:
                     log_dict["single_sweeps"][single_simulation]["core_hyst_losses"] = 0
             log_dict["total_losses"]["hyst_core_fundamental_freq"] = sum(core_hyst_losses)
         elif core_hyst_losses is not None:
-            raise ValueError("External core hysteresis losses are given in non-float format")
+            raise ValueError("External core hysteresis losses are given in non-List format")
         else:
             log_dict["total_losses"]["hyst_core_fundamental_freq"] = log_dict["single_sweeps"][fundamental_index][
                 "core_hyst_losses"]
