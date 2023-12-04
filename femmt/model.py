@@ -207,7 +207,7 @@ class Core:
                  steinmetz_parameter: list = None,
                  generalized_steinmetz_parameter: list = None,
                  mdb_verbosity: Verbosity = Verbosity.Silent,
-                 **kwargs): # TODO Is this kwargs really needed? Can this be removed?
+                 **kwargs):  # TODO Is this kwargs really needed? Can this be removed?
         """TODO Doc
 
         :param core_inner_diameter: diameter of the inner core
@@ -226,7 +226,7 @@ class Core:
         :type sigma: float, optional
         :param non_linear: _description_, defaults to False
         :type non_linear: bool, optional
-        :param detailed_core_model: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!!), defaults to False (recommended!)
+        :param detailed_core_model: Manual correction so cross-section of inner leg is not same as outer leg (PQ 40/40 only!!), defaults to False (recommended!)
         :type detailed_core_model: bool, optional
         """
         self.mdb_verbosity = mdb_verbosity
@@ -264,7 +264,7 @@ class Core:
             width_meas = 23e-3  # for PQ4040
             h_meas = 5.2e-3  # for PQ4040
             alpha = np.arcsin((width_meas / 2) / (self.core_inner_diameter / 2 + self.window_w))
-            h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))  # Areal leg
+            h_outer = (h_meas * 4 * alpha * (self.core_inner_diameter / 2 + self.window_w)) / (2 * np.pi * (self.core_inner_diameter / 2 + self.window_w))
             self.core_h = self.window_h + 2 * h_outer
 
         else:
@@ -470,7 +470,7 @@ class AirGaps:
     # Needed for to_dict
     air_gap_settings: List
 
-    def __init__(self, method: AirGapMethod, core: Core):
+    def __init__(self, method: Optional[AirGapMethod], core: Optional[Core]):
         """Creates an AirGaps object. An AirGapMethod needs to be set. This determines the way the air gap will be added to the model.
         In order to calculate the air gap positions the core object needs to be given.
 
@@ -605,7 +605,9 @@ class Insulation:
     def add_winding_insulations(self, inner_winding_insulation: List[List[float]]):
         """Adds insulations between turns of one winding and insulation between virtual winding windows.
         Insulation between virtual winding windows is not always needed.
-        :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number. The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
+        :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to
+            the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
+            The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
         :type inner_winding_insulation: List[List[float]]
         """
         if inner_winding_insulation is [[]]:
@@ -722,8 +724,7 @@ class VirtualWindingWindow:
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
         self.windings = [conductor]
-        self.turns = [0] * (
-                    conductor.winding_number + 1)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
+        self.turns = [0] * (conductor.winding_number + 1)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
         # self.turns = [0] * (3)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
         self.turns.insert(conductor.winding_number, turns)
         self.winding_is_set = True
@@ -778,7 +779,8 @@ class VirtualWindingWindow:
         self.wrap_para = None
 
     def __repr__(self):
-        return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
+        return f"WindingType: {self.winding_type}, WindingScheme: {self.winding_scheme}, Bounds: bot: {self.bot_bound}, " \
+               f"top: {self.top_bound}, left: {self.left_bound}, right: {self.right_bound}"
 
     def to_dict(self):
         if hasattr(self, 'winding_insulation'):
@@ -864,8 +866,7 @@ class WindingWindow:
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - \
-                                 insulations.core_cond[0]
+            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - insulations.core_cond[0]
             self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
@@ -1038,16 +1039,14 @@ class WindingWindow:
             distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
             # TODO: should be changed to the core-cond isolation
             horizontal_splits = min_pos + distance / 2
-            vertical_split = self.max_left_bound + (
-                    self.max_right_bound - self.max_left_bound) * vertical_split_factor
+            vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
             split_distance = distance  # here, the distance between the two vwws is set automatically
         else:
             horizontal_splits = self.max_top_bound - abs(self.max_bot_bound - self.max_top_bound) * np.array(
                 horizontal_split_factors)
             # horizontal_splits = self.max_top_bound - np.abs(self.max_bot_bound - self.max_top_bound) * np.array(horizontal_split_factors)
 
-            vertical_split = self.max_left_bound + (
-                    self.max_right_bound - self.max_left_bound) * vertical_split_factor
+            vertical_split = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factor
         # Initialize lists for Left_cells, Right_cells and virtual_winding_windows
         self.Left_cells = []
         self.Right_cells = []
@@ -1113,17 +1112,17 @@ class WindingWindow:
         if bottom_up:
             for i, row_element in enumerate(stack.order):
                 vertical_space_used_last = vertical_space_used
-                if type(row_element) == StackIsolation:
+                if isinstance(row_element, StackIsolation):
                     vertical_space_used += row_element.thickness
                 else:
-                    if type(row_element) == ConductorRow:
+                    if isinstance(row_element, ConductorRow):
                         vertical_space_used += row_element.row_height
                         if row_element.winding_tag == WindingTag.Primary:
                             winding_scheme_type.append(WindingType.Single)
                         elif row_element.winding_tag == WindingTag.Secondary or row_element.winding_tag == WindingTag.Tertiary:
                             winding_scheme_type.append(WindingScheme.FoilHorizontal)
 
-                    elif type(row_element) == CenterTappedGroup:
+                    elif isinstance(row_element, CenterTappedGroup):
                         vertical_space_used += get_height_of_group(group=row_element)
                         winding_scheme_type.append(WindingType.CenterTappedGroup)
 
@@ -1149,11 +1148,11 @@ class WindingWindow:
         if bottom_up:
             for i, row_element in enumerate(stack.order):
                 vertical_space_used_last = vertical_space_used
-                if type(row_element) == StackIsolation:
+                if isinstance(row_element, StackIsolation):
                     vertical_space_used += row_element.thickness
                 else:
                     additional_bobbin = 0
-                    if type(row_element) == ConductorRow:
+                    if isinstance(row_element, ConductorRow):
                         vertical_space_used += row_element.row_height
                         additional_bobbin = row_element.additional_bobbin
                         if row_element.winding_tag == WindingTag.Primary:
@@ -1161,7 +1160,7 @@ class WindingWindow:
                         elif row_element.winding_tag == WindingTag.Secondary or row_element.winding_tag == WindingTag.Tertiary:
                             winding_scheme_type.append(WindingScheme.FoilHorizontal)
 
-                    elif type(row_element) == CenterTappedGroup:
+                    elif isinstance(row_element, CenterTappedGroup):
                         vertical_space_used += get_height_of_group(group=row_element)
                         winding_scheme_type.append(WindingType.CenterTappedGroup)
 
@@ -1210,7 +1209,7 @@ class WindingWindow:
         :param vertical_split_factors: position of borders between rows per column
         :return:
         """
-        if vertical_split_factors == None:
+        if vertical_split_factors is None:
             vertical_split_factors = [None] * (len(horizontal_split_factors)+1)
 
         # Convert horizontal_split_factors to a numpy array

@@ -1,14 +1,13 @@
 # Python standard libraries
 import os
-import shutil
 
 import numpy as np
 from typing import List
 
-import femmt
 # Local libraries
 from femmt.enumerations import ConductorType
 from femmt.model import Conductor
+
 
 class FileData:
     """Contains paths to every folder and file needed in femmt.
@@ -49,6 +48,10 @@ class FileData:
 
         :param working_directory: working directory folder path
         :type working_directory: str
+        :param electro_magnetic_folder_path: folder path to electro magnetic simulation folders
+        :type electro_magnetic_folder_path: str
+        :param strands_coefficients_folder_path: folder path to strand coefficients
+        :type strands_coefficients_folder_path: str
         """
         # Setup folder paths 
         self.working_directory = working_directory
@@ -87,8 +90,9 @@ class FileData:
 
         # Create necessary folders
         self.create_folders(self.femmt_folder_path, self.mesh_folder_path, self.electro_magnetic_folder_path, 
-            self.results_folder_path, self.e_m_values_folder_path, self.e_m_fields_folder_path, 
-            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path)
+                            self.results_folder_path, self.e_m_values_folder_path, self.e_m_fields_folder_path,
+                            self.e_m_circuit_folder_path, self.e_m_strands_coefficients_folder_path)
+
 
 class MeshData:
     """Contains data which is needed for the mesh generation.
@@ -97,7 +101,7 @@ class MeshData:
 
     padding: float           # > 1
     skin_mesh_factor: float
-    c_core : float
+    c_core: float
     c_window: float
     c_conductor = List[float]
     c_center_conductor = List[float]
@@ -108,7 +112,7 @@ class MeshData:
     mu0: float
     core_w: float
     window_w: float
-    windings: List["Conductor"] # This is written as string because it is a forward import
+    windings: List["Conductor"]  # This is written as string because it is a forward import
 
     def __init__(self, mesh_accuracy_core: float,
                  mesh_accuracy_window: float,
@@ -159,7 +163,8 @@ class MeshData:
                 self.delta = np.sqrt(2 / (2 * frequency * np.pi * self.windings[0].cond_sigma * self.mu0))
             for i in range(len(self.windings)):
                 if self.windings[i].conductor_type == ConductorType.RoundSolid:
-                    self.c_conductor[i] = min([self.delta * self.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor]) #* self.mesh.skin_mesh_factor])
+                    self.c_conductor[i] = min([self.delta * self.skin_mesh_factor, self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor])
+                    # * self.mesh.skin_mesh_factor])
                     self.c_center_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor  # * self.mesh.skin_mesh_factor
                 elif self.windings[i].conductor_type == ConductorType.RoundLitz:
                     self.c_conductor[i] = self.windings[i].conductor_radius / 4 * self.mesh_accuracy_conductor
@@ -167,4 +172,3 @@ class MeshData:
                 else:
                     self.c_conductor[i] = self.windings[i].thickness / 4 * self.mesh_accuracy_conductor  # TODO: dynamic implementation
                     self.c_center_conductor[i] = self.center_factor * self.windings[i].thickness / 4 * self.mesh_accuracy_conductor
-

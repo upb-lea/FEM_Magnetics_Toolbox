@@ -19,8 +19,6 @@ def transformer_component_study(onelab_folder: str = None, show_visual_outputs: 
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
 
-
-
     # Example for a transformer_component_study.
     working_directory = os.path.join(example_results_folder, "transformer_component_study")
     if not os.path.exists(working_directory):
@@ -31,7 +29,8 @@ def transformer_component_study(onelab_folder: str = None, show_visual_outputs: 
                                 silent=True, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)

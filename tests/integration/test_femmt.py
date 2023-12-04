@@ -15,6 +15,7 @@ import femmt.examples.basic_inductor_foil_vertical
 import femmt.examples.basic_transformer_n_winding
 import femmt.examples.advanced_inductor_sweep
 import femmt.examples.basic_transformer_5_windings
+import femmt.examples.advanced_inductor_air_gap_sweep
 import materialdatabase as mdb
 
 
@@ -1800,3 +1801,10 @@ def test_advanced_example_inductor_sweep(temp_folder):
     femmt.examples.advanced_inductor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
                                                                            show_visual_outputs=False,
                                                                            is_test=True)
+
+
+def test_advanced_example_inductor_air_gap_sweep(temp_folder):
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.advanced_inductor_air_gap_sweep.basic_example_sweep(onelab_folder=onelab_folder,
+                                                                       show_visual_outputs=False,
+                                                                       is_test=True)
