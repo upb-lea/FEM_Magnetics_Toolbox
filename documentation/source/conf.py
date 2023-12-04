@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 
 project = 'FEM Magnetics Toolbox'
-copyright = '{}, {}'.format(time.strftime('%Y'),  'LEA, Paderborn University')
+copyright = '{}, {}'.format(time.strftime('%Y'), 'LEA, Paderborn University')
 author = 'LEA-UPB'
 
 # The full version, including alpha/beta/rc tags
@@ -79,9 +79,8 @@ html_context = {
 
 # Code for adding html side bars to theme
 html_sidebars = {
-    '**': ['versioning.html']
- }
+    '**': ['versioning.html']}
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
+# html_static_path = ['_static']

@@ -12,6 +12,7 @@ def test_files():
              '../../femmt/functions.py',
              '../../femmt/functions_drawing.py',
              '../../femmt/functions_model.py',
+             '../../femmt/functions_topologies.py',
              '../../femmt/mesh.py',
              '../../femmt/component.py',
              '../../femmt/drawing.py',

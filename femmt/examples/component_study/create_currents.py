@@ -28,5 +28,5 @@ plt.show()
 print(np.mean(np.mean(i1)))
 print(np.mean(np.mean(i2)))
 
-i1.tofile('i1.csv', sep = ',')
-i2.tofile('i2.csv', sep = ',')
+i1.tofile('i1.csv', sep=',')
+i2.tofile('i2.csv', sep=',')
