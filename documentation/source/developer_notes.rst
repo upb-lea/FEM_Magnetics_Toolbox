@@ -90,6 +90,12 @@ Exclude simulation directory from indexing
 Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the ``example_results`` direcory from the project, as shown in the following steps:
 ``File`` -> ``Settings`` -> ``project structure``, select the folders you need (e.g. ``femmt/examples/example_results``, ``right click`` and click ``exlcuded``.
 
+Line length
+#########################################################
+
+``File`` -> ``Settings`` -> ``Editor`` -> ``Code Style``
+Set the max. lenth to ``160``.
+
 Pycharm code highlightning for pro-files
 #########################################################
 
@@ -100,4 +106,10 @@ Pycharm code highlightning for pro-files
 .. |image_pycharm_configuration_pro_files| image:: ../images/pycharm_configuration_pro_files.png
 
 
+Lint check
+---------------------------------------------------------------
+
+run
+``pycodestyle $(git ls-files '*.py')``
+to check all your files for correct linting.
 
