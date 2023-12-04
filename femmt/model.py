@@ -238,7 +238,7 @@ class Core:
         self.core_inner_diameter = core_dimensions.core_inner_diameter
         self.window_w = core_dimensions.window_w
         self.correct_outer_leg = detailed_core_model
-        self.core_thickness = 4.7e-3  # self.core_inner_diameter / 4  # default
+        self.core_thickness = self.core_inner_diameter / 4  # default: A_inner_leg = A_outer_leg(s)
 
         self.r_inner = self.window_w + self.core_inner_diameter / 2
 
