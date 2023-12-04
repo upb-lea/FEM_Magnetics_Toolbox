@@ -238,6 +238,8 @@ class Core:
         self.core_inner_diameter = core_dimensions.core_inner_diameter
         self.window_w = core_dimensions.window_w
         self.correct_outer_leg = detailed_core_model
+        self.core_thickness = 4.7e-3  # self.core_inner_diameter / 4  # default
+
         self.r_inner = self.window_w + self.core_inner_diameter / 2
 
         if self.core_type == CoreType.Single:
@@ -248,8 +250,7 @@ class Core:
         if self.core_type == CoreType.Stacked:
             self.window_h_bot = core_dimensions.window_h_bot
             self.window_h_top = core_dimensions.window_h_top
-            # self.core_h = self.window_h_bot + self.window_h_top + self.core_inner_diameter * 3 / 4  # TODO: could also be done arbitrarily
-            self.core_h = self.window_h_bot + self.core_inner_diameter / 2  # TODO: could also be done arbitrarily
+            self.core_h = self.window_h_bot + 2 * self.core_thickness
             self.number_core_windows = 4
 
         if detailed_core_model:
@@ -545,8 +546,7 @@ class AirGaps:
                 self.midpoints.append([0, 0, height])
                 self.number += 1
             if stacked_position == StackedPosition.Top:
-                self.midpoints.append([0, self.core.window_h_bot / 2 + self.core.core_inner_diameter / 4 + height / 2,
-                                       height])  # TODO: could also be done arbitrarily
+                self.midpoints.append([0, self.core.window_h_bot / 2 + self.core.core_thickness + height / 2, height])
                 self.number += 1
 
         else:
@@ -864,8 +864,7 @@ class WindingWindow:
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
         elif self.core.core_type == CoreType.Stacked:  # top, bot, left, right
             self.max_bot_bound = -core.window_h_bot / 2 + insulations.core_cond[1]
-            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_inner_diameter / 4 - \
-                                 insulations.core_cond[0]
+            self.max_top_bound = core.window_h_bot / 2 + core.window_h_top + core.core_thickness - insulations.core_cond[0]
             self.max_left_bound = core.core_inner_diameter / 2 + insulations.core_cond[2]
             self.max_right_bound = core.r_inner - insulations.core_cond[3]
 
