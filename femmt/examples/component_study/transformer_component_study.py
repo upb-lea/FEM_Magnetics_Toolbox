@@ -6,8 +6,8 @@ def transformer_component_study(onelab_folder: str = None, show_visual_outputs: 
     switching_frequency = 180000
 
     # max efficient
-    i_primary = np.genfromtxt("i1.csv", delimiter=",", dtype=float)
-    i_secondary = np.genfromtxt("i2.csv", delimiter=",", dtype=float)
+    i_primary = np.genfromtxt(os.path.join(os.path.dirname(__file__), "i1.csv"), delimiter=",", dtype=float)
+    i_secondary = np.genfromtxt(os.path.join(os.path.dirname(__file__), "i2.csv"), delimiter=",", dtype=float)
 
     length_i_primary = len(i_primary)
     time = np.linspace(0, 1 / switching_frequency, length_i_primary)
@@ -15,7 +15,7 @@ def transformer_component_study(onelab_folder: str = None, show_visual_outputs: 
     i_1 = [time, i_primary]
     i_2 = [time, i_secondary]
 
-    example_results_folder = os.path.join(os.path.dirname(__file__), "results")
+    example_results_folder = os.path.join(os.path.dirname(__file__), os.pardir, "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
 
@@ -26,14 +26,14 @@ def transformer_component_study(onelab_folder: str = None, show_visual_outputs: 
 
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                silent=True, is_gui=is_test)
+                                verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.012 + 0.015/2)
     core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                     permeability_datasource=fmt.MaterialDataSource.Custom,
                     permittivity_datasource=fmt.MaterialDataSource.Custom)
@@ -42,6 +42,7 @@ def transformer_component_study(onelab_folder: str = None, show_visual_outputs: 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 80)
     geo.set_air_gaps(air_gaps)
 
     # 4. set insulation
