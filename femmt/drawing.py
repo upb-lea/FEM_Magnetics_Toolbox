@@ -9,6 +9,7 @@ from femmt.data import MeshData
 from femmt.model import Core, WindingWindow, AirGaps, StrayPath, Insulation
 import femmt.functions as ff
 
+
 class TwoDaxiSymmetric:
     """
     This class creates the model of the magnetic component. This is done by creating lists of points which
@@ -84,25 +85,13 @@ class TwoDaxiSymmetric:
         """
         # Outer Core
         # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
-        self.p_outer[0][:] = [-self.r_outer,
-                            -self.core.core_h/2,
-                            0,
-                            self.mesh_data.c_core]
+        self.p_outer[0][:] = [-self.r_outer, -self.core.core_h/2, 0, self.mesh_data.c_core]
 
-        self.p_outer[1][:] = [self.r_outer,
-                            -self.core.core_h/2,
-                            0,
-                            self.mesh_data.c_core]
+        self.p_outer[1][:] = [self.r_outer, -self.core.core_h/2, 0, self.mesh_data.c_core]
 
-        self.p_outer[2][:] = [-self.r_outer,
-                            self.core.core_h/2,
-                            0,
-                            self.mesh_data.c_core]
+        self.p_outer[2][:] = [-self.r_outer, self.core.core_h/2, 0, self.mesh_data.c_core]
 
-        self.p_outer[3][:] = [self.r_outer,
-                            self.core.core_h/2,
-                            0,
-                            self.mesh_data.c_core]
+        self.p_outer[3][:] = [self.r_outer, self.core.core_h/2, 0, self.mesh_data.c_core]
 
     def draw_single_window(self):
         # Window
@@ -250,45 +239,25 @@ class TwoDaxiSymmetric:
                         air_gap_length_bot = self.stray_path.length
 
                 # Bottom left
-                self.p_air_gaps[i * 4 + 0] = [0,
-                                                air_gap_y_position -
-                                                air_gap_height / 2,
-                                                0,
-                                                self.mesh_data.c_air_gaps]
+                self.p_air_gaps[i * 4 + 0] = [0, air_gap_y_position - air_gap_height / 2, 0, self.mesh_data.c_air_gaps]
 
                 # Bottom right
-                self.p_air_gaps[i * 4 + 1] = [air_gap_length_bot,
-                                                air_gap_y_position -
-                                                air_gap_height / 2,
-                                                0,
-                                                self.mesh_data.c_air_gaps]
+                self.p_air_gaps[i * 4 + 1] = [air_gap_length_bot, air_gap_y_position - air_gap_height / 2, 0, self.mesh_data.c_air_gaps]
 
                 # Top left
-                self.p_air_gaps[i * 4 + 2] = [0,
-                                                air_gap_y_position +
-                                                air_gap_height / 2,
-                                                0,
-                                                self.mesh_data.c_air_gaps]
+                self.p_air_gaps[i * 4 + 2] = [0, air_gap_y_position + air_gap_height / 2, 0, self.mesh_data.c_air_gaps]
 
                 # Top right
-                self.p_air_gaps[i * 4 + 3] = [air_gap_length_top,
-                                                air_gap_y_position +
-                                                air_gap_height / 2,
-                                                0,
-                                                self.mesh_data.c_air_gaps]
+                self.p_air_gaps[i * 4 + 3] = [air_gap_length_top, air_gap_y_position + air_gap_height / 2, 0, self.mesh_data.c_air_gaps]
 
         # In order to close the air gap when a stray_path is added, additional points need to be added
         if self.component_type == ComponentType.IntegratedTransformer:
             top_point = [self.core.core_inner_diameter / 2,
-                         self.air_gaps.midpoints[self.stray_path.start_index+1][1] -
-                         self.air_gaps.midpoints[self.stray_path.start_index+1][2] / 2,
-                         0,
-                         self.mesh_data.c_air_gaps]
+                         self.air_gaps.midpoints[self.stray_path.start_index+1][1] - self.air_gaps.midpoints[self.stray_path.start_index+1][2] / 2,
+                         0, self.mesh_data.c_air_gaps]
             bot_point = [self.core.core_inner_diameter / 2,
-                         self.air_gaps.midpoints[self.stray_path.start_index][1] +
-                         self.air_gaps.midpoints[self.stray_path.start_index][2] / 2,
-                         0,
-                         self.mesh_data.c_air_gaps]
+                         self.air_gaps.midpoints[self.stray_path.start_index][1] + self.air_gaps.midpoints[self.stray_path.start_index][2] / 2,
+                         0, self.mesh_data.c_air_gaps]
             self.p_close_air_gaps = [top_point, bot_point]
 
     def draw_conductors(self, draw_top_down=True):
@@ -303,7 +272,8 @@ class TwoDaxiSymmetric:
 
                 # Check, if virtual winding window fits in physical window
                 # print(f"{bot_bound = }\n", f"{top_bound = }\n", f"{left_bound = }\n", f"{right_bound = }\n")
-                # print(f"{winding_window.max_bot_bound = }\n", f"{winding_window.max_top_bound = }\n", f"{winding_window.max_left_bound = }\n", f"{winding_window.max_right_bound = }\n")
+                # print(f"{winding_window.max_bot_bound = }\n", f"{winding_window.max_top_bound = }\n", f"{winding_window.max_left_bound = }\n",
+                # f"{winding_window.max_right_bound = }\n")
                 if bot_bound < winding_window.max_bot_bound or top_bound > winding_window.max_top_bound or \
                         left_bound < winding_window.max_left_bound or right_bound > winding_window.max_right_bound:
                     # Set valid to False, so that geometry is to be neglected in geometry sweep
@@ -421,13 +391,16 @@ class TwoDaxiSymmetric:
 
                                                 N_completed[col_cond] += 1
 
-                                                y -= windings[col_cond].conductor_radius * 2 + self.insulation.cond_cond[col_cond][col_cond]  # one from top to bot
+                                                # one from top to bot
+                                                y -= windings[col_cond].conductor_radius * 2 + self.insulation.cond_cond[col_cond][col_cond]
 
                                             # Check whether one winding is "finished" and only the other winding must be placed...
                                             if N_completed[(col_cond + 1) % 2] == turns[(col_cond + 1) % 2]:
-                                                x += windings[col_cond].conductor_radius + windings[col_cond].conductor_radius + self.insulation.cond_cond[col_cond][(col_cond + 1) % 2]
+                                                x += windings[col_cond].conductor_radius + windings[col_cond].conductor_radius + \
+                                                    self.insulation.cond_cond[col_cond][(col_cond + 1) % 2]
                                             else:
-                                                x += windings[col_cond].conductor_radius + windings[(col_cond + 1) % 2].conductor_radius + self.insulation.cond_cond[col_cond][(col_cond + 1) % 2]
+                                                x += windings[col_cond].conductor_radius + windings[(col_cond + 1) % 2].conductor_radius + \
+                                                    self.insulation.cond_cond[col_cond][(col_cond + 1) % 2]
                                                 # TODO: only works for two windings
                                                 col_cond = (col_cond + 1) % 2
 
@@ -444,8 +417,8 @@ class TwoDaxiSymmetric:
                                         col_cond = (col_cond + 1) % 2
 
                                         # Correct the reset of y and correct x displacement
-                                        x += windings[col_cond].conductor_radius - windings[(col_cond + 1) % 2].conductor_radius \
-                                             - self.insulation.cond_cond[col_cond][(col_cond + 1) % 2] + self.insulation.cond_cond[col_cond][col_cond]
+                                        x += windings[col_cond].conductor_radius - windings[(col_cond + 1) % 2].conductor_radius - \
+                                            self.insulation.cond_cond[col_cond][(col_cond + 1) % 2] + self.insulation.cond_cond[col_cond][col_cond]
 
                                         y = top_bound - windings[col_cond].conductor_radius
                                         top_window_iso_counter -= 1
@@ -508,9 +481,11 @@ class TwoDaxiSymmetric:
 
                                                 N_completed[col_cond] += 1
 
-                                                y += windings[col_cond].conductor_radius * 2 + self.insulation.cond_cond[col_cond][col_cond]  # one from bot to top
+                                                # one from bot to top
+                                                y += windings[col_cond].conductor_radius * 2 + self.insulation.cond_cond[col_cond][col_cond]
 
-                                            x += windings[col_cond].conductor_radius + windings[(col_cond + 1) % 2].conductor_radius + self.insulation.cond_cond[col_cond][(col_cond + 1) % 2]
+                                            x += windings[col_cond].conductor_radius + windings[(col_cond + 1) % 2].conductor_radius + \
+                                                self.insulation.cond_cond[col_cond][(col_cond + 1) % 2]
 
                                             # Reset y
                                             col_cond = (col_cond + 1) % 2
@@ -525,8 +500,8 @@ class TwoDaxiSymmetric:
                                         winding_number = winding_numbers[col_cond]
 
                                         # Correct the reset of y and correct x displacement
-                                        x += windings[col_cond].conductor_radius - windings[(col_cond + 1) % 2].conductor_radius\
-                                             - self.insulation.cond_cond[col_cond][(col_cond + 1) % 2] + self.insulation.cond_cond[col_cond][col_cond]
+                                        x += windings[col_cond].conductor_radius - windings[(col_cond + 1) % 2].conductor_radius - \
+                                            self.insulation.cond_cond[col_cond][(col_cond + 1) % 2] + self.insulation.cond_cond[col_cond][col_cond]
 
                                         y = bot_bound + windings[col_cond].conductor_radius
 
@@ -606,7 +581,8 @@ class TwoDaxiSymmetric:
                                             self.mesh_data.c_conductor[winding_number0]])
                                         i += 1
 
-                                        x += 2 * np.cos(np.pi / 6) * (winding0.conductor_radius + self.insulation.cond_cond[winding_number0][winding_number0] / 2)
+                                        x += 2 * np.cos(np.pi / 6) * (winding0.conductor_radius + \
+                                                                      self.insulation.cond_cond[winding_number0][winding_number0] / 2)
 
                                         # depending on what line, hexa scheme starts shifted
                                         # reset y to "new" bottom
@@ -668,7 +644,8 @@ class TwoDaxiSymmetric:
                                         i += 1
 
                                         x += winding1.conductor_radius * 2 + self.insulation.cond_cond[winding_number1][winding_number1]  # from left to right
-                                    y += -(winding1.conductor_radius * 2) - self.insulation.cond_cond[winding_number1][winding_number1]  # one step from bot to top
+                                    # one step from bot to top
+                                    y += -(winding1.conductor_radius * 2) - self.insulation.cond_cond[winding_number1][winding_number1]
                                     x = left_bound + winding1.conductor_radius  # always the same
                             elif winding1.conductor_arrangement == ConductorArrangement.Hexagonal:
                                 base_line = True
@@ -706,7 +683,7 @@ class TwoDaxiSymmetric:
 
                                         i += 1
                                         x += 2 * np.cos(np.pi / 6) * (
-                                                winding1.conductor_radius + self.insulation.cond_cond[winding_number1][winding_number1] / 2)
+                                            winding1.conductor_radius + self.insulation.cond_cond[winding_number1][winding_number1] / 2)
 
                                         # depending on what line, hexa scheme starts shifted
                                         # reset y to "new" bottom
@@ -732,7 +709,8 @@ class TwoDaxiSymmetric:
                     elif virtual_winding_window.winding_type == WindingType.Single:
                         # One winding in the virtual winding window
                         winding = virtual_winding_window.windings[0]
-                        turns = sum(virtual_winding_window.turns)  # TODO:  find another solution for this (is needed in mesh.py for air_stacked) see set_winding in model
+                        turns = sum(virtual_winding_window.turns)
+                        # TODO:  find another solution for this (turns = ...) (is needed in mesh.py for air_stacked) see set_winding in model
                         conductor_type = winding.conductor_type
                         winding_scheme = virtual_winding_window.winding_scheme
 
@@ -763,9 +741,8 @@ class TwoDaxiSymmetric:
                                     top_bound,
                                     0,
                                     self.mesh_data.c_conductor[num]])
-                                center_point = self.get_center_of_rect([left_bound, bot_bound],
-                                                                        [right_bound, bot_bound], [left_bound, top_bound],
-                                                                        [right_bound, top_bound])
+                                center_point = self.get_center_of_rect([left_bound, bot_bound], [right_bound, bot_bound], [left_bound, top_bound],
+                                                                       [right_bound, top_bound])
                                 self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
                             elif winding_scheme == WindingScheme.FoilVertical:
                                 # TODO Add check if turns do not fit in winding window
@@ -891,15 +868,8 @@ class TwoDaxiSymmetric:
                                             0,
                                             self.mesh_data.c_conductor[num]])
                                         self.p_conductor[num].append(
-                                            [x + winding.conductor_radius,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y - winding.conductor_radius,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
+                                            [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                        self.p_conductor[num].append([x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
                                         i += 1
                                         y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # one step from left to right
                                     x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # from left to top
@@ -985,7 +955,8 @@ class TwoDaxiSymmetric:
                                             0,
                                             self.mesh_data.c_conductor[num]])
                                         i += 1
-                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # TODO: anisotrop insulation  # one step from left to right
+                                        # TODO: anisotrop insulation  # one step from left to right
+                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
                                     y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # bot to top
                                     x = left_bound + winding.conductor_radius  # always the same
 
@@ -1040,7 +1011,6 @@ class TwoDaxiSymmetric:
                         # use y for next winding in stack
                         bot_bound = y - winding.conductor_radius - self.insulation.cond_cond[0][0] + self.insulation.cond_cond[0][1]
 
-
                         # Secondary Winding
                         winding = virtual_winding_window.windings[1]
                         turns = virtual_winding_window.turns[1]
@@ -1076,7 +1046,7 @@ class TwoDaxiSymmetric:
                                     0,
                                     self.mesh_data.c_conductor[num]])
                                 center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
-                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                                                       self.p_conductor[num][-2], self.p_conductor[num][-1])
                                 self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
 
                         # use y for next winding in stack
@@ -1117,7 +1087,7 @@ class TwoDaxiSymmetric:
                                     0,
                                     self.mesh_data.c_conductor[num]])
                                 center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
-                                                                               self.p_conductor[num][-2], self.p_conductor[num][-1])
+                                                                       self.p_conductor[num][-2], self.p_conductor[num][-1])
                                 self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
 
                     else:
@@ -1153,27 +1123,19 @@ class TwoDaxiSymmetric:
             raise Exception(f"Winding mismatch. Probably too many turns that do not fit in the winding window")
 
     def draw_region_single(self):
-            # Region for Boundary Condition
-            self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
-                                        -(self.core.window_h / 2 + self.core.core_inner_diameter / 4)
-                                        * self.mesh_data.padding,
-                                        0,
-                                        self.mesh_data.c_core * self.mesh_data.padding]
-            self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
-                                        -(self.core.window_h / 2 + self.core.core_inner_diameter / 4)
-                                        * self.mesh_data.padding,
-                                        0,
-                                        self.mesh_data.c_core * self.mesh_data.padding]
-            self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
-                                        (self.core.window_h / 2 + self.core.core_inner_diameter / 4)
-                                        * self.mesh_data.padding,
-                                        0,
-                                        self.mesh_data.c_core * self.mesh_data.padding]
-            self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
-                                        (self.core.window_h / 2 + self.core.core_inner_diameter / 4)
-                                        * self.mesh_data.padding,
-                                        0,
-                                        self.mesh_data.c_core * self.mesh_data.padding]
+        # Region for Boundary Condition
+        self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
+                                     -(self.core.window_h / 2 + self.core.core_inner_diameter / 4) * self.mesh_data.padding, 0,
+                                     self.mesh_data.c_core * self.mesh_data.padding]
+        self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
+                                     -(self.core.window_h / 2 + self.core.core_inner_diameter / 4) * self.mesh_data.padding, 0,
+                                     self.mesh_data.c_core * self.mesh_data.padding]
+        self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
+                                     (self.core.window_h / 2 + self.core.core_inner_diameter / 4) * self.mesh_data.padding, 0,
+                                     self.mesh_data.c_core * self.mesh_data.padding]
+        self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
+                                     (self.core.window_h / 2 + self.core.core_inner_diameter / 4) * self.mesh_data.padding, 0,
+                                     self.mesh_data.c_core * self.mesh_data.padding]
 
     def draw_insulations(self):
         """

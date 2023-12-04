@@ -1,17 +1,26 @@
+# python libraries
+import copy
+from typing import List
+
+# 3rd party libraries
+import numpy as np
+
+# femmt libraries
 from femmt import *
 from femmt.dtos import *
-import copy
-import numpy as np
+
 
 def number_of_rows(row: ConductorRow):
     """
     :return:
     """
-    number_rows = int(row.number_of_conds_per_winding / row.number_of_conds_per_row) + (row.number_of_conds_per_winding % row.number_of_conds_per_row > 0)
+    number_rows = int(row.number_of_conds_per_winding / row.number_of_conds_per_row) + \
+                     (row.number_of_conds_per_winding % row.number_of_conds_per_row > 0)
     return number_rows
 
 
-def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType, thickness=None, radius=None, cond_cond_isolation=None, additional_bobbin=0):
+def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType,
+               thickness=None, radius=None, cond_cond_isolation=None, additional_bobbin=0):
     """
     Defines a full row of the defined conductor in the specified window width.
     It is assumed, that the row is full, which means, as many conductors are
@@ -30,12 +39,13 @@ def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTa
 
     if conductor_type == ConductorType.RoundLitz or conductor_type == ConductorType.RoundSolid:
         conductor_row.row_height = radius * 2
-        # How many full conductor cross sections fit into one row of the winding window?
+        # How many full conductor cross-sections fit into one row of the winding window?
         conductor_row.number_of_conds_per_row = 0
-        while window_width > 2 * (conductor_row.number_of_conds_per_row + 1) * radius + cond_cond_isolation * conductor_row.number_of_conds_per_row:
+        while window_width > 2 * (conductor_row.number_of_conds_per_row + 1) * radius + cond_cond_isolation * \
+                conductor_row.number_of_conds_per_row:
             conductor_row.number_of_conds_per_row += 1
     elif conductor_type == ConductorType.RectangularSolid:
-        # Rectangular Solid Conductors are meant to be as possible, so their cross section is
+        # Rectangular Solid Conductors are meant to be as possible, so their cross-section is
         # simply adjusted to the winding window width
         conductor_row.row_height = thickness
         conductor_row.number_of_conds_per_row = 1
@@ -66,8 +76,10 @@ def check_secondary_and_tertiary_are_the_same(secondary_row: ConductorRow, terti
 #         number_of_groups = primary_row.number_of_rows
 #
 #     # Initialize the winding objects "to be placed"
-#     single_primary_rows_to_be_placed = [primary_row] * (primary_row.number_of_rows - number_of_groups * center_tapped_group.primary_number_of_rows)
-#     single_secondary_rows_to_be_placed = [secondary_row] * (secondary_row.number_of_rows - number_of_groups * center_tapped_group.secondary_number_of_rows)
+#     single_primary_rows_to_be_placed = [primary_row] * (primary_row.number_of_rows - number_of_groups * \
+#         center_tapped_group.primary_number_of_rows)
+#     single_secondary_rows_to_be_placed = [secondary_row] * (secondary_row.number_of_rows - number_of_groups * \
+#         center_tapped_group.secondary_number_of_rows)
 #     groups_to_be_placed = [center_tapped_group] * number_of_groups
 #
 #     # Depending on the rows that could not be covered by the groups, integrate them among the groups
@@ -140,9 +152,9 @@ def get_height_of_group(group: CenterTappedGroup):
     """
     total_height = 0
     for row_element in group.stack:
-        if type(row_element) == ConductorRow:
+        if isinstance(row_element, ConductorRow):
             total_height += row_element.row_height
-        elif type(row_element) == StackIsolation:
+        elif isinstance(row_element, StackIsolation):
             total_height += row_element.thickness
     return total_height
 
@@ -151,7 +163,7 @@ def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_
     secondary_tags = []
     number_of_added_tertiaries = 0
     for i, obj in enumerate(stack_order_without_tertiary):
-        if type(obj) == ConductorRow:
+        if isinstance(obj, ConductorRow):
             if obj.winding_tag == WindingTag.Secondary:
                 secondary_tags.append(i + 1 + number_of_added_tertiaries)
                 number_of_added_tertiaries += 1
@@ -179,14 +191,14 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
 
         # TODO: dynamic isolations (vertical)
         for n, row in enumerate([stack_order[i], stack_order[i + 1]]):
-            if type(row) == ConductorRow:
+            if isinstance(row, ConductorRow):
                 if row.winding_tag == WindingTag.Primary:
                     insulation_string += "primary"
                 elif row.winding_tag == WindingTag.Secondary:
                     insulation_string += "secondary"
                 elif row.winding_tag == WindingTag.Tertiary:
                     insulation_string += "tertiary"
-            elif type(row) == CenterTappedGroup:
+            elif isinstance(row, CenterTappedGroup):
                 position_in_group = n-1  # 0 for the bot and -1 for the top element
                 if row.stack[position_in_group].winding_tag == WindingTag.Primary:
                     insulation_string += "primary"
@@ -213,17 +225,19 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
 
 def get_set_of_integers_from_string_list(string_list):
     integer_list = []
-    for string in string_list:
+    for single_string in string_list:
         try:
-            if int(string) not in integer_list:
-                integer_list.append(int(string))
+            if int(single_string) not in integer_list:
+                integer_list.append(int(single_string))
         except:
             pass
     return integer_list
 
 
-def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingSchemesFoilLitz, stack_order, primary_additional_bobbin, center_foil_additional_bobbin,
-                                         primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow, isolations: ThreeWindingIsolation):
+def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingSchemesFoilLitz, stack_order,
+                                         primary_additional_bobbin, center_foil_additional_bobbin,
+                                         primary_row: ConductorRow, secondary_row: ConductorRow,
+                                         tertiary_row: ConductorRow, isolations: ThreeWindingIsolation):
 
     # Init the winding counters (needed for vertical insulation adjustments)
     number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = 0, 0, 0
@@ -247,9 +261,11 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
                 number_of_tertiary_rows += 1
 
             # Stacking of the foils does not depend on secondary and tertiary
-            # center_foil_additional_bobbin affects only, if the foil is in the inner 50 % of all rows (close to the air gap)
+            # center_foil_additional_bobbin affects only, if the foil is in the inner 50 % of all rows
+            # (close to the air gap)
             center_interval = 0.5
-            if no_element < len(string_stack_order)*(center_interval/2) or no_element >= len(string_stack_order)*(1/2+center_interval/2):
+            if no_element < len(string_stack_order)*(center_interval/2) or no_element >= len(string_stack_order) * \
+                    (1/2+center_interval/2):
                 stack_order.append(temp_row)
             else:
                 center_temp_row = copy.deepcopy(temp_row)
@@ -277,28 +293,26 @@ def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_
     initial_stack_order = []
 
     number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = \
-        stack_order_from_interleaving_scheme(interleaving_scheme, initial_stack_order, primary_additional_bobbin, center_foil_additional_bobbin,
+        stack_order_from_interleaving_scheme(interleaving_scheme, initial_stack_order, primary_additional_bobbin,
+                                             center_foil_additional_bobbin,
                                              primary_row, secondary_row, tertiary_row, isolations)
 
     insulation_tags = insert_insulations_to_stack(initial_stack_order, isolations)
     number_of_insulations_primary_to_primary = insulation_tags.count("primary_to_primary")
     number_of_insulations_primary_to_secondary = insulation_tags.count("primary_to_secondary") + insulation_tags.count("secondary_to_primary") + \
-                                                 insulation_tags.count("primary_to_tertiary") + insulation_tags.count("tertiary_to_primary")
+        insulation_tags.count("primary_to_tertiary") + insulation_tags.count("tertiary_to_primary")
     number_of_insulations_secondary_to_secondary = insulation_tags.count("secondary_to_secondary") + insulation_tags.count("tertiary_to_tertiary") + \
-                                                   insulation_tags.count("secondary_to_tertiary") + insulation_tags.count("tertiary_to_secondary")
+        insulation_tags.count("secondary_to_tertiary") + insulation_tags.count("tertiary_to_secondary")
 
     # 1
-    minimum_needed_height = number_of_primary_rows * primary_row.row_height + \
-                            number_of_secondary_rows * secondary_row.row_height + \
-                            number_of_tertiary_rows * secondary_row.row_height + \
-                            number_of_insulations_primary_to_primary * isolations.primary_to_primary + \
-                            number_of_insulations_secondary_to_secondary * isolations.secondary_to_tertiary + \
-                            number_of_insulations_primary_to_secondary * isolations.primary_to_secondary
+    minimum_needed_height = number_of_primary_rows * primary_row.row_height + number_of_secondary_rows * secondary_row.row_height + \
+        number_of_tertiary_rows * secondary_row.row_height + number_of_insulations_primary_to_primary * isolations.primary_to_primary + \
+        number_of_insulations_secondary_to_secondary * isolations.secondary_to_tertiary + \
+        number_of_insulations_primary_to_secondary * isolations.primary_to_secondary
 
     # 2
-    new_iso_parameter = np.round((available_height - minimum_needed_height +
-                                  number_of_insulations_primary_to_secondary * isolations.primary_to_secondary) /
-                                 number_of_insulations_primary_to_secondary, 9) - 1e-9
+    new_iso_parameter = np.round((available_height - minimum_needed_height + number_of_insulations_primary_to_secondary * \
+                                  isolations.primary_to_secondary) / number_of_insulations_primary_to_secondary, 9) - 1e-9
     if new_iso_parameter > isolations.primary_to_secondary:
         isolations.primary_to_secondary = new_iso_parameter
         isolations.primary_to_tertiary = new_iso_parameter
@@ -308,7 +322,8 @@ def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_
 
 def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: ConductorRow, tertiary_row: ConductorRow,
                                     isolations: ThreeWindingIsolation, available_height: float,
-                                    interleaving_type: CenterTappedInterleavingType, interleaving_scheme: InterleavingSchemesFoilLitz,
+                                    interleaving_type: CenterTappedInterleavingType,
+                                    interleaving_scheme: InterleavingSchemesFoilLitz,
                                     primary_additional_bobbin: float, center_foil_additional_bobbin: float):
     """Defines the vertical stacking of previously defined ConductorRows.
     IMPORTANT DEFINITION: the rows are calculated without taking into account
@@ -334,7 +349,8 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         elif center_tapped_group.primary_number_of_rows == 1 and center_tapped_group.primary_rest == 0:
             number_of_groups = primary_row.number_of_rows
 
-        # Initialize the winding objects "to be placed"  # TODO: is it possible handle the rest number of primary conductors for the last row? not definitely needed here...
+        # Initialize the winding objects "to be placed"
+        # TODO: is it possible handle the rest number of primary conductors for the last row? not definitely needed here
         single_primary_rows_to_be_placed = [primary_row] * (primary_row.number_of_rows - number_of_groups * center_tapped_group.primary_number_of_rows)
         single_secondary_rows_to_be_placed = [secondary_row] * (secondary_row.number_of_rows - number_of_groups * center_tapped_group.secondary_number_of_rows)
         groups_to_be_placed = [center_tapped_group] * number_of_groups
@@ -342,22 +358,22 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         # Depending on the rows that could not be covered by the groups, integrate them among the groups
         number_of_single_rows = 0
         if len(single_primary_rows_to_be_placed) != 0:
-            stack_order = mix_x_and_I(single_primary_rows_to_be_placed, groups_to_be_placed)
+            stack_order = mix_x_and_i(single_primary_rows_to_be_placed, groups_to_be_placed)
             number_of_single_rows = len(single_primary_rows_to_be_placed)
         elif len(single_secondary_rows_to_be_placed) != 0:
-            stack_order = mix_x_and_I(single_secondary_rows_to_be_placed, groups_to_be_placed)
+            stack_order = mix_x_and_i(single_secondary_rows_to_be_placed, groups_to_be_placed)
             number_of_single_rows = len(single_secondary_rows_to_be_placed)
         else:
-            stack_order = mix_x_and_I(single_secondary_rows_to_be_placed, groups_to_be_placed)
+            stack_order = mix_x_and_i(single_secondary_rows_to_be_placed, groups_to_be_placed)
 
         # Add the tertiary winding to the stack_order
         add_tertiary_winding_to_stack(stack_order, tertiary_row)
 
-
         insert_insulations_to_stack(stack_order, isolations)
 
         # Create the complete ConductorStack from the stack_order
-        return ConductorStack(number_of_groups=number_of_groups, number_of_single_rows=number_of_single_rows, order=stack_order)
+        return ConductorStack(number_of_groups=number_of_groups, number_of_single_rows=number_of_single_rows,
+                              order=stack_order)
 
     elif interleaving_type == CenterTappedInterleavingType.TypeB:
         number_of_single_rows = None
@@ -374,7 +390,6 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
         stack_order.append(secondary_row)
 
         insert_insulations_to_stack(stack_order, isolations)
-
 
         # Create the complete ConductorStack from the stack_order
         return ConductorStack(number_of_groups=0, number_of_single_rows=number_of_single_rows, order=stack_order)
@@ -420,16 +435,16 @@ def get_number_of_turns_in_groups(stack):
     turns2 = 0
 
     for row_element in stack.order:
-        if type(row_element) == StackIsolation:
+        if isinstance(row_element, StackIsolation):
             pass
         else:
-            if type(row_element) == ConductorRow:
+            if isinstance(row_element, ConductorRow):
                 pass
-            elif type(row_element) == CenterTappedGroup:
-               for row in row_element.stack:
-                    if type(row) == StackIsolation:
+            elif isinstance(row_element, CenterTappedGroup):
+                for row in row_element.stack:
+                    if isinstance(row, StackIsolation):
                         pass
-                    elif type(row) == ConductorRow:
+                    elif isinstance(row, ConductorRow):
                         if row.winding_tag == WindingTag.Primary:
                             turns1 += row.number_of_conds_per_row
                         elif row.winding_tag == WindingTag.Secondary:
@@ -444,40 +459,39 @@ def is_even(x: int):
         return True
 
 
-def center(l: List):
-    return int(len(l) / 2)
+def center(l_list: List):
+    return int(len(l_list) / 2)
 
 
-def mix_x_and_I(input_x, input_I):
+def mix_x_and_i(input_x, input_i):
     len_x = len(input_x)
-    len_I = len(input_I)
-    if len_x > len_I:
+    len_i = len(input_i)
+    if len_x > len_i:
         print("x must be smaller or equal I")
     else:
         if len_x == 0:
-            return input_I
+            return input_i
         else:
             x = [0] * len_x
-            I = [1] * len_I
+            current = [1] * len_i
 
             if is_even(len_x):
                 # If an even number shall be distributed, always start from the outsides
                 count = 1
-                mix_distance = 1 + int(len_I / len_x)  # TODO:distance adaptive not always 1
+                mix_distance = 1 + int(len_i / len_x)  # TODO:distance adaptive not always 1
                 while len(x) > 0:
                     if count > 0:
-                        I.insert(count, x[0])
+                        current.insert(count, x[0])
                         count = - count
                     elif count < 0:
-                        I.insert(count, x[0])
+                        current.insert(count, x[0])
                         count = -count + mix_distance
                     x.pop(0)
             elif not is_even(len_x):
                 temp_x = x[0]
-                temp_mixed = mix_x_and_I(x[0:-1], I)
+                temp_mixed = mix_x_and_i(x[0:-1], current)
                 temp_mixed.insert(center(temp_mixed), temp_x)
-                I = temp_mixed
+                current = temp_mixed
             # print(f"{I = }")
-            input_list = [input_x[0], input_I[0]]
-            return [input_list[i] for i in I]
-
+            input_list = [input_x[0], input_i[0]]
+            return [input_list[i] for i in current]

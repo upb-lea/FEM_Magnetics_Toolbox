@@ -6,6 +6,7 @@ from typing import Dict
 # 3rd party libraries
 import numpy as np
 
+
 def calculate_heat_flux_round_wire(power, wire_radius, wire_distance):
     """
     :param power: losses in Watts
@@ -16,6 +17,7 @@ def calculate_heat_flux_round_wire(power, wire_radius, wire_distance):
     volume = 2 * np.pi**2 * wire_radius**2 * wire_distance
 
     return power/volume
+
 
 def read_results_log(results_log_file_path: str) -> Dict:
     """

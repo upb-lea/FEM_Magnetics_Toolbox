@@ -24,9 +24,10 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
     """Creates an example model which is used for the parallel execution example. This does implement a simple transformer.
     """ 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, verbosity=fmt.Verbosity.ToFile)
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.015/2)
     core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom, mdb_verbosity=fmt.Verbosity.Silent)
+                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom,
+                    mdb_verbosity=fmt.Verbosity.Silent)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
@@ -53,8 +54,8 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     :param inductor_frequency: Frequency for the inductor.
     :type inductor_frequency: int
     """ 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None, # Can be set to None since it will be overwritten anyways
-                                verbosity=fmt.Verbosity.ToFile)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,  # Can be set to None since it will be overwritten anyways
+                                clean_previous_results=False, verbosity=fmt.Verbosity.ToFile)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
@@ -81,7 +82,8 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
-    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+    # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,fill_factor=None,
+    # conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False
     vww.set_winding(winding, 9, None)
     geo.set_winding_windows([winding_window])
@@ -132,11 +134,10 @@ def parallel_simulation_study(averaging_count):
     runtimes = []
 
     for frequency, air_gap_height, air_gap_position in product(frequencies, air_gap_heights, air_gap_positions):
-            models.append(create_parallel_example_inductor(frequency, air_gap_height, air_gap_position))
-            simulation_parameters.append({
-                "freq": frequency,
-                "current": [1]
-    })
+        models.append(create_parallel_example_inductor(frequency, air_gap_height, air_gap_position))
+        simulation_parameters.append({
+            "freq": frequency,
+            "current": [1]})
 
     for process_count in process_counts:
         working_directory = os.path.join(study_results_folder, f"{process_count}")
@@ -151,7 +152,6 @@ def parallel_simulation_study(averaging_count):
 
         runtimes.append(statistics.fmean(simulation_times))
 
-
     print("Process counts:", process_counts)
     print("Runtimes:", runtimes)
     
@@ -163,6 +163,7 @@ def parallel_simulation_study(averaging_count):
     else:
         plt.ylabel(f"Runtime")
     plt.show()
+
 
 if __name__ == "__main__":
     # ---- Choosing the execution ----
@@ -193,7 +194,7 @@ if __name__ == "__main__":
             geos.append(create_parallel_example_inductor(inductor_frequency))
             simulation_parameters.append({
                 "freq": inductor_frequency,
-                "current": [4.5]
+                "current": [4.5*(1+i/10)]
             })
 
         start_time = time.time()
@@ -248,4 +249,3 @@ if __name__ == "__main__":
         parallel_simulation_study(3)
     else:
         raise Exception(f"Execution type {execution_type} not found.")
-

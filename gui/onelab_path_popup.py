@@ -19,7 +19,8 @@ class OnelabPathDialog(QDialog):
         if os.path.isdir(directory):
             self.directory = directory
             self.onelab_path_box.setText(directory)
-            
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = OnelabPathDialog()

@@ -6,13 +6,11 @@ import pkg_resources
 import subprocess
 import sys
 import os
-import time
 import warnings
 from typing import Union, List, Tuple, Dict
 
 # Third parry libraries
 import gmsh
-import pandas as pd
 from matplotlib import pyplot as plt
 import numpy.typing as npt
 import numpy as np
@@ -84,7 +82,8 @@ def core_database() -> Dict:
     All dimensions are nominal dimensions without consideration of tolerances.
 
     For PQ core sizes (e.g. PQ 40/40), it has been found out that
-    core_dimension_x / core_dimension_y = 1.45, the error over all available shapes is maximum 7% (compared to datasheet value)
+    core_dimension_x / core_dimension_y = 1.45, the error over all available shapes is maximum 7%
+    (compared to datasheet value)
     Derivation:
     core_list: ['PQ 20/20', 'PQ 26/25', 'PQ 32/30', 'PQ 35/35', 'PQ 40/40', 'PQ 50/50']
     factor core_dimension_x / core_dimension_y = [1.46, 1.39, 1.45, 1.35, 1.44, 1.56]
@@ -436,7 +435,7 @@ def conductivity_temperature(material: str, temperature: float) -> float:
     temperature_coefficient_database = material_from_database.temperature_coefficient
 
     resistance_temperature = 1 / sigma_database * (
-                1 + temperature_coefficient_database * (temperature - temperature_database))
+        1 + temperature_coefficient_database * (temperature - temperature_database))
     sigma_temperature = 1 / resistance_temperature
 
     return sigma_temperature
@@ -456,8 +455,8 @@ def cost_material_database() -> Dict:
     This is split in material and fabrication costs.
     Both, material and fabrication costs have a euro_per_kilogram and a euro_per_unit (fix costs) price.
 
-    Source: R. Burkart and J. Kolar 'Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converter'
-    2013.
+    Source: R. Burkart and J. Kolar 'Component Cost Models for Multi-Objective Optimizations of #
+    Switched-Mode Power Converter' 2013.
 
     These are outdated prices (year 2013). Update needed in future.
     """
@@ -710,7 +709,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
         raise ValueError("if mode is 'rad' or 'deg', a fundamental frequency f0 must be set")
     # check for input is list. Convert to numpy-array
     if isinstance(period_vector_t_i, list):
-        if plot != 'no' and plot != False:
+        if plot != 'no' and plot is not False:
             print("Input is list, convert to np.array()")
         period_vector_t_i = np.array(period_vector_t_i)
 
@@ -766,7 +765,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
         raise ValueError(
             f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
 
-    if plot != 'no' and plot != False:
+    if plot != 'no' and plot is not False:
         print(f"{title = }")
         print(f"{t[-1] = }")
         print(f"{f0 = }")
@@ -845,7 +844,7 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
     # plt.show()
 
 
-def compare_fft_list(input_data_list: list, sample_factor: float = 1000, mode: str = 'rad',
+def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str = 'rad',
                      f0: Union[float, None] = None) -> None:
     """
     generate fft curves from input curves and compare them to each other
@@ -856,13 +855,14 @@ def compare_fft_list(input_data_list: list, sample_factor: float = 1000, mode: s
     >>> example_waveform_2 = np.array([[0, 0.55, 3.14, 3.69, 6.28],[-138.37, 257.58, 138.37, -257.58, -138.37]])
     >>> compare_fft_list([example_waveform, example_waveform_2], mode='rad', f0=25000)
 
-    :param input_data_list: list of fft-compatible numpy-arrays [element, element, ... ], each element format like [[time-vector[,[current-vector]]. One period only
+    :param input_data_list: list of fft-compatible numpy-arrays [element, element, ... ], each element format
+        like [[time-vector[,[current-vector]]. One period only
     :param mode: 'rad'[default]: full period is 2*pi, 'deg': full period is 360°, 'time': time domain.
     :type mode: str
     :param f0: fundamental frequency. Needs to be set in 'rad'- or 'deg'-mode
     :type f0: float
     :param sample_factor: samle factor, defaults to 1000
-    :type sample_factor: float
+    :type sample_factor: int
 
     :return: plot
 
@@ -973,7 +973,8 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     >>> amplitude_2 = [5, 6, 7, 8, 9]
     >>> phase_1 = [10, 20, 30, 40]
     >>> phase_2 = [50, 60, 70, 80, 90]
-    >>> common_f, common_a, common_phase = fmt.find_common_frequencies(frequency_1, amplitude_1, phase_1, frequency_2, amplitude_2, phase_2)
+    >>> common_f, common_a, common_phase = fmt.find_common_frequencies(frequency_1, amplitude_1, phase_1,
+    >>>     frequency_2, amplitude_2, phase_2)
     :Returns:
     >>> common_f = [200, 50, 100, 150]
     >>> common_a = [[4, 9], [1, 5], [2, 6], [3, 7]]
@@ -1112,7 +1113,8 @@ def get_number_of_turns_of_winding(winding_windows, windings: List, winding_numb
         for vww in ww.virtual_winding_windows:
             for index, winding in enumerate(windings):
                 if winding.winding_number == winding_number:
-                    # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
+                    # TODO: change index_turns right no. of winding numbers, right position in list and
+                    #  length of list is needed
                     try:
                         turns += vww.turns[index]
                     except:
@@ -1142,7 +1144,8 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
     """
     Calculates single winding material and fabrication costs depending on winding-type and weight
 
-    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converters"
+    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations
+    of Switched-Mode Power Converters"
 
     :param wire_weight_list: winding weight in kg in list-form
     :type wire_weight_list: List[float]
@@ -1166,15 +1169,13 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
         if sigma_material_winding_euro_per_kilogram == -1:
             # case for special litz wire calculation. Additional data is loaded from cost_database.
             sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"][
-                                                           "sigma_numerator"] / (single_strand_cross_section_list[
-                                                                                     winding_count] * 1e6 +
-                                                                                 cost_database[
-                                                                                     "winding_material_euro_per_kilogram_for_litz"][
-                                                                                     "sigma_denominator"])
+                "sigma_numerator"] / (single_strand_cross_section_list[winding_count] * 1e6 + cost_database[
+                    "winding_material_euro_per_kilogram_for_litz"]["sigma_denominator"])
 
         winding_material_euro_per_unit = cost_database["winding_material_euro_per_unit"][wire_type_list[winding_count]]
 
-        winding_material_cost = sigma_material_winding_euro_per_kilogram * winding_weight + winding_material_euro_per_unit
+        winding_material_cost = sigma_material_winding_euro_per_kilogram * winding_weight + \
+            winding_material_euro_per_unit
 
         # fabrication cost (per kilogram and per unit)
         sigma_fabrication_euro_per_kilogram = cost_database["winding_fabrication_euro_per_kilogram"][
@@ -1195,7 +1196,8 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
     Calculates the total costs for an inductive element.
     This includes material costs for core and winding, fabrication costs for core and winding and manufacturer margin
 
-    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converters"
+    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of
+    Switched-Mode Power Converters"
 
     :param core_weight: core weight in kg
     :type core_weight: float
@@ -1232,7 +1234,8 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
 
     :param result_log_folder: filepath to result-log folder
     :type result_log_folder: str
-    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
+    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core",
+        "core_inner_diameter"]
     :type keyword_list: list
     :param value_min_max: value to check for
     :type value_min_max: list
@@ -1240,7 +1243,8 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
     :Example:
     Check for files with a core inner diameter smaller equal than 0.02 m.
     >>> import femmt as fmt
-    >>> fmt.find_result_log_file("/home/filepath/fem_simulation_data", ["simulation_settings", "core", "core_inner_diameter"],[0.015, 0.02])
+    >>> fmt.find_result_log_file("/home/filepath/fem_simulation_data", ["simulation_settings", "core",
+    >>>     "core_inner_diameter"],[0.015, 0.02])
 
     """
 
@@ -1395,7 +1399,8 @@ def get_coupling_matrix(flux_linkages: List) -> np.array:
     coupling_matrix = [[None] * len(flux_linkages) for _ in range(len(flux_linkages))]
     for self_index in range(0, len(flux_linkages)):
         for cross_index in range(0, len(flux_linkages)):
-            coupling_matrix[cross_index][self_index] = flux_linkages[cross_index][self_index].real / flux_linkages[self_index][self_index].real
+            coupling_matrix[cross_index][self_index] = flux_linkages[cross_index][self_index].real / \
+                flux_linkages[self_index][self_index].real
     return coupling_matrix
 
 
@@ -1408,7 +1413,8 @@ def get_mean_coupling_factors(coupling_matrix: np.array):
     mean_coupling_factors = [[None] * len(coupling_matrix) for _ in range(len(coupling_matrix))]
     for self_index in range(0, len(coupling_matrix)):
         for cross_index in range(0, len(coupling_matrix)):
-            mean_coupling_factors[cross_index][self_index] = (coupling_matrix[cross_index][self_index] * coupling_matrix[self_index][cross_index]) ** 0.5
+            mean_coupling_factors[cross_index][self_index] = (coupling_matrix[cross_index][self_index] * \
+                                                              coupling_matrix[self_index][cross_index]) ** 0.5
     return mean_coupling_factors
 
 
@@ -1507,7 +1513,8 @@ def visualize_mean_coupling_factors(mean_coupling_factors: List, silent: bool):
     string_to_print = ""
     for x in range(0, len(mean_coupling_factors)):
         for y in range(0, len(mean_coupling_factors)):
-            string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} / Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
+            string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} " \
+                               f"/ Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
         if not silent:
             print(f"\n"
                   f"Mean Coupling Factors: ")
@@ -1539,8 +1546,11 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
 def visualize_mutual_inductances(self_inductances: List, coupling_factors: List, silent: bool):
     """
     Print the mutal inductances to the terminal (or file-) output
-    :param inductance_matrix: inductance matrix
-    :type inductance_matrix: np.array
+
+    :param self_inductances: Matrix with self inductances
+    :type self_inductances: List
+    :param coupling_factors: Matrix with coupling factors
+    :type coupling_factors: List
     :param silent: True for no output
     :type silent: bool
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
@@ -1570,7 +1580,7 @@ def visualize_inductance_matrix_coefficients(inductance_matrix, silent: bool):
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
     if not silent:
         print(f"\n"
-                   f"Inductance Matrix Coefficients: ")
+              f"Inductance Matrix Coefficients: ")
         print(string_to_print)
 
 

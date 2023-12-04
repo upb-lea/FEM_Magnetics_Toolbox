@@ -48,7 +48,7 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         z_value_str = [str(round(z, 3)) for z in z_value]
 
     if inductance_value is not None:
-        l_value_str = [str(round(l, 6)) for l in inductance_value]
+        l_value_str = [str(round(inductance, 6)) for inductance in inductance_value]
 
     x_value_str = [str(round(x, 6)) for x in x_value]
     y_value_str = [str(round(y, 3)) for y in y_value]
@@ -129,8 +129,6 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     ax.grid()
     plt.show()
 
-
-
 # Faster than is_pareto_efficient_simple, but less readable.
 def is_pareto_efficient(costs, return_mask=True):
     """
@@ -157,9 +155,6 @@ def is_pareto_efficient(costs, return_mask=True):
     else:
         return is_efficient
 
-
-
-
 def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]) -> tuple:
     """
     Calculates the Pareto front from a list of ItoSingleResultFiles.
@@ -176,12 +171,11 @@ def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]) -> tuple:
     for dto in dto_list:
         x_vec = np.append(x_vec, dto.core_2daxi_total_volume)
         y_vec = np.append(y_vec, dto.total_loss)
-        tuple_vec.append((dto.core_2daxi_total_volume,dto.total_loss))
+        tuple_vec.append((dto.core_2daxi_total_volume, dto.total_loss))
 
     tuple_vec = np.array(tuple_vec)
 
     pareto_tuple_mask_vec = is_pareto_efficient(tuple_vec)
-
 
     x_pareto_vec = []
     y_pareto_vec = []
