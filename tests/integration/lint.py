@@ -23,6 +23,7 @@ def test_files():
              # examples
              '../../femmt/examples/advanced_inductor_sweep.py',
              '../../femmt/examples/advanced_sto.py',
+             '../../femmt/examples/advanced_inductor_air_gap_sweep.py',
              '../../femmt/examples/basic_inductor.py',
              '../../femmt/examples/basic_inductor_foil_vertical.py',
              '../../femmt/examples/basic_transformer.py',
@@ -40,7 +41,6 @@ def test_files():
              '../../femmt/examples/inductor_optimization.py',
              '../../femmt/examples/ito_brute_force_example.py',
              '../../femmt/examples/ito_optuna_example.py',
-             '../../femmt/examples/parameter_sweep_example.py',
              '../../femmt/examples/winding_test.py',
              '../../femmt/examples/__init__.py',
 
