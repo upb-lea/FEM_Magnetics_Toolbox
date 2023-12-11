@@ -922,9 +922,11 @@ class StackedTransformerOptimization:
         :type config: StoSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default]
+            removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter,
+            except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         :param show_simulation_results: visualize the simulation results of the FEM simulation
         :type show_simulation_results: bool
@@ -953,9 +955,9 @@ class StackedTransformerOptimization:
         primary_coil_turns = int(loaded_trial_params["params_primary_coil_turns"])
         # Note: int() is used to round down.
         number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
         window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
@@ -984,7 +986,6 @@ class StackedTransformerOptimization:
                                       working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
                                       verbosity=femmt.Verbosity.Silent,
                                       simulation_name=f"Single_Case_{loaded_trial_params['number']}")
-
 
         core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                            window_h_top=window_h_top, window_h_bot=window_h_bot)
@@ -1205,7 +1206,6 @@ class StackedTransformerOptimization:
             os.mkdir(f'{config.working_directory}/drawings')
         for trial_number in trials_numbers:
             femmt.StackedTransformerOptimization.save_png_from_df(df, config, number_trial=trial_number, show_simulation_results=False)
-
 
     @staticmethod
     def study_to_df(study_name: str, database_url: str):
