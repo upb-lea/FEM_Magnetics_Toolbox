@@ -1,3 +1,4 @@
+"""Functions for the termal simulations."""
 # Python standard libraries
 import json
 import os
@@ -9,6 +10,8 @@ import numpy as np
 
 def calculate_heat_flux_round_wire(power, wire_radius, wire_distance):
     """
+    Calculate teat flux for round wire.
+
     :param power: losses in Watts
     :param wire_radius: wire thickness in m
     :param wire_distance:

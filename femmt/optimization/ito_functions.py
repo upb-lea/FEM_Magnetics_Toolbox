@@ -1,3 +1,4 @@
+"""Functions for the integrated transformer optimization."""
 # python libraries
 import shutil
 import os
@@ -16,8 +17,9 @@ import femmt as fmt
 
 def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
     """
-    Inner function. Needed in order to appropriately run parallel simulations since some GetDP files
-    are changed in every simulation instance
+    Appropriately run parallel simulations since some GetDP files are changed in every simulation instance.
+
+    Inner function, should not be used directly by the user.
 
     :param src_folder: Path to the base electro_magnetic folder
     :type src_folder: str
@@ -35,7 +37,7 @@ def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
 
 def dto_list_to_vec(dto_list: List[ItoSingleResultFile]) -> Tuple:
     """
-    Brings a list of dto-objects to two lists
+    Brings a list of dto-objects to two lists.
 
     Use case is to bring the pareto-front into two vectors for further calculations
 
@@ -43,7 +45,6 @@ def dto_list_to_vec(dto_list: List[ItoSingleResultFile]) -> Tuple:
     :type dto_list: List[ItoSingleResultFile]
 
     """
-
     for dto in dto_list:
         x_pareto_vec = dto.core_2daxi_total_volume
         y_pareto_vec = dto.total_loss
@@ -138,6 +139,7 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
                                                           phase_deg_1: float,
                                                           phase_deg_2: float,
                                                           visualize: bool = False):
+    """FEM simulation for the integrated transformer from a result DTO."""
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
                                 working_directory=fem_working_directory,
@@ -224,6 +226,7 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
                                                             simulation_dto_list: List[ItoSingleResultFile],
                                                             visualize: bool = False,
                                                             ):
+    """FEM simulation for the integrated transformer from a result DTO."""
     ito_target_and_fixed_parameters_dto = fmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(
         config_dto)
 
@@ -267,7 +270,7 @@ def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingl
 def integrated_transformer_fem_thermal_simulations_from_result_dtos(
         config_dto: ItoSingleInputConfig, simulation_dto_list: List[ItoSingleResultFile],
         visualize: bool = False):
-
+    """Thermal FEM simulation for the integrated transformer from a result DTO."""
     ito_target_and_fixed_parameters_dto = fmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(
         config_dto)
 
