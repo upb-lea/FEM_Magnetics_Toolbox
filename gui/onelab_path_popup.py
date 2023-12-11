@@ -15,6 +15,7 @@ class OnelabPathDialog(QDialog):
         self.browse_button.clicked.connect(self.clicked_browse_button)
 
     def clicked_browse_button(self):
+        """Select a directory for the onlab filepath inside the GUI."""
         directory = str(QFileDialog.getExistingDirectory(self, "Select Directory", directory=self.directory))
         if os.path.isdir(directory):
             self.directory = directory

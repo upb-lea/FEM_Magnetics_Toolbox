@@ -1,0 +1,31 @@
+
+exclude = [
+    ".eggs",
+    ".git",
+    ".venv",
+    "venv",
+    "gui/femmt_gui.py"]
+
+line-length = 88
+indent-width = 4
+
+target-version = "py39"
+
+[lint]
+select = ["E4", "E7", "E9", "F", "B", "D"]
+ignore = ["B008", "D107", "D203", "D212", "D213", "D402", "D413", "D415", "D416", "E722", "E731", "F403", "F405", "F841",]
+
+# ignore list in docstring according to numpy codestyles for Dxxx.
+# http://www.pydocstyle.org/en/5.0.1/error_codes.html#default-conventions
+
+fixable = ["ALL"]
+unfixable = []
+
+[format]
+quote-style = "double"
+
+indent-style = "space"
+
+skip-magic-trailing-comma = false
+
+line-ending = "auto"
