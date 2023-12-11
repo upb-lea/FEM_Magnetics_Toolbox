@@ -1154,43 +1154,6 @@ class WindingWindow:
                 if isinstance(row_element, StackIsolation):
                     vertical_space_used += row_element.thickness
                 else:
-                    if isinstance(row_element, ConductorRow):
-                        vertical_space_used += row_element.row_height
-                        if row_element.winding_tag == WindingTag.Primary:
-                            winding_scheme_type.append(WindingType.Single)
-                        elif row_element.winding_tag == WindingTag.Secondary or row_element.winding_tag == WindingTag.Tertiary:
-                            winding_scheme_type.append(WindingScheme.FoilHorizontal)
-
-                    elif isinstance(row_element, CenterTappedGroup):
-                        vertical_space_used += get_height_of_group(group=row_element)
-                        winding_scheme_type.append(WindingType.CenterTappedGroup)
-
-                    self.virtual_winding_windows.append(
-                        VirtualWindingWindow(
-                            bot_bound=self.max_bot_bound + vertical_space_used_last,
-                            top_bound=self.max_bot_bound + vertical_space_used,
-                            left_bound=self.max_left_bound,
-                            right_bound=self.max_right_bound))
-
-        return self.virtual_winding_windows, winding_scheme_type
-
-    def split_with_stack(self, stack: ConductorStack):
-        """
-        Split the winding window according to a ConductorStack dataclass.
-
-        :param stack:
-        :return:
-        """
-        bottom_up = True
-        vertical_space_used = 0  # initialize the counter with zero
-        self.virtual_winding_windows = []
-        winding_scheme_type = []
-        if bottom_up:
-            for _, row_element in enumerate(stack.order):
-                vertical_space_used_last = vertical_space_used
-                if isinstance(row_element, StackIsolation):
-                    vertical_space_used += row_element.thickness
-                else:
                     additional_bobbin = 0
                     if isinstance(row_element, ConductorRow):
                         vertical_space_used += row_element.row_height
