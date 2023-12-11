@@ -160,22 +160,22 @@ class TwoDaxiSymmetric:
                                 self.mesh_data.c_window]
 
         self.p_window_top[0] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4,  # TODO: could also be done arbitrarily
+                                self.core.window_h_bot/2 + self.core.core_thickness,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[1] = [self.r_inner,
-                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4,  # TODO: could also be done arbitrarily
+                                self.core.window_h_bot/2 + self.core.core_thickness,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[2] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + self.core.window_h_top,  # TODO: could also be done arbitrarily
+                                self.core.window_h_bot/2 + self.core.core_thickness + self.core.window_h_top,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[3] = [self.r_inner,
-                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + self.core.window_h_top,  # TODO: could also be done arbitrarily
+                                self.core.window_h_bot/2 + self.core.core_thickness + self.core.window_h_top,
                                 0,
                                 self.mesh_data.c_window]
 

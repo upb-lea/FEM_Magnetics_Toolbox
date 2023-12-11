@@ -660,13 +660,13 @@ class Mesh:
 
         # 9 top right
         p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[3][0],
-                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_inner_diameter / 4,
+                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_thickness,
                                               self.model.p_outer[3][2],
                                               self.model.p_outer[1][3]))  # TODO accuracy of mesh
 
         # 10 top left
         p_core.append(gmsh.model.geo.addPoint(0,
-                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_inner_diameter / 4,
+                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_thickness,
                                               self.model.p_outer[3][2],
                                               self.model.p_outer[1][3]))  # TODO accuracy of mesh
 
@@ -703,9 +703,9 @@ class Mesh:
         #  center part
         # 16 top air gap bot_left # TODO: Code for distributed air gaps
         p_core.append(gmsh.model.geo.addPoint(0,
-                                              top_air_gap_center_y - top_air_gap_length / 2,
+                                              self.model.p_outer[2][1],
                                               0,
-                                              self.model.p_outer[1][3]))  # TODO: Code for distributed air gaps
+                                              self.model.p_outer[1][3]))
 
         # 17
         p_core.append(gmsh.model.geo.addPoint(0,
@@ -1210,8 +1210,8 @@ class Mesh:
         # gmsh.option.setNumber("Mesh.SaveAll", 1)
         if save_png:
             gmsh.fltk.initialize()
-
             gmsh.write(self.hybrid_color_png_file)  # save png
+            gmsh.fltk.finalize()
 
     def generate_hybrid_mesh(self, color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default,
                              visualize_before: bool = False,
