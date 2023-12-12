@@ -1,3 +1,4 @@
+"""Functions to draw different conductor schemes for the FEM simulation."""
 # python libraries
 import copy
 from typing import List
@@ -12,6 +13,8 @@ from femmt.dtos import *
 
 def number_of_rows(row: ConductorRow):
     """
+
+
     :return:
     """
     number_rows = int(row.number_of_conds_per_winding / row.number_of_conds_per_row) + \
@@ -22,7 +25,8 @@ def number_of_rows(row: ConductorRow):
 def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType,
                thickness=None, radius=None, cond_cond_isolation=None, additional_bobbin=0):
     """
-    Defines a full row of the defined conductor in the specified window width.
+    Define a full row of the defined conductor in the specified window width.
+
     It is assumed, that the row is full, which means, as many conductors are
     place horizontally next to each other, as possible.
     It is assumed, that the row fits into the winding window. A later control
@@ -56,7 +60,8 @@ def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTa
 
 def check_secondary_and_tertiary_are_the_same(secondary_row: ConductorRow, tertiary_row: ConductorRow):
     """
-    Does the definition of the single rows relate to a center-tapped transformer?
+    Define the single rows relate to a center-tapped transformer.
+
     :return:
     """
     if secondary_row.row_height == tertiary_row.row_height and \
@@ -148,8 +153,7 @@ def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
 
 
 def get_height_of_group(group: CenterTappedGroup):
-    """returns the total height of thr conductors and insulation
-    """
+    """Return the total height of thr conductors and insulation."""
     total_height = 0
     for row_element in group.stack:
         if isinstance(row_element, ConductorRow):
@@ -182,7 +186,7 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     insulation_stack = []
     number_of_added_insulations = 0
     # here: zero index means bot_row
-    for i, bot_row in enumerate(stack_order[0:-1]):
+    for i, _ in enumerate(stack_order[0:-1]):
         insulation_string = ""
         # print(f"{bot_row = }")
         # print(f"{top_row = }\n")
@@ -325,12 +329,12 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
                                     interleaving_type: CenterTappedInterleavingType,
                                     interleaving_scheme: InterleavingSchemesFoilLitz,
                                     primary_additional_bobbin: float, center_foil_additional_bobbin: float):
-    """Defines the vertical stacking of previously defined ConductorRows.
+    """Define the vertical stacking of previously defined ConductorRows.
+
     IMPORTANT DEFINITION: the rows are calculated without taking into account
     any vertical insulation. Only the horizontal insulation from conductors
     of the same WindingTag is taken into account in ConductorRow definition.
     """
-
     if not check_secondary_and_tertiary_are_the_same(secondary_row, tertiary_row):
         print("Secondary and tertiary winding are not defined similar. "
               "That is not a nice center-tapped transformer :(")
@@ -417,11 +421,11 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
     elif interleaving_type == CenterTappedInterleavingType.TypeD:
         number_of_single_rows = None
         stack_order = []
-        for i in range(0, primary_row.number_of_rows):
+        for _ in range(0, primary_row.number_of_rows):
             stack_order.append(primary_row)
-        for i in range(0, secondary_row.number_of_rows):
+        for _ in range(0, secondary_row.number_of_rows):
             stack_order.append(secondary_row)
-        for i in range(0, tertiary_row.number_of_rows):
+        for _ in range(0, tertiary_row.number_of_rows):
             stack_order.append(tertiary_row)
 
         insert_insulations_to_stack(stack_order, isolations)
@@ -453,6 +457,11 @@ def get_number_of_turns_in_groups(stack):
 
 
 def is_even(x: int):
+    """Check if given number is even or odd.
+
+    :param x: input number to check
+    :type x: int
+    """
     if x % 2:
         return False
     else:

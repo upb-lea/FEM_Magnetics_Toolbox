@@ -1,3 +1,4 @@
+"""Contains constants used by FEMMT."""
 import numpy as np
 
 # vacuum permeability

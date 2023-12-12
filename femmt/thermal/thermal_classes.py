@@ -39,9 +39,11 @@ class GroupPro:
         self.regions = {}
 
     def add_regions(self, more_regions):
+        """Add given regions to the group."""
         self.regions.update(more_regions)
 
     def create_file(self, file_path, air_gaps_enabled=False, insulation_enabled=False):
+        """Create some onelab specific result files."""
         with open(file_path, "w") as fd:
             fd.write("Group {\n")
             for key, value in self.regions.items():

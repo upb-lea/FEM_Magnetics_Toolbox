@@ -4,7 +4,7 @@ import femmt as fmt
 
 
 phi = np.linspace(0, 2*np.pi, 100)
-t =
+t = np.linspace(0, 2*np.pi, 100)
 i1 = 8*np.sin(phi) + 1*np.sin(2*phi+5)
 i2 = 8*np.cos(phi) - 2*np.cos(2*phi+4)
 print(np.mean(np.mean(i1)))

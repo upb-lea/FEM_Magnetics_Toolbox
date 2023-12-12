@@ -1,9 +1,11 @@
+"""Basic example to show how to simulate an inductor with vertical foil winding."""
 import femmt as fmt
 import os
 
 
 def basic_example_inductor_foil_vertical(onelab_folder: str = None, show_visual_outputs: bool = True,
                                          is_test: bool = False):
+    """Run the example code for the inductor with vertical foil winding."""
 
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:

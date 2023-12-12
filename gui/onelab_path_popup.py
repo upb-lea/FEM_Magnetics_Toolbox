@@ -1,9 +1,12 @@
+"""Class and methods for the separate GUI window to ask for the ONELAB filepath at first run."""
 from PyQt5 import uic
 from PyQt5.QtWidgets import *
 import sys
 import os
 
 class OnelabPathDialog(QDialog):
+    """Class to open a separate GUI window to ask for the ONELAB filepath."""
+
     def __init__(self):
         super(QDialog, self).__init__()
         ui_file_path = os.path.join(os.path.dirname(__file__), "onelab_path_popup.ui")

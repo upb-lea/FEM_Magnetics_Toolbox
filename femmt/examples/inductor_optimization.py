@@ -1,3 +1,4 @@
+"""Optimize an inductor using the reluctance model and FEM simulations."""
 # python libraries
 import json
 import csv
@@ -25,15 +26,14 @@ material_db = mdb.MaterialDatabase()
 
 def load_from_single_file(working_directory: str, file_name: str):
     """
-        Load from a single FEM simulation case for checking the result in detail
+    Load from a single FEM simulation case for checking the result in detail.
 
-        param working_directory: Working directory where all the simulated cases have been saved
-        from the automated design
-        :type working_directory: str
-        :param file_name: Log file which needs to be simulated (e.g. 'case1344.json')
-        :type file_name: str
+    param working_directory: Working directory where all the simulated cases have been saved
+    from the automated design
+    :type working_directory: str
+    :param file_name: Log file which needs to be simulated (e.g. 'case1344.json')
+    :type file_name: str
     """
-
     file_path = os.path.join(working_directory, "fem_simulation_data", file_name)
 
     example_results_folder = os.path.join(working_directory, "example_results")
@@ -51,7 +51,7 @@ def load_from_single_file(working_directory: str, file_name: str):
 
     frequency = 0
     current = 0
-    for name, data in log_parser.data.items():
+    for _, data in log_parser.data.items():
         frequency = data.sweeps[0].frequency
         current = data.sweeps[0].windings[0].current.real
 
@@ -65,28 +65,28 @@ def load_from_single_file(working_directory: str, file_name: str):
 def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, plot_color: str, z_value: list = None,
             z_label: str = None, inductance_value: list = None, annotations: list = None):
     """
-        Visualize data in 2d plot with popover next to mouse position.
+    Visualize data in 2d plot with popover next to mouse position.
 
-        param x_value: Data points for x-axis
-        :type x_value: list
-        :param y_value: Data points for y-axis
-        :type y_value: list
-        :param z_value: Data points for z-axis
-        :type z_value: list
-        :param x_label: x-axis label
-        :type x_label: str
-        :param y_label: y-axis label
-        :type y_label: str
-        :param z_label: z-axis label
-        :type z_label: str
-        :param title: Title of the graph
-        :type title: str
-        :param inductance_value: Data points for inductance value corresponding to the (x, y, z): (Optional)
-        :type inductance_value: list
-        :param annotations: Annotations corresponding to the 3D points
-        :type annotations: list
-        :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
-        :type annotations: str
+    param x_value: Data points for x-axis
+    :type x_value: list
+    :param y_value: Data points for y-axis
+    :type y_value: list
+    :param z_value: Data points for z-axis
+    :type z_value: list
+    :param x_label: x-axis label
+    :type x_label: str
+    :param y_label: y-axis label
+    :type y_label: str
+    :param z_label: z-axis label
+    :type z_label: str
+    :param title: Title of the graph
+    :type title: str
+    :param inductance_value: Data points for inductance value corresponding to the (x, y, z): (Optional)
+    :type inductance_value: list
+    :param annotations: Annotations corresponding to the 3D points
+    :type annotations: list
+    :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
+    :type annotations: str
     """
     if annotations is None:
         names = [str(x) for x in list(range(len(x_value)))]
@@ -130,8 +130,7 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     annot.set_visible(False)
 
     def update_annot(ind):
-        """Create popover annotations in 2d plot"""
-
+        """Create popover annotations in 2d plot."""
         pos = sc.get_offsets()[ind["ind"][0]]
         annot.xy = pos
         text = ""
@@ -164,8 +163,7 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         annot.get_bbox_patch().set_alpha(0.8)
 
     def hover(event):
-        """Event that is triggered when mouse is hovered.
-        Shows text annotation over data point closest to mouse."""
+        """Event that is triggered when mouse is hovered. Shows text annotation over data point closest to mouse."""
         vis = annot.get_visible()
         if event.inaxes == ax:
             cont, ind = sc.contains(event)
@@ -186,26 +184,26 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
 def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: str, z_label: str,
             title: str, annotations: list, plot_color: str):
     """
-        Visualize data in 3d plot with popover next to mouse position.
+    Visualize data in 3d plot with popover next to mouse position.
 
-        param x_value: Data points for x-axis
-        :type x_value: list
-        :param y_value: Data points for y-axis
-        :type y_value: list
-        :param z_value: Data points for z-axis
-        :type z_value: list
-        :param x_label: x-axis label
-        :type x_label: str
-        :param y_label: y-axis label
-        :type y_label: str
-        :param z_label: z-axis label
-        :type z_label: str
-        :param title: Title of the graph
-        :type title: str
-        :param annotations: Annotations corresponding to the 3D points
-        :type annotations: list
-        :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
-        :type annotations: str
+    param x_value: Data points for x-axis
+    :type x_value: list
+    :param y_value: Data points for y-axis
+    :type y_value: list
+    :param z_value: Data points for z-axis
+    :type z_value: list
+    :param x_label: x-axis label
+    :type x_label: str
+    :param y_label: y-axis label
+    :type y_label: str
+    :param z_label: z-axis label
+    :type z_label: str
+    :param title: Title of the graph
+    :type title: str
+    :param annotations: Annotations corresponding to the 3D points
+    :type annotations: list
+    :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
+    :type annotations: str
     """
     names = np.array(annotations)
     num = [re.findall(r'\d+', item) for item in names]
@@ -241,12 +239,15 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
                depthshade=True, picker=True)
 
     def distance(point, event):
-        """Return distance between mouse position and given data point
+        """Return distance between mouse position and given data point.
 
         Args:
+        ----
             point (np.array): np.array of shape (3,), with x,y,z in data coordinates
             event (MouseEvent): mouse event (which contains mouse position in .x and .xdata)
+
         Returns:
+        -------
             distance (np.float64): distance (in screen coordinates) between mouse pos and data point
         """
         assert point.shape == (3,), "distance: point.shape is wrong: %s, must be (3,)" % point.shape
@@ -262,9 +263,12 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
         """Calculate which data point is closest to the mouse position.
 
         Args:
+        ----
             array_of_points (np.array) - array of points, of shape (numPoints, 3)
             mouse_event (MouseEvent) - mouse event (containing mouse position)
+
         Returns:
+        -------
             smallestIndex (int) - the index (into the array of points X) of the element closest to the mouse position
         """
         X_modified = array_of_points[np.all(~np.isnan(array_of_points), axis=1), 0:3]
@@ -272,9 +276,10 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
         return np.argmin(distances)
 
     def annotate_plot(array_of_points, index):
-        """Create popover label in 3d chart
+        """Create popover label in 3d chart.
 
         Args:
+        ----
             array_of_points (np.array) - array of points, of shape (numPoints, 3)
             index (int) - index (into points array X) of item which should be printed
         Returns:
@@ -304,7 +309,7 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
 def filter_after_fem(inductance: list, total_loss: list, total_volume: list, total_cost: list,
                      annotation_list: list, goal_inductance: float, percent_tolerance: int):
     """
-    The function filters the FEM simulated data based on the inductance tolerance
+    Filter the FEM simulated data based on the inductance tolerance.
 
     param inductance: Inductance read from FEM simulation cases[in Henry]
     :type inductance: list
@@ -340,7 +345,7 @@ def filter_after_fem(inductance: list, total_loss: list, total_volume: list, tot
 
 def load_fem_simulation_results(working_directory: str):
     """
-    Load FEM simulation results from given working directory
+    Load FEM simulation results from given working directory.
 
     param working_directory: Sets the working directory
     :type fem_simulation_results_directory: str
@@ -372,7 +377,7 @@ def load_fem_simulation_results(working_directory: str):
     total_loss = []
     total_volume = []
     total_cost = []
-    for name, data in log_parser.data.items():
+    for _, data in log_parser.data.items():
         inductivities.append(data.sweeps[0].windings[0].self_inductance)
         total_loss.append(data.total_core_losses + data.total_winding_losses)
         total_volume.append(data.core_2daxi_total_volume)
@@ -393,6 +398,7 @@ def load_fem_simulation_results(working_directory: str):
 class AutomatedDesign:
     """
     AutomatedDesign class implements brute force optimization for magnetic component design.
+
     It consists of input parameters sweep, filtration, FEM simulation and plotting of the relevant results.
     """
 
@@ -434,66 +440,66 @@ class AutomatedDesign:
                  manual_litz_strand_r: list,
                  manual_litz_strand_n: list,
                  manual_litz_fill_factor: list):
-
         """
-                :param working_directory: Sets the working directory
-                :type working_directory: str
-                :param magnetic_component: Sets magnetic component: 'inductor', 'integrated transformer'
-                :type magnetic_component: str
-                :param target_inductance: Sets goal inductance for design [in Henry]
-                :type target_inductance: float
-                :param frequency: Operating frequency [in Hz]
-                :type frequency: float
-                :param target_inductance_percent_tolerance: percent tolerance with respect to goal inductance [in percent]
-                :type target_inductance_percent_tolerance: float
-                :param winding_scheme: Winding scheme: 'Square' or 'Hexagonal'
-                :type winding_scheme: str
-                :param peak_current: Max current amplitude with assumption of sinusoidal current waveform [in Ampere]
-                :type peak_current: float
-                :param percent_of_flux_density_saturation: percent of saturation of magnetic flux density [in percent]
-                :type percent_of_flux_density_saturation: int
-                :param percent_of_total_loss: percentage of the total loss [in percent]
-                :type percent_of_total_loss: int
-                :param database_core_names: list of core names from the database
-                :type database_core_names: list
-                :param database_litz_names: list of litz wire names from the database
-                :type database_litz_names: list
-                :param solid_conductor_r: Solid conductor radius [in meter]
-                :type solid_conductor_r: list
-                :param manual_core_inner_diameter: Diameter of center leg of the core [in meter]
-                :type manual_core_inner_diameter: list
-                :param manual_window_h: Height of the core window [in meter]
-                :type manual_window_h: list
-                :param manual_window_w: Width of the core window [in meter]
-                :type manual_window_w: list
-                :param no_of_turns: Number of turns
-                :type no_of_turns: list
-                :param n_air_gaps: Number of air-gaps in the center leg of the core
-                :type n_air_gaps: list
-                :param air_gap_height: Air-gap height [in meter]
-                :type air_gap_height: list
-                :param air_gap_position: Position of the air-gap in the percentage with respect to window_h [in percent]
-                :type air_gap_position: list
-                :param core_material: Relative permeability of the core [in F/m]
-                :type core_material: list
-                :param mult_air_gap_type: Two types of equally distributed air-gaps (used only for air-gaps more than 1)
-                    Type 1: Edge distributed
-                    Type 2: Center distributed
-                :type mult_air_gap_type: list
-                :param top_core_insulation: top_core_insulation [in meter]
-                :type top_core_insulation: float
-                :param bot_core_insulation: bot_core_insulation [in meter]
-                :type bot_core_insulation: float
-                :param left_core_insulation: left_core_insulation [in meter]
-                :type left_core_insulation: float
-                :param right_core_insulation: right_core_insulation [in meter]
-                :type right_core_insulation: float
-                :param inner_winding_insulation: inner_winding_insulation [in meter]
-                :type inner_winding_insulation: float
-                :param temperature: core temperature [in degree Celsius]
-                :type temperature: float
-        """
+        Initialize the automated design.
 
+        :param working_directory: Sets the working directory
+        :type working_directory: str
+        :param magnetic_component: Sets magnetic component: 'inductor', 'integrated transformer'
+        :type magnetic_component: str
+        :param target_inductance: Sets goal inductance for design [in Henry]
+        :type target_inductance: float
+        :param frequency: Operating frequency [in Hz]
+        :type frequency: float
+        :param target_inductance_percent_tolerance: percent tolerance with respect to goal inductance [in percent]
+        :type target_inductance_percent_tolerance: float
+        :param winding_scheme: Winding scheme: 'Square' or 'Hexagonal'
+        :type winding_scheme: str
+        :param peak_current: Max current amplitude with assumption of sinusoidal current waveform [in Ampere]
+        :type peak_current: float
+        :param percent_of_flux_density_saturation: percent of saturation of magnetic flux density [in percent]
+        :type percent_of_flux_density_saturation: int
+        :param percent_of_total_loss: percentage of the total loss [in percent]
+        :type percent_of_total_loss: int
+        :param database_core_names: list of core names from the database
+        :type database_core_names: list
+        :param database_litz_names: list of litz wire names from the database
+        :type database_litz_names: list
+        :param solid_conductor_r: Solid conductor radius [in meter]
+        :type solid_conductor_r: list
+        :param manual_core_inner_diameter: Diameter of center leg of the core [in meter]
+        :type manual_core_inner_diameter: list
+        :param manual_window_h: Height of the core window [in meter]
+        :type manual_window_h: list
+        :param manual_window_w: Width of the core window [in meter]
+        :type manual_window_w: list
+        :param no_of_turns: Number of turns
+        :type no_of_turns: list
+        :param n_air_gaps: Number of air-gaps in the center leg of the core
+        :type n_air_gaps: list
+        :param air_gap_height: Air-gap height [in meter]
+        :type air_gap_height: list
+        :param air_gap_position: Position of the air-gap in the percentage with respect to window_h [in percent]
+        :type air_gap_position: list
+        :param core_material: Relative permeability of the core [in F/m]
+        :type core_material: list
+        :param mult_air_gap_type: Two types of equally distributed air-gaps (used only for air-gaps more than 1)
+            Type 1: Edge distributed
+            Type 2: Center distributed
+        :type mult_air_gap_type: list
+        :param top_core_insulation: top_core_insulation [in meter]
+        :type top_core_insulation: float
+        :param bot_core_insulation: bot_core_insulation [in meter]
+        :type bot_core_insulation: float
+        :param left_core_insulation: left_core_insulation [in meter]
+        :type left_core_insulation: float
+        :param right_core_insulation: right_core_insulation [in meter]
+        :type right_core_insulation: float
+        :param inner_winding_insulation: inner_winding_insulation [in meter]
+        :type inner_winding_insulation: float
+        :param temperature: core temperature [in degree Celsius]
+        :type temperature: float
+        """
         self.working_directory = working_directory
         self.set_up_folder_structure(working_directory)
 
@@ -566,6 +572,7 @@ class AutomatedDesign:
         self.data_matrix_fem = self.data_matrix_5
 
     def set_up_folder_structure(self, working_directory):
+        """Set up the folder structure for the inductor optimization."""
         if working_directory is None:
             caller_filename = inspect.stack()[1].filename
             working_directory = os.path.join(os.path.dirname(caller_filename),
@@ -589,8 +596,7 @@ class AutomatedDesign:
                            self.inductor_fem_simulations_results_directory, self.femmt_working_directory)
 
     def input_pre_process(self):
-        """ Pre-process the user input to prepare lists for reluctance model"""
-
+        """Pre-process the user input to prepare lists for reluctance model."""
         # Creating all possible combinations from the given manual geometry parameters
         all_manual_combinations = list(product(self.manual_core_inner_diameter, self.manual_window_h, self.manual_window_w))
         manual_core_inner_diameter = [item[0] for item in all_manual_combinations]
@@ -641,9 +647,9 @@ class AutomatedDesign:
 
     def filter_reluctance_target_inductance(self, data_matrix):
         """
-        Filter out design cases which are in between the given goal inductance tolerance band
+        Filter out design cases which are in between the given goal inductance tolerance band.
 
-        param data_matrix: Matrix containing the design parameters
+        :param data_matrix: Matrix containing the design parameters
         :type data_matrix: ndarray
         """
         data_matrix = data_matrix[np.where((data_matrix[:, self.param["inductance"]] > ((100 - self.goal_inductance_percent_tolerance) / 100) * \
@@ -694,12 +700,11 @@ class AutomatedDesign:
 
     def filter_reluctance_winding_window(self, data_matrix):
         """
-        Filter out design cases which are not physical possible based on no_of_turns and winding area
+        Filter out design cases which are not physical possible based on no_of_turns and winding area.
 
-        param data_matrix: Matrix containing the design parameters
+        :param data_matrix: Matrix containing the design parameters
         :type data_matrix: ndarray
         """
-
         final_data_matrix1 = np.zeros((len(data_matrix), len(data_matrix[0]) + 6))
         final_data_matrix2 = np.zeros((len(data_matrix), len(data_matrix[0]) + 6))
 
@@ -769,10 +774,10 @@ class AutomatedDesign:
 
     def filter_reluctance_losses(self, data_matrix):
         """
-       Filter out design cases based on the calculated hysteresis and DC loss
+        Filter out design cases based on the calculated hysteresis and DC loss.
 
-       param data_matrix: Matrix containing the design parameters
-       :type data_matrix: ndarray
+        :param data_matrix: Matrix containing the design parameters
+        :type data_matrix: ndarray
         """
         # Dictionary to store {initial_permeability: counter}
         mu_r_imag_dict = {}
@@ -860,6 +865,7 @@ class AutomatedDesign:
         return data_matrix
 
     def pareto_front_from_data_matrix(self, data_matrix):
+        """Get the pareto front from the data matrix."""
         total_loss_vec = data_matrix[:, self.param["total_loss"]]
         core_2daxi_total_volume_vec = data_matrix[:, self.param["total_volume"]]
 
@@ -888,6 +894,7 @@ class AutomatedDesign:
         return np.array(x_pareto_vec), np.array(y_pareto_vec)
 
     def filter_reluctance_pareto_front_tolerance(self, data_matrix, factor_min_dc_losses: float = 1):
+        """Filter all reluctance calculations to see the pareto front."""
         total_loss_vec = data_matrix[:, self.param["total_loss"]]
         total_volume_vec = data_matrix[:, self.param["total_volume"]]
 
@@ -907,10 +914,7 @@ class AutomatedDesign:
         return return_data_matrix
 
     def fem_simulation(self):
-        """
-        FEM simulation of the design cases and saving the result in the given working directory for later analysis
-        """
-
+        """Perform FEM simulation of the design cases. Save the result in the given working directory for later analysis."""
         start_time = time.time()
 
         data_files = []
@@ -1025,14 +1029,14 @@ class AutomatedDesign:
 
     def add_column_to_data_matrix(self, data_matrix, column_value, column_name: str):
         """
-        Adds column to the given matrix
+        Add columns to the given matrix.
 
         param data_matrix: Matrix containing the design parameters
-       :type data_matrix: ndarray
-       :param column_value: Column to be added
-       :type column_value: ndarray
-       :param column_name: Identifier of the column
-       :type column_name: str
+        :type data_matrix: ndarray
+        :param column_value: Column to be added
+        :type column_value: ndarray
+        :param column_name: Identifier of the column
+        :type column_name: str
         """
         size = len(data_matrix[0])
         data_matrix = np.hstack((data_matrix, np.reshape(column_value, (len(column_value), 1))))
@@ -1041,9 +1045,7 @@ class AutomatedDesign:
         return data_matrix
 
     def write_data_matrix_fem_to_csv(self):
-        """
-            The function writes the data_matrix_fem to csv file for later review of the data.
-        """
+        """Write the data_matrix_fem to csv file for later review of the data."""
         header = list(self.param.keys())
         header.insert(0, 'Case_no.')
         data = self.data_matrix_fem
@@ -1060,10 +1062,7 @@ class AutomatedDesign:
             writer.writerows(data)
 
     def save_automated_design_settings(self):
-        """
-            The function creates json file, writing all the settings that is used to run AutomatedDesign
-            in that particular project.
-        """
+        """Create a json file, write all settings that are used to run AutomatedDesign in that particular project."""
         dictionary = {
             "working_directory": self.working_directory,
             "magnetic_component": self.magnetic_component,

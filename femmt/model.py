@@ -1,6 +1,7 @@
-"""Contains all important components of a MagneticComponent:
+"""Contains all important components of a MagneticComponent.
 
-Conductors, Core, AirGaps, Insulations, WindingWindow, StrayPath and the VirtualWindingWindow."""
+Conductors, Core, AirGaps, Insulations, WindingWindow, StrayPath and the VirtualWindingWindow.
+"""
 # Python standard libraries
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Union

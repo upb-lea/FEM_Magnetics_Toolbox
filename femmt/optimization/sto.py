@@ -911,7 +911,7 @@ class StackedTransformerOptimization:
     @staticmethod
     def save_png_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int):
         """
-        Creates the geometry of specified trials_numbers
+        Create the geometry of specified trials_numbers.
 
         Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
         The values are given separate. In case of re-simulation, you may want to have more accurate results.
@@ -1190,9 +1190,9 @@ class StackedTransformerOptimization:
     @staticmethod
     def create_pngs(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig):
         """
-        Creates the geometry of specified trials_numbers and saves a screenshot in png format for each trial and stores them with in the
-        format "trial_number.png" as follows:
+        Create the geometry of specified trials_numbers and saves a screenshot in png format for each trial.
 
+        Storage format "trial_number.png" as follows:
         f'{config.working_directory}/drawings/{number_trial}.png')
 
         :param df: Dataframe, generated from an optuna study (exported by optuna)
