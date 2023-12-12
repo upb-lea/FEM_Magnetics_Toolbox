@@ -612,8 +612,6 @@ def min_max_inner_points(a, b, input_points):
         min_point = buffer[argmin]
     return [min_point, max_point]
 
-
-
 def litz_calculate_number_strands(n_layers: int) -> int:
     """
     Return the number of strands in a hexagonal litz winding with a specified number of layers (n_layers).
