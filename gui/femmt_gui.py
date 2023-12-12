@@ -5,11 +5,9 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import cm
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QLabel, QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem, QDialog, \
-    QVBoxLayout, QScrollArea, QFormLayout
-from PyQt5 import QtCore, uic, QtGui, QtWidgets
-from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
+from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 import femmt as fmt
 import json
 import os
