@@ -13,7 +13,7 @@ from femmt.dtos import *
 
 def number_of_rows(row: ConductorRow):
     """
-
+    Get the number of rows needed to place some conductors in a given winding window.
 
     :return:
     """
@@ -231,6 +231,10 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
 
 
 def get_set_of_integers_from_string_list(string_list):
+    """Get the list of the set of integers in a list of strings.
+
+    Used by winding_scheme key.
+    """
     integer_list = []
     for single_string in string_list:
         try:
@@ -245,7 +249,7 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
                                          primary_additional_bobbin, center_foil_additional_bobbin,
                                          primary_row: ConductorRow, secondary_row: ConductorRow,
                                          tertiary_row: ConductorRow, isolations: ThreeWindingIsolation):
-
+    """Get the stack order from a given interleaving scheme."""
     # Init the winding counters (needed for vertical insulation adjustments)
     number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = 0, 0, 0
 
@@ -442,6 +446,7 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
 
 
 def get_number_of_turns_in_groups(stack):
+    """Get the number of turns in one center tapped stack for Type A winding scheme. Experimental."""
     turns1 = 0
     turns2 = 0
 
@@ -476,10 +481,16 @@ def is_even(x: int):
 
 
 def center(l_list: List):
+    """Return the center indes of a list. Rounds off."""
     return int(len(l_list) / 2)
 
 
 def mix_x_and_i(input_x, input_i):
+    """General usage to interleave windings. One winding could be input_x and the other input_i. Experimental.
+
+    Example: 16 primary windings (input_x), 3 secondary windings (input_i).
+    Trys to fit these widings symmetric into the winding window.
+    """
     len_x = len(input_x)
     len_i = len(input_i)
     if len_x > len_i:

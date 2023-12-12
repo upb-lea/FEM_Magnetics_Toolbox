@@ -1,8 +1,6 @@
 """Contains different functions, used by the whole FEMMT functions."""
 # Python standard libraries
 import json
-import random
-import string
 import pkg_resources
 import subprocess
 import sys
@@ -614,9 +612,6 @@ def min_max_inner_points(a, b, input_points):
         min_point = buffer[argmin]
     return [min_point, max_point]
 
-
-def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
 
 
 def litz_calculate_number_strands(n_layers: int) -> int:

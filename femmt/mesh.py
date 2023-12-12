@@ -1,4 +1,12 @@
-"""Classes and methods to generate the mesh for the FEM simulations."""
+"""Classes and methods to generate the mesh for the FEM simulations.
+
+GMSH default procedure
+- define points
+- define lines from points
+- define closed loops from lines
+- define planes from closed loops
+- define physical surfaces from planes
+"""
 # Python standard libraries
 import os
 import numpy as np
@@ -95,6 +103,7 @@ class Mesh:
             self.logger.info(text)
 
     def set_empty_point_lists(self):
+        """Initialize point lists. For internal overview as a mirrored gmsh information set."""
         # Add empty lists
         p_core = []
         p_island = []
@@ -106,7 +115,7 @@ class Mesh:
         return p_core, p_island, p_cond, p_region, p_iso_core
 
     def set_empty_line_lists(self):
-
+        """Initialize line lists. For internal overview as a mirrored gmsh information set."""
         # Curves
         l_bound_core = []
         l_bound_air = []
@@ -121,6 +130,7 @@ class Mesh:
         return l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core
 
     def set_empty_curve_loop_lists(self):
+        """Initialize curve loop lists. For internal overview as a mirrored gmsh information set."""
         # Curve Loops
         curve_loop_cond = []
         for _ in range(len(self.windings)):
@@ -134,6 +144,7 @@ class Mesh:
         return curve_loop_cond, curve_loop_island, curve_loop_air, curve_loop_air_gaps, curve_loop_iso_core
 
     def set_empty_plane_lists(self):
+        """Initialize plane lists. For internal overview as a mirrored gmsh information set."""
         # This is only needed for the surfaces since they are the only global variables
         # Plane Surfaces
         self.plane_surface_core = []
@@ -934,7 +945,7 @@ class Mesh:
         return curve_loop_iso_core
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the single core."""
         # Air
         # Points are partwise double designated
 
@@ -990,7 +1001,7 @@ class Mesh:
         #     self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))
 
     def air_stacked(self, l_core_air: list, l_bound_air, curve_loop_cond: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the stacked core."""
         # Air
         # Points are partwise double designated
 
@@ -1089,10 +1100,16 @@ class Mesh:
         #     gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
 
     def boundary(self, p_core: list, p_region: list, l_bound_core: list, l_bound_air: list, l_region: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """
+        Create the boundary of the simulation region.
+
+        Default case is for air gaps in the inner core.
+        The else-case, for outer air gaps is unused for air gaps in the inner core.
+        """
         # Boundary
         if self.core.core_type == CoreType.Single:
             if self.region is None:
+                # For inner air gaps.
                 self.l_bound_tmp = l_bound_core[:7]
                 for i in range(len(l_bound_air)):
                     self.l_bound_tmp.append(l_bound_air[-i - 1])
@@ -1100,6 +1117,7 @@ class Mesh:
                         self.l_bound_tmp.append(l_bound_core[-i - 1])
 
             else:
+                # For outer air gaps. Not used for cores with air gaps in the inner leg.
                 # Generate Lines of Region
                 # start top left and go clockwise
                 p_region.append(gmsh.model.geo.addPoint(0,
@@ -1726,10 +1744,7 @@ class Mesh:
         gmsh.write(self.thermal_mesh_file)
 
     def inter_conductor_meshing(self, p_cond):
-        """
-
-        """
-
+        """To be defined."""
         p_inter = None
         for ww in self.model.winding_windows:
             for vww in ww.virtual_winding_windows:

@@ -33,6 +33,8 @@ class ConstraintPro:
 
 
 class GroupPro:
+    """Define the group.pro file for the thermal simulation."""
+
     regions: dict
 
     def __init__(self):
@@ -62,7 +64,7 @@ class GroupPro:
 
 
 class ParametersPro:
-    """For creating a parameters.pro."""
+    """Define the parameter.pro file for the thermal simulation."""
 
     parameters: dict
 
@@ -134,6 +136,7 @@ class PostOperationPro:
         self.statements = []
 
     def add_on_point_statement(self, field, x, y, formatting, file_name, point_name, append=False):
+        """Add x,y point to statement, what is written to the .pro file."""
         format_str = ""
         if formatting is not None:
             format_str = f"Format {formatting}, "
