@@ -264,12 +264,12 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
 
         Args:
         ----
-            array_of_points (np.array) - array of points, of shape (numPoints, 3)
-            mouse_event (MouseEvent) - mouse event (containing mouse position)
+        array_of_points (np.array): array of points, of shape (numPoints, 3)
+        mouse_event (MouseEvent): mouse event (containing mouse position)
 
         Returns:
         -------
-            smallestIndex (int) - the index (into the array of points X) of the element closest to the mouse position
+        smallestIndex (int) - the index (into the array of points X) of the element closest to the mouse position
         """
         X_modified = array_of_points[np.all(~np.isnan(array_of_points), axis=1), 0:3]
         distances = [distance(X_modified[i, 0:3], mouse_event) for i in range(X_modified.shape[0])]
@@ -280,10 +280,11 @@ def plot_3d(x_value: list, y_value: list, z_value: list, x_label: str, y_label: 
 
         Args:
         ----
-            array_of_points (np.array) - array of points, of shape (numPoints, 3)
-            index (int) - index (into points array X) of item which should be printed
+        array_of_points (np.array): array of points, of shape (numPoints, 3)
+        index (int): index (into points array X) of item which should be printed
         Returns:
-            None
+        -------
+        None
         """
         # If we have previously displayed another label, remove it first
         if hasattr(annotate_plot, 'label'):
@@ -1022,7 +1023,7 @@ class AutomatedDesign:
                 print(f"{time_difference_minutes = }")
                 print(f"{time_difference_hours = }")
 
-            except (Exception,) as e:
+            except Exception as e:
                 print("next iteration")
                 logging.exception(e)
         print(f"Successful FEM simulations: {successful_sim_counter} out of total cases: {len(self.data_matrix_fem)}")

@@ -108,6 +108,7 @@ def check_secondary_and_tertiary_are_the_same(secondary_row: ConductorRow, terti
 def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
                         primary_row, secondary_row, tertiary_row,
                         isolations: ThreeWindingIsolation):
+    """Group center tapped windings."""
     group = CenterTappedGroup(primary_number_of_rows=None, secondary_number_of_rows=None,
                               primary_rest=None, secondary_rest=None, stack=None)
     # TODO: rests do not really belong into each group but only once
@@ -164,6 +165,7 @@ def get_height_of_group(group: CenterTappedGroup):
 
 
 def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_be_added):
+    """Add tertiary widing to stack."""
     secondary_tags = []
     number_of_added_tertiaries = 0
     for i, obj in enumerate(stack_order_without_tertiary):
@@ -177,6 +179,7 @@ def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_
 
 # Insert insulations into the stack_order
 def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
+    """Insert insulations to a stack."""
     # Which insulation is needed depends on the bot and top row neighbours
     # TODO: insert insulations into the stack depending on isolation matrix
 
@@ -293,6 +296,10 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
 def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_row, secondary_row, tertiary_row,
                                                    primary_additional_bobbin, center_foil_additional_bobbin,
                                                    isolations, available_height):
+    """Adjust the vertical insulation of a center tapped stack.
+
+    The insulation is equally distributed.
+    """
     # Initial stacking with predefined minimum insulations
     initial_stack_order = []
 

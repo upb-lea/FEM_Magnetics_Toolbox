@@ -1,3 +1,4 @@
+"""Example how to create a .csv files with information about a time and current amplitude."""
 import numpy as np
 from matplotlib import pyplot as plt
 import femmt as fmt
@@ -16,10 +17,6 @@ i2 = i2 - np.mean(i2)
 res1 = fmt.fft(i1, mode='time')
 print(res1)
 fmt.fft(i2)
-def wizard_n_ffts():
-    # TODO: function that takes n ffts with a certain energy limit and createst the missing harmonic results!
-    pass
-
 
 plt.plot(phi, i1)
 plt.plot(phi, i2)

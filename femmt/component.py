@@ -1128,7 +1128,7 @@ class MagneticComponent:
 
     def overwrite_air_conductors_with_conductors(self, physical_surfaces_to_overwrite: list):
         """
-        EXPERIMENTAL
+        Overwrite conductors made of air with real conductors. Experimental. Danger, use with care.
 
         :return:
         """

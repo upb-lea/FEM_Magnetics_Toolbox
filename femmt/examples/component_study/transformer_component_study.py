@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 def transformer_component_study(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Example how to perform a component study."""
+    """Perform a component study."""
     switching_frequency = 180000
 
     # max efficient

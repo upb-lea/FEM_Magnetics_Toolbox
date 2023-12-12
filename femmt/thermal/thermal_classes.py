@@ -102,6 +102,7 @@ class FunctionPro:
 
     @staticmethod
     def dict_as_function_str(name, dct):
+        """Write dictionary as a string."""
         dict_as_str = ""
         for key, value in dct.items():
             dict_as_str += f"\t{name}[{key}] = {value};\n"

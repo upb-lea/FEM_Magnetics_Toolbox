@@ -90,6 +90,7 @@ class Mesh:
         self.gmsh_log = file_paths.gmsh_log
 
     def femmt_print(self, text: str):
+        """Print text to terminal or to log-file, dependent on the current verbosity."""
         if not self.verbosity == Verbosity.Silent:
             self.logger.info(text)
 
@@ -410,6 +411,7 @@ class Mesh:
             self.plane_surface_air_gaps.append(gmsh.model.geo.addPlaneSurface([curve_loop]))
 
     def stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list):
+        """Generate the stacked core."""
         # Points
         # (index refers to sketch)
         from operator import itemgetter
@@ -595,6 +597,7 @@ class Mesh:
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([-curve_loop_core]))
 
     def modular_stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list, l_core_core: list):
+        """Generate the modular stacked core."""
         # Points
         # (index refers to sketch)
         from operator import itemgetter
@@ -820,7 +823,7 @@ class Mesh:
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_top]))
 
     def conductors(self, p_cond: list, l_cond: list, curve_loop_cond: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate the conductors."""
         # Conductors
         p_cond_center = []  # List for center points which are later embed in the model
 
@@ -902,10 +905,10 @@ class Mesh:
 
     def insulations_core_cond(self, p_iso_core: list):
         """
-        Sets the rectangular electrical insulation between conductors and core.
+        Set the rectangular electrical insulation between conductors and core.
+
         :return:
         """
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Insulations
         # Core to Windings
         # If no insulation, return an empty list
@@ -1158,7 +1161,6 @@ class Mesh:
 
     def visualize(self, visualize_before, save_png):
         """Visualize the geometry or the FEM simulation result."""
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Colorize model and show it if needed
         # mesh generation
         color_scheme = ff.colors_femmt_default
@@ -1724,6 +1726,9 @@ class Mesh:
         gmsh.write(self.thermal_mesh_file)
 
     def inter_conductor_meshing(self, p_cond):
+        """
+
+        """
 
         p_inter = None
         for ww in self.model.winding_windows:
