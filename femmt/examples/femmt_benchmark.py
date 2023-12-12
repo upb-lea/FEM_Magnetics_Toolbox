@@ -1,5 +1,7 @@
-# This file is used for the LEA Master Project Group - Speed up of FEMMT by using parallel processing.
-# It contains multiple benchmarking functions in order to analyse the runtime and the accuracy of the simulation results.
+"""Speed up of FEMMT by using parallel processing. File to generate benchmarks of different speed-up techniques.
+
+It contains multiple benchmarking functions in order to analyse the runtime and the accuracy of the simulation results.
+"""
 
 # Python standard libraries
 from typing import List
@@ -16,12 +18,15 @@ import femmt as fmt
 
 @dataclass
 class MeshAccuracies:
+    """Mesh accuracies for core, window, air gaps and conductors."""
+
     mesh_accuracy_core: float
     mesh_accuracy_window: float
     mesh_accuracy_conductor: float
     mesh_accuracy_air_gaps: float
 
 class SingleBenchmark:
+    """Define a single benchmark."""
     
     # Benchmark times
     high_level_geo_gen_time: float              # Time to create the model in gmsh
@@ -45,6 +50,7 @@ class SingleBenchmark:
         self.model = model
 
     def benchmark_simulation(self, inductor_frequency):
+        """Start the simulation for a single benchmark."""
         # Simulate
         self.high_level_geo_gen_time, self.generate_hybrid_mesh_time = self.model.create_model(freq=inductor_frequency, pre_visualize_geometry=False,
                                                                                                save_png=False, benchmark=True)
@@ -67,6 +73,7 @@ class SingleBenchmark:
             self.winding_losses = content["total_losses"]["all_windings"]
 
     def to_dict(self):
+        """Export the single benchmark results to a dict."""
         return {
             "create_model_time": self.create_model_time,
             "simulation_time": self.simulation_time,
@@ -83,12 +90,15 @@ class SingleBenchmark:
         }
 
 class Benchmark:
+    """Benchmarks different mesh accuracies for a general comparison."""
+
     benchmarks: SingleBenchmark
 
     def __init__(self, benchmarks):
         self.benchmarks = benchmarks
 
     def to_json(self, file_path):
+        """Export the benchmark results to a .json file."""
         output = {
             "averages": {
                 "create_model_time": np.mean([x.create_model_time for x in self.benchmarks]),
@@ -122,7 +132,7 @@ class Benchmark:
 
 
 def create_model(working_directory, mesh_accuracies=None, aspect_ratio=10, wwr_enabled=True, number_of_conductors: int = 9):
-
+    """Create the model for benchmark."""
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
     inductor_frequency = 270000
@@ -171,6 +181,7 @@ def create_model(working_directory, mesh_accuracies=None, aspect_ratio=10, wwr_e
 
 
 def create_rectangular_conductor_model(working_directory, mesh_accuracies, thickness, center_factor, left_bound_delta=None, wwr_enabled=True, aspect_ratio=10):
+    """Create a model with rectangular condutors."""
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
     inductor_frequency = 270000
@@ -246,7 +257,7 @@ def create_rectangular_conductor_model(working_directory, mesh_accuracies, thick
     return geo
 
 def plot_mesh_over_precision(benchmarks, x_list, x_label, title):
-    
+    """Plot the mesh over precision."""
     total_losses = [bm.total_losses for bm in benchmarks]
     self_inductance = [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in benchmarks]
     execution_times = [bm.execution_time for bm in benchmarks]
@@ -279,6 +290,7 @@ def plot_mesh_over_precision(benchmarks, x_list, x_label, title):
 # ------ Benchmarks ------
 
 def benchmark_rectangular_conductor_offset(working_directory):
+    """Benchmark the conductor offset."""
     left_bound_deltas = np.linspace(0.001, 0.005, num=5)
     default_mesh_accuracy = 0.5
     thickness = 0.0015
@@ -329,6 +341,7 @@ def benchmark_rectangular_conductor_offset(working_directory):
 
 
 def benchmark_rectangular_conductor(working_directory):
+    """Benchmark mesh accuracies inside a rectangular condutor."""
     # mesh_accuracies = np.arange(0.1, 1, step=0.1)
     # mesh_accuracies_conductor = np.linspace(0.001, 0.00005, num=10)
     default_mesh_accuracy = 0.4
@@ -399,6 +412,7 @@ def benchmark_rectangular_conductor(working_directory):
 
 
 def benchmark_different_mesh_accuracies(working_directory):
+    """Simulate for different mesh accuracies and benchmark the results."""
     # comparison_data = {
     #    # Data from simulation with 0.05 mesh accuracy (everywhere) and no wwr and no insulations
     #    "total_losses": 7.681125170876381,
@@ -509,8 +523,7 @@ def benchmark_different_mesh_accuracies(working_directory):
     plt.show()
 
 def benchmark_aspect_ratios(folder: str):
-    """Creates a benchmark for the different insulation_deltas. Opens a plot a the end.
-    """
+    """Create a benchmark for the different insulation_deltas. Opens a plot in the end."""
     aspect_ratios = np.arange(0, 10, step=1)
     frequency = 270000
     benchmarks = []
@@ -525,8 +538,7 @@ def benchmark_aspect_ratios(folder: str):
     plot_mesh_over_precision(benchmarks, aspect_ratios, "aspect ratio", "Benchmark: Different aspect ratios")
 
 def benchmark_mesh_accuracy(folder: str):
-    """Creates a benchmark for the different mesh_accuracies. Opens a plot at the end.
-    """
+    """Create a benchmark for the different mesh_accuracies. Opens a plot at the end."""
     mesh_accuracies = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1]
     # mesh_accuracies = [1]
     frequency = 270000 
@@ -658,12 +670,11 @@ def benchmark_mesh_accuracy(folder: str):
     plt.show()
 
 def single_benchmark(benchmark_results_folder, frequency):
-    """Runs many simulations of the same model and writes the execution times as well as a multiple other measured times in a log file.
-    """
+    """Run many simulations of the same model and writes the execution times as well as a multiple other measured times in a log file."""
     benchmark_results_file = os.path.join(benchmark_results_folder, "benchmark_test_without_insulation_bug.json")
     benchmarks = []
 
-    for i in range(4):
+    for _ in range(4):
         working_directory = os.path.join(benchmark_results_folder, "without_bug")
         model = create_model(working_directory)
         benchmark = SingleBenchmark(working_directory, model)
@@ -674,6 +685,7 @@ def single_benchmark(benchmark_results_folder, frequency):
 
 
 def benchmark_winding_window_rasterization(folder):
+    """Introduce different winding counts to benachmark the winding window rasterization."""
     numbers_of_conductors = np.arange(2, 10, step=2)
     # numbers_of_conductors = [1]
     benchmarks_no_wwr = []
@@ -702,7 +714,7 @@ def benchmark_winding_window_rasterization(folder):
 
     figure, axis = plt.subplots(3, sharex=True)
 
-    figure.suptitle(f"Comparing coarser winding window with default winding window", fontsize=font_size_title)
+    figure.suptitle("Comparing coarser winding window with default winding window", fontsize=font_size_title)
     axis[0].plot(numbers_of_conductors, [bm.total_losses for bm in benchmarks_no_wwr], "ro", label="No WWR", markersize=markersize)
     axis[0].plot(numbers_of_conductors, [bm.total_losses for bm in benchmarks_wwr], "yo", label="WWR", markersize=markersize)
     # axis[0].axhline(y=comparison_data["total_losses"], linestyle="--", label="Ideal value")
@@ -731,6 +743,7 @@ def benchmark_winding_window_rasterization(folder):
     plt.show()
 
 def general_comparison(folder):
+    """Comparison with and without meshing techniques."""
     mesh_accuracies = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     # mesh_accuracies = [0.4, 0.5, 1]
     frequency = 270000

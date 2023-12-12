@@ -1,3 +1,4 @@
+"""Draw structures inside Onelab."""
 # Python standard libraries
 import numpy as np
 from logging import Logger
@@ -7,16 +8,13 @@ from typing import List
 from femmt.enumerations import *
 from femmt.data import MeshData
 from femmt.model import Core, WindingWindow, AirGaps, StrayPath, Insulation
-import femmt.functions as ff
 
 
 class TwoDaxiSymmetric:
     """
-    This class creates the model of the magnetic component. This is done by creating lists of points which
-    will be later added to the gmsh file.
+    Create the model of the magnetic component.
 
-    :return:
-
+    This is done by creating lists of points which will be later added to the gmsh file.
     """
 
     core: Core
@@ -74,6 +72,7 @@ class TwoDaxiSymmetric:
         self.r_outer = core.r_outer    
         
     def femmt_print(self, text: str):
+        """Print text to terminal or to log-file, dependent on the current verbosity."""
         if not self.verbosity == Verbosity.Silent:
             self.logger.info(text)
 
@@ -94,7 +93,7 @@ class TwoDaxiSymmetric:
         self.p_outer[3][:] = [self.r_outer, self.core.core_h/2, 0, self.mesh_data.c_core]
 
     def draw_single_window(self):
-        # Window
+        """Draw a single window."""
         # At this point both windows (in a cut) are modeled
         # print(f"win: c_window: {self.component.mesh.c_window}")
         self.p_window[0] = [-self.r_inner,
@@ -138,7 +137,7 @@ class TwoDaxiSymmetric:
                             self.mesh_data.c_window]
 
     def draw_stacked_windows(self):
-        # Window
+        """Draw stacked windows."""
         self.p_window_bot[0] = [self.core.core_inner_diameter / 2,
                                 -self.core.window_h_bot / 2,
                                 0,
@@ -160,26 +159,27 @@ class TwoDaxiSymmetric:
                                 self.mesh_data.c_window]
 
         self.p_window_top[0] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4,  # TODO: could also be done arbitrarily
+                                self.core.window_h_bot/2 + self.core.core_thickness,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[1] = [self.r_inner,
-                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4,  # TODO: could also be done arbitrarily
+                                self.core.window_h_bot/2 + self.core.core_thickness,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[2] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + self.core.window_h_top,  # TODO: could also be done arbitrarily
+                                self.core.window_h_bot/2 + self.core.core_thickness + self.core.window_h_top,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[3] = [self.r_inner,
-                                self.core.window_h_bot/2 + self.core.core_inner_diameter / 4 + self.core.window_h_top,  # TODO: could also be done arbitrarily
+                                self.core.window_h_bot/2 + self.core.core_thickness + self.core.window_h_top,
                                 0,
                                 self.mesh_data.c_window]
 
     def draw_air_gaps(self):
+        """Draw air gaps."""
         # Air gaps
         # "air_gaps" is a list with [position_tag, air_gap_position, air_gap_h, c_air_gap]
         #   - position_tag: specifies the "leg" with air gaps
@@ -261,7 +261,7 @@ class TwoDaxiSymmetric:
             self.p_close_air_gaps = [top_point, bot_point]
 
     def draw_conductors(self, draw_top_down=True):
-        # Draw every conductor type based on the virtual_winding_window bounds
+        """Draw every conductor type based on the virtual_winding_window bounds."""
         for winding_window in self.winding_windows:
             for virtual_winding_window in winding_window.virtual_winding_windows:
                 # Get bounds from virtual winding window
@@ -278,7 +278,7 @@ class TwoDaxiSymmetric:
                         left_bound < winding_window.max_left_bound or right_bound > winding_window.max_right_bound:
                     # Set valid to False, so that geometry is to be neglected in geometry sweep
                     # self.valid = False
-                    raise Exception(f"Winding does not fit into winding window!")
+                    raise Exception("Winding does not fit into winding window!")
                 else:
                     # Check the possible WindingTypes and draw accordingly
                     if virtual_winding_window.winding_type == WindingType.TwoInterleaved:
@@ -1094,13 +1094,13 @@ class TwoDaxiSymmetric:
                         raise Exception(f"Unknown winding type {virtual_winding_window.winding_type}")
 
     def check_number_of_drawn_conductors(self):
+        """Check if number of conductors fits into the given winding window size."""
         needed_number_of_turns = 0
         all_windings = []
 
         for winding_window in self.winding_windows:
             for vww in winding_window.virtual_winding_windows:
-                for index, winding in enumerate(vww.windings):
-
+                for _, winding in enumerate(vww.windings):
                     if winding not in all_windings:
                         all_windings.append(winding)
 
@@ -1120,26 +1120,14 @@ class TwoDaxiSymmetric:
         if drawn_number_of_turns != needed_number_of_turns:
             self.femmt_print(f"{drawn_number_of_turns = }")
             self.femmt_print(f"{needed_number_of_turns = }")
-            raise Exception(f"Winding mismatch. Probably too many turns that do not fit in the winding window")
-
-    def draw_region_single(self):
-        # Region for Boundary Condition
-        self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
-                                     -(self.core.window_h / 2 + self.core.core_inner_diameter / 4) * self.mesh_data.padding, 0,
-                                     self.mesh_data.c_core * self.mesh_data.padding]
-        self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
-                                     -(self.core.window_h / 2 + self.core.core_inner_diameter / 4) * self.mesh_data.padding, 0,
-                                     self.mesh_data.c_core * self.mesh_data.padding]
-        self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
-                                     (self.core.window_h / 2 + self.core.core_inner_diameter / 4) * self.mesh_data.padding, 0,
-                                     self.mesh_data.c_core * self.mesh_data.padding]
-        self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
-                                     (self.core.window_h / 2 + self.core.core_inner_diameter / 4) * self.mesh_data.padding, 0,
-                                     self.mesh_data.c_core * self.mesh_data.padding]
+            raise Exception("Winding mismatch. Probably too many turns that do not fit in the winding window")
 
     def draw_insulations(self):
         """
-        IMPORTANT
+        Draw insulations.
+
+        Important:
+        ---------
         Because the distance from the core to the winding is set by
         iso.core_cond, a delta, which is used in order for no overlapping lines will cause
         the "real" insulation to be slightly smaller than set by the user.
@@ -1366,6 +1354,11 @@ class TwoDaxiSymmetric:
             """
 
     def draw_model(self):
+        """Draw the full component.
+
+        The full component consists of core, air gaps, insulation and the conductors.
+        The insulation is only drawn if self.insulation.flag_insulation was set.
+        """
         self.draw_outer()
         if self.core.core_type == CoreType.Single:
             self.draw_single_window()
@@ -1386,6 +1379,7 @@ class TwoDaxiSymmetric:
 
     @staticmethod
     def get_center_of_rect(p1: List[float], p2: List[float], p3: List[float], p4: List[float]):
+        """Get center point of a rectangular conductor."""
         x_list = [p1[0], p2[0], p3[0], p4[0]]
         y_list = [p1[1], p2[1], p3[1], p4[1]]
 

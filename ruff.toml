@@ -1,0 +1,30 @@
+
+exclude = [
+    ".eggs",
+    ".git",
+    ".venv",
+    "venv"]
+
+line-length = 88
+indent-width = 4
+
+target-version = "py39"
+
+[lint]
+select = ["E4", "E7", "E9", "F", "B", "D", "D417"]
+# extend-select = ["D417"] deactivated by default in case of pep257 codestyle.
+# see also: https://docs.astral.sh/ruff/rules/undocumented-param/
+ignore = ["B008", "D107", "D203", "D212", "D213", "D402", "D413", "D415", "D416", "E722", "E731", "F403", "F405", "F841",]
+fixable = ["ALL"]
+unfixable = []
+# ignore list in docstring according to numpy codestyles for Dxxx.
+# http://www.pydocstyle.org/en/5.0.1/error_codes.html#default-conventions
+
+[lint.pydocstyle]
+convention = "pep257"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

@@ -1,3 +1,4 @@
+"""Functions to provide parallel computing on multiple processes. Each process has its own thread."""
 # Python standard libraries
 from multiprocessing import Pool
 from typing import List, Dict, Callable
@@ -10,8 +11,7 @@ from femmt import MagneticComponent
 
 def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
     """
-    Inner function. Needed in order to appropriately run parallel simulations since some GetDP files are
-    changed in every simulation instance
+    Inner function. Run parallel simulations since some GetDP files are changed in every simulation instance.
 
     :param src_folder: Path to the base electro_magnetic folder
     :type src_folder: str
@@ -29,6 +29,8 @@ def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
 
 def hpc_single_simulation(parameters: Dict):
     """
+    Perform single simulations in parallel.
+
     The default function which is used for parallel execution. Using this function for every model create_model()
     and single_simulation will be executed.
     If for the parallel simulation a custom function is needed you can take this as an example. The parameters
@@ -57,9 +59,9 @@ def hpc_single_simulation(parameters: Dict):
 
 def run_hpc(n_processes: int, models: List[MagneticComponent], simulation_parameters: List[Dict],
             working_directory: str, custom_hpc: Callable = None):
-    """
-    Executes the given models on the given number of parallel processes. Typically, this number
-    shouldn't be higher than the number of cores of the processor.
+    """Execute the given models on the given number of parallel processes.
+
+    Typically, this number shouldn't be higher than the number of cores of the processor.
 
     :param n_processes: Number of parallel processes. If None, the number returned by os.cpu_count() is used.
     :type n_processes: int
@@ -106,7 +108,7 @@ def run_hpc(n_processes: int, models: List[MagneticComponent], simulation_parame
     # Create pool of workers and apply _hpc to it
     with Pool(processes=n_processes) as pool:
         parameters = []
-        for index, (model, simulation_parameter) in enumerate(zip(models, simulation_parameters)):
+        for _, (model, simulation_parameter) in enumerate(zip(models, simulation_parameters)):
             # Fill parameters list
             parameters.append({
                 "model": model,

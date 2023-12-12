@@ -1,3 +1,4 @@
+"""Example file how to perform some frequency sweeps."""
 import femmt as fmt
 import os
 

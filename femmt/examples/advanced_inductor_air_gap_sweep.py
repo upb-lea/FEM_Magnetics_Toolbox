@@ -1,3 +1,4 @@
+"""Advanced example to demonstrate an air gap sweep for an inductor."""
 import matplotlib.pyplot as plt
 import femmt as fmt
 import os
@@ -7,6 +8,7 @@ if not os.path.exists(os.path.join(os.path.dirname(__file__), "sweep_examples"))
 
 
 def basic_example_sweep(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+    """Advanced example to demonstrate an air gap sweep for an inductor."""
     # In this sweep an inductor with variable air gap height is simulated
     air_gap_heights = [0.0020, 0.0010, 0.0005, 0.000025, 0.0000125]
 
@@ -73,7 +75,7 @@ def basic_example_sweep(onelab_folder: str = None, show_visual_outputs: bool = T
 
     # In this case the self inductivity of winding1 will be analyzed
     inductivities = []
-    for name, data in log_parser.data.items():
+    for _, data in log_parser.data.items():
         inductivities.append(data.sweeps[0].windings[0].flux_over_current)
 
     if not is_test:

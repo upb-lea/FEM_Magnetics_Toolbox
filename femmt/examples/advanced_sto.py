@@ -1,3 +1,4 @@
+"""Advanced example to show an optimization workflow for the stacked transformer."""
 # python libraries
 import os
 

@@ -1,3 +1,4 @@
+"""Functions to calculate reluctance models."""
 # python libraries
 
 
@@ -13,13 +14,13 @@ from matplotlib import pyplot as plt
 
 def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
     """
-    Calculates the transformer primary concentrated circuit parameters from matrix
+    Calculate the transformer primary concentrated circuit parameters from matrix.
+
     :param inductance_matrix: input reluctance matrix in form of [[L_11, M], [M, L_22]]
     :return l_s: primary concentrated stray inductance
     :return l_h: primary concentrated main inductance
     :return n: ratio
     """
-
     l_11 = inductance_matrix[0, 0]
     l_22 = inductance_matrix[1, 1]
 
@@ -35,7 +36,7 @@ def calculate_ls_lh_n_from_inductance_matrix(inductance_matrix):
 
 def calculate_inductance_matrix_from_ls_lh_n(l_s_target_value, l_h_target_value, n_target_value):
     """
-    Calculates the inductance matrix from ls, lh, n parameters
+    Calculate the inductance matrix from ls, lh, n parameters.
 
     :param l_s_target_value: serial inductance
     :param l_h_target_value: mutal inductance
@@ -52,7 +53,7 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
         flux, cylinder_height, cylinder_inner_radius, cylinder_outer_radius,
         fundamental_frequency, mu_r_abs, flux_density_data_vec, mu_r_imag_data_vec):
     """
-    This function calculates the hysteresis losses inside a cylinder, where the flux flows in radial direction.
+    Calculate the hysteresis losses inside a cylinder, where the flux flows in radial direction.
 
     :param flux: flux
     :param cylinder_height: cylinder height
@@ -67,7 +68,8 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
 
     def flux_density_cylinder_envelope(cylinder_radius, flux_in_cylinder, height_of_cylinder):
         """
-        This is a helper-function, what is used as a function to integrate by scipy.integrate.quad.
+        Helper-function, what is used as a function to integrate by scipy.integrate.quad.
+
         It calculates the flux density in a cylinder envelope. By using the integration function, the flux density
         in a volume can be calculated, as done in the superordinate function.
 
@@ -81,7 +83,8 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
 
     def power_loss_density_cylinder_envelope(cylinder_radius, flux_in_cylinder, height_of_cylinder):
         """
-        This is a helper-function, what is used as a function to integrate by scipy.integrate.quad
+        Helper-function, what is used as a function to integrate by scipy.integrate.quad.
+
         It calculates the power losses in a cylinder envelope. Together with the integration function, the hysteresis
         losses are calculated in a volumetric cylinder where the flux is orientated in radiant direction.
 
@@ -109,7 +112,8 @@ def power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
 def hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_half, window_w, mu_r_abs,
                                     flux_max, fundamental_frequency, flux_density_data_vec, mu_r_imag_data_vec):
     """
-    Calculates the losses of a core cylinder half.
+    Calculate the losses of a core cylinder half.
+
     means: losses in inner cylinder + losses in outer cylinder + losses in ONE cylinder_radial e.g. for top or bot
 
     Note: To calculate the hysteresis losses of an inductor, you need to run this function twice
@@ -142,7 +146,8 @@ def hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_half, window_w
 
 def calculate_core_2daxi_total_volume(core_inner_diameter, window_h, window_w):
     """
-    Calculates the full volume of a rotationally symmetric core.
+    Calculate the full volume of a rotationally symmetric core.
+
     Inside material (windings, air) also belong to this volume.
     This is the total volume used by the magnetic itself.
 
@@ -174,7 +179,7 @@ def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_height, cyl
                                                       cylinder_outer_radius,
                                                       fundamental_frequency, mu_r_imag, mu_r_abs):
     """
-    This function calculates the hysteresis losses inside a cylinder, where the flux flows in radial direction.
+    Calculate the hysteresis losses inside a cylinder, where the flux flows in radial direction.
 
     :param flux: flux
     :param cylinder_height: cylinder height
@@ -185,10 +190,10 @@ def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_height, cyl
     :param mu_r_abs: absolute value of mu_r: abs(mu_r)
 
     """
-
     def flux_density_cylinder_envelope(cylinder_radius, flux_in_cylinder, height_of_cylinder):
         """
-        This is a helper-function, what is used as a function to integrate by scipy.integrate.quad.
+        Helper-function, what is used as a function to integrate by scipy.integrate.quad.
+
         It calculates the flux density in a cylinder envelope. By using the integration function, the flux density
         in a volume can be calculated, as done in the superordinate function.
 
@@ -202,7 +207,8 @@ def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_height, cyl
 
     def power_loss_density_cylinder_envelope(cylinder_radius, flux_in_cylinder, height_of_cylinder):
         """
-        This is a helper-function, what is used as a function to integrate by scipy.integrate.quad
+        Helper-function, what is used as a function to integrate by scipy.integrate.quad.
+
         It calculates the power losses in a cylinder envelope. Together with the integration function, the hysteresis
         losses are calculated in a volumetric cylinder where the flux is orientated in radiant direction.
 
@@ -222,7 +228,6 @@ def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_height, cyl
 
         Note: function parameter names differ from outer parameters to avoid 'shadows name from outer scope'.
         """
-
         return 2 * np.pi * cylinder_radius * height_of_cylinder * np.pi * fundamental_frequency * mu_0 * mu_r_imag * \
             (flux_density_cylinder_envelope(cylinder_radius,
                                             flux_in_cylinder, height_of_cylinder) / mu_r_abs / mu_0) ** 2
@@ -234,7 +239,8 @@ def power_losses_hysteresis_cylinder_radial_direction(flux, cylinder_height, cyl
 def hyst_losses_core_half(core_inner_diameter, window_h_half, window_w, mu_r_imag,
                           mu_r_abs, flux_max, fundamental_frequency):
     """
-    Calculates the losses of a core cylinder half.
+    Calculate the losses of a core cylinder half.
+
     means: losses in inner cylinder + losses in outer cylinder + losses in ONE cylinder_radial e.g. for top or bot
 
     Note: To calculate the hysteresis losses of an inductor, you need to run this
@@ -264,8 +270,7 @@ def hyst_losses_core_half(core_inner_diameter, window_h_half, window_w, mu_r_ima
 
 def calculate_reluctance_matrix(winding_matrix, inductance_matrix):
     """
-    Calculates the Reluctance Matrix.
-    Everything must be numpy!
+    Calculate the reluctance matrix. Everything must be numpy.
 
     L. Keuck, "Entwurf eines einstufigen Ladewandlers auf Basis eines LLC-Resonanzwandlers", dissertation 2023
 
@@ -280,7 +285,6 @@ def calculate_reluctance_matrix(winding_matrix, inductance_matrix):
     N = [ [N_1a, N_2b], [N_1b, N_2b] ]
 
     """
-
     # Reluctance Matrix
     if np.ndim(winding_matrix) == 0:
         L_invert = 1 / inductance_matrix
@@ -292,7 +296,7 @@ def calculate_reluctance_matrix(winding_matrix, inductance_matrix):
 
 def calculate_inductance_matrix(reluctance_matrix, winding_matrix):
     """
-    Calculates the inductance matrix out of reluctance matrix and winding matrix.
+    Calculate the inductance matrix out of reluctance matrix and winding matrix.
 
     :param reluctance_matrix: matrix of transformer reluctance
     :param winding_matrix: matrix of transformer windings
@@ -308,7 +312,6 @@ def calculate_inductance_matrix(reluctance_matrix, winding_matrix):
     returns inductance matrix e.g.
     L = [ [L_11, M], [M, L_22] ]
     """
-
     if np.ndim(reluctance_matrix) == 0:
         reluctance_matrix_invert = 1 / reluctance_matrix
     else:
@@ -319,7 +322,7 @@ def calculate_inductance_matrix(reluctance_matrix, winding_matrix):
 
 def calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix):
     """
-    calculates the flux for e.g. an integrated transformer
+    Calculate the flux for e.g. an integrated transformer.
 
     reluctance matrix e.g.
     reluctance_matrix = [ [r1, r2], [r3, r4] ]
@@ -333,7 +336,6 @@ def calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix):
     returns flux matrix e.g.
     flux_matrix = [ [flux_1], [flux_2] ]
     """
-
     if np.ndim(reluctance_matrix) == 0:
         reluctance_matrix_invert = 1 / reluctance_matrix
     else:
@@ -343,12 +345,13 @@ def calculate_flux_matrix(reluctance_matrix, winding_matrix, current_matrix):
 
 
 def time_vec_current_vec_from_time_current_vec(time_current_vec):
+    """Split a time-current vector into time and current vector."""
     return time_current_vec[0], time_current_vec[1]
 
 
 def flux_vec_from_current_vec(current_vec_1, current_vec_2, winding_matrix, inductance_matrix):
     """
-    calculates the integrated transformer flux from current vectors
+    Calculate the integrated transformer flux from current vectors.
 
     :param current_vec_2: current vector e.g. [[time1, time2, ...], [current1, current2, ...]]
     :type current_vec_2: np.array
@@ -359,12 +362,11 @@ def flux_vec_from_current_vec(current_vec_1, current_vec_2, winding_matrix, indu
     :param inductance_matrix: inductance matrix e.g. [[... ], [...]] in shape (2,2)
     :type inductance_matrix: np.array
     """
-
     flux_top_vec = []
     flux_bot_vec = []
     flux_stray_vec = []
 
-    for count, value in enumerate(current_vec_1):
+    for count, _ in enumerate(current_vec_1):
         current_value_timestep = [current_vec_1[count], current_vec_2[count]]
 
         # simplified formula: flux = L * I / N
@@ -381,6 +383,7 @@ def flux_vec_from_current_vec(current_vec_1, current_vec_2, winding_matrix, indu
 
 
 def visualize_current_and_flux(time, flux_top_vec, flux_bot_vec, flux_stray_vec, current_1_vec, current_2_vec):
+    """Visualize current and flux over time."""
     figure, axis = plt.subplots(2, figsize=(4, 4))
 
     axis[0].plot(time, current_1_vec, label=r"$I_{\mathrm{in}}$")
@@ -404,7 +407,7 @@ def visualize_current_and_flux(time, flux_top_vec, flux_bot_vec, flux_stray_vec,
 
 def max_value_from_value_vec(*args):
     """
-    Returns the peak values from the vectors
+    Return the peak values from the vectors.
 
     :param args: value_vector
     :return: peak_value_from_vector
@@ -419,7 +422,7 @@ def max_value_from_value_vec(*args):
 
 def phases_deg_from_time_current(time_vec, *args):
     """
-    Returns the phases_deg of the peaks
+    Return the phases_deg of the peaks.
 
     :param time_vec: time vector with time steps
     :param args: vectors of current
@@ -437,7 +440,8 @@ def phases_deg_from_time_current(time_vec, *args):
 
 def power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_density_max, mu_r_abs, core_volume):
     """
-    Calculates the hysteresis losses depending on the input parameters.
+    Calculate the hysteresis losses depending on the input parameters.
+
     The output are the losses for a certain volume of core.
 
     :param fundamental_frequency: fundamental frequency in Hz
@@ -446,14 +450,14 @@ def power_loss_hysteresis_simple_volume(fundamental_frequency, mu_r_imag, flux_d
     :param mu_r_abs: abs(mu_r)
     :param core_volume: core volume
     """
-
     return core_volume * np.pi * fundamental_frequency * mu_r_imag * mu_0 * (flux_density_max / mu_0 / mu_r_abs) ** 2
 
 
 def power_loss_hysteresis_simple_volume_mu_r_imag(fundamental_frequency, flux_density_max,
                                                   mu_r_abs, core_volume, flux_density_data_vec, mu_r_imag_data_vec):
     """
-    Calculates the hysteresis losses depending on the input parameters.
+    Calculate the hysteresis losses depending on the input parameters.
+
     The output are the losses for a certain volume of core.
 
     :param fundamental_frequency: fundamental frequency in Hz
@@ -470,7 +474,8 @@ def power_loss_hysteresis_simple_volume_mu_r_imag(fundamental_frequency, flux_de
 
 def r_basic_round_inf(air_gap_radius, air_gap_basic_height, core_height):
     """
-    Do not use this function directly!
+    Calculate the r_basic for a round to infinite structure. Do not use this function directly.
+
     Use it indirectly by using
      - r_air_gap_round_round
      - r_air_gap_round_inf
@@ -493,7 +498,8 @@ def r_basic_round_inf(air_gap_radius, air_gap_basic_height, core_height):
 
 def sigma_round(r_equivalent, air_gap_radius, air_gap_total_height):
     """
-    Do not use this function directly!
+    Calculate sigma for a round structure. Do not use this function directly.
+
     Use it indirectly by using
      - r_air_gap_round_round
      - r_air_gap_round_inf
@@ -509,7 +515,7 @@ def sigma_round(r_equivalent, air_gap_radius, air_gap_total_height):
 
 def r_air_gap_round_round(air_gap_total_height, core_inner_diameter, core_height_upper, core_height_lower):
     """
-    Returns the reluctance of a round-round air gap structure and includes finging effects.
+    Return the reluctance of a round-round air gap structure and includes fringing effects.
 
     :param air_gap_total_height: total air gap height of the air gap
     :param core_inner_diameter: core inner diameter
@@ -518,7 +524,7 @@ def r_air_gap_round_round(air_gap_total_height, core_inner_diameter, core_height
     :return: air gap reluctance for round-round structure including fringing effects
     """
     if np.any(air_gap_total_height == 0):
-        raise ValueError(f"'air_gap_total_height' can not be Zero!")
+        raise ValueError("'air_gap_total_height' can not be Zero!")
 
     air_gap_total_height = np.array(air_gap_total_height)
     core_inner_diameter = np.array(core_inner_diameter)
@@ -550,20 +556,20 @@ def r_air_gap_round_round(air_gap_total_height, core_inner_diameter, core_height
 
 def r_air_gap_round_round_sct(air_gap_total_height, core_inner_diameter,
                               core_height_upper, core_height_lower, target_reluctance):
+    """Calculate the air gap length of a round-round structure by a given target reluctance."""
     return r_air_gap_round_round(air_gap_total_height, core_inner_diameter, core_height_upper, core_height_lower) - \
         target_reluctance
 
 
 def r_air_gap_round_inf(air_gap_total_height, core_inner_diameter, core_height):
     """
-    Returns the reluctance of a round-infinite air gap structure and includes fringing effects
+    Return the reluctance of a round-infinite air gap structure and includes fringing effects.
 
     :param air_gap_total_height: total air gap height of the air gap
     :param core_inner_diameter: core inner diameter
     :param core_height: core height (needed for better calculating fringing effects)
     :return: air gap reluctance for round-inf structure including fringing effects
     """
-
     air_gap_total_height = np.array(air_gap_total_height)
     core_inner_diameter = np.array(core_inner_diameter)
     core_height = np.array(core_height)
@@ -581,12 +587,14 @@ def r_air_gap_round_inf(air_gap_total_height, core_inner_diameter, core_height):
 
 
 def r_air_gap_round_inf_sct(air_gap_total_height, core_inner_diameter, core_height, target_reluctance):
+    """Calculate the air gap length of a round infinite structure by a given target reluctance."""
     return r_air_gap_round_inf(air_gap_total_height, core_inner_diameter, core_height) - target_reluctance
 
 
 def r_basic_tablet_cyl(tablet_height, air_gap_basic_height, tablet_radius):
     """
-    Do not use this function directly!
+    Calculate the r_basic for round to infinite structure. Do not use this function directly.
+
     Use it indirectly by using
      - r_air_gap_tablet_cyl
     instead!
@@ -613,7 +621,8 @@ def r_basic_tablet_cyl(tablet_height, air_gap_basic_height, tablet_radius):
 
 def sigma_tablet_cyl(r_equivalent, tablet_height, air_gap_total_height):
     """
-    Do not use this function directly!
+    Do not use this function directly! Calculate sigma for a tablet-cylinder structure.
+
     Use it indirectly by using
      - r_air_gap_tablet_cyl
     instead!
@@ -630,7 +639,8 @@ def sigma_tablet_cyl(r_equivalent, tablet_height, air_gap_total_height):
 
 def r_air_gap_tablet_cyl(tablet_height, air_gap_total_height, core_inner_diameter, window_w):
     """
-    Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
+    Return the reluctance of a cylinder-tablet air gap structure and includes fringing effects.
+
     This function calculates the air gap reluctance for a 2D-axisymmetric core.
 
     :param tablet_height: tablet height in m
@@ -639,7 +649,6 @@ def r_air_gap_tablet_cyl(tablet_height, air_gap_total_height, core_inner_diamete
     :param window_w: core window width in m
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
-
     r_inner = core_inner_diameter / 2 + window_w
 
     # translate practical core dimensions to non-practical air-gap dimensions
@@ -662,13 +671,16 @@ def r_air_gap_tablet_cyl(tablet_height, air_gap_total_height, core_inner_diamete
 
 def r_air_gap_tablet_cylinder_sct(air_gap_total_height, core_inner_diameter,
                                   tablet_height, window_w, target_reluctance):
+    """Calculate the air gap length of a table cylinder by a given target reluctance."""
     return r_air_gap_tablet_cyl(tablet_height, air_gap_total_height, core_inner_diameter, window_w) - target_reluctance
 
 
 def r_air_gap_tablet_cyl_no_2d_axi(tablet_height, air_gap_total_length, core_inner_diameter, window_w):
     """
-    Returns the reluctance of a cylinder-tablet air gap structure and includes fringing effects
+    Return the reluctance of a cylinder-tablet air gap structure and includes fringing effects.
+
     Note:
+    ----
     This function differs from r_air_gap_tablet_cyl (ideal 2D axisymmetric core). Here, the air gap reluctance for
     a non-2D-axisymmetric core is taken into account, as a real PQ core is open at the side. So, there is no air gap
     taken into account for the side-sections. The new core_dimension_y parameter describes the width of the
@@ -680,7 +692,6 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_height, air_gap_total_length, core_inn
     :param window_w: core window width in m
     :return: air gap reluctance for tablet - cylinder structure including air gap fringing
     """
-
     r_inner = core_inner_diameter / 2 + window_w
 
     if np.any(air_gap_total_length >= window_w):
@@ -724,34 +735,32 @@ def r_air_gap_tablet_cyl_no_2d_axi(tablet_height, air_gap_total_length, core_inn
 
 def r_core_tablet(tablet_height, tablet_radius, mu_r_abs, core_inner_diameter):
     """
-    Calculates the magnetic resistance of the core tablet
+    Calculate the magnetic resistance of the core tablet.
 
     :param tablet_height: tablet height
     :param tablet_radius: tablet radius
     :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
     :param core_inner_diameter: core inner diameter. For idealized core material, this value can be 0.001.
     """
-
     return np.log(tablet_radius / (core_inner_diameter / 2)) / (2 * np.pi * mu_0 * mu_r_abs * tablet_height)
 
 
 def r_core_top_bot_radiant(core_inner_diameter, window_w, mu_r_abs, core_top_bot_height):
     """
-    Calculates the top or bottom core material part
+    Calculate the top or bottom core material part.
 
     :param core_inner_diameter: core inner diameter
     :param window_w: width of winding window
     :param mu_r_abs: relative permeability (mu_r) of the core material from datasheet
     :param core_top_bot_height: height of the core material top / bottom of the winding window
     """
-
     return np.log((core_inner_diameter + 2 * window_w) / core_inner_diameter) / \
         (2 * np.pi * mu_0 * mu_r_abs * core_top_bot_height)
 
 
 def r_core_round(core_inner_diameter, core_round_height, mu_r_abs):
     """
-    Calculates the core reluctance for a round structure
+    Calculate the core reluctance for a round structure.
 
     :param core_round_height: height of the round core part section
     :param core_inner_diameter: core inner diameter
@@ -763,7 +772,7 @@ def r_core_round(core_inner_diameter, core_round_height, mu_r_abs):
 def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_count: int, conductor_radius: float,
                           material: str = 'Copper') -> float:
     """
-    Calculates the resistance of a solid wire.
+    Calculate the resistance of a solid wire.
 
     :param core_inner_diameter: core inner diameter
     :type core_inner_diameter: float
@@ -778,7 +787,6 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
     :return: total resistance of wire
     :rtype: float
     """
-
     # simplification: middle turn length
     # figure out middle length of one turn for given geometry
     turn_radius = core_inner_diameter / 2 + conductor_radius
@@ -800,14 +808,13 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
 
 def i_rms(time_current_matrix: np.array) -> float:
     """
-    RMS calculation from a time-current-vector
+    RMS calculation from a time-current-vector.
 
     :param time_current_matrix: time and current in format [[0, 0.5e-6, 2.5e-6, 3e-6], [16.55, -10.55, -16.55, 10.55]]
     :type time_current_matrix: np.array
     :return: rms current
     :rtype: float
     """
-
     time = time_current_matrix[0]
     current = time_current_matrix[1]
 

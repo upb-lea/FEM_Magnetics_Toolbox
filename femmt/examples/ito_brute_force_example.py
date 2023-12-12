@@ -1,3 +1,4 @@
+"""Example how to perform a brute-force optimization."""
 import femmt as fmt
 import numpy as np
 import os

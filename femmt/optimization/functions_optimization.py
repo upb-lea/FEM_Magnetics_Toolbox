@@ -1,3 +1,4 @@
+"""Functions used by the optimization methods in general."""
 # python libraries
 from typing import List, Dict
 
@@ -12,28 +13,28 @@ from femmt.optimization.ito_dtos import *
 def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str, plot_color: str, z_value: list = None,
             z_label: str = None, inductance_value: list = None, annotations: list = None):
     """
-        Visualize data in 2d plot with popover next to mouse position.
+    Visualize data in 2d plot with popover next to mouse position.
 
-        param x_value: Data points for x-axis
-        :type x_value: list
-        :param y_value: Data points for y-axis
-        :type y_value: list
-        :param z_value: Data points for z-axis
-        :type z_value: list
-        :param x_label: x-axis label
-        :type x_label: str
-        :param y_label: y-axis label
-        :type y_label: str
-        :param z_label: z-axis label
-        :type z_label: str
-        :param title: Title of the graph
-        :type title: str
-        :param inductance_value: Data points for inductance value corresponding to the (x, y, z): (Optional)
-        :type inductance_value: list
-        :param annotations: Annotations corresponding to the 3D points
-        :type annotations: list
-        :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
-        :type annotations: str
+    param x_value: Data points for x-axis
+    :type x_value: list
+    :param y_value: Data points for y-axis
+    :type y_value: list
+    :param z_value: Data points for z-axis
+    :type z_value: list
+    :param x_label: x-axis label
+    :type x_label: str
+    :param y_label: y-axis label
+    :type y_label: str
+    :param z_label: z-axis label
+    :type z_label: str
+    :param title: Title of the graph
+    :type title: str
+    :param inductance_value: Data points for inductance value corresponding to the (x, y, z): (Optional)
+    :type inductance_value: list
+    :param annotations: Annotations corresponding to the 3D points
+    :type annotations: list
+    :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
+    :type annotations: str
     """
     if annotations is None:
         names = [str(x) for x in list(range(len(x_value)))]
@@ -77,8 +78,7 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
     annot.set_visible(False)
 
     def update_annot(ind):
-        """Create popover annotations in 2d plot"""
-
+        """Create popover annotations in 2d plot."""
         pos = sc.get_offsets()[ind["ind"][0]]
         annot.xy = pos
         text = ""
@@ -111,8 +111,7 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
         annot.get_bbox_patch().set_alpha(0.8)
 
     def hover(event):
-        """Event that is triggered when mouse is hovered.
-        Shows text annotation over data point closest to mouse."""
+        """Event that is triggered when mouse is hovered. Shows text annotation over data point closest to mouse."""
         vis = annot.get_visible()
         if event.inaxes == ax:
             cont, ind = sc.contains(event)
@@ -132,7 +131,8 @@ def plot_2d(x_value: list, y_value: list, x_label: str, y_label: str, title: str
 # Faster than is_pareto_efficient_simple, but less readable.
 def is_pareto_efficient(costs, return_mask=True):
     """
-    Find the pareto-efficient points
+    Find the pareto-efficient points.
+
     :param costs: An (n_points, n_costs) array
     :param return_mask: True to return a mask
     :return: An array of indices of pareto-efficient points.
@@ -157,7 +157,7 @@ def is_pareto_efficient(costs, return_mask=True):
 
 def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]) -> tuple:
     """
-    Calculates the Pareto front from a list of ItoSingleResultFiles.
+    Calculate the Pareto front from a list of ItoSingleResultFiles.
 
     :param dto_list: List of ItoSingleResultFiles
     :type dto_list: List[ItoSingleResultFiles]
@@ -192,7 +192,7 @@ def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]) -> tuple:
 
 def pareto_front_from_result_dicts(result_dict_list: List[Dict]) -> tuple:
     """
-    Calculates the Pareto front from a list of result log dictionaries.
+    Calculate the Pareto front from a list of result log dictionaries.
 
     :param result_dict_list: List of result log dictionaries
     :type result_dict_list: List[Dict]
