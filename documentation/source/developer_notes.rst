@@ -115,3 +115,5 @@ to check all your files for correct linting.
 
 also run
 ``ruff check $(git ls-files '*.py')``
+
+For windows users, use the pycharm integrated ``Git Bash``.
