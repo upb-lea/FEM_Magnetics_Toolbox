@@ -1,3 +1,12 @@
+"""Classes and methods to generate the mesh for the FEM simulations.
+
+GMSH default procedure
+- define points
+- define lines from points
+- define closed loops from lines
+- define planes from closed loops
+- define physical surfaces from planes
+"""
 # Python standard libraries
 import os
 import numpy as np
@@ -17,9 +26,8 @@ from femmt.drawing import TwoDaxiSymmetric
 
 
 class Mesh:
-    """
-    This class will create a mesh from the given model.
-    """
+    """Create a mesh from the given model."""
+
     model: TwoDaxiSymmetric
     core: Core
     stray_path: StrayPath
@@ -90,29 +98,31 @@ class Mesh:
         self.gmsh_log = file_paths.gmsh_log
 
     def femmt_print(self, text: str):
+        """Print text to terminal or to log-file, dependent on the current verbosity."""
         if not self.verbosity == Verbosity.Silent:
             self.logger.info(text)
 
     def set_empty_point_lists(self):
+        """Initialize point lists. For internal overview as a mirrored gmsh information set."""
         # Add empty lists
         p_core = []
         p_island = []
         p_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             p_cond.append([])
         p_region = []
         p_iso_core = []
         return p_core, p_island, p_cond, p_region, p_iso_core
 
     def set_empty_line_lists(self):
-
+        """Initialize line lists. For internal overview as a mirrored gmsh information set."""
         # Curves
         l_bound_core = []
         l_bound_air = []
         l_core_air = []
         l_core_core = []
         l_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             l_cond.append([])
         l_region = []
         l_air_gaps_air = []
@@ -120,9 +130,10 @@ class Mesh:
         return l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core
 
     def set_empty_curve_loop_lists(self):
+        """Initialize curve loop lists. For internal overview as a mirrored gmsh information set."""
         # Curve Loops
         curve_loop_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             curve_loop_cond.append([])
         curve_loop_island = []
         curve_loop_air = []
@@ -133,12 +144,13 @@ class Mesh:
         return curve_loop_cond, curve_loop_island, curve_loop_air, curve_loop_air_gaps, curve_loop_iso_core
 
     def set_empty_plane_lists(self):
+        """Initialize plane lists. For internal overview as a mirrored gmsh information set."""
         # This is only needed for the surfaces since they are the only global variables
         # Plane Surfaces
         self.plane_surface_core = []
 
         self.plane_surface_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             self.plane_surface_cond.append([])
         if self.core.core_type == CoreType.Single:
             self.plane_surface_air = []
@@ -154,8 +166,7 @@ class Mesh:
                     p_core: list, p_island: list,
                     l_bound_core: list, l_core_air: list, l_bound_air: list, l_air_gaps_air: list,
                     curve_loop_island: list, curve_loop_air_gaps: list):
-        """sets a single core with one physical winding window
-        """
+        """Set a single core with one physical winding window."""
         # Points
         # (index refers to sketch)
 
@@ -411,6 +422,7 @@ class Mesh:
             self.plane_surface_air_gaps.append(gmsh.model.geo.addPlaneSurface([curve_loop]))
 
     def stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list):
+        """Generate the stacked core."""
         # Points
         # (index refers to sketch)
         from operator import itemgetter
@@ -596,6 +608,7 @@ class Mesh:
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([-curve_loop_core]))
 
     def modular_stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list, l_core_core: list):
+        """Generate the modular stacked core."""
         # Points
         # (index refers to sketch)
         from operator import itemgetter
@@ -821,7 +834,7 @@ class Mesh:
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_top]))
 
     def conductors(self, p_cond: list, l_cond: list, curve_loop_cond: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate the conductors."""
         # Conductors
         p_cond_center = []  # List for center points which are later embed in the model
 
@@ -903,10 +916,10 @@ class Mesh:
 
     def insulations_core_cond(self, p_iso_core: list):
         """
-        Sets the rectangular electrical insulation between conductors and core.
+        Set the rectangular electrical insulation between conductors and core.
+
         :return:
         """
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Insulations
         # Core to Windings
         # If no insulation, return an empty list
@@ -932,11 +945,11 @@ class Mesh:
         return curve_loop_iso_core
 
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the single core."""
         # Air
         # Points are partwise double designated
 
-        """ This is without the split of the air gaps
+        """This is without the split of the air gaps
         l_air_tmp = self.l_core_air[:7]
         for i in range(0, len(self.l_bound_air)):
             l_air_tmp.append(self.l_bound_air[i])
@@ -988,11 +1001,11 @@ class Mesh:
         #     self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))
 
     def air_stacked(self, l_core_air: list, l_bound_air, curve_loop_cond: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the stacked core."""
         # Air
         # Points are partwise double designated
 
-        """ This is without the split of the air gaps
+        """This is without the split of the air gaps
         l_air_tmp = self.l_core_air[:7]
         for i in range(0, len(self.l_bound_air)):
             l_air_tmp.append(self.l_bound_air[i])
@@ -1087,10 +1100,16 @@ class Mesh:
         #     gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
 
     def boundary(self, p_core: list, p_region: list, l_bound_core: list, l_bound_air: list, l_region: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """
+        Create the boundary of the simulation region.
+
+        Default case is for air gaps in the inner core.
+        The else-case, for outer air gaps is unused for air gaps in the inner core.
+        """
         # Boundary
         if self.core.core_type == CoreType.Single:
             if self.region is None:
+                # For inner air gaps.
                 self.l_bound_tmp = l_bound_core[:7]
                 for i in range(len(l_bound_air)):
                     self.l_bound_tmp.append(l_bound_air[-i - 1])
@@ -1098,6 +1117,7 @@ class Mesh:
                         self.l_bound_tmp.append(l_bound_core[-i - 1])
 
             else:
+                # For outer air gaps. Not used for cores with air gaps in the inner leg.
                 # Generate Lines of Region
                 # start top left and go clockwise
                 p_region.append(gmsh.model.geo.addPoint(0,
@@ -1158,7 +1178,7 @@ class Mesh:
                         self.l_bound_tmp.append(l_bound_core[-i - 1])
 
     def visualize(self, visualize_before, save_png):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Visualize the geometry or the FEM simulation result."""
         # Colorize model and show it if needed
         # mesh generation
         color_scheme = ff.colors_femmt_default
@@ -1217,6 +1237,8 @@ class Mesh:
                              visualize_before: bool = False,
                              save_png: bool = True, refine=0, alternative_error=0):
         """
+        Generate the hybird mesh.
+
         - interaction with gmsh
         - mesh generation
             - Skin depth based forward meshing
@@ -1252,7 +1274,8 @@ class Mesh:
         # TODO: Add model_insulation as an input parameter of the function.
 
         if self.model.component_type == ComponentType.IntegratedTransformer:
-            warnings.warn("Inuslations are currently not implemented for integrated transformer and will be ignored.")
+            warnings.warn("Insulations are currently not implemented for integrated transformer and will be ignored.",
+                          stacklevel=2)
             # TODO: Implement insulations for integrated transformer.
             model_insulation = False
 
@@ -1291,6 +1314,7 @@ class Mesh:
         gmsh.write(self.model_geo_file)
 
     def generate_electro_magnetic_mesh(self, refine=0):
+        """Generate the mesh for the electro magnetic FEM simulation."""
         self.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
         self.PN_BOUND = 111111
@@ -1310,7 +1334,7 @@ class Mesh:
 
         def set_physical_surface_conductor():
             self.ps_cond = []
-            for num in range(len(self.windings)):
+            for _ in range(len(self.windings)):
                 self.ps_cond.append([])
 
             # Since the turns are saved for each vww all turns per winding must be collected
@@ -1338,7 +1362,7 @@ class Mesh:
                     if winding.parallel:
                         tags = self.plane_surface_cond[winding_number]
                         physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=self.PN_COND_SOLID + 1000 * winding_number)
-                        for i in range(flattened_turns[winding_number]):
+                        for _ in range(flattened_turns[winding_number]):
                             self.ps_cond[winding_number].append(physical_group_number)
                     else:
                         for i in range(flattened_turns[winding_number]):
@@ -1414,6 +1438,7 @@ class Mesh:
                 fd.write(text)
 
     def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before):
+        """Generate the mesh for the thermal FEM simulation."""
         self.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")
 
         gmsh.open(self.model_geo_file)
@@ -1580,7 +1605,7 @@ class Mesh:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
         self.ps_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             self.ps_cond.append([])
 
         # Since the turns are saved for each vww all turns per winding must be collected
@@ -1603,7 +1628,7 @@ class Mesh:
                 if winding.parallel:
                     tags = self.plane_surface_cond[winding_number]
                     physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=130000 + 1000 * winding_number)
-                    for i in range(flattened_turns[winding_number]):
+                    for _ in range(flattened_turns[winding_number]):
                         self.ps_cond[winding_number].append(physical_group_number)
 
                 else:
@@ -1719,6 +1744,7 @@ class Mesh:
         gmsh.write(self.thermal_mesh_file)
 
     def inter_conductor_meshing(self, p_cond):
+        """To be defined."""
         p_inter = None
         for ww in self.model.winding_windows:
             for vww in ww.virtual_winding_windows:
@@ -1754,7 +1780,7 @@ class Mesh:
 
         # TODO: Inter conductor meshing!
         if all(winding.conductor_type == ConductorType.RoundSolid for winding in self.windings):
-            self.femmt_print(f"Making use of skin based meshing\n")
+            self.femmt_print("Making use of skin based meshing\n")
             for num in range(len(self.windings)):
                 for i in range(0, int(len(p_cond[num]) / 5)):
                     gmsh.model.mesh.embed(0, [p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
@@ -1770,6 +1796,7 @@ class Mesh:
 
     def forward_meshing(self, p_cond):
         """In this function multiple techniques in order to raise the mesh density at certain points are applied.
+
         :return:
         """
         def point_is_in_conductor(x, y, p1, p2, p3, p4, p5):
@@ -1813,7 +1840,7 @@ class Mesh:
 
             fixed_points = []  # Points from the conductors which should be avoided by this method
             conductors = self.model.p_conductor
-            for winding_number, winding in enumerate(self.windings):
+            for winding_number, _ in enumerate(self.windings):
                 for i in range(len(conductors[winding_number]) // 5):
                     p1 = conductors[winding_number][i * 5]
                     p2 = conductors[winding_number][i * 5 + 1]
@@ -1963,8 +1990,9 @@ class Mesh:
         gmsh.model.geo.synchronize()
 
     def rectangular_conductor_center_points(self):
+        """Add center points for rectangular conductors for better meshing."""
         def calculate_center_points(left_bound, right_bound, top_bound, bottom_bound, center_point, min_distance):
-
+            """Calculate the coordinates for the new center points."""
             # As upper bound use a maximum of 10 points per direction
             number_of_points_left = int(abs(center_point[0] - left_bound)/min_distance)
             number_of_points_right = int(abs(right_bound - center_point[0])/min_distance)

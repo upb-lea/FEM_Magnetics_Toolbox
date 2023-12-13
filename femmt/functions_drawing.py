@@ -1,3 +1,4 @@
+"""Functions to draw different conductor schemes for the FEM simulation."""
 # python libraries
 import copy
 from typing import List
@@ -12,6 +13,8 @@ from femmt.dtos import *
 
 def number_of_rows(row: ConductorRow):
     """
+    Get the number of rows needed to place some conductors in a given winding window.
+
     :return:
     """
     number_rows = int(row.number_of_conds_per_winding / row.number_of_conds_per_row) + \
@@ -22,7 +25,8 @@ def number_of_rows(row: ConductorRow):
 def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTag, conductor_type: ConductorType,
                thickness=None, radius=None, cond_cond_isolation=None, additional_bobbin=0):
     """
-    Defines a full row of the defined conductor in the specified window width.
+    Define a full row of the defined conductor in the specified window width.
+
     It is assumed, that the row is full, which means, as many conductors are
     place horizontally next to each other, as possible.
     It is assumed, that the row fits into the winding window. A later control
@@ -56,7 +60,8 @@ def single_row(number_of_conds_per_winding, window_width, winding_tag: WindingTa
 
 def check_secondary_and_tertiary_are_the_same(secondary_row: ConductorRow, tertiary_row: ConductorRow):
     """
-    Does the definition of the single rows relate to a center-tapped transformer?
+    Define the single rows relate to a center-tapped transformer.
+
     :return:
     """
     if secondary_row.row_height == tertiary_row.row_height and \
@@ -103,6 +108,7 @@ def check_secondary_and_tertiary_are_the_same(secondary_row: ConductorRow, terti
 def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
                         primary_row, secondary_row, tertiary_row,
                         isolations: ThreeWindingIsolation):
+    """Group center tapped windings."""
     group = CenterTappedGroup(primary_number_of_rows=None, secondary_number_of_rows=None,
                               primary_rest=None, secondary_rest=None, stack=None)
     # TODO: rests do not really belong into each group but only once
@@ -148,8 +154,7 @@ def group_center_tapped(primary_number_of_rows, secondary_number_of_rows,
 
 
 def get_height_of_group(group: CenterTappedGroup):
-    """returns the total height of thr conductors and insulation
-    """
+    """Return the total height of thr conductors and insulation."""
     total_height = 0
     for row_element in group.stack:
         if isinstance(row_element, ConductorRow):
@@ -160,6 +165,7 @@ def get_height_of_group(group: CenterTappedGroup):
 
 
 def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_be_added):
+    """Add tertiary widing to stack."""
     secondary_tags = []
     number_of_added_tertiaries = 0
     for i, obj in enumerate(stack_order_without_tertiary):
@@ -173,6 +179,7 @@ def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_
 
 # Insert insulations into the stack_order
 def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
+    """Insert insulations to a stack."""
     # Which insulation is needed depends on the bot and top row neighbours
     # TODO: insert insulations into the stack depending on isolation matrix
 
@@ -182,7 +189,7 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     insulation_stack = []
     number_of_added_insulations = 0
     # here: zero index means bot_row
-    for i, bot_row in enumerate(stack_order[0:-1]):
+    for i, _ in enumerate(stack_order[0:-1]):
         insulation_string = ""
         # print(f"{bot_row = }")
         # print(f"{top_row = }\n")
@@ -224,6 +231,10 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
 
 
 def get_set_of_integers_from_string_list(string_list):
+    """Get the list of the set of integers in a list of strings.
+
+    Used by winding_scheme key.
+    """
     integer_list = []
     for single_string in string_list:
         try:
@@ -238,7 +249,7 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
                                          primary_additional_bobbin, center_foil_additional_bobbin,
                                          primary_row: ConductorRow, secondary_row: ConductorRow,
                                          tertiary_row: ConductorRow, isolations: ThreeWindingIsolation):
-
+    """Get the stack order from a given interleaving scheme."""
     # Init the winding counters (needed for vertical insulation adjustments)
     number_of_primary_rows, number_of_secondary_rows, number_of_tertiary_rows = 0, 0, 0
 
@@ -289,6 +300,10 @@ def stack_order_from_interleaving_scheme(interleaving_scheme: InterleavingScheme
 def adjust_vertical_insulation_center_tapped_stack(interleaving_scheme, primary_row, secondary_row, tertiary_row,
                                                    primary_additional_bobbin, center_foil_additional_bobbin,
                                                    isolations, available_height):
+    """Adjust the vertical insulation of a center tapped stack.
+
+    The insulation is equally distributed.
+    """
     # Initial stacking with predefined minimum insulations
     initial_stack_order = []
 
@@ -325,12 +340,12 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
                                     interleaving_type: CenterTappedInterleavingType,
                                     interleaving_scheme: InterleavingSchemesFoilLitz,
                                     primary_additional_bobbin: float, center_foil_additional_bobbin: float):
-    """Defines the vertical stacking of previously defined ConductorRows.
+    """Define the vertical stacking of previously defined ConductorRows.
+
     IMPORTANT DEFINITION: the rows are calculated without taking into account
     any vertical insulation. Only the horizontal insulation from conductors
     of the same WindingTag is taken into account in ConductorRow definition.
     """
-
     if not check_secondary_and_tertiary_are_the_same(secondary_row, tertiary_row):
         print("Secondary and tertiary winding are not defined similar. "
               "That is not a nice center-tapped transformer :(")
@@ -417,11 +432,11 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
     elif interleaving_type == CenterTappedInterleavingType.TypeD:
         number_of_single_rows = None
         stack_order = []
-        for i in range(0, primary_row.number_of_rows):
+        for _ in range(0, primary_row.number_of_rows):
             stack_order.append(primary_row)
-        for i in range(0, secondary_row.number_of_rows):
+        for _ in range(0, secondary_row.number_of_rows):
             stack_order.append(secondary_row)
-        for i in range(0, tertiary_row.number_of_rows):
+        for _ in range(0, tertiary_row.number_of_rows):
             stack_order.append(tertiary_row)
 
         insert_insulations_to_stack(stack_order, isolations)
@@ -431,6 +446,7 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
 
 
 def get_number_of_turns_in_groups(stack):
+    """Get the number of turns in one center tapped stack for Type A winding scheme. Experimental."""
     turns1 = 0
     turns2 = 0
 
@@ -453,6 +469,11 @@ def get_number_of_turns_in_groups(stack):
 
 
 def is_even(x: int):
+    """Check if given number is even or odd.
+
+    :param x: input number to check
+    :type x: int
+    """
     if x % 2:
         return False
     else:
@@ -460,10 +481,16 @@ def is_even(x: int):
 
 
 def center(l_list: List):
+    """Return the center indes of a list. Rounds off."""
     return int(len(l_list) / 2)
 
 
 def mix_x_and_i(input_x, input_i):
+    """General usage to interleave windings. One winding could be input_x and the other input_i. Experimental.
+
+    Example: 16 primary windings (input_x), 3 secondary windings (input_i).
+    Trys to fit these widings symmetric into the winding window.
+    """
     len_x = len(input_x)
     len_i = len(input_i)
     if len_x > len_i:

@@ -1,3 +1,4 @@
+"""Parser between optuna and femmt optimization."""
 # python libraries
 
 # 3rd party libraries
@@ -8,9 +9,15 @@ from femmt.optimization.ito_dtos import *
 
 
 class OptunaFemmtParser:
+    """Parser to bring optuna results to ItoSingleResultFile format."""
+
     @staticmethod
     def parse(frozen_trial: optuna.trial.FrozenTrial) -> ItoSingleResultFile:
+        """Parse the optuna trial to ItoSingleResultFile.
 
+        :param frozen_trial: frozen trial (by optuna)
+        :type frozen_trial: optuna.trial.FrozenTrial
+        """
         return ItoSingleResultFile(
             case=frozen_trial.number,
             # geometry parameters

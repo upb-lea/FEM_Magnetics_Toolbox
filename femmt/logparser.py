@@ -1,3 +1,4 @@
+"""Functions and methods to load simulations from result-log files."""
 import os
 import json
 import matplotlib.pyplot as plt
@@ -7,11 +8,15 @@ from dataclasses import dataclass
 
 
 class SweepTypes(Enum):
+    """List different sweep types."""
+
     SingleSweep = "single_sweeps"
 
 
 @dataclass
 class WindingData:
+    """Data from the windings for the result-log file."""
+
     flux: complex
     turns: int
     flux_over_current: complex
@@ -24,6 +29,8 @@ class WindingData:
 
 @dataclass
 class SweepData:
+    """Data from simulations sweeps for the result-log file."""
+
     frequency: float
     core_eddy_losses: float
     core_hyst_losses: float
@@ -33,6 +40,8 @@ class SweepData:
 
 @dataclass
 class FileData:
+    """General data for the result-log file."""
+
     file_path: str
     sweeps: List[SweepData]
     total_winding_losses: float
@@ -45,13 +54,15 @@ class FileData:
 
 class FEMMTLogParser:
     """Class to parse the electromagnetic_results_log file created by FEMMT.
+
     Creates a class structure from the file in order to easy access the data and create plots.
     """
+
     # Contains the complete data
     data: Dict[str, FileData]
 
     def __init__(self, file_paths_dict: Dict):
-        """Creates the data dict out of the given file_paths.
+        """Create the data dict out of the given file_paths.
 
         :param file_paths_dict: List of paths to every log file that should be added to the data.
         :type file_paths_dict: List[str]
@@ -66,8 +77,9 @@ class FEMMTLogParser:
 
     def plot_frequency_sweep_losses(self, data_names: List[str], loss_parameter: str, plot_label: str = "") -> None:
         """
-        Example function for a possible sweep plot. Sweeps over the frequency of different simulations from
-        one or multiple files.
+        Sweep over the frequency of different simulations from one or multiple files.
+
+        Example function for a possible sweep plot.
 
         :param data_names: Name of the data (keys of data dict). If the list is empty every key will be taken.
         :param loss_parameter: Name of the variable from SweepData as str which will be set on the y-axis.
@@ -97,8 +109,9 @@ class FEMMTLogParser:
     def plot_frequency_sweep_winding_params(self, data_names: str, winding_number: int, winding_parameter: str,
                                             plot_label: str = "") -> None:
         """
-        Example function for a possible sweep plot. Sweeps over the frequency of different simulations from
-        one or multiple files.
+        Sweeps over the frequency of different simulations from one or multiple files.
+
+        Example function for a possible sweep plot.
 
         :param data_names: Name of the data (keys of data dict). If the list is empty every key will be taken.
         :type data_names: str
@@ -140,9 +153,10 @@ class FEMMTLogParser:
     @staticmethod
     def get_log_files_from_working_directories(working_directories: List[str]) -> Dict:
         """
-        Returns a dict containing the log files for each given working directory together with the name of the
-        directory as key. For every working directory the local path to the log file
-        is working_directory/results/log_electro_magnetic.json
+        Get the log files as dict for each given working directory together with the name of the directory as key.
+
+        For every working directory the local path to the log file is:
+        working_directory/results/log_electro_magnetic.json
 
         :param working_directories: Working directories.
         :return: Dictionary with the name of the directory as key and the log.json as value.
@@ -156,12 +170,12 @@ class FEMMTLogParser:
 
     @staticmethod
     def parse_complex(data):
-        """Returns complex number if data is list with two elements.
+        """Return complex number if data is list with two elements.
 
         :param data: List of 2 values or single value
         :return: Either float or complex value
         """
-        if type(data) is list:
+        if isinstance(data, list):
             if len(data) == 2:
                 return complex(data[0], data[1])
             else:
@@ -170,7 +184,7 @@ class FEMMTLogParser:
 
     @staticmethod
     def parse_file(file_path: str, sweep_type: SweepTypes) -> FileData:
-        """Internal function used to parse the JSON-File to a Class structure.
+        """Parse the JSON-File to a Class structure. Internal function.
 
         :param file_path: Full path to file
         :type file_path: str

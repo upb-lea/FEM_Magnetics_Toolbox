@@ -1,3 +1,4 @@
+"""Contains information about the file structure."""
 # Python standard libraries
 import os
 
@@ -10,31 +11,31 @@ from femmt.model import Conductor
 
 
 class FileData:
-    """Contains paths to every folder and file needed in femmt.
-    """
+    """Contains paths to every folder and file needed in femmt."""
+
     def __init__(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None):
         if working_directory is not None:
             self.update_paths(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
 
     @staticmethod
     def create_folders(*args) -> None:
-        """
-        Creates folder for every given folder path (if it does not exist).
-        """
+        """Create folders for every given folder path (if it does not exist)."""
         for folder in list(args):
             if not os.path.exists(folder):
                 os.mkdir(folder)
 
     def clear_previous_simulation_results(self):
+        """Clear all simulation results from previous simulations.
+
+        Therefore, the folder structure is cleaned up.
+        """
         self.clean_folder_structure(self.results_folder_path)
 
     @staticmethod
     def clean_folder_structure(folder_path: str):
-        """
-        Cleans all files from a folder structure. The folder structure remains intact.
-        """
+        """Clean all files from a folder structure. The folder structure remains intact."""
         try:
-            for root, dirs, files in os.walk(folder_path):
+            for root, _, files in os.walk(folder_path):
                 for file in files:
                     file_path = os.path.join(root, file)
                     os.remove(file_path)
@@ -44,7 +45,7 @@ class FileData:
             print("Error occurred while deleting files and subdirectories.")
 
     def update_paths(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None) -> None:
-        """Sets the local path based on the given working directory
+        """Set the local path based on the given working directory.
 
         :param working_directory: working directory folder path
         :type working_directory: str
@@ -95,9 +96,7 @@ class FileData:
 
 
 class MeshData:
-    """Contains data which is needed for the mesh generation.
-    Is updated by high_level_geo_gen.
-    """
+    """Contains data which is needed for the mesh generation. Is updated by high_level_geo_gen."""
 
     padding: float           # > 1
     skin_mesh_factor: float
@@ -132,6 +131,7 @@ class MeshData:
         self.center_factor = 4
 
     def update_spatial_data(self, core_w: float, window_w: float, windings: List["Conductor"]):
+        """Update geometry data of the core of the magnetic component."""
         self.core_w = core_w
         self.window_w = window_w
         self.windings = windings
@@ -145,14 +145,13 @@ class MeshData:
         self.c_air_gaps = window_w / 20 * self.mesh_accuracy_air_gaps
 
     def update_data(self, frequency: float, skin_mesh_factor: float) -> None:
-        """Updates the mesh data according to the given frequency and skin_mesh_factor.
+        """Update the mesh data according to the given frequency and skin_mesh_factor.
 
         :param frequency: Frequency of the model (updates skin depth which affects the mesh)
         :type frequency: float
         :param skin_mesh_factor: Factor for skin mesh
         :type skin_mesh_factor: float
         """
-
         self.skin_mesh_factor = skin_mesh_factor
 
         # Update Skin Depth (needed for meshing)

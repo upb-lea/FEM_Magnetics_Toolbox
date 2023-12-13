@@ -113,3 +113,5 @@ run
 ``pycodestyle $(git ls-files '*.py')``
 to check all your files for correct linting.
 
+also run
+``ruff check $(git ls-files '*.py')``

@@ -1,3 +1,4 @@
+"""Example how to perform an optimization using optuna and FEMMT."""
 # python libraries
 import os
 

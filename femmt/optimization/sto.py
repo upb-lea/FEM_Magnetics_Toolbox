@@ -1,3 +1,5 @@
+"""Stacked transformer optimization (STO)."""
+
 # python libraries
 import os
 import shutil
@@ -20,11 +22,11 @@ import materialdatabase as mdb
 
 
 class StackedTransformerOptimization:
+    """Optimize a stacked transformer."""
 
     @staticmethod
     def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
-        """
-        Calculate fix parameters what can be derived from the input configuration.
+        """Calculate fix parameters what can be derived from the input configuration.
 
         return values are:
 
@@ -46,7 +48,6 @@ class StackedTransformerOptimization:
         :return: calculated target and fix parameters
         :rtype: ItoTargetAndFixedParameters
         """
-
         # currents
         time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
             config.time_current_1_vec)
@@ -103,8 +104,7 @@ class StackedTransformerOptimization:
     def objective(trial, config: StoSingleInputConfig,
                   target_and_fixed_parameters: StoTargetAndFixedParameters,
                   number_objectives: int, show_geometries: bool = False, process_number: int = 1):
-        """
-        Objective for optuna optimization.
+        """Objective for optuna optimization.
 
         :param trial: optuna trail objective. Used by optuna
         :param config: simulation configuration file
@@ -331,8 +331,7 @@ class StackedTransformerOptimization:
                             sampler=optuna.samplers.NSGAIISampler(),
                             show_geometries: bool = False,
                             ) -> None:
-        """
-        Proceed a study which is stored as sqlite database.
+        """Proceed a study which is stored as sqlite database.
 
         :param study_name: Name of the study
         :type study_name: str
@@ -351,8 +350,8 @@ class StackedTransformerOptimization:
         """
 
         def objective_directions(configure_number_objectives: int):
-            """
-            Checks if the number of objectives is correct and returns the minimizing targets
+            """Check the number of objectives and returns the minimizing targets.
+
             :param configure_number_objectives: number of objectives
             :type configure_number_objectives: int
             :returns: objective targets and optimization function
@@ -412,8 +411,7 @@ class StackedTransformerOptimization:
                                  show_geometries: bool = False,
                                  process_number: int = 1,
                                  ) -> None:
-        """
-        Proceed a study which can be paralleled. It is highly recommended to use a mysql-database (or mariadb).
+        """Proceed a study which can be paralleled. It is highly recommended to use a mysql-database (or mariadb).
 
         :param study_name: Name of the study
         :type study_name: str
@@ -434,8 +432,8 @@ class StackedTransformerOptimization:
         """
 
         def objective_directions(number_objectives: int):
-            """
-            Checks if the number of objectives is correct and returns the minimizing targets
+            """Check if the number of objectives is correct and returns the minimizing targets.
+
             :param number_objectives: number of objectives
             :type number_objectives: int
             :returns: objective targets and optimization function
@@ -479,17 +477,18 @@ class StackedTransformerOptimization:
 
     @staticmethod
     def run_garbage_collector(study: optuna.Study, _):
-        if len(study.trials) % 10000 == 0:
-            # Run the garbage collector to prevent high memory consumption.
-            # as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
-            # the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate.
-            # in case of running 10 or more cores, the garbage collector will run each 10.000 trial
-            # There could be an improvement to run the garbage collector on every process in future.
-            # Now, it is random on which of the processes the garbage collector runs.
-            # Learn about the garbage collector https://docs.python.org/3/library/gc.html#gc.collect
-            # Every process runs its own garbage collector. So there is no difference between multiple processes
-            # https://stackoverflow.com/questions/23272943/how-does-garbage-collection-work-with-multiple-running-processes-threads
+        """Run the garbage collector to prevent high memory consumption.
 
+        as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
+        the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate.
+        in case of running 10 or more cores, the garbage collector will run each 10.000 trial
+        There could be an improvement to run the garbage collector on every process in the future.
+        Now, it is random on which of the processes the garbage collector runs.
+        Learn about the garbage collector https://docs.python.org/3/library/gc.html#gc.collect
+        Every process runs its own garbage collector. So there is no difference between multiple processes
+        https://stackoverflow.com/questions/23272943/how-does-garbage-collection-work-with-multiple-running-processes-threads
+        """
+        if len(study.trials) % 10000 == 0:
             print("Run garbage collector")
             gc.collect()
 
@@ -497,8 +496,7 @@ class StackedTransformerOptimization:
     def show_study_results(study_name: str, config: StoSingleInputConfig,
                            percent_error_difference_l_h: float = 20,
                            percent_error_difference_l_s12: float = 20) -> None:
-        """
-        Show the results of a study.
+        """Show the results of a study.
 
         A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
 
@@ -537,8 +535,7 @@ class StackedTransformerOptimization:
     @staticmethod
     def show_study_results3(study_name: str, config: StoSingleInputConfig,
                             error_difference_inductance_sum_percent, storage: str = 'sqlite') -> None:
-        """
-        Show the results of a study.
+        """Show the results of a study.
 
         A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
 
@@ -567,7 +564,7 @@ class StackedTransformerOptimization:
         print(f"{error_difference_inductance_sum_percent = }")
 
         time_start = datetime.datetime.now()
-        print(f"start generating Pareto front....")
+        print("start generating Pareto front....")
         fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (
             t.values[0] if error_difference_inductance_sum_percent > t.values[2] else None,
             t.values[1] if error_difference_inductance_sum_percent > t.values[2] else None), target_names=["volume in m³", "loss in W"])
@@ -584,7 +581,8 @@ class StackedTransformerOptimization:
     def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number_trial: int,
                                   fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
                                   storage: str = "sqlite"):
-        """
+        """Re-Simulates a FEM simulation from an optuna study.
+
         Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
         number_trial design inside the study 'study_name'. Loads from an optuna study and is very slow.
 
@@ -753,7 +751,8 @@ class StackedTransformerOptimization:
     def re_simulate_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int,
                             fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
                             show_simulation_results: bool = False):
-        """
+        """Perform a single FEM simulation from a given pandas dataframe created by an optuna study.
+
         Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
         number_trial design inside the study 'study_name'. Loads from a pandas dataframe and is very fast.
 
@@ -912,7 +911,7 @@ class StackedTransformerOptimization:
     @staticmethod
     def save_png_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int):
         """
-        Creates the geometry of specified trials_numbers
+        Create the geometry of specified trials_numbers.
 
         Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
         The values are given separate. In case of re-simulation, you may want to have more accurate results.
@@ -923,9 +922,11 @@ class StackedTransformerOptimization:
         :type config: StoSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default]
+            removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter,
+            except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         :param show_simulation_results: visualize the simulation results of the FEM simulation
         :type show_simulation_results: bool
@@ -954,9 +955,9 @@ class StackedTransformerOptimization:
         primary_coil_turns = int(loaded_trial_params["params_primary_coil_turns"])
         # Note: int() is used to round down.
         number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
         window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
@@ -985,7 +986,6 @@ class StackedTransformerOptimization:
                                       working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
                                       verbosity=femmt.Verbosity.Silent,
                                       simulation_name=f"Single_Case_{loaded_trial_params['number']}")
-
 
         core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
                                                            window_h_top=window_h_top, window_h_bot=window_h_bot)
@@ -1051,8 +1051,7 @@ class StackedTransformerOptimization:
     @staticmethod
     def thermal_simulation_from_geo(geo, thermal_config: ThermalConfig, flag_insulation: bool = False,
                                     show_visual_outputs: bool = True):
-        """
-        Performs the thermal simulation for the transformer.
+        """Perform the thermal simulation for the transformer.
 
         :param geo: geometry object
         :type geo: femmt.Component
@@ -1073,15 +1072,13 @@ class StackedTransformerOptimization:
 
     @staticmethod
     def df_plot_pareto_front(df: pd.DataFrame, sum_inductance_error_percent: float):
-        """
-        Plots an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
+        """Plot an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
 
         :param df: Dataframe, generated from an optuna study (exported by optuna)
         :type df: pd.Dataframe
         :param sum_inductance_error_percent: maximum allowed error of |error(L_s12)| + |error(L_h)| in %
         :type sum_inductance_error_percent: float
         """
-
         print(df.head())
         df_pareto = df[df["values_2"] < sum_inductance_error_percent]
 
@@ -1127,8 +1124,8 @@ class StackedTransformerOptimization:
                            thermal_config: ThermalConfig,
                            current_waveforms_operating_points: List[CurrentWorkingPoint],
                            fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
-        """
-        Creates for several geometries and several working points a report.
+        """Create for several geometries and several working points a report.
+
         Simulates magnetoquasistatic and thermal for all given geometries and current working points.
         Summarizes the losses and temperatures for every working point and geometry.
 
@@ -1149,7 +1146,6 @@ class StackedTransformerOptimization:
             e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         """
-
         report_df = pd.DataFrame()
 
         for trial_number in trials_numbers:
@@ -1194,9 +1190,9 @@ class StackedTransformerOptimization:
     @staticmethod
     def create_pngs(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig):
         """
-        Creates the geometry of specified trials_numbers and saves a screenshot in png format for each trial and stores them with in the
-        format "trial_number.png" as follows:
+        Create the geometry of specified trials_numbers and saves a screenshot in png format for each trial.
 
+        Storage format "trial_number.png" as follows:
         f'{config.working_directory}/drawings/{number_trial}.png')
 
         :param df: Dataframe, generated from an optuna study (exported by optuna)
@@ -1211,11 +1207,9 @@ class StackedTransformerOptimization:
         for trial_number in trials_numbers:
             femmt.StackedTransformerOptimization.save_png_from_df(df, config, number_trial=trial_number, show_simulation_results=False)
 
-
     @staticmethod
     def study_to_df(study_name: str, database_url: str):
-        """
-        Creates a dataframe from a study.
+        """Create a dataframe from a study.
 
         :param study_name: name of study
         :type study_name: str

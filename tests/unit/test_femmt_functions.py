@@ -1,8 +1,10 @@
+"""Contains Unittests for some subfunctions of FEMMT."""
 import pytest
 import femmt
 import numpy as np
 
 def test_fft():
+    """Unittest to calculate the FFT of a given waveform."""
     example_waveform = np.array([[0, 1.34, 3.14, 4.48, 6.28], [-175.69, 103.47, 175.69, -103.47, -175.69]])
 
     out = femmt.fft(example_waveform, plot='no', mode='rad', f0=25000, title='FFT input current')
@@ -25,6 +27,7 @@ def test_fft():
         femmt.fft(example_waveform, mode='unallowed_mode')
 
 def test_find_common_frequencies():
+    """Unittest to figure out common frequencies in different current waveforms."""
     frequency_1 = [50, 100, 150, 200]
     frequency_2 = [50, 100, 150, 170, 200]
     amplitude_1 = [1, 2, 3, 4]
@@ -40,12 +43,14 @@ def test_find_common_frequencies():
     assert out == out_test
 
 def test_cost_function_core():
+    """Unittest to calculate the material cost of a core."""
     assert femmt.cost_function_core(1, "ferrite") == 5.5
     assert femmt.cost_function_core(1.25, "ferrite") == 6.875
     assert femmt.cost_function_core(1.25, "nanocristalline") == 28.75
 
 
 def test_phases_deg_from_time_current():
+    """Unittest to calculate the phase angle from a given current waveform."""
     time_vec = [0, 1, 2, 3, 4]
     current_1 = [0, 1, 3, 2, 1]
     current_2 = [0, 2, 1, 3, 2]
@@ -56,6 +61,7 @@ def test_phases_deg_from_time_current():
     assert phase_deg_2 == 270
 
 def test_max_value_from_value_vec():
+    """Unittest to return the maximum value from given current waveforms."""
     current_1 = [0, 1, 3, 2, 1]
     current_2 = [0, 2, 1, 3, 2]
 
@@ -66,6 +72,7 @@ def test_max_value_from_value_vec():
 
 
 def test_cost_function_winding():
+    """Unittest to calculate the material cost of a winding."""
     assert femmt.cost_function_winding([0.1], [femmt.ConductorType.RoundSolid.name]) == [4.7]
     assert femmt.cost_function_winding([0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == [4.7, 35.1]
     single_strand_cross_section_75um = (75e-6 / 2) ** 2 * np.pi
@@ -73,11 +80,13 @@ def test_cost_function_winding():
 
 
 def test_cost_function_total():
+    """Unittest to calculate the material cost of the total magnetic component."""
     assert femmt.cost_function_total(1.25, "ferrite", [0.1, 0.9], [femmt.ConductorType.RoundSolid.name, femmt.ConductorType.RectangularSolid.name]) == \
            pytest.approx(62.233, rel=1e-3)
 
 
 def test_reluctance():
+    """Unittests for several air gap structures."""
     core_inner_diameter = 0.045
     single_air_gap_total_hight = 0.0002
     core_hight = 0.01
@@ -98,6 +107,7 @@ def test_reluctance():
 
 
 def test_volume():
+    """Unittest to calculate the volume of a core."""
     window_h = 0.03
     window_w = 0.011
     core_inner_diameter = 0.02
@@ -105,10 +115,12 @@ def test_volume():
 
 
 def test_rms_current_calculation():
+    """Unittest to calculate an RMS current."""
     time_current = [[0, 0.5e-6, 2.5e-6, 3e-6, 5e-6], [16.55, -10.55, -16.55, 10.55, 16.55]]
     assert femmt.i_rms(time_current) == pytest.approx(12.779756127041967, rel=1e-3)
 
 def test_winding_resistance_calculation_solid():
+    """Unittest to calculate the winding resistance for solid wires."""
     core_inner_diameter = 20e-3
     window_w = 0.05
     turns_count = 20
@@ -118,6 +130,7 @@ def test_winding_resistance_calculation_solid():
     assert femmt.resistance_solid_wire(core_inner_diameter, window_w, turns_count, conductor_radius, material) == pytest.approx(0.02251034482758622, rel=1e-3)
 
 def test_calculate_inductance_matrix():
+    """Unittest to calculate the inductance matrix from equivalent circuit parameters."""
     l_s_target_value = 85e-6
     l_h_target_value = 850e-6
     n_target_value = 3.1
@@ -128,6 +141,7 @@ def test_calculate_inductance_matrix():
     assert inductance_matrix[1] == pytest.approx([0.00027419354838709674, 8.844953173777314e-05], rel=1e-3)
 
 def test_conductivity_temperature():
+    """Unittest for calculating the material conductivity at any temperature."""
     temperature = 100
 
     copper_sigma_100_degree_calculated = femmt.conductivity_temperature("Copper", temperature)

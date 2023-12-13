@@ -1,3 +1,4 @@
+"""DTOs for the stacked transformer optimization."""
 # python libraries
 from dataclasses import dataclass
 from typing import List, Union
@@ -10,6 +11,8 @@ from femmt.enumerations import *
 
 @dataclass
 class StoInsulation:
+    """Insulation definition for stacked transformer optimization."""
+
     iso_top_core: float
     iso_bot_core: float
     iso_left_core_min: float
@@ -28,6 +31,7 @@ class StoSingleInputConfig:
     Input parameters are the target parameters, current vectors and the parameters to sweep.
     Also specifies the working directory where to store the results.
     """
+
     # target parameters
     l_s12_target: float
     l_h_target: float
@@ -72,6 +76,8 @@ class StoSingleInputConfig:
 
 @dataclass
 class ThermalConfig:
+    """Thermal configuration file for the stacked transformer optimization."""
+
     thermal_conductivity_dict: dict
     case_gap_top: float
     case_gap_right: float
@@ -82,9 +88,8 @@ class ThermalConfig:
 
 @dataclass
 class WorkingDirectories:
-    """
-    Working directories for an integrated transformer optimization
-    """
+    """Working directories for an integrated transformer optimization."""
+
     fem_working_directory: str
     reluctance_model_results_directory: str
     fem_simulation_results_directory: str
@@ -97,8 +102,10 @@ class WorkingDirectories:
 class StoTargetAndFixedParameters:
     """
     Stacked-transformer optimization target and fixed parameters.
+
     These parameters are calculated from the stacked-transformer input configuration (StoSingleInputConfig).
     """
+
     i_rms_1: float
     i_rms_2: float
     i_peak_1: float
@@ -116,9 +123,8 @@ class StoTargetAndFixedParameters:
 
 @dataclass
 class CurrentWorkingPoint:
-    """
-    Stores the working point of currents together with a human-readable name
-    """
+    """Stores the working point of currents together with a human-readable name."""
+
     name: str
     time_current_1_vec: Union[np.ndarray, list]
     time_current_2_vec: Union[np.ndarray, list]

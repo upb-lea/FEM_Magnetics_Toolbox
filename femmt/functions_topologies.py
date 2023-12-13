@@ -1,3 +1,4 @@
+"""Includes functions to generate different winding topologies."""
 # python libraries
 import copy
 from typing import Optional
@@ -13,6 +14,7 @@ from femmt.functions_model import define_center_tapped_insulation
 
 def create_stacked_winding_windows(core, insulation):
     """
+    Create stacked winding windows.
 
     :param core:
     :param insulation:
@@ -42,22 +44,24 @@ def create_stacked_winding_windows(core, insulation):
 
 def check_if_primary_conductor_row_fits_in_vww(vww, row_element: ConductorRow, winding_element, winding_insulations):
     """
+    Check if the primary conductor row fits into the virtual winding window.
 
     :param vww:
     :param row_element:
     :return:
     """
     if row_element.row_height > np.round(vww.top_bound-vww.bot_bound, 6):
-        raise Exception(f"Row is too high!")
+        raise Exception("Row is too high!")
     elif row_element.number_of_conds_per_row * winding_element.conductor_radius*2 + (row_element.number_of_conds_per_row-1) * \
             winding_insulations.primary_to_primary >= vww.right_bound-vww.left_bound:
         # remark: additional bobbin is already included into the vww!
-        raise Exception(f"Row does not fit into virtual winding window!")
+        raise Exception("Row does not fit into virtual winding window!")
 
 
 def place_center_tapped_conductor_row(vwws, row_element, row_winding_scheme_type, no_vww, primary_conductors_to_be_placed,
                                       winding1, winding2, winding3, winding_insulations):
     """
+    Place center-tapped conductor row.
 
     :param vwws: list of virtual winding windows
     :param row_element: row element to be placed in vwws
@@ -91,6 +95,7 @@ def place_center_tapped_conductor_row(vwws, row_element, row_winding_scheme_type
 def place_windings_in_vwws(vwws, winding_scheme_type, transformer_stack, primary_turns,
                            winding1, winding2, winding3, winding_insulations):
     """
+    Place windings in virtual winding windows.
 
     :param vwws:
     :param winding_scheme_type: list with the winding schemes according to the transformer stack
@@ -163,7 +168,7 @@ def set_center_tapped_windings(core,
                                bobbin_coil_top=None, bobbin_coil_bot=None, bobbin_coil_left=None, bobbin_coil_right=None,
                                primary_coil_turns=None, winding_temperature: Optional[float] = None):
     """
-    Set center tapped windings
+    Set center tapped windings.
 
     :param interleaving_scheme:
     :param center_foil_additional_bobbin:
