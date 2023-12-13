@@ -1,9 +1,11 @@
+"""Basic example to show how to simulate an inductor."""
 import femmt as fmt
 import materialdatabase as mdb
 import os
 
 
 def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+    """Run the example code for the inductor."""
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the

@@ -1,8 +1,10 @@
+"""Basic example to show how to simulate a transformer."""
 import femmt as fmt
 import os
 
 
 def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+    """Run the example code for the transformer."""
 
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:

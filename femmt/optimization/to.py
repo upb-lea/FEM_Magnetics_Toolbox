@@ -1,3 +1,4 @@
+"""Transformer optimization."""
 # python libraries
 import os
 import shutil
@@ -19,6 +20,7 @@ import materialdatabase as mdb
 
 
 class TransformerOptimization:
+    """Class to perform a transformer optimization."""
 
     @staticmethod
     def calculate_fix_parameters(config: ToSingleInputConfig) -> ToTargetAndFixedParameters:
@@ -45,7 +47,6 @@ class TransformerOptimization:
         :return: calculated target and fix parameters
         :rtype: ItoTargetAndFixedParameters
         """
-
         # currents
         time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
             config.time_current_1_vec)
@@ -343,7 +344,8 @@ class TransformerOptimization:
 
         def objective_directions(number_target_objectives: int):
             """
-            Checks if the number of objectives is correct and returns the minimizing targets
+            Check if the number of objectives is correct and returns the minimizing targets.
+
             :param number_target_objectives: number of objectives
             :type number_target_objectives: int
             :returns: objective targets and optimization function
@@ -389,6 +391,7 @@ class TransformerOptimization:
 
     @staticmethod
     def run_garbage_collector(study: optuna.Study, _):
+        """Run the garbage collector."""
         if len(study.trials) % 10000 == 0:
             # Run the garbage collector to prevent high memory consumption.
             # as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
@@ -408,8 +411,9 @@ class TransformerOptimization:
                             fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
                             show_simulation_results: bool = False):
         """
-        Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
-        number_trial design inside the study 'study_name'. Loads from a pandas dataframe and is very fast.
+        Perform a single simulation study and show the geometry of number_trial design inside the study 'study_name'.
+
+        study targets: (inductance, core loss, winding loss). Loads from a pandas dataframe and is very fast.
 
         Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
         The values are given separate. In case of re-simulation, you may want to have more accurate results.
@@ -559,7 +563,7 @@ class TransformerOptimization:
     def thermal_simulation_from_geo(geo, thermal_config: ThermalConfig, flag_insulation: bool = False,
                                     show_visual_outputs: bool = True):
         """
-        Performs the thermal simulation for the transformer.
+        Perform the thermal simulation for the transformer.
 
         :param geo: geometry object
         :type geo: femmt.Component
@@ -581,14 +585,13 @@ class TransformerOptimization:
     @staticmethod
     def df_plot_pareto_front(df: pd.DataFrame, sum_inductance_error_percent: float):
         """
-        Plots an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
+        Plot an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
 
         :param df: Dataframe, generated from an optuna study (exported by optuna)
         :type df: pd.Dataframe
         :param sum_inductance_error_percent: maximum allowed error of |error(L_s12)| + |error(L_h)| in %
         :type sum_inductance_error_percent: float
         """
-
         print(df.head())
         df_pareto = df[df["values_2"] < sum_inductance_error_percent]
 
@@ -635,7 +638,8 @@ class TransformerOptimization:
                            current_waveforms_operating_points: List[CurrentWorkingPoint],
                            fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
         """
-        Creates for several geometries and several working points a report.
+        Create for several geometries and several working points a report.
+
         Simulates magnetoquasistatic and thermal for all given geometries and current working points.
         Summarizes the losses and temperatures for every working point and geometry.
 
@@ -656,7 +660,6 @@ class TransformerOptimization:
             thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         """
-
         report_df = pd.DataFrame()
 
         for trial_number in trials_numbers:
@@ -703,7 +706,7 @@ class TransformerOptimization:
     @staticmethod
     def study_to_df(study_name: str, database_url: str):
         """
-        Creates a dataframe from a study.
+        Create a dataframe from a study.
 
         :param study_name: name of study
         :type study_name: str

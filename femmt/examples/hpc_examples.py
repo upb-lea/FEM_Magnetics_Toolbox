@@ -1,3 +1,4 @@
+"""Examples for the parallel simulation."""
 # Python standard libraries
 from typing import Dict
 from itertools import product
@@ -21,12 +22,12 @@ For more information have a look here: https://docs.python.org/2/library/multipr
 
 # ---- Utility functions ----
 def create_parallel_example_transformer() -> fmt.MagneticComponent:
-    """Creates an example model which is used for the parallel execution example. This does implement a simple transformer.
-    """ 
+    """Create an example model which is used for the parallel execution example. This does implement a simple transformer."""
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, verbosity=fmt.Verbosity.ToFile)
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.015/2)
     core = fmt.Core(core_dimensions=core_dimensions, non_linear=False, sigma=1, re_mu_rel=3200, phi_mu_deg=10,
-                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource = fmt.MaterialDataSource.Custom, mdb_verbosity=fmt.Verbosity.Silent)
+                    permeability_datasource=fmt.MaterialDataSource.Custom, permittivity_datasource=fmt.MaterialDataSource.Custom,
+                    mdb_verbosity=fmt.Verbosity.Silent)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
@@ -48,7 +49,7 @@ def create_parallel_example_transformer() -> fmt.MagneticComponent:
     return geo
 
 def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: float = 0.0005, air_gap_position: int = 50) -> fmt.MagneticComponent:
-    """Creates an example model which is used for the parallel execution example. This does implement a simple inductor with given inductor_frequency.
+    """Create an example model which is used for the parallel execution example. This does implement a simple inductor with given inductor_frequency.
 
     :param inductor_frequency: Frequency for the inductor.
     :type inductor_frequency: int
@@ -81,7 +82,8 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
-    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+    # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,fill_factor=None,
+    # conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False
     vww.set_winding(winding, 9, None)
     geo.set_winding_windows([winding_window])
@@ -111,6 +113,7 @@ def custom_hpc(parameters: Dict):
     model.single_simulation(freq=250000, current=current, phi_deg=phi_deg, show_fem_simulation_results=False)
 
 def parallel_simulation_study(averaging_count):
+    """Perform several parallel simulations."""
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     parallel_results_folder = os.path.join(example_results_folder, "parallel")
     study_results_folder = os.path.join(parallel_results_folder, "study")
@@ -132,11 +135,10 @@ def parallel_simulation_study(averaging_count):
     runtimes = []
 
     for frequency, air_gap_height, air_gap_position in product(frequencies, air_gap_heights, air_gap_positions):
-            models.append(create_parallel_example_inductor(frequency, air_gap_height, air_gap_position))
-            simulation_parameters.append({
-                "freq": frequency,
-                "current": [1]
-    })
+        models.append(create_parallel_example_inductor(frequency, air_gap_height, air_gap_position))
+        simulation_parameters.append({
+            "freq": frequency,
+            "current": [1]})
 
     for process_count in process_counts:
         working_directory = os.path.join(study_results_folder, f"{process_count}")
@@ -144,13 +146,12 @@ def parallel_simulation_study(averaging_count):
             os.mkdir(working_directory)
 
         simulation_times = []
-        for count in range(averaging_count):
+        for _ in range(averaging_count):
             start_time = time.time()
             fmt.run_hpc(process_count, models, simulation_parameters, working_directory)
             simulation_times.append(time.time() - start_time)
 
         runtimes.append(statistics.fmean(simulation_times))
-
 
     print("Process counts:", process_counts)
     print("Runtimes:", runtimes)
@@ -161,8 +162,9 @@ def parallel_simulation_study(averaging_count):
     if averaging_count > 1:
         plt.ylabel(f"Runtime (mean of {averaging_count} simulations)")
     else:
-        plt.ylabel(f"Runtime")
+        plt.ylabel("Runtime")
     plt.show()
+
 
 if __name__ == "__main__":
     # ---- Choosing the execution ----
@@ -221,7 +223,7 @@ if __name__ == "__main__":
         geos = []
         simulation_parameters = []
         working_directories = []
-        for i in range(number_of_models):
+        for _ in range(number_of_models):
             geos.append(create_parallel_example_inductor(inductor_frequency))
             simulation_parameters.append({
                 "current": [4, 12],
@@ -248,4 +250,3 @@ if __name__ == "__main__":
         parallel_simulation_study(3)
     else:
         raise Exception(f"Execution type {execution_type} not found.")
-

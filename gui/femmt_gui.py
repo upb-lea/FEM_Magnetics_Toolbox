@@ -1,24 +1,17 @@
+"""Graphical user interface (GUI) for FEMMT."""
 import sys
-import re
-from mpl_toolkits.mplot3d import proj3d
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import cm
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QLabel, QApplication, QMainWindow, QListWidget, QWidget, QListWidgetItem, QDialog, \
-    QVBoxLayout, QScrollArea, QFormLayout
-from PyQt5 import QtCore, uic, QtGui, QtWidgets
-from PyQt5.QtGui import QIcon, QPixmap, QDoubleValidator, QValidator, QIntValidator
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
+from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 import femmt as fmt
 import json
 import os
-from os import listdir
-from os.path import isfile, join
-import shutil
-import logging
-from typing import List, Union, Optional
+from typing import List
 import PIL
 import webbrowser
 
@@ -27,12 +20,12 @@ import matplotlib.pyplot as plt
 
 from gui.onelab_path_popup import OnelabPathDialog
 
-database = mdb.MaterialDatabase()
-
 from femmt.examples.inductor_optimization import AutomatedDesign
-from femmt.examples.inductor_optimization import load_fem_simulation_results, plot_2d, filter_after_fem
+from femmt.examples.inductor_optimization import load_fem_simulation_results, filter_after_fem
 
 import mplcursors
+
+database = mdb.MaterialDatabase()
 
 float_validator = QDoubleValidator()
 int_validator = QIntValidator()
@@ -40,7 +33,7 @@ int_validator = QIntValidator()
 
 def comma_str_to_point_float(input_str: str) -> float:
     """
-    Workaround to convert a comma (depends on the user input) in a point (needed for python)
+    Workaround to convert a comma (depends on the user input) in a point (needed for python).
 
     :param input_str: input string
     :type input_str: str
@@ -61,9 +54,7 @@ def comma_str_to_point_float(input_str: str) -> float:
 
 
 class MatplotlibWidget(QWidget):
-    """
-    MatplotlibWidget class which inherits from QWidget and is used to implement a Matplotlib figure inside a QWidget
-    """
+    """MatplotlibWidget class which inherits from QWidget and is used to implement a Matplotlib figure inside a QWidget."""
 
     def __init__(self, parent=None):
         super(MatplotlibWidget, self).__init__(parent)
@@ -81,7 +72,8 @@ class MatplotlibWidget(QWidget):
 
 
 class MainWindow(QMainWindow):
-    "Global variable declaration"
+    """Global variable declaration."""
+
     litz_conductor_r = 0
     FEM_data_matrix = 0
     winding_factor = 0
@@ -134,7 +126,7 @@ class MainWindow(QMainWindow):
         }
         "******** menu bar *********"
 
-        ### Actions for Help
+        # ## Actions for Help
         self.action_contribute.triggered.connect(self.webbrowser_contribute)
         self.action_documentation.triggered.connect(self.webbrowser_documentation)
         self.action_report_bug.triggered.connect(self.webbrowser_bugreport)
@@ -521,26 +513,28 @@ class MainWindow(QMainWindow):
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_meas_input)
 
     #  **************************** Menu bar ************************************************************  #
-    ### Help actions ###
+    # ## Help actions ###
     def webbrowser_contribute(self):
+        """Open the web browser to the GitHub FEMMT repository contribution page."""
         webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox')
 
     def webbrowser_bugreport(self):
+        """Open the web browser to the GitHub FEMMT repository issue page."""
         webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox/issues')
 
     def webbrowser_documentation(self):
+        """Open the web brower to the FEMMT documentation."""
         webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html')
 
     #  **************************** Automated design tab ************************************************************  #
 
     def plot_volume_loss(self, data_matrix, matplotlib_widget):
         """
-        Plots estimated normalised volume vs loss graph from reluctance model results
+        Plot estimated normalised volume vs loss graph from reluctance model results.
 
-        param data_matrix: Matrix containing the design parameters
-       :type data_matrix: array
+        :param data_matrix: Matrix containing the design parameters
+        :type data_matrix: array
         """
-
         matplotlib_widget.axis.set(xlabel="Volume / m\u00b3", ylabel="Loss / W", title=" Volume vs Loss")
         lines = matplotlib_widget.axis.plot(data_matrix[:, 30],
                                             data_matrix[:, 28], 'o')
@@ -553,28 +547,28 @@ class MainWindow(QMainWindow):
                 z_value: list = None,
                 z_label: str = None, inductance_value: list = None, annotations: list = None):
         """
-            Visualize data in 2d plot with popover next to mouse position.
+        Visualize data in 2d plot with popover next to mouse position.
 
-            param x_value: Data points for x-axis
-            :type x_value: list
-            :param y_value: Data points for y-axis
-            :type y_value: list
-            :param z_value: Data points for z-axis
-            :type z_value: list
-            :param x_label: x-axis label
-            :type x_label: str
-            :param y_label: y-axis label
-            :type y_label: str
-            :param z_label: z-axis label
-            :type z_label: str
-            :param title: Title of the graph
-            :type title: str
-            :param inductance_value: Data points for inductance value corresponding to the (x, y, z): (Optional)
-            :type inductance_value: list
-            :param annotations: Annotations corresponding to the 3D points
-            :type annotations: list
-            :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
-            :type annotations: str
+        :param x_value: Data points for x-axis
+        :type x_value: list
+        :param y_value: Data points for y-axis
+        :type y_value: list
+        :param z_value: Data points for z-axis
+        :type z_value: list
+        :param x_label: x-axis label
+        :type x_label: str
+        :param y_label: y-axis label
+        :type y_label: str
+        :param z_label: z-axis label
+        :type z_label: str
+        :param title: Title of the graph
+        :type title: str
+        :param inductance_value: Data points for inductance value corresponding to the (x, y, z): (Optional)
+        :type inductance_value: list
+        :param annotations: Annotations corresponding to the 3D points
+        :type annotations: list
+        :param plot_color: Color of the plot (the colors are based on 'fmt.colors_femmt_default')
+        :type annotations: str
         """
         if annotations is None:
             names = [str(x) for x in list(range(len(x_value)))]
@@ -589,7 +583,7 @@ class MainWindow(QMainWindow):
             z_value_str = [str(round(z, 3)) for z in z_value]
 
         if inductance_value is not None:
-            l_value_str = [str(round(l, 6)) for l in inductance_value]
+            l_value_str = [str(round(inductance, 6)) for inductance in inductance_value]
 
         x_value_str = [str(round(x, 6)) for x in x_value]
         y_value_str = [str(round(y, 3)) for y in y_value]
@@ -614,8 +608,7 @@ class MainWindow(QMainWindow):
         matplotlib_widget.axis.grid()
 
         def update_annot(ind):
-            """Create popover annotations in 2d plot"""
-
+            """Create popover annotations in 2d plot."""
             pos = sc.get_offsets()[ind["ind"][0]]
             annot.xy = pos
             text = ""
@@ -647,15 +640,13 @@ class MainWindow(QMainWindow):
             annot.get_bbox_patch().set_alpha(0.4)
 
     def automated_design_func(self, matplotlib_widget):
+        """Create to accept input parameters from the definitions tab, to create matrix with all input combinations.
+
+        A call is being made to the reluctance model to filter out the cases for FEM simulation.
+
+        :param matplotlib_widget: To plot volume vs loss in reluctance models tab
         """
-         The function is created to accept input parameters from the definitions tab, to create matrix with all input combinations.
-         A call is being made to the reluctance model to filter out the cases for FEM simulation.
-
-            param matplotlib_widget: To plot volume vs loss in reluctance models tab
-
-        """
-        #########################################   {DESIGN PARAMETERS}   #################################################
-
+        # ########################################   {DESIGN PARAMETERS}   #################################################
         goal_inductance = comma_str_to_point_float(
             self.aut_goal_inductance_val_lineEdit.text())  # Automated design-Reluctacne model-Goal Inductance
         self.trans_dict = {
@@ -821,15 +812,12 @@ class MainWindow(QMainWindow):
         self.fem_cases_label.setText(f"{n_cases_FEM}")
 
     def automated_design_fem_sim(self, matplotlib_widget):
-
         """
-         The function is created to run the fem simulations of the filtered cases from reluctance models tab and to plot
-         the volume vs loss in FEM simulations tab
+        Run the fem simulations of the filtered cases from reluctance models tab. Plot the volume vs loss in FEM simulations tab.
 
-            param matplotlib_widget: To plot volume vs loss in FEM simulations tab
-
+        :param matplotlib_widget: To plot volume vs loss in FEM simulations tab
         """
-        ###########################################   {FEM_SIMULATION}   ##################################################
+        # ##########################################   {FEM_SIMULATION}   ##################################################
 
         # Run FEM simulation of "self.data_matrix_fem"
         self.ad.fem_simulation()
@@ -860,13 +848,10 @@ class MainWindow(QMainWindow):
 
     def load_designs(self, matplotlib_widget):
         """
-         The function is created to plot the volume vs loss from the already run files of FEM simulations from the
-         directory path, in the Load(results) tab
+         Plot the volume vs loss from the already run files of FEM simulations from the directory path, in the Load(results) tab.
 
-            param matplotlib_widget: To plot volume vs loss in the Load(results) tab
-
+        :param matplotlib_widget: To plot volume vs loss in the Load(results) tab
         """
-
         matplotlib_widget = MatplotlibWidget()
         matplotlib_widget.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_9)
@@ -890,7 +875,7 @@ class MainWindow(QMainWindow):
                      annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
 
     def check_onelab_config(self, geo: fmt.MagneticComponent):
-
+        """Check the onlab configuration to enter or read the onelab filepath."""
         # Ask for onelab path (if no config file exists)
         if not os.path.isfile(geo.file_data.config_path):
             onelab_path_dialog = OnelabPathDialog()
@@ -911,67 +896,30 @@ class MainWindow(QMainWindow):
                 raise Exception(f"Unknown return type from OnelabPathDialog: {valid}")
 
     def automated_design_func_config(self):
-        """
-            Function to call automated_design_func, when simulate button is pressed in Reluctance models tab
-        """
+        """Call automated_design_func, when simulate button is pressed in Reluctance models tab."""
         self.automated_design_func(self.matplotlib_widget_aut_tab2)
 
     def automated_design_fem_sim_config(self):
-        """
-           Function to call automated_design_fem_sim, when simulate button is pressed in FEM simulations tab
-        """
+        """Call automated_design_fem_sim, when simulate button is pressed in FEM simulations tab."""
         self.automated_design_fem_sim(self.matplotlib_widget_aut_tab3)
 
     def load_designs_config(self):
-        """
-           Function to call load_designs, when Load design button is pressed in Load(results) tab
-        """
+        """Call load_designs, when Load design button is pressed in Load(results) tab."""
         self.load_designs(self.matplotlib_widget_aut_tab4)
 
     #  **************************** Automated design tab initializations ********************************************  #
-
-    def aut_winding1_change_litz_implicit(self, implicit_typ_from_combo_box: str) -> None:
-        """
-        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
-        :param implicit_type_from_combo_box: input type to implicit
-        :type implicit_type_from_combo_box: str
-        :return: None
-        :rtype: None
-        """
-        if implicit_typ_from_combo_box == self.translation_dict['implicit_litz_radius']:
-            self.aut_winding1_strands_lineEdit.setEnabled(True)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(False)
-        if implicit_typ_from_combo_box == self.translation_dict['implicit_strands_number']:
-            self.aut_winding1_strands_lineEdit.setEnabled(False)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(True)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(True)
-        if implicit_typ_from_combo_box == self.translation_dict['implicit_ff']:
-            self.aut_winding1_strands_lineEdit.setEnabled(True)
-            self.aut_winding1_fill_factor_lineEdit.setEnabled(False)
-            self.aut_winding1_strand_radius_lineEdit.setEnabled(True)
-            self.aut_winding1_radius_lineEdit.setEnabled(True)
-
     def oncgeoClearallClicked(self):
-        """
-            Function to clear all entries
-        """
+        """Clear all entries."""
         self.aut_core_geometry_basket_listWidget.clear()
 
     def oncgeoClearClicked(self):
-        """
-            Function to add the manually selected core choice to the basket.
-        """
+        """Add the manually selected core choice to the basket."""
         List_item = self.aut_core_geometry_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_core_geometry_basket_listWidget.takeItem(self.aut_core_geometry_basket_listWidget.row(item))
 
     def oncgeoMultipleClicked(self):
-        """
-            Function to accept multiple choices
-        """
+        """Accept multiple choices."""
         itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_geometry_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_core_geometry_listWidget.selectedItems()]
@@ -982,16 +930,15 @@ class MainWindow(QMainWindow):
             pass
 
     def oncgeomanualMultipleClicked(self):
-        """
-            Function to for the manual
-        """
+        """Manual."""
         items = []
 
         if self.aut_min_core_width_lineEdit.text() and self.aut_max_core_width_lineEdit.text() and self.aut_step_core_width_lineEdit.text() \
                 and self.aut_min_window_height_lineEdit.text() and self.aut_max_window_height_lineEdit.text() and self.aut_step_window_height_lineEdit.text() \
                 and self.aut_min_window_width_lineEdit.text() and self.aut_max_window_width_lineEdit.text() and self.aut_step_window_width_lineEdit.text():
             items.append(
-                f"{self.aut_min_core_width_lineEdit.text()}*{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
+                f"{self.aut_min_core_width_lineEdit.text()}*"
+                f"{self.aut_min_window_height_lineEdit.text()}*{self.aut_min_window_width_lineEdit.text()} (min value)")
         itemsTextList = [str(self.aut_core_geometry_manual_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_geometry_manual_basket_listWidget.count())]
         for i in items:
@@ -999,15 +946,11 @@ class MainWindow(QMainWindow):
                 self.aut_core_geometry_manual_basket_listWidget.addItem(i)
 
     def cgeoselectall(self):
-        """
-            Function to select all the choices.
-        """
+        """Select all the choices."""
         self.aut_core_geometry_listWidget.selectAll()
 
     def oncgeoClicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
+        """Add a choice by click to the basket if it is not already in the basket."""
         itemsTextList = [str(self.aut_core_geometry_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_geometry_basket_listWidget.count())]
         checkitem = self.aut_core_geometry_listWidget.currentItem().text()
@@ -1017,23 +960,17 @@ class MainWindow(QMainWindow):
             pass
 
     def onairgaptypeClearallClicked(self):
-        """
-            Function to clear all the entries.
-        """
+        """Clear all the entries."""
         self.aut_airgap_type_basket_listwidget.clear()
 
     def onairgaptypeClearClicked(self):
-        """
-            Function to clear the selected entry.
-        """
+        """Clear the selected entry."""
         List_item = self.aut_airgap_type_basket_listwidget.selectedItems()
         for item in List_item:
             self.aut_airgap_type_basket_listwidget.takeItem(self.aut_airgap_type_basket_listwidget.row(item))
 
     def onairgaptypeMultipleClicked(self):
-        """
-            Function to accept multiple choices.
-        """
+        """Accept multiple choices."""
         itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
                          range(self.aut_airgap_type_basket_listwidget.count())]
         checkitems = [item.text() for item in self.aut_airgap_type_listWidget.selectedItems()]
@@ -1044,9 +981,7 @@ class MainWindow(QMainWindow):
             pass
 
     def onairgaptypeClicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
+        """Add a choice by click to the basket if it is not already in the basket."""
         itemsTextList = [str(self.aut_airgap_type_basket_listwidget.item(i).text()) for i in
                          range(self.aut_airgap_type_basket_listwidget.count())]
         checkitem = self.aut_airgap_type_listWidget.currentItem().text()
@@ -1056,29 +991,21 @@ class MainWindow(QMainWindow):
             pass
 
     def airgaptypeselectall(self):
-        """
-            Function to select all the choices.
-        """
+        """Select all the choices."""
         self.aut_airgap_type_listWidget.selectAll()
 
     def oncmatClearallClicked(self):
-        """
-            Function to clear all entries.
-        """
+        """Clear all entries."""
         self.aut_core_material_basket_listWidget.clear()
 
     def oncmatClearClicked(self):
-        """
-            Function to clear the selected entry.
-        """
+        """Clear the selected entry."""
         List_item = self.aut_core_material_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_core_material_basket_listWidget.takeItem(self.aut_core_material_basket_listWidget.row(item))
 
     def oncmatMultipleClicked(self):
-        """
-            Function to accept multiple choices.
-        """
+        """Accept multiple choices."""
         itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_material_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_core_material_data_listWidget.selectedItems()]
@@ -1089,15 +1016,11 @@ class MainWindow(QMainWindow):
             pass
 
     def cmatselectall(self):
-        """
-            Function to select all the choices.
-        """
+        """Select all the choices."""
         self.aut_core_material_data_listWidget.selectAll()
 
     def oncmatClicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
+        """Add a choice by click to the basket if it is not already in the basket."""
         itemsTextList = [str(self.aut_core_material_basket_listWidget.item(i).text()) for i in
                          range(self.aut_core_material_basket_listWidget.count())]
         checkitem = self.aut_core_material_data_listWidget.currentItem().text()
@@ -1108,23 +1031,17 @@ class MainWindow(QMainWindow):
             pass
 
     def onl1ClearallClicked(self):
-        """
-            Function to clear all entries.
-        """
+        """Clear all entries."""
         self.aut_litz_basket_listWidget.clear()
 
     def onl1ClearClicked(self):
-        """
-            Function to clear the selected entry.
-        """
+        """Clear the selected entry."""
         List_item = self.aut_litz_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_litz_basket_listWidget.takeItem(self.aut_litz_basket_listWidget.row(item))
 
     def onl1MultipleClicked(self):
-        """
-            Function to accept multiple choices.
-        """
+        """Accept multiple choices."""
         itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_litz_data_listWidget.selectedItems()]
@@ -1135,9 +1052,7 @@ class MainWindow(QMainWindow):
             pass
 
     def onl1Clicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
+        """Add a choice by click to the basket if it is not already in the basket."""
         itemsTextList = [str(self.aut_litz_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz_basket_listWidget.count())]
         checkitem = self.aut_litz_data_listWidget.currentItem().text()
@@ -1147,29 +1062,21 @@ class MainWindow(QMainWindow):
             pass
 
     def litz1selectall(self):
-        """
-            Function to select all the choices.
-        """
+        """Select all the choices."""
         self.aut_litz_data_listWidget.selectAll()
 
     def onl2ClearallClicked(self):
-        """
-            Function to clear all entries.
-        """
+        """Clear all entries."""
         self.aut_litz2_basket_listWidget.clear()
 
     def onl2ClearClicked(self):
-        """
-            Function to clear the selected entry.
-        """
+        """Clear the selected entry."""
         List_item = self.aut_litz2_basket_listWidget.selectedItems()
         for item in List_item:
             self.aut_litz2_basket_listWidget.takeItem(self.aut_litz2_basket_listWidget.row(item))
 
     def onl2MultipleClicked(self):
-        """
-            Function to accept multiple choices.
-        """
+        """Accept multiple choices."""
         itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz2_basket_listWidget.count())]
         checkitems = [item.text() for item in self.aut_litz2_data_listWidget.selectedItems()]
@@ -1180,9 +1087,7 @@ class MainWindow(QMainWindow):
             pass
 
     def onl2Clicked(self):
-        """
-            Function to add a choice by click to the basket if it is not already in the basket.
-        """
+        """Add a choice by click to the basket if it is not already in the basket."""
         itemsTextList = [str(self.aut_litz2_basket_listWidget.item(i).text()) for i in
                          range(self.aut_litz2_basket_listWidget.count())]
         checkitem = self.aut_litz2_data_listWidget.currentItem().text()
@@ -1192,9 +1097,7 @@ class MainWindow(QMainWindow):
             pass
 
     def litz2selectall(self):
-        """
-            Function to select all the choices.
-        """
+        """Select all the choices."""
         self.aut_litz2_data_listWidget.selectAll()
 
     def aut_initialize_controls(self) -> None:
@@ -1290,7 +1193,8 @@ class MainWindow(QMainWindow):
 
     def aut_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
         """
-        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        Enable / Disable input parameter fields for different "implicit xyz" types in case of litz wire.
+
         :param implicit_type_from_combo_box: input type to implicit
         :type implicit_type_from_combo_box: str
         :return: None
@@ -1314,7 +1218,8 @@ class MainWindow(QMainWindow):
 
     def aut_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
         """
-        Enables / Disables input parameter for litz/solid wire
+        Enable / Disable input parameter for litz/solid wire.
+
         :param wire_type_from_combot_box: wire type
         :type wire_type_from_combot_box: str
         :return: None
@@ -1340,7 +1245,8 @@ class MainWindow(QMainWindow):
 
     def aut_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
         """
-        Action performed when signal of aut_simulation_type_comboBox text has changed.
+        Perform action when signal of aut_simulation_type_comboBox text has changed.
+
         Action will be enabling / disabling user inputs for not-used windings.
 
         :param simulation_type_from_combo_box:
@@ -1405,16 +1311,14 @@ class MainWindow(QMainWindow):
     #  **************************** Database tab ********************************************************************  #
 
     def datupdateraph1(self, matplotlib_widget1, matplotlib_widget2, matplotlib_widget3, matplotlib_widget4):
-
         """
-           Function for the datasheet-datasheet plot
-            param matplotlib_widget1: for the first plot of relative power loss vs B
-            param matplotlib_widget2: for the second plot of relative power loss vs temperature
-            param matplotlib_widget3: for the third plot of relative power loss vs frequency
-            param matplotlib_widget4: for the fourth plot of B vs H
+        Datasheet-datasheet plot.
 
+        :param matplotlib_widget1: for the first plot of relative power loss vs B
+        :param matplotlib_widget2: for the second plot of relative power loss vs temperature
+        :param matplotlib_widget3: for the third plot of relative power loss vs frequency
+        :param matplotlib_widget4: for the fourth plot of B vs H
         """
-
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget)
         self.layout.addWidget(matplotlib_widget1)
@@ -1517,12 +1421,11 @@ class MainWindow(QMainWindow):
 
     def datupdateraph2(self, matplotlib_widget1, matplotlib_widget2):
         """
-           Function for the Measurement-Measurement plot
-            param matplotlib_widget1: Fot the first plot of uR/u0 vs B
-            param matplotlib_widget2: for the second plot of uR/u0 vs B
+        Measurement-Measurement plot.
 
+        :param matplotlib_widget1: Fot the first plot of uR/u0 vs B
+        :param matplotlib_widget2: for the second plot of uR/u0 vs B
         """
-
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_13)
         self.layout.addWidget(matplotlib_widget1)
@@ -1601,12 +1504,10 @@ class MainWindow(QMainWindow):
         matplotlib_widget2.figure.tight_layout()
 
     def datupdateraph3(self, matplotlib_widget):
-        """
-           Function for the Datasheet-Measurement plot
-            param matplotlib_widget: To plot relative power loss vs B
+        """Datasheet-Measurement plot.
 
+        :param matplotlib_widget: To plot relative power loss vs B
         """
-
         matplotlib_widget.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_15)
         self.layout.addWidget(matplotlib_widget)
@@ -1627,29 +1528,20 @@ class MainWindow(QMainWindow):
         matplotlib_widget.figure.tight_layout()
 
     def datupdateraph1_config(self):
-        """
-           Function to call datupdateraph1, when Update preview button is pressed in Datasheet-Datasheet tab.
-        """
+        """Call datupdateraph1, when Update preview button is pressed in Datasheet-Datasheet tab."""
         self.datupdateraph1(self.matplotlib_widget_datdd1, self.matplotlib_widget_datdd2,
                             self.matplotlib_widget_datdd3, self.matplotlib_widget_datdd4)
 
     def datupdateraph2_config(self):
-        """
-            Function to call datupdateraph2, when Update preview button is pressed in Measurement-Measurement tab.
-        """
+        """Call datupdateraph2, when Update preview button is pressed in Measurement-Measurement tab."""
         self.datupdateraph2(self.matplotlib_widget_datmm1, self.matplotlib_widget_datmm2)
 
     def datupdateraph3_config(self):
-        """
-            Function to call datupdateraph3, when Update preview button is pressed in Datasheet-Measurement tab.
-        """
+        """Call datupdateraph3, when Update preview button is pressed in Datasheet-Measurement tab."""
         self.datupdateraph3(self.matplotlib_widget_datdm)
 
     def tempfluxinput1(self):
-        """
-            Function to get the flux and temperature of a particular material selected.
-        """
-
+        """Get the flux and temperature of a particular material selected."""
         mat_text1 = self.dat_core_material1_comboBox.currentText()
 
         get_temp1_list = []
@@ -1674,10 +1566,7 @@ class MainWindow(QMainWindow):
             self.aut_flux_m1_comboBox.addItem(option)
 
     def tempfluxinput2(self):
-        """
-            Function to get the flux and temperature of a particular material selected.
-        """
-
+        """Get the flux and temperature of a particular material selected."""
         mat_text2 = self.dat_core_material2_comboBox.currentText()
         get_temp2_list = []
         get_flux2_list = []
@@ -1700,10 +1589,7 @@ class MainWindow(QMainWindow):
             self.aut_flux_m2_comboBox.addItem(option)
 
     def tempfluxinput3(self):
-        """
-            Function to get the flux and temperature of a particular material selected.
-        """
-
+        """Get the flux and temperature of a particular material selected."""
         mat_text3 = self.dat_core_material3_comboBox.currentText()
         get_temp3_list = []
         get_flux3_list = []
@@ -1726,10 +1612,7 @@ class MainWindow(QMainWindow):
             self.aut_flux_m3_comboBox.addItem(option)
 
     def tempfluxinput4(self):
-        """
-            Function to get the flux and temperature of a particular material selected.
-        """
-
+        """Get the flux and temperature of a particular material selected."""
         mat_text4 = self.dat_core_material4_comboBox.currentText()
         get_temp4_list = []
         get_flux4_list = []
@@ -1752,10 +1635,7 @@ class MainWindow(QMainWindow):
             self.aut_flux_m4_comboBox.addItem(option)
 
     def tempfluxinput5(self):
-        """
-            Function to get the flux and temperature of a particular material selected.
-        """
-
+        """Get the flux and temperature of a particular material selected."""
         mat_text5 = self.dat_core_material5_comboBox.currentText()
         get_temp5_list = []
         get_flux5_list = []
@@ -1778,10 +1658,7 @@ class MainWindow(QMainWindow):
             self.aut_flux_m5_comboBox.addItem(option)
 
     def test_setup_name1(self):
-        """
-         Function to get test setup names from database for particular material.
-
-        """
+        """Get test setup names from database for particular material."""
         mat_text1 = self.dat_core_material1_comboBox_2.currentText()
 
         names_list = []
@@ -1793,10 +1670,7 @@ class MainWindow(QMainWindow):
             self.test_name_1_comboBox.addItem(option)
 
     def test_setup_name2(self):
-        """
-         Function to get test setup names from database for particular material.
-
-        """
+        """Get test setup names from database for particular material."""
         mat_text2 = self.dat_core_material2_comboBox_2.currentText()
 
         names_list = []
@@ -1808,10 +1682,7 @@ class MainWindow(QMainWindow):
             self.test_name_2_comboBox.addItem(option)
 
     def test_setup_name3(self):
-        """
-         Function to get test setup names from database for particular material.
-
-        """
+        """Get test setup names from database for particular material."""
         mat_text3 = self.dat_core_material3_comboBox_2.currentText()
 
         names_list = []
@@ -1823,10 +1694,7 @@ class MainWindow(QMainWindow):
             self.test_name_3_comboBox.addItem(option)
 
     def test_setup_name4(self):
-        """
-         Function to get test setup names from database for particular material.
-
-        """
+        """Get test setup names from database for particular material."""
         mat_text4 = self.dat_core_material4_comboBox_2.currentText()
 
         names_list = []
@@ -1838,10 +1706,7 @@ class MainWindow(QMainWindow):
             self.test_name_4_comboBox.addItem(option)
 
     def test_setup_name5(self):
-        """
-         Function to get test setup names from database for particular material.
-
-        """
+        """Get test setup names from database for particular material."""
         mat_text5 = self.dat_core_material5_comboBox_2.currentText()
 
         names_list = []
@@ -1853,10 +1718,7 @@ class MainWindow(QMainWindow):
             self.test_name_5_comboBox.addItem(option)
 
     def tempfreqinput1(self):
-        """
-            Function to get the frequency and temperature of a particular material selected.
-        """
-
+        """Get the frequency and temperature of a particular material selected."""
         mat_text1 = self.dat_core_material1_comboBox_2.currentText()
         test_setup_text1 = self.test_name_1_comboBox.currentText()
 
@@ -1883,10 +1745,7 @@ class MainWindow(QMainWindow):
             self.aut_freq_m1_comboBox.addItem(option)
 
     def tempfreqinput2(self):
-        """
-            Function to get the frequency and temperature of a particular material selected.
-        """
-
+        """Get the frequency and temperature of a particular material selected."""
         mat_text2 = self.dat_core_material2_comboBox_2.currentText()
         test_setup_text2 = self.test_name_2_comboBox.currentText()
         get_temp2_list = []
@@ -1912,10 +1771,7 @@ class MainWindow(QMainWindow):
             self.aut_freq_m2_comboBox.addItem(option)
 
     def tempfreqinput3(self):
-        """
-            Function to get the frequency and temperature of a particular material selected.
-        """
-
+        """Get the frequency and temperature of a particular material selected."""
         mat_text3 = self.dat_core_material3_comboBox_2.currentText()
         test_setup_text3 = self.test_name_3_comboBox.currentText()
         get_temp3_list = []
@@ -1941,10 +1797,7 @@ class MainWindow(QMainWindow):
             self.aut_freq_m3_comboBox.addItem(option)
 
     def tempfreqinput4(self):
-        """
-            Function to get the frequency and temperature of a particular material selected.
-        """
-
+        """Get the frequency and temperature of a particular material selected."""
         mat_text4 = self.dat_core_material4_comboBox_2.currentText()
         test_setup_text4 = self.test_name_4_comboBox.currentText()
         get_temp4_list = []
@@ -1970,10 +1823,7 @@ class MainWindow(QMainWindow):
             self.aut_freq_m4_comboBox.addItem(option)
 
     def tempfreqinput5(self):
-        """
-            Function to get the frequency and temperature of a particular material selected.
-        """
-
+        """Get the frequency and temperature of a particular material selected."""
         mat_text5 = self.dat_core_material5_comboBox_2.currentText()
         test_setup_text5 = self.test_name_5_comboBox.currentText()
         get_temp5_list = []
@@ -2001,10 +1851,7 @@ class MainWindow(QMainWindow):
         ########################################################################
 
     def temp_dat_input(self):
-        """
-            Function to get the database temperature of a particular material selected.
-        """
-
+        """Get the database temperature of a particular material selected."""
         mat_text1 = self.dat_core_material_comboBox.currentText()
 
         get_temp1_list = []
@@ -2019,10 +1866,7 @@ class MainWindow(QMainWindow):
             self.aut_temp_dat_comboBox.addItem(option)
 
     def temp_meas_input(self):
-        """
-            Function to get the measurement temperature of a particular material selected.
-        """
-
+        """Get the measurement temperature of a particular material selected."""
         mat_text1 = self.dat_core_material_comboBox.currentText()
 
         get_temp1_list = []
@@ -2091,7 +1935,8 @@ class MainWindow(QMainWindow):
     # ----------------------------------------------------------
     def md_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
         """
-        Action performed when signal of md_simulation_type_comboBox text has changed.
+        Change simulation type when signal of md_simulation_type_comboBox text has changed.
+
         Action will be enabling / disabling user inputs for not-used windings.
 
         :param simulation_type_from_combo_box:
@@ -2149,9 +1994,7 @@ class MainWindow(QMainWindow):
         self.md_isolation_p2s_label.setVisible(status)
 
     def md_gmsh_pre_visualisation(self):
-        """
-            Function for pre-visualization when Update preview button is pressed in the definitions tab
-        """
+        """Pre-visualize when update preview button is pressed in the definitions tab."""
         geo = self.md_setup_geometry()
         print(f"geo:{geo}")
 
@@ -2191,6 +2034,7 @@ class MainWindow(QMainWindow):
         self.md_gmsh_visualisation_QLabel.show()
 
     def md_set_core_geometry_from_database(self):
+        """Set a core geometry for the material database."""
         core_dict = fmt.core_database()
         core_type = self.md_core_geometry_comboBox.currentText()
 
@@ -2209,6 +2053,7 @@ class MainWindow(QMainWindow):
             self.md_window_width_lineEdit.setEnabled(True)
 
     def md_winding1_set_litz_parameters_from_litz_database(self):
+        """Set litz parameters from material database for winding 1 in manual design."""
         litz_dict = fmt.litz_database()
         litz_type = self.md_winding1_litz_material_comboBox.currentText()
 
@@ -2235,7 +2080,8 @@ class MainWindow(QMainWindow):
 
     def md_winding1_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
         """
-        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        Enable / Disable input parameter fields for different "implicit xyz" types in case of litz wire.
+
         :param implicit_type_from_combo_box: input type to implicit
         :type implicit_type_from_combo_box: str
         :return: None
@@ -2259,7 +2105,8 @@ class MainWindow(QMainWindow):
 
     def md_winding1_change_wire_type(self, wire_type_from_combot_box: str) -> None:
         """
-        Enables / Disables input parameter for litz/solid wire
+        Enable / Disable input parameter for litz/solid wire.
+
         :param wire_type_from_combot_box: wire type
         :type wire_type_from_combot_box: str
         :return: None
@@ -2284,6 +2131,7 @@ class MainWindow(QMainWindow):
             self.md_winding1_litz_material_comboBox.setEnabled(False)
 
     def md_winding2_set_litz_parameters_from_litz_database(self):
+        """Set litz parameters from material database for winding 2 in manual design."""
         litz_dict = fmt.litz_database()
         litz_type = self.md_winding2_litz_material_comboBox.currentText()
         if litz_type != 'Manual':
@@ -2310,7 +2158,8 @@ class MainWindow(QMainWindow):
 
     def md_winding2_change_litz_implicit(self, implicit_type_from_combo_box: str) -> None:
         """
-        Enables / Disables input parameter fields for different "implicit xyz" types in case of litz wire:
+        Enable / Disable input parameter fields for different "implicit xyz" types in case of litz wire:.
+
         :param implicit_type_from_combo_box: input type to implicit
         :type implicit_type_from_combo_box: str
         :return: None
@@ -2334,7 +2183,8 @@ class MainWindow(QMainWindow):
 
     def md_winding2_change_wire_type(self, wire_type_from_combot_box: str) -> None:
         """
-        Enables / Disables input parameter for litz/solid wire
+        Enable / Disable input parameter for litz/solid wire.
+
         :param wire_type_from_combot_box: wire type
         :type wire_type_from_combot_box: str
         :return: None
@@ -2360,7 +2210,8 @@ class MainWindow(QMainWindow):
 
     def md_change_air_gap_count(self, air_gap_count_from_combo_box: str) -> None:
         """
-        Sets the number of editable air gap fields in dependence of the air gap count combobox.
+        Set the number of editable air gap fields in dependence of the air gap count combobox.
+
         :param air_gap_count_from_combo_box: Number of editable air gaps
         :type air_gap_count_from_combo_box: str
         :return: None
@@ -2386,7 +2237,8 @@ class MainWindow(QMainWindow):
 
     def md_change_air_gap_placement(self, air_gap_placement_from_combo_box: str) -> None:
         """
-        Changes the labels in case of different air gap placement methods
+        Change the labels in case of different air gap placement methods.
+
         :param air_gap_placement_from_combo_box: Air gap placement method
         :type air_gap_placement_from_combo_box: str
         :return: None
@@ -2404,7 +2256,7 @@ class MainWindow(QMainWindow):
 
     def md_air_gap_1_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for air gap No. 1
+        Enable / Disable the input fields for air gap No. 1.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2420,7 +2272,7 @@ class MainWindow(QMainWindow):
 
     def md_air_gap_2_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for air gap No. 2
+        Enable / Disable the input fields for air gap No. 2.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2436,7 +2288,7 @@ class MainWindow(QMainWindow):
 
     def md_air_gap_3_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for air gap No. 3
+        Enable / Disable the input fields for air gap No. 3.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2452,7 +2304,7 @@ class MainWindow(QMainWindow):
 
     def md_air_gap_4_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for air gap No. 4
+        Enable / Disable the input fields for air gap No. 4.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2468,7 +2320,7 @@ class MainWindow(QMainWindow):
 
     def md_air_gap_5_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for air gap No. 5
+        Enable / Disable the input fields for air gap No. 5.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2488,7 +2340,7 @@ class MainWindow(QMainWindow):
 
     def md_dc_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for dc current.
+        Enable / Disable the input fields for dc current.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2506,14 +2358,13 @@ class MainWindow(QMainWindow):
 
     def md_f1_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for frequency/phase No. 1
+        Enable / Disable the input fields for frequency/phase No. 1.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
         :return: None
         :rtype: None
         """
-
         self.md_winding1_ik1_lineEdit.setEnabled(status)
         self.md_winding1_pk1_lineEdit.setEnabled(status)
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
@@ -2525,7 +2376,7 @@ class MainWindow(QMainWindow):
 
     def md_f2_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for frequency/phase No. 2
+        Enable / Disable the input fields for frequency/phase No. 2.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2543,7 +2394,7 @@ class MainWindow(QMainWindow):
 
     def md_f3_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for frequency/phase No. 3
+        Enable / Disable the input fields for frequency/phase No. 3.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2561,7 +2412,7 @@ class MainWindow(QMainWindow):
 
     def md_f4_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for frequency/phase No. 4
+        Enable / Disable the input fields for frequency/phase No. 4.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2579,7 +2430,7 @@ class MainWindow(QMainWindow):
 
     def md_f5_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for frequency/phase No. 5
+        Enable / Disable the input fields for frequency/phase No. 5.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2597,7 +2448,7 @@ class MainWindow(QMainWindow):
 
     def md_f6_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for frequency/phase No. 6
+        Enable / Disable the input fields for frequency/phase No. 6.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2615,7 +2466,7 @@ class MainWindow(QMainWindow):
 
     def md_f7_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for frequency/phase No. 7
+        Enable / Disable the input fields for frequency/phase No. 7.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2633,7 +2484,7 @@ class MainWindow(QMainWindow):
 
     def md_f8_enable(self, status: bool) -> None:
         """
-        Enables / Disables the input fields for frequency/phase No. 8
+        Enable / Disable the input fields for frequency/phase No. 8.
 
         :param status: True for enable fields, False for disable fields
         :type status: bool
@@ -2651,7 +2502,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_dc(self, status: int) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2662,7 +2513,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_1(self, status: int) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2673,7 +2524,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_2(self, status) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2684,7 +2535,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_3(self, status) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2695,7 +2546,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_4(self, status) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2706,7 +2557,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_5(self, status) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2717,7 +2568,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_6(self, status) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2728,7 +2579,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_7(self, status) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2739,7 +2590,7 @@ class MainWindow(QMainWindow):
 
     def md_change_frequencies_8(self, status) -> None:
         """
-        Changes the frequency field in case of checking/unchecking the frequency-checkboxes
+        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
         :param status: 0 for disabling, anything else for enabling freqency boxes
         :type status: int
@@ -2750,14 +2601,15 @@ class MainWindow(QMainWindow):
 
     def md_redraw_input_signals(self) -> None:
         """
-        Generate visual graphics for the input signals
+        Generate visual graphics for the input signals.
+
         Generates a graphic. This graphic is read and insertet to the gui.
 
         :return: None
         :rtype: None
         """
-
-        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
+        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
+            winding2_phi_rad_list = self.md_get_frequency_lists()
 
         fmt.plot_fourier_coefficients(winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list,
                                       figure_directory="./md_winding_1.png")
@@ -2781,7 +2633,8 @@ class MainWindow(QMainWindow):
         """
         Read frequency, amplitude and phase depending on the checked frequencies and return it as a list.
 
-        :return: [winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list]
+        :return: [winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list,
+             winding2_amplitude_list, winding2_phi_rad_list]
         :rtype: List
         """
         winding1_frequency_list = []
@@ -2860,9 +2713,7 @@ class MainWindow(QMainWindow):
         return winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list
 
     def wdg_scheme(self):
-        """
-         Function to choose the winding scheme
-        """
+        """Choose the winding scheme."""
         if self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["square"]:
             scheme = 'square'
         elif self.md_winding1_scheme_comboBox.currentText() == self.translation_dict["hexa"]:
@@ -2870,7 +2721,7 @@ class MainWindow(QMainWindow):
 
     def md_setup_geometry(self):
         """
-        Sets up the core and conductor geometry depending on the GUI input parameters
+        Set up the core and conductor geometry depending on the GUI input parameters.
 
         returns: femmt MagneticComponent
 
@@ -2894,8 +2745,6 @@ class MainWindow(QMainWindow):
                                         working_directory=self.md_working_directory_lineEdit.text(),
                                         verbosity=fmt.Verbosity.ToConsole)
 
-
-
             core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
                                                             window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
                                                             window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
@@ -2904,17 +2753,16 @@ class MainWindow(QMainWindow):
             material_enum = fmt.Material(self.md_core_material_comboBox.currentText())
 
             core = fmt.Core(core_type=fmt.CoreType.Single,
-                           core_dimensions=core_dimensions,
-                           detailed_core_model=False,
-                           material=material_enum, temperature=45, frequency=int(self.md_base_frequency_lineEdit.text()),
-                           # permeability_datasource="manufacturer_datasheet",
-                           permeability_datasource=fmt.MaterialDataSource.Measurement,
-                           permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                           permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
-                           permittivity_datasource=fmt.MaterialDataSource.Measurement,
-                           permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                           permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
-
+                            core_dimensions=core_dimensions,
+                            detailed_core_model=False,
+                            material=material_enum, temperature=45, frequency=int(self.md_base_frequency_lineEdit.text()),
+                            # permeability_datasource="manufacturer_datasheet",
+                            permeability_datasource=fmt.MaterialDataSource.Measurement,
+                            permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                            permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                            permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                            permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                            permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
 
             geo.set_core(core)
 
@@ -2978,8 +2826,7 @@ class MainWindow(QMainWindow):
                                     position_tag=[],
                                     air_gap_position=[])"""
 
-            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict[
-                "percent"] and air_gap_count >= 1:
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
@@ -2996,8 +2843,7 @@ class MainWindow(QMainWindow):
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
 
-            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict[
-                "manually"] and air_gap_count >= 1:
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["manually"] and air_gap_count >= 1:
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 for i in range(1, air_gap_count + 1):
@@ -3037,7 +2883,6 @@ class MainWindow(QMainWindow):
             # Create conductor and set parameters: use solid wires
             # -----------------------------------------------------------
 
-
             winding_material_name = self.md_winding1_material_comboBox.currentText()
             if winding_material_name == 'Copper':
                 winding_material_enum = fmt.Conductivity.Copper
@@ -3062,7 +2907,6 @@ class MainWindow(QMainWindow):
             # ----------------------------------------------------------------------
             vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
             geo.set_winding_windows([winding_window])
-
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
 
@@ -3147,8 +2991,7 @@ class MainWindow(QMainWindow):
                                     position_tag=[],
                                     air_gap_position=[])"""
 
-            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict[
-                "percent"] and air_gap_count >= 1:
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
@@ -3165,8 +3008,7 @@ class MainWindow(QMainWindow):
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
 
-            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict[
-                "manually"] and air_gap_count >= 1:
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["manually"] and air_gap_count >= 1:
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 for i in range(1, air_gap_count + 1):
@@ -3213,7 +3055,6 @@ class MainWindow(QMainWindow):
             right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None)
             geo.set_winding_window(winding_window)
 
-
         elif self.md_simulation_type_comboBox.currentText() == 'integrated transformer':
             pass
 
@@ -3221,13 +3062,11 @@ class MainWindow(QMainWindow):
 
     def md_action_run_simulation(self) -> None:
         """
-        Read all input parameters from the fields.
-        Run the simulation in dependence of input fields.
+        Read all input parameters from the fields. Run the simulation in dependence of input fields.
 
         :return: None
         :rtype: None
         """
-
         geo = self.md_setup_geometry()
         # -----------------------------------------------
         # Simulation
@@ -3236,7 +3075,8 @@ class MainWindow(QMainWindow):
                          save_png=False)
         # geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
 
-        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, winding2_phi_rad_list = self.md_get_frequency_lists()
+        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
+            winding2_phi_rad_list = self.md_get_frequency_lists()
 
         if len(winding1_frequency_list) == 1:
             if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
@@ -3247,7 +3087,6 @@ class MainWindow(QMainWindow):
                 geo.single_simulation(freq=winding1_frequency_list[0],
                                       current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
                                       phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
-
 
         else:
 
@@ -3309,7 +3148,7 @@ class MainWindow(QMainWindow):
         # self.md_simulation_output_textBrowser.setText(simulation_results)
 
     def inductancecalc(self):
-
+        """Calculate inductance from given geometries."""
         air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
         air_gap_heigth_array = []
         air_gap_position_array = []
@@ -3407,9 +3246,7 @@ class MainWindow(QMainWindow):
         self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
 
     def therm_simulation(self):
-        """
-            Function for implementing the thermal simulation
-        """
+        """Implement the thermal simulation."""
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
         # In order to use the thermal simulation, thermal conductivities for each material can be entered as well as a boundary temperature
@@ -3483,6 +3320,7 @@ class MainWindow(QMainWindow):
 
 
 def clear_layout(layout):
+    """Clear the layout."""
     while layout.count():
         child = layout.takeAt(0)
         if isinstance(child, QtWidgets.QSpacerItem):

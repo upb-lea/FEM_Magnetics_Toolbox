@@ -1,3 +1,4 @@
+"""Contains integration tests to benchmark new changes against previous simulation results."""
 import pytest
 import os
 import json
@@ -15,10 +16,13 @@ import femmt.examples.basic_inductor_foil_vertical
 import femmt.examples.basic_transformer_n_winding
 import femmt.examples.advanced_inductor_sweep
 import femmt.examples.basic_transformer_5_windings
+import femmt.examples.advanced_inductor_air_gap_sweep
+import femmt.examples.component_study.transformer_component_study
 import materialdatabase as mdb
 
 
 def compare_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
+    """Compare the result log against a given one to see the differences when running the integration tests."""
     first_content = None
     second_content = None
 
@@ -49,7 +53,7 @@ def compare_result_logs(first_log_filepath, second_log_filepath, significant_dig
 
 
 def compare_thermal_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
-
+    """Compare the thermal result log against a given one to see the differences when running the integration tests."""
     with open(first_log_filepath, "r") as fd:
         first_content = json.loads(fd.read())
 
@@ -70,6 +74,7 @@ def compare_thermal_result_logs(first_log_filepath, second_log_filepath, signifi
 
 @pytest.fixture
 def temp_folder():
+    """Fixture to create the temporary folder the results are stored."""
     # Setup temp folder
     temp_folder_path = os.path.join(os.path.dirname(__file__), "temp")
 
@@ -94,6 +99,7 @@ def temp_folder():
 
 @pytest.fixture
 def femmt_simulation_inductor_core_material_database(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
     
     # Create new temp folder, build model and simulate
@@ -207,6 +213,7 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_inductor_core_material_database_measurement(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -324,6 +331,7 @@ def femmt_simulation_inductor_core_material_database_measurement(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -436,6 +444,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -548,6 +557,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -663,6 +673,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -778,6 +789,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder)
 
 @pytest.fixture
 def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -899,6 +911,7 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -1019,6 +1032,7 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -1148,6 +1162,7 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -1291,6 +1306,7 @@ def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
 
 @pytest.fixture
 def femmt_simulation_transformer_5_windings(temp_folder):
+    """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
 
     # Create new temp folder, build model and simulate
@@ -1448,15 +1464,7 @@ def femmt_simulation_transformer_5_windings(temp_folder):
 
 
 def test_inductor_core_material_database(femmt_simulation_inductor_core_material_database):
-    """
-    The first idea was to compare the simulated meshes with test meshes simulated manually.
-    It turns out that the meshes cannot be compared because even slightly differences in the mesh,
-    can cause to a test failure, because the meshes are binary files.
-    Those differences could even occur when running the simulation on different machines
-    -> This was observed when creating a docker image and running the tests.
-
-    Now as an example only the result log will be checked.
-    """
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_inductor_core_material_database
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1476,15 +1484,7 @@ def test_inductor_core_material_database(femmt_simulation_inductor_core_material
 
 
 def test_inductor_core_material_database_measurement(femmt_simulation_inductor_core_material_database_measurement):
-    """
-    The first idea was to compare the simulated meshes with test meshes simulated manually.
-    It turns out that the meshes cannot be compared because even slightly differences in the mesh,
-    can cause to a test failure, because the meshes are binary files.
-    Those differences could even occur when running the simulation on different machines
-    -> This was observed when creating a docker image and running the tests.
-
-    Now as an example only the result log will be checked.
-    """
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_inductor_core_material_database_measurement
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1502,6 +1502,7 @@ def test_inductor_core_material_database_measurement(femmt_simulation_inductor_c
 
 
 def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_loss_angle):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1519,6 +1520,7 @@ def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_los
 
 
 def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core_fixed_loss_angle_litz_wire):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle_litz_wire
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1536,6 +1538,7 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
 
 
 def test_inductor_core_fixed_loss_angle_foil_vertical(femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1555,6 +1558,7 @@ def test_inductor_core_fixed_loss_angle_foil_vertical(femmt_simulation_inductor_
 
 def test_inductor_core_fixed_loss_angle_foil_horizontal(
         femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1572,6 +1576,7 @@ def test_inductor_core_fixed_loss_angle_foil_horizontal(
 
 
 def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fixed_loss_angle):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_transformer_core_fixed_loss_angle
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1589,6 +1594,7 @@ def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fix
 
 
 def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transformer_interleaved_core_fixed_loss_angle):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_transformer_interleaved_core_fixed_loss_angle
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1606,6 +1612,7 @@ def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transfor
 
 
 def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transformer_integrated_core_fixed_loss_angle):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_transformer_integrated_core_fixed_loss_angle
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1623,6 +1630,7 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
 
 
 def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transformer_stacked_center_tapped):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_transformer_stacked_center_tapped
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1640,6 +1648,7 @@ def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transform
 
 
 def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windings):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log = femmt_simulation_transformer_5_windings
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1665,8 +1674,8 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
                     femmt_simulation_transformer_interleaved_core_fixed_loss_angle,
                     femmt_simulation_transformer_integrated_core_fixed_loss_angle
                     ):
-    """
-    This function tests if simulations can be set up from a simulation file.
+    """Function tests if simulations can be set up from a simulation file.
+
     There is no complete function check, there is just an error-check if the load will fail or not.
 
     Note: Fixtures are used, to make sure that the latest self-generated log-files can be read.
@@ -1706,7 +1715,7 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
         #
         # fixture_log_filepath_list = []
 
-        for count, filepath in enumerate(result_log_filepath_list):
+        for filepath in result_log_filepath_list:
             test_result_log = fmt.MagneticComponent.decode_settings_from_log(filepath, working_directory)
 
             assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1721,6 +1730,7 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
 
 
 def test_basic_examples(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_inductor.basic_example_inductor(onelab_folder=onelab_folder,
                                                          show_visual_outputs=False,
@@ -1728,6 +1738,7 @@ def test_basic_examples(temp_folder):
 
 
 def test_basic_example_transformer_interleaved(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_interleaved.basic_example_transformer_interleaved(onelab_folder=onelab_folder,
                                                                                        show_visual_outputs=False,
@@ -1735,12 +1746,14 @@ def test_basic_example_transformer_interleaved(temp_folder):
 
 
 def test_basic_example_transformer(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer.basic_example_transformer(onelab_folder=onelab_folder, show_visual_outputs=False,
                                                                is_test=True)
 
 
 def test_basic_example_transformer_three_winding(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
@@ -1748,6 +1761,7 @@ def test_basic_example_transformer_three_winding(temp_folder):
 
 
 def test_basic_example_transformer_integrated(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_integrated.basic_example_transformer_integrated(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
@@ -1755,6 +1769,7 @@ def test_basic_example_transformer_integrated(temp_folder):
 
 
 def test_basic_example_transformer_center_tapped(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_center_tapped.basic_example_transformer_center_tapped(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
@@ -1762,6 +1777,7 @@ def test_basic_example_transformer_center_tapped(temp_folder):
 
 
 def test_basic_example_transformer_stacked(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_stacked.basic_example_transformer_stacked(onelab_folder=onelab_folder,
                                                                                show_visual_outputs=False,
@@ -1769,12 +1785,14 @@ def test_basic_example_transformer_stacked(temp_folder):
 
 
 def test_basic_example_transformer_stacked_center_tapped(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(
         onelab_folder=onelab_folder, show_visual_outputs=False, is_test=True)
 
 
 def test_basic_example_inductor_foil_vertical(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_inductor_foil_vertical.basic_example_inductor_foil_vertical(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
@@ -1782,6 +1800,7 @@ def test_basic_example_inductor_foil_vertical(temp_folder):
 
 
 def test_basic_example_transformer_n_winding(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_n_winding.basic_example_transformer_n_winding(onelab_folder=onelab_folder,
                                                                                    show_visual_outputs=False,
@@ -1789,6 +1808,7 @@ def test_basic_example_transformer_n_winding(temp_folder):
 
 
 def test_basic_example_transformer_5_windings(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_5_windings.basic_example_transformer_5_windings(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
@@ -1796,7 +1816,23 @@ def test_basic_example_transformer_5_windings(temp_folder):
 
 
 def test_advanced_example_inductor_sweep(temp_folder):
+    """Integrationtest to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.advanced_inductor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
                                                                            show_visual_outputs=False,
                                                                            is_test=True)
+
+
+def test_advanced_example_inductor_air_gap_sweep(temp_folder):
+    """Integrationtest to test the basic example file."""
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.advanced_inductor_air_gap_sweep.basic_example_sweep(onelab_folder=onelab_folder,
+                                                                       show_visual_outputs=False,
+                                                                       is_test=True)
+
+def test_transformer_component_study(temp_folder):
+    """Integrationtest to test the basic example file."""
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.component_study.transformer_component_study.transformer_component_study(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)

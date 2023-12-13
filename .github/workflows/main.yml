@@ -29,9 +29,10 @@ jobs:
         run: |
             pip install pycodestyle
             pip install pytest
-            cd tests/integration
-            pytest lint.py
-            cd ../..
+            pycodestyle $(git ls-files '*.py') 
+          
+            pip install ruff
+            ruff check $(git ls-files '*.py')
 
       - name: install femmt package
         run: |

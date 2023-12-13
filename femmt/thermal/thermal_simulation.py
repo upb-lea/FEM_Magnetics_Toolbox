@@ -1,3 +1,4 @@
+"""Thermal simulation functions."""
 # Python standard libraries
 import re
 import json
@@ -14,14 +15,11 @@ import femmt.thermal.thermal_functions as thermal_f
 from femmt.thermal.thermal_classes import ConstraintPro, FunctionPro, GroupPro, ParametersPro, PostOperationPro
 from femmt.data import FileData
 
-
-
-
 def create_case(boundary_regions, boundary_physical_groups, boundary_temperatures, boundary_flags, k_case,
                 function_pro: FunctionPro, parameters_pro: ParametersPro, group_pro: GroupPro,
                 constraint_pro: ConstraintPro):
     """
-    Sets boundary conditions and material parameters for the case around the core.
+    Set boundary conditions and material parameters for the case around the core.
 
     TODO Set docstring
 
@@ -51,7 +49,7 @@ def create_case(boundary_regions, boundary_physical_groups, boundary_temperature
 
 
 def create_insulation(insulation_tag, k_iso, function_pro: FunctionPro, group_pro: GroupPro):
-
+    """Create insulations for thermal simulation."""
     k_iso = {"insulation": k_iso}
 
     function_pro.add_dicts(k_iso, None)
@@ -59,6 +57,7 @@ def create_insulation(insulation_tag, k_iso, function_pro: FunctionPro, group_pr
 
 
 def create_background(background_tag, k_air, function_pro: FunctionPro, group_pro: GroupPro):
+    """Create simulation background."""
     k_air = {"air": k_air}
 
     function_pro.add_dicts(k_air, None)
@@ -68,17 +67,17 @@ def create_background(background_tag, k_air, function_pro: FunctionPro, group_pr
 def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, air_gaps_tag, k_air_gaps,
                              function_pro: FunctionPro, group_pro: GroupPro):
     """
-        Creates core and air gaps configurations with associated thermal properties.
+    Create core and air gaps configurations with associated thermal properties.
 
-        :param core_tags: Tags identifying different parts of the core.
-        :param k_core: Thermal conductivity of the core.
-        :param core_area: Areas of different core parts.
-        :param core_parts_losses: losses in different core parts.
-        :param air_gaps_tag: Tag identifying the air gaps.
-        :param k_air_gaps: Thermal conductivity of the air gaps.
-        :param function_pro: Object to manage function properties.
-        :param group_pro: Object to manage group properties.
-        """
+    :param core_tags: Tags identifying different parts of the core.
+    :param k_core: Thermal conductivity of the core.
+    :param core_area: Areas of different core parts.
+    :param core_parts_losses: losses in different core parts.
+    :param air_gaps_tag: Tag identifying the air gaps.
+    :param k_air_gaps: Thermal conductivity of the air gaps.
+    :param function_pro: Object to manage function properties.
+    :param group_pro: Object to manage group properties.
+    """
     # Initialize dictionaries for volumetric heat flux, thermal conductivity, and region
     q_vol = {}  # Dictionary to hold volumetric heat flux for each core part
     k = {}  # Dictionary to hold thermal conductivity for each core part
@@ -93,7 +92,7 @@ def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, ai
         core_total_str += f"{name}, "
 
         # Compute the heat flux for the core part using its loss and area
-        q_vol[name] = core_parts_losses[index] / core_area[index] # TODO Core_area should be calculated for every core_part
+        q_vol[name] = core_parts_losses[index] / core_area[index]  # TODO Core_area should be calculated for every core_part
 
         # Store the thermal conductivity of the core part
         k[name] = k_core
@@ -111,18 +110,14 @@ def create_core_and_air_gaps(core_tags, k_core, core_area, core_parts_losses, ai
     group_pro.add_regions(regions)
     function_pro.add_dicts(k, q_vol)
 
-
-
 def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, wire_distances,
                     function_pro: FunctionPro, group_pro: GroupPro):
+    """Create windings for the thermal simulation."""
     q_vol = {}
     k = {}
     regions = {}
     windings_total_str = "{"
     tag_counters = {}
-
-
-
 
     for winding_index, winding in enumerate(winding_tags):
         if winding is not None and len(winding) > 0:
@@ -131,8 +126,6 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
 
                 if len(original_winding) > len(winding_losses[winding_index]):
                     winding_losses[winding_index] = [winding_losses[winding_index][0] / len(original_winding) for _ in range(len(original_winding))]
-
-
 
             for index, tag in enumerate(winding):
                 name = f"winding_{winding_index}_{index}"
@@ -143,13 +136,11 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
 
                 print(q_vol[name])
                 k[name] = k_windings
-                if tag not in tag_counters: # The counter is needed here to create a single region for for every turn in case of parallel windings
+                if tag not in tag_counters:  # The counter is needed here to create a single region for for every turn in case of parallel windings
                     tag_counters[tag] = 0
                 else:
                     tag_counters[tag] += 1
                 regions[name] = tag + tag_counters[tag]
-
-
 
     # Needs to be added. [:-2] removes the last ', '
     regions["windings_total"] = windings_total_str[:-2] + "}"
@@ -162,13 +153,12 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
                           core_file, insulation_file, winding_file, windings, core_parts, print_sensor_values,
                           post_operation_pro: PostOperationPro, flag_insulation):
     """
-        Configures post-operation properties for a thermal simulation.
+    Configure post-operation properties for a thermal simulation.
 
-        :param ...: (Include detailed description for each parameter as needed)
-        :param post_operation_pro: Object to manage post-operation properties.
-        :param flag_insulation: Flag indicating the presence of insulation.
-        """
-
+    :param ...: (Include detailed description for each parameter as needed)
+    :param post_operation_pro: Object to manage post-operation properties.
+    :param flag_insulation: Flag indicating the presence of insulation.
+    """
     # Add pos file generation
     post_operation_pro.add_on_elements_of_statement("T", "Total", thermal_file_path)
     post_operation_pro.add_on_elements_of_statement("influx", "Warm", thermal_influx_file_path)
@@ -196,19 +186,18 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
                                                   "air_gap_lower", True)
 
     # Add regions
-    #core file will be GmshParsed file as we have many core parts
+    # core file will be GmshParsed file as we have many core parts
     # Adding temperature post-operation statements for each core part if they are defined
     core_parts = [[part] for part in core_parts]
     core_append = False  # Initialize the append flag for core parts
     for core_index, core_part in enumerate(core_parts):
         if core_part is not None and len(core_part) > 0:
-            #core_part_value = core_part[0]
+            # core_part_value = core_part[0]
 
             name = f"core_part_{core_index + 1}"
             post_operation_pro.add_on_elements_of_statement("T", name, core_file, "GmshParsed", 0, name, core_append)
             if not core_append:
                 core_append = True
-
 
     # Adding temperature post-operation statement for insulation if insulation is present
     if flag_insulation:
@@ -218,8 +207,8 @@ def create_post_operation(thermal_file_path, thermal_influx_file_path, thermal_m
     append = False
     for winding_index, winding in enumerate(windings):
         if winding is not None and len(winding) > 0:
-              # Remove duplicates from region of parallel windings
-            for index, tag in enumerate(winding):
+            # Remove duplicates from region of parallel windings
+            for index, _ in enumerate(winding):
                 name = f"winding_{winding_index}_{index}"
                 post_operation_pro.add_on_elements_of_statement("T", name, winding_file, "GmshParsed", 0, name, append)
                 if not append:
@@ -254,8 +243,9 @@ def simulate(onelab_folder_path: str, mesh_file: str, solver_file: str, silent: 
 
 def parse_simple_table(file_path: str) -> np.array:
     """
-    Reads a thermal simulation output file (e.g. core.txt or insulation.txt) and translates it
-    to a numpy array (containing temperatures).
+    Read a thermal simulation output file (e.g. core.txt or insulation.txt) and translates it to a numpy array.
+
+    The output contains temperatures.
 
     :param file_path: filepath to core.txt or insulation.txt
     :type file_path: str
@@ -273,6 +263,11 @@ def parse_simple_table(file_path: str) -> np.array:
 
 
 def parse_gmsh_parsed(file_path: str):
+    """Parse gmsh output to a python dict.
+
+    :param file_path: file path
+    :type file_path: str
+    """
     regex_view_line = "View \"(?P<key>\w+)\" \{\n"
     regex_SP_line = "SP\(-?\d+\.\d+(e-\d+)?,-?\d+\.\d+(e-\d+)?,0\)\{(?P<value>-?\d+\.\d+)\};\n"
 
@@ -309,11 +304,11 @@ def parse_gmsh_parsed(file_path: str):
 
     return value_dict
 
-
 def post_operation(case_volume: float, output_file: str, sensor_points_file: str, core_file: str, insulation_file: str,
                    winding_file: str, flag_insulation: bool = True):
-    """
-    Post operations after performing the thermal simulation. Calculates minimum, maximum and mean temperatures of core,
+    """Post operations after performing the thermal simulation.
+
+    Calculates minimum, maximum and mean temperatures of core,
     conductors and insulations.
 
     :param case_volume: case volume in m³
@@ -329,7 +324,6 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
     :param winding_file: filepath with all the mesh-cell temperatures of the winding
     :type winding_file: str
     """
-
     # Extract sensor_points
     sensor_point_values = None
     if sensor_points_file is not None:
@@ -343,7 +337,6 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
     core_part_min = float('inf')
     core_part_max = -float('inf')
     mean_sum = 0
-
 
     for core_items, core_value in core_values.items():
         current_min = core_value.min()
@@ -411,7 +404,7 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
         "misc": misc
     }
 
-    if flag_insulation and insulation_file is not None: # The flag is to check if the thermal simulation with insulation or without
+    if flag_insulation and insulation_file is not None:  # The flag is to check if the thermal simulation with insulation or without
         # insulations
         insulation_values = parse_simple_table(insulation_file)
         insulation_min = insulation_values.min()
@@ -424,23 +417,18 @@ def post_operation(case_volume: float, output_file: str, sensor_points_file: str
             "mean": insulation_mean
         }
 
-
     if sensor_point_values is not None:
         data["sensor_points"] = sensor_point_values
 
     with open(output_file, "w") as fd:
         json.dump(data, fd, indent=2)
 
-
-
-
-
 def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict: Dict, boundary_temperatures: Dict,
                 boundary_flags: Dict, boundary_physical_groups: Dict, core_area: List, conductor_radii: float,
                 wire_distances: float, case_volume: float,
                 show_thermal_fem_results: bool, print_sensor_values: bool, silent: bool, flag_insulation: bool = True):
     """
-    Runs a thermal simulation.
+    Run a thermal simulation.
 
     :param file_data: Contains paths to every folder and file needed in femmt.
     :param tags_dict: Dictionary containing the tags of the case, air, core and windings
@@ -513,18 +501,12 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
                 inner_winding_list.append(winding)
         winding_losses.append(inner_winding_list)
 
-
-
     # Extract core_parts losses as a list
     core_parts_losses = []
 
     core_part_keys = [key for key in losses.keys() if key.startswith("total_core_part_")]
     for key in core_part_keys:
         core_parts_losses.append(losses[key])
-
-
-
-
 
     # TODO All those pro classes could be used as global variables
     create_case(tags_dict["boundary_regions"], boundary_physical_groups, boundary_temperatures, boundary_flags,
@@ -554,7 +536,6 @@ def run_thermal(file_data: FileData, tags_dict: Dict, thermal_conductivity_dict:
     simulate(onelab_folder_path, model_mesh_file_path, thermal_template_file, silent)
 
     post_operation(case_volume, output_file, sensor_points_file, core_file, insulation_file, winding_file, flag_insulation)
-
 
     if show_thermal_fem_results:
         gmsh.open(map_pos_file)

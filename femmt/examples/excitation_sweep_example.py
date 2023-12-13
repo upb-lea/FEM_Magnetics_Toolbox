@@ -1,3 +1,4 @@
+"""Example file how to perform some frequency sweeps."""
 import femmt as fmt
 import os
 
@@ -63,7 +64,7 @@ if component == "inductor_sweep":
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=100)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
-    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
+    # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
@@ -95,7 +96,6 @@ if component == "transformer_sweep":
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
                                                     window_w=0.012,
                                                     window_h=0.0295)
-
 
     core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                     permeability_datasource=fmt.MaterialDataSource.Custom,

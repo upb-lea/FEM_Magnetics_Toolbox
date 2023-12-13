@@ -1,3 +1,5 @@
+"""Stacked transformer optimization (STO)."""
+
 # python libraries
 import os
 import shutil
@@ -20,11 +22,11 @@ import materialdatabase as mdb
 
 
 class StackedTransformerOptimization:
+    """Optimize a stacked transformer."""
 
     @staticmethod
     def calculate_fix_parameters(config: StoSingleInputConfig) -> StoTargetAndFixedParameters:
-        """
-        Calculate fix parameters what can be derived from the input configuration.
+        """Calculate fix parameters what can be derived from the input configuration.
 
         return values are:
 
@@ -46,7 +48,6 @@ class StackedTransformerOptimization:
         :return: calculated target and fix parameters
         :rtype: ItoTargetAndFixedParameters
         """
-
         # currents
         time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
             config.time_current_1_vec)
@@ -103,8 +104,7 @@ class StackedTransformerOptimization:
     def objective(trial, config: StoSingleInputConfig,
                   target_and_fixed_parameters: StoTargetAndFixedParameters,
                   number_objectives: int, show_geometries: bool = False, process_number: int = 1):
-        """
-        Objective for optuna optimization.
+        """Objective for optuna optimization.
 
         :param trial: optuna trail objective. Used by optuna
         :param config: simulation configuration file
@@ -149,9 +149,9 @@ class StackedTransformerOptimization:
                                                config.primary_coil_turns_min_max_list[1])
         # Note: int() is used to round down.
         number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - iso_left_core) / available_width) + 1
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - iso_left_core) / available_width) + 1
         window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                    number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         # Maximum coil air gap depends on the maximum window height top
         air_gap_coil = trial.suggest_float("air_gap_coil", 0.1e-3, window_h_top - 0.1e-3)
@@ -282,10 +282,6 @@ class StackedTransformerOptimization:
             geo.stacked_core_center_tapped_study(center_tapped_study_excitation,
                                                  number_primary_coil_turns=primary_coil_turns)
 
-            # geo.stacked_core_center_tapped_study(time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_1_vec],
-            #                                              [target_and_fixed_parameters.time_extracted_vec, target_and_fixed_parameters.current_extracted_2_vec]],
-            #                        plot_waveforms=False)
-
             # copy result files to result-file folder
             source_json_file = os.path.join(
                 target_and_fixed_parameters.working_directories.fem_working_directory, f'process_{process_number}',
@@ -312,7 +308,8 @@ class StackedTransformerOptimization:
             trial.set_user_attr("l_s12", geo.L_s12)
 
             # TODO: Normalize on goal values here or the whole generation on min and max? for each feature inbetween 0 and 1
-            # norm_total_loss, norm_difference_l_h, norm_difference_l_s12 = total_loss/10, abs(difference_l_h/config.l_h_target), abs(difference_l_s12/config.l_s12_target)
+            # norm_total_loss, norm_difference_l_h, norm_difference_l_s12 = total_loss/10, #
+            #     abs(difference_l_h/config.l_h_target), abs(difference_l_s12/config.l_s12_target)
             # return norm_total_loss, norm_difference_l_h, norm_difference_l_s12
             if number_objectives == 3:
                 return total_volume, total_loss, 100 * (abs(difference_l_h / config.l_h_target) + abs(
@@ -334,8 +331,7 @@ class StackedTransformerOptimization:
                             sampler=optuna.samplers.NSGAIISampler(),
                             show_geometries: bool = False,
                             ) -> None:
-        """
-        Proceed a study which is stored as sqlite database.
+        """Proceed a study which is stored as sqlite database.
 
         :param study_name: Name of the study
         :type study_name: str
@@ -354,8 +350,8 @@ class StackedTransformerOptimization:
         """
 
         def objective_directions(configure_number_objectives: int):
-            """
-            Checks if the number of objectives is correct and returns the minimizing targets
+            """Check the number of objectives and returns the minimizing targets.
+
             :param configure_number_objectives: number of objectives
             :type configure_number_objectives: int
             :returns: objective targets and optimization function
@@ -390,9 +386,7 @@ class StackedTransformerOptimization:
         directions = objective_directions(number_objectives)
 
         func = lambda \
-            trial: femmt.optimization.StackedTransformerOptimization.objective(
-            trial, config,
-            target_and_fixed_parameters, number_objectives, show_geometries)
+            trial: femmt.optimization.StackedTransformerOptimization.objective(trial, config, target_and_fixed_parameters, number_objectives, show_geometries)
 
         study_in_storage = optuna.create_study(study_name=study_name,
                                                storage=storage,
@@ -417,8 +411,7 @@ class StackedTransformerOptimization:
                                  show_geometries: bool = False,
                                  process_number: int = 1,
                                  ) -> None:
-        """
-        Proceed a study which can be paralleled. It is highly recommended to use a mysql-database (or mariadb).
+        """Proceed a study which can be paralleled. It is highly recommended to use a mysql-database (or mariadb).
 
         :param study_name: Name of the study
         :type study_name: str
@@ -439,8 +432,8 @@ class StackedTransformerOptimization:
         """
 
         def objective_directions(number_objectives: int):
-            """
-            Checks if the number of objectives is correct and returns the minimizing targets
+            """Check if the number of objectives is correct and returns the minimizing targets.
+
             :param number_objectives: number of objectives
             :type number_objectives: int
             :returns: objective targets and optimization function
@@ -471,10 +464,8 @@ class StackedTransformerOptimization:
 
         directions = objective_directions(number_objectives)
 
-        func = lambda \
-                trial: femmt.optimization.StackedTransformerOptimization.objective(
-            trial, config,
-            target_and_fixed_parameters, number_objectives, show_geometries, process_number)
+        func = lambda trial: femmt.optimization.StackedTransformerOptimization.objective(trial, config, target_and_fixed_parameters,
+                                                                                         number_objectives, show_geometries, process_number)
 
         study_in_database = optuna.create_study(study_name=study_name,
                                                 storage=storage,
@@ -486,17 +477,18 @@ class StackedTransformerOptimization:
 
     @staticmethod
     def run_garbage_collector(study: optuna.Study, _):
-        if len(study.trials) % 10000 == 0:
-            # Run the garbage collector to prevent high memory consumption.
-            # as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
-            # the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate.
-            # in case of running 10 or more cores, the garbage collector will run each 10.000 trial
-            # There could be an improvement to run the garbage collector on every process in future.
-            # Now, it is random on which of the processes the garbage collector runs.
-            # Learn about the garbage collector https://docs.python.org/3/library/gc.html#gc.collect
-            # Every process runs its own garbage collector. So there is no difference between multiple processes
-            # https://stackoverflow.com/questions/23272943/how-does-garbage-collection-work-with-multiple-running-processes-threads
+        """Run the garbage collector to prevent high memory consumption.
 
+        as seen so far, a typical study needs 50.000 to 500.000 trials to have good results when performing
+        the optimization. In the range above 200.000 trials, the RAM has a high occupancy rate.
+        in case of running 10 or more cores, the garbage collector will run each 10.000 trial
+        There could be an improvement to run the garbage collector on every process in the future.
+        Now, it is random on which of the processes the garbage collector runs.
+        Learn about the garbage collector https://docs.python.org/3/library/gc.html#gc.collect
+        Every process runs its own garbage collector. So there is no difference between multiple processes
+        https://stackoverflow.com/questions/23272943/how-does-garbage-collection-work-with-multiple-running-processes-threads
+        """
+        if len(study.trials) % 10000 == 0:
             print("Run garbage collector")
             gc.collect()
 
@@ -504,8 +496,7 @@ class StackedTransformerOptimization:
     def show_study_results(study_name: str, config: StoSingleInputConfig,
                            percent_error_difference_l_h: float = 20,
                            percent_error_difference_l_s12: float = 20) -> None:
-        """
-        Show the results of a study.
+        """Show the results of a study.
 
         A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
 
@@ -532,20 +523,19 @@ class StackedTransformerOptimization:
         print(f"{l_s_absolute_error = }")
 
         fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (
-        t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None,
-        t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None),
-                                                     target_names=["volume in m³", "loss in W"])
+            t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None,
+            t.values[1] if -l_s_absolute_error < t.values[3] < l_s_absolute_error else None), target_names=["volume in m³", "loss in W"])
         fig.update_layout(
             title=f"{study_name}: Filtering l_h_absolute_error = {l_h_absolute_error * 100} %, l_s_absolute_error = {l_s_absolute_error * 100} %.")
         fig.write_html(
-            f"{config.working_directory}/{study_name}_error_lh_{l_h_absolute_error}_error_ls_{l_s_absolute_error}_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
+            f"{config.working_directory}/{study_name}_error_lh_{l_h_absolute_error}_error_ls_{l_s_absolute_error}"
+            f"_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
         fig.show()
 
     @staticmethod
     def show_study_results3(study_name: str, config: StoSingleInputConfig,
                             error_difference_inductance_sum_percent, storage: str = 'sqlite') -> None:
-        """
-        Show the results of a study.
+        """Show the results of a study.
 
         A local .html file is generated under config.working_directory to store the interactive plotly plots on disk.
 
@@ -574,25 +564,25 @@ class StackedTransformerOptimization:
         print(f"{error_difference_inductance_sum_percent = }")
 
         time_start = datetime.datetime.now()
-        print(f"start generating Pareto front....")
+        print("start generating Pareto front....")
         fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (
             t.values[0] if error_difference_inductance_sum_percent > t.values[2] else None,
-            t.values[1] if error_difference_inductance_sum_percent > t.values[2] else None),
-                                                     target_names=["volume in m³", "loss in W"])
-        fig.update_layout(
-            title=f"{study_name}: Filtering {error_difference_inductance_sum_percent} % of |err(Ls_12)| + |err(L_h)|")
+            t.values[1] if error_difference_inductance_sum_percent > t.values[2] else None), target_names=["volume in m³", "loss in W"])
+        fig.update_layout(title=f"{study_name}: Filtering {error_difference_inductance_sum_percent} % of |err(Ls_12)| + |err(L_h)|")
         time_stop = datetime.datetime.now()
         print(f"Finished generating Pareto front in time: {time_stop - time_start}")
 
         fig.write_html(
-            f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum_percent}%_{datetime.datetime.now().isoformat(timespec='minutes')}.html")
+            f"{config.working_directory}/{study_name}_error_diff_{error_difference_inductance_sum_percent}%_"
+            f"{datetime.datetime.now().isoformat(timespec='minutes')}.html")
         fig.show()
 
     @staticmethod
     def re_simulate_single_result(study_name: str, config: StoSingleInputConfig, number_trial: int,
                                   fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
                                   storage: str = "sqlite"):
-        """
+        """Re-Simulates a FEM simulation from an optuna study.
+
         Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
         number_trial design inside the study 'study_name'. Loads from an optuna study and is very slow.
 
@@ -605,9 +595,11 @@ class StackedTransformerOptimization:
         :type config: StoSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of
+            the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
+            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         :param storage: storage of the study
         :type storage: str
@@ -650,9 +642,9 @@ class StackedTransformerOptimization:
         primary_coil_turns = loaded_trial_params["primary_coil_turns"]
         # Note: int() is used to round down.
         number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
         window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
@@ -745,11 +737,6 @@ class StackedTransformerOptimization:
 
         geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, pre_visualize_geometry=True)
 
-        # geo.single_simulation(freq=target_and_fixed_parameters.fundamental_frequency,
-        #                       current=[target_and_fixed_parameters.i_peak_1, target_and_fixed_parameters.i_peak_2 / 2, target_and_fixed_parameters.i_peak_2 / 2],
-        #                       phi_deg=[target_and_fixed_parameters.i_phase_deg_1, target_and_fixed_parameters.i_phase_deg_2, target_and_fixed_parameters.i_phase_deg_2],
-        #                       show_fem_simulation_results=False)
-
         center_tapped_study_excitation = geo.center_tapped_pre_study(
             time_current_vectors=[[target_and_fixed_parameters.time_extracted_vec,
                                    target_and_fixed_parameters.current_extracted_1_vec],
@@ -764,7 +751,8 @@ class StackedTransformerOptimization:
     def re_simulate_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int,
                             fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5,
                             show_simulation_results: bool = False):
-        """
+        """Perform a single FEM simulation from a given pandas dataframe created by an optuna study.
+
         Performs a single simulation study (inductance, core loss, winding loss) and shows the geometry of
         number_trial design inside the study 'study_name'. Loads from a pandas dataframe and is very fast.
 
@@ -777,9 +765,11 @@ class StackedTransformerOptimization:
         :type config: StoSingleInputConfig
         :param number_trial: number of trial to simulate
         :type number_trial: int
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of
+            the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
+            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         :param show_simulation_results: visualize the simulation results of the FEM simulation
         :type show_simulation_results: bool
@@ -808,9 +798,9 @@ class StackedTransformerOptimization:
         primary_coil_turns = int(loaded_trial_params["params_primary_coil_turns"])
         # Note: int() is used to round down.
         number_rows_coil_winding = int((primary_coil_turns * (
-                    primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
         window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
-                number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
 
         primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
 
@@ -919,10 +909,149 @@ class StackedTransformerOptimization:
         return geo
 
     @staticmethod
+    def save_png_from_df(df: pd.DataFrame, config: StoSingleInputConfig, number_trial: int):
+        """
+        Create the geometry of specified trials_numbers.
+
+        Note: This function does not use the fft_filter_value_factor and mesh_accuracy from the config-file.
+        The values are given separate. In case of re-simulation, you may want to have more accurate results.
+
+        :param df: pandas dataframe with the loaded study
+        :type df: pandas dataframe
+        :param config: stacked transformer configuration file
+        :type config: StoSingleInputConfig
+        :param number_trial: number of trial to simulate
+        :type number_trial: int
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default]
+            removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :type fft_filter_value_factor: float
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter,
+            except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :type mesh_accuracy: float
+        :param show_simulation_results: visualize the simulation results of the FEM simulation
+        :type show_simulation_results: bool
+        """
+        target_and_fixed_parameters = femmt.optimization.StackedTransformerOptimization.calculate_fix_parameters(config)
+
+        loaded_trial_params = df.iloc[number_trial]
+
+        # suggest core geometry
+        core_inner_diameter = loaded_trial_params["params_core_inner_diameter"]
+        window_w = loaded_trial_params["params_window_w"]
+        air_gap_transformer = loaded_trial_params["params_air_gap_transformer"]
+        # inner_coil_insulation = trial_params["inner_coil_insulation"]
+        iso_left_core = loaded_trial_params["params_iso_left_core"]
+
+        primary_litz_wire = loaded_trial_params["params_primary_litz_wire"]
+
+        primary_litz_parameters = ff.litz_database()[primary_litz_wire]
+        primary_litz_diameter = 2 * primary_litz_parameters["conductor_radii"]
+
+        # Will always be calculated from the given parameters
+        available_width = window_w - iso_left_core - config.insulations.iso_right_core
+
+        # Re-calculation of top window coil
+        # Theoretically also 0 coil turns possible (number_rows_coil_winding must then be recalculated to avoid neg. values)
+        primary_coil_turns = int(loaded_trial_params["params_primary_coil_turns"])
+        # Note: int() is used to round down.
+        number_rows_coil_winding = int((primary_coil_turns * (
+            primary_litz_diameter + config.insulations.iso_primary_to_primary) - config.insulations.iso_primary_inner_bobbin) / available_width) + 1
+        window_h_top = config.insulations.iso_top_core + config.insulations.iso_bot_core + number_rows_coil_winding * primary_litz_diameter + (
+            number_rows_coil_winding - 1) * config.insulations.iso_primary_to_primary
+
+        primary_additional_bobbin = config.insulations.iso_primary_inner_bobbin - iso_left_core
+
+        # Maximum coil air gap depends on the maximum window height top
+        air_gap_coil = loaded_trial_params["params_air_gap_coil"]
+
+        # suggest categorical
+        core_material = Material(loaded_trial_params["params_material"])
+        foil_thickness = loaded_trial_params["params_foil_thickness"]
+
+        if config.max_transformer_total_height is not None:
+            # Maximum transformer height
+            window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
+            window_h_bot_min = config.window_h_bot_min_max_list[0]
+            if window_h_bot_min > window_h_bot_max:
+                print(f"{number_rows_coil_winding = }")
+                print(f"{window_h_top = }")
+                raise ValueError(f"{window_h_bot_min = } > {window_h_bot_max = }")
+
+            window_h_bot = loaded_trial_params["params_window_h_bot"]
+
+        else:
+            window_h_bot = loaded_trial_params["params_window_h_bot"]
+
+        geo = femmt.MagneticComponent(component_type=femmt.ComponentType.IntegratedTransformer,
+                                      working_directory=target_and_fixed_parameters.working_directories.fem_working_directory,
+                                      verbosity=femmt.Verbosity.Silent,
+                                      simulation_name=f"Single_Case_{loaded_trial_params['number']}")
+
+        core_dimensions = femmt.dtos.StackedCoreDimensions(core_inner_diameter=core_inner_diameter, window_w=window_w,
+                                                           window_h_top=window_h_top, window_h_bot=window_h_bot)
+
+        core = femmt.Core(core_type=femmt.CoreType.Stacked, core_dimensions=core_dimensions,
+                          material=core_material, temperature=config.temperature,
+                          frequency=target_and_fixed_parameters.fundamental_frequency,
+                          permeability_datasource=config.permeability_datasource,
+                          permeability_datatype=config.permeability_datatype,
+                          permeability_measurement_setup=config.permeability_measurement_setup,
+                          permittivity_datasource=config.permittivity_datasource,
+                          permittivity_datatype=config.permittivity_datatype,
+                          permittivity_measurement_setup=config.permittivity_measurement_setup)
+
+        geo.set_core(core)
+
+        air_gaps = femmt.AirGaps(femmt.AirGapMethod.Stacked, core)
+        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_coil,
+                             stacked_position=femmt.StackedPosition.Top)
+        air_gaps.add_air_gap(femmt.AirGapLegPosition.CenterLeg, air_gap_transformer,
+                             stacked_position=femmt.StackedPosition.Bot)
+        geo.set_air_gaps(air_gaps)
+
+        # set_center_tapped_windings() automatically places the condu
+        insulation, coil_window, transformer_window = femmt.functions_topologies.set_center_tapped_windings(
+            core=core,
+
+            # primary litz
+            primary_additional_bobbin=primary_additional_bobbin,
+            primary_turns=config.n_target,
+            primary_radius=primary_litz_parameters["conductor_radii"],
+            primary_number_strands=primary_litz_parameters["strands_numbers"],
+            primary_strand_radius=primary_litz_parameters["strand_radii"],
+
+            # secondary foil
+            secondary_parallel_turns=2,
+            secondary_thickness_foil=foil_thickness,
+
+            # insulation
+            iso_top_core=config.insulations.iso_top_core, iso_bot_core=config.insulations.iso_bot_core,
+            iso_left_core=iso_left_core, iso_right_core=config.insulations.iso_right_core,
+            iso_primary_to_primary=config.insulations.iso_primary_to_primary,
+            iso_secondary_to_secondary=config.insulations.iso_secondary_to_secondary,
+            iso_primary_to_secondary=config.insulations.iso_primary_to_secondary,
+            bobbin_coil_top=config.insulations.iso_top_core,
+            bobbin_coil_bot=config.insulations.iso_bot_core,
+            bobbin_coil_left=config.insulations.iso_primary_inner_bobbin,
+            bobbin_coil_right=config.insulations.iso_right_core,
+            center_foil_additional_bobbin=0e-3,
+            interleaving_scheme=InterleavingSchemesFoilLitz(loaded_trial_params['params_interleaving_scheme']),
+
+            # misc
+            interleaving_type=CenterTappedInterleavingType(loaded_trial_params['params_interleaving_type']),
+            primary_coil_turns=primary_coil_turns,
+            winding_temperature=config.temperature)
+
+        geo.set_insulation(insulation)
+        geo.set_winding_windows([coil_window, transformer_window])
+
+        geo.create_model(freq=target_and_fixed_parameters.fundamental_frequency, save_png=True)
+        shutil.copy(geo.mesh.hybrid_color_png_file, os.path.join(geo.file_data.working_directory, f'{config.working_directory}/drawings/{number_trial}.png'))
+
+    @staticmethod
     def thermal_simulation_from_geo(geo, thermal_config: ThermalConfig, flag_insulation: bool = False,
                                     show_visual_outputs: bool = True):
-        """
-        Performs the thermal simulation for the transformer.
+        """Perform the thermal simulation for the transformer.
 
         :param geo: geometry object
         :type geo: femmt.Component
@@ -943,15 +1072,13 @@ class StackedTransformerOptimization:
 
     @staticmethod
     def df_plot_pareto_front(df: pd.DataFrame, sum_inductance_error_percent: float):
-        """
-        Plots an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
+        """Plot an interactive Pareto diagram (losses vs. volume) to select the transformers to re-simulate.
 
         :param df: Dataframe, generated from an optuna study (exported by optuna)
         :type df: pd.Dataframe
         :param sum_inductance_error_percent: maximum allowed error of |error(L_s12)| + |error(L_h)| in %
         :type sum_inductance_error_percent: float
         """
-
         print(df.head())
         df_pareto = df[df["values_2"] < sum_inductance_error_percent]
 
@@ -997,8 +1124,8 @@ class StackedTransformerOptimization:
                            thermal_config: ThermalConfig,
                            current_waveforms_operating_points: List[CurrentWorkingPoint],
                            fft_filter_value_factor: float = 0.01, mesh_accuracy: float = 0.5):
-        """
-        Creates for several geometries and several working points a report.
+        """Create for several geometries and several working points a report.
+
         Simulates magnetoquasistatic and thermal for all given geometries and current working points.
         Summarizes the losses and temperatures for every working point and geometry.
 
@@ -1012,12 +1139,13 @@ class StackedTransformerOptimization:
         :type thermal_config: ThermalConfig
         :param current_waveforms_operating_points: Trial numbers in a list to re-simulate
         :type current_waveforms_operating_points: List[int]
-        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all amplitudes below 1 % of the maximum amplitude from the result-frequency list
+        :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
+            amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
-        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations, e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
+        :param mesh_accuracy: a mesh_accuracy of 0.5 is recommended. Do not change this parameter, except performing thousands of simulations,
+            e.g. a Pareto optimization. In this case, the value can be set e.g. to 0.8
         :type mesh_accuracy: float
         """
-
         report_df = pd.DataFrame()
 
         for trial_number in trials_numbers:
@@ -1048,8 +1176,7 @@ class StackedTransformerOptimization:
                         "total_losses"],
                     f"max_temp_core_{current_waveform.name}": thermal_result_dict["core_parts"]["total"]["max"],
                     f"max_temp_winding_{current_waveform.name}": thermal_result_dict["windings"]["total"]["max"],
-                    "volume": electromagnetoquasistatic_result_dict["misc"]["core_2daxi_total_volume"]
-                    }
+                    "volume": electromagnetoquasistatic_result_dict["misc"]["core_2daxi_total_volume"]}
 
                 simulation_waveforms_dict.update(simulation_waveform_dict)
 
@@ -1061,9 +1188,28 @@ class StackedTransformerOptimization:
         print(f"Report exported to {config.working_directory}/summary.csv")
 
     @staticmethod
-    def study_to_df(study_name: str, database_url: str):
+    def create_pngs(df: pd.DataFrame, trials_numbers: list[int], config: StoSingleInputConfig):
         """
-        Creates a dataframe from a study.
+        Create the geometry of specified trials_numbers and saves a screenshot in png format for each trial.
+
+        Storage format "trial_number.png" as follows:
+        f'{config.working_directory}/drawings/{number_trial}.png')
+
+        :param df: Dataframe, generated from an optuna study (exported by optuna)
+        :type df: pd.Dataframe
+        :param trials_numbers: List of trial numbers to re-simulate
+        :type trials_numbers: List[int]
+        :param config: stacked transformer optimization configuration file
+        :type config: StoSingleInputConfig
+        """
+        if not os.path.exists(f'{config.working_directory}/drawings'):
+            os.mkdir(f'{config.working_directory}/drawings')
+        for trial_number in trials_numbers:
+            femmt.StackedTransformerOptimization.save_png_from_df(df, config, number_trial=trial_number, show_simulation_results=False)
+
+    @staticmethod
+    def study_to_df(study_name: str, database_url: str):
+        """Create a dataframe from a study.
 
         :param study_name: name of study
         :type study_name: str

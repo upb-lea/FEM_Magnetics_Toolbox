@@ -1,3 +1,4 @@
+"""Integrated transformer optimization."""
 # Python libraries
 import os
 import json
@@ -22,25 +23,31 @@ import femmt
 
 class MyJSONEncoder(json.JSONEncoder):
     """
-    class to transform dicts with numpy arrays to json.
+    Class to transform dicts with numpy arrays to json.
+
     This class is used as cls=MyJSONEncoder by json.dump
 
-    See also:
+    See Also
+    --------
     https://python-forum.io/thread-35245.html
     """
+
     def default(self, o):
+        """Transform the dictionary to a .json file."""
         try:
-            return o.tolist() # works with any object that has .tolist() method
+            return o.tolist()  # works with any object that has .tolist() method
         except AttributeError:
             pass
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, o)
 
+
 def result_file_dict_to_dto(result_file_dict):
+    """Translate the result file dictionary to a data transfer object (DTO)."""
     result_file_dto = ItoSingleResultFile(
-        case = result_file_dict["case"],
-        air_gap_top = result_file_dict["air_gap_top"],
-        air_gap_bot= result_file_dict["air_gap_bot"],
+        case=result_file_dict["case"],
+        air_gap_top=result_file_dict["air_gap_top"],
+        air_gap_bot=result_file_dict["air_gap_bot"],
         air_gap_middle=result_file_dict["air_gap_middle"],
         n_p_top=int(result_file_dict["n_p_top"]),
         n_p_bot=int(result_file_dict["n_p_bot"]),
@@ -57,7 +64,7 @@ def result_file_dict_to_dto(result_file_dict):
         flux_density_top_max=result_file_dict["flux_density_top_max"],
         flux_density_bot_max=result_file_dict["flux_density_bot_max"],
         flux_density_stray_max=result_file_dict["flux_density_stray_max"],
-        p_hyst= result_file_dict["p_hyst"],
+        p_hyst=result_file_dict["p_hyst"],
         core_2daxi_total_volume=result_file_dict["core_2daxi_total_volume"],
         primary_litz_wire=result_file_dict["primary_litz_wire"],
         secondary_litz_wire=result_file_dict["secondary_litz_wire"],
@@ -68,19 +75,19 @@ def result_file_dict_to_dto(result_file_dict):
     return result_file_dto
 
 
-
 class IntegratedTransformerOptimization:
+    """Perform different optimization methods for the integrated transformer."""
+
     @staticmethod
     def plot(valid_design_list: List[ItoSingleResultFile]) -> None:
         """
-        Plots the pareto diagram out of the reluctance model calculation.
+        Plot the pareto diagram out of the reluctance model calculation.
 
         :param valid_design_list:
         :type valid_design_list: List[ItoSingleResultFile]
         :return: Plot
         :rtype: None
         """
-
         volume_list = []
         core_hyst_loss_list = []
         annotation_list = []
@@ -89,7 +96,6 @@ class IntegratedTransformerOptimization:
             volume_list.append(result.core_2daxi_total_volume)
             core_hyst_loss_list.append(result.total_loss)
             annotation_list.append(result.case)
-
 
         fo.plot_2d(volume_list, core_hyst_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
                    plot_color="red", annotations=annotation_list)
@@ -102,7 +108,8 @@ class IntegratedTransformerOptimization:
     @staticmethod
     def is_pareto_efficient_dumb(costs):
         """
-        Find the pareto-efficient points
+        Find the pareto-efficient points.
+
         :param costs: An (n_points, n_costs) array
         :return: A (n_points, ) boolean array, indicating whether each point is Pareto efficient
         """
@@ -136,7 +143,6 @@ class IntegratedTransformerOptimization:
         :return: calculated target and fix parameters
         :rtype: ItoTargetAndFixedParameters
         """
-
         # currents
         time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(config.time_current_1_vec)
         time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(config.time_current_2_vec)
@@ -176,14 +182,17 @@ class IntegratedTransformerOptimization:
         return target_and_fix_parameters
 
     class ReluctanceModel:
+        """Create and calculate the reluctance model for the integrated transformer."""
 
         class BruteForce:
+            """Brute force calculation for the integrated transformer."""
 
             #############################
             # initial optimization
             #############################
             @staticmethod
             def brute_force_calculation(config_file: ItoSingleInputConfig):
+                """Brute force calculation for the integrated transformer."""
                 case_number = 0
 
                 # 0. Empty folder
@@ -235,7 +244,7 @@ class IntegratedTransformerOptimization:
                      sweep_dto.l_h_target_value / (sweep_dto.n_target_value ** 2)]]
 
                 geometry_simulation_counter = 0
-                for count_core_material, material_name in enumerate(sweep_dto.t1_core_material):
+                for _, material_name in enumerate(sweep_dto.t1_core_material):
                     """
                     outer core material loop loads material properties from material database
                      * mu_r_abs
@@ -251,7 +260,6 @@ class IntegratedTransformerOptimization:
 
                     # get material data from material database.
                     material_dto = material_db.material_data_interpolation_to_dto(material_name, fundamental_frequency, config_file.temperature)
-
 
                     for count_geometry, t1d_core_geometry_material in enumerate(t2_core_geometry_sweep):
 
@@ -290,19 +298,18 @@ class IntegratedTransformerOptimization:
                             # https://optuna.readthedocs.io/en/stable/faq.html#what-happens-when-i-dynamically-alter-a-search-space
 
                             # n_p_top suggestion
-                            n_p_top_max = total_available_window_cross_section_top / (
-                                        2 * primary_litz["conductor_radii"]) ** 2
+                            n_p_top_max = total_available_window_cross_section_top / (2 * primary_litz["conductor_radii"]) ** 2
                             t1_n_p_top_max = np.arange(0, n_p_top_max + 1)
 
-                            for count_n_p_top, n_p_top in enumerate(t1_n_p_top_max):
+                            for _, n_p_top in enumerate(t1_n_p_top_max):
                                 winding_cross_section_n_p_top = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2
 
                                 winding_cross_section_n_p_top_max = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2
                                 n_s_top_max = int((total_available_window_cross_section_top - winding_cross_section_n_p_top_max) / (
-                                            2 * secondary_litz["conductor_radii"]) ** 2)
+                                    2 * secondary_litz["conductor_radii"]) ** 2)
                                 t1_n_s_top_max = np.arange(0, n_s_top_max + 1)
 
-                                for count_n_s_top, n_s_top in enumerate(t1_n_s_top_max):
+                                for _, n_s_top in enumerate(t1_n_s_top_max):
 
                                     total_available_window_cross_section_bot = window_h_bot * window_w - insulation_cross_section_bot
 
@@ -310,17 +317,16 @@ class IntegratedTransformerOptimization:
                                     n_p_bot_max = total_available_window_cross_section_bot / (2 * primary_litz["conductor_radii"]) ** 2
                                     t1_n_p_bot = np.arange(0, n_p_bot_max + 1)
 
-                                    for count_n_p_bot, n_p_bot in enumerate(t1_n_p_bot):
+                                    for _, n_p_bot in enumerate(t1_n_p_bot):
                                         winding_cross_section_n_p_bot = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2
 
                                         # n_s_bot suggestion
                                         winding_cross_section_n_p_bot_max = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2
-                                        n_s_bot_max = int((
-                                                        total_available_window_cross_section_bot - winding_cross_section_n_p_bot_max) / (
-                                                    2 * secondary_litz["conductor_radii"]) ** 2)
+                                        n_s_bot_max = int((total_available_window_cross_section_bot - winding_cross_section_n_p_bot_max) / (
+                                            2 * secondary_litz["conductor_radii"]) ** 2)
                                         t1_n_s_bot = np.arange(0, n_s_bot_max + 1)
 
-                                        for count_n_s_bot, n_s_bot in enumerate(t1_n_s_bot):
+                                        for _, n_s_bot in enumerate(t1_n_s_bot):
 
                                             core_top_bot_height = core_inner_diameter / 4
                                             core_cross_section = (core_inner_diameter / 2) ** 2 * np.pi
@@ -332,14 +338,11 @@ class IntegratedTransformerOptimization:
                                             # matrix reshaping
                                             t2_winding_matrix_transpose = np.transpose(t2_winding_matrix, (1, 0))
 
-                                            t2_reluctance_matrix = femmt.IntegratedTransformerOptimization.ReluctanceModel.BruteForce.t2_calculate_reluctance_matrix(
-                                                t2_inductance_matrix,
-                                                t2_winding_matrix,
-                                                t2_winding_matrix_transpose)
+                                            t2_reluctance_matrix = femmt.IntegratedTransformerOptimization.ReluctanceModel.BruteForce.\
+                                                t2_calculate_reluctance_matrix(t2_inductance_matrix, t2_winding_matrix, t2_winding_matrix_transpose)
 
                                             if np.linalg.det(t2_reluctance_matrix) != 0 and np.linalg.det(
-                                                    np.transpose(t2_winding_matrix)) != 0 and np.linalg.det(
-                                                t2_inductance_matrix) != 0:
+                                                    np.transpose(t2_winding_matrix)) != 0 and np.linalg.det(t2_inductance_matrix) != 0:
                                                 # calculate the flux
                                                 flux_top_vec, flux_bot_vec, flux_stray_vec = fr.flux_vec_from_current_vec(
                                                     current_extracted_1_vec,
@@ -388,25 +391,25 @@ class IntegratedTransformerOptimization:
                                                         minimum_sort_out_air_gap_length = 100e-6
 
                                                         try:
-                                                            l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct,
-                                                                                            minimum_air_gap_length,
-                                                                                            maximum_air_gap_length, args=(
-                                                                    core_inner_diameter, window_h_top, r_air_gap_top_target),
+                                                            l_top_air_gap = optimize.brentq(
+                                                                fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length,
+                                                                args=(core_inner_diameter, window_h_top, r_air_gap_top_target), full_output=True)[0]
+                                                            l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct, minimum_air_gap_length,
+                                                                                            maximum_air_gap_length, args=(core_inner_diameter, window_h_bot / 2,
+                                                                                                                          window_h_bot / 2,
+                                                                                                                          r_air_gap_bot_target),
                                                                                             full_output=True)[0]
-                                                            l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct,
-                                                                                            minimum_air_gap_length,
-                                                                                            maximum_air_gap_length, args=(
-                                                                    core_inner_diameter, window_h_bot / 2, window_h_bot / 2,
-                                                                    r_air_gap_bot_target), full_output=True)[0]
                                                             l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct,
                                                                                                minimum_air_gap_length,
-                                                                                               maximum_air_gap_length, args=(
-                                                                    core_inner_diameter, core_inner_diameter / 4, window_w,
-                                                                    r_air_gap_middle_target), full_output=True)[0]
+                                                                                               maximum_air_gap_length, args=(core_inner_diameter,
+                                                                                                                             core_inner_diameter / 4, window_w,
+                                                                                                                             r_air_gap_middle_target),
+                                                                                               full_output=True)[0]
                                                         except ValueError:
                                                             break
 
-                                                        if l_top_air_gap > minimum_sort_out_air_gap_length and l_bot_air_gap > minimum_sort_out_air_gap_length and l_middle_air_gap > minimum_sort_out_air_gap_length:
+                                                        if l_top_air_gap > minimum_sort_out_air_gap_length and l_bot_air_gap > minimum_sort_out_air_gap_length \
+                                                                and l_middle_air_gap > minimum_sort_out_air_gap_length:
                                                             p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter,
                                                                                                             window_h_top,
                                                                                                             window_w,
@@ -417,10 +420,8 @@ class IntegratedTransformerOptimization:
                                                                                                             material_dto.material_mu_r_imag_vec)
 
                                                             p_hyst_middle = fr.power_losses_hysteresis_cylinder_radial_direction_mu_r_imag(
-                                                                flux_stray_max, core_inner_diameter / 4,
-                                                                                core_inner_diameter / 2,
-                                                                                core_inner_diameter / 2 + window_w,
-                                                                fundamental_frequency,
+                                                                flux_stray_max, core_inner_diameter / 4, core_inner_diameter / 2,
+                                                                core_inner_diameter / 2 + window_w, fundamental_frequency,
                                                                 mu_r_abs, material_dto.material_flux_density_vec, material_dto.material_mu_r_imag_vec)
 
                                                             p_hyst_bot = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter,
@@ -439,10 +440,8 @@ class IntegratedTransformerOptimization:
                                                                 (window_h_bot + window_h_top + core_inner_diameter / 4),
                                                                 window_w)
 
-                                                            primary_effective_conductive_cross_section = primary_litz[
-                                                                                                             "strands_numbers"] * \
-                                                                                                         primary_litz[
-                                                                                                             "strand_radii"] ** 2 * np.pi
+                                                            primary_effective_conductive_cross_section = primary_litz["strands_numbers"] * \
+                                                                primary_litz["strand_radii"] ** 2 * np.pi
                                                             primary_effective_conductive_radius = np.sqrt(
                                                                 primary_effective_conductive_cross_section / np.pi)
                                                             primary_resistance = fr.resistance_solid_wire(
@@ -452,10 +451,8 @@ class IntegratedTransformerOptimization:
                                                                 material='Copper')
                                                             primary_dc_loss = primary_resistance * i_rms_1 ** 2
 
-                                                            secondary_effective_conductive_cross_section = secondary_litz[
-                                                                                                               "strands_numbers"] * \
-                                                                                                           secondary_litz[
-                                                                                                               "strand_radii"] ** 2 * np.pi
+                                                            secondary_effective_conductive_cross_section = secondary_litz["strands_numbers"] * \
+                                                                secondary_litz["strand_radii"] ** 2 * np.pi
                                                             secondary_effective_conductive_radius = np.sqrt(
                                                                 secondary_effective_conductive_cross_section / np.pi)
                                                             secondary_resistance = fr.resistance_solid_wire(
@@ -508,7 +505,7 @@ class IntegratedTransformerOptimization:
             @staticmethod
             def t2_calculate_reluctance_matrix(t2_inductance_matrix, t2_winding_matrix, t2_winding_matrix_transpose):
                 """
-                Calculates the inductance matrix out of reluctance matrix and winding matrix.
+                Calculate the inductance matrix out of reluctance matrix and winding matrix.
 
                 :param t2_inductance_matrix: matrix of transformer inductance
                 :param t2_winding_matrix: matrix of transformer windings
@@ -523,7 +520,6 @@ class IntegratedTransformerOptimization:
                 returns reluctance matrix e.g.
                 r = [ [], [] ]
                 """
-
                 # invert inductance matrix
                 t2_inductance_matrix_invert = np.linalg.inv(t2_inductance_matrix)
 
@@ -562,7 +558,7 @@ class IntegratedTransformerOptimization:
             @staticmethod
             def calculate_sweep_tensors(input_parameters_dto: ItoSingleInputConfig) -> SweepTensor:
                 """
-                This method calculates the SweepTensor from the integrated-transformer input config file (ItoSingleInputConfig).
+                Calculate the SweepTensor from the integrated-transformer input config file (ItoSingleInputConfig).
 
                 ItoSingleInputConfig: core_inner_diameter = [10e-3, 30e-3, 5]
                 ->> SweepTensor: t1_core_inner_diameter = [10e-3, 15e-3, 20e-3, 25e-3, 30e-3]
@@ -572,7 +568,6 @@ class IntegratedTransformerOptimization:
                 :return: returns the sweep tensor as mentioned in the example
                 :rtype: SweepTensor
                 """
-
                 sweep_tensor = SweepTensor(
                     # tensors: outer core geometry and material
                     t1_window_h_top=np.linspace(input_parameters_dto.window_h_top_min_max_list[0],
@@ -606,6 +601,7 @@ class IntegratedTransformerOptimization:
         #############################
 
         class NSGAII:
+            """NSGAII algorithm to find the pareto front."""
 
             ##############################
             # simulation
@@ -619,7 +615,8 @@ class IntegratedTransformerOptimization:
 
                 Using optuna. Some hints:
 
-                 * returning failed trails by using return float('nan'), float('nan'), see https://optuna.readthedocs.io/en/stable/faq.html#how-are-nans-returned-by-trials-handled
+                 * returning failed trails by using return float('nan'), float('nan'),
+                   see https://optuna.readthedocs.io/en/stable/faq.html#how-are-nans-returned-by-trials-handled
                  * speed up the search for NSGA-II algorithm with dynamic alter the search space, see https://optuna.readthedocs.io/en/stable/faq.html#id10
 
 
@@ -629,7 +626,6 @@ class IntegratedTransformerOptimization:
                 :param target_and_fixed_parameters: target and fix parameters
                 :type target_and_fixed_parameters: ItoTargetAndFixedParameters
                 """
-
                 # pass multiple arguments to the objective function used by optuna
                 # https://www.kaggle.com/general/261870
 
@@ -678,7 +674,7 @@ class IntegratedTransformerOptimization:
                 # n_s_top_suggestion
                 winding_cross_section_n_p_top_max = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2
                 n_s_top_max = int((total_available_window_cross_section_top - winding_cross_section_n_p_top_max) / (
-                            2 * secondary_litz["conductor_radii"]) ** 2)
+                    2 * secondary_litz["conductor_radii"]) ** 2)
                 n_s_top = trial.suggest_int("n_s_top", 0, n_s_top_max)
 
                 # n_p_bot suggestion
@@ -687,14 +683,11 @@ class IntegratedTransformerOptimization:
 
                 # n_s_bot suggestion
                 winding_cross_section_n_p_bot_max = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2
-                n_s_bot_max = int((total_available_window_cross_section_bot - winding_cross_section_n_p_bot_max) / (
-                            2 * secondary_litz["conductor_radii"]) ** 2)
+                n_s_bot_max = int((total_available_window_cross_section_bot - winding_cross_section_n_p_bot_max) / (2 * secondary_litz["conductor_radii"]) ** 2)
                 n_s_bot = trial.suggest_int("n_s_bot", 0, n_s_bot_max)
 
-                winding_cross_section_top = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_top * (
-                            2 * secondary_litz["conductor_radii"]) ** 2
-                winding_cross_section_bot = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_bot * (
-                            2 * secondary_litz["conductor_radii"]) ** 2
+                winding_cross_section_top = n_p_top * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_top * (2 * secondary_litz["conductor_radii"]) ** 2
+                winding_cross_section_bot = n_p_bot * (2 * primary_litz["conductor_radii"]) ** 2 + n_s_bot * (2 * secondary_litz["conductor_radii"]) ** 2
 
                 thousand_simulations = trial.number / 1000
 
@@ -719,8 +712,8 @@ class IntegratedTransformerOptimization:
                                                                                            config.n_target)
                     t2_reluctance_matrix = fr.calculate_reluctance_matrix(t2_winding_matrix, target_inductance_matrix)
 
-                    core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(core_inner_diameter, (
-                            window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
+                    core_2daxi_total_volume = fr.calculate_core_2daxi_total_volume(core_inner_diameter,
+                                                                                   (window_h_bot + window_h_top + core_inner_diameter / 4), window_w)
 
                     if np.linalg.det(t2_reluctance_matrix) != 0 and np.linalg.det(
                             np.transpose(t2_winding_matrix)) != 0 and np.linalg.det(target_inductance_matrix) != 0:
@@ -775,20 +768,16 @@ class IntegratedTransformerOptimization:
                                 # to search for the zero.
                                 # Note: setting full output to true and taking object [0] is only
                                 # to avoid linting error!
-                                l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct, minimum_air_gap_length,
-                                                                maximum_air_gap_length,
-                                                                args=(
-                                                                core_inner_diameter, window_h_top, r_air_gap_top_target),
-                                                                full_output=True)[0]
+                                l_top_air_gap = optimize.brentq(fr.r_air_gap_round_inf_sct, minimum_air_gap_length, maximum_air_gap_length,
+                                                                args=(core_inner_diameter, window_h_top, r_air_gap_top_target), full_output=True)[0]
 
                                 l_bot_air_gap = optimize.brentq(fr.r_air_gap_round_round_sct, minimum_air_gap_length,
-                                                                maximum_air_gap_length, args=(
-                                        core_inner_diameter, window_h_bot / 2, window_h_bot / 2, r_air_gap_bot_target),
-                                                                full_output=True)[0]
+                                                                maximum_air_gap_length, args=(core_inner_diameter, window_h_bot / 2, window_h_bot / 2,
+                                                                                              r_air_gap_bot_target), full_output=True)[0]
 
                                 l_middle_air_gap = optimize.brentq(fr.r_air_gap_tablet_cylinder_sct, minimum_air_gap_length,
-                                                                   maximum_air_gap_length, args=(
-                                        core_inner_diameter, core_inner_diameter / 4, window_w, r_air_gap_middle_target),
+                                                                   maximum_air_gap_length, args=(core_inner_diameter,
+                                                                                                 core_inner_diameter / 4, window_w, r_air_gap_middle_target),
                                                                    full_output=True)[0]
 
                             except ValueError:
@@ -798,7 +787,8 @@ class IntegratedTransformerOptimization:
                             if l_top_air_gap > core_inner_diameter or l_bot_air_gap > core_inner_diameter:
                                 return float('nan'), float('nan')
 
-                            if l_top_air_gap >= minimum_sort_out_air_gap_length and l_bot_air_gap >= minimum_sort_out_air_gap_length and l_middle_air_gap >= minimum_sort_out_air_gap_length:
+                            if l_top_air_gap >= minimum_sort_out_air_gap_length and l_bot_air_gap >= minimum_sort_out_air_gap_length \
+                                    and l_middle_air_gap >= minimum_sort_out_air_gap_length:
                                 p_hyst_top = fr.hyst_losses_core_half_mu_r_imag(core_inner_diameter, window_h_top, window_w,
                                                                                 material_data.material_mu_r_abs,
                                                                                 flux_top_max,
@@ -835,8 +825,7 @@ class IntegratedTransformerOptimization:
                                                                               material='Copper')
                                 primary_dc_loss = primary_resistance * target_and_fixed_parameters.i_rms_1 ** 2
 
-                                secondary_effective_conductive_cross_section = secondary_litz["strands_numbers"] * \
-                                                                               secondary_litz["strand_radii"] ** 2 * np.pi
+                                secondary_effective_conductive_cross_section = secondary_litz["strands_numbers"] * secondary_litz["strand_radii"] ** 2 * np.pi
                                 secondary_effective_conductive_radius = np.sqrt(
                                     secondary_effective_conductive_cross_section / np.pi)
                                 secondary_resistance = fr.resistance_solid_wire(core_inner_diameter, window_w,
@@ -906,7 +895,7 @@ class IntegratedTransformerOptimization:
             def start_study(study_name: str, config: ItoSingleInputConfig, number_trials: int,
                             storage: str = None) -> None:
                 """
-                Start a study to optimize an integrated transformer
+                Start a study to optimize an integrated transformer.
 
                 Note: Due to performance reasons, the study is calculated in RAM.
                 After finishing the study, the results are copied to sqlite or mysql database by the use of a new study.
@@ -920,14 +909,12 @@ class IntegratedTransformerOptimization:
                 :param storage: "sqlite" or "mysql"
                 :type storage: str
                 """
-
                 # calculate the target and fixed parameters
                 # and generate the folder structure inside this function
                 target_and_fixed_parameters = femmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(config)
 
                 # Wrap the objective inside a lambda and call objective inside it
-                func = lambda trial: femmt.IntegratedTransformerOptimization.ReluctanceModel.NSGAII.objective(trial, config,
-                                                                                   target_and_fixed_parameters)
+                func = lambda trial: femmt.IntegratedTransformerOptimization.ReluctanceModel.NSGAII.objective(trial, config, target_and_fixed_parameters)
 
                 # Pass func to Optuna studies
                 study_in_memory = optuna.create_study(directions=["minimize", "minimize"],
@@ -935,7 +922,8 @@ class IntegratedTransformerOptimization:
                                                       sampler=optuna.samplers.NSGAIISampler(),
                                                       )
 
-                # set logging verbosity: https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
+                # set logging verbosity:
+                # https://optuna.readthedocs.io/en/stable/reference/generated/optuna.logging.set_verbosity.html#optuna.logging.set_verbosity
                 # .INFO: all messages (default)
                 # .WARNING: fails and warnings
                 # .ERROR: only errors
@@ -976,7 +964,7 @@ class IntegratedTransformerOptimization:
 
                 # Wrap the objective inside a lambda and call objective inside it
                 func = lambda trial: femmt.optimization.IntegratedTransformerOptimization.ReluctanceModel.NSGAII.objective(trial, config,
-                                                                                   target_and_fixed_parameters)
+                                                                                                                           target_and_fixed_parameters)
 
                 study = optuna.create_study(study_name=study_name, storage=f"sqlite:///study_{study_name}.sqlite3",
                                             load_if_exists=True)
@@ -1020,13 +1008,13 @@ class IntegratedTransformerOptimization:
                                             storage=f"sqlite:///{config.working_directory}/study_{study_name}.sqlite3",
                                             load_if_exists=True)
 
-                dto_list = [op.OptunaFemmtParser.parse(frozen_object) for frozen_object in study.trials if frozen_object.state == optuna.trial.TrialState.COMPLETE]
+                dto_list = [op.OptunaFemmtParser.parse(frozen_object) for frozen_object in study.trials \
+                            if frozen_object.state == optuna.trial.TrialState.COMPLETE]
 
                 return dto_list
 
             @staticmethod
-            def load_study_best_trials_to_dto(study_name: str, config: ItoSingleInputConfig) -> List[
-                ItoSingleResultFile]:
+            def load_study_best_trials_to_dto(study_name: str, config: ItoSingleInputConfig) -> List[ItoSingleResultFile]:
                 """
                 Load the best trials (Pareto front) of a study.
 
@@ -1053,8 +1041,8 @@ class IntegratedTransformerOptimization:
         #############################
 
         @staticmethod
-        def filter_loss_list(valid_design_list: List[ItoSingleResultFile], factor_min_dc_losses: float = 1.2) -> \
-        List[ItoSingleResultFile]:
+        def filter_loss_list(valid_design_list: List[ItoSingleResultFile], factor_min_dc_losses: float = 1.2) -> List[ItoSingleResultFile]:
+            """Remove designs with too high losses compared to the minimum losses."""
             # figure out pareto front
             # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
@@ -1085,8 +1073,8 @@ class IntegratedTransformerOptimization:
             return filtered_design_dto_list
 
         @staticmethod
-        def filter_max_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], max_air_gap_length=1e-6) -> List[
-            ItoSingleResultFile]:
+        def filter_max_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], max_air_gap_length=1e-6) -> List[ItoSingleResultFile]:
+            """Remove designs with a too large air gap."""
             filtered_dtos = []
             for dto in dto_list_to_filter:
                 if dto.air_gap_middle < max_air_gap_length and dto.air_gap_top < max_air_gap_length and dto.air_gap_bot < max_air_gap_length:
@@ -1094,14 +1082,13 @@ class IntegratedTransformerOptimization:
             return filtered_dtos
 
         @staticmethod
-        def filter_min_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], min_air_gap_length=1e-6) -> List[
-            ItoSingleResultFile]:
+        def filter_min_air_gap_length(dto_list_to_filter: List[ItoSingleResultFile], min_air_gap_length=1e-6) -> List[ItoSingleResultFile]:
+            """Remove designs with a too small air gap."""
             filtered_dtos = []
             for dto in dto_list_to_filter:
                 if dto.air_gap_middle > min_air_gap_length and dto.air_gap_top > min_air_gap_length and dto.air_gap_bot > min_air_gap_length:
                     filtered_dtos.append(dto)
             return filtered_dtos
-
 
         #############################
         # save and load
@@ -1110,7 +1097,7 @@ class IntegratedTransformerOptimization:
         @staticmethod
         def save_dto_list(result_dto_list: List[ItoSingleResultFile], filepath: str):
             """
-            Save the ItoSingleResultFile-List to the file structure
+            Save the ItoSingleResultFile-List to the file structure.
 
             :param result_dto_list:
             :type result_dto_list: List[ItoSingleResultFile]
@@ -1120,7 +1107,7 @@ class IntegratedTransformerOptimization:
             if not os.path.exists(filepath):
                 os.mkdir(filepath)
 
-            for count, dto in enumerate(result_dto_list):
+            for _, dto in enumerate(result_dto_list):
                 file_name = os.path.join(filepath, f"case_{dto.case}.json")
 
                 result_dict = dataclasses.asdict(dto)
@@ -1155,7 +1142,7 @@ class IntegratedTransformerOptimization:
         @staticmethod
         def load_list(filepath: str) -> List[ItoSingleResultFile]:
             """
-            Loads the list of the reluctance models from the folder structure.
+            Load the list of the reluctance models from the folder structure.
 
             :param filepath: filepath
             :type filepath: str
@@ -1178,7 +1165,7 @@ class IntegratedTransformerOptimization:
         @staticmethod
         def load_unfiltered_results(working_directory: str) -> List[ItoSingleResultFile]:
             """
-            Loads the results of the reluctance model and returns the ItoSingleResultFiles as a list.
+            Load the results of the reluctance model and returns the ItoSingleResultFiles as a list.
 
             :param working_directory: working directory
             :type working_directory: str
@@ -1192,7 +1179,7 @@ class IntegratedTransformerOptimization:
         @staticmethod
         def load_filtered_results(working_directory: str) -> List[ItoSingleResultFile]:
             """
-            Loads the results of the reluctance model and returns the ItoSingleResultFiles as a list.
+            Load the results of the reluctance model and returns the ItoSingleResultFiles as a list.
 
             :param working_directory: working directory
             :type working_directory: str
@@ -1204,23 +1191,21 @@ class IntegratedTransformerOptimization:
             return femmt.IntegratedTransformerOptimization.ReluctanceModel.load_list(integrated_transformer_reluctance_model_results_directory)
 
     class FemSimulation:
+        """Group functions to perform FEM simulations."""
 
         @staticmethod
         def simulate(config_dto: ItoSingleInputConfig, simulation_dto_list: List[ItoSingleResultFile], visualize: bool = False):
-
+            """Perform the FEM simulation."""
             femmt.integrated_transformer_fem_simulations_from_result_dtos(config_dto, simulation_dto_list, visualize)
-
 
         @staticmethod
         def filter_loss(fem_simulations_dict_list: List[Dict]):
-            """"
-            Placeholder function for future filtering the pareto-front
-            """
-
+            """Future use placeholder. Filter the pareto-front."""
             return fem_simulations_dict_list
 
         @staticmethod
         def filter_loss_list(fem_simulations_dict_list: List[Dict], factor_min_dc_losses: float = 0.5) -> List[Dict]:
+            """Remove too high losses from the given dictionary."""
             # figure out pareto front
             # pareto_volume_list, pareto_core_hyst_list, pareto_dto_list = self.pareto_front(volume_list, core_hyst_loss_list, valid_design_list)
 
@@ -1255,22 +1240,19 @@ class IntegratedTransformerOptimization:
         @staticmethod
         def plot(result_log_dict_list: List[Dict]) -> None:
             """
-            Plots the pareto diagram out of the fem simulation results.
+            Plot the pareto diagram out of the fem simulation results.
 
             :param result_log_dict_list: list of result_log dicts
             :type result_log_dict_list: str
             :return: Plot
             :rtype: None
             """
-
             data_dict_list = []
 
             volume_list = []
             total_loss_list = []
             total_cost_list = []
             annotation_list = []
-
-
 
             for result_log_dict in result_log_dict_list:
 
@@ -1282,7 +1264,6 @@ class IntegratedTransformerOptimization:
 
             fo.plot_2d(volume_list, total_loss_list, "Volume in m³", "Losses in W", "Pareto Diagram",
                        plot_color="red", annotations=annotation_list)
-
 
         #############################
         # save and load
@@ -1318,43 +1299,44 @@ class IntegratedTransformerOptimization:
         @staticmethod
         def load_unfiltered_results(working_directory: str) -> List[Dict]:
             """
-            loads the fem simulations results as a dict into a list.
+            Load the FEM simulations results as a dict into a list.
 
             :param working_directory: file path
             :type working_directory: str
             :return:
             :rtype: List[Dict]
             """
-
             filepath = os.path.join(working_directory, "02_fem_simulation_results")
             return femmt.IntegratedTransformerOptimization.FemSimulation.load(filepath)
 
         @staticmethod
         def load_filtered_results(working_directory: str) -> List[Dict]:
             """
-            loads the fem simulations results as a dict into a list.
+            Load the FEM simulation results as a dict into a list.
 
             :param working_directory: file path
             :type working_directory: str
             :return:
             :rtype: List[Dict]
             """
-
             filepath = os.path.join(working_directory, "02_fem_simulation_results_filtered")
             return femmt.IntegratedTransformerOptimization.FemSimulation.load(filepath)
 
         @staticmethod
         def save_filtered_results(filtered_dict_list: List[Dict], working_directory: str):
-
-            for count, result_log in enumerate(filtered_dict_list):
+            """Save filtered FEM simulation results to hard disk."""
+            for _, result_log in enumerate(filtered_dict_list):
                 json_filepath = os.path.join(working_directory, "02_fem_simulation_results_filtered", f"case_{result_log['case']}.json")
 
                 with open(json_filepath, "w") as outfile:
                     json.dump(result_log, outfile)
 
     class ThermalSimulation:
+        """Perform thermal simulations."""
+
         @staticmethod
         def simulation(config_dto: ItoSingleInputConfig, result_log_dict_list: List[Dict], visualize: bool = False):
+            """Perform a thermal simulation."""
             all_filtered_reluctance_dtos = femmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(
                 config_dto.working_directory)
 
@@ -1371,7 +1353,7 @@ class IntegratedTransformerOptimization:
 
         @staticmethod
         def load_unfiltered_simulations(working_directory: str) -> List[Dict]:
-
+            """Load all simulations."""
             filepath = os.path.join(working_directory, "03_fem_thermal_simulation_results")
 
             return femmt.IntegratedTransformerOptimization.FemSimulation.load(filepath)
@@ -1379,7 +1361,7 @@ class IntegratedTransformerOptimization:
         @staticmethod
         def filter_max_temperature(thermal_result_log_list: List[Dict], max_core_temperature: float, max_winding_temperature: float) -> List[Dict]:
             """
-            Filters out designs with too high core and winding temperatures.
+            Filter out designs with too high core and winding temperatures.
 
             :param thermal_result_log_list: list of thermal result logs
             :type thermal_result_log_list: List[Dict]
@@ -1408,7 +1390,6 @@ class IntegratedTransformerOptimization:
             :return: List of FEM result-logs
             :rtype: List[Dict]
             """
-
             common_case_list = []
             for thermal_fem_result in thermal_fem_results_list:
                 for fem_result in fem_results_list:
@@ -1417,6 +1398,3 @@ class IntegratedTransformerOptimization:
                         break
 
             return common_case_list
-
-
-

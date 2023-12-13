@@ -1,3 +1,4 @@
+"""Advanced example to show an excitation sweep of multiple frequencies for an inductor."""
 import numpy as np
 
 import femmt as fmt
@@ -6,7 +7,7 @@ import os
 
 
 def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-
+    """Advanced example to show an excitation sweep of multiple frequencies for an inductor."""
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)

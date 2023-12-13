@@ -1,3 +1,4 @@
+"""DTOs for the integrated transformer optimization."""
 # python libraries
 from dataclasses import dataclass
 from typing import List
@@ -15,6 +16,7 @@ class ItoSingleInputConfig:
     Input parameters are the target parameters, current vectors and the parameters to sweep.
     Also specifies the working directory where to store the results.
     """
+
     l_s_target: float
     l_h_target: float
     n_target: float
@@ -33,9 +35,8 @@ class ItoSingleInputConfig:
 
 @dataclass
 class WorkingDirectories:
-    """
-    Working directories for an integrated transformer optimization
-    """
+    """Working directories for an integrated transformer optimization."""
+
     fem_working_directory: str
     reluctance_model_results_directory: str
     fem_simulation_results_directory: str
@@ -47,8 +48,10 @@ class WorkingDirectories:
 class ItoTargetAndFixedParameters:
     """
     Integrated-transformer optimization target and fixed parameters.
+
     These parameters are calculated from the integrated-transformer input configuration (ItoSingleInputConfig).
     """
+
     i_rms_1: float
     i_rms_2: float
     material_dto_curve_list: List[MaterialCurve]
@@ -68,6 +71,7 @@ class SweepTensor:
     ItoSingleInputConfig: core_inner_diameter = [10e-3, 30e-3, 5]
     ->> SweepTensor: t1_core_inner_diameter = [10e-3, 15e-3, 20e-3, 25e-3, 30e-3]
     """
+
     t1_window_h_top: np.ndarray
     t1_window_h_bot: np.ndarray
     t1_window_w: np.ndarray
@@ -89,6 +93,7 @@ class ItoSingleResultFile:
 
     Contains concrete geometry parameters as well as the calculated results.
     """
+
     case: int
     # geometry parameters
     air_gap_top: float

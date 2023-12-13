@@ -1,3 +1,4 @@
+"""Init file for the FEMMT package."""
 from femmt.enumerations import *
 from femmt.logparser import *
 from femmt.data import *
