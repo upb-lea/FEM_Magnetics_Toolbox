@@ -1122,6 +1122,29 @@ class TwoDaxiSymmetric:
             self.femmt_print(f"{needed_number_of_turns = }")
             raise Exception("Winding mismatch. Probably too many turns that do not fit in the winding window")
 
+    def draw_region_single(self):
+        """
+        Region for Boundary Condition: Draws a rectangular outer region. Needed for air gaps in the outer flux path.
+
+        Currently not used. Code kept for future implementations
+        """
+        self.p_region_bound[0][:] = [-self.r_outer * self.mesh_data.padding,
+                                     -(self.core.window_h / 2 + self.core.core_thickness) * self.mesh_data.padding,
+                                     0,
+                                     self.mesh_data.c_core * self.mesh_data.padding]
+        self.p_region_bound[1][:] = [self.r_outer * self.mesh_data.padding,
+                                     -(self.core.window_h / 2 + self.core.core_thickness) * self.mesh_data.padding,
+                                     0,
+                                     self.mesh_data.c_core * self.mesh_data.padding]
+        self.p_region_bound[2][:] = [-self.r_outer * self.mesh_data.padding,
+                                     (self.core.window_h / 2 + self.core.core_thickness) * self.mesh_data.padding,
+                                     0,
+                                     self.mesh_data.c_core * self.mesh_data.padding]
+        self.p_region_bound[3][:] = [self.r_outer * self.mesh_data.padding,
+                                     (self.core.window_h / 2 + self.core.core_thickness) * self.mesh_data.padding,
+                                     0,
+                                     self.mesh_data.c_core * self.mesh_data.padding]
+
     def draw_insulations(self):
         """
         Draw insulations.
