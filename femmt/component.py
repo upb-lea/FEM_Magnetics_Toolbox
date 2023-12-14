@@ -8,11 +8,9 @@ import json
 import warnings
 import inspect
 import re
-import matplotlib.pyplot as plt
 import pandas as pd
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime
-from scipy.integrate import quadrature
+# from typing import List, Dict, Optional, Tuple
+# from datetime import datetime
 import time
 import logging
 from typing import List, Dict, Optional, Tuple
@@ -24,14 +22,14 @@ from matplotlib import pyplot as plt
 # Third party libraries
 from onelab import onelab
 import materialdatabase as mdb
-import numpy as np
+# import numpy as np
 
 # Local libraries
 import femmt.functions as ff
 from femmt.constants import *
 from femmt.mesh import Mesh
 from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
-from femmt.enumerations import *
+# from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
 from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire, read_results_log
@@ -53,14 +51,11 @@ class MagneticComponent:
     onelab_folder_path: str = None
     silent: bool = False
 
-
-
-
-    def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
+    def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain,
+                 component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
                  clean_previous_results: bool = True, verbosity: Verbosity = 2, is_gui: bool = False,
                  simulation_name: Optional[str] = None, wwr_enabled=True):
         # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
-
         """
         Initialize the magnetic component.
 
@@ -119,10 +114,8 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Component Geometry
-
         self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" (or "three-phase-transformer")
-        self.simulation_type = simulation_type #frequencd domain # time domain
-
+        self.simulation_type = simulation_type  # frequencd domain # time domain
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
@@ -142,7 +135,7 @@ class MagneticComponent:
         self.plot_fields = "standard"  # can be "standard" or False
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Excitation Parameters
+        # Excitation Parameters for freq and time domain
         # Empty lists will be set when a winding window is added to the magnetic component
         self.imposed_reduced_frequency = None
         self.flag_excitation_type = None
@@ -151,15 +144,13 @@ class MagneticComponent:
         self.current_density = []               # Defined for every conductor
         self.voltage = []                       # Defined for every conductor
         self.time = []                          # Defined for time domain simulation
-        self.average_currents = []              #Definded for average currents for every winding
-        self.rms_currents = []                  #definded for rms currents for every winding
-        self.timesteps_per_periode = None
+        self.average_currents = []              # Defined for average currents for every winding
+        self.rms_currents = []                  # Defined for rms currents for every winding
+        self.time_steps_per_period = None
         self.time_period = None
-        self.initial_time = None
-        self.maxtime = None
-        self.Nb_steps = None
-
-
+        self.initial_time = None  # Default 0
+        self.max_time = None  # Simulation's duration
+        self.nb_steps = None  # Number of time steps
         self.frequency = None
         self.phase_deg = None  # Default is zero, Defined for every conductor
         self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
@@ -1081,88 +1072,61 @@ class MagneticComponent:
             for num in range(len(self.windings)):
                 self.red_freq[num] = 0
 
-    def excitation_time_domain(self, frequency: float, current_list: List[List[float]], time_list: List[float], initial_time: float, number_of_periods : int, NbSteps: int, phase_deg_list: List = None, ex_type: str = 'current',
-                   plot_interpolation: bool = False, imposed_red_f=0):
+    def excitation_time_domain(self, frequency: float, current_list: List[List[float]], time_list: List[float],
+                               number_of_periods: int, phase_deg_list: List = None, ex_type: str = 'current',
+                               plot_interpolation: bool = False, imposed_red_f=0):
         """
-         Excites the electromagnetic problem in the time domain with specified current and time settings.
+        Excites the electromagnetic problem in the time domain with specified current and time settings.
 
-        Parameters:
-        - frequency (float): The frequency of the excitation in Hz.
-        - current_list (List[List[float]]): A nested list containing current values for each time step and winding.
-        - time_list (List[List[float]]): A nested list containing the corresponding time values for each current value.
-        - time_period (float): The total time period of the excitation in seconds.
-        - initial_time (float): The starting time of the excitation in seconds of simulation.
-        - timemax (float): The maximum time for the excitation in seconds of simulation.
-        - NbSteps (int): The total number of time steps within the provided time period of simulation.
-        - delta_time (float): The time interval between each time step in seconds.
-         time_list : List[List[float]], time_period: float,
-        :param plot_interpolation:
-        :param frequency: Frequency
+        :param frequency: The frequency of the excitation in Hz.
         :type frequency: float
-        :param time_period : time period
-        :type time_period : float
-        :param initial_time : initial time
-        :type initial_time : float
-        :param timemax : time max
-        :type timemax : float
-        :param NbSteps : Number of steps
-        :type NbSteps : float
-        :param delta_time : dt
-        :type delta_time : float
-        :param current_list : A nested list containing current values for each time step and winding
-        :type current_list : (List[List[float]]) as for every winding
-        :param time_list : A nested list containing the corresponding time values for each current value.
-        :type time_list : (List[List[float]]) as for every winding
-        :param phase_deg_list: Current phases in degree according to the current amplitudes (according to windings)
+        :param current_list: A nested list containing current values for each time step and winding.
+        :type current_list: List[List[float]]
+        :param time_list: A nested list containing the corresponding time values for each current value.
+        :type time_list: List[float]
+        :param number_of_periods: The total number of periods within the provided time period of simulation.
+        :type number_of_periods: int
+        :param phase_deg_list: Current phases in degrees according to the current amplitudes (according to windings).
         :type phase_deg_list: List
-        :param ex_type: Excitation type. 'Current' implemented only. Future use may: 'voltage' and 'current_density'
+        :param ex_type: Excitation type. 'current' implemented only. Future use may include 'voltage' and 'current_density'.
         :type ex_type: str
-        :param imposed_red_f:
-        :type imposed_red_f:
-
+        :param plot_interpolation: If True, plot the interpolation between the provided current values.
+        :type plot_interpolation: bool
+        :param imposed_red_f: An optional parameter for future use.
+        :type imposed_red_f: float
         """
-        # if len(current_list) != len(time_list):
-        #     raise ValueError("The length of the current_list does not match the length of the time_list.")
+        if any(len(sublist) != len(time_list) for sublist in current_list):
+            raise ValueError("The length of at least one sublist in current_list does not match the length of time_list.")
 
         self.femmt_print(f"\n---\n"
-              f"Excitation: \n"
-              f"Frequency: {frequency}\n"
-              #f"Time_Period(sec): {time_period}\n"
-              f"Initial_time(sec): {initial_time}\n"      
-              f"Maximum Time(sec): {number_of_periods}\n"
-              f"NumberofSteps: {NbSteps}\n"
-              #f"delta_time(sec): {delta_time}\n"
-              f"Current(s): {current_list}\n"
-              f"Time(s): {time_list}\n"
-              f"Phase(s): {phase_deg_list}\n")
-
+                         f"Excitation: \n"
+                         f"Frequency: {frequency}\n"     
+                         f"Maximum Time(sec): {number_of_periods}\n"
+                         f"Current(s): {current_list}\n"
+                         f"Time(s): {time_list}\n"
+                         f"Phase(s): {phase_deg_list}\n")
 
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.permeability["datasource"] != MaterialDataSource.Custom:
-            self.core.update_core_material_pro_file(frequency, self.file_data.electro_magnetic_folder_path, plot_interpolation)  # frequency update to core class
+            self.core.update_core_material_pro_file(frequency,
+                                                    self.file_data.electro_magnetic_folder_path,
+                                                    plot_interpolation)  # frequency update to core class
         if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
             self.core.update_sigma(frequency)
         # time simulation parameters
-        self.initial_time = initial_time
+        self.initial_time = 0  # defined 0
         self.frequency = frequency
         self.time_period = 1 / frequency
-        self.Nb_steps = NbSteps
-        self.timemax = number_of_periods * self.time_period
-        self.timesteps_per_periode = self.timemax / NbSteps
+        self.nb_steps = len(time_list)
+        self.max_time = number_of_periods * self.time_period
+        self.time_steps_per_period = self.max_time / self.nb_steps
         # current excitation
         for num in range(len(self.windings)):
-
             if self.flag_excitation_type == 'current':
                 if self.flag_excitation_type == 'current':
-                            # define the current vector ( list of list)
-                            self.current[num] = current_list[num]
-                            # define the time list
-                            self.time = time_list
-
-
-
-
+                    self.current[num] = current_list[num]  # define the current vector ( list of list)
+                    self.time = time_list  # define the time list
 
         # Imposed current density
         if self.flag_excitation_type == 'current_density':
@@ -1179,7 +1143,7 @@ class MagneticComponent:
         # Define reduced frequency (used for homogenization technique)
         # self.red_freq = np.empty(2)
         self.red_freq = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             self.red_freq.append([])
 
         if self.frequency != 0:
@@ -1214,14 +1178,11 @@ class MagneticComponent:
         gmsh.clear()
 
         # get model file names with correct path
-        if self.simulation_type == SimulationType.FreqDomain:
-            solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
-        if self.simulation_type == SimulationType.TimeDomain:
-            solver = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_time.pro")
+
+        solver_freq = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled.pro")
+        solver_time = os.path.join(self.file_data.electro_magnetic_folder_path, "ind_axi_python_controlled_time.pro")
 
         os.chdir(self.file_data.working_directory)
-
-
 
         if self.verbosity == Verbosity.Silent:
             verbose = "-verbose 1"
@@ -1232,21 +1193,17 @@ class MagneticComponent:
         if self.verbosity == Verbosity.ToFile:
             to_file_str = " > " + self.file_data.getdp_log
 
-
-
         # Run simulations as sub clients (non-blocking??)
+        getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
         if self.simulation_type == SimulationType.FreqDomain:
-            getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
+            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_freq + " -msh " + \
+                                            self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose + to_file_str)
         if self.simulation_type == SimulationType.TimeDomain:
-            getdp_filepath = os.path.join(self.file_data.onelab_folder_path, "getdp")
             # the two commands work but some changes should be done in fields_time.pro
-            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -pos Map_local -pos Get_global " + verbose +  to_file_str)
-            #self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file + " -solve Analysis -v2 " + verbose) #freeing solutions
-
-
-
-
+            self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
+                                            " -solve Analysis -pos Map_local -pos Get_global " + verbose + to_file_str)
+            # self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file +
+            # " -solve Analysis -v2 " + verbose) # freeing solutions
 
     def write_simulation_parameters_to_pro_files(self):
         """
@@ -1347,7 +1304,6 @@ class MagneticComponent:
 
             start_time = time.time()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
-            #self.calculate_and_write_log_try()
             logging_time = time.time() - start_time
             if show_fem_simulation_results:
                 self.visualize()
@@ -1362,23 +1318,32 @@ class MagneticComponent:
             self.generate_load_litz_approximation_parameters()
             self.simulate()
             self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
-            #self.calculate_and_write_log_try()
             if show_fem_simulation_results:
                 self.visualize()
 
-    def time_domain_simulation(self, freq: float, current_periode_vec: List[List[float]], time_periode_vec: List[float], initial_time: float, number_of_periods : int, NbSteps: int,  phi_deg: List[float] = None,
-                          plot_interpolation: bool = False, show_fem_simulation_results: bool = True, show_rolling_average: bool = True, rolling_avg_window_size: int = 5, benchmark: bool = False ):
+    def time_domain_simulation(self, freq: float, current_period_vec: List[List[float]], time_period_vec: List[float],
+                               number_of_periods: int, phi_deg: List[float] = None,
+                               plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
+                               show_rolling_average: bool = True, rolling_avg_window_size: int = 5, benchmark: bool = False):
         """
         Start a time_domain  electromagnetic ONELAB simulation.
 
         :param plot_interpolation:
         :param freq: frequency to simulate
         :type freq: float
-        :param current: current to simulate
+        :param current_period_vec: current to simulate
+        :param time_period_vec: time list
+        :param number_of_periods: periods (1, 2, 3,...)
         :param phi_deg: phase angle in degree
         :type phi_deg: List[float]
         :param show_fem_simulation_results: Set to True to show the simulation results after the simulation has finished
         :type show_fem_simulation_results: bool
+        :param show_rolling_average: set to True to show the dynamic average
+        :type show_rolling_average: bool
+        :param rolling_avg_window_size: how many data points used in each calculation of the average
+        :param benchmark: ....
+        :type benchmark: bool
+
         """
         phi_deg = phi_deg or []
         if benchmark:
@@ -1387,9 +1352,8 @@ class MagneticComponent:
             generate_electro_magnetic_mesh_time = time.time() - start_time
 
             start_time = time.time()
-            self.excitation_time_domain(frequency=freq, current_list=current_periode_vec, time_list=time_periode_vec,
-                                        initial_time=initial_time, number_of_periods=number_of_periods, NbSteps=NbSteps, phase_deg_list=phi_deg,
-                                        plot_interpolation=plot_interpolation)
+            self.excitation_time_domain(frequency=freq, current_list=current_period_vec, time_list=time_period_vec,
+                                        number_of_periods=number_of_periods, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)
 
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
@@ -1404,8 +1368,7 @@ class MagneticComponent:
             start_time = time.time()
             logging_time = time.time() - start_time
             self.calculate_average_files()
-            self.calculate_and_write_time_domain_log() # TODO: reuse center tapped
-            #self.calculate_and_write_log_try()
+            self.calculate_and_write_time_domain_log()  # TODO: reuse center tapped
             if show_fem_simulation_results:
                 self.visualize()
             if show_rolling_average:
@@ -1414,27 +1377,19 @@ class MagneticComponent:
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
             self.mesh.generate_electro_magnetic_mesh()
-            self.excitation_time_domain(frequency=freq, current_list=current_periode_vec, time_list=time_periode_vec,
-                                        initial_time=initial_time, number_of_periods=number_of_periods, NbSteps=NbSteps,
-                                        phase_deg_list=phi_deg,
-                                        plot_interpolation=plot_interpolation)
+            self.excitation_time_domain(frequency=freq, current_list=current_period_vec, time_list=time_period_vec,
+                                        number_of_periods=number_of_periods, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
             self.simulate()
             self.calculate_average_files()
-            self.calculate_and_write_time_domain_log()# TODO: reuse center tapped
-            #self.calculate_and_write_log_try()
+            self.calculate_and_write_time_domain_log()  # TODO: reuse center tapped
+
             if show_fem_simulation_results:
                 self.visualize()
             if show_rolling_average:
                 self.get_rolling_average(window_size=rolling_avg_window_size)
-
-
-
-
-
-
 
     def excitation_sweep(self, frequency_list: List, current_list_list: List, phi_deg_list_list: List,
                          show_last_fem_simulation: bool = False,
@@ -1553,21 +1508,25 @@ class MagneticComponent:
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
                 # self.visualize()
-
+        self.write_and_calculate_common_log(inductance_dict=inductance_dict)
         self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), currents=current_list_list,
-                                     frequencies=frequency_list,
-                                     core_hyst_losses=core_hyst_loss)
+                                                 frequencies=frequency_list,
+                                                 core_hyst_losses=core_hyst_loss)
 
         if show_last_fem_simulation:
             self.write_simulation_parameters_to_pro_files()
             self.visualize()
+
     def component_study(self, time_current_vectors: List[List[List[float]]], fft_filter_value_factor: float = 0.01):
         """
         Full study for the component: inductance values and losses.
 
+        :param time_current_vectors: ....
+        :type time_current_vectors: List[List[List[float]]
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
             amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
+
         """
         # winding losses
         frequency_current_phase_deg_list = []
@@ -1618,9 +1577,8 @@ class MagneticComponent:
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
-        #self.calculate_and_write_log()  # TODO: reuse center tapped
-        self.calculate_and_write_freq_domain_log()
-        #[p_hyst] = self.load_result(res_name="p_hyst")
+        self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
+        # [p_hyst] = self.load_result(res_name="p_hyst")
 
         # read the log of the transformer losses
         log = self.read_log()
@@ -1906,8 +1864,7 @@ class MagneticComponent:
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
-        #self.calculate_and_write_log()  # TODO: reuse center tapped
-        self.calculate_and_write_freq_domain_log()
+        self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
 
         # read the log of the transformer losses
         log = self.read_log()
@@ -1935,8 +1892,7 @@ class MagneticComponent:
         self.write_simulation_parameters_to_pro_files()
         self.generate_load_litz_approximation_parameters()
         self.simulate()
-        #self.calculate_and_write_log()  # TODO: reuse center tapped
-        self.calculate_and_write_freq_domain_log()
+        self.calculate_and_write_freq_domain_log()  # TODO: reuse center tapped
 
         # read the log of the inductor losses
         log = self.read_log()
@@ -1953,7 +1909,6 @@ class MagneticComponent:
                               center_tapped_study_excitation["linear_losses"]["current_amplitudes"],
                               center_tapped_study_excitation["linear_losses"]["current_phases_deg"],
                               inductance_dict=inductance_dict, core_hyst_loss=p_hyst_core_parts)
-
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Post-Processing
@@ -2220,27 +2175,23 @@ class MagneticComponent:
 
         # Magnetic Component Type
         if self.component_type == ComponentType.Inductor:
-            text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
+            text_file.write("Number_of_Windings = {};\n".format(len(self.windings)))
 
         if self.component_type == ComponentType.Transformer:
-            text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
+            text_file.write("Number_of_Windings = {};\n".format(len(self.windings)))
 
         if self.component_type == ComponentType.IntegratedTransformer:
-            text_file.write(f"Number_of_Windings = {len(self.windings)};\n")
-
+            text_file.write("Number_of_Windings = {};\n".format(len(self.windings)))
 
         if self.simulation_type == SimulationType.FreqDomain:
-            text_file.write(f"Flag_Freq_Domain = 1;\n")
-            text_file.write(f"Flag_Time_Domain = 0;\n")
-            text_file.write(f"Flag_Static = 0;\n")
+            text_file.write("Flag_Freq_Domain = 1;\n")
+            text_file.write("Flag_Time_Domain = 0;\n")
+            text_file.write("Flag_Static = 0;\n")
 
         if self.simulation_type == SimulationType.TimeDomain:
-            text_file.write(f"Flag_Time_Domain = 1;\n")
-            text_file.write(f"Flag_Freq_Domain = 0;\n")
-            text_file.write(f"Flag_Static = 0;\n")
-
-
-
+            text_file.write("Flag_Time_Domain = 1;\n")
+            text_file.write("Flag_Freq_Domain = 0;\n")
+            text_file.write("Flag_Static = 0;\n")
 
         # Frequency
         text_file.write("Freq = %s;\n" % self.frequency)
@@ -2273,11 +2224,11 @@ class MagneticComponent:
         if self.simulation_type == SimulationType.TimeDomain:
             text_file.write(f"T = {self.time_period};\n")
             text_file.write(f"time0 = {self.initial_time};\n")
-            text_file.write(f"timemax = {self.timemax};\n")
-            text_file.write(f"NbSteps = {self.Nb_steps};\n")
-            text_file.write(f"delta_t = {self.timesteps_per_periode};\n")
+            text_file.write(f"timemax = {self.max_time};\n")
+            text_file.write(f"NbSteps = {self.nb_steps};\n")
+            text_file.write(f"delta_t = {self.time_steps_per_period};\n")
             time_values_str = ', '.join(map(str, self.time))
-            text_file.write(f"TimeList = {{{time_values_str}}};\n") # TimeList is interpolated with current lists in the solver
+            text_file.write(f"TimeList = {{{time_values_str}}};\n")  # TimeList is interpolated with current lists in the solver
 
         # Conductor specific definitions
         for winding_number in range(len(self.windings)):
@@ -2329,11 +2280,9 @@ class MagneticComponent:
                     text_file.write(f"CurrentList_{winding_number + 1} = {{{current_values_str}}};\n")
                     text_file.write(f"Val_EE_{winding_number + 1} = 1;\n")
 
-
                 text_file.write(f"Phase_{winding_number + 1} = {np.deg2rad(self.phase_deg[winding_number])};\n")
                 text_file.write(
                     f"Parallel_{winding_number + 1} = {int(self.windings[winding_number].parallel is True)};\n")
-
 
             if self.flag_excitation_type == 'current_density':
                 text_file.write(f"Val_EE_{winding_number + 1} = {self.current_density[winding_number]};\n")
@@ -2435,7 +2384,6 @@ class MagneticComponent:
 
         text_file.close()
 
-
     def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, currents: List = None,
                                             frequencies: List = None,
                                             core_hyst_losses: List[float] = None):
@@ -2463,8 +2411,6 @@ class MagneticComponent:
         :type currents: list
         :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
         :type frequencies: list
-        :param inductance_dict: Optional inductance dict to include in the logfile.
-        :type inductance_dict: dict
         :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given,
             the external value is used in the result-log. Otherwise, the hysteresis losses of the
             fundamental frequency is used
@@ -2552,12 +2498,14 @@ class MagneticComponent:
                 complex_voltage_phasor = complex(winding_dict["V"][0], winding_dict["V"][1])
 
                 if complex_current_phasor == 0 or sweep_dict["f"] == 0:  # if-statement to avoid div by zero error
-                    winding_dict["flux_over_current"] = [0, 0]
+                    winding_dict["flux_over_current"] = [0.0, 0.0]
                 else:
-                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (
-                            complex(0, 1) * 2 * np.pi * complex_current_phasor * sweep_dict["f"])).real)
-                    winding_dict["flux_over_current"].append((complex_voltage_phasor / (
-                            complex(0, 1) * 2 * np.pi * complex_current_phasor * sweep_dict["f"])).imag)
+                    winding_dict["flux_over_current"].append(
+                        (complex_voltage_phasor / (complex(0, 1) * 2 * np.pi * complex_current_phasor * sweep_dict["f"])).real
+                    )
+                    winding_dict["flux_over_current"].append(
+                        (complex_voltage_phasor / (complex(0, 1) * 2 * np.pi * complex_current_phasor * sweep_dict["f"])).imag
+                    )
 
                 # Flux
                 winding_dict["flux"].append(
@@ -2587,7 +2535,7 @@ class MagneticComponent:
 
             # Core losses TODO: Choose between Steinmetz or complex core losses
             sweep_dict["core_eddy_losses"] = \
-            self.load_result(res_name="CoreEddyCurrentLosses", last_n=number_frequency_simulations)[single_simulation]
+                self.load_result(res_name="CoreEddyCurrentLosses", last_n=number_frequency_simulations)[single_simulation]
             sweep_dict["core_hyst_losses"] = self.load_result(res_name="p_hyst", last_n=number_frequency_simulations)[
                 single_simulation]
 
@@ -2702,11 +2650,10 @@ class MagneticComponent:
 
         # Total losses of inductive component according to single or sweep simulation
         log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
-                                           log_dict["total_losses"]["eddy_core"]
+            log_dict["total_losses"]["eddy_core"]
 
         log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
-                                                   log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"][
-                                                       "all_windings"]
+            log_dict["total_losses"]["eddy_core"] + log_dict["total_losses"]["all_windings"]
 
         # final_log_dict: freq dict + common dict
         common_log_dict = self.write_and_calculate_common_log()
@@ -2715,26 +2662,21 @@ class MagneticComponent:
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(final_log_dict, outfile, indent=2, ensure_ascii=False)
 
-
-
-
     def calculate_and_write_time_domain_log(self):
-
         """
-       This method processes and logs the results of time domain simulations. It reads back the results
-       from the simulation output files and stores them in a JSON format. The log includes detailed
-       information about each time step of the simulation, as well as average and total losses.
+        Process and log the results of time domain simulations.
 
-       The logged information includes:
-        * Time step-specific data such as current (I), voltage (V), and flux for each winding.
-        * Average losses, including core eddy and hysteresis losses.
-        * Total losses for the entire simulation.
-        * Additional core part losses if multiple core parts are present.
+        Reads back the results from the simulation output files and stores them in a JSON format.
+        The log includes detailed information about each time step of the simulation, as well as average and total losses.
+        The logged information includes:
+        - Time step-specific data such as current (I), voltage (V), and flux for each winding.
+        - Average losses, including core eddy and hysteresis losses.
+        - Total losses for the entire simulation.
+        - Additional core part losses if multiple core parts are present.
 
-       The method also combines this time domain-specific data with common simulation data
-       (like simulation settings) generated by the write_and_calculate_common_log method.
-       """
-
+        The method also combines this time domain-specific data with common simulation data
+        (like simulation settings) generated by the write_and_calculate_common_log method.
+        """
         # log_dict = {"time_steps": []}
         log_dict = {"time_domain_simulation": [], "average_losses": {}, "total_losses": {}}
         # Flatten the self.time
@@ -2746,14 +2688,14 @@ class MagneticComponent:
         Time_domain_data_dict = {}
         Time_domain_data_dict["f"] = self.frequency
         Time_domain_data_dict["T"] = self.time_period
-        Time_domain_data_dict["Timemax"] = self.timemax
-        Time_domain_data_dict["number_of_steps"] = self.Nb_steps
-        Time_domain_data_dict["dt"] = self.timesteps_per_periode
+        Time_domain_data_dict["Timemax"] = self.max_time
+        Time_domain_data_dict["number_of_steps"] = self.nb_steps
+        Time_domain_data_dict["dt"] = self.time_steps_per_period
         log_dict["time_domain_simulation"].append(Time_domain_data_dict)
 
         # time_step_n log
         # indide every time_step_n, there are windings log such that I, V, Flux are shown in every winding (winding1, winding2, .. )
-        for t in range(0, self.Nb_steps):
+        for t in range(0, self.nb_steps):
             time_step_dict = {
                 "windings": {}
             }
@@ -2812,17 +2754,14 @@ class MagneticComponent:
                     log_dict["average_losses"]["core_parts"][f"core_part_{i + 1}"]["hyst_losses"] = hyst
 
                     # Calculate the total losses for every core part
-                    log_dict["average_losses"]["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy[
-                                                                                                                     0] + hyst
+                    log_dict["average_losses"]["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"] = eddy[0] + hyst
 
             else:
                 # if there is only one core part
                 log_dict["average_losses"]["core_parts"] = {}
                 log_dict["average_losses"]["core_parts"]["core_part_1"] = {}
                 # Assuming you have already loaded core_eddy_losses and core_hyst_losses somewhere above in the code
-                total_loss = log_dict["average_losses"][
-                                 "core_eddy_losses"] + log_dict["average_losses"][
-                                 "core_hyst_losses"]  # Use appropriate way to get this value if it's different
+                total_loss = log_dict["average_losses"]["core_eddy_losses"] + log_dict["average_losses"]["core_hyst_losses"]
                 log_dict["average_losses"]["core_parts"]["core_part_1"]["total_core_part_1"] = total_loss[0]
 
             # average winding losses, turns_losses, current, volatge, power losses, ..etc
@@ -2891,11 +2830,11 @@ class MagneticComponent:
                     losses_dict["winding_losses"] = \
                         self.load_result(res_name=f"j2F_{winding_num + 1}", average=True)
 
-                    if losses_dict["winding_losses"]: losses_dict["winding_losses"] = losses_dict["winding_losses"][0]
+                    if losses_dict["winding_losses"]:
+                        losses_dict["winding_losses"] = losses_dict["winding_losses"][0]
 
                     if self.windings[winding_num].parallel:
-                        turn_loss = self.load_result(res_name=winding_name[winding_num] + f"/Losses_turn_{1}",
-                                                     average=True)
+                        turn_loss = self.load_result(res_name=winding_name[winding_num] + f"/Losses_turn_{1}", average=True)
                         losses_dict["turn_losses"].append(turn_loss[0])
 
                     else:
@@ -2922,42 +2861,39 @@ class MagneticComponent:
                     "winding_losses" in winding_info)
                 # cores
                 log_dict["total_losses"]["eddy_core"] = log_dict["average_losses"]["core_eddy_losses"][0] + \
-                                                        log_dict["average_losses"]["core_hyst_losses"][0]
+                    log_dict["average_losses"]["core_hyst_losses"][0]
                 log_dict["total_losses"][
                     "hyst_core_fundamental_freq"] = 0  # it is here 0 until the hystersis losses can be defined correctly in the solver
                 log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
-                                                   log_dict["total_losses"]["eddy_core"]
+                    log_dict["total_losses"]["eddy_core"]
                 # core part losses
                 if len(self.mesh.plane_surface_core) > 1:
                     for i in range(len(self.mesh.plane_surface_core)):
                         log_dict["total_losses"][f"total_core_part_{i + 1}"] = \
-                        log_dict["average_losses"]["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"][0]
+                            log_dict["average_losses"]["core_parts"][f"core_part_{i + 1}"][f"total_core_part_{i + 1}"][0]
                 if len(self.mesh.plane_surface_core) == 1:
                     log_dict["total_losses"]["total_core_part_1"] = \
-                    log_dict["average_losses"]["core_parts"][f"core_part_1"][f"total_core_part_1"]
+                        log_dict["average_losses"]["core_parts"]["core_part_1"]["total_core_part_1"]
 
                 log_dict["total_losses"]["total_losses"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
-                                                           log_dict["total_losses"]["eddy_core"] + \
-                                                           log_dict["total_losses"]["all_windings_losses"]
+                    log_dict["total_losses"]["eddy_core"] + \
+                    log_dict["total_losses"]["all_windings_losses"]
 
         common_log_dict = self.write_and_calculate_common_log()
         final_log_dict = {**log_dict, **common_log_dict}
         with open(self.file_data.e_m_results_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(final_log_dict, outfile, indent=2, ensure_ascii=False)
+
     def write_and_calculate_common_log(self, inductance_dict: dict = None):
         """
-        Compiles common logging information for simulation results into a dictionary. This includes simulation
-        settings, miscellaneous data such as core volume and wire lengths, and cost calculations. Optionally,
-        includes inductance values if an inductance dictionary is provided.
+        Compiles common logging information for simulation results into a dictionary.
 
         :param inductance_dict: Optional dictionary containing inductance values to be included in the log.
-                                n.
         :type inductance_dict: dict, optional
 
         :return: A dictionary containing the compiled common logging information.
         :rtype: dict
         """
-
         log_dict = {"simulation_settings": {}}
         # ---- Introduce calculations for writing the misc-dict into the result-log ----
         wire_type_list = []
@@ -3012,7 +2948,6 @@ class MagneticComponent:
 
         return log
 
-
     def read_thermal_log(self) -> Dict:
         """
         Read results from electromagnetic simulation.
@@ -3025,7 +2960,6 @@ class MagneticComponent:
             log = content
 
         return log
-
 
     def visualize(self):
         """
@@ -3040,9 +2974,7 @@ class MagneticComponent:
         self.femmt_print("\n---\n"
                          "Visualize fields in GMSH front end:\n")
 
-
-
-        #gmsh.initialize()
+        # gmsh.initialize()
         epsilon = 1e-9
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3110,13 +3042,12 @@ class MagneticComponent:
             gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'j2H_density.pos'))
             gmsh.merge(os.path.join(self.file_data.e_m_fields_folder_path, 'Magb.pos'))
 
-
             v = gmsh.view.getTags()
             # We set some options for each post-processing view:
 
             if any(self.windings[i].conductor_type != ConductorType.RoundLitz for i in range(len(self.windings))):
                 # Ohmic losses (weighted effective value of current density)
-                #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
+                # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2F_density.pos"))
                 gmsh.option.setNumber(f"View[{v[0]}].ScaleType", 2)
                 gmsh.option.setNumber(f"View[{v[0]}].RangeType", 3)
                 gmsh.option.setNumber(f"View[{v[0]}].SaturateValues", 1)
@@ -3130,11 +3061,9 @@ class MagneticComponent:
                 gmsh.option.setNumber(f"View[{v[0]}].Time", 1)
                 gmsh.option.setNumber(f"View[{v[0]}].NbTimeStep", 1)
 
-
-
                 if any(self.windings[i].conductor_type == ConductorType.RoundLitz for i in range(len(self.windings))):
                     # Ohmic losses (weighted effective value of current density)
-                    #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
+                    # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "j2H_density.pos"))
                     gmsh.option.setNumber(f"View[{v[1]}].ScaleType", 2)
                     gmsh.option.setNumber(f"View[{v[1]}].RangeType", 3)
                     gmsh.option.setNumber(f"View[{v[1]}].SaturateValues", 1)
@@ -3148,11 +3077,10 @@ class MagneticComponent:
                     gmsh.option.setNumber(f"View[{v[1]}].TimeStep", 1)
                     gmsh.option.setNumber(f"View[{v[1]}].Time", 1)
                     gmsh.option.setNumber(f"View[{v[1]}].NbTimeStep", 1)
-                    #ff.femmt_print(gmsh.option.getNumber(f"View[{v[1]}].Max"))
-
+                    # ff.femmt_print(gmsh.option.getNumber(f"View[{v[1]}].Max"))
 
                 # Magnetic flux density
-                #gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
+                # gmsh.open(os.path.join(self.file_data.e_m_fields_folder_path, "Magb.pos"))
                 gmsh.option.setNumber(f"View[{v[2]}].ScaleType", 1)
                 gmsh.option.setNumber(f"View[{v[2]}].RangeType", 3)
                 gmsh.option.setNumber(f"View[{v[2]}].CustomMin", gmsh.option.getNumber(f"View[{v[2]}].Min") + epsilon)
@@ -3164,11 +3092,6 @@ class MagneticComponent:
                 gmsh.option.setNumber(f"View[{v[2]}].TimeStep", 1)
                 gmsh.option.setNumber(f"View[{v[2]}].Time", 1)
                 gmsh.option.setNumber(f"View[{v[2]}].NbTimeStep", 1)
-
-
-
-
-
 
         """
         # Vector Potential
@@ -3184,7 +3107,7 @@ class MagneticComponent:
         """
 
         gmsh.fltk.run()
-        #gmsh.finalize()
+        # gmsh.finalize()
 
     def get_loss_data(self, last_n_values: int, loss_type: str = 'litz_loss'):
         """
@@ -3207,11 +3130,12 @@ class MagneticComponent:
             data = list(reader)
         return data[-last_n_values:-1] + [data[-1]]
 
-
     def get_rolling_average(self, window_size):
         """
-        Computes the rolling average for each result file and plots the original data
-        alongside the rolling average if show_rolling_average is True.
+        Compute the rolling average for each result file and plots the original data.
+
+        :param window_size: The size of the rolling window for calculating the average.
+        :type window_size: int
         """
 
         def rolling_calculation(res_name: str, res_path: str):
@@ -3249,7 +3173,7 @@ class MagneticComponent:
         # Looping through each result type to process the files
         for res_type in result_types:
             res_path = self.file_data.e_m_values_folder_path if res_type == "value" else self.file_data.e_m_circuit_folder_path
-            #some files are not needed for calculation /for ex. average files), so they are excluded
+            # some files are not needed for calculation /for ex. average files), so they are excluded
             all_files = os.listdir(res_path)
             dat_files = [file for file in all_files if
                          file.endswith('.dat') and not file.endswith('_average.dat') and not file.endswith('_rms.dat')]
@@ -3258,7 +3182,7 @@ class MagneticComponent:
                 res_name = dat_file.replace('.dat', '')
                 rolling_calculation(res_name, res_path)
             # Processing files in the winding-specific subdirectories, if they exist
-            for index, winding in enumerate(self.windings, start=1):
+            for index, _ in enumerate(self.windings, start=1):
                 winding_folder_path = os.path.join(res_path, f"winding_{index}")
                 # some files are not needed for calculation /for ex. average files) in sub winding files, so they are excluded
                 if os.path.isdir(winding_folder_path):
@@ -3269,20 +3193,19 @@ class MagneticComponent:
                     for winding_dat_file in winding_dat_files:
                         res_name = winding_dat_file.replace('.dat', '')
                         rolling_calculation(res_name, winding_folder_path)
-    def calculate_average_files(self):
 
+    def calculate_average_files(self):
         """
-        This function finding the average value of all .dat files within the 'value' directory and each 'Winding_n' subdirectory
+        find the average value of all .dat files within the 'value' directory and each 'Winding_n' subdirectory.
+
         - For each .dat file, the method reads the time steps and corresponding data points.
         - Computes the average value by dividing the integral by the total duration of the time steps.
         - Writes the average value to a new file with the same base name as the input file but with an '_average.dat' suffix.
         - Repeats the same process for all .dat files within each 'Winding_n' subdirectory.
         - the method also calculates the RMS value and writes it to a new file with an '_rms.dat' suffix.
-        - The output from this method is a set of new files containing the computed average and RMS values. These files are saved in the same directory as the original data files.
+        - The output from this method is a set of new files containing the computed average and RMS values.
+        - These files are saved in the same directory as the original data files.
         """
-
-
-
         result_types = ["value"]
         for res_type in result_types:
             res_path = self.file_data.e_m_values_folder_path if res_type == "value" else None
@@ -3321,7 +3244,7 @@ class MagneticComponent:
                         file.write(str(rms))
 
             # 'Winding_n' subdirectory (Winding_1, Winding_2, ...etc)
-            for index, winding in enumerate(self.windings, start=1):
+            for index, _ in enumerate(self.windings, start=1):
                 winding_folder_path = os.path.join(res_path, f"winding_{index}")
                 # .dat files inside 'Winding_n' subdirectory
                 if os.path.isdir(winding_folder_path):
@@ -3341,37 +3264,31 @@ class MagneticComponent:
                             if len(line_values) == 2:
                                 timesteps.append(float(line_values[0]))
                                 data.append(float(line_values[1]))
-                        #finding the integral, and then calculating the average (integral(data)/T)
+                        # finding the integral, and then calculating the average (integral(data)/T)
                         integral = ff.calculate_quadrature_integral(timesteps, data)
                         average = ff.calculate_average(integral, timesteps)
-                        #write average files
+                        # write average files
                         output_filename = os.path.join(winding_folder_path, f"{res_name}_average.dat")
-                        #writing files for average values
+                        # writing files for average values
                         with open(output_filename, 'w') as file:
                             file.write(str(average))
-
 
         # finding the average and RMS of current to use in log function
         for num in range(len(self.windings)):
             if self.current[num]:
                 # sum the currents for every winding
                 sum_current = sum(self.current[num])
-                #finding the average of current for every winding and add it to list to use it in write_log function
+                # finding the average of current for every winding and add it to list to use it in write_log function
                 average = sum_current / len(self.current[num])
                 self.average_currents.append(average)
-                #find the rms for current [sqrt(integral(data)²/T]
+                # find the rms for current [sqrt(integral(data)²/T]
                 squared_integral = ff.calculate_squared_quadrature_integral(self.time, self.current[num])
-                #finding the rms of current for every winding and add it to list to use it in write_log function
-                I_rms = ff.calculate_rms(squared_integral, self.time)
-                self.rms_currents.append(I_rms)
+                # finding the rms of current for every winding and add it to list to use it in write_log function
+                i_rms = ff.calculate_rms(squared_integral, self.time)
+                self.rms_currents.append(i_rms)
 
-
-
-
-    def load_result(self, res_name: str, res_type: str = "value", last_n: int = 1, part:str = "real", position: int = 0, average: bool = False, rms: bool = False):
-
-
-
+    def load_result(self, res_name: str, res_type: str = "value", last_n: int = 1, part: str = "real",
+                    position: int = 0, average: bool = False, rms: bool = False):
         """
         Load the "last_n" parameters from a result file of the scalar quantity "res_name".
 
@@ -3384,15 +3301,17 @@ class MagneticComponent:
         :param position:
         :return: last_n entries of the chosen result file
         :rtype: list
+        :param average: average result or not, defined false
+        :type average: bool
+        :param rms: rms result or not, defined false
+        :type rms: bool
         """
-
-
         if res_type == "value":
             res_path = self.file_data.e_m_values_folder_path
-        if res_type == "circuit":
+        elif res_type == "circuit":
             res_path = self.file_data.e_m_circuit_folder_path
-
-
+        else:
+            raise ValueError(f"Invalid res_type: {res_type}")
 
         if self.simulation_type == SimulationType.FreqDomain:
 
@@ -3415,26 +3334,21 @@ class MagneticComponent:
                 with open(os.path.join(res_path, f"{res_name}_rms.dat")) as fd:
                     line = fd.readline().strip()
                     result = [float(line)]
-
             else:
-
-                #timesteps = []  # Initializing
+                # timesteps = []
+                # Initializing
                 data = []
                 with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
                     lines = fd.readlines()
-
-
                     for line in lines:
                         line_values = line.split()
                         if len(line_values) == 2:
-                            #timesteps.append(float(line_values[0]))
+                            # timesteps.append(float(line_values[0]))
                             data.append(float(line_values[1]))
 
                 result = list(zip(data))  # Returns list of (time, data) pairs
 
-
         return result
-
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Litz Approximation [internal methods]

@@ -1,13 +1,12 @@
+"""Basic example to show how to simulate an inductor in time domain."""
 import numpy as np
-
 import femmt as fmt
 import materialdatabase as mdb
 import os
+from matplotlib import pyplot as plt
 
 def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-
-
-
+    """Demonstrate how to simulate an inductor in time domain."""
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
@@ -18,11 +17,13 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain,
+                                component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
                                 verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     inductor_frequency = 270000
 
@@ -88,9 +89,8 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
 
     # 6.a. start simulation
-    from matplotlib import pyplot as plt
     # time value
-    t = np.linspace(0, 2 / inductor_frequency, 50)
+    t = np.linspace(0, 2 / inductor_frequency, 5)
     # t_list = t.tolist()
     t_list = [float(x) for x in t.tolist()]
     # # Current values
@@ -109,24 +109,20 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # Electromagnetic time-domain simulation
     #  The 'current_periode_vec' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
     #  The 'time_periode_vec' parameter accepts a single list representing the time steps for the simulation; this is common for all windings.
-    #  The 'initial_time' parameter defines the starting point of the simulation in seconds.
     #  The 'number_of_periods' parameter defines the number of periods or the simulation duration time internally.
-    #  The 'NbSteps' parameter represents the total number of time steps within the provided time period for the simulation.
     # The 'show_rolling_average' parameter is a boolean that determines whether to plot the rolling average of the simulation results.
     # The 'rolling_avg_window_size' parameter is an integer that specifies the window size for calculating the rolling average.
     # It defines the number of data points used in each calculation of the average
     # a too-small window size may not effectively smooth out short-term fluctuations.
     geo.time_domain_simulation(freq=inductor_frequency,
-                               current_periode_vec=[current_values_list],
-                               time_periode_vec=t_list,
-                               initial_time=0,
+                               current_period_vec=[current_values_list],
+                               time_period_vec=t_list,
                                number_of_periods=2,
-                               NbSteps=5,
                                plot_interpolation=False,
                                show_fem_simulation_results=True,
                                show_rolling_average=False,
                                rolling_avg_window_size=5)
 
+
 if __name__ == "__main__":
     basic_example_inductor(show_visual_outputs=True)
-

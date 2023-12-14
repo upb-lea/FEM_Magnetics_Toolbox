@@ -58,12 +58,10 @@ class ComponentType(IntEnum):
     IntegratedTransformer = 3
 
 class SimulationType(IntEnum):
-    """Sets the simulation type. The static is just to show the fields
-    """
-    FreqDomain = 1
-    Static = 2
-    TimeDomain = 3
+    """Sets the simulation type. The static is just to show the fields."""
 
+    FreqDomain = 1
+    TimeDomain = 2
 
 class CoreType(IntEnum):
     """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation."""

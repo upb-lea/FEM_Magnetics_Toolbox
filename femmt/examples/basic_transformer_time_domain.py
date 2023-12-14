@@ -1,15 +1,14 @@
+"""Basic example to show how to simulate a two winding transformer in time domain."""
 import femmt as fmt
 import materialdatabase as mdb
 import os
-
+from matplotlib import pyplot as plt
+import numpy as np
 def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-
-
+    """Demonstrate how to simulate a two winding transformer in time domain."""
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
-
-
 
     # Example for a transformer with multiple virtual winding windows.
     working_directory = os.path.join(example_results_folder, "transformer")
@@ -17,14 +16,16 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain,
+                                component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
                                 verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on github only. Please ignore this line!
-    if onelab_folder is not None: geo.file_data.onelab_folder_path = onelab_folder
+    if onelab_folder is not None:
+        geo.file_data.onelab_folder_path = onelab_folder
 
     # 2. set core parameters
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295,core_h=0.04)
+    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015, window_w=0.012, window_h=0.0295, core_h=0.04)
     # core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
     #                 permeability_datasource=fmt.MaterialDataSource.Custom,
     #                 permittivity_datasource=fmt.MaterialDataSource.Custom)
@@ -74,20 +75,17 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     top.set_winding(winding2, 12, None)
     geo.set_winding_windows([winding_window])
 
-    from matplotlib import pyplot as plt
-    import numpy as np
     # t = np.linspace(0, 2, 30) * 1/inductor_frequency
     t = np.linspace(0, 2 / 200000, 5)
     t_list = [float(x) for x in t.tolist()]
     # # Current values
     current_values_1 = 2 * np.cos(2 * np.pi * 200000 * t)
-    current_values_2 = 2 * np.cos(2* np.pi * 200000 * t + np.pi)
+    current_values_2 = 2 * np.cos(2 * np.pi * 200000 * t + np.pi)
     current_values_list_1 = current_values_1.tolist()
     current_values_list_2 = current_values_2.tolist()
 
     print(t_list)
     print(current_values_list_1)
-
 
     # time_list = [0, 2, 4, 6, 8]
     plt.plot(t_list, current_values_list_1)
@@ -101,31 +99,21 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
     # Electromagnetic time-domain simulation
-    #  The 'current' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
-    #  The 'time' parameter accepts a single list representing the time steps for the simulation; this is common for all windings.
-    #  The 'time_period' should be always defind as 1/f.. It's introduced to distinguish it from 'timemax'.
-    #  The 'initial_time' parameter defines the starting point of the simulation in seconds.
-    #  The 'timemax' parameter defines the end point of the simulation in seconds. It can be set to a value like 2*time_period, depending on the user's needs.
-    #  The 'NbSteps' parameter represents the total number of time steps within the provided time period for the simulation.
-    #  The 'delta_time' is the interval between each time step in seconds, often defined as T/NbSteps.
-    # Smaller time steps can capture rapid changes in the system with higher precision, but they also increase the computational load.
-    # Note: If 'timemax' is defined as 2 * time_period, it’s essential to adjust 'delta_time' or 'NbSteps' accordingly.
-    # For instance, 'delta_time' can be adapted as (2 * time_period / NbSteps) to maintain the simulation's resolution.
-    # Failing to do so, the solver will automatically double 'NbSteps', potentially increasing the computational load.
+    # The 'current_periode_vec' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
+    # The 'time_periode_vec' parameter accepts a single list representing the time steps for the simulation; this is common for all windings.
+    # The 'number_of_periods' parameter defines the number of periods or the simulation duration time internally.
+    # The 'show_rolling_average' parameter is a boolean that determines whether to plot the rolling average of the simulation results.
+    # The 'rolling_avg_window_size' parameter is an integer that specifies the window size for calculating the rolling average.
+    # It defines the number of data points used in each calculation of the average
+    # a too-small window size may not effectively smooth out short-term fluctuations.
     geo.time_domain_simulation(freq=200000,
-                               current=[current_values_list_1, current_values_list_2],
-                               time=t_list,
-                               time_period=1 / 200000,
-                               initial_time=0,
-                               timemax=1 / 200000,
-                               NbSteps=5,
-                               delta_time=((1 / 200000) / 5),
+                               current_period_vec=[current_values_list_1, current_values_list_2],
+                               time_period_vec=t_list,
+                               number_of_periods=2,
                                plot_interpolation=False,
                                show_fem_simulation_results=True,
-                               show_rolling_average=True,
+                               show_rolling_average=False,
                                rolling_avg_window_size=5)
-
-
 
 
 if __name__ == "__main__":
