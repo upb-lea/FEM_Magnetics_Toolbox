@@ -9,12 +9,10 @@ import warnings
 import inspect
 import re
 import pandas as pd
-# from typing import List, Dict, Optional, Tuple
-# from datetime import datetime
-import time
-import logging
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
+import time
+import logging
 import dataclasses
 from matplotlib import pyplot as plt
 
@@ -22,14 +20,14 @@ from matplotlib import pyplot as plt
 # Third party libraries
 from onelab import onelab
 import materialdatabase as mdb
-# import numpy as np
+import numpy as np
 
 # Local libraries
 import femmt.functions as ff
 from femmt.constants import *
 from femmt.mesh import Mesh
 from femmt.model import VirtualWindingWindow, WindingWindow, Core, Insulation, StrayPath, AirGaps, Conductor
-# from femmt.enumerations import *
+from femmt.enumerations import *
 from femmt.data import FileData, MeshData
 from femmt.drawing import TwoDaxiSymmetric
 from femmt.thermal import thermal_simulation, calculate_heat_flux_round_wire, read_results_log
@@ -146,11 +144,12 @@ class MagneticComponent:
         self.time = []                          # Defined for time domain simulation
         self.average_currents = []              # Defined for average currents for every winding
         self.rms_currents = []                  # Defined for rms currents for every winding
-        self.time_steps_per_period = None
+        self.step_time = None
         self.time_period = None
         self.initial_time = None  # Default 0
         self.max_time = None  # Simulation's duration
-        self.nb_steps = None  # Number of time steps
+        self.nb_steps_per_periode = None  # Number of time steps
+        self.nb_steps = None
         self.frequency = None
         self.phase_deg = None  # Default is zero, Defined for every conductor
         self.red_freq = None  # [] * self.n_windings  # Defined for every conductor
@@ -1072,8 +1071,8 @@ class MagneticComponent:
             for num in range(len(self.windings)):
                 self.red_freq[num] = 0
 
-    def excitation_time_domain(self, frequency: float, current_list: List[List[float]], time_list: List[float],
-                               number_of_periods: int, phase_deg_list: List = None, ex_type: str = 'current',
+    def excitation_time_domain(self, current_list: List[List[float]], time_list: List[float],
+                               number_of_periods: int, ex_type: str = 'current',
                                plot_interpolation: bool = False, imposed_red_f=0):
         """
         Excites the electromagnetic problem in the time domain with specified current and time settings.
@@ -1100,34 +1099,41 @@ class MagneticComponent:
 
         self.femmt_print(f"\n---\n"
                          f"Excitation: \n"
-                         f"Frequency: {frequency}\n"     
                          f"Maximum Time(sec): {number_of_periods}\n"
                          f"Current(s): {current_list}\n"
-                         f"Time(s): {time_list}\n"
-                         f"Phase(s): {phase_deg_list}\n")
-
+                         f"Time(s): {time_list}\n")
+        self.frequency = 1/time_list[-1]
         # -- Excitation --
         self.flag_excitation_type = ex_type  # 'current', 'current_density', 'voltage'
         if self.core.permeability["datasource"] != MaterialDataSource.Custom:
-            self.core.update_core_material_pro_file(frequency,
+            self.core.update_core_material_pro_file(self.frequency,
                                                     self.file_data.electro_magnetic_folder_path,
                                                     plot_interpolation)  # frequency update to core class
         if self.core.permittivity["datasource"] != MaterialDataSource.Custom:
-            self.core.update_sigma(frequency)
+            self.core.update_sigma(self.frequency)
         # time simulation parameters
         self.initial_time = 0  # defined 0
-        self.frequency = frequency
-        self.time_period = 1 / frequency
-        self.nb_steps = len(time_list)
-        self.max_time = number_of_periods * self.time_period
-        self.time_steps_per_period = self.max_time / self.nb_steps
+        self.step_time = time_list[1]  # convention!!! for fixed time steps
+        self.time_period = time_list[-1]
+        print(f"{1/self.frequency = }")
+        print(f"{time_list[-1] = }")
+        self.nb_steps_per_periode = len(time_list)
+        self.max_time = number_of_periods * (self.time_period + self.step_time)
         # current excitation
         for num in range(len(self.windings)):
             if self.flag_excitation_type == 'current':
                 if self.flag_excitation_type == 'current':
-                    self.current[num] = current_list[num]  # define the current vector ( list of list)
-                    self.time = time_list  # define the time list
-
+                    # self.current[num] = current_list[num]
+                    # self.time = time_list  # define the time list
+                    self.current[num] = number_of_periods * current_list[num]  # define the current vector ( list of list)
+                    # Iterate over the number of periods
+                    for period in range(number_of_periods):
+                        # Iterate over the original_time_list
+                        for i in range(len(time_list)):
+                            # Calculate each time value and append it to self.time to deal with more one period
+                            time_value = time_list[i % len(time_list)] + period * len(time_list) * self.step_time
+                            self.time.append(time_value)
+        self.nb_steps = len(self.time)
         # Imposed current density
         if self.flag_excitation_type == 'current_density':
             raise NotImplementedError
@@ -1137,8 +1143,6 @@ class MagneticComponent:
             raise NotImplementedError
 
         # -- Frequency --
-
-        self.frequency = frequency  # in Hz
 
         # Define reduced frequency (used for homogenization technique)
         # self.red_freq = np.empty(2)
@@ -1201,7 +1205,7 @@ class MagneticComponent:
         if self.simulation_type == SimulationType.TimeDomain:
             # the two commands work but some changes should be done in fields_time.pro
             self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver_time + " -msh " + self.file_data.e_m_mesh_file + \
-                                            " -solve Analysis -pos Map_local -pos Get_global " + verbose + to_file_str)
+                                            " -solve Analysis -pos Map_local  " + verbose + to_file_str)
             # self.onelab_client.runSubClient("myGetDP", getdp_filepath + " " + solver + " -msh " + self.file_data.e_m_mesh_file +
             # " -solve Analysis -v2 " + verbose) # freeing solutions
 
@@ -1321,8 +1325,8 @@ class MagneticComponent:
             if show_fem_simulation_results:
                 self.visualize()
 
-    def time_domain_simulation(self, freq: float, current_period_vec: List[List[float]], time_period_vec: List[float],
-                               number_of_periods: int, phi_deg: List[float] = None,
+    def time_domain_simulation(self, current_period_vec: List[List[float]], time_period_vec: List[float],
+                               number_of_periods: int,
                                plot_interpolation: bool = False, show_fem_simulation_results: bool = True,
                                show_rolling_average: bool = True, rolling_avg_window_size: int = 5, benchmark: bool = False):
         """
@@ -1345,15 +1349,14 @@ class MagneticComponent:
         :type benchmark: bool
 
         """
-        phi_deg = phi_deg or []
         if benchmark:
             start_time = time.time()
             self.mesh.generate_electro_magnetic_mesh()
             generate_electro_magnetic_mesh_time = time.time() - start_time
 
             start_time = time.time()
-            self.excitation_time_domain(frequency=freq, current_list=current_period_vec, time_list=time_period_vec,
-                                        number_of_periods=number_of_periods, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)
+            self.excitation_time_domain(current_list=current_period_vec, time_list=time_period_vec,
+                                        number_of_periods=number_of_periods, plot_interpolation=plot_interpolation)
 
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
@@ -1377,8 +1380,8 @@ class MagneticComponent:
             return generate_electro_magnetic_mesh_time, prepare_simulation_time, real_simulation_time, logging_time
         else:
             self.mesh.generate_electro_magnetic_mesh()
-            self.excitation_time_domain(frequency=freq, current_list=current_period_vec, time_list=time_period_vec,
-                                        number_of_periods=number_of_periods, phase_deg_list=phi_deg, plot_interpolation=plot_interpolation)
+            self.excitation_time_domain(current_list=current_period_vec, time_list=time_period_vec,
+                                        number_of_periods=number_of_periods, plot_interpolation=plot_interpolation)
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
@@ -2225,8 +2228,9 @@ class MagneticComponent:
             text_file.write(f"T = {self.time_period};\n")
             text_file.write(f"time0 = {self.initial_time};\n")
             text_file.write(f"timemax = {self.max_time};\n")
+            text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_periode};\n")
             text_file.write(f"NbSteps = {self.nb_steps};\n")
-            text_file.write(f"delta_t = {self.time_steps_per_period};\n")
+            text_file.write(f"delta_t = {self.step_time};\n")
             time_values_str = ', '.join(map(str, self.time))
             text_file.write(f"TimeList = {{{time_values_str}}};\n")  # TimeList is interpolated with current lists in the solver
 
@@ -2689,13 +2693,13 @@ class MagneticComponent:
         Time_domain_data_dict["f"] = self.frequency
         Time_domain_data_dict["T"] = self.time_period
         Time_domain_data_dict["Timemax"] = self.max_time
-        Time_domain_data_dict["number_of_steps"] = self.nb_steps
-        Time_domain_data_dict["dt"] = self.time_steps_per_period
+        Time_domain_data_dict["number_of_steps"] = self.nb_steps_per_periode
+        Time_domain_data_dict["dt"] = self.step_time
         log_dict["time_domain_simulation"].append(Time_domain_data_dict)
 
         # time_step_n log
         # indide every time_step_n, there are windings log such that I, V, Flux are shown in every winding (winding1, winding2, .. )
-        for t in range(0, self.nb_steps):
+        for t in range(0, self.nb_steps_per_periode):
             time_step_dict = {
                 "windings": {}
             }

@@ -90,7 +90,14 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 6.a. start simulation
     # time value
-    t = np.linspace(0, 2 / inductor_frequency, 5)
+    t = np.linspace(0, 1 / inductor_frequency, 5)
+    # T = 1 / inductor_frequency
+    # initial_time = 0
+    # number_of_periods = 2
+    # maxtime = number_of_periods * T
+    # number_of_steps = 5
+    # delta_t = maxtime / number_of_steps
+    # t = np.arange(initial_time, maxtime, delta_t)
     # t_list = t.tolist()
     t_list = [float(x) for x in t.tolist()]
     # # Current values
@@ -114,8 +121,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # The 'rolling_avg_window_size' parameter is an integer that specifies the window size for calculating the rolling average.
     # It defines the number of data points used in each calculation of the average
     # a too-small window size may not effectively smooth out short-term fluctuations.
-    geo.time_domain_simulation(freq=inductor_frequency,
-                               current_period_vec=[current_values_list],
+    geo.time_domain_simulation(current_period_vec=[current_values_list],
                                time_period_vec=t_list,
                                number_of_periods=2,
                                plot_interpolation=False,

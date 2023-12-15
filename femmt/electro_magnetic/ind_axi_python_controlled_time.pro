@@ -467,11 +467,11 @@ Resolution {
         SaveSolution[A] ;
 
         PostOperation[Map_local] ;
-        Test[ $TimeStep > 1 ]{
-            PostOperation[Get_global];
+        //Test[ $TimeStep > 1 ]{
+        PostOperation[Get_global];
 
       //PostOperation[T_resampled];
-        }
+        //}
       }
     }// Operation
   }
