@@ -228,10 +228,7 @@ class IntegratedTransformerOptimization:
                 # report simulation progress
                 number_of_geometry_simulations = len(t2_core_geometry_sweep) * len(sweep_dto.t1_core_material)
 
-                ff.femmt_print(f"{config_file.working_directory = }")
-                ff.femmt_print(f"Geometry count: {number_of_geometry_simulations}")
                 geometry_simulations_per_percent = int(number_of_geometry_simulations / 99)
-                ff.femmt_print(f"{geometry_simulations_per_percent = }")
                 simulation_progress_percent = 0
 
                 valid_design_list = []
