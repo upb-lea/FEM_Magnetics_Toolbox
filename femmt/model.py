@@ -125,7 +125,7 @@ class Conductor:
         elif fill_factor is None:
             ff_exact = number_strands * strand_radius ** 2 / conductor_radius ** 2
             self.ff = np.around(ff_exact, decimals=2)
-            if self.ff > 0.99:
+            if self.ff > 0.90:
                 raise Exception(f"A fill factor of {self.ff} is unrealistic!")
         elif strand_radius is None:
             self.strand_radius = np.sqrt(conductor_radius ** 2 * fill_factor / number_strands)
@@ -260,8 +260,8 @@ class Core:
         if self.core_type == CoreType.Single:
             self.window_h = core_dimensions.window_h
             self.number_core_windows = 2
-            self.core_h = self.window_h + self.core_inner_diameter / 2
-            self.core_h_center_leg = self.window_h + self.core_inner_diameter / 2  # per default
+            self.core_h = self.window_h + 2 * self.core_thickness
+            self.core_h_center_leg = self.window_h + 2 * self.core_thickness
         if self.core_type == CoreType.Stacked:
             self.window_h_bot = core_dimensions.window_h_bot
             self.window_h_top = core_dimensions.window_h_top
@@ -285,7 +285,7 @@ class Core:
 
         else:
             # set r_outer, so cross-section of outer leg has same cross-section as inner leg
-            # this is the recommended default-case
+            # this is the default-case
             self.r_outer = fr.calculate_r_outer(self.core_inner_diameter, self.window_w)
 
         # Material Parameters
