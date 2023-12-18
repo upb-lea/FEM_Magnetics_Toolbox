@@ -75,7 +75,7 @@ class MagneticComponent:
             os.mkdir(working_directory)
 
         # Create file paths class in order to handle all paths
-        self.file_data = FileData(working_directory)
+        self.file_data: FileData = FileData(working_directory)
         # Clear result folder structure in case of missing
         if clean_previous_results:
             self.file_data.clear_previous_simulation_results()
