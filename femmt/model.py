@@ -30,13 +30,13 @@ class Conductor:
 
     # TODO More documentation
     conductor_type: ConductorType
-    conductor_arrangement: ConductorArrangement = None
-    wrap_para: WrapParaType = None
-    conductor_radius: float = None
+    conductor_arrangement: Optional[ConductorArrangement] = None
+    wrap_para: Optional[WrapParaType] = None
+    conductor_radius: Optional[float] = None
     winding_number: int
-    thickness: float = None
-    ff: float = None
-    strand_radius: float = None
+    thickness: Optional[float] = None
+    ff: Optional[float] = None
+    strand_radius: Optional[float] = None
     n_strands: int = 0
     n_layers: int
     a_cell: float
@@ -45,7 +45,7 @@ class Conductor:
     conductor_is_set: bool
 
     # Not used in femmt_classes. Only needed for to_dict()
-    conductivity: Conductivity = None
+    conductivity: Optional[Conductivity] = None
 
     def __init__(self, winding_number: int, conductivity: Conductivity, parallel: bool = False,
                  winding_material_temperature: float = 100):
@@ -892,9 +892,9 @@ class WindingWindow:
         :param air_gaps: Air gaps path object. Only needed for integrated transformer, defaults to None
         :type air_gaps: AirGaps, optional
         """
-        self.core = core
-        self.stray_path = stray_path
-        self.air_gaps = air_gaps
+        self.core: Core = core
+        self.stray_path: StrayPath = stray_path
+        self.air_gaps: AirGaps = air_gaps
 
         if self.core.core_type == CoreType.Single:
             self.max_bot_bound = -core.window_h / 2 + insulations.core_cond[1]

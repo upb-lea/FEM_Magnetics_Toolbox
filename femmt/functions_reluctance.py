@@ -791,7 +791,7 @@ def resistance_solid_wire(core_inner_diameter: float, window_w: float, turns_cou
     # figure out middle length of one turn for given geometry
     turn_radius = core_inner_diameter / 2 + conductor_radius
     turn_count = 1
-    total_turn_length = 0
+    total_turn_length = 0.0
     while turn_radius <= (core_inner_diameter / 2 + window_w - conductor_radius):
         total_turn_length += turn_radius * 2 * np.pi
         turn_radius += 2 * conductor_radius

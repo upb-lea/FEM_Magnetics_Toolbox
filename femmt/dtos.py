@@ -1,7 +1,7 @@
 """Data transfer objects (DTOs) used by this toolbox."""
 from dataclasses import dataclass
-from femmt.enumerations import *
-from typing import Optional
+from femmt.enumerations import WindingTag
+from typing import Optional, List
 
 
 @dataclass
@@ -59,7 +59,7 @@ class CenterTappedGroup:
     secondary_number_of_rows: Optional[int]
     primary_rest: Optional[int]
     secondary_rest: Optional[int]
-    stack: [WindingTag]
+    stack: List[WindingTag]
 
 
 @dataclass
@@ -68,7 +68,7 @@ class ConductorStack:
 
     number_of_groups: int
     number_of_single_rows: Optional[int]
-    order: [int]
+    order: List[int]
 
 
 @dataclass
@@ -106,16 +106,16 @@ class TransformerInductance:
 class ThreeWindingTransformerInductance:
     """Inductance definitions for a three-winding transformer."""
 
-    M_12: float
-    M_13: float
-    M_23: float
-    L_s1: float
-    L_s2: float
-    L_s3: float
-    L_h: float
-    n_12: float
-    n_13: float
-    n_23: float
-    L_s12: float
-    L_s13: float
-    L_s23: float
+    M_12: Optional[float]
+    M_13: Optional[float]
+    M_23: Optional[float]
+    L_s1: Optional[float]
+    L_s2: Optional[float]
+    L_s3: Optional[float]
+    L_h: Optional[float]
+    n_12: Optional[float]
+    n_13: Optional[float]
+    n_23: Optional[float]
+    L_s12: Optional[float]
+    L_s13: Optional[float]
+    L_s23: Optional[float]

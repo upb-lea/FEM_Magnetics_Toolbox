@@ -46,7 +46,7 @@ class MagneticComponent:
     onelab_folder_path: str = None
     silent: bool = False
 
-    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
+    def __init__(self, component_type: ComponentType = ComponentType.Inductor, working_directory: Optional[str] = None,
                  clean_previous_results: bool = True, verbosity: Verbosity = 2, is_gui: bool = False,
                  simulation_name: Optional[str] = None, wwr_enabled=True):
         # TODO Add a enum? for the verbosity to combine silent and print_output_to_file variables
@@ -75,7 +75,7 @@ class MagneticComponent:
             os.mkdir(working_directory)
 
         # Create file paths class in order to handle all paths
-        self.file_data = FileData(working_directory)
+        self.file_data: FileData = FileData(working_directory)
         # Clear result folder structure in case of missing
         if clean_previous_results:
             self.file_data.clear_previous_simulation_results()
@@ -113,12 +113,12 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
-        self.core = None  # Contains all information about the cores
-        self.air_gaps = None  # Contains every air gap
+        self.core: Core = None  # Contains all information about the cores
+        self.air_gaps: Optional[AirGaps] = None  # Contains every air gap
         self.windings = None
         # self.windings: List of the different winding objects which the following structure:
         # windings[0]: primary, windings[1]: secondary, windings[2]: tertiary ....
-        self.insulation = None  # Contains information about the needed insulations
+        self.insulation: Insulation = None  # Contains information about the needed insulations
         self.winding_windows = None
         # self.winding_windows: Contains a list of every winding_window which was created containing a
         # list of virtual_winding_windows
@@ -143,13 +143,13 @@ class MagneticComponent:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Steinmetz loss material coefficients and current waveform
-        self.Ipeak = None
-        self.ki = None
-        self.alpha = None
-        self.beta = None
-        self.t_rise = None
-        self.t_fall = None
-        self.f_switch = None
+        self.Ipeak: Optional[float] = None
+        self.ki: Optional[float] = None
+        self.alpha: Optional[float] = None
+        self.beta: Optional[float] = None
+        self.t_rise: Optional[float] = None
+        self.t_fall: Optional[float] = None
+        self.f_switch: Optional[float] = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # MeshData to store the mesh size for different points
@@ -158,7 +158,7 @@ class MagneticComponent:
         global_accuracy = 0.5
         self.mesh_data = MeshData(global_accuracy, global_accuracy, global_accuracy, global_accuracy, padding, mu_0)
         self.mesh = None
-        self.two_d_axi = None
+        self.two_d_axi: TwoDaxiSymmetric = None
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # -- Used for Litz Validation --
@@ -2170,7 +2170,7 @@ class MagneticComponent:
 
     def calculate_and_write_log(self, number_frequency_simulations: int = 1, currents: List = None,
                                 frequencies: List = None,
-                                inductance_dict: dict = None, core_hyst_losses: List[float] = None):
+                                inductance_dict: Optional[dict] = None, core_hyst_losses: Optional[List[float]] = None):
         """
         Read back the results from the .dat result files created by the ONELAB simulation client.
 

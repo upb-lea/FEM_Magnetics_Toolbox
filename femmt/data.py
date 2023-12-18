@@ -8,6 +8,7 @@ from typing import List
 # Local libraries
 from femmt.enumerations import ConductorType
 from femmt.model import Conductor
+from typing import Optional
 
 
 class FileData:
@@ -16,6 +17,7 @@ class FileData:
     def __init__(self, working_directory: str, electro_magnetic_folder_path: str = None, strands_coefficients_folder_path: str = None):
         if working_directory is not None:
             self.update_paths(working_directory, electro_magnetic_folder_path, strands_coefficients_folder_path)
+        self.onelab_folder_path: Optional[str] = None
 
     @staticmethod
     def create_folders(*args) -> None:
