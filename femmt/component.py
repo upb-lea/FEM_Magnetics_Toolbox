@@ -2693,13 +2693,13 @@ class MagneticComponent:
         Time_domain_data_dict["f"] = self.frequency
         Time_domain_data_dict["T"] = self.time_period
         Time_domain_data_dict["Timemax"] = self.max_time
-        Time_domain_data_dict["number_of_steps"] = self.nb_steps_per_periode
+        Time_domain_data_dict["number_of_steps"] = self.nb_steps
         Time_domain_data_dict["dt"] = self.step_time
         log_dict["time_domain_simulation"].append(Time_domain_data_dict)
 
         # time_step_n log
         # indide every time_step_n, there are windings log such that I, V, Flux are shown in every winding (winding1, winding2, .. )
-        for t in range(0, self.nb_steps_per_periode):
+        for t in range(0, self.nb_steps):
             time_step_dict = {
                 "windings": {}
             }
