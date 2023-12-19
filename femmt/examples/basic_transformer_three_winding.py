@@ -1,9 +1,9 @@
 """Basic example to show how to simulate a three-winding transformer."""
 import femmt as fmt
 import os
+from typing import Optional
 
-
-def basic_example_transformer_three_winding(onelab_folder: str = None, show_visual_outputs: bool = True,
+def basic_example_transformer_three_winding(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True,
                                             is_test: bool = False):
     """Run the example code for the three-winding transformer."""
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):

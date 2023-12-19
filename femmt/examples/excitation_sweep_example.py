@@ -23,13 +23,14 @@ if component == "inductor_sweep":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=True)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.Silent)
 
     # 2. set core parameters
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"])
+                                                    window_h=core_db["window_h"],
+                                                    core_h=core_db["core_h"])
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
@@ -90,12 +91,13 @@ if component == "transformer_sweep":
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, silent=False)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory, verbosity=fmt.Verbosity.Silent)
 
     # 2. set core parameters
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=0.015,
                                                     window_w=0.012,
-                                                    window_h=0.0295)
+                                                    window_h=0.0295,
+                                                    core_h=0.035)
 
     core = fmt.Core(core_type=fmt.CoreType.Single, core_dimensions=core_dimensions,
                     permeability_datasource=fmt.MaterialDataSource.Custom,

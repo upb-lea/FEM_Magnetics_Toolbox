@@ -2,8 +2,9 @@
 import femmt as fmt
 import os
 import numpy as np
+from typing import Optional
 
-def transformer_component_study(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def transformer_component_study(onelab_folder: Optional[str] = None, show_visual_outputs: bool = True, is_test: bool = False):
     """Perform a component study."""
     switching_frequency = 180000
 
