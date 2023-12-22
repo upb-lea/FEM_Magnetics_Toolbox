@@ -4,7 +4,7 @@ FEM Magnetics Toolbox (FEMMT)
 Python toolbox to generate preconfigured figures for FEM simulation
 tools in power electronics.
 
-The toolbox contains two parts, a reluctance module and a FEM module. 
+The toolbox contains two parts, a reluctance module and a FEM module.
 
 * The reluctance module is for pre-calculations 
 * The FEM module is for detailed calculations
@@ -78,20 +78,22 @@ The magnetic component can be an inductor, a transformer, or a
 transformer with integrated stray path. The parameterization process is
 divided into the following steps: 
 
-1. Chose simulation type, 
+1. Choose the simulation type, whether it's frequency domain or time domain simulation,
 2. set core parameters (geometry, material), 
-3. set air gap parameters (position, height), 
-4. set conductor parameters (litz/solid wire), 
-5. start simulation with given frequencies and currents and phases.
+3. set air gap parameters (position, height),
+4. set insulation distances
+5. set conductor parameters (litz/solid wire),
+6. start the frequency domain simulation by specifying the given frequencies, currents, and phases, and the time domain simulation by specifying the given currents, and time parameters.
 
-Please have a look at the `basic_example </femmt/examples/basic_example.py>`__.
+Please have a look at the `basic_example </femmt/examples/basic_inductor.py>`__ for frequency domain simulation, and
+at the `basic_example </femmt/examples/basic_inductor_time_domain.py>`__ for time domain simulation.
 
 The examples contain among other things: 
 
 * Geometries: Coil, transformer, transformer with integrated stray path, 
 * wire and stranded wire definition, 
 * air gaps definition, 
-* excitation with different frequencies, amplitudes and phases.
+* excitation with different frequencies, amplitudes and phases for frequency domain simulation, and with amplitudes and time steps for time domain simulation.
 
 The simulation results can be found in `working_directory/results/result_log_electro_magnetic.json`. Working directory can either be set by the user otherwise it located at `/python-side-packages-path/femmt`.
 In it you can find 
