@@ -929,22 +929,24 @@ class WindingWindow:
 
         The split factors are values between 0 and 1 and determine a horizontal and vertical line at which the window is split.
         Not every value is needed for every split type:
-        - NoSplit: No factor is needed
-        - HorizontalSplit: Horizontal split factor needed
-        - VerticalSplit: Vertical split factor needed
-        - HorizontalAndVerticalSplit: Both split factors needed
+        - NoSplit: No split_factor is needed
+        - HorizontalSplit: horizontal_split_factor needed
+        - VerticalSplit: vertical_split_factor factor needed
+        - HorizontalAndVerticalSplit: horizontal_split_factor and vertical_split_factor needed
 
         Up to 4 virtual winding windows are returned:
-        - NoSplit: complete
+        - NoSplit: One big virtual winding window, what is the window given by the core minus the core insulation.
         - HorizontalSplit: left, right
         - VerticalSplit: top, bottom
         - HorizontalAndVerticalSplit: top_left, top_right, bot_left, bot_right
 
         :param split_type: Determines the arrangement in which virtual winding windows are created
         :type split_type: WindingWindowSplit
-        :param horizontal_split_factor: Horizontal split factor, defaults to 0.5
+        :param split_distance: distance between two virtual winding windows in meter [m].
+        :type split_distance: float
+        :param horizontal_split_factor: Horizontal split factor 0...1, defaults to 0.5
         :type horizontal_split_factor: float, optional
-        :param vertical_split_factor: Vertical split factor, defaults to 0.5
+        :param vertical_split_factor: Vertical split factor 0...1, defaults to 0.5
         :type vertical_split_factor: float, optional
         :return: Tuple containing the virtual winding windows
         :rtype: Tuple[VirtualWindingWindow]
