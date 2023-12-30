@@ -9,15 +9,15 @@ Working directory
 --------------------
 
 Every femmt model has a working directory which can be set when creating
-an instance of the femmt base class called 'MagneticComponent'. When
+an instance of the femmt base class called ``MagneticComponent``. When
 running the simulation many files will be created in the working
 directory including the model, mesh and multiple result files. It also
 contains the electro_magnetic_log.json which the most important
 simulation results (e.g. losses, inductance, ...).
 
-Besides the working directory a MagneticComponent also needs a
-ComponentType. Currently this can be 'Inductor', 'Transformer' or
-'IntegratedTransformer'.
+Besides the working directory a ``MagneticComponent`` also needs a
+``ComponentType``. Currently this can be '``Inductor``', '``Transformer``' or
+'``IntegratedTransformer``'.
 
 This results to the following code:
 
@@ -25,10 +25,24 @@ This results to the following code:
 
    import femmt as fmt
 
-   geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, silent=False) 
+   geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain,
+                                component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
-Note about the silent-flag. In case of False, all outputs are printed in the terminal. In case of True, no command line outputs are shown. This simple feature significantly speeds up simulation time, especially for many automated simulations. 
+The ``simulation_type`` specifies the type of simulation to be performed.
 
+- If set to ``FreqDomain``, indicating a frequency domain simulation.
+- If set to ``TimeDomain``, indicating a time domain simulations.
+
+The ``Verbosity`` controls the level of detail in the output.
+
+- If set to ``ToConsole``, all outputs are printed in the terminal.
+- If set to ``ToFile``, all outputs are written to files.
+- If set to ``Silent``, no command line outputs are shown.
+
+This simple feature significantly speeds up simulation time, especially for many automated simulations.
+
+The ``is_gui`` bool asks at first startup for onelab-path. It is a distinction between GUI and command line and is defaults to False in command-line-mode.
 
 Creating a core
 ------------------
@@ -64,8 +78,22 @@ Now the core object can be created and added to the model (geo object)
 
 .. code:: python
 
-   core = fmt.Core(core_inner_diameter=core_db["core_inner_diameter"], window_w=core_db["window_w"], window_h=core_db["window_h"], material="N95", temperature=25, frequency=100000, datasource="manufacturer_datasheet")
-   core.set_core(core)
+   core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                    window_w=core_db["window_w"],
+                                                    window_h=core_db["window_h"],
+                                                    core_h=core_db["core_h"])
+
+   core = fmt.Core(core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    detailed_core_model=False,
+                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
+                    permeability_datasource=fmt.MaterialDataSource.Measurement,
+                    permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                    permittivity_datasource=fmt.MaterialDataSource.Measurement,
+                    permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+   geo.set_core(core)
 
 Material database
 ~~~~~~~~~~~~~~~~~
@@ -84,7 +112,7 @@ methods are available:
 -  **Center**: The air gap will always be positioned in the center
 -  **Percent**: A value between 0 and 100 can be given. Where 0
    represents the bottom end and 100 the top end of the winding window.
--  **Manually**: The specific y coordinate nneeds to be entered
+-  **Manually**: The specific y coordinate needs to be entered
    manually.
 
 .. image:: ../images/geometry_air_gap.png
@@ -120,14 +148,9 @@ a distance between each virtual winding window. The first two are set
 using the 'add_winding_insulations' functions, the last one when
 creating such a virtual winding window (vww).
 
-The function 'add_winding_insulations' therefore needs multiple
-parameters:
-
--  The first parameter is a list called **inner_windings**, where the
-   list index corresponds to the number of the winding (0: Primary, 1:
-   Secondary, ...).
--  The second parameter is the distance between two virtual winding
-   windows, this is called **virtual_winding_window_insulation**.
+The function '``add_winding_insulations``' therefore contains lists which represent the insulations between turns of the same winding. This does not correspond to
+the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
+The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
 
 .. image:: ../images/geometry_insulation.png
 	:width: 800
@@ -136,9 +159,9 @@ This is how to create an insulation object and add certain insulations:
 
 .. code:: python
 
-   insulation = fmt.Insulation()
-   insulation.add_core_insulation(0.001, 0.001, 0.004, 0.001)
-   insulation.add_winding_insulation([0.0005], 0.0001)
+   insulation = fmt.Insulation(flag_insulation=True)
+   insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
+   insulation.add_winding_insulations([[0.0002, 0.001],[0.001, 0.0002]])
    geo.set_insulation(insulation)
 
 The spatial parameters for the insulation, as well as for every other
