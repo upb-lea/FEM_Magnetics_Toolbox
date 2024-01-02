@@ -78,6 +78,7 @@ class FileData:
 
         # Setup file paths
         self.e_m_results_log_path = os.path.join(self.results_folder_path, "log_electro_magnetic.json")
+        self.coordinates_description_log_path = os.path.join(self.results_folder_path, "log_coordinates_description.json")
         self.femm_results_log_path = os.path.join(self.femm_folder_path, "result_log_femm.json")
         self.config_path = os.path.join(self.femmt_folder_path, "config.json")
         self.e_m_mesh_file = os.path.join(self.mesh_folder_path, "electro_magnetic.msh")

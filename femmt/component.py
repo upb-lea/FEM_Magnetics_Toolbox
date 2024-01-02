@@ -550,6 +550,7 @@ class MagneticComponent:
             self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
             self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png,
                                            color_scheme=color_scheme, colors_geometry=colors_geometry)
+        self.log_coordinates_description()
 
     def get_single_complex_permeability(self):
         """
@@ -2486,6 +2487,21 @@ class MagneticComponent:
             log = content
 
         return log
+
+    def log_coordinates_description(self):
+        """
+        Log a coordinates-based geometry description.
+
+        :return:
+        """
+        coordinates_dict = {
+            "dummy_coordinates_dict": {},
+            "dummy_coordinates_list": {}
+        }
+
+        # ====== save data as JSON ======
+        with open(self.file_data.coordinates_description_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(coordinates_dict, outfile, indent=2, ensure_ascii=False)
 
     def read_thermal_log(self) -> Dict:
         """
