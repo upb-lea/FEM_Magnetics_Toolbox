@@ -550,7 +550,10 @@ class MagneticComponent:
             self.high_level_geo_gen(frequency=freq, skin_mesh_factor=skin_mesh_factor)
             self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png,
                                            color_scheme=color_scheme, colors_geometry=colors_geometry)
-        self.log_coordinates_description()
+
+        if self.component_type == ComponentType.Inductor:
+            if self.windings[0].conductor_type == ConductorType.RoundLitz or self.windings[0].conductor_type == ConductorType.RoundSolid:
+                self.log_coordinates_description()
 
     def get_single_complex_permeability(self):
         """
@@ -2492,7 +2495,8 @@ class MagneticComponent:
         """
         Log a coordinates-based geometry description.
 
-        Currently, implemented for inductor only.
+        Currently, implemented for inductor with round conductors only!
+
         Following lists are created according to sketch in documentation.
         - p_outer
         - p_ww
@@ -2520,6 +2524,8 @@ class MagneticComponent:
         coordinates_dict["p_air_gap_center"], coordinates_dict["lengths_air_gap"] = \
             ff.convert_air_gap_corner_points_to_center_and_distance(self.two_d_axi.p_air_gaps.tolist())  # transform to center points and extract heights
         # for the conductors, the coordinates have to be obtained somewhere else...
+        coordinates_dict["p_cond_center"] = self.two_d_axi.p_conductor[0][::5].tolist()
+        coordinates_dict["radius_cond"] = self.two_d_axi.p_conductor[0][0, 0] - self.two_d_axi.p_conductor[0][1, 0]
 
         # ====== save data as JSON ======
         with open(self.file_data.coordinates_description_log_path, "w+", encoding='utf-8') as outfile:
