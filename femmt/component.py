@@ -2508,10 +2508,18 @@ class MagneticComponent:
             "p_outer": [],
             "p_ww": [],
             "p_air_gap_center": [],
-            "distances_air_gap": [],
+            "lengths_air_gap": [],
             "p_cond_center": [],
             "radius_cond": []
         }
+
+        # Obtain coordinates data from component
+        coordinates_dict["p_outer"] = self.two_d_axi.p_outer[:, :2].tolist()  # cut last 2 columns (z coordinate and mesh accuracy)
+        coordinates_dict["p_outer"][0][0], coordinates_dict["p_outer"][2][0] = 0, 0  # 2d axi symmetric: description only of right half
+        coordinates_dict["p_ww"] = self.two_d_axi.p_window[4:, :2].tolist()  # cut first 4 rows (left winding window) and last 2 columns ("-")
+        coordinates_dict["p_air_gap_center"], coordinates_dict["lengths_air_gap"] = \
+            ff.convert_air_gap_corner_points_to_center_and_distance(self.two_d_axi.p_air_gaps.tolist())  # transform to center points and extract heights
+        # for the conductors, the coordinates have to be obtained somewhere else...
 
         # ====== save data as JSON ======
         with open(self.file_data.coordinates_description_log_path, "w+", encoding='utf-8') as outfile:
