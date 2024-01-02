@@ -1611,5 +1611,28 @@ def visualize_inductance_matrix(inductance_matrix, silent: bool):
         print(string_to_print)
 
 
+def convert_air_gap_corner_points_to_center_and_distance(corner_points):
+    """
+    Convert the list-defined air_gap_corner_points from a "two_d_axi" object to center points and lengths as to separate lists.
+
+    :param corner_points: in usage of magnetic component -> "self.two_d_axi.p_air_gaps.tolist()"
+    :return:
+    """
+    centers = []
+    heights = []
+    # 4 corner points make up one air gap
+    for n_air_gap in range(0, int(len(corner_points)/4)):
+        width = corner_points[n_air_gap*4 + 1][0] - corner_points[n_air_gap*4 + 0][0]
+        height = corner_points[n_air_gap * 4 + 2][1] - corner_points[n_air_gap * 4 + 0][1]
+        heights.append(height)
+        centers.append(
+            [
+                corner_points[n_air_gap*4 + 0][0] + width/2,  # x-coordinate of air gap's center
+                corner_points[n_air_gap*4 + 2][1] - height/2  # y-coordinate of air gap's center
+            ]
+        )
+    return centers, heights
+
+
 if __name__ == '__main__':
     pass
