@@ -2492,11 +2492,25 @@ class MagneticComponent:
         """
         Log a coordinates-based geometry description.
 
+        Currently, implemented for inductor only.
+        Following lists are created according to sketch in documentation.
+        - p_outer
+        - p_ww
+        - p_air_gap_center
+        - p_cond_center
+        Following pairs of lists need to match each other in their order.
+        - p_air_gap_center and distances_air_gap
+        - p_cond_center and radius_cond
+
         :return:
         """
         coordinates_dict = {
-            "dummy_coordinates_dict": {},
-            "dummy_coordinates_list": {}
+            "p_outer": [],
+            "p_ww": [],
+            "p_air_gap_center": [],
+            "distances_air_gap": [],
+            "p_cond_center": [],
+            "radius_cond": []
         }
 
         # ====== save data as JSON ======
