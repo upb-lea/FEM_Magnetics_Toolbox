@@ -57,14 +57,14 @@ The following graphics always show only a sectional view of the core
 geometry.
 
 .. image:: ../images/geometry_translated.png
-	:width: 800
+    :width: 800
 
-After creating a MagneticComponent a core needs to be created. The core
+After creating a MagneticComponent, a core needs to be created. The core
 needs spatial parameters as well as material parameters. The neccessary
 spatial parameters are shown in the image below.
 
 .. image:: ../images/geometry_core.png
-	:width: 800
+    :width: 800
 
 Core spatial parameters can be entered manually but FEMMT provides a
 database of different practical cores. This database can be accessed
@@ -116,7 +116,7 @@ methods are available:
    manually.
 
 .. image:: ../images/geometry_air_gap.png
-	:width: 800
+    :width: 800
 
 Have a look at the following example on how to create an air gap object
 and add it to the model:
@@ -126,6 +126,7 @@ and add it to the model:
    air_gaps = fmt.AirGaps(method=fmt.AirGapMethod.Percent, core=core)
    air_gaps.add_air_gap(leg_position=fmt.AirGapLegPosition.CenterLeg, height=0.0005, position_value=50)
    geo.set_air_gaps(air_gaps)
+
 
 Adding an air_gap object is not necessary. If no air gap is needed,
 don't add the air gap object to the model.
@@ -145,15 +146,12 @@ function.
 Furthermore there are offset insulations between each turn in the same
 winding, a distance between 2 windings in one virtual winding window and
 a distance between each virtual winding window. The first two are set
-using the 'add_winding_insulations' functions, the last one when
+using the '``add_winding_insulations``' functions, the last one when
 creating such a virtual winding window (vww).
 
-The function '``add_winding_insulations``' therefore contains lists which represent the insulations between turns of the same winding. This does not correspond to
-the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
-The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
 
 .. image:: ../images/geometry_insulation.png
-	:width: 800
+    :width: 800
 
 This is how to create an insulation object and add certain insulations:
 
@@ -163,6 +161,7 @@ This is how to create an insulation object and add certain insulations:
    insulation.add_core_insulations(0.001, 0.001, 0.002, 0.001)
    insulation.add_winding_insulations([[0.0002, 0.001],[0.001, 0.0002]])
    geo.set_insulation(insulation)
+
 
 The spatial parameters for the insulation, as well as for every other
 function in FEMMT, are always in SI-Units, in this case metres.
@@ -179,7 +178,7 @@ Virtual Winding Windows
 For every femmt model there is always one winding window, which is a 2D
 representation of the 3D rotated winding window. This winding window can
 be split into multiple virtual winding windows which are used to draw
-the conductors. There are multiple ways to split a winding window:
+the conductors. The ``split_window`` function has multiple ways to split a winding window into:
 
 -  **NoSplit**: Only 1 virtual winding window will be returned and it
    has the same size as the real winding window.
@@ -197,9 +196,10 @@ the conductors. There are multiple ways to split a winding window:
    vertical split factors can be used to set the sizes of each grid
    cell.
 
+
 .. image:: ../images/geometry_winding_windows.png
-	:width: 800
-	
+    :width: 800
+
 In addition to that 2 virtual winding windows can be combined to one
 (this is not possible for (top_left, bottom_right) or (top_right,
 bottom_left) combinations). This is done using the combine_vww()
@@ -215,6 +215,31 @@ like this:
 
    winding_window = fmt.WindingWindow(core, insulation)
    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+
+Additionally, the ``NCellsSplit`` function provides even more flexibility, allowing
+the winding window to be split into N columns horizontally. The distance
+between the virtual winding windows, horizontal split factors, and the
+vertical split factor can be specified. A winding window with 12 columns horizontally can be created like this:
+
+.. code:: python
+
+   winding_window = fmt.WindingWindow(core, insulation)
+   cells = winding_window.NCellsSplit(0, [1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6], 0.5)
+
+
+Furthermore, the ``NHorizontalAndVerticalSplit`` function introduces more advanced splitting capabilities
+by allowing the winding window to be split into N columns horizontally,with each having M_N rows (vertically).
+Users can specify the positions of borders between columns and rows
+to customize the layout of the resulting virtual winding windows. Creating a winding window with three columns,
+where the second column is further divided into two rows, can be achieved with the following code:
+
+.. code:: python
+
+    winding_window = fmt.WindingWindow(core, insulation)
+    cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.48, 0.75],
+                                                      vertical_split_factors=[None, [0.5, 0.85], None])
+
 
 Winding types and winding schemes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -346,7 +371,7 @@ as well:
 
 .. code:: python
 
-   geo.set_winding_window(winding_window=winding_window)
+   geo.set_winding_windows([winding_window])
 
 Create model and start simulation
 ------------------------------------
@@ -361,10 +386,33 @@ The last step is to run a simulation using single_simulation(), which
 needs the frequency, currents (and phase if transformer is set) as
 parameters.
 
-.. code:: python
+The last step is to run a simulation using ``single_simulation()`` or ``time_domain_simulation`` depending on the
+simulation type, where every type needs the following parameters:
 
-   geo.create_model(freq=100000, visualize_before=True, save_png=False)
-   geo.single_simulation(freq=100000, current=[4.5], show_results=True)
+- For Frequency Domain Simulation: the frequency, currents (and phase if transformer is set) are needed as parameters.
+
+  .. code:: python
+
+     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
+     geo.single_simulation(freq=inductor_frequency, current=[4.5],
+                           plot_interpolation=False,
+                           show_fem_simulation_results=show_visual_outputs)
+
+- For Time Domain Simulation: the ``current_period_vec`` (list of lists of current values), ``time_period_vec`` (list of corresponding time values),
+and ``number_of_periods`` are needed as parameters. The ``show_rolling_average parameter`` is a boolean flag that determines whether to
+display or hide the rolling average of simulation results during the time domain simulation.
+
+  .. code:: python
+
+     geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
+     geo.time_domain_simulation(current_period_vec=[[0, 1, 0, -1, 0 ], [0, 1, 0, -1, 0]]
+                                time_period_vec=[0, 0.1, 0.2, 0.3, 0.4]
+                                number_of_periods=2,
+                                plot_interpolation=False,
+                                show_fem_simulation_results=True,
+                                show_rolling_average=False,
+                                rolling_avg_window_size=50)
+
 
 The results should look like this:
 
@@ -393,7 +441,7 @@ simulation different values are needed:
    parameter
    
 .. image:: ../images/geometry_thermal.png
-	:width: 800
+    :width: 800
 
 Have a look at this example on how to set the parameters since the
 dictionary keywords are important to write correctly:
@@ -412,7 +460,7 @@ dictionary keywords are important to write correctly:
            "core": 5,
            "winding": 400,
            "air_gaps": 180,
-           "insulation": 0.42
+           "insulation": 0.42 if flag_insulation else None
    }
 
    case_gap_top = 0.002
@@ -468,11 +516,14 @@ the simulation can be run:
 
 .. code:: python
 
-   geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top, case_gap_right, case_gap_bot, True, True)
+   geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                               case_gap_right, case_gap_bot, show_thermal_visual_outputs,
+                               color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas,
+                               flag_insulation=flag_insulation)
 
 The following image shows the simulation results:
 
 .. image:: ../images/user_guide_example_thermal_simulation.png
-	:width: 350
+    :width: 350
 
 
