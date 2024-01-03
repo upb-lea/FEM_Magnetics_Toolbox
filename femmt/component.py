@@ -49,7 +49,6 @@ class MagneticComponent:
     onelab_folder_path: str = None
     silent: bool = False
 
-      
     def __init__(self, simulation_type: SimulationType = SimulationType.FreqDomain,
                  component_type: ComponentType = ComponentType.Inductor, working_directory: str = None,
 
@@ -2389,7 +2388,6 @@ class MagneticComponent:
             text_file.write("Flag_show_standard_fields = 0;\n")
 
         text_file.close()
-
 
     def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, currents: List = None,
                                             frequencies: List = None,

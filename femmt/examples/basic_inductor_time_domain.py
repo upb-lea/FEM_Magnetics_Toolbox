@@ -91,14 +91,6 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # 6.a. start simulation
     # time value
     t = np.linspace(0, 1 / inductor_frequency, 5)
-    # T = 1 / inductor_frequency
-    # initial_time = 0
-    # number_of_periods = 2
-    # maxtime = number_of_periods * T
-    # number_of_steps = 5
-    # delta_t = maxtime / number_of_steps
-    # t = np.arange(initial_time, maxtime, delta_t)
-    # t_list = t.tolist()
     t_list = [float(x) for x in t.tolist()]
     # # Current values
     current_values = 4.5 * np.cos(2 * np.pi * inductor_frequency * t)
