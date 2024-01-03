@@ -1,5 +1,7 @@
-# This file is used for the LEA Master Project Group - Speed up of FEMMT by using parallel processing.
-# It contains multiple benchmarking functions in order to analyse the runtime and the accuracy of the simulation results.
+"""Speed up of FEMMT by using parallel processing. File to generate benchmarks of different speed-up techniques.
+
+It contains multiple benchmarking functions in order to analyse the runtime and the accuracy of the simulation results.
+"""
 
 # Python standard libraries
 from typing import List
@@ -16,16 +18,19 @@ import femmt as fmt
 
 @dataclass
 class MeshAccuracies:
+    """Mesh accuracies for core, window, air gaps and conductors."""
+
     mesh_accuracy_core: float
     mesh_accuracy_window: float
     mesh_accuracy_conductor: float
     mesh_accuracy_air_gaps: float
 
 class SingleBenchmark:
+    """Define a single benchmark."""
     
     # Benchmark times
     high_level_geo_gen_time: float              # Time to create the model in gmsh
-    generate_hybrid_mesh_time : float           # Time to generate the hybrid mesh
+    generate_hybrid_mesh_time: float           # Time to generate the hybrid mesh
     generate_electro_magnetic_mesh_time: float  # Time to generate the electro magnetic mesh
     prepare_simulation_time: float              # Time to prepare the simulation (create GetDP files and set simulation options)
     real_simulation_time: float                 # Time to run the simulation in GetDP
@@ -45,11 +50,13 @@ class SingleBenchmark:
         self.model = model
 
     def benchmark_simulation(self, inductor_frequency):
+        """Start the simulation for a single benchmark."""
         # Simulate
-        self.high_level_geo_gen_time, self.generate_hybrid_mesh_time = self.model.create_model(freq=inductor_frequency, pre_visualize_geometry=False, save_png=False, benchmark=True)
+        self.high_level_geo_gen_time, self.generate_hybrid_mesh_time = self.model.create_model(freq=inductor_frequency, pre_visualize_geometry=False,
+                                                                                               save_png=False, benchmark=True)
 
-        self.generate_electro_magnetic_mesh_time, self.prepare_simulation_time, self.real_simulation_time, self.logging_time = self.model.single_simulation(freq=inductor_frequency, current=[4.5],
-                          plot_interpolation=False, show_fem_simulation_results=False, benchmark=True)
+        self.generate_electro_magnetic_mesh_time, self.prepare_simulation_time, self.real_simulation_time, self.logging_time = self.model.single_simulation(
+            freq=inductor_frequency, current=[4.5], plot_interpolation=False, show_fem_simulation_results=False, benchmark=True)
        
         self.create_model_time = self.high_level_geo_gen_time + self.generate_hybrid_mesh_time
         self.simulation_time = self.generate_electro_magnetic_mesh_time + self.prepare_simulation_time + self.real_simulation_time + self.logging_time
@@ -65,8 +72,8 @@ class SingleBenchmark:
             self.total_losses = content["total_losses"]["total_losses"]
             self.winding_losses = content["total_losses"]["all_windings"]
 
-
     def to_dict(self):
+        """Export the single benchmark results to a dict."""
         return {
             "create_model_time": self.create_model_time,
             "simulation_time": self.simulation_time,
@@ -83,12 +90,15 @@ class SingleBenchmark:
         }
 
 class Benchmark:
+    """Benchmarks different mesh accuracies for a general comparison."""
+
     benchmarks: SingleBenchmark
 
     def __init__(self, benchmarks):
         self.benchmarks = benchmarks
 
     def to_json(self, file_path):
+        """Export the benchmark results to a .json file."""
         output = {
             "averages": {
                 "create_model_time": np.mean([x.create_model_time for x in self.benchmarks]),
@@ -120,13 +130,15 @@ class Benchmark:
 
 # ------ Generic Functions ------
 
-def create_model(working_directory, mesh_accuracies = None, aspect_ratio = 10, wwr_enabled = True, number_of_conductors: int = 9):
 
+def create_model(working_directory, mesh_accuracies=None, aspect_ratio=10, wwr_enabled=True, number_of_conductors: int = 9):
+    """Create the model for benchmark."""
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
     inductor_frequency = 270000
     
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
@@ -144,9 +156,10 @@ def create_model(working_directory, mesh_accuracies = None, aspect_ratio = 10, w
                     permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
     
     if mesh_accuracies:
-        if type(mesh_accuracies) == MeshAccuracies:
-            geo.update_mesh_accuracies(mesh_accuracies.mesh_accuracy_core, mesh_accuracies.mesh_accuracy_window, mesh_accuracies.mesh_accuracy_conductor, mesh_accuracies.mesh_accuracy_air_gaps)
-        elif type(mesh_accuracies) == float:
+        if isinstance(mesh_accuracies, MeshAccuracies):
+            geo.update_mesh_accuracies(mesh_accuracies.mesh_accuracy_core, mesh_accuracies.mesh_accuracy_window,
+                                       mesh_accuracies.mesh_accuracy_conductor, mesh_accuracies.mesh_accuracy_air_gaps)
+        elif isinstance(mesh_accuracies, float):
             geo.update_mesh_accuracies(mesh_accuracies, mesh_accuracies, mesh_accuracies, mesh_accuracies)
     geo.set_core(core)
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -166,19 +179,22 @@ def create_model(working_directory, mesh_accuracies = None, aspect_ratio = 10, w
 
     return geo
 
-def create_rectangular_conductor_model(working_directory, mesh_accuracies, thickness, center_factor, left_bound_delta = None, wwr_enabled = True, aspect_ratio = 10):
+
+def create_rectangular_conductor_model(working_directory, mesh_accuracies, thickness, center_factor, left_bound_delta=None, wwr_enabled=True, aspect_ratio=10):
+    """Create a model with rectangular condutors."""
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
     inductor_frequency = 270000
     
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory, verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                verbosity=fmt.Verbosity.Silent, wwr_enabled=wwr_enabled)
 
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
                                                     window_w=core_db["window_w"],
                                                     window_h=core_db["window_h"],
                                                     core_h=core_db["core_h"])
-    #core = fmt.Core(core_type=fmt.CoreType.Single,
+    # core = fmt.Core(core_type=fmt.CoreType.Single,
     #                core_dimensions=core_dimensions,
     #                material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
     #                permeability_datasource=fmt.MaterialDataSource.Measurement,
@@ -190,23 +206,24 @@ def create_rectangular_conductor_model(working_directory, mesh_accuracies, thick
     
     # Used for FEMM comparison
     core = fmt.Core(core_type=fmt.CoreType.Single,
-                        core_dimensions=core_dimensions,
-                        material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
-                        # permeability_datasource="manufacturer_datasheet",
-                        permeability_datasource=fmt.MaterialDataSource.Custom,
-                        #permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                        #permeability_measurement_setup="LEA_LK",
-                        mu_r_abs=1500, phi_mu_deg=0,
-                        permittivity_datasource=fmt.MaterialDataSource.Custom,
-                        #permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                        #permittivity_measurement_setup="LEA_LK", 
-                        sigma=2.38732212414336e-001,
-                        mdb_verbosity=fmt.Verbosity.Silent,)
+                    core_dimensions=core_dimensions,
+                    material=fmt.Material.N49, temperature=45, frequency=inductor_frequency,
+                    # permeability_datasource="manufacturer_datasheet",
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    # permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
+                    # permeability_measurement_setup="LEA_LK",
+                    mu_r_abs=1500, phi_mu_deg=0,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom,
+                    # permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
+                    # permittivity_measurement_setup="LEA_LK",
+                    sigma=2.38732212414336e-001,
+                    mdb_verbosity=fmt.Verbosity.Silent,)
 
     if mesh_accuracies:
-        if type(mesh_accuracies) == MeshAccuracies:
-            geo.update_mesh_accuracies(mesh_accuracies.mesh_accuracy_core, mesh_accuracies.mesh_accuracy_window, mesh_accuracies.mesh_accuracy_conductor, mesh_accuracies.mesh_accuracy_air_gaps)
-        elif type(mesh_accuracies) == float:
+        if isinstance(mesh_accuracies, MeshAccuracies):
+            geo.update_mesh_accuracies(mesh_accuracies.mesh_accuracy_core, mesh_accuracies.mesh_accuracy_window,
+                                       mesh_accuracies.mesh_accuracy_conductor, mesh_accuracies.mesh_accuracy_air_gaps)
+        elif isinstance(mesh_accuracies, float):
             geo.update_mesh_accuracies(mesh_accuracies, mesh_accuracies, mesh_accuracies, mesh_accuracies)
 
     geo.set_core(core)
@@ -240,7 +257,7 @@ def create_rectangular_conductor_model(working_directory, mesh_accuracies, thick
     return geo
 
 def plot_mesh_over_precision(benchmarks, x_list, x_label, title):
-    
+    """Plot the mesh over precision."""
     total_losses = [bm.total_losses for bm in benchmarks]
     self_inductance = [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in benchmarks]
     execution_times = [bm.execution_time for bm in benchmarks]
@@ -273,6 +290,7 @@ def plot_mesh_over_precision(benchmarks, x_list, x_label, title):
 # ------ Benchmarks ------
 
 def benchmark_rectangular_conductor_offset(working_directory):
+    """Benchmark the conductor offset."""
     left_bound_deltas = np.linspace(0.001, 0.005, num=5)
     default_mesh_accuracy = 0.5
     thickness = 0.0015
@@ -321,13 +339,15 @@ def benchmark_rectangular_conductor_offset(working_directory):
     axis[2].legend()
     plt.show()
 
+
 def benchmark_rectangular_conductor(working_directory):
-    #mesh_accuracies = np.arange(0.1, 1, step=0.1)
-    #mesh_accuracies_conductor = np.linspace(0.001, 0.00005, num=10)
+    """Benchmark mesh accuracies inside a rectangular condutor."""
+    # mesh_accuracies = np.arange(0.1, 1, step=0.1)
+    # mesh_accuracies_conductor = np.linspace(0.001, 0.00005, num=10)
     default_mesh_accuracy = 0.4
     thickness = 0.0015
-    #num_vertical_mesh_points = np.arange(1, 15, step=1.5)
-    #mesh_accuracies_conductor = [thickness/x for x in num_vertical_mesh_points]
+    # num_vertical_mesh_points = np.arange(1, 15, step=1.5)
+    # mesh_accuracies_conductor = [thickness/x for x in num_vertical_mesh_points]
     mesh_accuracies_conductor = [0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     winding_losses = []
     execution_times = []
@@ -390,16 +410,18 @@ def benchmark_rectangular_conductor(working_directory):
     axis[1].grid()
     plt.show()
 
+
 def benchmark_different_mesh_accuracies(working_directory):
-    #comparison_data = {
+    """Simulate for different mesh accuracies and benchmark the results."""
+    # comparison_data = {
     #    # Data from simulation with 0.05 mesh accuracy (everywhere) and no wwr and no insulations
     #    "total_losses": 7.681125170876381,
     #    "self_inductance": 3.536549787506707e-05,
     #    "execution_time": 239.89776849746704
-    #}
+    # }
 
     mesh_accuracy_values = np.linspace(0.3, 1, num=8)
-    #mesh_accuracy_values = [1]
+    # mesh_accuracy_values = [1]
     default_accuracy = 0.3
 
     insulation_deltas = 0.00003
@@ -459,23 +481,29 @@ def benchmark_different_mesh_accuracies(working_directory):
 
     figure, axis = plt.subplots(3, sharex=True)
 
-    figure.suptitle(f"Benchmark: Different mesh accuracies based on position (specific region is coarser); default mesh size = {default_accuracy}", fontsize=font_size_title)
+    figure.suptitle(f"Benchmark: Different mesh accuracies based on position (specific region is coarser); default mesh size = {default_accuracy}",
+                    fontsize=font_size_title)
     axis[0].plot(mesh_accuracy_values, [bm.total_losses for bm in core_benchmarks], "ro", label="Fine winding window mesh", markersize=markersize)
     axis[0].plot(mesh_accuracy_values, [bm.total_losses for bm in window_benchmarks], "yo", label="Coarse winding window mesh", markersize=markersize)
     axis[0].plot(mesh_accuracy_values, [bm.total_losses for bm in winding_benchmarks], "go", label="Winding", markersize=markersize)
     axis[0].plot(mesh_accuracy_values, [bm.total_losses for bm in air_gaps_benchmarks], "bo", label="Air Gaps", markersize=markersize)
     axis[0].plot(mesh_accuracy_values, [bm.total_losses for bm in comparison_benchmarks], "co", label="Comparison", markersize=markersize)
-    #axis[0].axhline(y=comparison_data["total_losses"], linestyle="--", label="Ideal value")
+    # axis[0].axhline(y=comparison_data["total_losses"], linestyle="--", label="Ideal value")
     axis[0].set_ylabel("Total losses", fontsize=font_size_default)
     axis[0].set_xticks(mesh_accuracy_values, fontsize=font_size_default)
     axis[0].grid()
 
-    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in core_benchmarks], "ro", label="Fine winding window mesh", markersize=markersize)
-    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in window_benchmarks], "yo", label="Coarse winding window mesh", markersize=markersize)
-    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in winding_benchmarks], "go", label="Winding", markersize=markersize)
-    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in air_gaps_benchmarks], "bo", label="Air Gaps", markersize=markersize)
-    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in comparison_benchmarks], "co", label="Comparison", markersize=markersize)
-    #axis[1].axhline(y=comparison_data["self_inductance"], linestyle="--", label="Ideal value")
+    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in core_benchmarks], "ro",
+                 label="Fine winding window mesh", markersize=markersize)
+    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in window_benchmarks], "yo",
+                 label="Coarse winding window mesh", markersize=markersize)
+    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in winding_benchmarks], "go",
+                 label="Winding", markersize=markersize)
+    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in air_gaps_benchmarks], "bo",
+                 label="Air Gaps", markersize=markersize)
+    axis[1].plot(mesh_accuracy_values, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in comparison_benchmarks], "co",
+                 label="Comparison", markersize=markersize)
+    # axis[1].axhline(y=comparison_data["self_inductance"], linestyle="--", label="Ideal value")
     axis[1].set_ylabel("|Self inductance|", fontsize=font_size_default)
     axis[1].set_xticks(mesh_accuracy_values, fontsize=font_size_default)
     axis[1].grid()
@@ -485,7 +513,7 @@ def benchmark_different_mesh_accuracies(working_directory):
     axis[2].plot(mesh_accuracy_values, [bm.execution_time for bm in winding_benchmarks], "go", label="Winding", markersize=markersize)
     axis[2].plot(mesh_accuracy_values, [bm.execution_time for bm in air_gaps_benchmarks], "bo", label="Air Gaps", markersize=markersize)
     axis[2].plot(mesh_accuracy_values, [bm.execution_time for bm in comparison_benchmarks], "co", label="Comparison", markersize=markersize)
-    #axis[2].axhline(y=comparison_data["execution_time"], linestyle="--", label="Ideal value")
+    # axis[2].axhline(y=comparison_data["execution_time"], linestyle="--", label="Ideal value")
     axis[2].set_ylabel("Execution time", fontsize=font_size_default)
     axis[2].set_xlabel("Mesh accuracy for set region", fontsize=font_size_default)
     axis[2].set_xticks(mesh_accuracy_values, fontsize=font_size_default)
@@ -495,8 +523,7 @@ def benchmark_different_mesh_accuracies(working_directory):
     plt.show()
 
 def benchmark_aspect_ratios(folder: str):
-    """Creates a benchmark for the different insulation_deltas. Opens a plot a the end.
-    """
+    """Create a benchmark for the different insulation_deltas. Opens a plot in the end."""
     aspect_ratios = np.arange(0, 10, step=1)
     frequency = 270000
     benchmarks = []
@@ -511,10 +538,9 @@ def benchmark_aspect_ratios(folder: str):
     plot_mesh_over_precision(benchmarks, aspect_ratios, "aspect ratio", "Benchmark: Different aspect ratios")
 
 def benchmark_mesh_accuracy(folder: str):
-    """Creates a benchmark for the different mesh_accuracies. Opens a plot at the end.
-    """
+    """Create a benchmark for the different mesh_accuracies. Opens a plot at the end."""
     mesh_accuracies = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1]
-    #mesh_accuracies = [1]
+    # mesh_accuracies = [1]
     frequency = 270000 
     font_size_default = 15
     markersize = 7
@@ -612,7 +638,6 @@ def benchmark_mesh_accuracy(folder: str):
     print("Without both <Self inductance>:", self_inductance)
     print("Without both <Execution time>:", execution_time)
 
-
     figure, axis = plt.subplots(3, sharex=True)
 
     figure.suptitle("Benchmark: Different mesh precisions", fontsize=font_size_title)
@@ -645,12 +670,11 @@ def benchmark_mesh_accuracy(folder: str):
     plt.show()
 
 def single_benchmark(benchmark_results_folder, frequency):
-    """Runs many simulations of the same model and writes the execution times as well as a multiple other measured times in a log file.
-    """
+    """Run many simulations of the same model and writes the execution times as well as a multiple other measured times in a log file."""
     benchmark_results_file = os.path.join(benchmark_results_folder, "benchmark_test_without_insulation_bug.json")
     benchmarks = []
 
-    for i in range(4):
+    for _ in range(4):
         working_directory = os.path.join(benchmark_results_folder, "without_bug")
         model = create_model(working_directory)
         benchmark = SingleBenchmark(working_directory, model)
@@ -659,9 +683,11 @@ def single_benchmark(benchmark_results_folder, frequency):
     benchmark = Benchmark(benchmarks)
     benchmark.to_json(benchmark_results_file)
 
+
 def benchmark_winding_window_rasterization(folder):
+    """Introduce different winding counts to benachmark the winding window rasterization."""
     numbers_of_conductors = np.arange(2, 10, step=2)
-    #numbers_of_conductors = [1]
+    # numbers_of_conductors = [1]
     benchmarks_no_wwr = []
     benchmarks_wwr = []
     frequency = 270000
@@ -688,24 +714,26 @@ def benchmark_winding_window_rasterization(folder):
 
     figure, axis = plt.subplots(3, sharex=True)
 
-    figure.suptitle(f"Comparing coarser winding window with default winding window", fontsize=font_size_title)
+    figure.suptitle("Comparing coarser winding window with default winding window", fontsize=font_size_title)
     axis[0].plot(numbers_of_conductors, [bm.total_losses for bm in benchmarks_no_wwr], "ro", label="No WWR", markersize=markersize)
     axis[0].plot(numbers_of_conductors, [bm.total_losses for bm in benchmarks_wwr], "yo", label="WWR", markersize=markersize)
-    #axis[0].axhline(y=comparison_data["total_losses"], linestyle="--", label="Ideal value")
+    # axis[0].axhline(y=comparison_data["total_losses"], linestyle="--", label="Ideal value")
     axis[0].set_ylabel("Total losses", fontsize=font_size_default)
     axis[0].set_xticks(numbers_of_conductors, fontsize=font_size_default)
     axis[0].grid()
 
-    axis[1].plot(numbers_of_conductors, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in benchmarks_no_wwr], "ro", label="No WWR", markersize=markersize)
-    axis[1].plot(numbers_of_conductors, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in benchmarks_wwr], "yo", label="WWR", markersize=markersize)
-    #axis[1].axhline(y=comparison_data["self_inductance"], linestyle="--", label="Ideal value")
+    axis[1].plot(numbers_of_conductors, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in benchmarks_no_wwr], "ro", label="No WWR",
+                 markersize=markersize)
+    axis[1].plot(numbers_of_conductors, [np.sqrt(bm.flux_over_current[0]**2+bm.flux_over_current[1]**2) for bm in benchmarks_wwr], "yo", label="WWR",
+                 markersize=markersize)
+    # axis[1].axhline(y=comparison_data["self_inductance"], linestyle="--", label="Ideal value")
     axis[1].set_ylabel("|Self inductance|", fontsize=font_size_default)
     axis[1].set_xticks(numbers_of_conductors, fontsize=font_size_default)
     axis[1].grid()
     
     axis[2].plot(numbers_of_conductors, [bm.execution_time for bm in benchmarks_no_wwr], "ro", label="No WWR", markersize=markersize)
     axis[2].plot(numbers_of_conductors, [bm.execution_time for bm in benchmarks_wwr], "yo", label="WWR", markersize=markersize)
-    #axis[2].axhline(y=comparison_data["execution_time"], linestyle="--", label="Ideal value")
+    # axis[2].axhline(y=comparison_data["execution_time"], linestyle="--", label="Ideal value")
     axis[2].set_ylabel("Execution time", fontsize=font_size_default)
     axis[2].set_xlabel("Number of conductors", fontsize=font_size_default)
     axis[2].set_xticks(numbers_of_conductors, fontsize=font_size_default)
@@ -715,8 +743,9 @@ def benchmark_winding_window_rasterization(folder):
     plt.show()
 
 def general_comparison(folder):
+    """Comparison with and without meshing techniques."""
     mesh_accuracies = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-    #mesh_accuracies = [0.4, 0.5, 1]
+    # mesh_accuracies = [0.4, 0.5, 1]
     frequency = 270000
 
     font_size_default = 15
@@ -772,6 +801,7 @@ def general_comparison(folder):
     plt.legend()
     plt.show()
 
+
 if __name__ == "__main__":
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     benchmark_results_folder = os.path.join(example_results_folder, "benchmarks")
@@ -801,11 +831,11 @@ if __name__ == "__main__":
     if not os.path.exists(general_comparison_folder):
         os.mkdir(general_comparison_folder)
 
-    #single_benchmark(benchmark_single_results_folder, 270000)
-    #benchmark_mesh_accuracy(benchmark_accuracy_results_folder)
-    #benchmark_aspect_ratios(benchmark_aspect_ratio_folder)
-    #benchmark_different_mesh_accuracies(benchmark_different_accuracy_folder)
-    #benchmark_rectangular_conductor(benchmark_rect_conductor_folder)
-    #benchmark_rectangular_conductor_offset(benchmark_rect_conductor_offset_folder)
-    #benchmark_winding_window_rasterization(benchmark_winding_window_rasterization_folder)
+    # single_benchmark(benchmark_single_results_folder, 270000)
+    # benchmark_mesh_accuracy(benchmark_accuracy_results_folder)
+    # benchmark_aspect_ratios(benchmark_aspect_ratio_folder)
+    # benchmark_different_mesh_accuracies(benchmark_different_accuracy_folder)
+    # benchmark_rectangular_conductor(benchmark_rect_conductor_folder)
+    # benchmark_rectangular_conductor_offset(benchmark_rect_conductor_offset_folder)
+    # benchmark_winding_window_rasterization(benchmark_winding_window_rasterization_folder)
     general_comparison(general_comparison_folder)

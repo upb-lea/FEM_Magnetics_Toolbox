@@ -1,3 +1,4 @@
+"""Test different winding options."""
 import femmt as fmt
 import os
 inductor_combinations = [
@@ -72,6 +73,7 @@ transformer_combinations = [
 ]
 
 def run_inductor_simulations(working_directory, combinations):
+    """Run the simulations to test several winding options for the inductor."""
     not_working = []
     for combination in combinations:
         geo = fmt.MagneticComponent(fmt.ComponentType.Inductor, working_directory, True)
@@ -115,7 +117,6 @@ def run_inductor_simulations(working_directory, combinations):
         except Exception as e:
             print(e)
             not_working.append(name + ": " + str(e))
-           
 
         image_path = os.path.join(working_directory, "mesh", "hybrid_color.png")
         os.rename(image_path, os.path.join(working_directory, "..", "images", f"{name}.png"))
@@ -124,6 +125,7 @@ def run_inductor_simulations(working_directory, combinations):
 
 
 def run_transformer_simulations(working_directory, combinations):
+    """Run the simulations to test several winding options for the transformer."""
     not_working = []
     for combination in combinations:
         geo = fmt.MagneticComponent(fmt.ComponentType.Transformer, working_directory, True)
@@ -176,12 +178,12 @@ def run_transformer_simulations(working_directory, combinations):
         except Exception as e:
             print(e)
             not_working.append(name + ": " + str(e))
-           
 
         image_path = os.path.join(working_directory, "mesh", "hybrid_color.png")
         os.rename(image_path, os.path.join(working_directory, "..", "images", f"{name}.png"))
 
     print(not_working)
+
 
 if __name__ == "__main__":
     working_directory = os.path.join(os.path.dirname(__file__), "winding_test")

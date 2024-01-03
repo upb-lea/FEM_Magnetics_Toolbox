@@ -1,10 +1,13 @@
+"""Data transfer objects (DTOs) used by this toolbox."""
 from dataclasses import dataclass
-from femmt.enumerations import *
-from typing import Optional
+from femmt.enumerations import WindingTag
+from typing import Optional, List
 
 
 @dataclass
 class SingleCoreDimensions:
+    """Defines the dimensions of a default core."""
+
     core_inner_diameter: float
     window_w: float
     window_h: float
@@ -13,6 +16,8 @@ class SingleCoreDimensions:
 
 @dataclass
 class StackedCoreDimensions:
+    """Defines the dimensions of a stacked core. A stacked core is made of a transformer section an an inductor."""
+
     core_inner_diameter: float
     window_w: float
     window_h_top: float
@@ -21,6 +26,8 @@ class StackedCoreDimensions:
 
 @dataclass
 class ConductorRow:
+    """Defines the conductors in one row."""
+
     number_of_conds_per_winding: int
     number_of_conds_per_row: Optional[int]
     row_height: Optional[float]
@@ -31,6 +38,8 @@ class ConductorRow:
 
 @dataclass
 class ThreeWindingIsolation:
+    """Defines the insulation of a three-winding transformer."""
+
     primary_to_primary: float
     primary_to_secondary: float
     primary_to_tertiary: float
@@ -44,27 +53,35 @@ class ThreeWindingIsolation:
 
 @dataclass
 class CenterTappedGroup:
+    """Definitions for the center tapped group. A group is made of several primary and secondary rows."""
+
     primary_number_of_rows: Optional[int]
     secondary_number_of_rows: Optional[int]
     primary_rest: Optional[int]
     secondary_rest: Optional[int]
-    stack: [WindingTag]
+    stack: List[WindingTag]
 
 
 @dataclass
 class ConductorStack:
+    """Definitions for the conductor stack."""
+
     number_of_groups: int
     number_of_single_rows: Optional[int]
-    order: [int]
+    order: List[int]
 
 
 @dataclass
 class StackIsolation:
+    """Definition for the stack insulation."""
+
     thickness: float
 
 
 @dataclass
 class WireMaterial:
+    """Definitions for the wire material."""
+
     name: str
     sigma: float
     temperature: float
@@ -75,6 +92,8 @@ class WireMaterial:
 
 @dataclass
 class TransformerInductance:
+    """Inductance definitions for a two-winding transformer."""
+
     l_h_conc: float
     l_s_conc: float
     n_conc: float
@@ -85,16 +104,18 @@ class TransformerInductance:
 
 @dataclass
 class ThreeWindingTransformerInductance:
-    M_12: float
-    M_13: float
-    M_23: float
-    L_s1: float
-    L_s2: float
-    L_s3: float
-    L_h: float
-    n_12: float
-    n_13: float
-    n_23: float
-    L_s12: float
-    L_s13: float
-    L_s23: float
+    """Inductance definitions for a three-winding transformer."""
+
+    M_12: Optional[float]
+    M_13: Optional[float]
+    M_23: Optional[float]
+    L_s1: Optional[float]
+    L_s2: Optional[float]
+    L_s3: Optional[float]
+    L_h: Optional[float]
+    n_12: Optional[float]
+    n_13: Optional[float]
+    n_23: Optional[float]
+    L_s12: Optional[float]
+    L_s13: Optional[float]
+    L_s23: Optional[float]

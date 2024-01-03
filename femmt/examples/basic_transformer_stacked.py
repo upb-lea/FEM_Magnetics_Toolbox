@@ -1,9 +1,11 @@
+"""Basic example to show how to simulate a stacked transformer."""
 import femmt as fmt
 import os
 
 
 def basic_example_transformer_stacked(onelab_folder: str = None, show_visual_outputs: bool = True,
                                       is_test: bool = False):
+    """Run the example code for the stacked transformer."""
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the

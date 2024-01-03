@@ -1,9 +1,10 @@
+"""Enumeration for FEMMT."""
 from enum import IntEnum, Enum
 
 
 class Verbosity(IntEnum):
-    """State of verbosity
-    """
+    """State of verbosity."""
+
     # TODO Currently in ToFile the FEMMT console outputs are just suppressed not written to a file
     # TODO Add Verbosity for materialdatabase
     Silent = 1  # No outputs
@@ -12,16 +13,16 @@ class Verbosity(IntEnum):
 
 
 class WindingTag(IntEnum):
-    """Names of windings
-    """
+    """Names of windings."""
+
     Primary = 1
     Secondary = 2
     Tertiary = 3
 
 
 class WindingWindowSplit(IntEnum):
-    """Determines how many virtual winding windows are created by the winding window. Used in Winding window class.
-    """
+    """Determines how many virtual winding windows are created by the winding window. Used in Winding window class."""
+
     NoSplit = 1
     """Virtual winding window same size as winding window
     """
@@ -50,24 +51,26 @@ class WindingWindowSplit(IntEnum):
 
 
 class ComponentType(IntEnum):
-    """Sets the component type for the whole simulation. Needs to be given to the MagneticComponent on creation.
-    """
+    """Sets the component type for the whole simulation. Needs to be given to the MagneticComponent on creation."""
+
     Inductor = 1
     Transformer = 2
     IntegratedTransformer = 3
 
 
 class CoreType(IntEnum):
-    """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation.
-    """
+    """Sets the core type for the whole simulation. Needs to be given to the MagneticComponent on creation."""
+
     Single = 1  # one axisymmetric core
     Stacked = 2  # one and a half cores
 
 
 class AirGapMethod(IntEnum):
     """Sets the method how the air gap position (vertical) is set.
+
     Used in AirGaps class.
     """
+
     Center = 1
     """Only valid for one air gap. This air gap will always be placed in the middle (vertically)
     """
@@ -86,8 +89,10 @@ class AirGapMethod(IntEnum):
 
 class AirGapLegPosition(IntEnum):
     """Sets the core at which the air gap will be added. Currently only CenterLeg is supported.
+
     Used when adding an air gap to the model.
     """
+
     LeftLeg = -1
     """Air gap in left leg.
     """
@@ -105,13 +110,14 @@ class StackedPosition(IntEnum):
     1 to place air gap in the top winding window
     2 to place air gap in the bot winding window
     """
+
     Top = 1
     Bot = 2
 
 
 class WindingType(IntEnum):
-    """Internally used in VirtualWindingWindow class.
-    """
+    """Internally used in VirtualWindingWindow class."""
+
     TwoInterleaved = 1
     """only two winding (transformer) interleaving
     """
@@ -124,8 +130,11 @@ class WindingType(IntEnum):
 
 
 class WindingScheme(IntEnum):
-    """Used when adding a single winding to the virtual winding window. Only used with a rectangular solid conductor.
+    """Used when adding a single winding to the virtual winding window.
+
+    Only used with a rectangular solid conductor.
     """
+
     Full = 1
     """The whole virtual winding window is filled with one conductor.
     """
@@ -141,8 +150,8 @@ class WindingScheme(IntEnum):
 
 
 class InterleavedWindingScheme(IntEnum):
-    """Used when adding an interleaved winding to the virtual winding window.
-    """
+    """Used when adding an interleaved winding to the virtual winding window."""
+
     Bifilar = 1
     """Not implemented.
     """
@@ -158,8 +167,8 @@ class InterleavedWindingScheme(IntEnum):
 
 
 class ConductorArrangement(IntEnum):
-    """Set for round conductors when having a single conductor in the virtual winding window.
-    """
+    """Set for round conductors when having a single conductor in the virtual winding window."""
+
     Square = 1
     """Turns are drawn in a grid (perfectly aligned). First drawn in y-direction then x-direction.
     """
@@ -173,8 +182,8 @@ class ConductorArrangement(IntEnum):
 
 
 class CenterTappedInterleavingType(IntEnum):
-    """
-    """
+    """Contains different interleaving types for the center tapped transformer."""
+
     custom = 1
     TypeA = 2
     TypeB = 3
@@ -184,6 +193,8 @@ class CenterTappedInterleavingType(IntEnum):
 
 class InterleavingSchemesFoilLitz(str, Enum):
     """
+    Contains interleaving schemes for mixed foil/litz windings.
+
     ----sec---
     ooo-primary-ooo
     ooo-primary-ooo
@@ -193,6 +204,7 @@ class InterleavingSchemesFoilLitz(str, Enum):
     ooo-primary-ooo
     ---ter---
     """
+
     ter_3_4_ter_sec_4_3_sec = "ter_3_4_ter_sec_4_3_sec"
     ter_4_3_ter_sec_3_4_sec = "ter_4_3_ter_sec_3_4_sec"
     ter_3_4_sec_ter_4_3_sec = "ter_3_4_sec_ter_4_3_sec"
@@ -200,11 +212,12 @@ class InterleavingSchemesFoilLitz(str, Enum):
     ter_sec_3_4_4_3_sec_ter = "ter_sec_3_4_4_3_ter_sec"
     ter_sec_4_3_3_4_sec_ter = "ter_sec_4_3_3_4_ter_sec"
     _4_3_ter_sec__sec_ter_3_4 = "4_3_ter_sec_sec_ter_3_4"
+    ter_sec_5_ter_sec_5_ter_sec_5_ter_sec = "ter_sec_5_ter_sec_5_ter_sec_5_ter_sec"
 
 
 class ConductorType(IntEnum):
-    """Sets the type of the conductor.
-    """
+    """Sets the type of the conductor."""
+
     RoundSolid = 1
     RoundLitz = 2
     RectangularSolid = 3
@@ -212,9 +225,11 @@ class ConductorType(IntEnum):
 
 class WrapParaType(IntEnum):
     """
-    Sets the wrap para type. Only necessary for a single conductor in a
-    virtual winding window and a FoilVertical winding scheme.
+    Sets the wrap para type.
+
+    Only necessary for a single conductor in a virtual winding window and a FoilVertical winding scheme.
     """
+
     FixedThickness = 1
     """The foils have a fixed thickness given when creating the conductor. The virtual winding window
     may not be fully occupied.
@@ -227,30 +242,30 @@ class WrapParaType(IntEnum):
 
 
 class Conductivity(IntEnum):
-    """Sets the conductivity of the conductor.
-    """
+    """Sets the conductivity of the conductor."""
+
     Copper = 1
     Aluminium = 2
 
 
 class LossApproach(IntEnum):
-    """Sets the way how losses will be calculated.
-    """
+    """Sets the way how losses will be calculated."""
+
     Steinmetz = 1
     LossAngle = 2
 
 
 class PermeabilityType(IntEnum):
-    """Sets the way how permeability data is received.
-    """
+    """Sets the way how permeability data is received."""
+
     FixedLossAngle = 1
     RealValue = 2
     FromData = 3
 
 
 class ExcitationMeshingType(IntEnum):
-    """When running an excitation it is possible to not mesh at every frequency.
-    """
+    """When running an excitation it is possible to not mesh at every frequency."""
+
     MeshOnlyLowestFrequency = 1
     MeshOnlyHighestFrequency = 2
     MeshEachFrequency = 3
@@ -258,33 +273,31 @@ class ExcitationMeshingType(IntEnum):
 
 # Following Enums must always be consistent with the materialdatabase
 class MaterialDataSource(str, Enum):
-    """Sets the source from where data is taken.
-    """
+    """Sets the source from where data is taken."""
+
     Custom = "custom"
     Measurement = "measurements"
     ManufacturerDatasheet = "manufacturer_datasheet"
 
 
 class MeasurementDataType(str, Enum):
-    """Sets the type of measurement data.
-    """
+    """Sets the type of measurement data."""
+
     ComplexPermeability = "complex_permeability"
     ComplexPermittivity = "complex_permittivity"
     Steinmetz = "Steinmetz"
 
 
 class MeasurementSetup(str, Enum):
-    """Sets the source from where data is taken.
-    """
+    """Sets the source from where data is taken."""
+
     LEA_MTB = "LEA_MTB"
     LEA_MTB_small_signal = "LEA_MTB_small_signal"
     LEA_LK = "LEA_LK"
 
 
 class Material(str, Enum):
-    """
-    Sets the name of the core material as enums.
-    """
+    """Sets the name of the core material as enums."""
 
     N49 = "N49"
     N87 = "N87"

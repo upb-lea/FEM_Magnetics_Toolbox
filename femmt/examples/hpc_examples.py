@@ -1,3 +1,4 @@
+"""Examples for the parallel simulation."""
 # Python standard libraries
 from typing import Dict
 from itertools import product
@@ -128,7 +129,8 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
     winding = fmt.Conductor(0, fmt.Conductivity.Copper)
     winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
-    #winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
+    # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,fill_factor=None,
+    # conductor_arrangement=fmt.ConductorArrangement.Square)
     winding.parallel = False
     vww.set_winding(winding, 9, None)
     geo.set_winding_windows([winding_window])
@@ -213,6 +215,7 @@ def custom_hpc(parameters: Dict):
     model.single_simulation(freq=Testdata_Generator.frequency(), current=current, phi_deg=phi_deg, show_fem_simulation_results=False)
 
 def parallel_simulation_study(averaging_count):
+    """Perform several parallel simulations."""
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     parallel_results_folder = os.path.join(example_results_folder, "parallel")
     study_results_folder = os.path.join(parallel_results_folder, "study")
@@ -249,13 +252,12 @@ def parallel_simulation_study(averaging_count):
             os.mkdir(working_directory)
 
         simulation_times = []
-        for count in range(averaging_count):
+        for _ in range(averaging_count):
             start_time = time.time()
             fmt.run_hpc(process_count, models, simulation_parameters, working_directory)
             simulation_times.append(time.time() - start_time)
 
         runtimes.append(statistics.fmean(simulation_times))
-
 
     print("Process counts:", process_counts)
     print("Runtimes:", runtimes)
@@ -266,8 +268,9 @@ def parallel_simulation_study(averaging_count):
     if averaging_count > 1:
         plt.ylabel(f"Runtime (mean of {averaging_count} simulations)")
     else:
-        plt.ylabel(f"Runtime")
+        plt.ylabel("Runtime")
     plt.show()
+
 
 if __name__ == "__main__":
 
@@ -370,4 +373,3 @@ if __name__ == "__main__":
         parallel_simulation_study(3)
     else:
         raise Exception(f"Execution type {execution_type} not found.")
-

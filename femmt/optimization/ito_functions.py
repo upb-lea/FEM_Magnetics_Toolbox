@@ -1,9 +1,11 @@
+"""Functions for the integrated transformer optimization."""
 # python libraries
 import shutil
 import os
 from typing import List, Tuple
 import inspect
 
+import femmt
 # 3rd party libraries
 
 # femmt libraries
@@ -12,12 +14,17 @@ import femmt.functions_reluctance as fr
 import femmt.functions as ff
 import femmt as fmt
 
+
 def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
-    """Inner function. Needed in order to appropriately run parallel simulations since some GetDP files are changed in every simulation instance
+    """
+    Appropriately run parallel simulations since some GetDP files are changed in every simulation instance.
+
+    Inner function, should not be used directly by the user.
 
     :param src_folder: Path to the base electro_magnetic folder
     :type src_folder: str
-    :param dest_folder: Path to the folder where the necessary files shall be stored. The "new" electro_magnetic folder for the corresponding simulation.
+    :param dest_folder: Path to the folder where the necessary files shall be stored. The "new" electro_magnetic folder
+        for the corresponding simulation.
     :type dest_folder: str
     """
     files = ["fields.pro", "ind_axi_python_controlled.pro", "solver.pro", "values.pro"]
@@ -30,7 +37,7 @@ def _copy_electro_magnetic_necessary_files(src_folder: str, dest_folder: str):
 
 def dto_list_to_vec(dto_list: List[ItoSingleResultFile]) -> Tuple:
     """
-    Brings a list of dto-objects to two lists
+    Brings a list of dto-objects to two lists.
 
     Use case is to bring the pareto-front into two vectors for further calculations
 
@@ -38,7 +45,6 @@ def dto_list_to_vec(dto_list: List[ItoSingleResultFile]) -> Tuple:
     :type dto_list: List[ItoSingleResultFile]
 
     """
-
     for dto in dto_list:
         x_pareto_vec = dto.core_2daxi_total_volume
         y_pareto_vec = dto.total_loss
@@ -73,11 +79,12 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
 
     working_directories = WorkingDirectories(
         fem_working_directory=os.path.join(working_directory, '00_femmt_simulation'),
-        reluctance_model_results_directory = os.path.join(working_directory, "01_reluctance_model_results"),
-        fem_simulation_results_directory = os.path.join(working_directory, "02_fem_simulation_results"),
-        fem_simulation_filtered_results_directory = os.path.join(working_directory, "02_fem_simulation_results_filtered"),
-        fem_thermal_simulation_results_directory = os.path.join(working_directory, "03_fem_thermal_simulation_results"),
-        fem_thermal_filtered_simulation_results_directory = os.path.join(working_directory, "03_fem_thermal_simulation_results_filtered"),
+        reluctance_model_results_directory=os.path.join(working_directory, "01_reluctance_model_results"),
+        fem_simulation_results_directory=os.path.join(working_directory, "02_fem_simulation_results"),
+        fem_simulation_filtered_results_directory=os.path.join(working_directory, "02_fem_simulation_results_filtered"),
+        fem_thermal_simulation_results_directory=os.path.join(working_directory, "03_fem_thermal_simulation_results"),
+        fem_thermal_filtered_simulation_results_directory=os.path.join(working_directory,
+                                                                       "03_fem_thermal_simulation_results_filtered"),
     )
 
     os.makedirs(working_directories.fem_working_directory, exist_ok=True)
@@ -85,21 +92,23 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
     # generate 50 folders for 50 possible parallel calculations
     number_of_processes = 50
 
-    for process_number in list(range(1,number_of_processes+1)):
+    for process_number in list(range(1, number_of_processes+1)):
         single_process_directory = os.path.join(working_directories.fem_working_directory, f"process_{process_number}")
         os.makedirs(single_process_directory, exist_ok=True)
 
-    electro_magnetic_folder_general = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "electro_magnetic"))
+    electro_magnetic_folder_general = os.path.abspath(os.path.join(os.path.dirname(
+        os.path.abspath(__file__)), os.pardir, "electro_magnetic"))
     strands_coefficients_folder_general = os.path.join(electro_magnetic_folder_general, "Strands_Coefficients")
 
     if not os.path.isdir(working_directory):
         os.mkdir(working_directory)
 
-    for process_number in list(range(1,number_of_processes+1)):
+    for process_number in list(range(1, number_of_processes+1)):
         # Setup necessary files and directories
         single_process_directory = os.path.join(working_directories.fem_working_directory, f"process_{process_number}")
         electro_magnetic_directory_single_process = os.path.join(single_process_directory, "electro_magnetic")
-        strands_coefficients_directory_single_process = os.path.join(electro_magnetic_directory_single_process, 'Strands_Coefficients')
+        strands_coefficients_directory_single_process = os.path.join(electro_magnetic_directory_single_process,
+                                                                     'Strands_Coefficients')
         if not os.path.isdir(single_process_directory):
             os.mkdir(single_process_directory)
         if not os.path.isdir(electro_magnetic_directory_single_process):
@@ -107,10 +116,10 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
         if not os.path.isdir(strands_coefficients_directory_single_process):
             os.mkdir(strands_coefficients_directory_single_process)
 
-        _copy_electro_magnetic_necessary_files(electro_magnetic_folder_general, electro_magnetic_directory_single_process)
-        shutil.copytree(strands_coefficients_folder_general, strands_coefficients_directory_single_process, dirs_exist_ok=True)
-
-
+        _copy_electro_magnetic_necessary_files(electro_magnetic_folder_general,
+                                               electro_magnetic_directory_single_process)
+        shutil.copytree(strands_coefficients_folder_general, strands_coefficients_directory_single_process,
+                        dirs_exist_ok=True)
 
     os.makedirs(working_directories.fem_simulation_results_directory, exist_ok=True)
     os.makedirs(working_directories.fem_simulation_filtered_results_directory, exist_ok=True)
@@ -119,6 +128,7 @@ def set_up_folder_structure(working_directory: str) -> WorkingDirectories:
     os.makedirs(working_directories.fem_thermal_filtered_simulation_results_directory, exist_ok=True)
 
     return working_directories
+
 
 def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleInputConfig,
                                                           dto: ItoSingleResultFile,
@@ -129,16 +139,18 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
                                                           phase_deg_1: float,
                                                           phase_deg_2: float,
                                                           visualize: bool = False):
+    """FEM simulation for the integrated transformer from a result DTO."""
     # 1. chose simulation type
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.IntegratedTransformer,
                                 working_directory=fem_working_directory,
-                                silent=True)
+                                verbosity=femmt.Verbosity.Silent)
 
     window_h = dto.window_h_bot + dto.window_h_top + dto.core_inner_diameter / 4
 
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=dto.core_inner_diameter,
                                                     window_w=dto.window_w,
-                                                    window_h=window_h)
+                                                    window_h=window_h,
+                                                    core_h=window_h + dto.core_inner_diameter / 2)
 
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
@@ -209,55 +221,63 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
 
     return geo
 
+
 def integrated_transformer_fem_simulations_from_result_dtos(config_dto: ItoSingleInputConfig,
                                                             simulation_dto_list: List[ItoSingleResultFile],
                                                             visualize: bool = False,
                                                             ):
-    ito_target_and_fixed_parameters_dto = fmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(config_dto)
+    """FEM simulation for the integrated transformer from a result DTO."""
+    ito_target_and_fixed_parameters_dto = fmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(
+        config_dto)
 
-    time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec \
-        (config_dto.time_current_1_vec)
-    time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec \
-        (config_dto.time_current_2_vec)
+    time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
+        config_dto.time_current_1_vec)
+    time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(
+        config_dto.time_current_2_vec)
     fundamental_frequency = int(1 / time_extracted[-1])
 
-    phase_deg_1, phase_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec, current_extracted_2_vec)
+    phase_deg_1, phase_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec,
+                                                               current_extracted_2_vec)
     i_peak_1, i_peak_2 = fr.max_value_from_value_vec(current_extracted_1_vec, current_extracted_2_vec)
-
-
 
     for count, dto in enumerate(simulation_dto_list):
         print(f"FEM simulation {count} of {len(simulation_dto_list)}")
         try:
-            geo = integrated_transformer_fem_simulation_from_result_dto(config_dto = config_dto,
-                                                                        dto=dto,
-                                                                        fem_working_directory = ito_target_and_fixed_parameters_dto.working_directories.fem_working_directory,
-                                                                        fundamental_frequency = fundamental_frequency,
-                                                                        i_peak_1=i_peak_1,
-                                                                        i_peak_2=i_peak_2,
-                                                                        phase_deg_1 = phase_deg_1,
-                                                                        phase_deg_2 = phase_deg_2,
-                                                                        visualize= visualize)
+            integrated_transformer_fem_simulation_from_result_dto(
+                config_dto=config_dto,
+                dto=dto,
+                fem_working_directory=ito_target_and_fixed_parameters_dto.working_directories.fem_working_directory,
+                fundamental_frequency=fundamental_frequency,
+                i_peak_1=i_peak_1,
+                i_peak_2=i_peak_2,
+                phase_deg_1=phase_deg_1,
+                phase_deg_2=phase_deg_2,
+                visualize=visualize)
 
-            source_json_file = os.path.join(ito_target_and_fixed_parameters_dto.working_directories.fem_working_directory, "results", "log_electro_magnetic.json")
-            destination_json_file = os.path.join(ito_target_and_fixed_parameters_dto.working_directories.fem_simulation_results_directory,
-                                                f'case_{dto.case}.json')
+            source_json_file = os.path.join(
+                ito_target_and_fixed_parameters_dto.working_directories.fem_working_directory,
+                "results", "log_electro_magnetic.json")
+            destination_json_file = os.path.join(
+                ito_target_and_fixed_parameters_dto.working_directories.fem_simulation_results_directory,
+                f'case_{dto.case}.json')
 
             shutil.copy(source_json_file, destination_json_file)
 
         except Exception as e:
             print(f"Exception: {e}")
 
-def integrated_transformer_fem_thermal_simulations_from_result_dtos(config_dto: ItoSingleInputConfig,
-                                                            simulation_dto_list: List[ItoSingleResultFile],
-                                                            visualize: bool = False,
-                                                            ):
-    ito_target_and_fixed_parameters_dto = fmt.optimization.ito_optuna.ItoOptuna.calculate_fix_parameters(config_dto)
 
-    time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec \
-        (config_dto.time_current_1_vec)
-    time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec \
-        (config_dto.time_current_2_vec)
+def integrated_transformer_fem_thermal_simulations_from_result_dtos(
+        config_dto: ItoSingleInputConfig, simulation_dto_list: List[ItoSingleResultFile],
+        visualize: bool = False):
+    """Thermal FEM simulation for the integrated transformer from a result DTO."""
+    ito_target_and_fixed_parameters_dto = fmt.optimization.IntegratedTransformerOptimization.calculate_fix_parameters(
+        config_dto)
+
+    time_extracted, current_extracted_1_vec = fr.time_vec_current_vec_from_time_current_vec(
+        config_dto.time_current_1_vec)
+    time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(
+        config_dto.time_current_2_vec)
     fundamental_frequency = int(1 / time_extracted[-1])
 
     phase_deg_1, phase_deg_2 = fr.phases_deg_from_time_current(time_extracted, current_extracted_1_vec,
@@ -266,16 +286,16 @@ def integrated_transformer_fem_thermal_simulations_from_result_dtos(config_dto: 
 
     for dto in simulation_dto_list:
         try:
-            geo = integrated_transformer_fem_simulation_from_result_dto(config_dto=config_dto,
-                                                                        dto=dto,
-                                                                        fem_working_directory=ito_target_and_fixed_parameters_dto.fem_working_directory,
-                                                                        fundamental_frequency=fundamental_frequency,
-                                                                        i_peak_1=i_peak_1,
-                                                                        i_peak_2=i_peak_2,
-                                                                        phase_deg_1=phase_deg_1,
-                                                                        phase_deg_2=phase_deg_2,
-                                                                        visualize=visualize)
-
+            geo = integrated_transformer_fem_simulation_from_result_dto(
+                config_dto=config_dto,
+                dto=dto,
+                fem_working_directory=ito_target_and_fixed_parameters_dto.working_directories.fem_working_directory,
+                fundamental_frequency=fundamental_frequency,
+                i_peak_1=i_peak_1,
+                i_peak_2=i_peak_2,
+                phase_deg_1=phase_deg_1,
+                phase_deg_2=phase_deg_2,
+                visualize=visualize)
 
             thermal_conductivity_dict = {
                 "air": 0.122,  # potting epoxy resign
@@ -325,14 +345,17 @@ def integrated_transformer_fem_thermal_simulations_from_result_dtos(config_dto: 
 
             geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                    case_gap_right,
-                                   case_gap_bot, show_thermal_simulation_results=visualize, pre_visualize_geometry=False, color_scheme=color_scheme,
+                                   case_gap_bot, show_thermal_simulation_results=visualize,
+                                   pre_visualize_geometry=False, color_scheme=color_scheme,
                                    colors_geometry=colors_geometry)
 
-            source_json_file = os.path.join(ito_target_and_fixed_parameters_dto.fem_working_directory, "results",
-                                            "results_thermal.json")
-            destination_json_file = os.path.join(ito_target_and_fixed_parameters_dto.fem_thermal_simulation_results_directory,
-                                                 f'case_{dto.case}.json')
+            source_json_file = os.path.join(
+                ito_target_and_fixed_parameters_dto.working_directories.fem_working_directory, "results",
+                "results_thermal.json")
+            destination_json_file = os.path.join(
+                ito_target_and_fixed_parameters_dto.working_directories.fem_thermal_simulation_results_directory,
+                f'case_{dto.case}.json')
 
             shutil.copy(source_json_file, destination_json_file)
-        except:
+        except Exception:
             pass

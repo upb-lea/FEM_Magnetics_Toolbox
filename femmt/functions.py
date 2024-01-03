@@ -1,7 +1,6 @@
+"""Contains different functions, used by the whole FEMMT functions."""
 # Python standard libraries
 import json
-import random
-import string
 import pkg_resources
 import subprocess
 import sys
@@ -77,12 +76,13 @@ colors_geometry_draw_only_lines = {
 
 def core_database() -> Dict:
     """
-    Returns core geometry for defined core structures
+    Return a core geometry for defined core structure.
 
     All dimensions are nominal dimensions without consideration of tolerances.
 
     For PQ core sizes (e.g. PQ 40/40), it has been found out that
-    core_dimension_x / core_dimension_y = 1.45, the error over all available shapes is maximum 7% (compared to datasheet value)
+    core_dimension_x / core_dimension_y = 1.45, the error over all available shapes is maximum 7%
+    (compared to datasheet value)
     Derivation:
     core_list: ['PQ 20/20', 'PQ 26/25', 'PQ 32/30', 'PQ 35/35', 'PQ 40/40', 'PQ 50/50']
     factor core_dimension_x / core_dimension_y = [1.46, 1.39, 1.45, 1.35, 1.44, 1.56]
@@ -241,7 +241,7 @@ def core_database() -> Dict:
 
 def litz_database() -> Dict:
     """
-    Returns litz parameters for defined litz wires.
+    Return litz parameters for defined litz wires.
 
     :return: Dict including litz parameters like strand_numbers, strand_radii and conductor_radii
     :rtype: Dict
@@ -387,7 +387,7 @@ def litz_database() -> Dict:
 
 def wire_material_database() -> Dict[str, WireMaterial]:
     """
-    Returns wire materials e.g. copper, aluminium in a dictionary
+    Return wire materials e.g. copper, aluminium in a dictionary.
 
     :return: Dict with materials and conductivity
     :rtype: Dict
@@ -417,7 +417,7 @@ def wire_material_database() -> Dict[str, WireMaterial]:
 
 def conductivity_temperature(material: str, temperature: float) -> float:
     """
-    Calculates the conductivity for a certain temperature of the material.
+    Calculate the conductivity for a certain temperature of the material.
 
     :param material: material name, e.g. "copper"
     :type material: str
@@ -426,7 +426,6 @@ def conductivity_temperature(material: str, temperature: float) -> float:
     :return: conductivity of material at given temperature
     :rtype: float
     """
-
     material_from_database = wire_material_database()[material]
 
     sigma_database = material_from_database.sigma
@@ -434,15 +433,14 @@ def conductivity_temperature(material: str, temperature: float) -> float:
     temperature_coefficient_database = material_from_database.temperature_coefficient
 
     resistance_temperature = 1 / sigma_database * (
-                1 + temperature_coefficient_database * (temperature - temperature_database))
+        1 + temperature_coefficient_database * (temperature - temperature_database))
     sigma_temperature = 1 / resistance_temperature
 
     return sigma_temperature
 
 
 def create_folders(*args) -> None:
-    """Creates folder for every given folder path (if it does not exist).
-    """
+    """Create folders for every given folder path (if it does not exist)."""
     for folder in list(args):
         if not os.path.exists(folder):
             os.mkdir(folder)
@@ -450,16 +448,15 @@ def create_folders(*args) -> None:
 
 def cost_material_database() -> Dict:
     """
-    Returns costs for core and winding.
-    This is split in material and fabrication costs.
+    Return costs for core and winding. This is split in material and fabrication costs.
+
     Both, material and fabrication costs have a euro_per_kilogram and a euro_per_unit (fix costs) price.
 
-    Source: R. Burkart and J. Kolar 'Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converter'
-    2013.
+    Source: R. Burkart and J. Kolar 'Component Cost Models for Multi-Objective Optimizations of #
+    Switched-Mode Power Converter' 2013.
 
     These are outdated prices (year 2013). Update needed in future.
     """
-
     cost_database = {}
     cost_database["core_euro_per_kilogram"] = {"ferrite": 5.5,
                                                "amorphous": 16,
@@ -495,8 +492,7 @@ def cost_material_database() -> Dict:
 
 def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter: float) -> np.array:
     """
-    Calculates the effective inner core diameter without the hole
-    Often used in PM-cores
+    Calculate the effective inner core diameter without the hole often used in PM-cores.
 
     :param inner_core_diameter: inner core diameter
     :type inner_core_diameter: float
@@ -514,8 +510,7 @@ def pm_core_inner_diameter_calculator(inner_core_diameter: float, hole_diameter:
 
 def install_pyfemm_if_missing() -> None:
     """
-    Windows users only.
-    Installs femm-software pip package in case of running on Windows machine
+    Installs femm-software pip package in case of running on Windows machine. Windows users only.
 
     :return: None
 
@@ -534,8 +529,7 @@ def install_pyfemm_if_missing() -> None:
 
 def inner_points(a, b, input_points):
     """
-    Returns the input points that have a common coordinate as the two
-    interval borders a and b
+    Return the input points that have a common coordinate as the two interval borders a and b.
 
     Use case: Air gap generation. Helps to generate the core structure form class AirGap.
 
@@ -580,8 +574,7 @@ def inner_points(a, b, input_points):
 # TODO Is this function even used?
 def min_max_inner_points(a, b, input_points):
     """
-    Returns the input points that have a common coordinate and
-    the minimum distance from the interval borders.
+    Return the input points that have a common coordinate and the minimum distance from the interval borders.
 
     :param a: first point
     :param b: second point
@@ -590,7 +583,6 @@ def min_max_inner_points(a, b, input_points):
     :return:
 
     """
-
     [min_point, max_point] = [None, None]
     buffer = input_points
     dim = None
@@ -620,16 +612,11 @@ def min_max_inner_points(a, b, input_points):
         min_point = buffer[argmin]
     return [min_point, max_point]
 
-
-def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
-
-
 def litz_calculate_number_strands(n_layers: int) -> int:
     """
-    Returns the number of strands in a hexagonal litz winding with a
-    specified number of layers (n_layers). CAUTION: Zero number of
-    layers corresponds to a single strand.
+    Return the number of strands in a hexagonal litz winding with a specified number of layers (n_layers).
+
+    CAUTION: Zero number of layers corresponds to a single strand.
 
     :param n_layers: number of litz_layers
     :type n_layers: int
@@ -643,8 +630,7 @@ def litz_calculate_number_strands(n_layers: int) -> int:
 
 def litz_calculate_number_layers(n_strands: int) -> int:
     """
-    Returns the number of layers in a hexagonal litz winding with a
-    specified number of strands (n_strands).
+    Return the number of layers in a hexagonal litz winding with a specified number of strands (n_strands).
 
     .. note:: Zero number of layers corresponds to a single strand.
 
@@ -653,7 +639,6 @@ def litz_calculate_number_layers(n_strands: int) -> int:
 
     :return: number of layers for a litz
     :rtype: int
-
     """
     return np.sqrt(0.25 + (n_strands - 1) / 3) - 0.5
 
@@ -663,7 +648,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
         filter_value_factor: float = 0.01, filter_value_harmonic: int = 100,
         figure_size: Tuple = None, figure_directory: str = None) -> npt.NDArray[list]:
     """
-    A fft for an input signal. Input signal is in vector format and should include one period.
+    Calculate the FFT for a given input signal. Input signal is in vector format and should include one period.
 
     Output vector includes only frequencies with amplitudes > 1% of input signal
 
@@ -702,7 +687,6 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     :return: numpy-array [[frequency-vector],[amplitude-vector],[phase-vector]]
     :rtype: npt.NDArray[list]
     """
-
     # check for correct input parameter
     if (mode == 'rad' or mode == 'deg') and f0 is None:
         raise ValueError("if mode is 'rad' or 'deg', a fundamental frequency f0 must be set")
@@ -745,13 +729,13 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
     x_out = []
     phi_rad_out = []
     if filter_type.lower() == 'factor':
-        for count, value in enumerate(x_mag_corrected):
+        for count, _ in enumerate(x_mag_corrected):
             if x_mag_corrected[count] > filter_value_factor * max(abs(i)):
                 f_out.append(f_corrected[count])
                 x_out.append(x_mag_corrected[count])
                 phi_rad_out.append(phi_rad_corrected[count])
     elif filter_type.lower() == 'harmonic':
-        for count, value in enumerate(x_mag_corrected):
+        for count, _ in enumerate(x_mag_corrected):
             if count < filter_value_harmonic:
                 f_out.append(f_corrected[count])
                 x_out.append(x_mag_corrected[count])
@@ -809,6 +793,7 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
 
 def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000,
                               figure_directory: str = None):
+    """Plot fourier coefficients in a visual figure."""
     time_period = 1 / min(frequency_list)
 
     t_interp = np.linspace(0, time_period, sample_factor)
@@ -846,7 +831,7 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
 def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str = 'rad',
                      f0: Union[float, None] = None) -> None:
     """
-    generate fft curves from input curves and compare them to each other
+    Generate fft curves from input curves and compare them to each other.
 
     :Minimal Example:
 
@@ -867,11 +852,11 @@ def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str
 
     """
     out = []
-    for count, value in enumerate(input_data_list):
+    for count, _ in enumerate(input_data_list):
         out.append([fft(input_data_list[count], sample_factor=sample_factor, plot='no', mode=mode, f0=f0)])
 
     fig, axs = plt.subplots(2, len(input_data_list), sharey=True)
-    for count, value in enumerate(input_data_list):
+    for count, _ in enumerate(input_data_list):
         axs[0, count].plot(input_data_list[count][0], input_data_list[count][1], label='original signal')
         axs[0, count].grid()
         axs[0, count].set_xlabel('time in s')
@@ -889,7 +874,7 @@ def compare_fft_list(input_data_list: list, sample_factor: int = 1000, mode: str
 
 def store_as_npy_in_directory(dir_path: str, file_name: str, numpy_data) -> None:
     """
-    Stores a numpy array in a given directory
+    Store a numpy array in a given directory.
 
     :param dir_path: directory path
     :type dir_path: str
@@ -907,8 +892,8 @@ def store_as_npy_in_directory(dir_path: str, file_name: str, numpy_data) -> None
 
 def get_dicts_with_keys_and_values(data, **kwargs) -> Dict:
     """
-    Returns a list of dictionaries out of a list of dictionaries which contains pairs
-    of the given key(s) and value(s).
+    Return a list of dictionaries out of a list of dictionaries which contains pairs of the given key(s) and value(s).
+
     :param data: list of dicts
     :type data: List
     :param kwargs: keys and values in dicts
@@ -925,7 +910,8 @@ def get_dicts_with_keys_and_values(data, **kwargs) -> Dict:
 
 def get_dict_with_unique_keys(data, *keys) -> Dict:
     """
-    Returns a dictionary out of a list of dictionaries which contains the given key(s).
+    Return a dictionary out of a list of dictionaries which contains the given key(s).
+
     :param data: list of dicts
     :param keys: keys in dicts
     :return:
@@ -933,12 +919,12 @@ def get_dict_with_unique_keys(data, *keys) -> Dict:
     invalid_index = []
     for n, dictionary in enumerate(data):
         for key in keys:
-            if not key in dictionary:
+            if key not in dictionary:
                 invalid_index.append(n)
                 break
     valid_data = np.delete(data, invalid_index)
     if len(valid_data) != 1:
-        warnings.warn("Keyword(s) not unique!")
+        warnings.warn("Keyword(s) not unique!", stacklevel=2)
     # Only one dictionary shall survive --> choose element 0
     return valid_data[0]
 
@@ -946,7 +932,7 @@ def get_dict_with_unique_keys(data, *keys) -> Dict:
 def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phase_list_1_rad_or_deg: List,
                             frequency_list_2: List, amplitude_list_2: List, phase_list_2_rad_or_deg: List) -> List:
     """
-    Finds common frequencies and returns a list of intersections.
+    Find common frequencies and returns a list of intersections.
 
     :param amplitude_list_1: Amplitudes signal 1
     :type amplitude_list_1: List
@@ -972,7 +958,8 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     >>> amplitude_2 = [5, 6, 7, 8, 9]
     >>> phase_1 = [10, 20, 30, 40]
     >>> phase_2 = [50, 60, 70, 80, 90]
-    >>> common_f, common_a, common_phase = fmt.find_common_frequencies(frequency_1, amplitude_1, phase_1, frequency_2, amplitude_2, phase_2)
+    >>> common_f, common_a, common_phase = fmt.find_common_frequencies(frequency_1, amplitude_1, phase_1,
+    >>>     frequency_2, amplitude_2, phase_2)
     :Returns:
     >>> common_f = [200, 50, 100, 150]
     >>> common_a = [[4, 9], [1, 5], [2, 6], [3, 7]]
@@ -1002,7 +989,7 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
             common_amplitude_list_2.append(amplitude_list_2[np.where(frequency_list_2 == frequency)][0])
             common_phases_list_2.append(phase_list_2_rad_or_deg[np.where(frequency_list_2 == frequency)][0])
     else:
-        warnings.warn("Either a list or a np.ndarray must be provided!")
+        warnings.warn("Either a list or a np.ndarray must be provided!", stacklevel=2)
 
     current_pair_list = list(map(list, zip(common_amplitude_list_1, common_amplitude_list_2)))
     phase_pair_list = list(map(list, zip(common_phase_list_1, common_phases_list_2)))
@@ -1013,7 +1000,8 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
 def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
                              phase_pair_list_rad_or_deg: List, sort_out_factor: float) -> List:
     """
-    Sout out small harmonics.
+    Sort out small harmonics from a given fft-output of a signal.
+
     :param frequency_list: List of input frequencies
     :type frequency_list: List
     :param amplitude_pair_list: list of amplitude pairs
@@ -1025,7 +1013,6 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
     :return: [frequency_list, amplitude_pair_list, phase_pair_list_rad_or_deg]
     :rtype: List
     """
-
     # Calculate geometric lengths
     amp_tot = np.sqrt(np.sum(np.array(amplitude_pair_list) ** 2, axis=0))
     # amp_tot = np.max(amplitude_pairs, axis=0)
@@ -1046,8 +1033,9 @@ def sort_out_small_harmonics(frequency_list: List, amplitude_pair_list: List,
 
 def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
     """
-    Calculates the volume of an ideal cylinder. This function is uses e.g. to calculate the volume
-    of the inner core part.
+    Calculate the volume of an ideal cylinder.
+
+    This function is uses e.g. to calculate the volume of the inner core part.
     :param cylinder_height: height of cylinder
     :type cylinder_height: float
     :param cylinder_diameter: diameter of cylinder
@@ -1059,6 +1047,7 @@ def calculate_cylinder_volume(cylinder_diameter: float, cylinder_height: float):
 
 
 def create_physical_group(dim, entities, name):
+    """Greate a physical group, what is used inside ONELAB."""
     tag = gmsh.model.addPhysicalGroup(dim, entities)
     gmsh.model.setPhysicalName(dim, tag, name)
 
@@ -1066,6 +1055,7 @@ def create_physical_group(dim, entities, name):
 
 
 def visualize_simulation_results(simulation_result_file_path: str, store_figure_file_path: str, show_plot=True) -> None:
+    """Visualize the simulation results by a figure."""
     with open(simulation_result_file_path, "r") as fd:
         loaded_results_dict = json.loads(fd.read())
 
@@ -1096,6 +1086,7 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
 
 
 def point_is_in_rect(x, y, rect):
+    """Check if a given x-y point is inside a rectangular field (e.g. inside a conductor)."""
     # x, y of the point
     # List of 4 points given as tuples with (x, y) in the order top-right, top-left, bottom-right, bottom-left
 
@@ -1106,12 +1097,14 @@ def point_is_in_rect(x, y, rect):
 
 
 def get_number_of_turns_of_winding(winding_windows, windings: List, winding_number: int):
+    """Get the number of turns of a winding."""
     turns = 0
     for ww in winding_windows:
         for vww in ww.virtual_winding_windows:
             for index, winding in enumerate(windings):
                 if winding.winding_number == winding_number:
-                    # TODO: change index_turns right no. of winding numbers, right position in list and length of list is needed
+                    # TODO: change index_turns right no. of winding numbers, right position in list and
+                    #  length of list is needed
                     try:
                         turns += vww.turns[index]
                     except:
@@ -1121,7 +1114,7 @@ def get_number_of_turns_of_winding(winding_windows, windings: List, winding_numb
 
 def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
     """
-    Calculates core material costs depending on material and weight.
+    Calculate core material costs depending on material and weight.
 
     :param core_weight: core weight in kg
     :type core_weight: float
@@ -1139,7 +1132,7 @@ def cost_function_core(core_weight: float, core_type: str = "ferrite") -> float:
 def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[str],
                           single_strand_cross_section_list: Union[List[float], None] = None):
     """
-    Calculates single winding material and fabrication costs depending on winding-type and weight
+    Calculate single winding material and fabrication costs depending on winding-type and weight.
 
     Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations
     of Switched-Mode Power Converters"
@@ -1166,15 +1159,13 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
         if sigma_material_winding_euro_per_kilogram == -1:
             # case for special litz wire calculation. Additional data is loaded from cost_database.
             sigma_material_winding_euro_per_kilogram = cost_database["winding_material_euro_per_kilogram_for_litz"][
-                                                           "sigma_numerator"] / (single_strand_cross_section_list[
-                                                                                     winding_count] * 1e6 +
-                                                                                 cost_database[
-                                                                                     "winding_material_euro_per_kilogram_for_litz"][
-                                                                                     "sigma_denominator"])
+                "sigma_numerator"] / (single_strand_cross_section_list[winding_count] * 1e6 + cost_database[
+                    "winding_material_euro_per_kilogram_for_litz"]["sigma_denominator"])
 
         winding_material_euro_per_unit = cost_database["winding_material_euro_per_unit"][wire_type_list[winding_count]]
 
-        winding_material_cost = sigma_material_winding_euro_per_kilogram * winding_weight + winding_material_euro_per_unit
+        winding_material_cost = sigma_material_winding_euro_per_kilogram * winding_weight + \
+            winding_material_euro_per_unit
 
         # fabrication cost (per kilogram and per unit)
         sigma_fabrication_euro_per_kilogram = cost_database["winding_fabrication_euro_per_kilogram"][
@@ -1192,10 +1183,12 @@ def cost_function_winding(wire_weight_list: List[float], wire_type_list: List[st
 def cost_function_total(core_weight: float, core_type: str, wire_weight_list: List[float], wire_type_list: List[str],
                         single_strand_cross_section_list: Union[None, List[float]] = None) -> float:
     """
-    Calculates the total costs for an inductive element.
+    Calculate the total costs for an inductive element.
+
     This includes material costs for core and winding, fabrication costs for core and winding and manufacturer margin
 
-    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of Switched-Mode Power Converters"
+    Reference: Ralph Burkart and Johann W. Kolar: "Component Cost Models for Multi-Objective Optimizations of
+    Switched-Mode Power Converters"
 
     :param core_weight: core weight in kg
     :type core_weight: float
@@ -1227,12 +1220,14 @@ def cost_function_total(core_weight: float, core_type: str, wire_weight_list: Li
 
 def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_max: list):
     """
-    find a result log-file in a folder with many result-log files.
+    Find a result log-file in a folder with many result-log files.
+
     Check a dictornary keyword list for matching a certain value (equel, greater equal, smaller equal).
 
     :param result_log_folder: filepath to result-log folder
     :type result_log_folder: str
-    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
+    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core",
+        "core_inner_diameter"]
     :type keyword_list: list
     :param value_min_max: value to check for
     :type value_min_max: list
@@ -1240,10 +1235,9 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
     :Example:
     Check for files with a core inner diameter smaller equal than 0.02 m.
     >>> import femmt as fmt
-    >>> fmt.find_result_log_file("/home/filepath/fem_simulation_data", ["simulation_settings", "core", "core_inner_diameter"],[0.015, 0.02])
-
+    >>> fmt.find_result_log_file("/home/filepath/fem_simulation_data", ["simulation_settings", "core",
+    >>>     "core_inner_diameter"],[0.015, 0.02])
     """
-
     files_list = os.listdir(result_log_folder)
 
     value_min = value_min_max[0]
@@ -1270,6 +1264,7 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
 
 def wave_vector(f: float, complex_permeability: complex, complex_permittivity: complex, conductivity: float):
     """
+    Calculate the wave-vector of a signal inside the core material with its material parameters.
 
     :param f: frequency
     :type f: float
@@ -1287,6 +1282,7 @@ def wave_vector(f: float, complex_permeability: complex, complex_permittivity: c
 
 
 def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity):
+    """Calculate the axial wavelength for a given frequency."""
     k = wave_vector(f, complex_permeability, complex_permittivity, conductivity)
     return 2 * np.pi / k.real
 
@@ -1294,7 +1290,7 @@ def axial_wavelength(f, complex_permeability, complex_permittivity, conductivity
 def check_mqs_condition(radius: float, frequency: float, complex_permeability: float, complex_permittivity: float,
                         conductivity: float, relative_margin_to_first_resonance: float = 0.5, silent: bool = False):
     """
-    Checks if the condition for a magnetoquasistatic simulation is fulfilled.
+    Check if the condition for a magnetoquasistatic simulation is fulfilled.
 
     Calculates the ratio (core-diameter / wavelength) and includes a safety margin factor of 0.5.
     In case of ratio > 1, the simulated frequency is too high. A magnetoquasistatic simulation will not lead to good
@@ -1329,6 +1325,7 @@ def check_mqs_condition(radius: float, frequency: float, complex_permeability: f
 
 
 def create_open_circuit_excitation_sweep(I0, n, frequency):
+    """Create a circuit excitation sweep with the other windings unloaded."""
     frequencies = [frequency] * n
     currents = [[0] * n for _ in range(n)]
     phases = [[180] * n for _ in range(n)]
@@ -1344,7 +1341,8 @@ def create_open_circuit_excitation_sweep(I0, n, frequency):
 
 def list_to_complex(complex_list: list):
     """
-    Brings a list of two numbers (where first is real part, second is imaginary part) into a python specific complex number
+    Brings a list of two numbers (where first is real part, second is imaginary part) into a python specific complex number.
+
     :param complex_list:
     :type complex_list: list
     :return: complex number
@@ -1355,7 +1353,8 @@ def list_to_complex(complex_list: list):
 
 def get_self_inductances_from_log(log: Dict) -> List:
     """
-    Read the self-inductances from the result log file (dictionary)
+    Read the self-inductances from the result log file (dictionary).
+
     :param log: Result log dictionary
     :type log: Dict
     :return: self-inductances in a list
@@ -1370,7 +1369,8 @@ def get_self_inductances_from_log(log: Dict) -> List:
 
 def get_flux_linkages_from_log(log: Dict) -> List:
     """
-    Read the flux-linkages from the result log file (dictionary)
+    Read the flux-linkages from the result log file (dictionary).
+
     :param log: Result log dictionary
     :type log: Dict
     :return: flux-linkages in a list
@@ -1387,6 +1387,7 @@ def get_flux_linkages_from_log(log: Dict) -> List:
 def get_coupling_matrix(flux_linkages: List) -> np.array:
     """
     Calculate the coupling factors from the given flux linkages.
+
     :param flux_linkages: flux-linkages
     :type flux_linkages: List
     :return: coupling-matrix in a matrix (np.array)
@@ -1395,24 +1396,28 @@ def get_coupling_matrix(flux_linkages: List) -> np.array:
     coupling_matrix = [[None] * len(flux_linkages) for _ in range(len(flux_linkages))]
     for self_index in range(0, len(flux_linkages)):
         for cross_index in range(0, len(flux_linkages)):
-            coupling_matrix[cross_index][self_index] = flux_linkages[cross_index][self_index].real / flux_linkages[self_index][self_index].real
+            coupling_matrix[cross_index][self_index] = flux_linkages[cross_index][self_index].real / \
+                flux_linkages[self_index][self_index].real
     return coupling_matrix
 
 
 def get_mean_coupling_factors(coupling_matrix: np.array):
     """
-    calculate the mean coupling factors from the coupling matrix
+    Calculate the mean coupling factors from the coupling matrix.
+
     :param coupling_matrix: matrix with coupling factors between windings
     :type coupling_matrix: np.array
     """
     mean_coupling_factors = [[None] * len(coupling_matrix) for _ in range(len(coupling_matrix))]
     for self_index in range(0, len(coupling_matrix)):
         for cross_index in range(0, len(coupling_matrix)):
-            mean_coupling_factors[cross_index][self_index] = (coupling_matrix[cross_index][self_index] * coupling_matrix[self_index][cross_index]) ** 0.5
+            mean_coupling_factors[cross_index][self_index] = (coupling_matrix[cross_index][self_index] * \
+                                                              coupling_matrix[self_index][cross_index]) ** 0.5
     return mean_coupling_factors
 
 
 def get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matrix):
+    """Get the inductance matrix from self_inductances, mean_coupling_factors and the coupling_matrix."""
     inductance_matrix = [[None] * len(mean_coupling_factors) for _ in range(len(mean_coupling_factors))]
     for x in range(0, len(coupling_matrix)):
         for y in range(0, len(coupling_matrix)):
@@ -1422,7 +1427,8 @@ def get_inductance_matrix(self_inductances, mean_coupling_factors, coupling_matr
 
 def visualize_flux_linkages(flux_linkages: List, silent: bool) -> None:
     """
-    Print the flux linkages to the terminal (or file-) output
+    Print the flux linkages to the terminal (or file-) output.
+
     :param flux_linkages: flux-linkages in a list
     :type flux_linkages: List
     :param silent: True for no output
@@ -1433,13 +1439,14 @@ def visualize_flux_linkages(flux_linkages: List, silent: bool) -> None:
         for y in range(0, len(flux_linkages)):
             string_to_print += f"Phi_{x+1}{y+1} = {flux_linkages[x][y]}     Induced by I_{y+1} in Winding{x+1}\n"
     if not silent:
-        print(f"\nFluxes: ")
+        print("\nFluxes: ")
         print(string_to_print)
 
 
 def visualize_self_inductances(self_inductances: List, flux_linkages, silent: bool) -> None:
     """
-    Print the self-inductances to the terminal (or file-) output
+    Print the self-inductances to the terminal (or file-) output.
+
     :param self_inductances: self-inductances in a list
     :type self_inductances: List
     :param silent: True for no output
@@ -1449,14 +1456,14 @@ def visualize_self_inductances(self_inductances: List, flux_linkages, silent: bo
     for x in range(0, len(flux_linkages)):
         string_to_print += f"L_{x+1}_{x+1} = {self_inductances[x]}\n"
     if not silent:
-        print(f"\n"
-              f"Self Inductances: ")
+        print("\n"
+              "Self Inductances: ")
         print(string_to_print)
 
 
 def visualize_self_resistances(self_inductances: List, flux_linkages: List, frequency: float, silent: bool) -> None:
     """
-    Calculate and print the self resistances to the terminal (or file-) output
+    Calculate and print the self resistances to the terminal (or file-) output.
 
     :param self_inductances: self-inductances in a list
     :type self_inductances: List
@@ -1471,14 +1478,15 @@ def visualize_self_resistances(self_inductances: List, flux_linkages: List, freq
     for x in range(0, len(flux_linkages)):
         string_to_print += f"Z_{x+1}_{x+1} = {self_inductances[x].imag*2*np.pi*frequency}\n"
     if not silent:
-        print(f"\n"
-              f"Self Resistances: ")
+        print("\n"
+              "Self Resistances: ")
         print(string_to_print)
 
 
 def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: List, silent: bool):
     """
-    Print the coupling factors to the terminal (or file-) output
+    Print the coupling factors to the terminal (or file-) output.
+
     :param coupling_matrix: matrix with coupling factors between the windings
     :type coupling_matrix: np.array
     :param flux_linkages: flux-linkages in a list
@@ -1491,14 +1499,15 @@ def visualize_coupling_factors(coupling_matrix: np.array, flux_linkages: List, s
         for y in range(0, len(coupling_matrix)):
             string_to_print += f"K_{x + 1}{y + 1} = Phi_{x + 1}{y + 1} / Phi_{y + 1}{y + 1} = {coupling_matrix[x][y]}\n"
     if not silent:
-        print(f"\n"
-              f"Coupling Factors: ")
+        print("\n"
+              "Coupling Factors: ")
         print(string_to_print)
 
 
 def visualize_mean_coupling_factors(mean_coupling_factors: List, silent: bool):
     """
-    Print the mean coupling factors to the terminal (or file-) output
+    Print the mean coupling factors to the terminal (or file-) output.
+
     :param mean_coupling_factors: mean_coupling_factors in a list
     :type mean_coupling_factors: List
     :param silent: True for no output
@@ -1507,16 +1516,18 @@ def visualize_mean_coupling_factors(mean_coupling_factors: List, silent: bool):
     string_to_print = ""
     for x in range(0, len(mean_coupling_factors)):
         for y in range(0, len(mean_coupling_factors)):
-            string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} / Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
+            string_to_print += f"k_{x + 1}{y + 1} = Sqrt(K_{x + 1}{y + 1} * K_{y + 1}{x + 1}) = M_{x + 1}{y + 1} " \
+                               f"/ Sqrt(L_{x + 1}_{x + 1} * L_{y + 1}_{y + 1}) = {mean_coupling_factors[x][y]}\n"
         if not silent:
-            print(f"\n"
-                  f"Mean Coupling Factors: ")
+            print("\n"
+                  "Mean Coupling Factors: ")
             print(string_to_print)
 
 
 def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool):
     """
-    Print the mean mutal inductances to the terminal (or file-) output
+    Print the mean mutal inductances to the terminal (or file-) output.
+
     :param inductance_matrix: inductance matrix
     :type inductance_matrix: np.array
     :param silent: True for no output
@@ -1531,14 +1542,14 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
     if not silent:
-        print(f"\n"
-              f"Mean Mutual Inductances: ")
+        print("\n"
+              "Mean Mutual Inductances: ")
         print(string_to_print)
 
 
 def visualize_mutual_inductances(self_inductances: List, coupling_factors: List, silent: bool):
     """
-    Print the mutal inductances to the terminal (or file-) output
+    Print the mutal inductances to the terminal (or file-) output.
 
     :param self_inductances: Matrix with self inductances
     :type self_inductances: List
@@ -1556,13 +1567,19 @@ def visualize_mutual_inductances(self_inductances: List, coupling_factors: List,
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {self_inductances[y].real * coupling_factors[x][y]}\n"
     if not silent:
-        print(f"\n"
-              f"Mutual Inductances: ")
+        print("\n"
+              "Mutual Inductances: ")
         print(string_to_print)
 
 
 def visualize_inductance_matrix_coefficients(inductance_matrix, silent: bool):
-    """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+    """Visualize the inductance matrix coefficients in the terminal.
+
+    e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+
+    :param inductance_matrix: inductance matrix of transformer
+    :param silent: False to show the terminal output
+    :type silent: bool
     """
     string_to_print = ""
     for x in range(0, len(inductance_matrix)):
@@ -1572,24 +1589,49 @@ def visualize_inductance_matrix_coefficients(inductance_matrix, silent: bool):
             else:
                 string_to_print += f"M_{x + 1}{y + 1} = {inductance_matrix[x][y].real}\n"
     if not silent:
-        print(f"\n"
-                   f"Inductance Matrix Coefficients: ")
+        print("\n"
+              "Inductance Matrix Coefficients: ")
         print(string_to_print)
 
 
 def visualize_inductance_matrix(inductance_matrix, silent: bool):
-    """e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
+    """Visualize the inductance matrix in the terminal.
+
+    e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
     string_to_print = ""
     for x in range(0, len(inductance_matrix)):
         for y in range(0, len(inductance_matrix)):
             string_to_print += f"{np.round(inductance_matrix[x][y].real, 12)} "
-        string_to_print += f"\n"
+        string_to_print += "\n"
 
     if not silent:
-        print(f"\n"
-              f"Inductance Matrix: ")
+        print("\n"
+              "Inductance Matrix: ")
         print(string_to_print)
+
+
+def convert_air_gap_corner_points_to_center_and_distance(corner_points):
+    """
+    Convert the list-defined air_gap_corner_points from a "two_d_axi" object to center points and lengths as to separate lists.
+
+    :param corner_points: in usage of magnetic component -> "self.two_d_axi.p_air_gaps.tolist()"
+    :return:
+    """
+    centers = []
+    heights = []
+    # 4 corner points make up one air gap
+    for n_air_gap in range(0, int(len(corner_points)/4)):
+        width = corner_points[n_air_gap*4 + 1][0] - corner_points[n_air_gap*4 + 0][0]
+        height = corner_points[n_air_gap * 4 + 2][1] - corner_points[n_air_gap * 4 + 0][1]
+        heights.append(height)
+        centers.append(
+            [
+                corner_points[n_air_gap*4 + 0][0] + width/2,  # x-coordinate of air gap's center
+                corner_points[n_air_gap*4 + 2][1] - height/2  # y-coordinate of air gap's center
+            ]
+        )
+    return centers, heights
 
 
 if __name__ == '__main__':

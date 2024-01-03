@@ -1,3 +1,12 @@
+"""Classes and methods to generate the mesh for the FEM simulations.
+
+GMSH default procedure
+- define points
+- define lines from points
+- define closed loops from lines
+- define planes from closed loops
+- define physical surfaces from planes
+"""
 # Python standard libraries
 import os
 import numpy as np
@@ -10,16 +19,15 @@ import gmsh
 
 # Local libraries
 import femmt.functions as ff
-from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType, Verbosity, WindingScheme
+from femmt.enumerations import ComponentType, ConductorType, WindingType, CoreType, Verbosity
 from femmt.data import FileData
 from femmt.model import Conductor, Core, StrayPath, AirGaps, Insulation, WindingWindow
 from femmt.drawing import TwoDaxiSymmetric
 
 
 class Mesh:
-    """
-    This class will create a mesh from the given model.
-    """
+    """Create a mesh from the given model."""
+
     model: TwoDaxiSymmetric
     core: Core
     stray_path: StrayPath
@@ -90,29 +98,31 @@ class Mesh:
         self.gmsh_log = file_paths.gmsh_log
 
     def femmt_print(self, text: str):
+        """Print text to terminal or to log-file, dependent on the current verbosity."""
         if not self.verbosity == Verbosity.Silent:
             self.logger.info(text)
 
     def set_empty_point_lists(self):
+        """Initialize point lists. For internal overview as a mirrored gmsh information set."""
         # Add empty lists
         p_core = []
         p_island = []
         p_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             p_cond.append([])
         p_region = []
         p_iso_core = []
         return p_core, p_island, p_cond, p_region, p_iso_core
 
     def set_empty_line_lists(self):
-
+        """Initialize line lists. For internal overview as a mirrored gmsh information set."""
         # Curves
         l_bound_core = []
         l_bound_air = []
         l_core_air = []
         l_core_core = []
         l_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             l_cond.append([])
         l_region = []
         l_air_gaps_air = []
@@ -120,9 +130,10 @@ class Mesh:
         return l_bound_core, l_bound_air, l_core_air, l_cond, l_region, l_air_gaps_air, l_iso_core, l_core_core
 
     def set_empty_curve_loop_lists(self):
+        """Initialize curve loop lists. For internal overview as a mirrored gmsh information set."""
         # Curve Loops
         curve_loop_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             curve_loop_cond.append([])
         curve_loop_island = []
         curve_loop_air = []
@@ -133,13 +144,13 @@ class Mesh:
         return curve_loop_cond, curve_loop_island, curve_loop_air, curve_loop_air_gaps, curve_loop_iso_core
 
     def set_empty_plane_lists(self):
+        """Initialize plane lists. For internal overview as a mirrored gmsh information set."""
         # This is only needed for the surfaces since they are the only global variables
         # Plane Surfaces
         self.plane_surface_core = []
 
-
         self.plane_surface_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             self.plane_surface_cond.append([])
         if self.core.core_type == CoreType.Single:
             self.plane_surface_air = []
@@ -155,8 +166,7 @@ class Mesh:
                     p_core: list, p_island: list,
                     l_bound_core: list, l_core_air: list, l_bound_air: list, l_air_gaps_air: list,
                     curve_loop_island: list, curve_loop_air_gaps: list):
-        """sets a single core with one physical winding window
-        """
+        """Set a single core with one physical winding window."""
         # Points
         # (index refers to sketch)
 
@@ -407,12 +417,12 @@ class Mesh:
             else:
                 bottom = l_core_air[6 + 3 * i]
 
-
             curve_loop = gmsh.model.geo.addCurveLoop([left, top, bottom, right], -1, True)
             curve_loop_air_gaps.append(curve_loop)
             self.plane_surface_air_gaps.append(gmsh.model.geo.addPlaneSurface([curve_loop]))
 
     def stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list):
+        """Generate the stacked core."""
         # Points
         # (index refers to sketch)
         from operator import itemgetter
@@ -598,6 +608,7 @@ class Mesh:
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([-curve_loop_core]))
 
     def modular_stacked_core(self, p_core: list, l_bound_core: list, l_core_air: list, l_bound_air: list, l_core_core: list):
+        """Generate the modular stacked core."""
         # Points
         # (index refers to sketch)
         from operator import itemgetter
@@ -662,13 +673,13 @@ class Mesh:
 
         # 9 top right
         p_core.append(gmsh.model.geo.addPoint(self.model.p_outer[3][0],
-                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_inner_diameter / 4,
+                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_thickness,
                                               self.model.p_outer[3][2],
                                               self.model.p_outer[1][3]))  # TODO accuracy of mesh
 
         # 10 top left
         p_core.append(gmsh.model.geo.addPoint(0,
-                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_inner_diameter / 4,
+                                              self.model.p_outer[3][1] + self.core.window_h_top + self.core.core_thickness,
                                               self.model.p_outer[3][2],
                                               self.model.p_outer[1][3]))  # TODO accuracy of mesh
 
@@ -702,15 +713,12 @@ class Mesh:
                                               self.model.p_window_top[1][2],
                                               self.model.p_window_top[1][3]))
 
-
-
         #  center part
         # 16 top air gap bot_left # TODO: Code for distributed air gaps
         p_core.append(gmsh.model.geo.addPoint(0,
-                                              top_air_gap_center_y - top_air_gap_length / 2,
+                                              self.model.p_outer[2][1],
                                               0,
-                                              self.model.p_outer[1][3]))  # TODO: Code for distributed air gaps
-
+                                              self.model.p_outer[1][3]))
 
         # 17
         p_core.append(gmsh.model.geo.addPoint(0,
@@ -736,125 +744,99 @@ class Mesh:
                                               0,
                                               self.model.p_window_bot[0][3]))  # TODO: Code for distributed air gaps
 
-
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Curves
         # (index refers to sketch)
 
         # Curves: Boundary - Core
         # [0]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[0],
-                                                   p_core[1]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[0], p_core[1]))
         # [1]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[1],
-                                                   p_core[2]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[1], p_core[2]))
         # [2]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[2],
-                                                   p_core[3]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[2], p_core[3]))
         # [3]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[3],
-                                                   p_core[8]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[3], p_core[8]))
         # [4]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[8],
-                                                   p_core[9]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[8], p_core[9]))
         # [5]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[9],
-                                                   p_core[10]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[9], p_core[10]))
         # [6]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[10],
-                                                   p_core[11]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[10], p_core[11]))
         # [7]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[16],
-                                                   p_core[17]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[16], p_core[17]))
         # [8]
-        l_bound_core.append(gmsh.model.geo.addLine(p_core[17],
-                                                   p_core[19]))
+        l_bound_core.append(gmsh.model.geo.addLine(p_core[17], p_core[19]))
 
         # Curves: Bound - Air
         # [0]
-        l_bound_air.append(gmsh.model.geo.addLine(p_core[11],
-                                                  p_core[16]))
+        l_bound_air.append(gmsh.model.geo.addLine(p_core[11], p_core[16]))
         # [1]
-        l_bound_air.append(gmsh.model.geo.addLine(p_core[19],
-                                                  p_core[0]))
+        l_bound_air.append(gmsh.model.geo.addLine(p_core[19], p_core[0]))
 
         # Curves: Core - Air
         # top window
         # [0]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[11],
-                                                 p_core[12]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[11], p_core[12]))
         # [1]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[12],
-                                                 p_core[13]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[12], p_core[13]))
         # [2]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[13],
-                                                 p_core[14]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[13], p_core[14]))
         # [3]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[14],
-                                                 p_core[15]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[14], p_core[15]))
         # [4]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[15],
-                                                 p_core[16]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[15], p_core[16]))
         # bot window
         # [5]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[18],
-                                                 p_core[4]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[18], p_core[4]))
         # [6]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[19],
-                                                 p_core[20]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[19], p_core[20]))
         # [7]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[20],
-                                                 p_core[18]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[20], p_core[18]))
         # [8]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[4],
-                                                 p_core[5]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[4], p_core[5]))
         # [9]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[5],
-                                                 p_core[6]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[5], p_core[6]))
         # [10]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[6],
-                                                 p_core[7]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[6], p_core[7]))
         # [11]
-        l_core_air.append(gmsh.model.geo.addLine(p_core[7],
-                                                 p_core[0]))
+        l_core_air.append(gmsh.model.geo.addLine(p_core[7], p_core[0]))
 
         # core core
         # [0]
-        l_core_core.append(gmsh.model.geo.addLine(p_core[8],
-                                                  p_core[15]))
+        l_core_core.append(gmsh.model.geo.addLine(p_core[8], p_core[15]))
         # [1]
-        l_core_core.append(gmsh.model.geo.addLine(p_core[15],
-                                                  p_core[4]))
+        l_core_core.append(gmsh.model.geo.addLine(p_core[15], p_core[4]))
         # [2]
-        l_core_core.append(gmsh.model.geo.addLine(p_core[4],
-                                                  p_core[3]))
+        l_core_core.append(gmsh.model.geo.addLine(p_core[4], p_core[3]))
         # [3]
-        l_core_core.append(gmsh.model.geo.addLine(p_core[17],
-                                                  p_core[18]))
+        l_core_core.append(gmsh.model.geo.addLine(p_core[17], p_core[18]))
 
         # Transformer flux path only
-        curve_loop_core_bot = gmsh.model.geo.addCurveLoop(l_bound_core[0:3] + l_core_air[8:12] + [-l_core_core[2]])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_bot = gmsh.model.geo.addCurveLoop(l_bound_core[0:3] + l_core_air[8:12] + [-l_core_core[2]])
+        # TODO: curve_loop_core_bot must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_bot]))
-        curve_loop_core_center_left_bot = gmsh.model.geo.addCurveLoop([l_bound_core[8]] + l_core_air[6:8] + [-l_core_core[3]])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_center_left_bot = gmsh.model.geo.addCurveLoop([l_bound_core[8]] + l_core_air[6:8] + [-l_core_core[3]])
+        # TODO: curve_loop_core_center_left_bot: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_left_bot]))
 
         # Shared path parts
-        curve_loop_core_center_left_top = gmsh.model.geo.addCurveLoop([l_bound_core[7]] + l_core_air[4:6] + [-l_core_core[1]] + [l_core_core[3]])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_center_left_top = gmsh.model.geo.addCurveLoop([l_bound_core[7]] + l_core_air[4:6] + [-l_core_core[1]] + [l_core_core[3]])
+        # TODO: curve_loop_core_center_left_top: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_left_top]))
-        curve_loop_core_center_right = gmsh.model.geo.addCurveLoop([l_bound_core[3]] + l_core_core[0:3])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_center_right = gmsh.model.geo.addCurveLoop([l_bound_core[3]] + l_core_core[0:3])
+        # TODO: curve_loop_core_center_right: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_center_right]))
 
         # Choke path only
-        curve_loop_core_top = gmsh.model.geo.addCurveLoop(l_bound_core[4:7] + l_core_air[0:4] + [-l_core_core[0]])  # TODO: must be taken into account that its a kind of interrupted lines
+        curve_loop_core_top = gmsh.model.geo.addCurveLoop(l_bound_core[4:7] + l_core_air[0:4] + [-l_core_core[0]])
+        # TODO: curve_loop_core_top: must be taken into account that its a kind of interrupted lines
         self.plane_surface_core.append(gmsh.model.geo.addPlaneSurface([curve_loop_core_top]))
 
-
-
-
     def conductors(self, p_cond: list, l_cond: list, curve_loop_cond: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate the conductors."""
         # Conductors
-        p_cond_center = [] # List for center points which are later embed in the model
+        p_cond_center = []  # List for center points which are later embed in the model
 
         # Points of Conductors
         for num in range(len(self.windings)):
@@ -869,7 +851,7 @@ class Mesh:
                 if self.windings[num].conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
                     p_cond[num].append(point)
                 elif self.windings[num].conductor_type == ConductorType.RectangularSolid:
-                    if not ((i + 1) % 5 == 0): # Skip the center points
+                    if not ((i + 1) % 5 == 0):  # Skip the center points
                         p_cond[num].append(point)
                     else:
                         current_center_points.append(point)
@@ -934,16 +916,16 @@ class Mesh:
 
     def insulations_core_cond(self, p_iso_core: list):
         """
-        Sets the rectangular electrical insulation between conductors and core.
+        Set the rectangular electrical insulation between conductors and core.
+
         :return:
         """
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Insulations
         # Core to Windings
         # If no insulation, return an empty list
         if not self.model.p_iso_core:
             return []
-        #if self.model.p_iso_core and self.insulation.flag_insulation:  # Check if list is not empty
+        # if self.model.p_iso_core and self.insulation.flag_insulation:  # Check if list is not empty
             # Points
         for iso in self.model.p_iso_core:
             p_iso = []
@@ -962,13 +944,12 @@ class Mesh:
             self.plane_surface_iso_core.append(gmsh.model.geo.addPlaneSurface([cl]))
         return curve_loop_iso_core
 
-
     def air_single(self, l_core_air: list, l_air_gaps_air: list, curve_loop_air: list, curve_loop_cond: list, curve_loop_iso_core: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the single core."""
         # Air
         # Points are partwise double designated
 
-        """ This is without the split of the air gaps
+        """This is without the split of the air gaps
         l_air_tmp = self.l_core_air[:7]
         for i in range(0, len(self.l_bound_air)):
             l_air_tmp.append(self.l_bound_air[i])
@@ -981,7 +962,6 @@ class Mesh:
         """
 
         # With closed air gaps
-        l_air_tmp = []
         if self.model.air_gaps.number == 0:
             l_air_tmp = l_core_air
         else:
@@ -1013,19 +993,19 @@ class Mesh:
         # The other curve loops represent holes in the surface -> For each conductor as well as each insulation
         self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
 
-        #if curve_loop_iso_core is not None:
-           # self.plane_surface_air.append(
-            #gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
+        # if curve_loop_iso_core is not None:
+        #    self.plane_surface_air.append(
+        #    gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond + curve_loop_iso_core))
 
-        #else:
-            #self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))
+        # else:
+        #     self.plane_surface_air.append(gmsh.model.geo.addPlaneSurface(curve_loop_air + flatten_curve_loop_cond))
 
     def air_stacked(self, l_core_air: list, l_bound_air, curve_loop_cond: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Generate gmsh entities (points, lines, closed loops and planes) and draw the air gaps for the stacked core."""
         # Air
         # Points are partwise double designated
 
-        """ This is without the split of the air gaps
+        """This is without the split of the air gaps
         l_air_tmp = self.l_core_air[:7]
         for i in range(0, len(self.l_bound_air)):
             l_air_tmp.append(self.l_bound_air[i])
@@ -1120,10 +1100,16 @@ class Mesh:
         #     gmsh.model.geo.addPlaneSurface(curve_loop_air_bot + flatten_curve_loop_cond_bot + curve_loop_iso_core_bot))
 
     def boundary(self, p_core: list, p_region: list, l_bound_core: list, l_bound_air: list, l_region: list):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """
+        Create the boundary of the simulation region.
+
+        Default case is for air gaps in the inner core.
+        The else-case, for outer air gaps is unused for air gaps in the inner core.
+        """
         # Boundary
         if self.core.core_type == CoreType.Single:
             if self.region is None:
+                # For inner air gaps.
                 self.l_bound_tmp = l_bound_core[:7]
                 for i in range(len(l_bound_air)):
                     self.l_bound_tmp.append(l_bound_air[-i - 1])
@@ -1131,6 +1117,7 @@ class Mesh:
                         self.l_bound_tmp.append(l_bound_core[-i - 1])
 
             else:
+                # For outer air gaps. Not used for cores with air gaps in the inner leg.
                 # Generate Lines of Region
                 # start top left and go clockwise
                 p_region.append(gmsh.model.geo.addPoint(0,
@@ -1191,7 +1178,7 @@ class Mesh:
                         self.l_bound_tmp.append(l_bound_core[-i - 1])
 
     def visualize(self, visualize_before, save_png):
-        # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        """Visualize the geometry or the FEM simulation result."""
         # Colorize model and show it if needed
         # mesh generation
         color_scheme = ff.colors_femmt_default
@@ -1207,29 +1194,34 @@ class Mesh:
             # only colorize air-gap in case of air gaps
             for air_gap in self.plane_surface_air_gaps:
                 gmsh.model.setColor([(2, air_gap)], color_scheme[colors_geometry["air_gap"]][0],
-                                    color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2], recursive=True)
+                                    color_scheme[colors_geometry["air_gap"]][1], color_scheme[colors_geometry["air_gap"]][2],
+                                    recursive=True)
 
         # air/potting-material inside core window
         if self.model.core.core_type == CoreType.Single:
             gmsh.model.setColor([(2, self.plane_surface_air[0])], color_scheme[colors_geometry["potting_inner"]][0],
-                                color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2], recursive=True)
+                                color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2],
+                                recursive=True)
         elif self.model.core.core_type == CoreType.Stacked:
             gmsh.model.setColor([(2, self.plane_surface_air_bot[0])], color_scheme[colors_geometry["potting_inner"]][0],
-                                color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2], recursive=True)
+                                color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2],
+                                recursive=True)
             gmsh.model.setColor([(2, self.plane_surface_air_top[0])], color_scheme[colors_geometry["potting_inner"]][0],
-                                color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2], recursive=True)
-
+                                color_scheme[colors_geometry["potting_inner"]][1], color_scheme[colors_geometry["potting_inner"]][2],
+                                recursive=True)
 
         # winding colors
         for winding_number in range(len(self.windings)):
             for turn_number in range(len(self.plane_surface_cond[winding_number])):
                 gmsh.model.setColor([(2, self.plane_surface_cond[winding_number][turn_number])],
-                                    color_scheme[colors_geometry["winding"][winding_number]][0], color_scheme[colors_geometry["winding"][winding_number]][1],
+                                    color_scheme[colors_geometry["winding"][winding_number]][0],
+                                    color_scheme[colors_geometry["winding"][winding_number]][1],
                                     color_scheme[colors_geometry["winding"][winding_number]][2], recursive=True)
 
         # insulation color (inner insulation / bobbin)
         gmsh.model.setColor([(2, iso) for iso in self.plane_surface_iso_core],
-                            color_scheme[colors_geometry["insulation"]][0], color_scheme[colors_geometry["insulation"]][1], color_scheme[colors_geometry["insulation"]][2], recursive=True)
+                            color_scheme[colors_geometry["insulation"]][0], color_scheme[colors_geometry["insulation"]][1],
+                            color_scheme[colors_geometry["insulation"]][2], recursive=True)
 
         if visualize_before:
             gmsh.fltk.run()
@@ -1238,13 +1230,15 @@ class Mesh:
         # gmsh.option.setNumber("Mesh.SaveAll", 1)
         if save_png:
             gmsh.fltk.initialize()
-
             gmsh.write(self.hybrid_color_png_file)  # save png
+            gmsh.fltk.finalize()
 
     def generate_hybrid_mesh(self, color_scheme: Dict = ff.colors_femmt_default, colors_geometry: Dict = ff.colors_geometry_femmt_default,
                              visualize_before: bool = False,
                              save_png: bool = True, refine=0, alternative_error=0):
         """
+        Generate the hybird mesh.
+
         - interaction with gmsh
         - mesh generation
             - Skin depth based forward meshing
@@ -1277,11 +1271,12 @@ class Mesh:
 
         # Define mesh for conductors
         model_insulation: bool = True
-        #TODO: Add model_insulation as an input parameter of the function.
+        # TODO: Add model_insulation as an input parameter of the function.
 
         if self.model.component_type == ComponentType.IntegratedTransformer:
-            warnings.warn("Inuslations are currently not implemented for integrated transformer and will be ignored.")
-            #TODO: Implement insulations for integrated transformer.
+            warnings.warn("Insulations are currently not implemented for integrated transformer and will be ignored.",
+                          stacklevel=2)
+            # TODO: Implement insulations for integrated transformer.
             model_insulation = False
 
         if model_insulation:
@@ -1306,8 +1301,8 @@ class Mesh:
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # TODO The following algorithms try to modify the mesh in order to reduce the runtime. But maybe the synchronize() calls
-        # have a high runtime. Check if this is true and when it does try to reduce the number of synchronize() calls by adding all points first and
-        # embed them later together:
+        # have a high runtime. Check if this is true and when it does try to reduce the number of synchronize() calls by adding
+        # all points first and embed them later together:
         # This is added here therefore the additional points are not seen in the pictures and views
         self.forward_meshing(p_cond)
 
@@ -1319,6 +1314,7 @@ class Mesh:
         gmsh.write(self.model_geo_file)
 
     def generate_electro_magnetic_mesh(self, refine=0):
+        """Generate the mesh for the electro magnetic FEM simulation."""
         self.femmt_print("Electro Magnetic Mesh Generation in Gmsh (write physical entities)")
 
         self.PN_BOUND = 111111
@@ -1338,7 +1334,7 @@ class Mesh:
 
         def set_physical_surface_conductor():
             self.ps_cond = []
-            for num in range(len(self.windings)):
+            for _ in range(len(self.windings)):
                 self.ps_cond.append([])
 
             # Since the turns are saved for each vww all turns per winding must be collected
@@ -1359,18 +1355,20 @@ class Mesh:
                 if winding.conductor_type == ConductorType.RoundLitz:
                     for i in range(flattened_turns[winding_number]):
                         self.ps_cond[winding_number].append(
-                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=self.PN_ROUND_LITZ + 1000 * winding_number + i))
+                            gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]],
+                                                            tag=self.PN_ROUND_LITZ + 1000 * winding_number + i))
 
                 else:
                     if winding.parallel:
                         tags = self.plane_surface_cond[winding_number]
                         physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=self.PN_COND_SOLID + 1000 * winding_number)
-                        for i in range(flattened_turns[winding_number]):
+                        for _ in range(flattened_turns[winding_number]):
                             self.ps_cond[winding_number].append(physical_group_number)
                     else:
                         for i in range(flattened_turns[winding_number]):
                             self.ps_cond[winding_number].append(
-                                gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=self.PN_COND_SOLID + 1000 * winding_number + i))
+                                gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]],
+                                                                tag=self.PN_COND_SOLID + 1000 * winding_number + i))
 
         set_physical_surface_conductor()
 
@@ -1391,7 +1389,6 @@ class Mesh:
             self.pc_bound = gmsh.model.geo.addPhysicalGroup(1, self.l_bound_tmp, tag=self.PN_BOUND)
 
         set_physical_line_bound()
-
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Set names [optional]
@@ -1440,17 +1437,16 @@ class Mesh:
             with open(self.gmsh_log, "w") as fd:
                 fd.write(text)
 
-    def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot,  color_scheme, colors_geometry, visualize_before):
+    def generate_thermal_mesh(self, case_gap_top, case_gap_right, case_gap_bot, color_scheme, colors_geometry, visualize_before):
+        """Generate the mesh for the thermal FEM simulation."""
         self.femmt_print("Thermal Mesh Generation in Gmsh (write physical entities)")
 
         gmsh.open(self.model_geo_file)
-
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         # Create case around the core
         if self.model.core.core_type == CoreType.Single:
-
 
             # Core point and line tags
             core_point_tags = []
@@ -1481,8 +1477,8 @@ class Mesh:
 
             # Create 5 new areas: top, top right, right, bottom right, bottom
             # top
-            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top,tl_point_pos[2], mesh)
-            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top,tr_point_pos[2], mesh)
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
             top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
             top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
             top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
@@ -1490,41 +1486,39 @@ class Mesh:
             top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
 
             # top right
-            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right,tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
-            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1],tr_point_pos[2], mesh)
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh)
             top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
-            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point,top_right_case_top_right_point)
+            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
             top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
-            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
+            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line,
+                                                                     top_right_case_right_line, top_right_case_top_line])
             top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
 
             # right
-            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1],br_point_pos[2], mesh)
+            right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1], br_point_pos[2], mesh)
             right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, right_case_bottom_point)
             right_case_bottom_line = gmsh.model.geo.addLine(right_case_bottom_point, br_point)
             right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_right_case_bottom_line, right_case_right_line, right_case_bottom_line, right_line])
             right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
 
             # bottom right
-            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right,br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
-            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot,br_point_pos[2], mesh)
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot,
+                                                                           br_point_pos[2], mesh)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
             bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
-            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point,bottom_right_case_bottom_right_point)
-            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point,right_case_bottom_point)
-            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line,bottom_right_case_right_line])
+            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
+            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
+            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line,
+                                                                        bottom_right_case_right_line])
             bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
 
             # bottom
-            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot,bl_point_pos[2], mesh)
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh)
             bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
             bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
             bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_right_case_left_line] + bottom_lines)
             bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
-
-
-
-
-
 
         elif self.model.core.core_type == CoreType.Stacked:
             # Core point and line tags
@@ -1555,8 +1549,8 @@ class Mesh:
             mesh = self.mesh_data.c_core * 4
             # Create 5 new areas: top, top right, right, bottom right, bottom
             # top
-            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top,tl_point_pos[2], mesh)
-            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top,tr_point_pos[2], mesh)
+            top_case_left_point = gmsh.model.geo.addPoint(tl_point_pos[0], tl_point_pos[1] + case_gap_top, tl_point_pos[2], mesh)
+            top_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0], tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
             top_case_left_line = gmsh.model.geo.addLine(tl_point, top_case_left_point)
             top_case_top_line = gmsh.model.geo.addLine(top_case_left_point, top_case_right_point)
             top_case_right_line = gmsh.model.geo.addLine(top_case_right_point, tr_point)
@@ -1564,12 +1558,13 @@ class Mesh:
             top_case_surface = gmsh.model.geo.addPlaneSurface([top_case_curve_loop])
 
             # top right
-            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right,tr_point_pos[1] + case_gap_top, tr_point_pos[2],mesh)
-            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1],tr_point_pos[2], mesh)
+            top_right_case_top_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1] + case_gap_top, tr_point_pos[2], mesh)
+            top_right_case_right_point = gmsh.model.geo.addPoint(tr_point_pos[0] + case_gap_right, tr_point_pos[1], tr_point_pos[2], mesh)
             top_right_case_bottom_line = gmsh.model.geo.addLine(tr_point, top_right_case_right_point)
-            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point,top_right_case_top_right_point)
+            top_right_case_right_line = gmsh.model.geo.addLine(top_right_case_right_point, top_right_case_top_right_point)
             top_right_case_top_line = gmsh.model.geo.addLine(top_right_case_top_right_point, top_case_right_point)
-            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line, top_right_case_right_line, top_right_case_top_line])
+            top_right_case_curve_loop = gmsh.model.geo.addCurveLoop([top_case_right_line, top_right_case_bottom_line,
+                                                                     top_right_case_right_line, top_right_case_top_line])
             top_right_case_surface = gmsh.model.geo.addPlaneSurface([top_right_case_curve_loop])
 
             # right
@@ -1580,24 +1575,22 @@ class Mesh:
             right_case_surface = gmsh.model.geo.addPlaneSurface([right_case_curve_loop])
 
             # bottom right
-            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right,br_point_pos[1] - case_gap_bot,br_point_pos[2], mesh)
-            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot,br_point_pos[2], mesh)
+            bottom_right_case_bottom_right_point = gmsh.model.geo.addPoint(br_point_pos[0] + case_gap_right, br_point_pos[1] - case_gap_bot, br_point_pos[2],
+                                                                           mesh)
+            bottom_right_case_bottom_point = gmsh.model.geo.addPoint(br_point_pos[0], br_point_pos[1] - case_gap_bot, br_point_pos[2], mesh)
             bottom_right_case_left_line = gmsh.model.geo.addLine(br_point, bottom_right_case_bottom_point)
-            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point,bottom_right_case_bottom_right_point)
-            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point,right_case_bottom_point)
-            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line, bottom_right_case_bottom_line,bottom_right_case_right_line])
+            bottom_right_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_right_case_bottom_right_point)
+            bottom_right_case_right_line = gmsh.model.geo.addLine(bottom_right_case_bottom_right_point, right_case_bottom_point)
+            bottom_right_case_curve_loop = gmsh.model.geo.addCurveLoop([right_case_bottom_line, bottom_right_case_left_line,
+                                                                        bottom_right_case_bottom_line, bottom_right_case_right_line])
             bottom_right_case_surface = gmsh.model.geo.addPlaneSurface([bottom_right_case_curve_loop])
 
             # bottom
-            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot,bl_point_pos[2], mesh)
-            bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point,bottom_case_bottom_left_point)
+            bottom_case_bottom_left_point = gmsh.model.geo.addPoint(bl_point_pos[0], bl_point_pos[1] - case_gap_bot, bl_point_pos[2], mesh)
+            bottom_case_bottom_line = gmsh.model.geo.addLine(bottom_right_case_bottom_point, bottom_case_bottom_left_point)
             bottom_case_left_line = gmsh.model.geo.addLine(bottom_case_bottom_left_point, bl_point)
             bottom_case_curve_loop = gmsh.model.geo.addCurveLoop([bottom_case_bottom_line, bottom_case_left_line, bottom_right_case_left_line, bottom_lines])
             bottom_case_surface = gmsh.model.geo.addPlaneSurface([bottom_case_curve_loop])
-
-
-
-
 
         gmsh.model.geo.synchronize()
 
@@ -1609,11 +1602,10 @@ class Mesh:
         for i in range(0, len(self.plane_surface_core)):
             self.ps_core.append(gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_core[i]], tag=120000+i))
 
-
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Conductors
         self.ps_cond = []
-        for num in range(len(self.windings)):
+        for _ in range(len(self.windings)):
             self.ps_cond.append([])
 
         # Since the turns are saved for each vww all turns per winding must be collected
@@ -1636,7 +1628,7 @@ class Mesh:
                 if winding.parallel:
                     tags = self.plane_surface_cond[winding_number]
                     physical_group_number = gmsh.model.geo.addPhysicalGroup(2, tags, tag=130000 + 1000 * winding_number)
-                    for i in range(flattened_turns[winding_number]):
+                    for _ in range(flattened_turns[winding_number]):
                         self.ps_cond[winding_number].append(physical_group_number)
 
                 else:
@@ -1644,26 +1636,19 @@ class Mesh:
                         self.ps_cond[winding_number].append(
                             gmsh.model.geo.addPhysicalGroup(2, [self.plane_surface_cond[winding_number][i]], tag=130000 + 1000 * winding_number + i))
 
-
-
-
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # air and Air gaps
         if self.model.core.core_type == CoreType.Single:
             self.ps_air = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air, tag=110000)
-            self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001) #trying by Othman for stacked transformer
+            self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_air_gaps, tag=110001)  # trying by Othman for stacked transformer
         elif self.model.core.core_type == CoreType.Stacked:
             air_total = self.plane_surface_air_bot + self.plane_surface_air_top
             self.ps_air_gaps = gmsh.model.geo.addPhysicalGroup(2, air_total, tag=110001)
-
-
-
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # insulations
         # TODO Currently insulations can only have the same material
         self.ps_insulation = gmsh.model.geo.addPhysicalGroup(2, self.plane_surface_iso_core)
-
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Boundary
@@ -1718,8 +1703,7 @@ class Mesh:
 
         # Set case color to core color
         for sf in [top_case_surface, top_right_case_surface, right_case_surface, bottom_right_case_surface, bottom_case_surface]:
-             gmsh.model.setColor([(2, sf)], color_case[0], color_case[1], color_case[2], recursive=True)
-
+            gmsh.model.setColor([(2, sf)], color_case[0], color_case[1], color_case[2], recursive=True)
 
         # core color
         for i in range(len(self.plane_surface_core)):
@@ -1760,11 +1744,12 @@ class Mesh:
         gmsh.write(self.thermal_mesh_file)
 
     def inter_conductor_meshing(self, p_cond):
+        """To be defined."""
         p_inter = None
         for ww in self.model.winding_windows:
             for vww in ww.virtual_winding_windows:
                 if vww.winding_type != WindingType.TwoInterleaved:
-                    for index, winding in enumerate(vww.windings):    #TODO: proof
+                    for index, winding in enumerate(vww.windings):    # TODO: proof
                         num = winding.winding_number
                         p_inter = []
                         x_inter = []
@@ -1776,8 +1761,7 @@ class Mesh:
                             while self.model.p_conductor[num][5 * j][1] == \
                                     self.model.p_conductor[num][5 * j + 5][1]:
                                 x_inter.append(
-                                    0.5 * (self.model.p_conductor[num][5 * j][0] +
-                                           self.model.p_conductor[num][5 * j + 5][0]))
+                                    0.5 * (self.model.p_conductor[num][5 * j][0] + self.model.p_conductor[num][5 * j + 5][0]))
                                 j += 1
                                 if j == vww.turns[index] - 1:
                                     break
@@ -1786,8 +1770,7 @@ class Mesh:
                                 for i in range(0, int(vww.turns[index] / j)):
                                     if 5 * j * i + 5 * j >= len(self.model.p_conductor[num][:]):
                                         break
-                                    y_inter.append(0.5 * (self.model.p_conductor[num][5 * j * i][1] +
-                                                          self.model.p_conductor[num][5 * j * i + 5 * j][1]))
+                                    y_inter.append(0.5 * (self.model.p_conductor[num][5 * j * i][1] + self.model.p_conductor[num][5 * j * i + 5 * j][1]))
                                 for x in x_inter:
                                     for y in y_inter:
                                         p_inter.append(gmsh.model.geo.addPoint(x,
@@ -1797,7 +1780,7 @@ class Mesh:
 
         # TODO: Inter conductor meshing!
         if all(winding.conductor_type == ConductorType.RoundSolid for winding in self.windings):
-            self.femmt_print(f"Making use of skin based meshing\n")
+            self.femmt_print("Making use of skin based meshing\n")
             for num in range(len(self.windings)):
                 for i in range(0, int(len(p_cond[num]) / 5)):
                     gmsh.model.mesh.embed(0, [p_cond[num][5 * i + 0]], 2, self.plane_surface_cond[num][i])
@@ -1813,6 +1796,7 @@ class Mesh:
 
     def forward_meshing(self, p_cond):
         """In this function multiple techniques in order to raise the mesh density at certain points are applied.
+
         :return:
         """
         def point_is_in_conductor(x, y, p1, p2, p3, p4, p5):
@@ -1854,9 +1838,9 @@ class Mesh:
                 for j in range(number_rows + 1):
                     possible_points.append([x + i * cell_width, y + j * cell_height])
 
-            fixed_points = [] # Points from the conductors which should be avoided by this method
+            fixed_points = []  # Points from the conductors which should be avoided by this method
             conductors = self.model.p_conductor
-            for winding_number, winding in enumerate(self.windings):
+            for winding_number, _ in enumerate(self.windings):
                 for i in range(len(conductors[winding_number]) // 5):
                     p1 = conductors[winding_number][i * 5]
                     p2 = conductors[winding_number][i * 5 + 1]
@@ -1865,7 +1849,8 @@ class Mesh:
                     p5 = conductors[winding_number][i * 5 + 4]
                     fixed_points.append([p1, p2, p3, p4, p5, winding_number])
                 
-            # Because the points need to be embed into the right surface. The points now will be split between different insulations and the air in the winding window.
+            # Because the points need to be embed into the right surface. The points now will be split between different insulations and the
+            # air in the winding window.
             # TODO Currently primary secondary insulation is not considered
             left_iso = []
             right_iso = []
@@ -1932,7 +1917,7 @@ class Mesh:
                     air.append(center_point)
                 
                 if self.insulation.flag_insulation:
-                    if self.model.p_iso_core: # check if list is not empty
+                    if self.model.p_iso_core:  # check if list is not empty
                         if ff.point_is_in_rect(x, y, iso_core_left):
                             # Left iso
                             left_iso.append(center_point)
@@ -1961,7 +1946,6 @@ class Mesh:
 
             return air
 
-        
         if self.core.core_type == CoreType.Single:
             # Inter Conductors
             self.inter_conductor_meshing(p_cond)
@@ -1982,7 +1966,8 @@ class Mesh:
             if self.wwr_enabled:
                 # Winding Windows list has exactly two winding windows: top and bot: 
                 if len(self.winding_windows) != 2:
-                    print(f"Winding Window Rasterization is only implemented for stacked core with exactly 2 winding windows. {len(self.winding_windows)} winding windows were given.")
+                    print(f"Winding Window Rasterization is only implemented for stacked core with exactly 2 winding windows. "
+                          f"{len(self.winding_windows)} winding windows were given.")
                     gmsh.model.geo.synchronize()
                     return
 
@@ -2005,8 +1990,9 @@ class Mesh:
         gmsh.model.geo.synchronize()
 
     def rectangular_conductor_center_points(self):
+        """Add center points for rectangular conductors for better meshing."""
         def calculate_center_points(left_bound, right_bound, top_bound, bottom_bound, center_point, min_distance):
-
+            """Calculate the coordinates for the new center points."""
             # As upper bound use a maximum of 10 points per direction
             number_of_points_left = int(abs(center_point[0] - left_bound)/min_distance)
             number_of_points_right = int(abs(right_bound - center_point[0])/min_distance)
@@ -2053,8 +2039,10 @@ class Mesh:
                 new_gmsh_winding_center_points = []
                 for idx in range(0, len(winding), 5):
                     turn_points = winding[idx:idx+5]
-                    new_center_points = calculate_center_points(turn_points[0][0], turn_points[1][0], turn_points[0][1], turn_points[3][1], turn_points[4], center_points_mesh_size)
-                    new_gmsh_winding_center_points.append([winding_number, [gmsh.model.geo.addPoint(x[0], x[1], 0, center_points_mesh_size) for x in new_center_points]])
+                    new_center_points = calculate_center_points(turn_points[0][0], turn_points[1][0], turn_points[0][1],
+                                                                turn_points[3][1], turn_points[4], center_points_mesh_size)
+                    new_gmsh_winding_center_points.append([winding_number,
+                                                           [gmsh.model.geo.addPoint(x[0], x[1], 0, center_points_mesh_size) for x in new_center_points]])
 
                 new_gmsh_center_points.append(new_gmsh_winding_center_points)
 

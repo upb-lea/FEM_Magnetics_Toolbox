@@ -1,3 +1,4 @@
+"""Create and calculate reluctance models."""
 # python imports
 
 # 3rd library imports
@@ -10,6 +11,7 @@ from femmt.constants import mu_0
 
 
 def plot_limitation():
+    """Plot limitation."""
     length = 15
     width = 100 * length
     height = 101 - length
@@ -37,14 +39,12 @@ def plot_limitation():
     width_c = 100
     length_c = 0.5
     height1_c = np.linspace(50, 100, 1000)
-    height2_c =100 - height1_c
+    height2_c = 100 - height1_c
     h_l = height2_c / length
     # print(h_l)
-    r_m1 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
-            1 + np.log(np.pi * height1_c / 4 / length_c))))
+    r_m1 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (1 + np.log(np.pi * height1_c / 4 / length_c))))
 
-    r_m2 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (
-            1 + np.log(np.pi * height2_c / 4 / length_c))))
+    r_m2 = 1 / (mu_0 * (width_c / 2 / length_c + 2 / np.pi * (1 + np.log(np.pi * height2_c / 4 / length_c))))
 
     r_m = r_m1 + r_m2
     ratio = r_mx / r_m
@@ -64,7 +64,8 @@ def plot_limitation():
 
 def plot_r_basic():
     """
-    The function plots the 2D Reluctance of the basic geometry described in Muelethaler thesis
+    Plot the 2D Reluctance of the basic geometry described in Muelethaler thesis.
+
     (using Schwarz-Christoffel transformation) at page no. 35.
     It plots the Reluctance formula with respect to its variables (h/l and w/l).
     It is an independent function and has been used to analyse the expression and its limitation.
@@ -123,8 +124,7 @@ def plot_r_basic():
     plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
 
     for i, wid in enumerate(width):
-        r_m = 1 / (mu_0 * (wid / 2 / length + 2 / np.pi * (
-                1 + np.log(np.pi * height / 4 / length))))
+        r_m = 1 / (mu_0 * (wid / 2 / length + 2 / np.pi * (1 + np.log(np.pi * height / 4 / length))))
 
         combined = np.vstack((h_l, r_m)).T
         # print(combined)
@@ -139,7 +139,7 @@ def plot_r_basic():
 
 
 def distributed_type_1(air_gap_height_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
-    """Returns distributed air-gap reluctance of Type 1 (Where corner air-gaps are present)
+    """Calculate distributed air-gap reluctance of Type 1 (Where corner air-gaps are present).
 
     :param air_gap_height_single_air_gap: Air-gap height [in meter]
     :type air_gap_height_single_air_gap: list
@@ -150,8 +150,8 @@ def distributed_type_1(air_gap_height_single_air_gap, core_inner_diameter, n_air
     :param h_multiple: Half of core height between two consecutive air-gaps in an equally distributed air-gaps [in meter]
     :type h_multiple: ndarray
     :return: Distributed air-gap reluctance of Type 1 (Where corner air-gaps are present)
-    :rtype: list"""
-
+    :rtype: list
+    """
     # ToDo: Raise Error for less than two air gaps
 
     # first part calculates the two outer air gaps (very top and very bottom)
@@ -167,7 +167,7 @@ def distributed_type_1(air_gap_height_single_air_gap, core_inner_diameter, n_air
 
 
 def distributed_type_2(air_gap_height_single_air_gap, core_inner_diameter, n_air_gaps, h_multiple):
-    """Returns distributed air-gap reluctance of Type 2 (Where corner air-gaps are absent)
+    """Calculate distributed air-gap reluctance of Type 2 (Where corner air-gaps are absent).
 
     :param air_gap_height_single_air_gap: Air-gap height [in meter]
     :type air_gap_height_single_air_gap: list
@@ -178,8 +178,8 @@ def distributed_type_2(air_gap_height_single_air_gap, core_inner_diameter, n_air
     :param h_multiple: Core height between two consecutive air-gaps in an equally distributed air-gaps [in meter]
     :type h_multiple: ndarray
     :return: Distributed air-gap reluctance of Type 2 (Where corner air-gaps are absent)
-    :rtype: list"""
-
+    :rtype: list
+    """
     # ToDo: Raise Error for less than two air gaps
 
     # First part calculates two outer air gaps (very top and very bottom)
@@ -198,8 +198,7 @@ def distributed_type_2(air_gap_height_single_air_gap, core_inner_diameter, n_air
 def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list, no_of_turns: list,
                        n_air_gaps: list,
                        air_gap_h: list, air_gap_position: list, mu_rel: list, mult_air_gap_type: list):
-
-    """ Creates matrix consisting of input design parameters with all their combinations
+    """Create matrix consisting of input design parameters with all their combinations.
 
     :param core_inner_diameter: Diameter of center leg of the core in meter
     :type core_inner_diameter: list
@@ -222,7 +221,6 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
         Type 2: Equally distributed air-gaps excluding corner air-gaps (eg: air-gaps-position = [25, 50, 75] for 3 air-gaps)
     :type mult_air_gap_type: list
     """
-
     # Structure: data_matrix = [core_inner_diameter, window_h, window_w, mu_rel, no_of_turns, n_air_gaps, air_gap_h,
     #                      air_gap_position, mult_air_gap_type, inductance]
     clone_n_air_gaps = n_air_gaps
@@ -230,7 +228,7 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
 
     if 1 in clone_n_air_gaps:
         data_matrix = np.zeros((len(core_inner_diameter) * len(no_of_turns) * len(air_gap_h) * len(mu_rel) * (
-                len(air_gap_position) + (len(n_air_gaps) - 1) * len(mult_air_gap_type)), 10))
+            len(air_gap_position) + (len(n_air_gaps) - 1) * len(mult_air_gap_type)), 10))
     else:
         data_matrix = np.zeros(
             (len(core_inner_diameter) * len(no_of_turns) * len(air_gap_h) * len(n_air_gaps) * len(
@@ -280,14 +278,14 @@ def create_data_matrix(core_inner_diameter: list, window_h: list, window_w: list
 
 
 class MagneticCircuit:
-    """
-    Class object for calculating the reluctance and inductance of 2D-axis symmetric inductor
-    """
+    """Class object for calculating the reluctance and inductance of 2D-axis symmetric inductor."""
 
     def __init__(self, core_inner_diameter: list, window_h: list, window_w: list, no_of_turns: list, n_air_gaps: list,
                  air_gap_h: list, air_gap_position: list, mu_r_abs: list, mult_air_gap_type: list = None,
                  air_gap_method: str = 'Percent', component_type: str = 'inductor', sim_type: str = 'single'):
         """
+        Init the MagneticCircuit class.
+
         :param core_inner_diameter: Diameter of center leg of the core in meter
         :type core_inner_diameter: list
         :param window_h: Height of the core window [in meter]
@@ -316,7 +314,6 @@ class MagneticCircuit:
         :param sim_type: Relative permeability of the core [in F/m]
         :type sim_type: str
         """
-
         # Storing input arguments into object variables
         self.core_inner_diameter = core_inner_diameter
         self.window_h = window_h
@@ -410,10 +407,8 @@ class MagneticCircuit:
                 self.data_matrix = self.add_column_to_data_matrix(self.data_matrix, self.core_h, 'core_h')  # 15
 
     def input_pre_check(self):
-        """
-        The function is used to check the correctness of the inputs provided to class MagneticCircuit
-        """
-        if not (len(self.core_inner_diameter) and len(self.window_h) and len(self.window_w) and len(self.no_of_turns)
+        """Check the correctness of the inputs provided to class MagneticCircuit."""
+        if not (len(self.core_inner_diameter) and len(self.window_h) and len(self.window_w) and len(self.no_of_turns) \
                 and len(self.n_air_gaps) and len(self.mu_r_abs)):
             raise Exception("one of the passed arguments are empty list")
         if not all(isinstance(item, int) for item in self.no_of_turns):
@@ -426,12 +421,11 @@ class MagneticCircuit:
             raise Exception("string value wrong for sim_type argument")
         if not (self.component_type == 'inductor' or self.component_type == 'integrated_transformer'):
             raise Exception("string value wrong for component_type argument")
-        #if any(item > 0.0005 for item in self.air_gap_h):
+        # if any(item > 0.0005 for item in self.air_gap_h):
         #    raise Exception("Model accuracy is not good for air_gap_h more than 0.0005")
         if self.sim_type == 'single':
             if not (len(self.core_inner_diameter) == 1 and len(self.window_h) == 1 and len(self.window_w) == 1 and len(
-                    self.no_of_turns) == 1
-                    and len(self.n_air_gaps) == 1 and len(self.mu_r_abs) == 1):
+                    self.no_of_turns) == 1 and len(self.n_air_gaps) == 1 and len(self.mu_r_abs) == 1):
                 raise Exception("single sim_type requires single list elements")
             if not (self.n_air_gaps[0] == len(self.air_gap_h) and self.n_air_gaps[0] == len(self.air_gap_position)):
                 raise Exception("No. of elements of air_gap_h and air_gap_position should match n_air_gaps")
@@ -450,13 +444,12 @@ class MagneticCircuit:
 
     def core_reluctance(self):
         """
-        Calculates the core reluctance along with length and area of each section of the core geometry
+        Calculate the core reluctance along with length and area of each section of the core geometry.
 
         Core reluctance are referred from Appendix B of book "E. C. Snelling. Soft Ferrites,
         Properties and Applications. 2nd edition. Butterworths, 1988". This book is referred in Muelethaler thesis
         at page no. 26
         """
-
         # Geometry definitions
         self.core_h = self.window_h + self.core_inner_diameter / 2
         self.core_h_middle = self.core_inner_diameter / 2 / 2
@@ -482,8 +475,7 @@ class MagneticCircuit:
         # Section 1: Inner corner
         s_1 = (self.core_inner_diameter / 2) - (self.core_inner_diameter / (2 * np.sqrt(2)))
         self.length[:, 1] = (np.pi / 4) * (s_1 + (self.core_h_middle / 2))
-        self.area[:, 1] = (np.pi / 2) * ((2 * (self.core_inner_diameter / 2) * self.core_h_middle) +
-                                         ((self.core_inner_diameter / 2) ** 2))
+        self.area[:, 1] = (np.pi / 2) * ((2 * (self.core_inner_diameter / 2) * self.core_h_middle) + ((self.core_inner_diameter / 2) ** 2))
 
         # Section 2: Winding window section
         self.length[:, 2] = self.window_w
@@ -492,8 +484,7 @@ class MagneticCircuit:
         # Section 3: Outer corner
         s_2 = np.sqrt(((self.r_inner ** 2) + (self.r_outer ** 2)) / 2) - self.r_inner
         self.length[:, 3] = (np.pi / 4) * (s_2 + (self.core_h_middle / 2))
-        self.area[:, 3] = (np.pi / 2) * ((2 * self.r_inner * self.core_h_middle) +
-                                         ((self.r_outer ** 2) - (self.r_inner ** 2)))
+        self.area[:, 3] = (np.pi / 2) * ((2 * self.r_inner * self.core_h_middle) + ((self.r_outer ** 2) - (self.r_inner ** 2)))
 
         # Section 4: Outer leg
         self.length[:, 4] = self.window_h
@@ -502,8 +493,7 @@ class MagneticCircuit:
         # Reluctance calculation
         self.reluctance[:, 0] = self.length[:, 0] / (mu_0 * self.mu_r_abs * self.area[:, 0])
         self.reluctance[:, 1] = self.length[:, 1] / (mu_0 * self.mu_r_abs * self.area[:, 1])
-        self.reluctance[:, 2] = ((mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * \
-                                np.log((2 * self.r_inner) / self.core_inner_diameter)
+        self.reluctance[:, 2] = ((mu_0 * self.mu_r_abs * 2 * np.pi * self.core_h_middle) ** -1) * np.log((2 * self.r_inner) / self.core_inner_diameter)
         self.reluctance[:, 3] = self.length[:, 3] / (mu_0 * self.mu_r_abs * self.area[:, 3])
         self.reluctance[:, 4] = self.length[:, 4] / (mu_0 * self.mu_r_abs * self.area[:, 4])
 
@@ -512,8 +502,9 @@ class MagneticCircuit:
 
     def air_gap_reluctance_sweep(self):
         """
-        This function calculates the air-gap reluctance for a sweep simulation with single/distributed air-gaps
-        according to the following paper:
+        Calculate the air-gap reluctance for a sweep simulation with single/distributed air-gaps.
+
+        Method according to the following paper:
         ["A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
         It is called when input variable sim_type == 'sweep'.
@@ -521,47 +512,37 @@ class MagneticCircuit:
         series connection. That is, multiple air-gaps are divided equally and common height (h) is calculated.
         Then their Reluctances are calculated and added such that they are connected in series.
         """
-
         # Single air-gap reluctance calculations
         self.max_percent_position = ((self.window_h[0:self.single_air_gap_len] - (
-                self.air_gap_h[0:self.single_air_gap_len] / 2)) / self.window_h[0:self.single_air_gap_len]) * 100
-        self.min_percent_position = ((self.air_gap_h[0:self.single_air_gap_len] / 2) / self.window_h[
-                                                                                       0:self.single_air_gap_len]) * 100
-        self.abs_position_air_gap = (self.air_gap_position[0:self.single_air_gap_len] * self.window_h[
-                                                                                                0:self.single_air_gap_len]) / 100  # Convert percent position to absolute value position
+            self.air_gap_h[0:self.single_air_gap_len] / 2)) / self.window_h[0:self.single_air_gap_len]) * 100
+        self.min_percent_position = ((self.air_gap_h[0:self.single_air_gap_len] / 2) / self.window_h[0:self.single_air_gap_len]) * 100
+        # Convert percent position to absolute value position
+        self.abs_position_air_gap = (self.air_gap_position[0:self.single_air_gap_len] * self.window_h[0:self.single_air_gap_len]) / 100
         h = np.zeros((len(self.abs_position_air_gap), 2))
 
         h[:, 0] = np.where((self.air_gap_position[0:self.single_air_gap_len] <= self.min_percent_position) | (
-                self.air_gap_position[0:self.single_air_gap_len] >= self.max_percent_position),
-                           self.window_h[0:self.single_air_gap_len] - self.air_gap_h[0:self.single_air_gap_len],
-                           self.abs_position_air_gap - (self.air_gap_h[0:self.single_air_gap_len] / 2))
+            self.air_gap_position[0:self.single_air_gap_len] >= self.max_percent_position),
+            self.window_h[0:self.single_air_gap_len] - self.air_gap_h[0:self.single_air_gap_len],
+            self.abs_position_air_gap - (self.air_gap_h[0:self.single_air_gap_len] / 2))
         h[:, 1] = np.where((self.air_gap_position[0:self.single_air_gap_len] <= self.min_percent_position) | (
-                self.air_gap_position[0:self.single_air_gap_len] >= self.max_percent_position),
-                           0,
-                           self.window_h[0:self.single_air_gap_len] - self.abs_position_air_gap - (
-                                   self.air_gap_h[0:self.single_air_gap_len] / 2))
+            self.air_gap_position[0:self.single_air_gap_len] >= self.max_percent_position), 0,
+            self.window_h[0:self.single_air_gap_len] - self.abs_position_air_gap - (self.air_gap_h[0:self.single_air_gap_len] / 2))
 
-        self.reluctance[0:self.single_air_gap_len, 5] = np.where(h[:, 1] == 0,
-                                                                 fr.r_air_gap_round_inf(
-                                                                     self.air_gap_h[0:self.single_air_gap_len],
-                                                                     self.core_inner_diameter[
-                                                                     0:self.single_air_gap_len], h[:, 0]),
-                                                                 fr.r_air_gap_round_round(
-                                                                     self.air_gap_h[0:self.single_air_gap_len],
-                                                                     self.core_inner_diameter[
-                                                                     0:self.single_air_gap_len], h[:, 0],
-                                                                     h[:, 1]))
+        self.reluctance[0:self.single_air_gap_len, 5] = np.where(h[:, 1] == 0, fr.r_air_gap_round_inf(
+            self.air_gap_h[0:self.single_air_gap_len], self.core_inner_diameter[0:self.single_air_gap_len],
+            h[:, 0]), fr.r_air_gap_round_round(self.air_gap_h[0:self.single_air_gap_len], self.core_inner_diameter[0:self.single_air_gap_len],
+                                               h[:, 0], h[:, 1]))
 
         # Distributed air-gaps reluctance calculations
         h_multiple = np.where(self.mult_air_gap_type[self.single_air_gap_len:self.data_matrix_len] == 1,
                               (self.window_h[self.single_air_gap_len:self.data_matrix_len] - (
-                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * self.air_gap_h[
-                                                                                                      self.single_air_gap_len:self.data_matrix_len])) / (
-                                      (self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] - 1) * 2),
+                               self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * \
+                               self.air_gap_h[self.single_air_gap_len:self.data_matrix_len])) / (
+                                   (self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] - 1) * 2),
                               (self.window_h[self.single_air_gap_len:self.data_matrix_len] - (
-                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * self.air_gap_h[
-                                                                                                      self.single_air_gap_len:self.data_matrix_len])) / (
-                                      self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] + 1))
+                                  self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] * \
+                                  self.air_gap_h[self.single_air_gap_len:self.data_matrix_len])) / (
+                                  self.n_air_gaps[self.single_air_gap_len:self.data_matrix_len] + 1))
 
         self.reluctance[self.single_air_gap_len:self.data_matrix_len, 5] = np.where(
             self.mult_air_gap_type[self.single_air_gap_len:self.data_matrix_len] == 1,
@@ -574,8 +555,9 @@ class MagneticCircuit:
 
     def air_gap_reluctance_sweep_new(self):
         """
-        This function calculates the air-gap reluctance for a sweep simulation with single/distributed air-gaps
-        according to the following paper:
+        Calculate the air-gap reluctance for a sweep simulation with single/distributed air-gaps.
+
+        Method according to the following paper:
         ["A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
         It is called when input variable sim_type == 'sweep'.
@@ -585,12 +567,10 @@ class MagneticCircuit:
         """
         # Single air-gap reluctance calculations
         # Convert percent position to absolute position
-        air_gap_position_absolute = (self.air_gap_position[0:self.single_air_gap_len] / 100) * \
-                                     self.window_h[0:self.single_air_gap_len]
+        air_gap_position_absolute = (self.air_gap_position[0:self.single_air_gap_len] / 100) * self.window_h[0:self.single_air_gap_len]
 
         core_height_lower = air_gap_position_absolute - (self.air_gap_h[0:self.single_air_gap_len] / 2)
-        core_height_upper = self.window_h[0:self.single_air_gap_len] - air_gap_position_absolute - \
-                            (self.air_gap_h[0:self.single_air_gap_len] / 2)
+        core_height_upper = self.window_h[0:self.single_air_gap_len] - air_gap_position_absolute - (self.air_gap_h[0:self.single_air_gap_len] / 2)
 
         core_height_lower = np.where(core_height_lower <= 0, 0, core_height_lower)
         core_height_upper = np.where(core_height_upper <= 0, 0, core_height_upper)
@@ -633,21 +613,23 @@ class MagneticCircuit:
 
     def get_parameters_position_dict(self):
         """
-        The function returns the dictionary 'param_pos_dict' and is used to refer the column number of data_matrix
-        by using the column names
+        Return dictionary 'param_pos_dict'.
+
+        Used to refer the column number of data_matrix by using the column names.
         """
         return self.param_pos_dict
 
     def air_gap_reluctance_single(self):
         """
-        This function calculates the air-gap reluctance for a single simulation with single/multiple air-gaps
-        according to the following paper:
+        Calculate the air-gap reluctance for a single simulation with single/multiple air-gaps.
+
+        Method according to the following paper:
         ["A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
         It is called when input variable sim_type == 'single'.
         Its calculation for multiple air-gap is based on
         series connection. That is, multiple air-gaps are divided equally and common height (h) is calculated.
-        Then their Reluctances are calculated and added such that they are connected in series.
+        Then their reluctances are calculated and added such that they are connected in series.
         """
         flag_0 = 0
         flag_1 = 0
@@ -718,11 +700,8 @@ class MagneticCircuit:
                             flag_2 = 1
 
                         if flag_0 == 0 and flag_1 == 0:
-                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
-                                i] / 2) / 2
-                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 -
-                                  self.air_gap_h[
-                                      i + 1] / 2) / 2
+                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[i] / 2) / 2
+                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[i + 1] / 2) / 2
                             print('No corner air gap detected')
                         elif flag_0 == 1 and flag_1 == 0:
                             h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
@@ -731,11 +710,8 @@ class MagneticCircuit:
                                 i] / 2) / 2
                             print('Lower air gap detected')
                         elif flag_0 == 0 and flag_1 == 1:
-                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[
-                                i] / 2) / 2
-                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 -
-                                  self.air_gap_h[
-                                      i + 1] / 2) / 2
+                            h1 = (self.position[i + 1] - self.position[i] - self.air_gap_h[i + 1] / 2 - self.air_gap_h[i] / 2) / 2
+                            h2 = (self.position[i + 2] - self.position[i + 1] - self.air_gap_h[i + 2] / 2 - self.air_gap_h[i + 1] / 2) / 2
                             print('Upper air gap detected')
                         else:
                             h1 = (self.position[i] - self.position[i - 1] - self.air_gap_h[i] / 2 - self.air_gap_h[
@@ -749,8 +725,9 @@ class MagneticCircuit:
 
     def air_gap_reluctance_single_new(self):
         """
-        This function calculates the air-gap reluctance for a single simulation with single/multiple air-gaps
-        according to the following paper:
+        Calculate the air-gap reluctance for a single simulation with single/multiple air-gaps.
+
+        Method is according to the following paper:
         ["A Novel Approach for 3D Air Gap Reluctance Calculations" - J. Mühlethaler, J.W. Kolar, A. Ecklebe]
 
         It is called when input variable sim_type == 'single'.
@@ -771,29 +748,25 @@ class MagneticCircuit:
         core_height_lower = np.where(core_height_lower <= 0, 0, core_height_lower)
 
         self.reluctance[:, 5] = np.sum(np.where(core_height_upper * core_height_lower == 0,
-                                         fr.r_air_gap_round_inf(self.air_gap_h, self.core_inner_diameter,
-                                                                core_height_lower + core_height_upper)
-                                         , fr.r_air_gap_round_round(self.air_gap_h, self.core_inner_diameter,
-                                                                    core_height_upper, core_height_lower)))
+                                       fr.r_air_gap_round_inf(self.air_gap_h, self.core_inner_diameter, core_height_lower + core_height_upper),
+                                       fr.r_air_gap_round_round(self.air_gap_h, self.core_inner_diameter, core_height_upper, core_height_lower)))
 
     def calculate_inductance(self):
-        """
-        The function calculates the inductance from Number of turns and total reluctance (L = N^2 / R_m)
-        """
+        """Calculate the inductance from Number of turns and total reluctance (L = N^2 / R_m)."""
         self.cal_inductance = (self.no_of_turns * self.no_of_turns) / np.sum(self.reluctance, axis=1)
         self.data_matrix[:, 9] = self.cal_inductance
         print(f"Inductance:{self.cal_inductance}")
 
     def add_column_to_data_matrix(self, data_matrix, column_value, column_name: str):
         """
-        Adds column to the given matrix
+        Add column to the given matrix.
 
-        param data_matrix: Matrix containing the design parameters
-       :type data_matrix: ndarray
-       :param column_value: Column to be added
-       :type column_value: ndarray
-       :param column_name: Identifier of the column
-       :type column_name: str
+        :param data_matrix: Matrix containing the design parameters
+        :type data_matrix: ndarray
+        :param column_value: Column to be added
+        :type column_value: ndarray
+        :param column_name: Identifier of the column
+        :type column_name: str
         """
         size = len(data_matrix[0])
         data_matrix = np.hstack((data_matrix, np.reshape(column_value, (len(column_value), 1))))
@@ -808,7 +781,6 @@ if __name__ == '__main__':
                           air_gap_h=[0.0005], air_gap_position=[50], mu_r_abs=[3000],
                           mult_air_gap_type=[1, 2],
                           air_gap_method='Percent', component_type='inductor', sim_type='single')  # 0.0149
-
 
     # mc1 = MagneticCircuit(core_inner_diameter=[0.0149], window_h=[0.0295], window_w=[0.01105], no_of_turns=[9],
     #                       n_air_gaps=[1, 3],

@@ -1,3 +1,4 @@
+"""Parser between optuna and femmt optimization."""
 # python libraries
 
 # 3rd party libraries
@@ -8,10 +9,16 @@ from femmt.optimization.ito_dtos import *
 
 
 class OptunaFemmtParser:
+    """Parser to bring optuna results to ItoSingleResultFile format."""
+
     @staticmethod
     def parse(frozen_trial: optuna.trial.FrozenTrial) -> ItoSingleResultFile:
+        """Parse the optuna trial to ItoSingleResultFile.
 
-         return ItoSingleResultFile(
+        :param frozen_trial: frozen trial (by optuna)
+        :type frozen_trial: optuna.trial.FrozenTrial
+        """
+        return ItoSingleResultFile(
             case=frozen_trial.number,
             # geometry parameters
             air_gap_top=frozen_trial.user_attrs["air_gap_top"],
@@ -22,7 +29,7 @@ class OptunaFemmtParser:
             n_s_top=frozen_trial.params["n_s_top"],
             n_s_bot=frozen_trial.params["n_s_bot"],
             window_h_top=frozen_trial.params["window_h_top"],
-            window_h_bot = frozen_trial.params["window_h_bot"],
+            window_h_bot=frozen_trial.params["window_h_bot"],
             window_w=frozen_trial.params["window_w"],
             core_material=frozen_trial.params["material"],
             core_inner_diameter=frozen_trial.params["core_inner_diameter"],
