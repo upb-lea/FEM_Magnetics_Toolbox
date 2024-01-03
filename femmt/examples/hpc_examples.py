@@ -145,7 +145,7 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
 
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,
                                 # Can be set to None since it will be overwritten anyways
-                                verbosity=fmt.Verbosity.ToFile)
+                                clean_previous_results=False, verbosity=fmt.Verbosity.ToFile)
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=Testdata_Generator.corediameter(),
                                                     window_w= Testdata_Generator.windowwidth(),
                                                     window_h= Testdata_Generator.windowheight(),
