@@ -566,6 +566,10 @@ class MagneticComponent:
             self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png,
                                            color_scheme=color_scheme, colors_geometry=colors_geometry)
 
+        if self.component_type == ComponentType.Inductor:
+            if self.windings[0].conductor_type == ConductorType.RoundLitz or self.windings[0].conductor_type == ConductorType.RoundSolid:
+                self.log_coordinates_description()
+
     def get_single_complex_permeability(self):
         """
         Read the complex permeability from the material database.
@@ -2952,6 +2956,46 @@ class MagneticComponent:
             log = content
 
         return log
+
+    def log_coordinates_description(self):
+        """
+        Log a coordinates-based geometry description.
+
+        Currently, implemented for inductor with round conductors only!
+
+        Following lists are created according to sketch in documentation.
+        - p_outer
+        - p_ww
+        - p_air_gap_center
+        - p_cond_center
+        Following pairs of lists need to match each other in their order.
+        - p_air_gap_center and distances_air_gap
+        - p_cond_center and radius_cond
+
+        :return:
+        """
+        coordinates_dict = {
+            "p_outer": [],
+            "p_ww": [],
+            "p_air_gap_center": [],
+            "lengths_air_gap": [],
+            "p_cond_center": [],
+            "radius_cond": []
+        }
+
+        # Obtain coordinates data from component
+        coordinates_dict["p_outer"] = self.two_d_axi.p_outer[:, :2].tolist()  # cut last 2 columns (z coordinate and mesh accuracy)
+        coordinates_dict["p_outer"][0][0], coordinates_dict["p_outer"][2][0] = 0, 0  # 2d axi symmetric: description only of right half
+        coordinates_dict["p_ww"] = self.two_d_axi.p_window[4:, :2].tolist()  # cut first 4 rows (left winding window) and last 2 columns ("-")
+        coordinates_dict["p_air_gap_center"], coordinates_dict["lengths_air_gap"] = \
+            ff.convert_air_gap_corner_points_to_center_and_distance(self.two_d_axi.p_air_gaps.tolist())  # transform to center points and extract heights
+        # for the conductors, the coordinates have to be obtained somewhere else...
+        coordinates_dict["p_cond_center"] = self.two_d_axi.p_conductor[0][::5].tolist()
+        coordinates_dict["radius_cond"] = self.two_d_axi.p_conductor[0][0, 0] - self.two_d_axi.p_conductor[0][1, 0]
+
+        # ====== save data as JSON ======
+        with open(self.file_data.coordinates_description_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(coordinates_dict, outfile, indent=2, ensure_ascii=False)
 
     def read_thermal_log(self) -> Dict:
         """
