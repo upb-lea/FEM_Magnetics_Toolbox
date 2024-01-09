@@ -147,7 +147,7 @@ Furthermore there are offset insulations between each turn in the same
 winding, a distance between 2 windings in one virtual winding window and
 a distance between each virtual winding window. The first two are set
 using the '``add_winding_insulations``' functions, the last one when
-creating such a virtual winding window (vww).
+creating such a :ref:`virtual winding windows` (vww).
 
 
 .. image:: ../images/geometry_insulation.png
@@ -240,6 +240,7 @@ where the second column is further divided into two rows, can be achieved with t
     cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.48, 0.75],
                                                       vertical_split_factors=[None, [0.5, 0.85], None])
 
+.. _virtual-winding-windows-label:
 
 Winding types and winding schemes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -382,14 +383,10 @@ is needed there because of the mesh which is adapted according to the
 skin depth. In addition to that a boolean can be given to show the model
 after creation (in gmsh).
 
-The last step is to run a simulation using single_simulation(), which
-needs the frequency, currents (and phase if transformer is set) as
-parameters.
-
 The last step is to run a simulation using ``single_simulation()`` or ``time_domain_simulation`` depending on the
 simulation type, where every type needs the following parameters:
 
-- For Frequency Domain Simulation: the frequency, currents (and phase if transformer is set) are needed as parameters.
+For Frequency Domain Simulation: the frequency, currents (and phase if transformer is set) are needed as parameters.
 
   .. code:: python
 
@@ -398,9 +395,12 @@ simulation type, where every type needs the following parameters:
                            plot_interpolation=False,
                            show_fem_simulation_results=show_visual_outputs)
 
-- For Time Domain Simulation: the ``current_period_vec`` (list of lists of current values), ``time_period_vec`` (list of corresponding time values),
-and ``number_of_periods`` are needed as parameters. The ``show_rolling_average parameter`` is a boolean flag that determines whether to
-display or hide the rolling average of simulation results during the time domain simulation.
+For Time Domain Simulation: the ``current_period_vec`` , ``time_period_vec`` ,and ``number_of_periods`` are needed as
+parameters. Users can generate the ``current_period_vec`` by creating nested lists, adjusting the structure based on
+the number of windings. The ``time_period_vec parameter corresponds`` to a list of time values associated with the
+simulation. Additionally, ``number_of_periods`` specifies the total number of periods to be simulated. The ``current_period_vec`` as The
+``show_rolling_average parameter`` is a boolean flag that determines whether to display or hide the rolling average of simulation
+results during the time domain simulation.
 
   .. code:: python
 
