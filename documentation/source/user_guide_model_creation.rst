@@ -70,7 +70,7 @@ using:
 
 .. code:: python
 
-   core_db = fmt.core-database()["PQ 40/40"]
+   core_db = fmt.core_database()["PQ 40/40"]
 
 Now the core object can be created and added to the model (geo object)
 
