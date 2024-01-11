@@ -36,13 +36,11 @@ The ``simulation_type`` specifies the type of simulation to be performed.
 
 The ``Verbosity`` controls the level of detail in the output.
 
-- If set to ``ToConsole``, all outputs are printed in the terminal.
-- If set to ``ToFile``, all outputs are written to files.
+- If set to ``ToConsole``, all output messages are shown in the commend line .
+- If set to ``ToFile``, all output messages are written to files.
 - If set to ``Silent``, no command line outputs are shown.
 
 This simple feature significantly speeds up simulation time, especially for many automated simulations.
-
-The ``is_gui`` bool asks at first startup for onelab-path. It is a distinction between GUI and command line and is defaults to False in command-line-mode.
 
 Creating a core
 ------------------
@@ -112,7 +110,7 @@ methods are available:
 -  **Center**: The air gap will always be positioned in the center
 -  **Percent**: A value between 0 and 100 can be given. Where 0
    represents the bottom end and 100 the top end of the winding window.
--  **Manually**: The specific y coordinate needs to be entered
+-  **Manually**: The specific y-coordinate needs to be entered
    manually.
 
 .. image:: ../images/geometry_air_gap.png
@@ -139,16 +137,21 @@ created as rectangles in the model, some are just adding an offset to
 the windings.
 
 Core insulations are the insulations which are created as rectangles in
-the model. 4 core insulations will be added: top, left, bottom, right.
-The distance of those values can be set with the 'add_core_insulations'
-function.
+the model. 4 core insulations will be added: top, bottom, left, right.
+The distance of those values can be set with the ``add_core_insulations``
+function. The order of ``add_core_insulations`` is as follow : top, bottom, left, and right.
 
 Furthermore there are offset insulations between each turn in the same
 winding, a distance between 2 windings in one virtual winding window and
 a distance between each virtual winding window. The first two are set
-using the '``add_winding_insulations``' functions, the last one when
+using the ``add_winding_insulations`` functions, the last one when
 creating such a :ref:`virtual winding windows` (vww).
 
+The ``add_winding_insulations`` contains the inner winding insulation, which is a nested lists representing
+the insulations between turns of the same winding. Importantly, these values are not arranged according to the
+sequence in which conductors are added to each winding. Instead, the organization is based on the winding number
+with conductors sorted in ascending order of these numbers. Thus, the first sublist (index 0) corresponds to
+the winding with the lowest number, the second sublist (index 1) to the winding with the next lowest number, and so on.
 
 .. image:: ../images/geometry_insulation.png
     :width: 800

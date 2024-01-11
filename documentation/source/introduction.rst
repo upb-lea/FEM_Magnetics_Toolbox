@@ -83,7 +83,7 @@ divided into the following steps:
 3. set air gap parameters (position, height),
 4. set insulation distances
 5. set conductor parameters (litz/solid wire),
-6. start the frequency domain simulation by specifying the given frequencies, currents, phases, and the time domain simulation by specifying the given currents, and time parameters.
+6. start the frequency domain simulation by specifying the given frequencies, currents, and phases, and start the time domain simulation by specifying the given currents, and time parameters.
 
 Please have a look at the `basic_example </femmt/examples/basic_inductor.py>`__ for frequency domain simulation, and
 at the `basic_example </femmt/examples/basic_inductor_time_domain.py>`__ for time domain simulation.
