@@ -1131,13 +1131,14 @@ class MagneticComponent:
                     # self.current[num] = current_list[num]
                     # self.time = time_list  # define the time list
                     self.current[num] = number_of_periods * current_list[num]  # define the current vector ( list of list)
-                    # Iterate over the number of periods
-                    for period in range(number_of_periods):
-                        # Iterate over the original_time_list
-                        for i in range(len(time_list)):
-                            # Calculate each time value and append it to self.time to deal with more one period
-                            time_value = time_list[i % len(time_list)] + period * len(time_list) * self.step_time
-                            self.time.append(time_value)
+        # Iterate over the number of periods
+        for period in range(number_of_periods):
+            # Iterate over the original_time_list
+            for i in range(len(time_list)):
+                # Calculate each time value and append it to self.time to deal with more one period
+                time_value = time_list[i % len(time_list)] + period * len(time_list) * self.step_time
+                self.time.append(time_value)
+        # number of steps
         self.nb_steps = len(self.time)
         # Imposed current density
         if self.flag_excitation_type == 'current_density':

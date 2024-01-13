@@ -84,17 +84,19 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     current_values_list_1 = current_values_1.tolist()
     current_values_list_2 = current_values_2.tolist()
 
-    print(t_list)
-    print(current_values_list_1)
+    print (len(t_list))
+    print (len(current_values_list_1))
+    print(len(current_values_list_2))
 
     # time_list = [0, 2, 4, 6, 8]
     plt.plot(t_list, current_values_list_1)
     plt.plot(t_list, current_values_list_2)
     plt.xlabel('Time (s)')
     plt.ylabel('Current (A)')
-    plt.title(f'Cos wave: {200000} Hz, {4.5} A amplitude')
+    plt.title(f'Cos wave: {200000} Hz, {2} A amplitude')
     plt.grid(True)
-    plt.show()
+    if show_visual_outputs and not is_test:
+        plt.show()
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)
@@ -106,12 +108,11 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # The 'rolling_avg_window_size' parameter is an integer that specifies the window size for calculating the rolling average.
     # It defines the number of data points used in each calculation of the average
     # a too-small window size may not effectively smooth out short-term fluctuations.
-    geo.time_domain_simulation(freq=200000,
-                               current_period_vec=[current_values_list_1, current_values_list_2],
+    geo.time_domain_simulation(current_period_vec=[current_values_list_1, current_values_list_2],
                                time_period_vec=t_list,
-                               number_of_periods=2,
+                               number_of_periods=1,
                                plot_interpolation=False,
-                               show_fem_simulation_results=True,
+                               show_fem_simulation_results=show_visual_outputs,
                                show_rolling_average=False,
                                rolling_avg_window_size=5)
 
