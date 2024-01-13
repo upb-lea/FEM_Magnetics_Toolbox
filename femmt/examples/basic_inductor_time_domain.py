@@ -5,7 +5,7 @@ import materialdatabase as mdb
 import os
 from matplotlib import pyplot as plt
 
-def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """Demonstrate how to simulate an inductor in time domain."""
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
@@ -92,7 +92,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # time value
     t = np.linspace(0, 1 / inductor_frequency, 5)
     t_list = [float(x) for x in t.tolist()]
-    # # Current values
+    # Current values
     current_values = 4.5 * np.cos(2 * np.pi * inductor_frequency * t)
     current_values_list = current_values.tolist()  # Convert numpy array to list
     print(t_list)
@@ -103,7 +103,8 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     plt.ylabel('Current (A)')
     plt.title(f'Cos wave: {inductor_frequency} Hz, {4.5} A amplitude')
     plt.grid(True)
-    plt.show()
+    if show_visual_outputs and not is_test:
+        plt.show()
 
     # Electromagnetic time-domain simulation
     #  The 'current_periode_vec' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
@@ -115,12 +116,12 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # a too-small window size may not effectively smooth out short-term fluctuations.
     geo.time_domain_simulation(current_period_vec=[current_values_list],
                                time_period_vec=t_list,
-                               number_of_periods=2,
+                               number_of_periods=1,
                                plot_interpolation=False,
-                               show_fem_simulation_results=True,
+                               show_fem_simulation_results=show_visual_outputs,
                                show_rolling_average=False,
                                rolling_avg_window_size=5)
 
 
 if __name__ == "__main__":
-    basic_example_inductor(show_visual_outputs=True)
+    basic_example_inductor_time_domain(show_visual_outputs=True)

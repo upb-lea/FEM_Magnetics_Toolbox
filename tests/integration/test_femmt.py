@@ -1,6 +1,7 @@
 """Contains integration tests to benchmark new changes against previous simulation results."""
 import pytest
 import os
+import numpy as np
 import json
 import femmt as fmt
 import deepdiff
@@ -16,6 +17,7 @@ import femmt.examples.basic_inductor_foil_vertical
 import femmt.examples.basic_transformer_n_winding
 import femmt.examples.advanced_inductor_sweep
 import femmt.examples.basic_transformer_5_windings
+import femmt.examples.basic_inductor_time_domain
 import femmt.examples.advanced_inductor_air_gap_sweep
 import femmt.examples.component_study.transformer_component_study
 import materialdatabase as mdb
@@ -1462,6 +1464,89 @@ def femmt_simulation_transformer_5_windings(temp_folder):
 
     return electromagnetoquasistatic_result, thermal_result
 
+@pytest.fixture
+def femmt_simulation_inductor_time_domain(temp_folder):
+    """Fixture for the integration test."""
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # 1. chose simulation type
+        geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.TimeDomain, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        # 2. set core parameters
+        core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
+        inductor_frequency = 270000
+        core = fmt.Core(core_type=fmt.CoreType.Single,
+                    core_dimensions=core_dimensions,
+                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
+                    permeability_datasource=fmt.MaterialDataSource.Custom,
+                    mu_r_abs=3000, phi_mu_deg=0,
+                    permittivity_datasource=fmt.MaterialDataSource.Custom,
+                    mdb_verbosity=fmt.Verbosity.Silent,
+                    sigma=1)
+        geo.set_core(core)
+
+        # 3. set air gap parameters
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
+        geo.set_air_gaps(air_gaps)
+
+        # 4. set insulations
+        insulation = fmt.Insulation(flag_insulation=True)
+        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+        insulation.add_winding_insulations([[0.0005]])
+        geo.set_insulation(insulation)
+
+        # 5. create winding window and virtual winding windows (vww)
+        winding_window = fmt.WindingWindow(core, insulation)
+        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        # 6. create conductor and set parameters: use solid wires
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
+        winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
+        winding.parallel = False
+
+        # 7. add conductor to vww and add winding window to MagneticComponent
+        vww.set_winding(winding, 7, None)
+        geo.set_winding_windows([winding_window])
+
+        # 8. create the model
+        geo.create_model(freq=270000, pre_visualize_geometry=False, save_png=False)
+
+        # 6.a. start simulation
+        # time value list
+        t = np.linspace(0, 1 / inductor_frequency, 5)
+        t_list = [float(x) for x in t.tolist()]
+        #  Current values list
+        current_values = 4.5 * np.cos(2 * np.pi * inductor_frequency * t)
+        current_values_list = current_values.tolist()
+
+        geo.time_domain_simulation(current_period_vec=[current_values_list],
+                                   time_period_vec=t_list,
+                                   number_of_periods=1,
+                                   show_fem_simulation_results=False,
+                                   show_rolling_average=False,)
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+
+    return electromagnetoquasistatic_result
 
 def test_inductor_core_material_database(femmt_simulation_inductor_core_material_database):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
@@ -1664,6 +1749,17 @@ def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windin
     #                                   "thermal_transformer_5_windings.json")
     # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
 
+def test_simulation_inductor_time_domain(femmt_simulation_inductor_time_domain):
+    """Integration test to validate the magnetoquasistatic simulation."""
+    test_result_log = femmt_simulation_inductor_time_domain
+
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+    # e_m mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+                                      "inductor_time_domain.json")
+    compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
+
 
 def test_load_files(temp_folder, femmt_simulation_inductor_core_material_database,
                     femmt_simulation_inductor_core_fixed_loss_angle,
@@ -1814,6 +1910,12 @@ def test_basic_example_transformer_5_windings(temp_folder):
                                                                                      show_visual_outputs=False,
                                                                                      is_test=True)
 
+def test_basic_inductor_time_domain(temp_folder):
+    """Integrationtest to test the basic example file."""
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_time_domain.basic_example_inductor_time_domain(onelab_folder=onelab_folder,
+                                                                                 show_visual_outputs=False,
+                                                                                 is_test=True)
 
 def test_advanced_example_inductor_sweep(temp_folder):
     """Integrationtest to test the basic example file."""
