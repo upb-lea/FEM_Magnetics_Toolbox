@@ -4,7 +4,7 @@ import materialdatabase as mdb
 import os
 from matplotlib import pyplot as plt
 import numpy as np
-def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """Demonstrate how to simulate a two winding transformer in time domain."""
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
@@ -71,14 +71,14 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding1, 10, None)
-    top.set_winding(winding2, 12, None)
+    bot.set_winding(winding2, 10, None)
+    top.set_winding(winding1, 10, None)
     geo.set_winding_windows([winding_window])
 
     # t = np.linspace(0, 2, 30) * 1/inductor_frequency
     t = np.linspace(0, 2 / 200000, 5)
     t_list = [float(x) for x in t.tolist()]
-    # # Current values
+    # Current values
     current_values_1 = 2 * np.cos(2 * np.pi * 200000 * t)
     current_values_2 = 2 * np.cos(2 * np.pi * 200000 * t + np.pi)
     current_values_list_1 = current_values_1.tolist()
@@ -118,4 +118,4 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
 
 
 if __name__ == "__main__":
-    basic_example_transformer(show_visual_outputs=True)
+    basic_example_transformer_time_domain(show_visual_outputs=True)
