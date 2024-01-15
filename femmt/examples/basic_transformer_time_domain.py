@@ -84,8 +84,8 @@ def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual
     current_values_list_1 = current_values_1.tolist()
     current_values_list_2 = current_values_2.tolist()
 
-    print (len(t_list))
-    print (len(current_values_list_1))
+    print(len(t_list))
+    print(len(current_values_list_1))
     print(len(current_values_list_2))
 
     # time_list = [0, 2, 4, 6, 8]
