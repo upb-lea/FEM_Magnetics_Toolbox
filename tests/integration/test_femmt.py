@@ -1715,7 +1715,7 @@ def femmt_simulation_transformer_3_windings_time_domain(temp_folder):
         geo.time_domain_simulation(current_period_vec=[current_values_list_1, current_values_list_2, current_values_list_3],
                                    time_period_vec=t_list,
                                    number_of_periods=1,
-                                   show_fem_simulation_results=True,
+                                   show_fem_simulation_results=False,
                                    show_rolling_average=False)
 
     except Exception as e:
