@@ -409,13 +409,11 @@ Resolution {
           CreateDir[DirResValsWinding~{n}];
       EndFor
 
-      If(!Flag_NL)
-          Generate[A] ; Solve[A] ;
-      Else
-          IterativeLoop[Nb_max_iter, stop_criterion, relaxation_factor]{
-              GenerateJac[A] ; SolveJac[A] ;
-          }
-      EndIf
+      // Non-linear iteration is always called. If system is linear, convergence will be achieved after one iteration.
+      IterativeLoop[Nb_max_iter, stop_criterion, relaxation_factor]{
+          GenerateJac[A] ; SolveJac[A] ;
+      }
+
       SaveSolution[A] ;
 
 
