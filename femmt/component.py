@@ -3233,7 +3233,7 @@ class MagneticComponent:
                 rolling_calculation(res_name, res_path)
             # Processing files in the winding-specific subdirectories, if they exist
             for index, _ in enumerate(self.windings, start=1):
-                winding_folder_path = os.path.join(res_path, f"winding_{index}")
+                winding_folder_path = os.path.join(res_path, f"Winding_{index}")
                 # some files are not needed for calculation /for ex. average files) in sub winding files, so they are excluded
                 if os.path.isdir(winding_folder_path):
                     winding_files = os.listdir(winding_folder_path)
@@ -3295,7 +3295,7 @@ class MagneticComponent:
 
             # 'Winding_n' subdirectory (Winding_1, Winding_2, ...etc)
             for index, _ in enumerate(self.windings, start=1):
-                winding_folder_path = os.path.join(res_path, f"winding_{index}")
+                winding_folder_path = os.path.join(res_path, f"Winding_{index}")
                 # .dat files inside 'Winding_n' subdirectory
                 if os.path.isdir(winding_folder_path):
                     winding_files = os.listdir(winding_folder_path)

@@ -2,7 +2,7 @@
 import femmt as fmt
 import materialdatabase as mdb
 import os
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 import numpy as np
 def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """Demonstrate how to simulate a two winding transformer in time domain."""
@@ -89,14 +89,14 @@ def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual
     print(len(current_values_list_2))
 
     # time_list = [0, 2, 4, 6, 8]
-    plt.plot(t_list, current_values_list_1)
-    plt.plot(t_list, current_values_list_2)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Current (A)')
-    plt.title(f'Cos wave: {200000} Hz, {2} A amplitude')
-    plt.grid(True)
-    if show_visual_outputs and not is_test:
-        plt.show()
+    # plt.plot(t_list, current_values_list_1)
+    # plt.plot(t_list, current_values_list_2)
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Current (A)')
+    # plt.title(f'Cos wave: {200000} Hz, {2} A amplitude')
+    # plt.grid(True)
+    # if show_visual_outputs and not is_test:
+    #     plt.show()
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=200000, pre_visualize_geometry=show_visual_outputs)

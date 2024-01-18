@@ -3,7 +3,7 @@ import numpy as np
 import femmt as fmt
 import materialdatabase as mdb
 import os
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 
 def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """Demonstrate how to simulate an inductor in time domain."""
@@ -98,13 +98,13 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
     print(t_list)
     print(current_values_list)
     # plot to see the current
-    plt.plot(t_list, current_values_list)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Current (A)')
-    plt.title(f'Cos wave: {inductor_frequency} Hz, {4.5} A amplitude')
-    plt.grid(True)
-    if show_visual_outputs and not is_test:
-        plt.show()
+    # plt.plot(t_list, current_values_list)
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Current (A)')
+    # plt.title(f'Cos wave: {inductor_frequency} Hz, {4.5} A amplitude')
+    # plt.grid(True)
+    # if show_visual_outputs and not is_test:
+    #     plt.show()
 
     # Electromagnetic time-domain simulation
     #  The 'current_periode_vec' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.

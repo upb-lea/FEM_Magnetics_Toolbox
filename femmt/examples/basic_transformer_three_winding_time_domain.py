@@ -2,7 +2,7 @@
 import femmt as fmt
 import materialdatabase as mdb
 import os
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 import numpy as np
 def basic_example_transformer_three_windings_time_domain(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """Demonstrate how to simulate a three winding transformer in time domain."""
@@ -90,15 +90,15 @@ def basic_example_transformer_three_windings_time_domain(onelab_folder: str = No
     print(current_values_list_1)
 
     # time_list = [0, 2, 4, 6, 8]
-    plt.plot(t_list, current_values_list_1)
-    plt.plot(t_list, current_values_list_2)
-    plt.plot(t_list, current_values_list_3)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Current (A)')
-    plt.title(f'Cos wave: {250000} Hz, {4.5} A amplitude')
-    plt.grid(True)
-    if show_visual_outputs and not is_test:
-        plt.show()
+    # plt.plot(t_list, current_values_list_1)
+    # plt.plot(t_list, current_values_list_2)
+    # plt.plot(t_list, current_values_list_3)
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Current (A)')
+    # plt.title(f'Cos wave: {250000} Hz, {4.5} A amplitude')
+    # plt.grid(True)
+    # if show_visual_outputs and not is_test:
+    #     plt.show()
     # Electromagnetic time-domain simulation
     # The 'current_periode_vec' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
     # The 'time_periode_vec' parameter accepts a single list representing the time steps for the simulation; this is common for all windings.
