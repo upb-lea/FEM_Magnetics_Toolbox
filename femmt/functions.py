@@ -696,6 +696,10 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
             print("Input is list, convert to np.array()")
         period_vector_t_i = np.array(period_vector_t_i)
 
+    # first value of time vector must be zero
+    if period_vector_t_i[0][0] != 0:
+        raise ValueError("Period vector must start with 0 seconds!")
+
     # mode pre-calculation
     if mode == 'rad':
         period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
