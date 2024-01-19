@@ -7,6 +7,8 @@ import sys
 import os
 import warnings
 from typing import Union, List, Tuple, Dict
+from scipy.integrate import quadrature
+
 
 # Third parry libraries
 import gmsh
@@ -1613,6 +1615,73 @@ def visualize_inductance_matrix(inductance_matrix, silent: bool):
         print("\n"
               "Inductance Matrix: ")
         print(string_to_print)
+
+def calculate_quadrature_integral(timesteps: List[float], data: List[float]) -> float:
+    """
+    Calculate the integral of given data over specific timesteps using the quadrature method.
+
+    :param timesteps: List of timesteps.
+    :type timesteps: List[float]
+    :param data: List of data corresponding to each timestep.
+    :type data: List[float]
+    Returns:
+    :return: The calculated integral.
+    :rtype: float
+    """
+    func = lambda x: np.interp(x, timesteps, data)
+    return quadrature(func, timesteps[0], timesteps[-1])[0]
+
+def calculate_squared_quadrature_integral(timesteps: List[float], data: List[float]) -> float:
+    """
+    Calculate the integral of squared given data over specific timesteps using the quadrature method..
+
+    :param timesteps: List of timesteps.
+    :type timesteps: List[float]
+    :param data: List of data corresponding to each timestep.
+    :type data: List[float]
+    Returns:
+    :return: The calculated integral.
+    :rtype: float
+    """
+    func = lambda x: np.interp(x, timesteps, data)**2
+    return quadrature(func, timesteps[0], timesteps[-1])[0]
+
+def calculate_average(integral: float, timesteps: List[float]) -> float:
+    """
+    Compute the average in general.
+
+    :param integral: The integral value.
+    :type integral: float
+    :param timesteps: List of timesteps.
+    :type timesteps: List[float]
+
+    Returns:
+    :return: The calculated average.
+    :rtype: float.
+    """
+    total_time = timesteps[-1] - timesteps[0]
+    if total_time == 0:
+        raise ValueError("Total time cannot be zero.")
+    return integral / total_time
+
+def calculate_rms(squared_integral: float, timesteps: List[float]) -> float:
+    """
+    Compute the RMS.
+
+    :param squared_integral: The integral value.
+    :type squared_integral: float
+    :param timesteps: List of timesteps.
+    :type timesteps: List[float]
+
+    Returns:
+    :return: The calculated average.
+    :rtype: float.
+    """
+    total_time = timesteps[-1] - timesteps[0]
+    if total_time == 0:
+        raise ValueError("Total time cannot be zero.")
+    mean_square = squared_integral / total_time  # Calculate the mean of the square of the data
+    return np.sqrt(mean_square)  # Take the square root to get RMS value
 
 
 def convert_air_gap_corner_points_to_center_and_distance(corner_points):

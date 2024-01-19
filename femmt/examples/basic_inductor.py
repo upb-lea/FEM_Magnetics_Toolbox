@@ -81,7 +81,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
                                 verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
@@ -108,6 +108,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
                     permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
+
     # mu_rel=3000, phi_mu_deg=10,
     # sigma=0.5)
     geo.set_core(core)
