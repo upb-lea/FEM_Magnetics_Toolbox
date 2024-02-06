@@ -13,7 +13,7 @@ The variable naming is defined as shown in this section. Note that the names sho
 |geometry_core_naming_convention|
 
 Geometry variables
-###################
+~~~~~~~~~~~~~~~~~~
 * ``core_inner_diameter``: core inner diameter
 * ``window_w``: width of winding window
 * ``winding_h``: height of winding window
@@ -25,12 +25,12 @@ Additional variables for integrated transformer
 * ``window_h_bot``: height of bottom winding window
 
 currents, temperature
-#####################
+~~~~~~~~~~~~~~~~~~~~~
 * ``temperature``: temperature (Do **not** use ``T``, ``temp``, ...)
 * ``frequency``: frequency (Do **not** use ``f``, ``freq``, ...)
 
 Material variables
-###################
+~~~~~~~~~~~~~~~~~~
 * ``mu_r_abs``: absolute value of mu_r
 * ``mu_r_real``: real part of mu_r
 * ``mu_r_imag``: imaginary part of mu_r
@@ -85,19 +85,19 @@ Recommended Pycharm settings
 ---------------------------------------------------------------
 
 Exclude simulation directory from indexing
-#########################################################
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the ``example_results`` direcory from the project, as shown in the following steps:
 ``File`` -> ``Settings`` -> ``project structure``, select the folders you need (e.g. ``femmt/examples/example_results``, ``right click`` and click ``exlcuded``.
 
 Line length
-#########################################################
+~~~~~~~~~~~
 
 ``File`` -> ``Settings`` -> ``Editor`` -> ``Code Style``
 Set the max. lenth to ``160``.
 
 Pycharm code highlightning for pro-files
-#########################################################
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 |image_pycharm_configuration_pro_files|
 
@@ -117,3 +117,7 @@ also run
 ``ruff check $(git ls-files '*.py')``
 
 For windows users, use the pycharm integrated ``Git Bash``.
+
+Build documentation
+---------------------------------------------------------------
+``sphinx-multiversion documentation/source documentation/build/html``

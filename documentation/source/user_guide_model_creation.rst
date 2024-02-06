@@ -145,7 +145,7 @@ Furthermore there are offset insulations between each turn in the same
 winding, a distance between 2 windings in one virtual winding window and
 a distance between each virtual winding window. The first two are set
 using the ``add_winding_insulations`` functions, the last one when
-creating such a :ref:`virtual winding windows` (vww).
+creating such a :ref:`virtual-winding-windows-label` (vww).
 
 The ``add_winding_insulations`` contains the inner winding insulation, which is a nested lists representing
 the insulations between turns of the same winding. Importantly, these values are not arranged according to the
@@ -569,14 +569,14 @@ Here is an example of how the outcomes of frequency domain simulation are struct
         {
           "f": 200000,
           "winding1": {
-            "turn_losses": [...],
+            "turn_losses": ["..."],
             "flux": [6.34870443074174e-06, -6.969982393761393e-07],
             "flux_over_current": [3.17434773053773e-06, -3.51948446513906e-07],
             "V": [0.8845429232083418, 7.978006008157411],
-            ...
+            "..."
           },
           "winding2": {
-            ...
+            "..."
           },
           "core_eddy_losses": 0.00050908155779138,
           "core_hyst_losses": 3.16018326710339,
@@ -586,14 +586,15 @@ Here is an example of how the outcomes of frequency domain simulation are struct
               "hyst_losses": 3.16018326710339,
               "total_core_part_1": 3.259745103293544
             }
-          ...
+          "..."
           "all_winding_losses": 0.5355581006243983
+          }
         }
       ],
       "total_losses": {
         "winding1": {
           "total": 0.5355581006244025,
-           "turns": [...]
+           "turns": ["..."]
         }
         "all_windings": 0.5355581006243983,
         "eddy_core": 0.09956183619015413,
@@ -604,6 +605,7 @@ Here is an example of how the outcomes of frequency domain simulation are struct
         "core": 3.259745103293544,
         "total_losses": 3.7953032039179426
      }
+    }
 
 **Key Components Explained:**
 
@@ -672,7 +674,7 @@ Here is an example of how the outcomes of time domain simulation are structured.
                 "I": 2.0
               },
               "winding2": {
-                ... }}}
+                "..." }}}
         },
         {
          "...": {}
@@ -689,7 +691,7 @@ Here is an example of how the outcomes of time domain simulation are structured.
           "S": 4.5274565545301515,
           "Q": 4.469775429993662
         },
-        "winding2": {...}
+        "winding2": {"..."}
       },
       "total_losses": {
         "all_windings_losses": 2.511429275334878,
@@ -743,13 +745,13 @@ simulation. The outcomes of thermal simulation are structured as:
         }
       },
       "windings": {
-        "winding_0_0": {...},
-        "winding_0_1": {...},
-        "winding_0_2": {...},
-        "winding_1_0": {...},
-        "winding_1_1": {...},
-        "winding_1_2": {...},
-        "total": {...}
+        "winding_0_0": {"..."},
+        "winding_0_1": {"..."},
+        "winding_0_2": {"..."},
+        "winding_1_0": {"..."},
+        "winding_1_1": {"..."},
+        "winding_1_2": {"..."},
+        "total": {"..."}
       },
       "misc": {
         "case_volume": 0.00017214993340642786,
