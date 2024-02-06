@@ -117,3 +117,7 @@ also run
 ``ruff check $(git ls-files '*.py')``
 
 For windows users, use the pycharm integrated ``Git Bash``.
+
+Build documentation
+---------------------------------------------------------------
+``sphinx-multiversion documentation/source documentation/build/html``
