@@ -17,42 +17,42 @@ The ``MagneticComponent`` class
 ---------------------------------------
 .. currentmodule:: femmt.MagneticComponent
 
-.. autoclass:: MagneticComponent
-   :members: set_core, set_air_gaps, set_insulation, set_stray_path, set_winding_window, create_model, single_simulation, excitation_sweep, mesh, thermal_simulation, femm_reference, femm_thermal_validation
+.. autoclass:: femmt.MagneticComponent
+   :members: set_core, set_air_gaps, set_insulation, set_stray_path, create_model, single_simulation, excitation_sweep, mesh, thermal_simulation, femm_reference, femm_thermal_validation
    :special-members: __init__
 
 The ``Core`` class
 --------------------------------------
-.. autoclass:: femmt.Model.Core
+.. autoclass:: femmt.Core
     :special-members: __init__
 	
 The ``AirGaps`` class
 --------------------------------------
-.. autoclass:: femmt.Model.AirGaps
+.. autoclass:: femmt.AirGaps
     :members: add_air_gap
     :special-members: __init__
 	
 The ``Insulation`` class
 --------------------------------------
-.. autoclass:: femmt.Model.Insulation
+.. autoclass:: femmt.Insulation
     :members: add_winding_insulations, add_core_insulations
     :special-members: __init__
 	
 The ``Conductor`` class
 --------------------------------------
-.. autoclass:: femmt.Model.Conductor
+.. autoclass:: femmt.Conductor
     :members: set_rectangular_conductor, set_solid_round_conductor, set_litz_round_conductor
     :special-members: __init__
 	
 The ``WindingWindow`` class
 --------------------------------------
-.. autoclass:: femmt.Model.WindingWindow
+.. autoclass:: femmt.WindingWindow
     :members: split_window, combine_vww
     :special-members: __init__
 	
 The ``VirtualWindingWindow`` class
 --------------------------------------
-.. autoclass:: femmt.Model.VirtualWindingWindow
+.. autoclass:: femmt.VirtualWindingWindow
     :members: set_winding, set_interleaved_winding
     :special-members: __init__
 	
@@ -76,13 +76,12 @@ The ``LogParser`` class
 
 ``Enumerations``
 ---------------------------------
-.. automodule:: femmt.Enumerations
-    :members:
-    :undoc-members:
+.. currentmodule:: femmt
+.. autoclass:: femmt.enumerations
 
 Helper functions
 ---------------------------------
-.. automodule:: femmt.Functions
-    :members: core_database, litz_database, wire_material_database
+.. automodule:: femmt.functions
+    :members:
 
 .. include:: developer_notes.rst

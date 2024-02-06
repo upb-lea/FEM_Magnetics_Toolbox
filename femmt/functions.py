@@ -1232,13 +1232,13 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
 
     :param result_log_folder: filepath to result-log folder
     :type result_log_folder: str
-    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core",
-        "core_inner_diameter"]
+    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
     :type keyword_list: list
     :param value_min_max: value to check for
     :type value_min_max: list
 
     :Example:
+
     Check for files with a core inner diameter smaller equal than 0.02 m.
     >>> import femmt as fmt
     >>> fmt.find_result_log_file("/home/filepath/fem_simulation_data", ["simulation_settings", "core",
@@ -1538,6 +1538,7 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
     :type inductance_matrix: np.array
     :param silent: True for no output
     :type silent: bool
+
     e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
     """
     string_to_print = ""
@@ -1563,6 +1564,7 @@ def visualize_mutual_inductances(self_inductances: List, coupling_factors: List,
     :type coupling_factors: List
     :param silent: True for no output
     :type silent: bool
+
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
     string_to_print = ""
@@ -1624,7 +1626,6 @@ def calculate_quadrature_integral(timesteps: List[float], data: List[float]) -> 
     :type timesteps: List[float]
     :param data: List of data corresponding to each timestep.
     :type data: List[float]
-    Returns:
     :return: The calculated integral.
     :rtype: float
     """
@@ -1639,7 +1640,6 @@ def calculate_squared_quadrature_integral(timesteps: List[float], data: List[flo
     :type timesteps: List[float]
     :param data: List of data corresponding to each timestep.
     :type data: List[float]
-    Returns:
     :return: The calculated integral.
     :rtype: float
     """
