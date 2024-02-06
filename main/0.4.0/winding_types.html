@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Winding types &mdash; FEM Magnetics Toolbox 0.4.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=6c02275b"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            FEM Magnetics Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html"><span class="sectnum">1 </span>FEM Magnetics Toolbox (FEMMT)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#installation"><span class="sectnum">1.1 </span>Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#onelab-installation"><span class="sectnum">1.1.1 </span>ONELAB installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#install-femmt"><span class="sectnum">1.1.2 </span>Install FEMMT</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-release-version-recommended"><span class="sectnum">1.1.2.1 </span>FEMMT release version (recommended)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-development-version-for-developers-only"><span class="sectnum">1.1.2.2 </span>FEMMT development version (for developers only)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#examples"><span class="sectnum">1.2 </span>Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#basics"><span class="sectnum">1.2.1 </span>Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#counting-arrow-system"><span class="sectnum">1.2.2 </span>Counting arrow system</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#gui-experimental"><span class="sectnum">1.3 </span>GUI (Experimental)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#femm-validation-for-developers-only"><span class="sectnum">1.4 </span>FEMM Validation (for developers only)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#user-guide-how-to-create-a-femmt-model"><span class="sectnum">2 </span>User Guide: How to create a FEMMT model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#working-directory"><span class="sectnum">2.1 </span>Working directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#creating-a-core"><span class="sectnum">2.2 </span>Creating a core</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#material-database"><span class="sectnum">2.2.1 </span>Material database</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#adding-air-gaps-to-the-core"><span class="sectnum">2.3 </span>Adding air gaps to the core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#set-insulation-distances"><span class="sectnum">2.4 </span>Set insulation distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#add-windings-to-the-winding-window"><span class="sectnum">2.5 </span>Add windings to the winding window</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#virtual-winding-windows"><span class="sectnum">2.5.1 </span>Virtual Winding Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#winding-types-and-winding-schemes"><span class="sectnum">2.5.2 </span>Winding types and winding schemes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#conductorarrangement"><span class="sectnum">2.5.2.1 </span>ConductorArrangement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#wrapparatype"><span class="sectnum">2.5.2.2 </span>WrapParaType</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#add-conductors"><span class="sectnum">2.6 </span>Add conductors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#add-conductors-to-virtual-winding-windows"><span class="sectnum">2.6.1 </span>Add conductors to virtual winding windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#create-model-and-start-simulation"><span class="sectnum">2.7 </span>Create model and start simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#optional-create-thermal-simulation"><span class="sectnum">2.8 </span>[Optional] Create thermal simulation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#winding-types"><span class="sectnum">3 </span>Winding types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#femmt-class-and-function-documentation"><span class="sectnum">4 </span>FEMMT class and function documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-magneticcomponent-class"><span class="sectnum">4.1 </span>The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent"><code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.__init__"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.create_model"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.create_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.excitation_sweep"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.excitation_sweep()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.femm_reference"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.femm_reference()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.femm_thermal_validation"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.femm_thermal_validation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.mesh"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.mesh()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.set_air_gaps"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.set_air_gaps()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.set_core"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.set_core()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.set_insulation"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.set_insulation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.set_stray_path"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.set_stray_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.set_winding_window"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.set_winding_window()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.single_simulation"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.single_simulation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.MagneticComponent.MagneticComponent.thermal_simulation"><code class="docutils literal notranslate"><span class="pre">MagneticComponent.thermal_simulation()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-core-class"><span class="sectnum">4.2 </span>The <code class="docutils literal notranslate"><span class="pre">Core</span></code> class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Model.Core"><code class="docutils literal notranslate"><span class="pre">Core</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.Core.__init__"><code class="docutils literal notranslate"><span class="pre">Core.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-airgaps-class"><span class="sectnum">4.3 </span>The <code class="docutils literal notranslate"><span class="pre">AirGaps</span></code> class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Model.AirGaps"><code class="docutils literal notranslate"><span class="pre">AirGaps</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.AirGaps.__init__"><code class="docutils literal notranslate"><span class="pre">AirGaps.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.AirGaps.add_air_gap"><code class="docutils literal notranslate"><span class="pre">AirGaps.add_air_gap()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-insulation-class"><span class="sectnum">4.4 </span>The <code class="docutils literal notranslate"><span class="pre">Insulation</span></code> class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Model.Insulation"><code class="docutils literal notranslate"><span class="pre">Insulation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.Insulation.__init__"><code class="docutils literal notranslate"><span class="pre">Insulation.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.Insulation.add_core_insulations"><code class="docutils literal notranslate"><span class="pre">Insulation.add_core_insulations()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.Insulation.add_winding_insulations"><code class="docutils literal notranslate"><span class="pre">Insulation.add_winding_insulations()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-conductor-class"><span class="sectnum">4.5 </span>The <code class="docutils literal notranslate"><span class="pre">Conductor</span></code> class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Model.Conductor"><code class="docutils literal notranslate"><span class="pre">Conductor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.Conductor.__init__"><code class="docutils literal notranslate"><span class="pre">Conductor.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.Conductor.set_litz_round_conductor"><code class="docutils literal notranslate"><span class="pre">Conductor.set_litz_round_conductor()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-windingwindow-class"><span class="sectnum">4.6 </span>The <code class="docutils literal notranslate"><span class="pre">WindingWindow</span></code> class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Model.WindingWindow"><code class="docutils literal notranslate"><span class="pre">WindingWindow</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.WindingWindow.__init__"><code class="docutils literal notranslate"><span class="pre">WindingWindow.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.WindingWindow.combine_vww"><code class="docutils literal notranslate"><span class="pre">WindingWindow.combine_vww()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.WindingWindow.split_window"><code class="docutils literal notranslate"><span class="pre">WindingWindow.split_window()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-virtualwindingwindow-class"><span class="sectnum">4.7 </span>The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Model.VirtualWindingWindow"><code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.VirtualWindingWindow.__init__"><code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.VirtualWindingWindow.set_interleaved_winding"><code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow.set_interleaved_winding()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Model.VirtualWindingWindow.set_winding"><code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow.set_winding()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#the-logparser-class"><span class="sectnum">4.8 </span>The <code class="docutils literal notranslate"><span class="pre">LogParser</span></code> class</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.FEMMTLogParser"><code class="docutils literal notranslate"><span class="pre">FEMMTLogParser</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.FEMMTLogParser.__init__"><code class="docutils literal notranslate"><span class="pre">FEMMTLogParser.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.FEMMTLogParser.plot_frequency_sweep_losses"><code class="docutils literal notranslate"><span class="pre">FEMMTLogParser.plot_frequency_sweep_losses()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.FEMMTLogParser.plot_frequency_sweep_winding_params"><code class="docutils literal notranslate"><span class="pre">FEMMTLogParser.plot_frequency_sweep_winding_params()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.FileData"><code class="docutils literal notranslate"><span class="pre">FileData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.FileData.create_folders"><code class="docutils literal notranslate"><span class="pre">FileData.create_folders()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.FileData.update_paths"><code class="docutils literal notranslate"><span class="pre">FileData.update_paths()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.SweepData"><code class="docutils literal notranslate"><span class="pre">SweepData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.SweepData.core_eddy_losses"><code class="docutils literal notranslate"><span class="pre">SweepData.core_eddy_losses</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.SweepData.core_hyst_losses"><code class="docutils literal notranslate"><span class="pre">SweepData.core_hyst_losses</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.SweepData.frequency"><code class="docutils literal notranslate"><span class="pre">SweepData.frequency</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.SweepData.winding_losses"><code class="docutils literal notranslate"><span class="pre">SweepData.winding_losses</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.SweepData.windings"><code class="docutils literal notranslate"><span class="pre">SweepData.windings</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.WindingData"><code class="docutils literal notranslate"><span class="pre">WindingData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.active_power"><code class="docutils literal notranslate"><span class="pre">WindingData.active_power</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.apparent_power"><code class="docutils literal notranslate"><span class="pre">WindingData.apparent_power</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.current"><code class="docutils literal notranslate"><span class="pre">WindingData.current</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.flux"><code class="docutils literal notranslate"><span class="pre">WindingData.flux</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.magnetic_field_energy"><code class="docutils literal notranslate"><span class="pre">WindingData.magnetic_field_energy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.reactive_power"><code class="docutils literal notranslate"><span class="pre">WindingData.reactive_power</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.self_inductance"><code class="docutils literal notranslate"><span class="pre">WindingData.self_inductance</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.turns"><code class="docutils literal notranslate"><span class="pre">WindingData.turns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.WindingData.voltage"><code class="docutils literal notranslate"><span class="pre">WindingData.voltage</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#module-femmt.Enumerations"><span class="sectnum">4.9 </span><code class="docutils literal notranslate"><span class="pre">Enumerations</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.AirGapLegPosition"><code class="docutils literal notranslate"><span class="pre">AirGapLegPosition</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.AirGapLegPosition.CenterLeg"><code class="docutils literal notranslate"><span class="pre">AirGapLegPosition.CenterLeg</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.AirGapLegPosition.LeftLeg"><code class="docutils literal notranslate"><span class="pre">AirGapLegPosition.LeftLeg</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.AirGapLegPosition.RightLeg"><code class="docutils literal notranslate"><span class="pre">AirGapLegPosition.RightLeg</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.AirGapMethod"><code class="docutils literal notranslate"><span class="pre">AirGapMethod</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.AirGapMethod.Center"><code class="docutils literal notranslate"><span class="pre">AirGapMethod.Center</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.AirGapMethod.Manually"><code class="docutils literal notranslate"><span class="pre">AirGapMethod.Manually</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.AirGapMethod.Percent"><code class="docutils literal notranslate"><span class="pre">AirGapMethod.Percent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.ComponentType"><code class="docutils literal notranslate"><span class="pre">ComponentType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ComponentType.Inductor"><code class="docutils literal notranslate"><span class="pre">ComponentType.Inductor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ComponentType.IntegratedTransformer"><code class="docutils literal notranslate"><span class="pre">ComponentType.IntegratedTransformer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ComponentType.Transformer"><code class="docutils literal notranslate"><span class="pre">ComponentType.Transformer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.Conductivity"><code class="docutils literal notranslate"><span class="pre">Conductivity</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.Conductivity.Aluminium"><code class="docutils literal notranslate"><span class="pre">Conductivity.Aluminium</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.Conductivity.Copper"><code class="docutils literal notranslate"><span class="pre">Conductivity.Copper</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.ConductorArrangement"><code class="docutils literal notranslate"><span class="pre">ConductorArrangement</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ConductorArrangement.Hexagonal"><code class="docutils literal notranslate"><span class="pre">ConductorArrangement.Hexagonal</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ConductorArrangement.Square"><code class="docutils literal notranslate"><span class="pre">ConductorArrangement.Square</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ConductorArrangement.SquareFullWidth"><code class="docutils literal notranslate"><span class="pre">ConductorArrangement.SquareFullWidth</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.ConductorType"><code class="docutils literal notranslate"><span class="pre">ConductorType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ConductorType.RectangularSolid"><code class="docutils literal notranslate"><span class="pre">ConductorType.RectangularSolid</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ConductorType.RoundLitz"><code class="docutils literal notranslate"><span class="pre">ConductorType.RoundLitz</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ConductorType.RoundSolid"><code class="docutils literal notranslate"><span class="pre">ConductorType.RoundSolid</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.ExcitationMeshingType"><code class="docutils literal notranslate"><span class="pre">ExcitationMeshingType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ExcitationMeshingType.MeshEachFrequency"><code class="docutils literal notranslate"><span class="pre">ExcitationMeshingType.MeshEachFrequency</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ExcitationMeshingType.MeshOnlyHighestFrequency"><code class="docutils literal notranslate"><span class="pre">ExcitationMeshingType.MeshOnlyHighestFrequency</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.ExcitationMeshingType.MeshOnlyLowestFrequency"><code class="docutils literal notranslate"><span class="pre">ExcitationMeshingType.MeshOnlyLowestFrequency</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.InterleavedWindingScheme"><code class="docutils literal notranslate"><span class="pre">InterleavedWindingScheme</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.InterleavedWindingScheme.Bifilar"><code class="docutils literal notranslate"><span class="pre">InterleavedWindingScheme.Bifilar</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.InterleavedWindingScheme.HorizontalAlternating"><code class="docutils literal notranslate"><span class="pre">InterleavedWindingScheme.HorizontalAlternating</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.InterleavedWindingScheme.VerticalAlternating"><code class="docutils literal notranslate"><span class="pre">InterleavedWindingScheme.VerticalAlternating</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.InterleavedWindingScheme.VerticalStacked"><code class="docutils literal notranslate"><span class="pre">InterleavedWindingScheme.VerticalStacked</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.LossApproach"><code class="docutils literal notranslate"><span class="pre">LossApproach</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.LossApproach.LossAngle"><code class="docutils literal notranslate"><span class="pre">LossApproach.LossAngle</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.LossApproach.Steinmetz"><code class="docutils literal notranslate"><span class="pre">LossApproach.Steinmetz</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.PermeabilityType"><code class="docutils literal notranslate"><span class="pre">PermeabilityType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.PermeabilityType.FixedLossAngle"><code class="docutils literal notranslate"><span class="pre">PermeabilityType.FixedLossAngle</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.PermeabilityType.FromData"><code class="docutils literal notranslate"><span class="pre">PermeabilityType.FromData</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.PermeabilityType.RealValue"><code class="docutils literal notranslate"><span class="pre">PermeabilityType.RealValue</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingScheme"><code class="docutils literal notranslate"><span class="pre">WindingScheme</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingScheme.FoilHorizontal"><code class="docutils literal notranslate"><span class="pre">WindingScheme.FoilHorizontal</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingScheme.FoilVertical"><code class="docutils literal notranslate"><span class="pre">WindingScheme.FoilVertical</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingScheme.Full"><code class="docutils literal notranslate"><span class="pre">WindingScheme.Full</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingScheme.SquareFullWidth"><code class="docutils literal notranslate"><span class="pre">WindingScheme.SquareFullWidth</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingType"><code class="docutils literal notranslate"><span class="pre">WindingType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingType.Interleaved"><code class="docutils literal notranslate"><span class="pre">WindingType.Interleaved</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingType.Single"><code class="docutils literal notranslate"><span class="pre">WindingType.Single</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingWindowSplit"><code class="docutils literal notranslate"><span class="pre">WindingWindowSplit</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingWindowSplit.HorizontalAndVerticalSplit"><code class="docutils literal notranslate"><span class="pre">WindingWindowSplit.HorizontalAndVerticalSplit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingWindowSplit.HorizontalSplit"><code class="docutils literal notranslate"><span class="pre">WindingWindowSplit.HorizontalSplit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingWindowSplit.NoSplit"><code class="docutils literal notranslate"><span class="pre">WindingWindowSplit.NoSplit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WindingWindowSplit.VerticalSplit"><code class="docutils literal notranslate"><span class="pre">WindingWindowSplit.VerticalSplit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Enumerations.WrapParaType"><code class="docutils literal notranslate"><span class="pre">WrapParaType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WrapParaType.FixedThickness"><code class="docutils literal notranslate"><span class="pre">WrapParaType.FixedThickness</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt.Enumerations.WrapParaType.Interpolate"><code class="docutils literal notranslate"><span class="pre">WrapParaType.Interpolate</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#module-femmt.Functions"><span class="sectnum">4.10 </span>Helper functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Functions.core_database"><code class="docutils literal notranslate"><span class="pre">core_database()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Functions.litz_database"><code class="docutils literal notranslate"><span class="pre">litz_database()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#femmt.Functions.wire_material_database"><code class="docutils literal notranslate"><span class="pre">wire_material_database()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#developer-notes-for-femmt"><span class="sectnum">5 </span>Developer Notes for FEMMT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#winding-creation"><span class="sectnum">5.1 </span>Winding creation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Winding types</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/winding_types.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="winding-types">
+<h1>Winding types<a class="headerlink" href="#winding-types" title="Link to this heading"></a></h1>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>Single_Square</strong></p></td>
+<td><p><strong>Single Hexagonal</strong></p></td>
+<td><p><strong>Single Full</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_images/Single_Square.png"><img alt="image0" src="_images/Single_Square.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Single_Hexagonal.png"><img alt="image1" src="_images/Single_Hexagonal.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Single_Full.png"><img alt="image2" src="_images/Single_Full.png" style="width: 250px;" /></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Single_SquareFullWidth</strong></p></td>
+<td><p><strong>Single FoilHorizontal</strong></p></td>
+<td><p><strong>Single FoilVertical (fixed thickness)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_images/Single_SquareFullWidth.png"><img alt="image3" src="_images/Single_SquareFullWidth.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Single_FoilHorizontal.png"><img alt="image4" src="_images/Single_FoilHorizontal.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Single_FoilVertical_fixed_thickness.png"><img alt="image5" src="_images/Single_FoilVertical_fixed_thickness.png" style="width: 250px;" /></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Single FoilVertical (interpolate)</strong></p></td>
+<td><p><strong>Interleaved HorizontalAlternating</strong></p></td>
+<td><p><strong>Interleaved VerticalStacked (square)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_images/Single_FoilVertical_interpolate.png"><img alt="image6" src="_images/Single_FoilVertical_interpolate.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Interleaved_HorizontalAlternating.png"><img alt="image7" src="_images/Interleaved_HorizontalAlternating.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Interleaved_VerticalStacked_square.png"><img alt="image8" src="_images/Interleaved_VerticalStacked_square.png" style="width: 250px;" /></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Interleaved VerticalStacked (hexagonal)</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_images/Interleaved_VerticalStacked_hexagonal.png"><img alt="image9" src="_images/Interleaved_VerticalStacked_hexagonal.png" style="width: 250px;" /></a></p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, LEA, Paderborn University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
