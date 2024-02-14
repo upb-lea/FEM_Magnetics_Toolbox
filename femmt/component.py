@@ -2538,6 +2538,7 @@ class MagneticComponent:
 
     def create_empty_material__dict(self):
         """
+        Create an empty json file, where the mTerial dictionary is stored in.
 
         :return:
         """
@@ -2545,13 +2546,12 @@ class MagneticComponent:
         with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
 
-    def log_material_properties(self, ):
+    def log_material_properties(self):
         """
         Log material properties.
 
         :return:
         """
-
         # read permeability data from core_materials_temp.pro file
         with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
             for no_line, line in enumerate(file):
@@ -2562,7 +2562,6 @@ class MagneticComponent:
                     permeability_real = list(ast.literal_eval(line[12:-2]))
                 if no_line == 4:
                     permeability_imag = list(ast.literal_eval(line[12:-2]))
-
 
         with open(self.file_data.material_log_path, "r") as fd:
             material_dict = json.loads(fd.read())
