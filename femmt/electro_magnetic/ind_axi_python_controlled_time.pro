@@ -16,12 +16,19 @@ Nb_max_iter             = 20;
 relaxation_factor       = 1.;
 stop_criterion          = 1e-8;
 Flag_Circuit            = Flag_ImposedVoltage;
+//T = 1/Freq;
+//time0 = 0;
+NbT = 1;
+//timemax = NbT*T;
+//NbSteps = 10;
+//delta_t = T/NbSteps;
+//dtResample=0.5
 // ----------------------
 // half inductor with axisymmetry
 // 1 means full cylinder
 SymFactor               = 1. ;
 CoefGeo                 = 2*Pi*SymFactor ; // axisymmetry +/* symmetry factor */
-n_windings = Number_of_Windings;
+n_windings = Number_of_Windings;  //added by Othman
 
 // ----------------------
 // Physical numbers
@@ -32,12 +39,12 @@ AIR_EXT             = 110001;
 AIR_COND            = 1000000;
 CORE_PN             = 120000;
 
-
 //physical numbers of conductors in n transformer
 For n In {1:n_windings}
        iCOND~{n} = 130000 + 1000*(n-1);
        istrandedCOND~{n} = 150000 + 1000*(n-1);
 EndFor
+po = "Output 2D/";
 
 
 
@@ -139,6 +146,11 @@ Group{
   // Dummy region number for postpro with functions
   DomainDummy = Region[ 12345 ] ;
 
+
+  // Dummy region number for postpro with functions
+  DomainDummy = Region[ 12345 ] ;
+
+  // ----------------------
   // ----------------------
   // Circuit Domains
   // ----------------------
@@ -184,6 +196,18 @@ Group{
 // ----------------------
 Function {
 
+//  DefineConstant[
+//    Freq = { 50., Min 0, Max 1e3, Step 1,
+//      Name "Input/21Frequency [Hz]", Highlight "AliceBlue"},
+//    Irms = { Val_EE_1/Sqrt[2], Min 1, Max 4*Val_EE_1/Sqrt[2], Step 2,
+//      Name "Input/4Coil Parameters/0Current (rms) [A]", Highlight "AliceBlue"},
+//    NbWires = { n_windings,
+//      Name "Input/4Coil Parameters/1Number of windings", Highlight "AliceBlue"}___
+//
+//  ];
+
+
+
   // Strand sizes
 
   For n In {1:n_windings}
@@ -217,11 +241,12 @@ Function {
 
   // nu: reluctivity
   // nu = 1/mu
-  nu[#{Air}] = Complex[nu0, 0];
-  mu[#{Air}] = Complex[mu0, 0];
-
+  //nu[#{Air}] = Complex[nu0, 0];
+  nu[#{Air}] = nu0;
+  //mu[#{Air}] = Complex[mu0, 0];
+  mu[#{Air}] = mu0;
   For n In {1:n_windings}
-      nu[#{Winding~{n}}] = Complex[nu0, 0];
+      nu[#{Winding~{n}}] = nu0;
   EndFor
 
   // Hysteresis Loss
@@ -230,15 +255,15 @@ Function {
   //mu_imag[ #{Core} ] = mu0 * f_mu_imag[$1, $2];
 
   If(!Flag_NL)
-    If(Flag_Fixed_Loss_Angle)
-        mu[#{Core}]   = Complex[mu0*mur_real, -mu0*mur_imag] ;
-        nu[#{Core}]   = 1/mu[$1, $2] ;
-    ElseIf(Flag_Permeability_From_Data)
-        mu[#{Core}]   = Complex[mu0*f_mu_real[$1], -mu0*f_mu_imag[$1]] ;
-        nu[#{Core}]   = 1/mu[$1, $2] ;
+    If(Flag_Fixed_Loss_Angle) //should be changed here for time_domain
+        mu[#{Core}]   = mu0*mur_real;
+        nu[#{Core}]   = 1/mu[$1] ;
+    ElseIf(Flag_Permeability_From_Data) //should be changed here for time_domain
+        mu[#{Core}]   = mu0*f_mu_real[$1];
+        nu[#{Core]   = 1/mu[$1] ;
     Else
         mu[#{Core}]   = mu0*mur ;
-        nu[#{Core}]   = 1/mu[$1, $2] ;
+        nu[#{Core}]   = 1/mu[] ;
     EndIf
 
   Else
@@ -257,26 +282,29 @@ Function {
 
   // Excitation Current
 
-
+  //Val_EE_1 = Irms * Sqrt[2];
   For n In {1:n_windings}
-      FSinusoidal~{n}[] = F_Cos_wt_p[]{2*Pi*Freq, Phase~{n}}; //Complex_MH[1,0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
-      Fct_Src~{n}[] = FSinusoidal~{n}[];
+      //FSinusoidal~{n}[] = F_Cos_wt_p[]{2*Pi*Freq, Phase~{n}}; //Complex_MH[1,0]{Freq} ; //Cos F_Cos_wt_p[]{2*Pi*Freq, 0};
+      Excitation~{n}[] = InterpolationLinear[$Time]{ListAlt[TimeList, CurrentList~{n}]};
+      Fct_Src~{n}[] = Excitation~{n}[];
       Signn~{n} = (Phase~{n}==Pi) ? -1 : 1;
   EndFor
 
   // Auxiliary functions for post-processing
-  nuOm[#{Air}] = nu[]*Complex[0.,1.];
-  nuOm[#{Core}] = -nu[$1]*Complex[0.,1.];
+  //nuOm[#{Air}] = nu[]*Complex[0.,1.];
+  nuOm[#{Air}] = nu[] ;
+  //nuOm[#{Iron}] = -nu[$1]*Complex[0.,1.];
+  nuOm[#{Core}] = -nu[$1] ;
   //nuOm[#{Winding1, Winding2, Winding3}] = Complex[ 2 * Pi * Freq * Im[nu[]], -Re[nu[]] ];
 
 
   For n In {1:n_windings}
       If(Flag_HomogenisedModel~{n})
          // Secondary
-         file_ZSkinRe~{n}  = Sprintf(StrCat[DirStrandCoeff, "coeff/pI_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
-         file_ZSkinIm~{n}  = Sprintf(StrCat[DirStrandCoeff, "coeff/qI_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
-         file_NuProxRe~{n} = Sprintf(StrCat[DirStrandCoeff, "coeff/qB_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
-         file_NuProxIm~{n} = Sprintf(StrCat[DirStrandCoeff, "coeff/pB_RS_la%.2g_%.2glayer.dat"], Fill~{n}, NbrLayers~{n});
+         file_ZSkinRe~{n}  = Sprintf("Strands_Coefficients/coeff/pI_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
+         file_ZSkinIm~{n}  = Sprintf("Strands_Coefficients/coeff/qI_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
+         file_NuProxRe~{n} = Sprintf("Strands_Coefficients/coeff/qB_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
+         file_NuProxIm~{n} = Sprintf("Strands_Coefficients/coeff/pB_RS_la%.2g_%.2glayer.dat", Fill~{n}, NbrLayers~{n});
          skin_rhor_list~{n}() = ListFromFile[ file_ZSkinRe~{n} ];
          skin_rhoi_list~{n}() = ListFromFile[ file_ZSkinIm~{n} ];
          prox_nur_list~{n}()  = ListFromFile[ file_NuProxRe~{n} ];
@@ -389,7 +417,7 @@ Constraint {
 // ----------------------
 // Include solver file(s)
 // ----------------------
-Include "solver.pro"
+Include "solver_time.pro"
 
 
 // ----------------------
@@ -399,27 +427,52 @@ Resolution {
 
   { Name Analysis ;
     System {
-      { Name A ; NameOfFormulation MagDyn_a ; Type ComplexValue ; Frequency Freq ; }
+      { Name A ; NameOfFormulation MagDyn_a ; }
     }
 
     Operation {
 
-      CreateDir[DirResValsCore];
+
       For n In {1:n_windings}
           CreateDir[DirResValsWinding~{n}];
+          //Before starting a new time domain simulation, it's essential to ensure that there's no lingering data from previous runs.
+          //The following lines remove files related to past simulations to guarantee that when averages are calculated, they are based on the data from the current simulation.
+          DeleteFile[Sprintf[StrCat[DirResVals, "j2F_%g.dat"], n]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"j2H_%g.dat"], n]];
+          DeleteFile[StrCat[DirResVals,"CoreEddyCurrentLosses.dat"]];
+          DeleteFile[StrCat[DirResVals,"p_hyst.dat"]];
+          DeleteFile[StrCat[DirResVals,"piGSE.dat"]];
+          DeleteFile[StrCat[DirResVals,"pSE.dat"]];
+          DeleteFile[StrCat[DirResVals,"ME.dat"]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"Flux_Linkage_%g.dat"], n]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"L_%g_%g.dat"], n, n]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"LFromMagEnergy_%g_%g.dat"], n, n]];
+          DeleteFile[Sprintf[StrCat[DirResVals,"Voltage_%g.dat"], n]];
+          For isF In {1:nbturns~{n}}
+            DeleteFile[Sprintf[StrCat[DirResValsWinding~{n},"Losses_turn_%g.dat"], isF]];
+          EndFor
+          DeleteFile[StrCat[DirResFields, "Magb"]];
+          DeleteFile[StrCat[DirResFields, "j2F_density"]] ;
+          DeleteFile[StrCat[DirResFields, "j2H_density"]] ;
       EndFor
+      InitSolution[A] ;
+      TimeLoopTheta[time0, timemax, delta_t, 1.]{ // Implicit Euler (theta=1)
+        If(!Flag_NL)
+            Generate[A] ; Solve[A] ;
+        Else
+            IterativeLoop[Nb_max_iter, stop_criterion, relaxation_factor]{
+                GenerateJac[A] ; SolveJac[A] ;
+            }
+        EndIf
+        SaveSolution[A] ;
 
-      // Non-linear iteration is always called. If system is linear, convergence will be achieved after one iteration.
-      IterativeLoop[Nb_max_iter, stop_criterion, relaxation_factor]{
-          GenerateJac[A] ; SolveJac[A] ;
+        PostOperation[Map_local] ;
+        //Test[ $TimeStep > 1 ]{
+        PostOperation[Get_global];
+
+      //PostOperation[T_resampled];
+        //}
       }
-
-      SaveSolution[A] ;
-
-
-      PostOperation[Map_local] ;
-      PostOperation[Get_global] ;
-
     }// Operation
   }
 }// Resolution
@@ -450,17 +503,17 @@ PostProcessing {
       // Electrical Field
 
       { Name e ; Value { Term { [ -1*(Dt[{a}]+{ur}/CoefGeo) ] ; In Domain ; Jacobian Vol ; } } }
-      { Name MagEz ; Value { Term { [  Norm[ -1*(Dt[{a}]+{ur}/CoefGeo) ]  ] ; In Domain ; Jacobian Vol ; } } }
+      { Name MagEz ; Value { Term { [  -1*(Dt[{a}]+{ur}/CoefGeo)  ] ; In Domain ; Jacobian Vol ; } } }
 
 
 
       // ------------------------------------------------------------------------------------------------
       // Magnetic Field
 
-      { Name h ; Value { Term { [ nu[{d a}, Freq]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Magh ; Value { Term { [ Norm[ nu[{d a}, Freq]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Mag_h_real ; Value { Term { [ Norm[ Re [ nu[{d a}, Freq]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Mag_h_imag ; Value { Term { [ Norm[ Im [ nu[{d a}, Freq]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      { Name h ; Value { Term { [ nu[{d a}]*{d a} ] ; In Domain ; Jacobian Vol ; } } }
+      //{ Name Magh ; Value { Term { [ Norm[ nu[{d a}, Freq]*{d a} ] ] ; In Domain ; Jacobian Vol ; } } }
+      //{ Name Mag_h_real ; Value { Term { [ Norm[ Re [ nu[{d a}, Freq]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
+      //{ Name Mag_h_imag ; Value { Term { [ Norm[ Im [ nu[{d a}, Freq]*{d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
 
 
 
@@ -468,25 +521,19 @@ PostProcessing {
       // Magnetic Flux Density
 
       { Name b ; Value { Term { [ {d a} ] ; In Domain ; Jacobian Vol ; } } }
-      { Name b_pol ; Value { Term { [ Norm [ Re [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name im_b_pol ; Value { Term { [ Norm [ Im [ Cart2Pol[ {d a} ] ] ] ] ; In Domain ; Jacobian Vol ; } } }
       { Name Magb ; Value { Term { [ Norm[ {d a} ] ]; In Domain ; Jacobian Vol ; } } }
-      { Name Mag_b_real ; Value { Term { [ Norm[ Re [ {d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name Mag_b_imag ; Value { Term { [ Norm[ Im [ {d a} ] ] ] ; In Domain ; Jacobian Vol ; } } }
-
-
 
       // ------------------------------------------------------------------------------------------------
       // Permeability Plot
 
-      { Name nur ; Value { Term { [ Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+      //{ Name nur ; Value { Term { [ Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
       //{ Name mur ; Value { Term { [ 1 / Norm[ nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Core ; Jacobian Vol ; } } }
-      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Core ; Jacobian Vol ; } } }
-      { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name mur_im ; Value { Term { [ Norm [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ] ; In Domain ; Jacobian Vol ; } } }
-      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
-      { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_im / (mur_re^2 + mur_im^2)
+//      { Name mur ; Value { Term { [ 1 / Norm [Im[ nu[{d a}, Freq]] * mu0 ] ] ; In Core ; Jacobian Vol ; } } }
+//      { Name mur_norm ; Value { Term { [ Norm [Im[ mu[{d a}, Freq]] / mu0 ] ] ; In Core ; Jacobian Vol ; } } }
+//      { Name mur_re ; Value { Term { [ Re[ 1/nu[{d a}, Freq] / mu0 ] ] ; In Domain ; Jacobian Vol ; } } }
+//      { Name mur_im ; Value { Term { [ Norm [ Im[ 1/nu[{d a}, Freq] / mu0 ] ] ] ; In Domain ; Jacobian Vol ; } } }
+//      { Name nur_re ; Value { Term { [ Re[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_re / (mur_re^2 + mur_im^2)
+//      { Name nur_im ; Value { Term { [ Im[ nu[{d a}, Freq] * mu0 ] ] ; In Domain ; Jacobian Vol ; } } }  // := mur_im / (mur_re^2 + mur_im^2)
 
 
       // ------------------------------------------------------------------------------------------------
@@ -525,47 +572,39 @@ PostProcessing {
 
       // DomainC (Solid Conductors)
 
-      If(Freq==0.0)
-          { Name j2F ; Value { Integral {
+      { Name j2F ; Value { Integral {
              [ CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
              In DomainC ; Jacobian Vol ; Integration II ; } } }
-          { Name j2F_density ; Value { Integral {
+      { Name j2F_density ; Value { Integral {
              [ CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;
              In DomainC ; Jacobian Vol ; Integration II ; } } }
-      Else
-           { Name j2F ; Value { Integral {
-             [ 0.5*CoefGeo*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;// 0.5 for frequency domain
-             In DomainC ; Jacobian Vol ; Integration II ; } } }
+//     { Name Average_j2F ; Value { Integral {
+//            [ $j2F/T ]  ;
+//            In DomainC ; Jacobian Vol ; Integration II ; } } }
 
-           { Name j2F_density ; Value { Integral {
-             [ 0.5*CoefGeo/ElementVol[]*sigma[]*SquNorm[ {ur}/CoefGeo - Dt[{a}] ] ] ;// 0.5 for frequency domain
-             In DomainC ; Jacobian Vol ; Integration II ; } } }
-      EndIf
+      //{ Name Average_j2F ; Value { Term { Type Global; [ $j2F / T ] ; In DomainDummy ; } } }
 
 
       // DomainS (Stranded Conductors)
 
-      If(Freq==0.0)
-           { Name j2H ; Value { Integral {
-             [ CoefGeo*( Re[-{d a}*Conj[nuOm[]*{d a}]] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
-             In DomainS ; Jacobian Vol ; Integration II ; } } }
-      Else
-           { Name j2H ; Value { Integral {
-             [ 0.5*CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
-             In DomainS ; Jacobian Vol ; Integration II ; } } }
 
-           { Name j2H_density ; Value { Integral {
-             [ 0.5*CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
-             In DomainS ; Jacobian Vol ; Integration II ; } } }
+      { Name j2H ; Value { Integral {
+           [ CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
+           In DomainS ; Jacobian Vol ; Integration II ; } } }
 
-           { Name j2Hprox ; Value { Integral {
-            [ 0.5*CoefGeo*Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] ] ;// 0.5 for frequency domain
-            In DomainS ; Jacobian Vol ; Integration II ; } } }
+      { Name j2H_density ; Value { Integral {
+           [ CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
+           In DomainS ; Jacobian Vol ; Integration II ; } } }
 
-           { Name j2Hskin ; Value { Integral {
-            [ 0.5*CoefGeo*sigma[]*SquNorm[-1/AreaCell[]*{ir}] ] ;// 0.5 for frequency domain
-            In DomainS ; Jacobian Vol ; Integration II ; } } }
-      EndIf
+      { Name j2Hprox ; Value { Integral {
+           [ CoefGeo*Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] ] ;// 0.5 for frequency domain
+           In DomainS ; Jacobian Vol ; Integration II ; } } }
+
+      { Name j2Hskin ; Value { Integral {
+           [ CoefGeo*sigma[]*SquNorm[-1/AreaCell[]*{ir}] ] ;// 0.5 for frequency domain
+           In DomainS ; Jacobian Vol ; Integration II ; } } }
+
+
 
 
 
@@ -594,38 +633,29 @@ PostProcessing {
                                      ] ; In Core ; Jacobian Vol ; Integration II ;} } }
       EndIf
 
-
-
-      // ------------------------------------------------------------------------------------------------
+      // hysteresis losses need to be studied in time domain simulation
       // Hysteresis Losses (According To Complex Core Parameters)
-
-      { Name p_hyst ; Value { Integral {
-        // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
-        [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
-        In Core ; Jacobian Vol ; Integration II ;} } }
-
-      { Name p_hyst_density ; Value { Integral {
-        [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
-        In Core ; Jacobian Vol ; Integration II ;} } }
-
+      // not true in time_domain
+//      { Name p_hyst ; Value { Integral {
+//        // [ 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[Norm[{d a}], Freq]] * SquNorm[nu[Norm[{d a}], Freq] * Norm[{d a}]] ] ;
+//        [ - 0.5 * CoefGeo * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[{d a}, Freq] * {d a}] ] ;
+//        In Core ; Jacobian Vol ; Integration II ;} } }
+//
+//      { Name p_hyst_density ; Value { Integral {
+//        [ - 0.5 * CoefGeo/ElementVol[] * 2*Pi*Freq * Im[mu[{d a}, Freq]] * SquNorm[nu[Norm[{d a}], Freq] * {d a}] ] ;
+//        In Core ; Jacobian Vol ; Integration II ;} } }
 
 
       // ------------------------------------------------------------------------------------------------
       // Energy
 
       { Name MagEnergy ; Value {
-          Integral { [ 1/4*CoefGeo*nu[{d a}, Freq]*({d a}*{d a}) ] ;
+          Integral { [ SymFactor * 1/2 *nu[{d a}]*{d a}*{d a} ] ;
             In Domain ; Jacobian Vol ; Integration II ; } } }
 
       { Name ElectEnergy ; Value {
           Integral { [ CoefGeo*nu[{d a}]*({d a}*{d a})/2] ;
             In Domain ; Jacobian Vol ; Integration II ; } } }
-
-      //{ Name b2F ; Value { Integral { // Magnetic Energy
-      //      [ CoefGeo*nu[{d a}]*SquNorm[{d a}] ] ;
-      //     In Domain ; Jacobian Vol ; Integration II ; } } }
-      //{ Name b2av ; Value { Integral { [ CoefGeo*{d a}/AreaCell[] ] ;
-      //      In Domain ; Jacobian Vol  ; Integration II ; } } }
 
 
 
@@ -666,6 +696,12 @@ PostProcessing {
       EndFor
 
       // ------------------------------------------------------------------------------------------------
+      // Current (Current_i = 1/nu0 integral B dl)
+//       For n In {1:n_windings}
+//           { Name Current~{n} ; Value { Integral { [ CoefGeo / (AreaCell~{n} * nu0) ] ; In DomainCond~{n} ; Jacobian Vol; Integration II; }}}
+//       EndFor
+
+      // ------------------------------------------------------------------------------------------------
       // Flux (Linkage)
 
       For n In {1:n_windings}
@@ -684,6 +720,15 @@ PostProcessing {
               [ 2 * CoefGeo*nu[{d a}, Freq]*({d a}*{d a}) / (Val_EE~{n}*Val_EE~{n}) ]; In Domain; Jacobian Vol; Integration II; } } }
           EndIf
       EndFor
+
+
+
+//      For n In {1:n_windings}
+//          If(Val_EE~{n}!=0)
+//              { Name L~{n}~{n} ; Value { Term { Type Global; [ $Flux_Linkage * 1e3/Val_EE~{n} ] ; In DomainDummy ; } } }
+//              { Name LFromMagEnergy~{n}~{n} ; Value { Term { Type Global; [ 2 * $MagEnergy * 1e3/(Val_EE~{n}*Val_EE~{n}) ] ; In DomainDummy ; } } }
+//          EndIf
+//      EndFor
 
       // Circuit Quantities
       { Name U ; Value {
@@ -707,9 +752,5 @@ PostProcessing {
 // ----------------------
 
 
-Include "fields.pro";
-Include "values.pro";
-
-
-
-
+Include "fields_time.pro";
+Include "values_time.pro";
