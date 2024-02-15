@@ -1790,7 +1790,9 @@ class Mesh:
             for ww in self.model.winding_windows:
                 for vww in ww.virtual_winding_windows:
                     if vww.winding_type != WindingType.TwoInterleaved:
+                        gmsh.model.geo.synchronize()  # added by Othman and need to be reviewed
                         gmsh.model.mesh.embed(0, p_inter, 2, self.plane_surface_air[0])
+
             # Stray path
             # mshopt gmsh.model.mesh.embed(0, stray_path_mesh_optimizer, 2, plane_surface_core[2])
 

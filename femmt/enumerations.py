@@ -185,6 +185,57 @@ class ConductorArrangement(IntEnum):
     turns of the previous line. First drawn in y-direction then x-direction.
     """
 
+class ConductorPlacingStrategy(IntEnum):
+    """Defines strategies for placing conductors in the virtual winding window."""
+
+    VerticalUpward_HorizontalRightward = 1
+    """Places conductors vertically upwards first, then moves horizontally rightward for the next set with consistent direction."""
+
+    VerticalUpward_HorizontalLefttward = 2
+    """Places conductors vertically upwards first, then moves horizontally leftward for the next set with consistent direction."""
+
+    VerticalDownward_HorizontalRightward = 3
+    """Places conductors vertically downwards first, then moves horizontally rightward for the next set with consistent direction."""
+
+    VerticalDownward_HorizontalLeftward = 4
+    """Places conductors vertically downwards first, then moves horizontally leftward for the next set with consistent direction."""
+
+    HorizontalRightward_VerticalUpward = 5
+    """Places conductors horizontally rightward first, then moves vertically upward for the next set with consistent direction."""
+
+    HorizontalRightward_VerticalDownward = 6
+    """Places conductors horizontally rightward first, then moves vertically downward for the next set with consistent direction."""
+
+    HorizontalLeftward_VerticalUpward = 7
+    """Places conductors horizontally leftward first, then moves vertically upward for the next set with consistent direction."""
+
+    HorizontalLeftward_VerticalDownward = 8
+    """Places conductors horizontally leftward first, then moves vertically downward for the next set with consistent direction."""
+
+    VerticalUpward_HorizontalRightward_ZigZag = 9
+    """Places conductors vertically upwards first, then moves horizontally rightward for the next set with Zig-Zag moving."""
+
+    VerticalUpward_HorizontalLefttward_ZigZag = 10
+    """Places conductors vertically upwards first, then moves horizontally leftward for the next set with Zig-Zag moving."""
+
+    VerticalDownward_HorizontalRightward_ZigZag = 11
+    """Places conductors vertically downwards first, then moves horizontally rightward for the next set with Zig-Zag moving."""
+
+    VerticalDownward_HorizontalLeftward_ZigZag = 12
+    """Places conductors vertically downwards first, then moves horizontally leftward for the next set with Zig-Zag moving."""
+
+    HorizontalRightward_VerticalUpward_ZigZag = 13
+    """Places conductors horizontally rightward first, then moves vertically upward for the next set with Zig-Zag moving."""
+
+    HorizontalRightward_VerticalDownward_ZigZag = 14
+    """Places conductors horizontally rightward first, then moves vertically downward for the next set with Zig-Zag moving."""
+
+    HorizontalLeftward_VerticalUpward_ZigZag = 15
+    """Places conductors horizontally leftward first, then moves vertically upward for the next set with Zag-Zag moving."""
+
+    HorizontalLeftward_VerticalDownward_ZigZag = 16
+    """Places conductors horizontally leftward first, then moves vertically downward for the next set with Zig-Zag moving."""
+
 
 class CenterTappedInterleavingType(IntEnum):
     """Contains different interleaving types for the center tapped transformer."""

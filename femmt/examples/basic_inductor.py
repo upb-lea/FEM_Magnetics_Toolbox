@@ -6,6 +6,7 @@ import os
 
 def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
     """Run the example code for the inductor."""
+
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the
@@ -137,7 +138,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 7, None)
+    vww.set_winding(winding, 15, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
     geo.set_winding_windows([winding_window])
 
     # 8. create the model
