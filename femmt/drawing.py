@@ -844,724 +844,148 @@ class TwoDaxiSymmetric:
                                 raise Exception(f"Winding scheme {winding_scheme.name} is not implemented.")
 
                         elif conductor_type == ConductorType.RoundSolid or conductor_type == ConductorType.RoundLitz:
-                            # Since round conductors have no winding scheme check for each conductor_arrangement
+                            # Since round conductors have no winding scheme check for each conductor_arrangement.
                             conductor_arrangement = winding.conductor_arrangement
                             if conductor_arrangement == ConductorArrangement.Square:
-                                # 8 cases for placing conductors in vww with consistent direction.
-                                # 1. primarily moves vertically upward from the bottom to the top, and then horizontally rightward for the next column.
-                                if placing_strategy == ConductorPlacingStrategy.VerticalUpward_HorizontalRightward:
-                                    y = bot_bound + winding.conductor_radius  # start from bottom for the upward movement.
-                                    x = left_bound + winding.conductor_radius  # start from left for the horizontal movement.
-                                    i = 0  # Reset conductor count
-                                    # Case n_conductors higher that "allowed" is missing
-                                    while x < right_bound - winding.conductor_radius and i < turns:
-                                        while y < top_bound - winding.conductor_radius and i < turns:
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_center_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x - winding.conductor_radius,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y + winding.conductor_radius,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            i += 1
-                                            # Move y upward for the next conductor in the column.
-                                            y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # After completing a column, move x rightward for the next column's start.
-                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        y = bot_bound + winding.conductor_radius  # Rest y to start the next column from bottom.
+                                # Define initial conditions based on the placement strategy.
+                                # 16 cases will be handled here, 8 cases with consistent direction, and 8 cases with Zigzag movement.
+                                vertical_first = placing_strategy in [
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward,
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward,
+                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward,
+                                    ConductorPlacingStrategy.VerticalDownward_HorizontalLeftward,
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag,
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward_ZigZag,
+                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward_ZigZag,
+                                    ConductorPlacingStrategy.VerticalDownward_HorizontalLeftward_ZigZag]
 
-                                # 2. primarily moves vertically upward from the bottom to the top, and then horizontally leftward for the next column.
-                                elif placing_strategy == ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward:
-                                    y = bot_bound + winding.conductor_radius  # start from bottom for the upward movement.
-                                    x = right_bound - winding.conductor_radius  # start from right for the horizontal movement.
-                                    i = 0
-                                    # Case n_conductors higher that "allowed" is missing
-                                    while x > left_bound + winding.conductor_radius and i < turns:
-                                        while y < top_bound - winding.conductor_radius and i < turns:
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_center_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x - winding.conductor_radius,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y + winding.conductor_radius,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            i += 1
-                                            # Move y upward for the next conductor in the column.
+                                upward_movement = placing_strategy in [
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward,
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward,
+                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward,
+                                    ConductorPlacingStrategy.HorizontalLeftward_VerticalUpward,
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag,
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward_ZigZag,
+                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward_ZigZag,
+                                    ConductorPlacingStrategy.HorizontalLeftward_VerticalUpward_ZigZag]
 
-                                            y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # After completing a column, move x leftward for the next column's start.
-                                        x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        y = bot_bound + winding.conductor_radius  # Rest y to start the next column from bottom.
-
-                                # 3. primarily moves vertically downward from the bottom to the top, and then horizontally rightward for the next column.
-                                elif placing_strategy == ConductorPlacingStrategy.VerticalDownward_HorizontalRightward:
-                                    y = top_bound - winding.conductor_radius  # start from top for the downward movement.
-                                    x = left_bound + winding.conductor_radius   # start from left for the horizontal rightward movement.
-                                    i = 0
-                                    # Case n_conductors higher that "allowed" is missing
-                                    while x < right_bound - winding.conductor_radius and i < turns:
-                                        while y > bot_bound - winding.conductor_radius and i < turns:
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_center_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x - winding.conductor_radius,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y + winding.conductor_radius,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            i += 1
-                                            # Move y downward for the next conductor in the column.
-                                            y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # After completing a column, move x rightward for the next column's start.
-                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        y = top_bound - winding.conductor_radius  # Rest y to start the next column from top.
-
-                                # 4. primarily moves vertically downward from the bottom to the top, and then horizontally leftward for the next column.
-                                elif placing_strategy == ConductorPlacingStrategy.VerticalDownward_HorizontalLeftward:
-                                    y = top_bound - winding.conductor_radius  # start from top for the downward movement.
-                                    x = right_bound - winding.conductor_radius  # start from right for the horizontal leftward movement.
-                                    i = 0
-                                    # Case n_conductors higher that "allowed" is missing
-                                    while x > left_bound - winding.conductor_radius and i < turns:
-                                        while y > bot_bound - winding.conductor_radius and i < turns:
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_center_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x - winding.conductor_radius,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y + winding.conductor_radius,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append(
-                                                [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            i += 1
-                                            # Move y downward for the next conductor in the column.
-                                            y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # After completing a column, move x leftward for the next column's start.
-                                        x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        y = top_bound - winding.conductor_radius  # Rest y to start the next column from top.
-
-                                # 5. primarily moves horizontally rightward from the left to the right, and then vertically upward for the next raw.
-                                elif placing_strategy == ConductorPlacingStrategy.HorizontalRightward_VerticalUpward:
-                                    x = left_bound + winding.conductor_radius  # start from left for the horizontally rightward movement.
-                                    y = bot_bound + winding.conductor_radius  # start from bottom for the upward movement.
-                                    i = 0
-                                    # Case n_conductors higher than "allowed" is missing
-                                    while y < top_bound - winding.conductor_radius and i < turns:
-                                        while x < right_bound - winding.conductor_radius and i < turns:
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_center_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x - winding.conductor_radius,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y + winding.conductor_radius,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            i += 1
-                                            # Move x rightward for the next conductor in the raw.
-                                            x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # After completing a raw, move y upward for the next raw's start.
-                                        y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        x = left_bound + winding.conductor_radius  # Reset x to start the next raw from the left again.
-
-                                # 6. primarily moves horizontally rightward from the left to the right, and then vertically downward for the next raw.
-                                elif placing_strategy == ConductorPlacingStrategy.HorizontalRightward_VerticalDownward:
-                                    x = left_bound + winding.conductor_radius  # start from left for the horizontally rightward movement.
-                                    y = top_bound - winding.conductor_radius  # start from top for the downward movement.
-                                    i = 0  # Reset conductor count
-                                    # Continue placing conductors until the bottom boundary is reached or all turns are placed
-                                    while y > bot_bound + winding.conductor_radius and i < turns:
-                                        while x < right_bound - winding.conductor_radius and i < turns:
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_center_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x - winding.conductor_radius,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y + winding.conductor_radius,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            i += 1  # Increment the conductor count
-                                            # Move x rightward for the next conductor in the raw.
-                                            x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # After completing a row, move y downward for the next row's start.
-                                        y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        x = left_bound + winding.conductor_radius  # Reset x to start the next row from the left again.
-
-                                # 7. primarily moves horizontally leftward from the right to the left, and then vertically upward for the next raw.
-                                elif placing_strategy == ConductorPlacingStrategy.HorizontalLeftward_VerticalUpward:
-                                    x = right_bound - winding.conductor_radius  # start from right for the horizontally leftward movement.
-                                    y = bot_bound + winding.conductor_radius  # start from bottom for the upward movement.
-                                    i = 0  # Reset conductor count
-                                    # Continue placing conductors until the top boundary is reached or all turns are placed
-                                    while y < top_bound - winding.conductor_radius and i < turns:
-                                        while x > left_bound + winding.conductor_radius and i < turns:
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_center_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x - winding.conductor_radius,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y + winding.conductor_radius,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            i += 1  # Increment the conductor count
-                                            # Move x leftward for the next conductor in the raw.
-                                            x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # After completing a row, move upward for the next row's start.
-                                        y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        x = right_bound - winding.conductor_radius  # Reset x to start the next row from the right again.
-
-                                # 8. primarily moves horizontally leftward from the right to the left, and then vertically downward for the next raw.
-                                elif placing_strategy == ConductorPlacingStrategy.HorizontalLeftward_VerticalDownward:
-                                    x = right_bound - winding.conductor_radius  # start from right for the horizontally leftward movement.
-                                    y = top_bound - winding.conductor_radius  # start from top for the downward movement.
-                                    i = 0  # Reset conductor count
-                                    # Continue placing conductors until the bottom boundary is reached or all turns are placed
-                                    while y > bot_bound + winding.conductor_radius and i < turns:
-                                        while x > left_bound + winding.conductor_radius and i < turns:
-                                            # Append conductor position and geometry details for the current conductor
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_center_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x - winding.conductor_radius,
-                                                y,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x,
-                                                y + winding.conductor_radius,
-                                                0,
-                                                self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                            self.p_conductor[num].append([
-                                                x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                            i += 1  # Increment the conductor count
-                                            # Move x leftward for the next conductor in the raw.
-                                            x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # After completing a row, move y downward for the next row's start.
-                                        y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        x = right_bound - winding.conductor_radius  # Reset x to start the next row from the right again.
-
-                                # 8 cases for placing conductors in vww with Zig-Zag movement.
+                                rightward_movement = placing_strategy in [
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward,
+                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward,
+                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward,
+                                    ConductorPlacingStrategy.HorizontalRightward_VerticalDownward,
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag,
+                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward_ZigZag,
+                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward_ZigZag,
+                                    ConductorPlacingStrategy.HorizontalRightward_VerticalDownward_ZigZag]
                                 # the term "Zig-Zag movement" refers to a specific pattern of placing conductors in a way that alternates direction
                                 # with each step to form a Zig-Zag pattern.
-                                # 1. Start at the bottom, move up, then right for each new column, alternating start points between bottom and top.
-                                elif placing_strategy == ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag:
-                                    x = left_bound + winding.conductor_radius  # start from left for the horizontally rightward movement.
-                                    moving_up = True  # Initialize direction for the first column
-                                    i = 0  # Counter for turns placed
-                                    while x < right_bound - winding.conductor_radius and i < turns:
-                                        if moving_up:
-                                            # Start from the bottom for upward movement
-                                            y = bot_bound + winding.conductor_radius
-                                            while y < top_bound - winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x, y, 0, self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move y downward for the next conductor in the column.
-                                                y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
+                                zigzag = placing_strategy in [
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag,
+                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward_ZigZag,
+                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward_ZigZag,
+                                    ConductorPlacingStrategy.VerticalDownward_HorizontalLeftward_ZigZag,
+                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward_ZigZag,
+                                    ConductorPlacingStrategy.HorizontalRightward_VerticalDownward_ZigZag,
+                                    ConductorPlacingStrategy.HorizontalLeftward_VerticalUpward_ZigZag,
+                                    ConductorPlacingStrategy.HorizontalLeftward_VerticalDownward_ZigZag]
+
+                                # Set the starting position and step size based on initial conditions
+                                # Determine if the first movement is vertically (upward or downward)
+                                if vertical_first:
+                                    if upward_movement:
+                                        start_y = bot_bound + winding.conductor_radius  # Start from the bottom
+                                        step_y = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                    else:
+                                        start_y = top_bound - winding.conductor_radius  # Start from the top
+                                        step_y = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+
+                                    if rightward_movement:
+                                        start_x = left_bound + winding.conductor_radius  # Moving right after completing a column
+                                        step_x = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                    else:
+                                        start_x = right_bound - winding.conductor_radius  # Moving left after completing a column
+                                        step_x = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                # Determine if the first movement is horizontally (rightward or leftward)
+                                else:
+                                    if rightward_movement:
+                                        start_x = left_bound + winding.conductor_radius  # start from the left
+                                        step_x = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                    else:
+                                        start_x = right_bound - winding.conductor_radius  # Start from the right
+                                        step_x = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+
+                                    if upward_movement:
+                                        start_y = bot_bound + winding.conductor_radius  # Moving top after completing a raw
+                                        step_y = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                    else:
+                                        start_y = top_bound - winding.conductor_radius  # Moving bottom after completing a raw
+                                        step_y = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+
+                                # Loop and place conductors accordingly
+                                x = start_x
+                                y = start_y
+                                i = 0
+                                # Vertically movement
+                                if vertical_first:
+                                    count = 0
+                                    while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
+                                        while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
+                                            self.p_conductor[num].append(
+                                                [x, y, 0, self.mesh_data.c_center_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
+                                            y += step_y
+                                            i += 1
+                                        if not zigzag:
+                                            # Start the next column with the same starting point (consistent direction)
+                                            y = start_y
                                         else:
-                                            # Start from the top for downward movement
-                                            y = top_bound - winding.conductor_radius
-                                            while y > bot_bound + winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x, y, 0, self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move y upward for the next conductor in the column.
-                                                y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        # After completing a column, move x rightward for the next column's start.
-                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # Toggle the direction for the next column
-                                        moving_up = not moving_up
-
-                                # 2. Start at the bottom, move up, then left for each new column, alternating start points between bottom and top.
-                                elif placing_strategy == ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward_ZigZag:
-                                    x = right_bound - winding.conductor_radius  # start from right for the horizontally leftward movement.
-                                    moving_up = True  # Initialize direction for the first column
-                                    i = 0  # Counter for turns placed
-
-                                    while x > left_bound + winding.conductor_radius and i < turns:
-                                        if moving_up:
-                                            # Start from the bottom for upward movement
-                                            y = bot_bound + winding.conductor_radius
-                                            while y < top_bound - winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x, y, 0, self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move y upward for the next conductor in the column.
-                                                y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
+                                            # Alternating between top and bottom for the Zigzag movement
+                                            count += 1
+                                            step_y *= -1
+                                            if upward_movement:
+                                                y = bot_bound + winding.conductor_radius if count % 2 == 0 else top_bound - winding.conductor_radius
+                                            else:
+                                                y = top_bound - winding.conductor_radius if count % 2 == 0 else bot_bound + winding.conductor_radius
+                                        # Moving one step horizontally (right or left)
+                                        x += step_x
+                                # Horizontally movement
+                                else:
+                                    count = 0
+                                    while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
+                                        while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
+                                            self.p_conductor[num].append(
+                                                [x, y, 0, self.mesh_data.c_center_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
+                                            x += step_x
+                                            i += 1
+                                        if not zigzag:
+                                            # Start the next raw with the same starting point (consistent direction)
+                                            x = start_x
                                         else:
-                                            # Start from the top for downward movement
-                                            y = top_bound - winding.conductor_radius
-                                            while y > bot_bound + winding.conductor_radius and i < turns:
-                                                # Append conductor details directly
-                                                self.p_conductor[num].append([
-                                                    x, y, 0, self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move y downward for the next conductor in the column.
-                                                y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        # After completing a column, move x leftward for the next column's start.
-                                        x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # Toggle the direction for the next column
-                                        moving_up = not moving_up
-
-                                # 3. Start at the top, move down, then right for each new column, alternating start points between top and bottom.
-                                elif placing_strategy == ConductorPlacingStrategy.VerticalDownward_HorizontalRightward_ZigZag:
-                                    x = left_bound + winding.conductor_radius  # start from left for the horizontally rightward movement.
-                                    moving_down = True  # Initialize direction for the first column
-                                    i = 0  # Counter for turns placed
-
-                                    while x < right_bound - winding.conductor_radius and i < turns:
-                                        if moving_down:
-                                            # Start from the top for downward movement
-                                            y = top_bound - winding.conductor_radius
-                                            while y > bot_bound + winding.conductor_radius and i < turns:
-                                                # Append conductor details directly
-                                                self.p_conductor[num].append([
-                                                    x, y, 0, self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move y downward for the next conductor in the column.
-                                                y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        else:
-                                            # Start from the bottom for upward movement
-                                            y = bot_bound + winding.conductor_radius
-                                            while y < top_bound - winding.conductor_radius and i < turns:
-                                                # Append conductor details directly
-                                                self.p_conductor[num].append([
-                                                    x, y, 0, self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move y upward for the next conductor in the column.
-                                                y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        # After completing a column, move x rightward for the next column's start.
-                                        x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # Toggle the direction for the next column
-                                        moving_down = not moving_down
-
-                                # 4. Start at the top, move down, then left for each new column, alternating start points between top and bottom.
-                                elif placing_strategy == ConductorPlacingStrategy.VerticalDownward_HorizontalLeftward_ZigZag:
-                                    x = right_bound - winding.conductor_radius  # start from right for the horizontally leftward movement.
-                                    moving_down = True  # Initialize direction for the first column
-                                    i = 0  # Counter for turns placed
-
-                                    while x > left_bound + winding.conductor_radius and i < turns:
-                                        if moving_down:
-                                            # Start from the top for downward movement
-                                            y = top_bound - winding.conductor_radius
-                                            while y > bot_bound + winding.conductor_radius and i < turns:
-                                                # Append conductor details directly
-                                                self.p_conductor[num].append([
-                                                    x, y, 0, self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move y downward for the next conductor in the column.
-                                                y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        else:
-                                            # Start from the bottom for upward movement in the Zig-Zag.
-                                            y = bot_bound + winding.conductor_radius
-                                            while y < top_bound - winding.conductor_radius and i < turns:
-                                                # Append conductor details directly
-                                                self.p_conductor[num].append([
-                                                    x, y, 0, self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move y upward for the next conductor in the column.
-                                                y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        # After completing a column, move x leftward for the next column's start.
-                                        x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # Toggle the direction for the next column
-                                        moving_down = not moving_down
-
-                                # 5. Start at the left, move right, then top for each new raw, alternating start points between left and right.
-                                elif placing_strategy == ConductorPlacingStrategy.HorizontalRightward_VerticalUpward_ZigZag:
-                                    y = bot_bound + winding.conductor_radius  # start from bot for the upward movement.
-                                    moving_right = True  # Initialize direction for the first row.
-                                    i = 0  # Counter for turns placed
-
-                                    while y < top_bound - winding.conductor_radius and i < turns:
-                                        if moving_right:
-                                            # start from the left for rightward movement.
-                                            x = left_bound + winding.conductor_radius
-                                            while x < right_bound - winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y + winding.conductor_radius,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move x rightward for the next conductor in the raw.
-                                                x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        else:
-                                            # start from the right for the leftward movement.
-                                            x = right_bound - winding.conductor_radius
-                                            while x > left_bound + winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y + winding.conductor_radius,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move x leftward for the next conductor in the raw.
-                                                x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1  # Increment the conductor count
-                                        # After completing a raw, move y upward for the next raw's start.
-                                        y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # Toggle the direction for the next row
-                                        moving_right = not moving_right
-
-                                # 6. Start at the left, move right, then bottom for each new raw, alternating start points between left and right.
-                                elif placing_strategy == ConductorPlacingStrategy.HorizontalRightward_VerticalDownward_ZigZag:
-                                    y = top_bound - winding.conductor_radius  # start from top for the downward movement.
-                                    moving_right = True  # Initialize direction for the first row
-                                    i = 0  # Counter for turns placed
-
-                                    while y > bot_bound + winding.conductor_radius and i < turns:
-                                        if moving_right:
-                                            # start from the left for rightward movement.
-                                            x = left_bound + winding.conductor_radius
-                                            while x < right_bound - winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y + winding.conductor_radius,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move x rightward for the next conductor in the raw.
-                                                x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        else:
-                                            # start from the right for the leftward movement.
-                                            x = right_bound - winding.conductor_radius
-                                            while x > left_bound + winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y + winding.conductor_radius,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move x leftward for the next conductor in the raw.
-                                                x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1  # Increment the conductor count
-                                        # After completing a raw, move y downward for the next raw's start.
-                                        y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # Toggle the direction for the next row
-                                        moving_right = not moving_right
-
-                                # 7. Start at the right, move left, then top for each new raw, alternating start points between left and right.
-                                elif placing_strategy == ConductorPlacingStrategy.HorizontalLeftward_VerticalUpward_ZigZag:
-                                    y = bot_bound + winding.conductor_radius  # start from bot for the upward movement.
-                                    moving_left = True  # Initialize direction for the first row.
-                                    i = 0  # Counter for turns placed
-                                    while y < top_bound - winding.conductor_radius and i < turns:
-                                        if moving_left:
-                                            # start from the right for leftward movement
-                                            x = right_bound - winding.conductor_radius
-                                            while x > left_bound + winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y + winding.conductor_radius,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move x leftward for the next conductor in the raw.
-                                                x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        else:
-                                            # start from the left for the rightward movement
-                                            x = left_bound + winding.conductor_radius
-                                            while x < right_bound - winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y + winding.conductor_radius,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move x rightward for the next conductor in the raw.
-                                                x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1  # Increment the conductor count
-                                        # After completing a raw, move y upward for the next raw's start.
-                                        y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # Toggle the direction for the next row
-                                        moving_left = not moving_left
-
-                                # 8. Start at the right, move left, then bottom for each new raw, alternating start points between left and right.
-                                elif placing_strategy == ConductorPlacingStrategy.HorizontalLeftward_VerticalDownward_ZigZag:
-                                    y = top_bound - winding.conductor_radius  # start from top for the downward movement.
-                                    moving_left = True  # Initialize direction for the first row
-                                    i = 0  # Counter for turns placed
-                                    while y > bot_bound + winding.conductor_radius and i < turns:
-                                        if moving_left:
-                                            # start from the right for leftward movement
-                                            x = right_bound - winding.conductor_radius
-                                            while x > left_bound + winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y + winding.conductor_radius,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move x leftward for the next conductor in the raw.
-                                                x -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1
-                                        else:
-                                            # start from the left for the rightward movement
-                                            x = left_bound + winding.conductor_radius
-                                            while x < right_bound - winding.conductor_radius and i < turns:
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_center_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x - winding.conductor_radius,
-                                                    y,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x,
-                                                    y + winding.conductor_radius,
-                                                    0,
-                                                    self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                                self.p_conductor[num].append([
-                                                    x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                                # Move x rightward for the next conductor in the raw.
-                                                x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                                i += 1  # Increment the conductor count
-                                        # After completing a raw, move y downward for the next raw's start.
-                                        y -= winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
-                                        # Toggle the direction for the next row
-                                        moving_left = not moving_left
+                                            # Alternating between right and left for the Zigzag movement
+                                            count += 1
+                                            step_x *= -1
+                                            if rightward_movement:
+                                                x = left_bound + winding.conductor_radius if count % 2 == 0 else right_bound - winding.conductor_radius
+                                            else:
+                                                x = right_bound - winding.conductor_radius if count % 2 == 0 else left_bound + winding.conductor_radius
+                                        # Moving one step vertically (top or bottom)
+                                        y += step_y
 
                             elif conductor_arrangement == ConductorArrangement.Hexagonal:
                                 y = bot_bound + winding.conductor_radius
