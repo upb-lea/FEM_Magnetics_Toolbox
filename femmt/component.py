@@ -3007,7 +3007,7 @@ class MagneticComponent:
 
     def create_empty_material_dict(self):
         """
-        Create an empty json file, where the mTerial dictionary is stored in.
+        Create an empty json file, where the material dictionary is stored in.
 
         :return:
         """
@@ -3025,7 +3025,6 @@ class MagneticComponent:
         with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
             for no_line, line in enumerate(file):
                 if no_line == 2:
-                    # magnetic_flux_density = ast.literal_eval(line[6:-2])
                     magnetic_flux_density = list(ast.literal_eval(line[6:-2]))
                 if no_line == 3:
                     permeability_real = list(ast.literal_eval(line[12:-2]))
