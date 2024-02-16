@@ -1359,6 +1359,8 @@ class MagneticComponent:
         :type benchmark: bool
 
         """
+        self.create_empty_material__dict()
+
         if benchmark:
             start_time = time.time()
             self.mesh.generate_electro_magnetic_mesh()
