@@ -1525,8 +1525,8 @@ class MagneticComponent:
                 self.simulate()
                 # self.visualize()
         self.write_and_calculate_common_log(inductance_dict=inductance_dict)
-        self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), currents=current_list_list,
-                                                 frequencies=frequency_list,
+        self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), current_amplitude_list=current_list_list,
+                                                 frequencies=frequency_list, phase_deg_list=phi_deg_list_list,
                                                  core_hyst_losses=core_hyst_loss)
 
         if show_last_fem_simulation:
@@ -2401,8 +2401,8 @@ class MagneticComponent:
 
         text_file.close()
 
-    def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, currents: List = None,
-                                            frequencies: List = None,
+    def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, current_amplitude_list: List = None,
+                                            phase_deg_list: List = None, frequencies: List = None,
                                             core_hyst_losses: List[float] = None):
         """
         Read back the results from the .dat result files created by the ONELAB simulation client.
@@ -2424,8 +2424,10 @@ class MagneticComponent:
         :param number_frequency_simulations: Number of sweep iterations that were done before. For a single simulation
             sweep_number = 1
         :type number_frequency_simulations: int
-        :param currents: Current values of the sweep iterations. Not needed for single simulation
-        :type currents: list
+        :param current_amplitude_list: Current values of the sweep iterations. Not needed for single simulation
+        :type current_amplitude_list: list
+        :param phase_deg_list: Phase in degree list for frequency sweeps. Not needed for single simulation
+        :type phase_deg_list: list
         :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
         :type frequencies: list
         :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given,
@@ -2471,8 +2473,13 @@ class MagneticComponent:
 
                 # Currents
                 if number_frequency_simulations > 1:
-                    # sweep_simulation -> get currents from passed currents
-                    complex_current_phasor = currents[single_simulation][winding_number]
+                    # sweep_simulation -> get currents from passed currents. Complex current needs to be created from amplitude and phase
+                    complex_current_phasor = complex(
+                        current_amplitude_list[single_simulation][winding_number] * np.cos(np.deg2rad(phase_deg_list[single_simulation][winding_number])),
+                        current_amplitude_list[single_simulation][winding_number] * np.sin(np.deg2rad(phase_deg_list[single_simulation][winding_number])))
+
+
+                    # complex_current_phasor = current_amplitude_list[single_simulation][winding_number]
                 else:
                     # single_simulation -> get current from instance variable
                     complex_current_phasor = self.current[winding_number]
