@@ -2478,7 +2478,6 @@ class MagneticComponent:
                         current_amplitude_list[single_simulation][winding_number] * np.cos(np.deg2rad(phase_deg_list[single_simulation][winding_number])),
                         current_amplitude_list[single_simulation][winding_number] * np.sin(np.deg2rad(phase_deg_list[single_simulation][winding_number])))
 
-
                     # complex_current_phasor = current_amplitude_list[single_simulation][winding_number]
                 else:
                     # single_simulation -> get current from instance variable
