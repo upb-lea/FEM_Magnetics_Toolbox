@@ -185,8 +185,17 @@ class ConductorArrangement(IntEnum):
     turns of the previous line. First drawn in y-direction then x-direction.
     """
 
-class ConductorPlacingStrategy(IntEnum):
-    """Defines strategies for placing conductors in the virtual winding window."""
+class CenteredConductorDistribution(IntEnum):
+    """Specifies the distribution direction for conductors when starting from the center. This can be done for having single windings in vww """
+
+    Horizontal = 1
+    """Distribute conductors outward from the center, horizontally."""
+    Vertical = 2
+    """Distribute conductors outward from the center, vertically."""
+
+
+class PeripheralConductorDistribution(IntEnum):
+    """Defines specific strategies for placing conductors starting from the peripheral (edges) of the virtual winding window."""
 
     VerticalUpward_HorizontalRightward = 1
     """Places conductors vertically upwards first, then moves horizontally rightward for the next set with consistent direction."""

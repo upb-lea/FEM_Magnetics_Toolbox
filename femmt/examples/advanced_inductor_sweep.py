@@ -74,7 +74,7 @@ def advanced_example_inductor_sweep(onelab_folder: str = None, show_visual_outpu
     #                                  fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 1, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+    vww.set_winding(winding, 1, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
     geo.set_winding_windows([winding_window])
 
     # 8. create the model

@@ -147,7 +147,7 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
         winding.set_solid_round_conductor(conductor_radius=0.0013,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
-        vww.set_winding(winding, 9, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        vww.set_winding(winding, 9, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
@@ -265,7 +265,7 @@ def femmt_simulation_inductor_core_material_database_measurement(temp_folder):
         winding.set_solid_round_conductor(conductor_radius=0.0013,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
-        vww.set_winding(winding, 9, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        vww.set_winding(winding, 9, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
@@ -379,7 +379,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
         winding.set_solid_round_conductor(conductor_radius=0.0013,
                                           conductor_arrangement=fmt.ConductorArrangement.Square)
 
-        vww.set_winding(winding, 9, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        vww.set_winding(winding, 9, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
@@ -490,7 +490,7 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
         winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
         winding.set_litz_round_conductor(None, 100, 70e-6, 0.5, fmt.ConductorArrangement.Square)
 
-        vww.set_winding(winding, 9, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        vww.set_winding(winding, 9, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)
@@ -843,8 +843,8 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
         winding2.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
-        left.set_winding(winding1, 10, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
-        right.set_winding(winding2, 10, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        left.set_winding(winding1, 10, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        right.set_winding(winding2, 10, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases
@@ -1378,11 +1378,11 @@ def femmt_simulation_transformer_5_windings(temp_folder):
         winding5.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
         # 7. assign windings to virtual winding windows (cells)
-        cells[0].set_winding(winding1, 22, fmt.WindingType.Single, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
-        cells[1].set_winding(winding2, 6, fmt.WindingType.Single, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
-        cells[2].set_winding(winding3, 6, fmt.WindingType.Single, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
-        cells[3].set_winding(winding4, 1, fmt.WindingType.Single, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
-        cells[4].set_winding(winding5, 2, fmt.WindingType.Single, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        cells[0].set_winding(winding1, 22, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        cells[1].set_winding(winding2, 6, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        cells[2].set_winding(winding3, 6, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        cells[3].set_winding(winding4, 1, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        cells[4].set_winding(winding5, 2, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         # 8. perform an FEM simulation
@@ -1520,7 +1520,7 @@ def femmt_simulation_inductor_time_domain(temp_folder):
         winding.parallel = False
 
         # 7. add conductor to vww and add winding window to MagneticComponent
-        vww.set_winding(winding, 7, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        vww.set_winding(winding, 7, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         # 8. create the model
@@ -1603,8 +1603,8 @@ def femmt_simulation_transformer_time_domain(temp_folder):
         winding2.parallel = False
 
         # 7. add conductor to vww and add winding window to MagneticComponent
-        bot.set_winding(winding2, 10, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
-        top.set_winding(winding1, 10, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        bot.set_winding(winding2, 10, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        top.set_winding(winding1, 10, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         # 8. create the model
@@ -1692,9 +1692,9 @@ def femmt_simulation_transformer_3_windings_time_domain(temp_folder):
         winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
         # 7. add conductor to vww and add winding window to MagneticComponent
-        top_left.set_winding(winding1, 7, fmt.WindingType.Single, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
-        top_right.set_winding(winding2, 8, fmt.WindingType.Single, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
-        bot_right.set_winding(winding3, 9, fmt.WindingType.Single, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+        top_left.set_winding(winding1, 7, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        top_right.set_winding(winding2, 8, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        bot_right.set_winding(winding3, 9, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
         geo.set_winding_windows([winding_window])
 
         # 8. start simulation with given frequency, currents and phases

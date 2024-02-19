@@ -737,7 +737,7 @@ class VirtualWindingWindow:
         self.right_bound = right_bound
         self.winding_is_set = False
 
-    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, placing_strategy: Optional[ConductorPlacingStrategy] = None,
+    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, placing_strategy: Optional[PeripheralConductorDistribution] = None,
                     wrap_para_type: WrapParaType = None):
         """Set a single winding to the current virtual winding window. A single winding always contains one conductor.
 

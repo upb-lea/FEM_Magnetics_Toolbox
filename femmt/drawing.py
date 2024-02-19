@@ -850,45 +850,45 @@ class TwoDaxiSymmetric:
                                 # Define initial conditions based on the placement strategy.
                                 # 16 cases will be handled here, 8 cases with consistent direction, and 8 cases with Zigzag movement.
                                 vertical_first = placing_strategy in [
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward,
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward,
-                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward,
-                                    ConductorPlacingStrategy.VerticalDownward_HorizontalLeftward,
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag,
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward_ZigZag,
-                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward_ZigZag,
-                                    ConductorPlacingStrategy.VerticalDownward_HorizontalLeftward_ZigZag]
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward,
+                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward,
+                                    PeripheralConductorDistribution.VerticalDownward_HorizontalLeftward,
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward_ZigZag,
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward_ZigZag,
+                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward_ZigZag,
+                                    PeripheralConductorDistribution.VerticalDownward_HorizontalLeftward_ZigZag]
 
                                 upward_movement = placing_strategy in [
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward,
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward,
-                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward,
-                                    ConductorPlacingStrategy.HorizontalLeftward_VerticalUpward,
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag,
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward_ZigZag,
-                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward_ZigZag,
-                                    ConductorPlacingStrategy.HorizontalLeftward_VerticalUpward_ZigZag]
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward,
+                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward,
+                                    PeripheralConductorDistribution.HorizontalLeftward_VerticalUpward,
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward_ZigZag,
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward_ZigZag,
+                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward_ZigZag,
+                                    PeripheralConductorDistribution.HorizontalLeftward_VerticalUpward_ZigZag]
 
                                 rightward_movement = placing_strategy in [
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward,
-                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward,
-                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward,
-                                    ConductorPlacingStrategy.HorizontalRightward_VerticalDownward,
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag,
-                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward_ZigZag,
-                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward_ZigZag,
-                                    ConductorPlacingStrategy.HorizontalRightward_VerticalDownward_ZigZag]
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward,
+                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward,
+                                    PeripheralConductorDistribution.HorizontalRightward_VerticalDownward,
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward_ZigZag,
+                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward_ZigZag,
+                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward_ZigZag,
+                                    PeripheralConductorDistribution.HorizontalRightward_VerticalDownward_ZigZag]
                                 # the term "Zig-Zag movement" refers to a specific pattern of placing conductors in a way that alternates direction
                                 # with each step to form a Zig-Zag pattern.
                                 zigzag = placing_strategy in [
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalRightward_ZigZag,
-                                    ConductorPlacingStrategy.VerticalUpward_HorizontalLefttward_ZigZag,
-                                    ConductorPlacingStrategy.VerticalDownward_HorizontalRightward_ZigZag,
-                                    ConductorPlacingStrategy.VerticalDownward_HorizontalLeftward_ZigZag,
-                                    ConductorPlacingStrategy.HorizontalRightward_VerticalUpward_ZigZag,
-                                    ConductorPlacingStrategy.HorizontalRightward_VerticalDownward_ZigZag,
-                                    ConductorPlacingStrategy.HorizontalLeftward_VerticalUpward_ZigZag,
-                                    ConductorPlacingStrategy.HorizontalLeftward_VerticalDownward_ZigZag]
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward_ZigZag,
+                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward_ZigZag,
+                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward_ZigZag,
+                                    PeripheralConductorDistribution.VerticalDownward_HorizontalLeftward_ZigZag,
+                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward_ZigZag,
+                                    PeripheralConductorDistribution.HorizontalRightward_VerticalDownward_ZigZag,
+                                    PeripheralConductorDistribution.HorizontalLeftward_VerticalUpward_ZigZag,
+                                    PeripheralConductorDistribution.HorizontalLeftward_VerticalDownward_ZigZag]
 
                                 # Set the starting position and step size based on initial conditions
                                 # Determine if the first movement is vertically (upward or downward)
@@ -928,7 +928,6 @@ class TwoDaxiSymmetric:
                                 i = 0
                                 # Vertically movement
                                 if vertical_first:
-                                    count = 0
                                     while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
                                         while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
                                             self.p_conductor[num].append(
@@ -948,17 +947,12 @@ class TwoDaxiSymmetric:
                                             y = start_y
                                         else:
                                             # Alternating between top and bottom for the Zigzag movement
-                                            count += 1
                                             step_y *= -1
-                                            if upward_movement:
-                                                y = bot_bound + winding.conductor_radius if count % 2 == 0 else top_bound - winding.conductor_radius
-                                            else:
-                                                y = top_bound - winding.conductor_radius if count % 2 == 0 else bot_bound + winding.conductor_radius
+                                            y += step_y
                                         # Moving one step horizontally (right or left)
                                         x += step_x
                                 # Horizontally movement
                                 else:
-                                    count = 0
                                     while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
                                         while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
                                             self.p_conductor[num].append(
@@ -978,12 +972,8 @@ class TwoDaxiSymmetric:
                                             x = start_x
                                         else:
                                             # Alternating between right and left for the Zigzag movement
-                                            count += 1
                                             step_x *= -1
-                                            if rightward_movement:
-                                                x = left_bound + winding.conductor_radius if count % 2 == 0 else right_bound - winding.conductor_radius
-                                            else:
-                                                x = right_bound - winding.conductor_radius if count % 2 == 0 else left_bound + winding.conductor_radius
+                                            x += step_x
                                         # Moving one step vertically (top or bottom)
                                         y += step_y
 

@@ -122,7 +122,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 4. set insulations
     insulation = fmt.Insulation(flag_insulation=True)
-    insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+    insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
     insulation.add_winding_insulations([[0.0005]])
     geo.set_insulation(insulation)
 
@@ -138,7 +138,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 15, None, fmt.ConductorPlacingStrategy.VerticalUpward_HorizontalRightward)
+    vww.set_winding(winding, 14, None, fmt.PeripheralConductorDistribution.VerticalDownward_HorizontalRightward_ZigZag)
     geo.set_winding_windows([winding_window])
 
     # 8. create the model
