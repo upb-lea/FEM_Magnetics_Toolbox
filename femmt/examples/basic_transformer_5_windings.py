@@ -141,11 +141,11 @@ def basic_example_transformer_5_windings(onelab_folder: str = None, show_visual_
     winding5.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
 
     # 7. assign windings to virtual winding windows (cells)
-    cells[0].set_winding(winding1, 22, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
-    cells[1].set_winding(winding2, 6, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
-    cells[2].set_winding(winding3, 6, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
-    cells[3].set_winding(winding4, 1, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
-    cells[4].set_winding(winding5, 2, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+    cells[0].set_winding(winding1, 22, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
+    cells[1].set_winding(winding2, 6, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
+    cells[2].set_winding(winding3, 6, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
+    cells[3].set_winding(winding4, 1, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
+    cells[4].set_winding(winding5, 2, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
     geo.set_winding_windows([winding_window])
 
     # 8. perform an FEM simulation

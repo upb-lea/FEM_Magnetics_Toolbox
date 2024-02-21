@@ -714,8 +714,9 @@ class TwoDaxiSymmetric:
                         # TODO:  find another solution for this (turns = ...) (is needed in mesh.py for air_stacked) see set_winding in model
                         conductor_type = winding.conductor_type
                         winding_scheme = virtual_winding_window.winding_scheme
+                        alignment = virtual_winding_window.alignment
                         placing_strategy = virtual_winding_window.placing_strategy
-
+                        zigzag = virtual_winding_window.zigzag
                         num = winding.winding_number
 
                         # Check if the coil is round or rectangular
@@ -850,48 +851,24 @@ class TwoDaxiSymmetric:
                                 # Define initial conditions based on the placement strategy.
                                 # 16 cases will be handled here, 8 cases with consistent direction, and 8 cases with Zigzag movement.
                                 vertical_first = placing_strategy in [
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward,
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward,
-                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward,
-                                    PeripheralConductorDistribution.VerticalDownward_HorizontalLeftward,
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward_ZigZag,
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward_ZigZag,
-                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward_ZigZag,
-                                    PeripheralConductorDistribution.VerticalDownward_HorizontalLeftward_ZigZag]
+                                    ConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    ConductorDistribution.VerticalUpward_HorizontalLefttward,
+                                    ConductorDistribution.VerticalDownward_HorizontalRightward,
+                                    ConductorDistribution.VerticalDownward_HorizontalLeftward]
 
                                 upward_movement = placing_strategy in [
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward,
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward,
-                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward,
-                                    PeripheralConductorDistribution.HorizontalLeftward_VerticalUpward,
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward_ZigZag,
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward_ZigZag,
-                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward_ZigZag,
-                                    PeripheralConductorDistribution.HorizontalLeftward_VerticalUpward_ZigZag]
+                                    ConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    ConductorDistribution.VerticalUpward_HorizontalLefttward,
+                                    ConductorDistribution.HorizontalRightward_VerticalUpward,
+                                    ConductorDistribution.HorizontalLeftward_VerticalUpward]
 
                                 rightward_movement = placing_strategy in [
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward,
-                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward,
-                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward,
-                                    PeripheralConductorDistribution.HorizontalRightward_VerticalDownward,
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward_ZigZag,
-                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward_ZigZag,
-                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward_ZigZag,
-                                    PeripheralConductorDistribution.HorizontalRightward_VerticalDownward_ZigZag]
-                                # the term "Zig-Zag movement" refers to a specific pattern of placing conductors in a way that alternates direction
-                                # with each step to form a Zig-Zag pattern.
-                                zigzag = placing_strategy in [
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalRightward_ZigZag,
-                                    PeripheralConductorDistribution.VerticalUpward_HorizontalLefttward_ZigZag,
-                                    PeripheralConductorDistribution.VerticalDownward_HorizontalRightward_ZigZag,
-                                    PeripheralConductorDistribution.VerticalDownward_HorizontalLeftward_ZigZag,
-                                    PeripheralConductorDistribution.HorizontalRightward_VerticalUpward_ZigZag,
-                                    PeripheralConductorDistribution.HorizontalRightward_VerticalDownward_ZigZag,
-                                    PeripheralConductorDistribution.HorizontalLeftward_VerticalUpward_ZigZag,
-                                    PeripheralConductorDistribution.HorizontalLeftward_VerticalDownward_ZigZag]
+                                    ConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    ConductorDistribution.VerticalDownward_HorizontalRightward,
+                                    ConductorDistribution.HorizontalRightward_VerticalUpward,
+                                    ConductorDistribution.HorizontalRightward_VerticalDownward]
 
                                 # Set the starting position and step size based on initial conditions
-                                # Determine if the first movement is vertically (upward or downward)
                                 if vertical_first:
                                     if upward_movement:
                                         start_y = bot_bound + winding.conductor_radius  # Start from the bottom
@@ -976,6 +953,45 @@ class TwoDaxiSymmetric:
                                             x += step_x
                                         # Moving one step vertically (top or bottom)
                                         y += step_y
+
+                                # Align to edges
+                                if alignment == Align.ToEdges:
+                                    # No adjustment of x or y
+                                    pass
+
+                                # Center the turns on horizontal axis
+                                elif alignment == Align.CenterOnHorizontalAxis:
+                                    # Calculate vertical bounds of the occupied space by turns to adjust y
+                                    min_y = min(point[1] for point in self.p_conductor[num])  # Find the lowest y position among all turns
+                                    max_y = max(point[1] for point in self.p_conductor[num])  # Find the highest y position among all turns
+                                    # The height of the space occupied by the turns is the difference between the highest and lowest y positions
+                                    occupied_height = max_y - min_y
+                                    # Calculate the vertical midpoint of the occupied space
+                                    occupied_midpoint_y = min_y + occupied_height / 2
+                                    # Calculate the midpoint of the winding window's vertical bounds as it is rectangle
+                                    window_midpoint_y = (bot_bound + top_bound) / 2
+                                    # Determine the adjustment needed for vertical centering
+                                    adjustment_y = window_midpoint_y - occupied_midpoint_y
+                                    # Apply the adjustment of y position to all points
+                                    for i, _ in enumerate(self.p_conductor[num]):
+                                        self.p_conductor[num][i][1] += adjustment_y
+
+                                # Center the turns on vertical axis
+                                elif alignment == Align.CenterOnVerticalAxis:
+                                    # Calculate horizontal bounds of the occupied space by turns to adjust x
+                                    min_x = min(point[0] for point in self.p_conductor[num])  # Find the leftmost x position among all turns
+                                    max_x = max(point[0] for point in self.p_conductor[num])  # Find the rightmost x position among all turns
+                                    # The width of the space occupied by the turns is the difference between the rightmost and leftmost x positions
+                                    occupied_width = max_x - min_x
+                                    # Calculate the horizontal midpoint of the occupied space
+                                    occupied_midpoint_x = min_x + (occupied_width / 2)
+                                    # Calculate the midpoint of the winding window's horizontal bounds
+                                    window_midpoint_x = (left_bound + right_bound) / 2
+                                    # Determine the adjustment needed for horizontal centering
+                                    adjustment_x = window_midpoint_x - occupied_midpoint_x
+                                    # Apply the adjustment of x positions to all points
+                                    for i, _ in enumerate(self.p_conductor[num]):
+                                        self.p_conductor[num][i][0] += adjustment_x
 
                             elif conductor_arrangement == ConductorArrangement.Hexagonal:
                                 y = bot_bound + winding.conductor_radius

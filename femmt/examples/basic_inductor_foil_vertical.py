@@ -119,7 +119,7 @@ def basic_example_inductor_foil_vertical(onelab_folder: str = None, show_visual_
     winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
     winding.set_rectangular_conductor(thickness=1e-3)
 
-    vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, None, wrap_para_type)
+    vww.set_winding(winding, 5, fmt.WindingScheme.FoilVertical, wrap_para_type=wrap_para_type)
     geo.set_winding_windows([winding_window])
 
     geo.create_model(freq=100000, pre_visualize_geometry=show_visual_outputs, save_png=False)

@@ -124,9 +124,9 @@ def basic_example_transformer_three_winding(onelab_folder: Optional[str] = None,
     winding3.set_solid_round_conductor(0.0011, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    top_left.set_winding(winding1, 8, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
-    top_right.set_winding(winding2, 6, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
-    bot_right.set_winding(winding3, 12, fmt.WindingType.Single, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+    top_left.set_winding(winding1, 8, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    top_right.set_winding(winding2, 6, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    bot_right.set_winding(winding3, 12, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
 
     geo.set_winding_windows([winding_window])
 

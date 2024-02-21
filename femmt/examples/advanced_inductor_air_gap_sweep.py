@@ -63,7 +63,7 @@ def basic_example_sweep(onelab_folder: Optional[str] = None, show_visual_outputs
         conductor = fmt.Conductor(0, fmt.Conductivity.Copper)
         conductor.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6, 
                                            fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
-        complete.set_winding(conductor, 9, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+        complete.set_winding(conductor, 9, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
         geo.set_winding_windows([winding_window])
 
         geo.create_model(freq=100000, pre_visualize_geometry=False, save_png=False)

@@ -71,8 +71,8 @@ def basic_example_transformer_time_domain(onelab_folder: str = None, show_visual
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding2, 10, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
-    top.set_winding(winding1, 10, None, fmt.PeripheralConductorDistribution.VerticalUpward_HorizontalRightward)
+    bot.set_winding(winding2, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    top.set_winding(winding1, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
     geo.set_winding_windows([winding_window])
 
     # t = np.linspace(0, 2, 30) * 1/inductor_frequency
