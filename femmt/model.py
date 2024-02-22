@@ -628,8 +628,8 @@ class Insulation:
 
         Insulation between virtual winding windows is not always needed.
         :param inner_winding_insulation: List of floats which represent the insulations between turns of the same winding. This does not correspond to
-            the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
-            The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
+        the order conductors are added to the winding! Instead, the winding number is important. The conductors are sorted by ascending winding number.
+        The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
         :type inner_winding_insulation: List[List[float]]
         """
         if inner_winding_insulation is [[]]:

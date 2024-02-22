@@ -15,6 +15,7 @@ import time
 import logging
 import dataclasses
 from matplotlib import pyplot as plt
+import ast
 
 
 # Third party libraries
@@ -1180,6 +1181,7 @@ class MagneticComponent:
         self.femmt_print("\n---\n"
                          "Initialize ONELAB API\n"
                          "Run Simulation\n")
+        self.log_material_properties()
 
         # -- Simulation --
         # create a new onelab client
@@ -1302,6 +1304,7 @@ class MagneticComponent:
             start_time = time.time()
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
+            self.create_empty_material_dict()
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
@@ -1323,6 +1326,7 @@ class MagneticComponent:
             self.mesh.generate_electro_magnetic_mesh()
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
+            self.create_empty_material_dict()
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
@@ -1355,6 +1359,8 @@ class MagneticComponent:
         :type benchmark: bool
 
         """
+        self.create_empty_material_dict()
+
         if benchmark:
             start_time = time.time()
             self.mesh.generate_electro_magnetic_mesh()
@@ -1491,6 +1497,7 @@ class MagneticComponent:
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
                 if count_frequency == 0:
                     self.check_model_mqs_condition()
+                    self.create_empty_material_dict()
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -1518,8 +1525,8 @@ class MagneticComponent:
                 self.simulate()
                 # self.visualize()
         self.write_and_calculate_common_log(inductance_dict=inductance_dict)
-        self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), currents=current_list_list,
-                                                 frequencies=frequency_list,
+        self.calculate_and_write_freq_domain_log(number_frequency_simulations=len(frequency_list), current_amplitude_list=current_list_list,
+                                                 frequencies=frequency_list, phase_deg_list=phi_deg_list_list,
                                                  core_hyst_losses=core_hyst_loss)
 
         if show_last_fem_simulation:
@@ -2394,8 +2401,8 @@ class MagneticComponent:
 
         text_file.close()
 
-    def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, currents: List = None,
-                                            frequencies: List = None,
+    def calculate_and_write_freq_domain_log(self, number_frequency_simulations: int = 1, current_amplitude_list: List = None,
+                                            phase_deg_list: List = None, frequencies: List = None,
                                             core_hyst_losses: List[float] = None):
         """
         Read back the results from the .dat result files created by the ONELAB simulation client.
@@ -2417,8 +2424,10 @@ class MagneticComponent:
         :param number_frequency_simulations: Number of sweep iterations that were done before. For a single simulation
             sweep_number = 1
         :type number_frequency_simulations: int
-        :param currents: Current values of the sweep iterations. Not needed for single simulation
-        :type currents: list
+        :param current_amplitude_list: Current values of the sweep iterations. Not needed for single simulation
+        :type current_amplitude_list: list
+        :param phase_deg_list: Phase in degree list for frequency sweeps. Not needed for single simulation
+        :type phase_deg_list: list
         :param frequencies: frequencies values of the sweep iterations. Not needed for single simulation
         :type frequencies: list
         :param core_hyst_losses: Optional core hysteresis losses value from another simulation. If a value is given,
@@ -2464,8 +2473,12 @@ class MagneticComponent:
 
                 # Currents
                 if number_frequency_simulations > 1:
-                    # sweep_simulation -> get currents from passed currents
-                    complex_current_phasor = currents[single_simulation][winding_number]
+                    # sweep_simulation -> get currents from passed currents. Complex current needs to be created from amplitude and phase
+                    complex_current_phasor = complex(
+                        current_amplitude_list[single_simulation][winding_number] * np.cos(np.deg2rad(phase_deg_list[single_simulation][winding_number])),
+                        current_amplitude_list[single_simulation][winding_number] * np.sin(np.deg2rad(phase_deg_list[single_simulation][winding_number])))
+
+                    # complex_current_phasor = current_amplitude_list[single_simulation][winding_number]
                 else:
                     # single_simulation -> get current from instance variable
                     complex_current_phasor = self.current[winding_number]
@@ -2997,6 +3010,48 @@ class MagneticComponent:
         # ====== save data as JSON ======
         with open(self.file_data.coordinates_description_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(coordinates_dict, outfile, indent=2, ensure_ascii=False)
+
+    def create_empty_material_dict(self):
+        """
+        Create an empty json file, where the material dictionary is stored in.
+
+        :return:
+        """
+        material_dict = {}
+        with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
+
+    def log_material_properties(self):
+        """
+        Log material properties.
+
+        :return:
+        """
+        # read permeability data from core_materials_temp.pro file
+        with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
+            for no_line, line in enumerate(file):
+                if no_line == 2:
+                    magnetic_flux_density = list(ast.literal_eval(line[6:-2]))
+                if no_line == 3:
+                    permeability_real = list(ast.literal_eval(line[12:-2]))
+                if no_line == 4:
+                    permeability_imag = list(ast.literal_eval(line[12:-2]))
+
+        with open(self.file_data.material_log_path, "r") as fd:
+            material_dict = json.loads(fd.read())
+
+        # Frequency/Temperature in operation point
+        material_dict[f"T_{self.core.temperature}__f_{self.frequency}"] = {
+            "sigma_core_real": self.core.sigma.real,
+            "sigma_core_imag": self.core.sigma.imag,
+            "magnetic_flux_denisty": magnetic_flux_density,
+            "permeability_real": permeability_real,
+            "permeability_imag": permeability_imag
+        }
+
+        # ====== save data as JSON ======
+        with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
+            json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
 
     def read_thermal_log(self) -> Dict:
         """

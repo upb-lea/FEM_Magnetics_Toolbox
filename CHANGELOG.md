@@ -6,11 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+## [0.5.1] - 2024-02-06
+### Fixed
+- Fix documentation issues
+- Fix material database dependency issues
+
+## [0.5.0] - 2024-02-06
 ### Added
-- unit tests for materialdatabase
+- various integration tests, unit tests for materialdatabase
 - three winding transformer
 - center-tapped transformer drawing schemes
+- stacked transformer
 - parallel connection of solid turns
+
+### Changed
+- API has lots of changes. Check out the examples and the documentation.
 
 ### Updated
 - materialdatabase: material loading and interpolation of operation point
@@ -118,7 +129,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/SolidComp.py
 - add femmt/CompRes.py
 
-[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.4.0...HEAD
+[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.5.1...HEAD
+[0.5.1]: https://github.com/upb-lea/transistordatabase/compare/0.5.1...0.5.0
+[0.5.0]: https://github.com/upb-lea/transistordatabase/compare/0.5.0...0.4.0
 [0.4.0]: https://github.com/upb-lea/transistordatabase/compare/0.4.0...0.3.0
 [0.3.0]: https://github.com/upb-lea/transistordatabase/compare/0.3.0...0.2.1
 [0.2.1]: https://github.com/upb-lea/transistordatabase/compare/0.2.0...0.2.1
