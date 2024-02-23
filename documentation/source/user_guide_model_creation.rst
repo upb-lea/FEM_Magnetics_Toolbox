@@ -364,11 +364,55 @@ the primary and secondary side.
 
 .. code:: python
 
-   vww.set_winding(conductor=winding1, turns=9, winding_scheme=None)
+   vww.set_winding(winding, 14, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
 
-If you have a look at the winding types and windng schemes table a
+If you have a look at the winding types and winding schemes table a
 winding scheme is not needed when creating a round solid conductor in
 single winding. Therefore the value is set to None.
+
+In the configuration of single windings using round solid or litz wire conductors,
+the focus is on two main aspects: alignment and how the conductors are placed.
+
+Alignment
+^^^^^^^^^
+
+Alignment pertains to how the set of conductors is positioned within the winding window:
+
+- **Align.ToEdges**: Ensures the outermost conductors are close to the winding window's edges.
+
+- **Align.CenterOnHorizontalAxis**: Center the winding along the window's horizontal axis, for balanced distribution.
+
+- **Align.CenterOnVerticalAxis**: Center the winding along the window's vertical axis, for balanced distribution.
+
+Placement Strategies
+^^^^^^^^^^^^^^^^^^^^
+
+The strategy for placing conductors is named based on the initial direction and subsequent movement. Examples include:
+
+- **VerticalUpward_HorizontalRightward**: Placement starts at the bottom, moving upward vertically, then shifts rightward horizontally for the next column.
+
+- **VerticalUpward_HorizontalLeftward**: Placement starts at the bottom, moving upward vertically, then shifts leftward horizontally for the next column.
+
+- **VerticalDownward_HorizontalRightward**: Begins placement from the top, moving downward, with a rightward shift for each new column.
+
+- **VerticalDownward_HorizontalLeftward**: Begins placement from the top, moving downward, with a leftward shift for each new column.
+
+- **HorizontalRightward_VerticalUpward**: Starts on the left side, moving rightward, then upward for each new row.
+
+- **HorizontalRightward_VerticalDownward**: Starts on the left side, moving rightward, then downward for each new row.
+
+- **HorizontalLeftward_VerticalUpward**: Starts on the right side, moving leftward, then upward for each new row.
+
+- **HorizontalLeftward_VerticalDownward**: Starts on the right side, moving leftward, then downward for each new row.
+
+
+Zigzag Condition
+^^^^^^^^^^^^^^^^
+
+Zigzag placement introduces an alternating pattern in the layout:
+
+- After completing a row or column, the direction alternates (e.g., if moving upward initially, the next is downward).
+- The ``zigzag`` parameter is optional and defaults to ``False``. It can be omitted if a zigzag movement is not needed.
 
 Now before simulating the winding window needs to be added to the model
 as well:
