@@ -22,10 +22,11 @@ Jacobian {
 Integration {
   { Name II ; Case {
       { Type Gauss ; Case {
-          { GeoElement Triangle ;    NumberOfPoints 4 ; }
+          { GeoElement Triangle ;    NumberOfPoints 4 ; } //changed
           { GeoElement Quadrangle  ; NumberOfPoints 4 ; }
+          { GeoElement Line       ; NumberOfPoints  13 ; } //added
         } }
-    } }
+  } }
 }
 
 // ----------------------

@@ -7,6 +7,8 @@ import sys
 import os
 import warnings
 from typing import Union, List, Tuple, Dict
+from scipy.integrate import quadrature
+
 
 # Third parry libraries
 import gmsh
@@ -696,6 +698,10 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
             print("Input is list, convert to np.array()")
         period_vector_t_i = np.array(period_vector_t_i)
 
+    # first value of time vector must be zero
+    if period_vector_t_i[0][0] != 0:
+        raise ValueError("Period vector must start with 0 seconds!")
+
     # mode pre-calculation
     if mode == 'rad':
         period_vector_t_i[0] = period_vector_t_i[0] / (2 * np.pi * f0)
@@ -1226,13 +1232,13 @@ def find_result_log_file(result_log_folder: str, keyword_list: list, value_min_m
 
     :param result_log_folder: filepath to result-log folder
     :type result_log_folder: str
-    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core",
-        "core_inner_diameter"]
+    :param keyword_list: list with hirarchical keywords for dictionary structure, e.g. ["simulation_settings", "core", "core_inner_diameter"]
     :type keyword_list: list
     :param value_min_max: value to check for
     :type value_min_max: list
 
     :Example:
+
     Check for files with a core inner diameter smaller equal than 0.02 m.
     >>> import femmt as fmt
     >>> fmt.find_result_log_file("/home/filepath/fem_simulation_data", ["simulation_settings", "core",
@@ -1532,6 +1538,7 @@ def visualize_mean_mutual_inductances(inductance_matrix: np.array, silent: bool)
     :type inductance_matrix: np.array
     :param silent: True for no output
     :type silent: bool
+
     e.g.  M_12 = M_21 = k_12 * (L_11 * L_22) ** 0.5
     """
     string_to_print = ""
@@ -1557,6 +1564,7 @@ def visualize_mutual_inductances(self_inductances: List, coupling_factors: List,
     :type coupling_factors: List
     :param silent: True for no output
     :type silent: bool
+
     e.g. M_12 = L_11 * K_21  !=   M_21 = L_22 * K_12   (ideally, they are the same)
     """
     string_to_print = ""
@@ -1609,6 +1617,71 @@ def visualize_inductance_matrix(inductance_matrix, silent: bool):
         print("\n"
               "Inductance Matrix: ")
         print(string_to_print)
+
+def calculate_quadrature_integral(timesteps: List[float], data: List[float]) -> float:
+    """
+    Calculate the integral of given data over specific timesteps using the quadrature method.
+
+    :param timesteps: List of timesteps.
+    :type timesteps: List[float]
+    :param data: List of data corresponding to each timestep.
+    :type data: List[float]
+    :return: The calculated integral.
+    :rtype: float
+    """
+    func = lambda x: np.interp(x, timesteps, data)
+    return quadrature(func, timesteps[0], timesteps[-1])[0]
+
+def calculate_squared_quadrature_integral(timesteps: List[float], data: List[float]) -> float:
+    """
+    Calculate the integral of squared given data over specific timesteps using the quadrature method..
+
+    :param timesteps: List of timesteps.
+    :type timesteps: List[float]
+    :param data: List of data corresponding to each timestep.
+    :type data: List[float]
+    :return: The calculated integral.
+    :rtype: float
+    """
+    func = lambda x: np.interp(x, timesteps, data)**2
+    return quadrature(func, timesteps[0], timesteps[-1])[0]
+
+def calculate_average(integral: float, timesteps: List[float]) -> float:
+    """
+    Compute the average in general.
+
+    :param integral: The integral value.
+    :type integral: float
+    :param timesteps: List of timesteps.
+    :type timesteps: List[float]
+
+    Returns:
+    :return: The calculated average.
+    :rtype: float.
+    """
+    total_time = timesteps[-1] - timesteps[0]
+    if total_time == 0:
+        raise ValueError("Total time cannot be zero.")
+    return integral / total_time
+
+def calculate_rms(squared_integral: float, timesteps: List[float]) -> float:
+    """
+    Compute the RMS.
+
+    :param squared_integral: The integral value.
+    :type squared_integral: float
+    :param timesteps: List of timesteps.
+    :type timesteps: List[float]
+
+    Returns:
+    :return: The calculated average.
+    :rtype: float.
+    """
+    total_time = timesteps[-1] - timesteps[0]
+    if total_time == 0:
+        raise ValueError("Total time cannot be zero.")
+    mean_square = squared_integral / total_time  # Calculate the mean of the square of the data
+    return np.sqrt(mean_square)  # Take the square root to get RMS value
 
 
 def convert_air_gap_corner_points_to_center_and_distance(corner_points):

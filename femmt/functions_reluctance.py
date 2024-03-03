@@ -162,16 +162,17 @@ def calculate_core_2daxi_total_volume(core_inner_diameter, window_h, window_w):
     return core_2daxi_total_volume
 
 
-def calculate_r_outer(core_inner_diameter, window_w):
+def calculate_r_outer(core_inner_diameter, window_w, outer_core_cross_section_scale: float = 1.0):
     """
     calculate outer core radius.
 
-    Assumption: outer core cross-section is same as inner core cross-section.
+    Default assumption: outer core cross-section is same as inner core cross-section.
 
+    :param outer_core_cross_section_scale: scales the outer legs cross-section relative to the center leg cross-section
     :param core_inner_diameter: core inner diameter
     :param window_w: width of core window
     """
-    outer_core_radius = np.sqrt(core_inner_diameter ** 2 / 2 + core_inner_diameter * window_w + window_w ** 2)
+    outer_core_radius = np.sqrt(outer_core_cross_section_scale * (core_inner_diameter/2)**2 + (core_inner_diameter / 2 + window_w)**2)
     return outer_core_radius
 
 
