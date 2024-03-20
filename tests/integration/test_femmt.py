@@ -1763,13 +1763,13 @@ def test_inductor_core_material_database(femmt_simulation_inductor_core_material
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_inductor_core_material_database.json")
+                                        "material_inductor_core_material_database.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "geometry_inductor_core_material_database.json")
+                                        "geometry_inductor_core_material_database.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1795,13 +1795,13 @@ def test_inductor_core_material_database_measurement(femmt_simulation_inductor_c
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_inductor_core_material_database_measurement.json")
+                                        "material_inductor_core_material_database_measurement.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "geometry_inductor_core_material_measurement.json")
+                                        "geometry_inductor_core_material_measurement.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1825,13 +1825,13 @@ def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_los
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_inductor_core_fixed_loss_angle.json")
+                                        "material_inductor_core_fixed_loss_angle.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "geometry_inductor_core_fixed_loss_angle.json")
+                                        "geometry_inductor_core_fixed_loss_angle.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1855,13 +1855,13 @@ def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_inductor_core_fixed_loss_angle_litz_wire.json")
+                                        "material_inductor_core_fixed_loss_angle_litz_wire.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "geometry_inductor_core_fixed_loss_angle_litz_wire.json")
+                                        "geometry_inductor_core_fixed_loss_angle_litz_wire.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1885,7 +1885,7 @@ def test_inductor_core_fixed_loss_angle_foil_vertical(femmt_simulation_inductor_
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_inductor_core_fixed_loss_angle_foil_vertical.json")
+                                        "material_inductor_core_fixed_loss_angle_foil_vertical.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1911,7 +1911,7 @@ def test_inductor_core_fixed_loss_angle_foil_horizontal(
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_inductor_core_fixed_loss_angle_foil_horizontal.json")
+                                        "material_inductor_core_fixed_loss_angle_foil_horizontal.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1935,7 +1935,7 @@ def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fix
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_transformer_core_fixed_loss_angle.json")
+                                        "material_transformer_core_fixed_loss_angle.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1959,7 +1959,7 @@ def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transfor
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_transformer_interleaved_core_fixed_loss_angle.json")
+                                        "material_transformer_interleaved_core_fixed_loss_angle.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -1983,7 +1983,7 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_transformer_integrated_core_fixed_loss_angle.json")
+                                        "material_transformer_integrated_core_fixed_loss_angle.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -2007,7 +2007,7 @@ def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transform
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_simulation_transformer_stacked_center_tapped.json")
+                                        "material_simulation_transformer_stacked_center_tapped.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -2031,7 +2031,7 @@ def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windin
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_simulation_transformer_5_windings.json")
+                                        "material_simulation_transformer_5_windings.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -2054,13 +2054,13 @@ def test_simulation_inductor_time_domain(femmt_simulation_inductor_time_domain):
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_simulation_inductor_time_domain.json")
+                                        "material_simulation_inductor_time_domain.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "geometry_simulation_inductor_time_domain.json")
+                                        "geometry_simulation_inductor_time_domain.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -2078,7 +2078,7 @@ def test_simulation_transformer_time_domain(femmt_simulation_transformer_time_do
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_simulation_transformer_time_domain.json")
+                                        "material_simulation_transformer_time_domain.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -2096,7 +2096,7 @@ def test_simulation_transformer_3_windings_time_domain(femmt_simulation_transfor
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                      "material_simulation_transformer_3_windings_time_domain.json")
+                                        "material_simulation_transformer_3_windings_time_domain.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
