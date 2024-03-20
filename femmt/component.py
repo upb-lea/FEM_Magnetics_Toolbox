@@ -1304,7 +1304,7 @@ class MagneticComponent:
             start_time = time.time()
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
-            self.create_empty_material_dict()
+            self.check_create_empty_material_log()
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
@@ -1326,7 +1326,7 @@ class MagneticComponent:
             self.mesh.generate_electro_magnetic_mesh()
             self.excitation(frequency=freq, amplitude_list=current, phase_deg_list=phi_deg,
                             plot_interpolation=plot_interpolation)  # frequency and current
-            self.create_empty_material_dict()
+            self.check_create_empty_material_log()
             self.check_model_mqs_condition()
             self.write_simulation_parameters_to_pro_files()
             self.generate_load_litz_approximation_parameters()
@@ -1359,7 +1359,7 @@ class MagneticComponent:
         :type benchmark: bool
 
         """
-        self.create_empty_material_dict()
+        self.check_create_empty_material_log()
 
         if benchmark:
             start_time = time.time()
@@ -1475,6 +1475,8 @@ class MagneticComponent:
         else:
             self.plot_fields = False
 
+        self.check_create_empty_material_log()
+
         # If one conductor is solid and no meshing type is given then change the meshing type to MeshEachFrequency
         # In case of litz wire, only the lowest frequency is meshed (frequency indecent due to litz-approximation)
         if excitation_meshing_type is None:
@@ -1497,7 +1499,6 @@ class MagneticComponent:
                                 phase_deg_list=phi_deg_list_list[count_frequency])  # frequency and current
                 if count_frequency == 0:
                     self.check_model_mqs_condition()
-                    self.create_empty_material_dict()
                 self.write_simulation_parameters_to_pro_files()
                 self.generate_load_litz_approximation_parameters()
                 self.simulate()
@@ -3011,15 +3012,16 @@ class MagneticComponent:
         with open(self.file_data.coordinates_description_log_path, "w+", encoding='utf-8') as outfile:
             json.dump(coordinates_dict, outfile, indent=2, ensure_ascii=False)
 
-    def create_empty_material_dict(self):
+    def check_create_empty_material_log(self):
         """
-        Create an empty json file, where the material dictionary is stored in.
+        Check if log_material.json is available. If not availabe, create an empty one.
 
-        :return:
+        The log_material.json stores the material data used for the simulation.
         """
-        material_dict = {}
-        with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
-            json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
+        if not os.path.exists(self.file_data.material_log_path):
+            material_dict = {}
+            with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
+                json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
 
     def log_material_properties(self):
         """

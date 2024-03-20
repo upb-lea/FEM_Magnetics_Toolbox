@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
-
+### Added 
+- log_material.json output for material logging information 
+### Fixed
+- Improved non-linear solver, as there were some one-shot results without any iteration
+- Wrong displayed currents when using excitation_sweep() with complex currents 
 ## [0.5.1] - 2024-02-06
 ### Fixed
 - Fix documentation issues
