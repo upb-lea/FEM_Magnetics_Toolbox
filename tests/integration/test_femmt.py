@@ -31,17 +31,19 @@ def compare_result_logs(first_log_filepath, second_log_filepath, significant_dig
 
     with open(first_log_filepath, "r") as fd:
         first_content = json.loads(fd.read())
-        if "date" in first_content["simulation_settings"]:
-            del first_content["simulation_settings"]["date"]
-        if "working_directory" in first_content["simulation_settings"]:
-            del first_content["simulation_settings"]["working_directory"]
+        if "simulation_settings" in first_content:
+            if "date" in first_content["simulation_settings"]:
+                del first_content["simulation_settings"]["date"]
+            if "working_directory" in first_content["simulation_settings"]:
+                del first_content["simulation_settings"]["working_directory"]
 
     with open(second_log_filepath, "r") as fd:
         second_content = json.loads(fd.read())
-        if "date" in second_content["simulation_settings"]:
-            del second_content["simulation_settings"]["date"]
-        if "working_directory" in second_content["simulation_settings"]:
-            del second_content["simulation_settings"]["working_directory"]
+        if "simulation_settings" in second_content:
+            if "date" in second_content["simulation_settings"]:
+                del second_content["simulation_settings"]["date"]
+            if "working_directory" in second_content["simulation_settings"]:
+                del second_content["simulation_settings"]["working_directory"]
 
     difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
                                    significant_digits=significant_digits)
@@ -210,8 +212,10 @@ def femmt_simulation_inductor_core_material_database(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -328,8 +332,10 @@ def femmt_simulation_inductor_core_material_database_measurement(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -441,8 +447,10 @@ def femmt_simulation_inductor_core_fixed_loss_angle(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -554,8 +562,10 @@ def femmt_simulation_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -670,8 +680,10 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -786,8 +798,10 @@ def femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal(temp_folder)
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -908,8 +922,10 @@ def femmt_simulation_transformer_core_fixed_loss_angle(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -1029,8 +1045,10 @@ def femmt_simulation_transformer_interleaved_core_fixed_loss_angle(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -1159,8 +1177,10 @@ def femmt_simulation_transformer_integrated_core_fixed_loss_angle(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -1303,8 +1323,10 @@ def femmt_simulation_transformer_stacked_center_tapped(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 
 @pytest.fixture
@@ -1462,8 +1484,10 @@ def femmt_simulation_transformer_5_windings(temp_folder):
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
     thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result, thermal_result
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
 
 @pytest.fixture
 def femmt_simulation_inductor_time_domain(temp_folder):
@@ -1546,8 +1570,10 @@ def femmt_simulation_inductor_time_domain(temp_folder):
         print("Keyboard interrupt..")
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result
+    return electromagnetoquasistatic_result, geometry_result, material_result
 
 @pytest.fixture
 def femmt_simulation_transformer_time_domain(temp_folder):
@@ -1632,8 +1658,9 @@ def femmt_simulation_transformer_time_domain(temp_folder):
         print("Keyboard interrupt..")
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result
+    return electromagnetoquasistatic_result, material_result
 @pytest.fixture
 def femmt_simulation_transformer_3_windings_time_domain(temp_folder):
     """Fixture for the integration test."""
@@ -1724,99 +1751,154 @@ def femmt_simulation_transformer_3_windings_time_domain(temp_folder):
         print("Keyboard interrupt..")
 
     electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
 
-    return electromagnetoquasistatic_result
+    return electromagnetoquasistatic_result, material_result
 
 
 def test_inductor_core_material_database(femmt_simulation_inductor_core_material_database):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_inductor_core_material_database
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_inductor_core_material_database
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_inductor_core_material_database.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_inductor_core_material_database.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_inductor_core_material.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "inductor_core_material_database.json")
     print(test_result_log)
     print(fixture_result_log)
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
 def test_inductor_core_material_database_measurement(femmt_simulation_inductor_core_material_database_measurement):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_inductor_core_material_database_measurement
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_inductor_core_material_database_measurement
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_inductor_core_material_database_measurement.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_inductor_core_material_measurement.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_inductor_core_material_measurement.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "inductor_core_material_measurement.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_material_database_measurement.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
 def test_inductor_core_fixed_loss_angle(femmt_simulation_inductor_core_fixed_loss_angle):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_inductor_core_fixed_loss_angle
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_inductor_core_fixed_loss_angle.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_inductor_core_fixed_loss_angle.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "inductor_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
 def test_inductor_core_fixed_loss_angle_litz_wire(femmt_simulation_inductor_core_fixed_loss_angle_litz_wire):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle_litz_wire
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_inductor_core_fixed_loss_angle_litz_wire
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_inductor_core_fixed_loss_angle_litz_wire.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_inductor_core_fixed_loss_angle_litz_wire.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "inductor_core_fixed_loss_angle_litz_wire.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=3)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_fixed_loss_angle_litz_wire.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
 
 
 def test_inductor_core_fixed_loss_angle_foil_vertical(femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil_vertical
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_inductor_core_fixed_loss_angle_foil_vertical.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_inductor_core_fixed_loss_angle_foil_vertical.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "inductor_core_fixed_loss_angle_foil_vertical.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
 
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_fixed_loss_angle_foil_vertical.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
@@ -1824,143 +1906,203 @@ def test_inductor_core_fixed_loss_angle_foil_vertical(femmt_simulation_inductor_
 def test_inductor_core_fixed_loss_angle_foil_horizontal(
         femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_inductor_core_fixed_loss_angle_foil_horizontal
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_inductor_core_fixed_loss_angle_foil_horizontal.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_inductor_core_fixed_loss_angle_foil_horizontal.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "inductor_core_fixed_loss_angle_foil_horizontal.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_inductor_core_fixed_loss_angle_foil_horizontal.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
 def test_transformer_core_fixed_loss_angle(femmt_simulation_transformer_core_fixed_loss_angle):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_transformer_core_fixed_loss_angle
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_transformer_core_fixed_loss_angle
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_transformer_core_fixed_loss_angle.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "transformer_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_transformer_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
 def test_transformer_interleaved_core_fixed_loss_angle(femmt_simulation_transformer_interleaved_core_fixed_loss_angle):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_transformer_interleaved_core_fixed_loss_angle
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_transformer_interleaved_core_fixed_loss_angle
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_transformer_interleaved_core_fixed_loss_angle.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "transformer_interleaved_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_transformer_interleaved_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
 def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transformer_integrated_core_fixed_loss_angle):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_transformer_integrated_core_fixed_loss_angle
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_transformer_integrated_core_fixed_loss_angle
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_transformer_integrated_core_fixed_loss_angle.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
-                                      "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "transformer_integrated_core_fixed_loss_angle.json")
     compare_result_logs(test_result_log, fixture_result_log)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_transformer_integrated_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
 def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transformer_stacked_center_tapped):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_transformer_stacked_center_tapped
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_transformer_stacked_center_tapped
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_simulation_transformer_stacked_center_tapped.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "transformer_stacked_center_tapped.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
     assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "thermal_transformer_stacked_center_tapped.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
 
 
 def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windings):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
-    test_result_log, thermal_result_log = femmt_simulation_transformer_5_windings
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_transformer_5_windings
+
+    assert os.path.exists(material_result_log), "Material log creation did not work!"
+
+    fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "material_simulation_transformer_5_windings.json")
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "transformer_5_windings.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
     # check thermal simulation results
     # assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
-    # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    # fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
     #                                   "thermal_transformer_5_windings.json")
     # compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=2)
 
 def test_simulation_inductor_time_domain(femmt_simulation_inductor_time_domain):
     """Integration test to validate the magnetoquasistatic simulation."""
-    test_result_log = femmt_simulation_inductor_time_domain
+    test_result_log, geometry_result_log, material_result_log = femmt_simulation_inductor_time_domain
+
+    # assert os.path.exists(material_result_log), "Material log creation did not work!"
+    #
+    # fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+    #                                     "material_simulation_inductor_time_domain.json")
+    # compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_simulation_inductor_time_domain.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "inductor_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
 def test_simulation_transformer_time_domain(femmt_simulation_transformer_time_domain):
     """Integration test to validate the magnetoquasistatic simulation."""
-    test_result_log = femmt_simulation_transformer_time_domain
+    test_result_log, material_result_log = femmt_simulation_transformer_time_domain
+
+    # assert os.path.exists(material_result_log), "Material log creation did not work!"
+    #
+    # fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+    #                                     "material_simulation_transformer_time_domain.json")
+    # compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "transformer_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
 def test_simulation_transformer_3_windings_time_domain(femmt_simulation_transformer_3_windings_time_domain):
     """Integration test to validate the magnetoquasistatic simulation."""
-    test_result_log = femmt_simulation_transformer_3_windings_time_domain
+    test_result_log, material_result_log = femmt_simulation_transformer_3_windings_time_domain
+
+    # assert os.path.exists(material_result_log), "Material log creation did not work!"
+    #
+    # fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
+    #                                     "material_simulation_transformer_3_windings_time_domain.json")
+    # compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
     # e_m mesh
-    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures", "results",
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                       "transformer_3_windings_time_domain.json")
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
@@ -2000,17 +2142,17 @@ def test_load_files(temp_folder, femmt_simulation_inductor_core_material_databas
         result_log_filepath_direction = os.path.join(os.path.dirname(__file__), "fixtures", "results")
 
         # femmt_simulation_inductor_core_material_database = os.path.join(result_log_filepath_direction,
-        # "log_electro_magnetic_inductor_core_material.json")
+        # "inductor_core_material.json")
         # femmt_simulation_inductor_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
-        # "log_electro_magnetic_inductor_core_fixed_loss_angle.json")
+        # "inductor_core_fixed_loss_angle.json")
         # femmt_simulation_inductor_core_fixed_loss_angle_litz_wire = os.path.join(result_log_filepath_direction,
-        # "log_electro_magnetic_inductor_core_fixed_loss_angle_litz_wire.json")
+        # "inductor_core_fixed_loss_angle_litz_wire.json")
         # femmt_simulation_transformer_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
-        # "log_electro_magnetic_transformer_core_fixed_loss_angle.json")
+        # "transformer_core_fixed_loss_angle.json")
         # femmt_simulation_transformer_interleaved_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
-        # "log_electro_magnetic_transformer_interleaved_core_fixed_loss_angle.json")
+        # "transformer_interleaved_core_fixed_loss_angle.json")
         # femmt_simulation_transformer_integrated_core_fixed_loss_angle = os.path.join(result_log_filepath_direction,
-        # "log_electro_magnetic_transformer_integrated_core_fixed_loss_angle.json")
+        # "transformer_integrated_core_fixed_loss_angle.json")
         #
         #
         # fixture_log_filepath_list = []
