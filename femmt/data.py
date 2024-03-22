@@ -31,7 +31,7 @@ class FileData:
         Clear all simulation results from previous simulations.
 
         Therefore, the result-folder structure as well as some temporary files
-        (Parameter.pro, core_materials_temp.proare cleaned up.
+        (Parameter.pro, core_materials_temp.pro are cleaned up.
         """
         self.clean_folder_structure(self.results_folder_path)
         if os.path.exists(os.path.join(self.electro_magnetic_folder_path, "core_materials_temp.pro")):

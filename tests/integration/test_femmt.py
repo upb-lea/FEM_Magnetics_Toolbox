@@ -1983,7 +1983,7 @@ def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windin
     assert os.path.exists(material_result_log), "Material log creation did not work!"
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "material_simulation_transformer_5_windings.json")
+                                        "material_transformer_5_windings.json")
     compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -2006,7 +2006,7 @@ def test_simulation_inductor_time_domain(femmt_simulation_inductor_time_domain):
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "geometry_simulation_inductor_time_domain.json")
+                                        "geometry_inductor_time_domain.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"

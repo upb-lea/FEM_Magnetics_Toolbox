@@ -3032,7 +3032,7 @@ class MagneticComponent:
         :return:
         """
         # only write the log of the material in case of a core_materials_temp.pro exists.
-        # e.g. it does not excist in case of a fixed loss angle (custom material).
+        # e.g. it does not exist in case of a fixed loss angle (custom material).
         if os.path.exists(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro")):
             # read permeability data from core_materials_temp.pro file
             with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
@@ -3051,7 +3051,7 @@ class MagneticComponent:
             material_dict[f"T_{self.core.temperature}__f_{self.frequency}"] = {
                 "sigma_core_real": self.core.sigma.real,
                 "sigma_core_imag": self.core.sigma.imag,
-                "magnetic_flux_denisty": magnetic_flux_density,
+                "magnetic_flux_density": magnetic_flux_density,
                 "permeability_real": permeability_real,
                 "permeability_imag": permeability_imag
             }
