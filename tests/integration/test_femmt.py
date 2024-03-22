@@ -24,7 +24,7 @@ import femmt.examples.component_study.transformer_component_study
 import materialdatabase as mdb
 
 
-def compare_result_logs(first_log_filepath, second_log_filepath, significant_digits=6):
+def compare_result_logs(first_log_filepath, second_log_filepath, significant_digits=6, ignore_order=True):
     """Compare the result log against a given one to see the differences when running the integration tests."""
     first_content = None
     second_content = None
@@ -45,11 +45,11 @@ def compare_result_logs(first_log_filepath, second_log_filepath, significant_dig
             if "working_directory" in second_content["simulation_settings"]:
                 del second_content["simulation_settings"]["working_directory"]
 
-    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
+    difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=ignore_order,
                                    significant_digits=significant_digits)
     print(f"{difference = }")
 
-    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
+    assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=ignore_order,
                                  significant_digits=significant_digits)
     # made several tests with the deepdiff command:
     # tried adding not existing keys in one of the dicts: results as expected in an error
@@ -1764,7 +1764,7 @@ def test_inductor_core_material_database(femmt_simulation_inductor_core_material
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_inductor_core_material_database.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
@@ -1796,7 +1796,7 @@ def test_inductor_core_material_database_measurement(femmt_simulation_inductor_c
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_inductor_core_material_database_measurement.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
@@ -1984,7 +1984,7 @@ def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windin
 
     fixture_material_log = os.path.join(os.path.dirname(__file__), "fixtures",
                                         "material_transformer_5_windings.json")
-    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10)
+    compare_result_logs(material_result_log, fixture_material_log, significant_digits=10, ignore_order=False)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 

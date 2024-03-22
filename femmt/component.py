@@ -3028,6 +3028,7 @@ class MagneticComponent:
         Log material properties.
 
         Read material properties from core_materials_temp.pro and write results to log_material.json.
+        Reading the .pro files ensures that the real simulation input data is logged.
 
         :return:
         """
@@ -3038,11 +3039,11 @@ class MagneticComponent:
             with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
                 for no_line, line in enumerate(file):
                     if no_line == 2:
-                        magnetic_flux_density = list(ast.literal_eval(line[6:-2]))
+                        magnetic_flux_density = ast.literal_eval("[" + line[7:-4] + "]")
                     if no_line == 3:
-                        permeability_real = list(ast.literal_eval(line[12:-2]))
+                        permeability_real = ast.literal_eval("[" + line[13:-4] + "]")
                     if no_line == 4:
-                        permeability_imag = list(ast.literal_eval(line[12:-2]))
+                        permeability_imag = ast.literal_eval("[" + line[13:-4] + "]")
 
             with open(self.file_data.material_log_path, "r") as fd:
                 material_dict = json.loads(fd.read())
@@ -3055,8 +3056,6 @@ class MagneticComponent:
                 "permeability_real": permeability_real,
                 "permeability_imag": permeability_imag
             }
-
-            print(f"{material_dict = }")
 
             # ====== save data as JSON ======
             with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
