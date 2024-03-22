@@ -27,11 +27,17 @@ class FileData:
                 os.mkdir(folder)
 
     def clear_previous_simulation_results(self):
-        """Clear all simulation results from previous simulations.
+        """
+        Clear all simulation results from previous simulations.
 
-        Therefore, the folder structure is cleaned up.
+        Therefore, the result-folder structure as well as some temporary files
+        (Parameter.pro, core_materials_temp.pro are cleaned up.
         """
         self.clean_folder_structure(self.results_folder_path)
+        if os.path.exists(os.path.join(self.electro_magnetic_folder_path, "core_materials_temp.pro")):
+            os.remove(os.path.join(self.electro_magnetic_folder_path, "core_materials_temp.pro"))
+        if os.path.exists(os.path.join(self.electro_magnetic_folder_path, "Parameter.pro")):
+            os.remove(os.path.join(self.electro_magnetic_folder_path, "Parameter.pro"))
 
     @staticmethod
     def clean_folder_structure(folder_path: str):

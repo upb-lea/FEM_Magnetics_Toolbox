@@ -3014,7 +3014,7 @@ class MagneticComponent:
 
     def check_create_empty_material_log(self):
         """
-        Check if log_material.json is available. If not availabe, create an empty one.
+        Check if log_material.json is available. If not available, create an empty one.
 
         The log_material.json stores the material data used for the simulation.
         """
@@ -3027,33 +3027,39 @@ class MagneticComponent:
         """
         Log material properties.
 
+        Read material properties from core_materials_temp.pro and write results to log_material.json.
+        Reading the .pro files ensures that the real simulation input data is logged.
+
         :return:
         """
-        # read permeability data from core_materials_temp.pro file
-        with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
-            for no_line, line in enumerate(file):
-                if no_line == 2:
-                    magnetic_flux_density = list(ast.literal_eval(line[6:-2]))
-                if no_line == 3:
-                    permeability_real = list(ast.literal_eval(line[12:-2]))
-                if no_line == 4:
-                    permeability_imag = list(ast.literal_eval(line[12:-2]))
+        # only write the log of the material in case of a core_materials_temp.pro exists.
+        # e.g. it does not exist in case of a fixed loss angle (custom material).
+        if os.path.exists(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro")):
+            # read permeability data from core_materials_temp.pro file
+            with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
+                for no_line, line in enumerate(file):
+                    if no_line == 2:
+                        magnetic_flux_density = ast.literal_eval("[" + line[7:-4] + "]")
+                    if no_line == 3:
+                        permeability_real = ast.literal_eval("[" + line[13:-4] + "]")
+                    if no_line == 4:
+                        permeability_imag = ast.literal_eval("[" + line[13:-4] + "]")
 
-        with open(self.file_data.material_log_path, "r") as fd:
-            material_dict = json.loads(fd.read())
+            with open(self.file_data.material_log_path, "r") as fd:
+                material_dict = json.loads(fd.read())
 
-        # Frequency/Temperature in operation point
-        material_dict[f"T_{self.core.temperature}__f_{self.frequency}"] = {
-            "sigma_core_real": self.core.sigma.real,
-            "sigma_core_imag": self.core.sigma.imag,
-            "magnetic_flux_denisty": magnetic_flux_density,
-            "permeability_real": permeability_real,
-            "permeability_imag": permeability_imag
-        }
+            # Frequency/Temperature in operation point
+            material_dict[f"T_{self.core.temperature}__f_{self.frequency}"] = {
+                "sigma_core_real": self.core.sigma.real,
+                "sigma_core_imag": self.core.sigma.imag,
+                "magnetic_flux_density": magnetic_flux_density,
+                "permeability_real": permeability_real,
+                "permeability_imag": permeability_imag
+            }
 
-        # ====== save data as JSON ======
-        with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
-            json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
+            # ====== save data as JSON ======
+            with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
+                json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
 
     def read_thermal_log(self) -> Dict:
         """
