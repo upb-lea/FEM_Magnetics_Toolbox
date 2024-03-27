@@ -58,8 +58,8 @@ class TwoDaxiSymmetric:
         if self.core.core_type == CoreType.Single:
             self.p_window = np.zeros((4 * core.number_core_windows, 4))  # TODO: why is this done for both sides?
         if self.core.core_type == CoreType.Stacked:
-            self.p_window_top = np.zeros((4, 4))   # TODO: just for right side? make it the same as for single core geometry
-            self.p_window_bot = np.zeros((4, 4))   # TODO: just for right side? make it the same as for single core geometry
+            self.p_window_top = np.zeros((4, 4))  # TODO: just for right side? make it the same as for single core geometry
+            self.p_window_bot = np.zeros((4, 4))  # TODO: just for right side? make it the same as for single core geometry
         self.p_air_gaps = np.zeros((4 * air_gaps.number, 4))
         self.p_conductor = []
         self.p_iso_core = []
@@ -69,8 +69,8 @@ class TwoDaxiSymmetric:
             self.p_conductor.insert(i, [])
 
         self.r_inner = core.r_inner
-        self.r_outer = core.r_outer    
-        
+        self.r_outer = core.r_outer
+
     def femmt_print(self, text: str):
         """Print text to terminal or to log-file, dependent on the current verbosity."""
         if not self.verbosity == Verbosity.Silent:
@@ -84,13 +84,13 @@ class TwoDaxiSymmetric:
         """
         # Outer Core
         # (A_zyl=2pi*r*h => h=0.5r=0.25core_w <=> ensure A_zyl=A_core on the tiniest point)
-        self.p_outer[0][:] = [-self.r_outer, -self.core.core_h/2, 0, self.mesh_data.c_core]
+        self.p_outer[0][:] = [-self.r_outer, -self.core.core_h / 2, 0, self.mesh_data.c_core]
 
-        self.p_outer[1][:] = [self.r_outer, -self.core.core_h/2, 0, self.mesh_data.c_core]
+        self.p_outer[1][:] = [self.r_outer, -self.core.core_h / 2, 0, self.mesh_data.c_core]
 
-        self.p_outer[2][:] = [-self.r_outer, self.core.core_h/2, 0, self.mesh_data.c_core]
+        self.p_outer[2][:] = [-self.r_outer, self.core.core_h / 2, 0, self.mesh_data.c_core]
 
-        self.p_outer[3][:] = [self.r_outer, self.core.core_h/2, 0, self.mesh_data.c_core]
+        self.p_outer[3][:] = [self.r_outer, self.core.core_h / 2, 0, self.mesh_data.c_core]
 
     def draw_single_window(self):
         """Draw a single window."""
@@ -159,22 +159,22 @@ class TwoDaxiSymmetric:
                                 self.mesh_data.c_window]
 
         self.p_window_top[0] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot/2 + self.core.core_thickness,
+                                self.core.window_h_bot / 2 + self.core.core_thickness,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[1] = [self.r_inner,
-                                self.core.window_h_bot/2 + self.core.core_thickness,
+                                self.core.window_h_bot / 2 + self.core.core_thickness,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[2] = [self.core.core_inner_diameter / 2,
-                                self.core.window_h_bot/2 + self.core.core_thickness + self.core.window_h_top,
+                                self.core.window_h_bot / 2 + self.core.core_thickness + self.core.window_h_top,
                                 0,
                                 self.mesh_data.c_window]
 
         self.p_window_top[3] = [self.r_inner,
-                                self.core.window_h_bot/2 + self.core.core_thickness + self.core.window_h_top,
+                                self.core.window_h_bot / 2 + self.core.core_thickness + self.core.window_h_top,
                                 0,
                                 self.mesh_data.c_window]
 
@@ -253,7 +253,7 @@ class TwoDaxiSymmetric:
         # In order to close the air gap when a stray_path is added, additional points need to be added
         if self.component_type == ComponentType.IntegratedTransformer:
             top_point = [self.core.core_inner_diameter / 2,
-                         self.air_gaps.midpoints[self.stray_path.start_index+1][1] - self.air_gaps.midpoints[self.stray_path.start_index+1][2] / 2,
+                         self.air_gaps.midpoints[self.stray_path.start_index + 1][1] - self.air_gaps.midpoints[self.stray_path.start_index + 1][2] / 2,
                          0, self.mesh_data.c_air_gaps]
             bot_point = [self.core.core_inner_diameter / 2,
                          self.air_gaps.midpoints[self.stray_path.start_index][1] + self.air_gaps.midpoints[self.stray_path.start_index][2] / 2,
@@ -515,6 +515,7 @@ class TwoDaxiSymmetric:
 
                             # First winding from bottom to top
                             if winding0.conductor_arrangement == ConductorArrangement.Square:
+
                                 while y < top_bound - winding0.conductor_radius and \
                                         i < turns0:
                                     while x < right_bound - winding0.conductor_radius and \
@@ -682,8 +683,8 @@ class TwoDaxiSymmetric:
                                             self.mesh_data.c_conductor[winding_number1]])
 
                                         i += 1
-                                        x += 2 * np.cos(np.pi / 6) * (
-                                            winding1.conductor_radius + self.insulation.cond_cond[winding_number1][winding_number1] / 2)
+                                        x += 2 * np.cos(np.pi / 6) * \
+                                            (winding1.conductor_radius + self.insulation.cond_cond[winding_number1][winding_number1] / 2)
 
                                         # depending on what line, hexa scheme starts shifted
                                         # reset y to "new" bottom
@@ -713,7 +714,9 @@ class TwoDaxiSymmetric:
                         # TODO:  find another solution for this (turns = ...) (is needed in mesh.py for air_stacked) see set_winding in model
                         conductor_type = winding.conductor_type
                         winding_scheme = virtual_winding_window.winding_scheme
-
+                        alignment = virtual_winding_window.alignment
+                        placing_strategy = virtual_winding_window.placing_strategy
+                        zigzag = virtual_winding_window.zigzag
                         num = winding.winding_number
 
                         # Check if the coil is round or rectangular
@@ -774,7 +777,7 @@ class TwoDaxiSymmetric:
                                                 top_bound,
                                                 0,
                                                 self.mesh_data.c_conductor[num]])
-                                            center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                            center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                                    self.p_conductor[num][-2], self.p_conductor[num][-1])
                                             self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
                                 elif virtual_winding_window.wrap_para == WrapParaType.Interpolate:
@@ -802,7 +805,7 @@ class TwoDaxiSymmetric:
                                             top_bound,
                                             0,
                                             self.mesh_data.c_conductor[num]])
-                                        center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                        center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                                self.p_conductor[num][-2], self.p_conductor[num][-1])
                                         self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
                                 else:
@@ -810,7 +813,7 @@ class TwoDaxiSymmetric:
                             elif winding_scheme == WindingScheme.FoilHorizontal:
                                 # Foil conductors where each conductor is very long and the conductors are expanding the y-direction
                                 # Stack defined number of turns and chosen thickness
-                                winding.a_cell = winding.thickness * (right_bound-left_bound)
+                                winding.a_cell = winding.thickness * (right_bound - left_bound)
                                 for i in range(turns):
                                     # CHECK if top bound is reached
                                     if round(bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num], 6) <= round(top_bound, 6):
@@ -835,45 +838,160 @@ class TwoDaxiSymmetric:
                                             bot_bound + (i + 1) * winding.thickness + i * self.insulation.cond_cond[num][num],
                                             0,
                                             self.mesh_data.c_conductor[num]])
-                                        center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                        center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                                self.p_conductor[num][-2], self.p_conductor[num][-1])
                                         self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
                             else:
                                 raise Exception(f"Winding scheme {winding_scheme.name} is not implemented.")
 
                         elif conductor_type == ConductorType.RoundSolid or conductor_type == ConductorType.RoundLitz:
-                            # Since round conductors have no winding scheme check for each conductor_arrangement
+                            # Since round conductors have no winding scheme check for each conductor_arrangement.
                             conductor_arrangement = winding.conductor_arrangement
-
                             if conductor_arrangement == ConductorArrangement.Square:
-                                y = bot_bound + winding.conductor_radius
-                                x = left_bound + winding.conductor_radius
+                                # Define initial conditions based on the placement strategy.
+                                # 16 cases will be handled here, 8 cases with consistent direction, and 8 cases with Zigzag movement.
+                                vertical_first = placing_strategy in [
+                                    ConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    ConductorDistribution.VerticalUpward_HorizontalLefttward,
+                                    ConductorDistribution.VerticalDownward_HorizontalRightward,
+                                    ConductorDistribution.VerticalDownward_HorizontalLeftward]
+
+                                upward_movement = placing_strategy in [
+                                    ConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    ConductorDistribution.VerticalUpward_HorizontalLefttward,
+                                    ConductorDistribution.HorizontalRightward_VerticalUpward,
+                                    ConductorDistribution.HorizontalLeftward_VerticalUpward]
+
+                                rightward_movement = placing_strategy in [
+                                    ConductorDistribution.VerticalUpward_HorizontalRightward,
+                                    ConductorDistribution.VerticalDownward_HorizontalRightward,
+                                    ConductorDistribution.HorizontalRightward_VerticalUpward,
+                                    ConductorDistribution.HorizontalRightward_VerticalDownward]
+
+                                # Set the starting position and step size based on initial conditions
+                                if vertical_first:
+                                    if upward_movement:
+                                        start_y = bot_bound + winding.conductor_radius  # Start from the bottom
+                                        step_y = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                    else:
+                                        start_y = top_bound - winding.conductor_radius  # Start from the top
+                                        step_y = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+
+                                    if rightward_movement:
+                                        start_x = left_bound + winding.conductor_radius  # Moving right after completing a column
+                                        step_x = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                    else:
+                                        start_x = right_bound - winding.conductor_radius  # Moving left after completing a column
+                                        step_x = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+                                # Determine if the first movement is horizontally (rightward or leftward)
+                                else:
+                                    if rightward_movement:
+                                        start_x = left_bound + winding.conductor_radius  # start from the left
+                                        step_x = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                    else:
+                                        start_x = right_bound - winding.conductor_radius  # Start from the right
+                                        step_x = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+
+                                    if upward_movement:
+                                        start_y = bot_bound + winding.conductor_radius  # Moving top after completing a raw
+                                        step_y = winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]
+                                    else:
+                                        start_y = top_bound - winding.conductor_radius  # Moving bottom after completing a raw
+                                        step_y = -(winding.conductor_radius * 2 + self.insulation.cond_cond[num][num])
+
+                                # Loop and place conductors accordingly
+                                x = start_x
+                                y = start_y
                                 i = 0
-                                # Case n_conductors higher that "allowed" is missing
-                                while x < right_bound - winding.conductor_radius and i < turns:
-                                    while y < top_bound - winding.conductor_radius and i < turns:
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_center_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x - winding.conductor_radius,
-                                            y,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([
-                                            x,
-                                            y + winding.conductor_radius,
-                                            0,
-                                            self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append(
-                                            [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
-                                        self.p_conductor[num].append([x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
-                                        i += 1
-                                        y += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # one step from left to right
-                                    x += winding.conductor_radius * 2 + self.insulation.cond_cond[num][num]  # from left to top
-                                    y = bot_bound + winding.conductor_radius
+                                # Vertically movement
+                                if vertical_first:
+                                    while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
+                                        while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
+                                            self.p_conductor[num].append(
+                                                [x, y, 0, self.mesh_data.c_center_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
+                                            y += step_y
+                                            i += 1
+                                        if not zigzag:
+                                            # Start the next column with the same starting point (consistent direction)
+                                            y = start_y
+                                        else:
+                                            # Alternating between top and bottom for the Zigzag movement
+                                            step_y *= -1
+                                            y += step_y
+                                        # Moving one step horizontally (right or left)
+                                        x += step_x
+                                # Horizontally movement
+                                else:
+                                    while i < turns and bot_bound + winding.conductor_radius <= y <= top_bound - winding.conductor_radius:
+                                        while i < turns and left_bound + winding.conductor_radius <= x <= right_bound - winding.conductor_radius:
+                                            self.p_conductor[num].append(
+                                                [x, y, 0, self.mesh_data.c_center_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x - winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x, y + winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x + winding.conductor_radius, y, 0, self.mesh_data.c_conductor[num]])
+                                            self.p_conductor[num].append(
+                                                [x, y - winding.conductor_radius, 0, self.mesh_data.c_conductor[num]])
+                                            x += step_x
+                                            i += 1
+                                        if not zigzag:
+                                            # Start the next raw with the same starting point (consistent direction)
+                                            x = start_x
+                                        else:
+                                            # Alternating between right and left for the Zigzag movement
+                                            step_x *= -1
+                                            x += step_x
+                                        # Moving one step vertically (top or bottom)
+                                        y += step_y
+
+                                # Align to edges
+                                if alignment == Align.ToEdges:
+                                    # No adjustment of x or y
+                                    pass
+
+                                # Center the turns on horizontal axis
+                                elif alignment == Align.CenterOnHorizontalAxis:
+                                    # Calculate vertical bounds of the occupied space by turns to adjust y
+                                    min_y = min(point[1] for point in self.p_conductor[num])  # Find the lowest y position among all turns
+                                    max_y = max(point[1] for point in self.p_conductor[num])  # Find the highest y position among all turns
+                                    # The height of the space occupied by the turns is the difference between the highest and lowest y positions
+                                    occupied_height = max_y - min_y
+                                    # Calculate the vertical midpoint of the occupied space
+                                    occupied_midpoint_y = min_y + occupied_height / 2
+                                    # Calculate the midpoint of the winding window's vertical bounds as it is rectangle
+                                    window_midpoint_y = (bot_bound + top_bound) / 2
+                                    # Determine the adjustment needed for vertical centering
+                                    adjustment_y = window_midpoint_y - occupied_midpoint_y
+                                    # Apply the adjustment of y position to all points
+                                    for i, _ in enumerate(self.p_conductor[num]):
+                                        self.p_conductor[num][i][1] += adjustment_y
+
+                                # Center the turns on vertical axis
+                                elif alignment == Align.CenterOnVerticalAxis:
+                                    # Calculate horizontal bounds of the occupied space by turns to adjust x
+                                    min_x = min(point[0] for point in self.p_conductor[num])  # Find the leftmost x position among all turns
+                                    max_x = max(point[0] for point in self.p_conductor[num])  # Find the rightmost x position among all turns
+                                    # The width of the space occupied by the turns is the difference between the rightmost and leftmost x positions
+                                    occupied_width = max_x - min_x
+                                    # Calculate the horizontal midpoint of the occupied space
+                                    occupied_midpoint_x = min_x + (occupied_width / 2)
+                                    # Calculate the midpoint of the winding window's horizontal bounds
+                                    window_midpoint_x = (left_bound + right_bound) / 2
+                                    # Determine the adjustment needed for horizontal centering
+                                    adjustment_x = window_midpoint_x - occupied_midpoint_x
+                                    # Apply the adjustment of x positions to all points
+                                    for i, _ in enumerate(self.p_conductor[num]):
+                                        self.p_conductor[num][i][0] += adjustment_x
 
                             elif conductor_arrangement == ConductorArrangement.Hexagonal:
                                 y = bot_bound + winding.conductor_radius
@@ -1045,7 +1163,7 @@ class TwoDaxiSymmetric:
                                     high,
                                     0,
                                     self.mesh_data.c_conductor[num]])
-                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                        self.p_conductor[num][-2], self.p_conductor[num][-1])
                                 self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
 
@@ -1086,7 +1204,7 @@ class TwoDaxiSymmetric:
                                     high,
                                     0,
                                     self.mesh_data.c_conductor[num]])
-                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3], 
+                                center_point = self.get_center_of_rect(self.p_conductor[num][-4], self.p_conductor[num][-3],
                                                                        self.p_conductor[num][-2], self.p_conductor[num][-1])
                                 self.p_conductor[num].append([center_point[0], center_point[1], 0, self.mesh_data.c_center_conductor[num]])
 
@@ -1182,7 +1300,7 @@ class TwoDaxiSymmetric:
                 # If no aspect ratio is set insulations wont be drawn
                 return
             else:
-                insulation_delta = self.mesh_data.c_window/self.insulation.max_aspect_ratio
+                insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio
 
             self.p_iso_core = []  # Order: Left, Top, Right, Bot
             self.p_iso_pri_sec = []

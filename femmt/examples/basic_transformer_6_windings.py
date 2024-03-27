@@ -1,12 +1,11 @@
-"""Basic example to show how to simulate an inductor."""
+"""Basic example to show how to simulate a 5-winding transformer."""
 import femmt as fmt
-import materialdatabase as mdb
 import os
 
 
-def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
-    """Run the example code for the inductor."""
-
+def basic_example_transformer_6_windings(onelab_folder: str = None, show_visual_outputs: bool = True,
+                                         is_test: bool = False):
+    """Run the example code for the 5-winding transformer."""
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the
@@ -76,91 +75,92 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
 
-    # Working directory can be set arbitrarily
-    working_directory = os.path.join(example_results_folder, "inductor")
+    # Example for a transformer with multiple virtual winding windows.
+    working_directory = os.path.join(example_results_folder, "n-horizontal-split")
     if not os.path.exists(working_directory):
         os.mkdir(working_directory)
 
     # 1. chose simulation type
-    geo = fmt.MagneticComponent(simulation_type=fmt.SimulationType.FreqDomain, component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
-                                verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
+                                verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
     # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
-    inductor_frequency = 270000
-
     # 2. set core parameters
-    core_db = fmt.core_database()["PQ 40/40"]
-    core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
-                                                    window_w=core_db["window_w"],
-                                                    window_h=core_db["window_h"],
-                                                    core_h=core_db["core_h"])
-
-    core = fmt.Core(core_type=fmt.CoreType.Single,
-                    core_dimensions=core_dimensions,
-                    detailed_core_model=False,
-                    material=mdb.Material.N49, temperature=45, frequency=inductor_frequency,
+    core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
+                                                    core_inner_diameter=12e-3, core_h=22e-3)
+    core = fmt.Core(core_dimensions=core_dimensions, material=fmt.Material.N95, temperature=60, frequency=100000,
                     # permeability_datasource="manufacturer_datasheet",
                     permeability_datasource=fmt.MaterialDataSource.Measurement,
                     permeability_datatype=fmt.MeasurementDataType.ComplexPermeability,
-                    permeability_measurement_setup=mdb.MeasurementSetup.LEA_LK,
+                    permeability_measurement_setup=fmt.MeasurementSetup.LEA_LK,
                     permittivity_datasource=fmt.MaterialDataSource.Measurement,
                     permittivity_datatype=fmt.MeasurementDataType.ComplexPermittivity,
-                    permittivity_measurement_setup=mdb.MeasurementSetup.LEA_LK, mdb_verbosity=fmt.Verbosity.Silent)
-
-    # mu_rel=3000, phi_mu_deg=10,
-    # sigma=0.5)
+                    permittivity_measurement_setup=fmt.MeasurementSetup.LEA_LK)
     geo.set_core(core)
 
     # 3. set air gap parameters
     air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
-    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 50)
-    # air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0002, 90)
+    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.00016, 50)
     geo.set_air_gaps(air_gaps)
 
-    # 4. set insulations
-    insulation = fmt.Insulation(flag_insulation=True)
-    insulation.add_core_insulations(0.001, 0.001, 0.003, 0.001)
-    insulation.add_winding_insulations([[0.0005]])
+    # 4. set insulation
+    insulation = fmt.Insulation()
+    insulation.add_core_insulations(0.0008, 0.0008, 0.0001, 0.00001)
+    iso_self = 0.0001
+    iso_against = 0.0002
+    insulation.add_winding_insulations(
+        [[iso_self, iso_against, iso_against, iso_against, iso_against, iso_against],
+         [iso_against, iso_self, iso_against, iso_against, iso_against, iso_against],
+         [iso_against, iso_against, iso_self, iso_against, iso_against, iso_against],
+         [iso_against, iso_against, iso_against, iso_self, iso_against, iso_against],
+         [iso_against, iso_against, iso_against, iso_against, iso_self, iso_against],
+         [iso_against, iso_against, iso_against, iso_against, iso_against, iso_self]])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+    cells = winding_window.NCellsSplit(0, [1 / 3, 2 / 3])
 
-    # 6. create conductor and set parameters: use solid wires
-    winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
-    winding.set_solid_round_conductor(conductor_radius=0.0013, conductor_arrangement=fmt.ConductorArrangement.Square)
-    winding.parallel = False  # set True to make the windings parallel, currently only for solid conductors
-    # winding.set_litz_round_conductor(conductor_radius=0.0013, number_strands=150, strand_radius=100e-6,
-    # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
-    # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 14, None, fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.HorizontalRightward_VerticalUpward,
-                    zigzag=True)
+    # 6. create windings and assign conductors
+    winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
+    winding1.set_litz_round_conductor(0.85e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
+    winding2.set_litz_round_conductor(1.0e-3 / 2, 60, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    winding3 = fmt.Conductor(2, fmt.Conductivity.Copper)
+    winding3.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    winding4 = fmt.Conductor(3, fmt.Conductivity.Copper)
+    winding4.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    winding5 = fmt.Conductor(4, fmt.Conductivity.Copper)
+    winding5.set_litz_round_conductor(0.75e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    winding6 = fmt.Conductor(5, fmt.Conductivity.Copper)
+    winding6.set_litz_round_conductor(0.95e-3 / 2, 40, 0.1e-3 / 2, None, fmt.ConductorArrangement.Square)
+
+    # 7. assign windings to virtual winding windows (cells)
+    cells[0].set_winding(winding1, 7, fmt.WindingType.Single, fmt.Align.CenterOnVerticalAxis, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
+    cells[1].set_winding(winding2, 7, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalDownward_HorizontalLeftward, zigzag=True)
+    cells[2].set_winding(winding3, 5, fmt.WindingType.Single, fmt.Align.CenterOnHorizontalAxis, fmt.ConductorDistribution.HorizontalRightward_VerticalUpward,
+                         zigzag=True)
+    cells[3].set_winding(winding4, 7, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalLeftward_VerticalUpward)
+    cells[4].set_winding(winding5, 5, fmt.WindingType.Single, fmt.Align.CenterOnHorizontalAxis, fmt.ConductorDistribution.HorizontalLeftward_VerticalDownward)
+    cells[5].set_winding(winding6, 6, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalLefttward)
     geo.set_winding_windows([winding_window])
 
-    # 8. create the model
-    geo.create_model(freq=inductor_frequency, pre_visualize_geometry=show_visual_outputs, save_png=False)
+    # 8. perform an FEM simulation
+    geo.create_model(freq=100000, pre_visualize_geometry=show_visual_outputs)
+    geo.single_simulation(freq=100000, current=[1.625, 6.9, 4.9, 0.5, 1, 2],
+                          phi_deg=[0, 180, 180, 90, 89, 180], show_fem_simulation_results=show_visual_outputs)
 
-    # 6.a. start simulation
-    geo.single_simulation(freq=inductor_frequency, current=[4.5],
-                          plot_interpolation=False, show_fem_simulation_results=show_visual_outputs)
-
-    # geo.femm_reference(freq=inductor_frequency, current=[4.5], sign=[1], non_visualize=0)
-
-    # 6.b. Excitation Sweep Example
-    # Perform a sweep using more than one frequency
-    # fs = [0, 10000, 30000, 60000, 100000, 150000]
-    # amplitude_list = [[10], [2], [1], [0.5], [0.2], [0.1]]
-    # phase_list = [[0], [10], [20], [30], [40], [50]]
-    # geo.excitation_sweep(frequency_list=fs, current_list_list=amplitude_list, phi_deg_list_list=phase_list)
-    # 9. start simulation
-
-    # 7. prepare and start thermal simulation
-    example_thermal_simulation(show_visual_outputs, flag_insulation=True)
+    # 9. prepare and start thermal simulation
+    example_thermal_simulation(show_thermal_visual_outputs=show_visual_outputs, flag_insulation=True)
 
 
 if __name__ == "__main__":
-    basic_example_inductor(show_visual_outputs=True)
+    basic_example_transformer_6_windings(show_visual_outputs=True)
