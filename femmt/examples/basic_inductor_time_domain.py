@@ -82,7 +82,7 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
     # fill_factor=None, conductor_arrangement=fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    vww.set_winding(winding, 7, None)
+    vww.set_winding(winding, 7, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
     geo.set_winding_windows([winding_window])
 
     # 8. create the model

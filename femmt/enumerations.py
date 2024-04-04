@@ -185,6 +185,44 @@ class ConductorArrangement(IntEnum):
     turns of the previous line. First drawn in y-direction then x-direction.
     """
 
+class Align(IntEnum):
+    """Specifies the distribution direction for conductors when starting from the center. This can be done for having single windings in vww."""
+
+    ToEdges = 1
+    """Conductors are placed according to the specified peripheral placing strategy without adjusting for central alignment."""
+
+    CenterOnHorizontalAxis = 2
+    """Conductors are centered across the middle line of the horizontal axis."""
+
+    CenterOnVerticalAxis = 3
+    """Conductors are centered across the middle line of the vertical axis."""
+
+class ConductorDistribution(IntEnum):
+    """Defines specific strategies for placing conductors starting from the peripheral (edges) of the virtual winding window."""
+
+    VerticalUpward_HorizontalRightward = 1
+    """Places conductors vertically upwards first, then moves horizontally rightward for the next set with consistent direction."""
+
+    VerticalUpward_HorizontalLefttward = 2
+    """Places conductors vertically upwards first, then moves horizontally leftward for the next set with consistent direction."""
+
+    VerticalDownward_HorizontalRightward = 3
+    """Places conductors vertically downwards first, then moves horizontally rightward for the next set with consistent direction."""
+
+    VerticalDownward_HorizontalLeftward = 4
+    """Places conductors vertically downwards first, then moves horizontally leftward for the next set with consistent direction."""
+
+    HorizontalRightward_VerticalUpward = 5
+    """Places conductors horizontally rightward first, then moves vertically upward for the next set with consistent direction."""
+
+    HorizontalRightward_VerticalDownward = 6
+    """Places conductors horizontally rightward first, then moves vertically downward for the next set with consistent direction."""
+
+    HorizontalLeftward_VerticalUpward = 7
+    """Places conductors horizontally leftward first, then moves vertically upward for the next set with consistent direction."""
+
+    HorizontalLeftward_VerticalDownward = 8
+    """Places conductors horizontally leftward first, then moves vertically downward for the next set with consistent direction."""
 
 class CenterTappedInterleavingType(IntEnum):
     """Contains different interleaving types for the center tapped transformer."""

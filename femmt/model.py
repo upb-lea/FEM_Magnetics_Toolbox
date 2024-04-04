@@ -737,7 +737,8 @@ class VirtualWindingWindow:
         self.right_bound = right_bound
         self.winding_is_set = False
 
-    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme,
+    def set_winding(self, conductor: Conductor, turns: int, winding_scheme: WindingScheme, alignment: Optional[Align] = None,
+                    placing_strategy: Optional[ConductorDistribution] = None, zigzag: bool = False,
                     wrap_para_type: WrapParaType = None):
         """Set a single winding to the current virtual winding window. A single winding always contains one conductor.
 
@@ -747,6 +748,8 @@ class VirtualWindingWindow:
         :type turns: int
         :param winding_scheme: Winding scheme defines the way the conductor is wrapped. Can be set to None.
         :type winding_scheme: WindingScheme
+        :param placing_strategy: Placing strategy defines the way the conductors are placing in vww
+        :type placing_strategy: ConductorPlacingStragety, optional
         :param wrap_para_type: Additional wrap parameter. Not always needed, defaults to None
         :type wrap_para_type: WrapParaType, optional
         """
@@ -755,9 +758,15 @@ class VirtualWindingWindow:
         self.windings = [conductor]
         self.turns = [0] * (conductor.winding_number + 1)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
         # self.turns = [0] * (3)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
+        self.placing_strategy = placing_strategy
+        self.alignment = alignment
+        self.zigzag = zigzag
         self.turns.insert(conductor.winding_number, turns)
         self.winding_is_set = True
         self.wrap_para = wrap_para_type
+
+        if alignment is not None and placing_strategy is None:
+            raise Exception("When alignment is there a placing_strategy must be set")
 
         if winding_scheme is WindingScheme.FoilVertical and wrap_para_type is None:
             raise Exception("When winding scheme is FoilVertical a wrap para type must be set.")

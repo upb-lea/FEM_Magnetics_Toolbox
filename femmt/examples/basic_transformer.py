@@ -129,8 +129,8 @@ def basic_example_transformer(onelab_folder: str = None, show_visual_outputs: bo
     # winding2.set_litz_round_conductor(0.0011, 50, 0.00011, None, fmt.ConductorArrangement.Square)
 
     # 7. add conductor to vww and add winding window to MagneticComponent
-    bot.set_winding(winding2, 10, None)
-    top.set_winding(winding1, 10, None)
+    bot.set_winding(winding2, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+    top.set_winding(winding1, 10, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
     geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
