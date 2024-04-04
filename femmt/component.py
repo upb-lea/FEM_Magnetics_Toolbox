@@ -567,9 +567,8 @@ class MagneticComponent:
             self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png,
                                            color_scheme=color_scheme, colors_geometry=colors_geometry)
 
-        if self.component_type == ComponentType.Inductor:
-            if self.windings[0].conductor_type == ConductorType.RoundLitz or self.windings[0].conductor_type == ConductorType.RoundSolid:
-                self.log_coordinates_description()
+        if self.component_type in [ComponentType.Inductor, ComponentType.Transformer, ComponentType.IntegratedTransformer]:
+            self.log_coordinates_description()
 
     def get_single_complex_permeability(self):
         """
@@ -2990,23 +2989,58 @@ class MagneticComponent:
         :return:
         """
         coordinates_dict = {
+            "core_type": "",
             "p_outer": [],
             "p_ww": [],
             "p_air_gap_center": [],
-            "lengths_air_gap": [],
-            "p_cond_center": [],
-            "radius_cond": []
+            "lengths_air_gap": []
         }
+
+        if self.core.core_type == CoreType.Stacked:
+            coordinates_dict["core_type"] = "Stacked"
+
+        if self.core.core_type == CoreType.Single:
+            coordinates_dict["core_type"] = "Single"
 
         # Obtain coordinates data from component
         coordinates_dict["p_outer"] = self.two_d_axi.p_outer[:, :2].tolist()  # cut last 2 columns (z coordinate and mesh accuracy)
         coordinates_dict["p_outer"][0][0], coordinates_dict["p_outer"][2][0] = 0, 0  # 2d axi symmetric: description only of right half
-        coordinates_dict["p_ww"] = self.two_d_axi.p_window[4:, :2].tolist()  # cut first 4 rows (left winding window) and last 2 columns ("-")
-        coordinates_dict["p_air_gap_center"], coordinates_dict["lengths_air_gap"] = \
-            ff.convert_air_gap_corner_points_to_center_and_distance(self.two_d_axi.p_air_gaps.tolist())  # transform to center points and extract heights
+        # Obtain airgap center points and length
+        # Single core
+        if self.core.core_type == CoreType.Single:
+            coordinates_dict["p_ww"] = self.two_d_axi.p_window[4:, :2].tolist()  # cut first 4 rows (left winding window) and last 2 columns ("-")
+            coordinates_dict["p_air_gap_center"], coordinates_dict["lengths_air_gap"] = \
+                ff.convert_air_gap_corner_points_to_center_and_distance(self.two_d_axi.p_air_gaps.tolist())  # transform to center points and extract heights
+        # Stacked core
+        elif self.core.core_type == CoreType.Stacked:
+            coordinates_dict["p_ww"] = {
+                "bot": self.two_d_axi.p_window_bot[:, :2].tolist(),  # cut last 2 columns (bot window)
+                "top": self.two_d_axi.p_window_top[:, :2].tolist()  # cut last 2 columns (top window)
+            }
+            for _, midpoint in enumerate(self.two_d_axi.air_gaps.midpoints):
+                # extract the midpoint (center position) for the current air gap
+                center_x = midpoint[0]
+                center_y = midpoint[1]
+                # Length of the current air gap
+                length = midpoint[2]
+                # Combine the center position and height into a single dictionary
+                coordinates_dict["p_air_gap_center"].append([center_x, center_y])
+                coordinates_dict["lengths_air_gap"].append(length)
+
+        if self.stray_path:  # Stray length
+            coordinates_dict["stray_length"] = self.stray_path.length
+
         # for the conductors, the coordinates have to be obtained somewhere else...
-        coordinates_dict["p_cond_center"] = self.two_d_axi.p_conductor[0][::5].tolist()
-        coordinates_dict["radius_cond"] = self.two_d_axi.p_conductor[0][0, 0] - self.two_d_axi.p_conductor[0][1, 0]
+        for index, winding in enumerate(self.windings):
+            # Round conductors
+            if winding.conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
+                coordinates_dict[f"p_cond_center_{index + 1}"] = self.two_d_axi.p_conductor[index][::5].tolist()
+                coordinates_dict[f"radius_cond_{index + 1}"] = self.two_d_axi.p_conductor[index][0, 0] - self.two_d_axi.p_conductor[index][1, 0]
+            # Rectangular conductors
+            elif winding.conductor_type == ConductorType.RectangularSolid:
+                coordinates_dict[f"p_cond_center_{index + 1}"] = \
+                    [self.two_d_axi.p_conductor[index][i].tolist() for i in range(4, len(self.two_d_axi.p_conductor[index]), 5)]
+                coordinates_dict[f"thickness_{index + 1}"] = self.two_d_axi.p_conductor[index][1, 0] - self.two_d_axi.p_conductor[index][0, 0]
 
         # ====== save data as JSON ======
         with open(self.file_data.coordinates_description_log_path, "w+", encoding='utf-8') as outfile:
@@ -3014,7 +3048,7 @@ class MagneticComponent:
 
     def check_create_empty_material_log(self):
         """
-        Check if log_material.json is available. If not availabe, create an empty one.
+        Check if log_material.json is available. If not available, create an empty one.
 
         The log_material.json stores the material data used for the simulation.
         """
@@ -3027,33 +3061,39 @@ class MagneticComponent:
         """
         Log material properties.
 
+        Read material properties from core_materials_temp.pro and write results to log_material.json.
+        Reading the .pro files ensures that the real simulation input data is logged.
+
         :return:
         """
-        # read permeability data from core_materials_temp.pro file
-        with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
-            for no_line, line in enumerate(file):
-                if no_line == 2:
-                    magnetic_flux_density = list(ast.literal_eval(line[6:-2]))
-                if no_line == 3:
-                    permeability_real = list(ast.literal_eval(line[12:-2]))
-                if no_line == 4:
-                    permeability_imag = list(ast.literal_eval(line[12:-2]))
+        # only write the log of the material in case of a core_materials_temp.pro exists.
+        # e.g. it does not exist in case of a fixed loss angle (custom material).
+        if os.path.exists(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro")):
+            # read permeability data from core_materials_temp.pro file
+            with open(os.path.join(self.file_data.electro_magnetic_folder_path, "core_materials_temp.pro"), "r") as file:
+                for no_line, line in enumerate(file):
+                    if no_line == 2:
+                        magnetic_flux_density = ast.literal_eval("[" + line[7:-4] + "]")
+                    if no_line == 3:
+                        permeability_real = ast.literal_eval("[" + line[13:-4] + "]")
+                    if no_line == 4:
+                        permeability_imag = ast.literal_eval("[" + line[13:-4] + "]")
 
-        with open(self.file_data.material_log_path, "r") as fd:
-            material_dict = json.loads(fd.read())
+            with open(self.file_data.material_log_path, "r") as fd:
+                material_dict = json.loads(fd.read())
 
-        # Frequency/Temperature in operation point
-        material_dict[f"T_{self.core.temperature}__f_{self.frequency}"] = {
-            "sigma_core_real": self.core.sigma.real,
-            "sigma_core_imag": self.core.sigma.imag,
-            "magnetic_flux_denisty": magnetic_flux_density,
-            "permeability_real": permeability_real,
-            "permeability_imag": permeability_imag
-        }
+            # Frequency/Temperature in operation point
+            material_dict[f"T_{self.core.temperature}__f_{self.frequency}"] = {
+                "sigma_core_real": self.core.sigma.real,
+                "sigma_core_imag": self.core.sigma.imag,
+                "magnetic_flux_density": magnetic_flux_density,
+                "permeability_real": permeability_real,
+                "permeability_imag": permeability_imag
+            }
 
-        # ====== save data as JSON ======
-        with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
-            json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
+            # ====== save data as JSON ======
+            with open(self.file_data.material_log_path, "w+", encoding='utf-8') as outfile:
+                json.dump(material_dict, outfile, indent=2, ensure_ascii=False)
 
     def read_thermal_log(self) -> Dict:
         """
