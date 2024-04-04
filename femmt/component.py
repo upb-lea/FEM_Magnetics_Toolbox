@@ -567,9 +567,6 @@ class MagneticComponent:
             self.mesh.generate_hybrid_mesh(visualize_before=pre_visualize_geometry, save_png=save_png,
                                            color_scheme=color_scheme, colors_geometry=colors_geometry)
 
-        # if self.component_type == ComponentType.Inductor:
-        #     if self.windings[0].conductor_type == ConductorType.RoundLitz or self.windings[0].conductor_type == ConductorType.RoundSolid:
-        #         self.log_coordinates_description()
         if self.component_type in [ComponentType.Inductor, ComponentType.Transformer, ComponentType.IntegratedTransformer]:
             self.log_coordinates_description()
 
@@ -2992,36 +2989,42 @@ class MagneticComponent:
         :return:
         """
         coordinates_dict = {
+            "core_type": "",
             "p_outer": [],
             "p_ww": [],
             "p_air_gap_center": [],
             "lengths_air_gap": []
         }
 
+        if self.core.core_type == CoreType.Stacked:
+            coordinates_dict["core_type"] = "Stacked"
+
+        if self.core.core_type == CoreType.Single:
+            coordinates_dict["core_type"] = "Single"
+
         # Obtain coordinates data from component
         coordinates_dict["p_outer"] = self.two_d_axi.p_outer[:, :2].tolist()  # cut last 2 columns (z coordinate and mesh accuracy)
         coordinates_dict["p_outer"][0][0], coordinates_dict["p_outer"][2][0] = 0, 0  # 2d axi symmetric: description only of right half
-
+        # Obtain airgap center points and length
+        # Single core
         if self.core.core_type == CoreType.Single:
             coordinates_dict["p_ww"] = self.two_d_axi.p_window[4:, :2].tolist()  # cut first 4 rows (left winding window) and last 2 columns ("-")
             coordinates_dict["p_air_gap_center"], coordinates_dict["lengths_air_gap"] = \
                 ff.convert_air_gap_corner_points_to_center_and_distance(self.two_d_axi.p_air_gaps.tolist())  # transform to center points and extract heights
-
+        # Stacked core
         elif self.core.core_type == CoreType.Stacked:
             coordinates_dict["p_ww"] = {
                 "bot": self.two_d_axi.p_window_bot[:, :2].tolist(),  # cut last 2 columns (bot window)
                 "top": self.two_d_axi.p_window_top[:, :2].tolist()  # cut last 2 columns (top window)
             }
-            sorted_midpoints = sorted(self.air_gaps.midpoints)
-            for midpoint in sorted_midpoints:
-                # The structure of each midpoint is assumed to be [0, y, length or height]
-                # To find x in the center, x should be modified
-                x = self.core.core_inner_diameter / 4  # x can be the half of the width of the airgap
-                y = midpoint[1]
+            for _, midpoint in enumerate(self.two_d_axi.air_gaps.midpoints):
+                # extract the midpoint (center position) for the current air gap
+                center_x = midpoint[0]
+                center_y = midpoint[1]
+                # Length of the current air gap
                 length = midpoint[2]
-
-                # Append the center (x, y) and length information to the respective lists
-                coordinates_dict["p_air_gap_center"].append([x, y])
+                # Combine the center position and height into a single dictionary
+                coordinates_dict["p_air_gap_center"].append([center_x, center_y])
                 coordinates_dict["lengths_air_gap"].append(length)
 
         if self.stray_path:  # Stray length
@@ -3029,12 +3032,12 @@ class MagneticComponent:
 
         # for the conductors, the coordinates have to be obtained somewhere else...
         for index, winding in enumerate(self.windings):
-
             # Round conductors
             if winding.conductor_type in [ConductorType.RoundLitz, ConductorType.RoundSolid]:
                 coordinates_dict[f"p_cond_center_{index + 1}"] = self.two_d_axi.p_conductor[index][::5].tolist()
                 coordinates_dict[f"radius_cond_{index + 1}"] = self.two_d_axi.p_conductor[index][0, 0] - self.two_d_axi.p_conductor[index][1, 0]
-            elif winding.conductor_type == ConductorType.RectangularSolid:  # Rectangular conductors
+            # Rectangular conductors
+            elif winding.conductor_type == ConductorType.RectangularSolid:
                 coordinates_dict[f"p_cond_center_{index + 1}"] = \
                     [self.two_d_axi.p_conductor[index][i].tolist() for i in range(4, len(self.two_d_axi.p_conductor[index]), 5)]
                 coordinates_dict[f"thickness_{index + 1}"] = self.two_d_axi.p_conductor[index][1, 0] - self.two_d_axi.p_conductor[index][0, 0]
