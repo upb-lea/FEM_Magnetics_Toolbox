@@ -1990,9 +1990,15 @@ def test_transformer_integrated_core_fixed_loss_angle(femmt_simulation_transform
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
 
-def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transformer_stacked_center_tapped):
+def test_transformer_stacked_center_tapped(femmt_simulation_transformer_stacked_center_tapped):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_transformer_stacked_center_tapped
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_transformer_stacked_center_tapped.json")
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
 
@@ -2008,14 +2014,14 @@ def test_simulation_transformer_stacked_center_tapped(femmt_simulation_transform
     compare_thermal_result_logs(thermal_result_log, fixture_result_log, significant_digits=3)
 
 
-def test_simulation_transformer_5_windings(femmt_simulation_transformer_5_windings):
+def test_transformer_5_windings(femmt_simulation_transformer_5_windings):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
     test_result_log, thermal_result_log, geometry_result_log, material_result_log = femmt_simulation_transformer_5_windings
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "geometry_simulation_transformer_5_windings.json")
+                                        "geometry_transformer_5_windings.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(material_result_log), "Material log creation did not work!"
@@ -2055,14 +2061,14 @@ def test_simulation_inductor_time_domain(femmt_simulation_inductor_time_domain):
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
-def test_simulation_transformer_time_domain(femmt_simulation_transformer_time_domain):
+def test_transformer_time_domain(femmt_simulation_transformer_time_domain):
     """Integration test to validate the magnetoquasistatic simulation."""
     test_result_log, material_result_log, geometry_result_log = femmt_simulation_transformer_time_domain
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "geometry_simulation_transformer_time_domain.json")
+                                        "geometry_transformer_time_domain.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
@@ -2073,14 +2079,14 @@ def test_simulation_transformer_time_domain(femmt_simulation_transformer_time_do
     compare_result_logs(test_result_log, fixture_result_log, significant_digits=4)
 
 
-def test_simulation_transformer_3_windings_time_domain(femmt_simulation_transformer_3_windings_time_domain):
+def test_transformer_3_windings_time_domain(femmt_simulation_transformer_3_windings_time_domain):
     """Integration test to validate the magnetoquasistatic simulation."""
     test_result_log, material_result_log, geometry_result_log = femmt_simulation_transformer_3_windings_time_domain
 
     assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
 
     fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
-                                        "geometry_simulation_transformer_3_windings_time_domain.json")
+                                        "geometry_transformer_3_windings_time_domain.json")
     compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
 
     assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
