@@ -44,21 +44,23 @@ This is the latest development version with the latest features. Note:
 You may need to install `git <https://git-scm.com/downloads>`__.
 Also have a look at the `developers notes </developers_notes.md>`__.
 
-
-::
-
-   cd /Documents/Folder/of/Interest/FEMMT   
-   git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
-   pip install -e .
-
-FEMMT is using the material database. To use the latest version for developing, also install the material database in developer mode.
+FEMMT is using the material database. To use the latest version for developing, also install the material database in developer mode. It is important to first install the material database, second install FEMMT. Note the ``dot .`` in the following instructions.
 
 ::
 
    cd /Documents/Folder/of/Interest/materialdatabase   
    git clone git@github.com:upb-lea/materialdatabase.git
+   cd materialdatabase
    pip install -e .
 
+After the material database has been installed, install FEMMT:
+
+::
+
+   cd /Documents/Folder/of/Interest/   
+   git clone git@github.com:upb-lea/FEM_Magnetics_Toolbox.git
+   cd FEM_Magnetics_Toolbox/
+   pip install -e .
 
 
 Examples
