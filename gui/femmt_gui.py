@@ -240,8 +240,6 @@ class MainWindow(QMainWindow):
         self.md_isolation_core2cond_bot_lineEdit.setValidator(float_validator)
         self.md_isolation_core2cond_inner_lineEdit.setValidator(float_validator)
         self.md_isolation_core2cond_outer_lineEdit.setValidator(float_validator)
-
-
         "Set Validators in Excitation Tab"
         self.md_winding1_idc_lineEdit.setValidator(float_validator)
         self.md_winding1_ik1_lineEdit.setValidator(float_validator)
@@ -1964,9 +1962,7 @@ class MainWindow(QMainWindow):
             self.md_winding2_enable(True)
 
     def on_insulation_state_changed(self):
-        """
-        Update the flag_insulation based on the checkbox state
-        """
+        """Update the flag_insulation based on the checkbox state."""
         self.flag_insulation = self.enable_insulation_checkbox.isChecked()
 
     def md_winding2_enable(self, status: bool) -> None:
@@ -2921,14 +2917,13 @@ class MainWindow(QMainWindow):
             # ----------------------------------------------------------------------
             # 7. add conductor to vww and add winding window to MagneticComponent
             # ----------------------------------------------------------------------
-            #vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
+            # vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
             # change 1: Number of turns should be an integer, not as a float
             vww.set_winding(winding, int(self.md_winding1_turns_lineEdit.text()), None,
                             fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=True)
             geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
-
             self.md_simulation_QLabel.setText('simulation startet...')
 
             # 1. chose simulation type
@@ -3298,14 +3293,12 @@ class MainWindow(QMainWindow):
             "core": 5,  # ferrite
             "winding": 400,  # copper
             "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42 if self.flag_insulation else None # polyethylen
+            "insulation": 0.42 if self.flag_insulation else None  # polyethylen
         }
-
         # Here the case size can be determined
         case_gap_top = 0.002
         case_gap_right = 0.0025
         case_gap_bot = 0.002
-
         # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
         # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
         boundary_temperatures = {
