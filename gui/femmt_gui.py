@@ -70,7 +70,6 @@ class MatplotlibWidget(QWidget):
         self.sm = plt.cm.ScalarMappable(cmap=cm.inferno)
         self.figure.colorbar(mappable=self.sm, cax=self.axis_cm)
 
-
 class MainWindow(QMainWindow):
     """Global variable declaration."""
 
@@ -163,6 +162,12 @@ class MainWindow(QMainWindow):
         # Results
         self.Inductance_value_pushButton.clicked.connect(self.inductancecalc)
 
+        "checkbox for Insulation mode"
+        # change 6: needed for enabeling the insulation
+        self.enable_insulation_checkbox.stateChanged.connect(self.on_insulation_state_changed)
+        # Initialize flag_insulation based on the checkbox's initial state
+        self.flag_insulation = self.enable_insulation_checkbox.isChecked()
+
         "Signals in Excitation Tab"
         self.md_dc_checkBox.stateChanged.connect(self.md_dc_enable)
         self.md_fk1_checkBox.stateChanged.connect(self.md_change_frequencies_1)
@@ -227,13 +232,14 @@ class MainWindow(QMainWindow):
         self.md_air_gap_4_position_lineEdit.setValidator(float_validator)
         self.md_air_gap_5_position_lineEdit.setValidator(float_validator)
         self.md_isolation_p2p_lineEdit.setValidator(float_validator)
-        self.md_isolation_s2s_lineEdit.setValidator(float_validator)
         self.md_isolation_p2s_lineEdit.setValidator(float_validator)
+        self.md_isolation_s2s_lineEdit.setValidator(float_validator)
+        # change 4: s2p
+        self.md_isolation_s2p_lineEdit.setValidator(float_validator)
         self.md_isolation_core2cond_top_lineEdit.setValidator(float_validator)
         self.md_isolation_core2cond_bot_lineEdit.setValidator(float_validator)
         self.md_isolation_core2cond_inner_lineEdit.setValidator(float_validator)
         self.md_isolation_core2cond_outer_lineEdit.setValidator(float_validator)
-
         "Set Validators in Excitation Tab"
         self.md_winding1_idc_lineEdit.setValidator(float_validator)
         self.md_winding1_ik1_lineEdit.setValidator(float_validator)
@@ -1713,7 +1719,7 @@ class MainWindow(QMainWindow):
 
         if mat_text5:
             names_list = database.find_measurement_names(material_name=mat_text5, datatype="complex_permeability")
-        
+
         for option in names_list:
             self.test_name_5_comboBox.addItem(option)
 
@@ -1955,6 +1961,10 @@ class MainWindow(QMainWindow):
             # set winding definitions of winding 2 to editable
             self.md_winding2_enable(True)
 
+    def on_insulation_state_changed(self):
+        """Update the flag_insulation based on the checkbox state."""
+        self.flag_insulation = self.enable_insulation_checkbox.isChecked()
+
     def md_winding2_enable(self, status: bool) -> None:
         """
         Enable/disable all fields being in contact with winding 2.
@@ -1990,8 +2000,11 @@ class MainWindow(QMainWindow):
         self.md_isolation_p2s_lineEdit.setEnabled(status)
         self.md_isolation_s2s_lineEdit.setVisible(status)
         self.md_isolation_p2s_lineEdit.setVisible(status)
+        # change 5: enable s2p only for winding 2
+        self.md_isolation_s2p_lineEdit.setVisible(status)
         self.md_isolation_s2s_label.setVisible(status)
         self.md_isolation_p2s_label.setVisible(status)
+        self.md_isolation_s2p_label.setVisible(status)
 
     def md_gmsh_pre_visualisation(self):
         """Pre-visualize when update preview button is pressed in the definitions tab."""
@@ -2827,11 +2840,11 @@ class MainWindow(QMainWindow):
                                     air_gap_position=[])"""
 
             elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
-
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_position_array[i - 1],
-                                         air_gap_heigth_array[i - 1])
+                    # change 2: The height should be before the position value
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
+                                         air_gap_position_array[i - 1])
                 """
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, md_air_gap_1_position, md_air_gap_1_height)"""
@@ -2847,8 +2860,8 @@ class MainWindow(QMainWindow):
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 for i in range(1, air_gap_count + 1):
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_position_array[i - 1],
-                                         air_gap_heigth_array[i - 1])
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
+                                         air_gap_position_array[i - 1])
                 """
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, md_air_gap_1_position, md_air_gap_1_height)"""
@@ -2863,8 +2876,7 @@ class MainWindow(QMainWindow):
             # ------------------------------------------------------
             # Set insulations
             # ------------------------------------------------------
-
-            insulation = fmt.Insulation()
+            insulation = fmt.Insulation(flag_insulation=self.flag_insulation)
             insulation.add_core_insulations(comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
@@ -2905,11 +2917,13 @@ class MainWindow(QMainWindow):
             # ----------------------------------------------------------------------
             # 7. add conductor to vww and add winding window to MagneticComponent
             # ----------------------------------------------------------------------
-            vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
+            # vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
+            # change 1: Number of turns should be an integer, not as a float
+            vww.set_winding(winding, int(self.md_winding1_turns_lineEdit.text()), None,
+                            fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=True)
             geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
-
             self.md_simulation_QLabel.setText('simulation startet...')
 
             # 1. chose simulation type
@@ -2919,10 +2933,14 @@ class MainWindow(QMainWindow):
             # -----------------------------------------------
             # Core
             # -----------------------------------------------
-            core = fmt.Core(window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
-                            window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
-                            core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
-                            mu_r_abs=3100, phi_mu_deg=12, sigma=0.6)
+            core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=comma_str_to_point_float(self.md_core_width_lineEdit.text()),
+                                                            window_w=comma_str_to_point_float(self.md_window_width_lineEdit.text()),
+                                                            window_h=comma_str_to_point_float(self.md_window_height_lineEdit.text()),
+                                                            core_h=0.04)
+            core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
+                            permeability_datasource=fmt.MaterialDataSource.Custom,
+                            permittivity_datasource=fmt.MaterialDataSource.Custom,
+                            detailed_core_model=True)
             geo.set_core(core)
             """
             geo.core.update(window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text()),
@@ -2995,8 +3013,9 @@ class MainWindow(QMainWindow):
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_position_array[i - 1],
-                                         air_gap_heigth_array[i - 1])
+                    # change 2
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
+                                         air_gap_position_array[i - 1])
                 """
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, md_air_gap_1_position, md_air_gap_1_height)"""
@@ -3012,8 +3031,9 @@ class MainWindow(QMainWindow):
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 for i in range(1, air_gap_count + 1):
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_position_array[i - 1],
-                                         air_gap_heigth_array[i - 1])
+                    # change 2
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
+                                         air_gap_position_array[i - 1])
                 """
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, md_air_gap_1_position, md_air_gap_1_height)"""
@@ -3026,15 +3046,17 @@ class MainWindow(QMainWindow):
                                     air_gap_position=air_gap_position_array)"""
 
             # 4. set insulation
-            insulation = fmt.Insulation()
+            insulation = fmt.Insulation(flag_insulation=self.flag_insulation)
             insulation.add_core_insulations(comma_str_to_point_float(self.md_isolation_core2cond_top_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            insulation.add_winding_insulations([comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()),
-                                                comma_str_to_point_float(self.md_isolation_s2s_lineEdit.text()),
-                                                comma_str_to_point_float(self.md_isolation_p2s_lineEdit.text())],
-                                               0.0005)
+            # change 3: update add_winding_insulations
+            insulation.add_winding_insulations([
+                [comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()),
+                 comma_str_to_point_float(self.md_isolation_p2s_lineEdit.text())],
+                [comma_str_to_point_float(self.md_isolation_s2p_lineEdit.text()),
+                 comma_str_to_point_float(self.md_isolation_s2s_lineEdit.text())]])
             geo.set_insulation(insulation)
 
             # 5. create winding window and virtual winding windows (vww)
@@ -3051,9 +3073,12 @@ class MainWindow(QMainWindow):
                                                fmt.ConductorArrangement.Square)
 
             # 7. add conductor to vww and add winding window to MagneticComponent
-            left.set_winding(winding1, int(self.md_winding1_turns_lineEdit.text()), None)
-            right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None)
-            geo.set_winding_window(winding_window)
+            left.set_winding(winding1, int(self.md_winding1_turns_lineEdit.text()), None, fmt.Align.ToEdges,
+                             fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+            right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None, fmt.Align.ToEdges,
+                              fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+            # Change 4 : editing set_winding
+            geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'integrated transformer':
             pass
@@ -3077,7 +3102,8 @@ class MainWindow(QMainWindow):
 
         winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
             winding2_phi_rad_list = self.md_get_frequency_lists()
-
+        print(winding1_frequency_list)
+        print(winding1_amplitude_list)
         if len(winding1_frequency_list) == 1:
             if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
                 geo.single_simulation(freq=winding1_frequency_list[0],
@@ -3254,6 +3280,7 @@ class MainWindow(QMainWindow):
 
         # The case parameter sets the thermal conductivity for a case which will be set around the core.
         # This could model some case in which the transformer is placed in together with a set potting material.
+        flag_insulation = True
         thermal_conductivity_dict = {
             "air": 0.0263,
             "case": {  # (epoxy resign) | transformer oil
@@ -3266,14 +3293,12 @@ class MainWindow(QMainWindow):
             "core": 5,  # ferrite
             "winding": 400,  # copper
             "air_gaps": 180,  # aluminiumnitride
-            "isolation": 0.42  # polyethylen
+            "insulation": 0.42 if self.flag_insulation else None  # polyethylen
         }
-
         # Here the case size can be determined
         case_gap_top = 0.002
         case_gap_right = 0.0025
         case_gap_bot = 0.002
-
         # Here the boundary temperatures can be set, currently it is set to 20°C (around 293°K).
         # This does not change the results of the simulation (at least when every boundary is set equally) but will set the temperature offset.
         boundary_temperatures = {
@@ -3310,9 +3335,50 @@ class MainWindow(QMainWindow):
         geo = self.md_setup_geometry()
         geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
                          save_png=False)
+        # electromagnetic simulation is needed for thermal simulation
+        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
+            winding2_phi_rad_list = self.md_get_frequency_lists()
+        if len(winding1_frequency_list) == 1:
+            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                geo.single_simulation(freq=winding1_frequency_list[0],
+                                      current=[winding1_amplitude_list[0]],
+                                      show_fem_simulation_results=True)
+            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                geo.single_simulation(freq=winding1_frequency_list[0],
+                                      current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
+                                      phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+
+        else:
+
+            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                amplitude_list = []
+                print(f"{winding1_amplitude_list = }")
+                for amplitude_value in winding1_amplitude_list:
+                    amplitude_list.append([amplitude_value])
+
+                phase_rad_list = []
+                for phase_value in winding1_phi_rad_list:
+                    phase_rad_list.append([phase_value])
+                geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list,
+                                     phi_deg_list_list=phase_rad_list)
+
+            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                amplitude1_list = []
+                for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
+                    amplitude1_list.append([amplitude1_value, amplitude2_value])
+
+                phase1_rad_list = []
+                for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
+                    phase1_rad_list.append([phase1_value, phase2_value])
+
+                geo.excitation_sweep(frequency_list=winding1_frequency_list,
+                                     current_list_list=amplitude1_list,
+                                     phi_deg_list_list=phase1_rad_list)
+
+        # Thermal simulation
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                               case_gap_right, case_gap_bot, True, color_scheme=fmt.colors_ba_jonas,
-                               colors_geometry=fmt.colors_geometry_ba_jonas)
+                               case_gap_right, case_gap_bot, True,
+                               color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=self.flag_insulation)
 
         # Because the isolations inside of the winding window are not implemented in femm simulation.
         # The validation only works when the isolations for the FEMMT thermal simulation are turned off.

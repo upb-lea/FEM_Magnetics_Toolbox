@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1658</width>
+    <width>1799</width>
     <height>1177</height>
    </rect>
   </property>
@@ -30,7 +30,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="md_QWidget_2">
        <attribute name="title">
@@ -712,30 +712,23 @@
                   </layout>
                  </widget>
                 </item>
+                <item alignment="Qt::AlignHCenter">
+                 <widget class="QCheckBox" name="enable_insulation_checkbox">
+                  <property name="text">
+                   <string>Enable Insulation</string>
+                  </property>
+                 </widget>
+                </item>
                 <item>
                  <widget class="QGroupBox" name="groupBox_6">
                   <property name="title">
-                   <string>Winding Isolation</string>
+                   <string>Winding Insulation</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_8">
-                   <item row="1" column="1">
-                    <widget class="QLineEdit" name="md_isolation_p2s_lineEdit">
-                     <property name="text">
-                      <string>0.0005</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="4">
-                    <widget class="QLineEdit" name="md_isolation_s2s_lineEdit">
-                     <property name="text">
-                      <string>0.0005</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="1" column="0">
-                    <widget class="QLabel" name="md_isolation_p2s_label">
+                    <widget class="QLabel" name="md_isolation_s2p_label">
                      <property name="text">
-                      <string>P2S [m]</string>
+                      <string>S2P [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -746,10 +739,23 @@
                      </property>
                     </widget>
                    </item>
+                   <item row="1" column="2">
+                    <spacer name="horizontalSpacer_19">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
                    <item row="0" column="3">
-                    <widget class="QLabel" name="md_isolation_s2s_label">
+                    <widget class="QLabel" name="md_isolation_p2s_label">
                      <property name="text">
-                      <string>S2S [m]</string>
+                      <string>P2S [m]</string>
                      </property>
                     </widget>
                    </item>
@@ -773,18 +779,33 @@
                      </property>
                     </spacer>
                    </item>
-                   <item row="1" column="2">
-                    <spacer name="horizontalSpacer_19">
-                     <property name="orientation">
-                      <enum>Qt::Horizontal</enum>
+                   <item row="1" column="3">
+                    <widget class="QLabel" name="md_isolation_s2s_label">
+                     <property name="text">
+                      <string>S2S [m]</string>
                      </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>40</width>
-                       <height>20</height>
-                      </size>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QLineEdit" name="md_isolation_s2p_lineEdit">
+                     <property name="text">
+                      <string>0.0005</string>
                      </property>
-                    </spacer>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QLineEdit" name="md_isolation_p2s_lineEdit">
+                     <property name="text">
+                      <string>0.0005</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="4">
+                    <widget class="QLineEdit" name="md_isolation_s2s_lineEdit">
+                     <property name="text">
+                      <string>0.0005</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
@@ -3610,7 +3631,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>55</width>
+                 <width>63</width>
                  <height>16</height>
                 </rect>
                </property>
@@ -4017,8 +4038,8 @@
                    <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>1068</width>
-                    <height>522</height>
+                    <width>1072</width>
+                    <height>518</height>
                    </rect>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -4056,7 +4077,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>55</width>
+                 <width>63</width>
                  <height>16</height>
                 </rect>
                </property>
@@ -4202,8 +4223,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>1068</width>
-                     <height>522</height>
+                     <width>1072</width>
+                     <height>518</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -4382,8 +4403,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>1068</width>
-                  <height>522</height>
+                  <width>1072</width>
+                  <height>518</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -6920,8 +6941,8 @@
                    <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>1068</width>
-                    <height>2043</height>
+                    <width>1072</width>
+                    <height>2036</height>
                    </rect>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -9536,8 +9557,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>1068</width>
-                  <height>1029</height>
+                  <width>1072</width>
+                  <height>1024</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -10128,8 +10149,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>1068</width>
-                  <height>522</height>
+                  <width>1072</width>
+                  <height>518</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -10163,7 +10184,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1658</width>
+     <width>1799</width>
      <height>21</height>
     </rect>
    </property>
