@@ -454,6 +454,120 @@ def fixture_inductor_core_fixed_loss_angle(temp_folder):
 
 
 @pytest.fixture
+def fixture_inductor_core_fixed_loss_angle_dc(temp_folder):
+    """Fixture for the integration test."""
+    temp_folder_path, onelab_folder = temp_folder
+
+    # Create new temp folder, build model and simulate
+    try:
+        working_directory = temp_folder_path
+        if not os.path.exists(working_directory):
+            os.mkdir(working_directory)
+
+        # Set is_gui = True so FEMMt won't ask for the onelab path if no config is found.
+        geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
+                                    verbosity=fmt.Verbosity.Silent, is_gui=True)
+
+        # Set onelab path manually
+        geo.file_data.onelab_folder_path = onelab_folder
+
+        core_db = fmt.core_database()["PQ 40/40"]
+        core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],
+                                                        window_w=core_db["window_w"],
+                                                        window_h=core_db["window_h"],
+                                                        core_h=core_db["core_h"])
+
+        core = fmt.Core(core_type=fmt.CoreType.Single,
+                        core_dimensions=core_dimensions,
+                        mu_r_abs=3000, phi_mu_deg=10, sigma=0.5, permeability_datasource=fmt.MaterialDataSource.Custom,
+                        permittivity_datasource=fmt.MaterialDataSource.Custom)
+        geo.set_core(core)
+
+        air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 10)
+        air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, 0.0005, 90)
+        geo.set_air_gaps(air_gaps)
+
+        insulation = fmt.Insulation()
+        insulation.add_core_insulations(0.001, 0.001, 0.004, 0.001)
+        insulation.add_winding_insulations([[0.0005]])
+        geo.set_insulation(insulation)
+
+        winding_window = fmt.WindingWindow(core, insulation)
+        vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+
+        winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=25)
+        winding.set_solid_round_conductor(conductor_radius=0.0013,
+                                          conductor_arrangement=fmt.ConductorArrangement.Square)
+
+        vww.set_winding(winding, 9, None, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalRightward)
+        geo.set_winding_windows([winding_window])
+
+        geo.create_model(freq=0, pre_visualize_geometry=False, save_png=False)
+
+        geo.single_simulation(freq=0, current=[4.5], show_fem_simulation_results=False)
+        thermal_conductivity_dict = {
+            "air": 1.57,  # potting epoxy resign
+            "case": {
+                "top": 1.57,
+                "top_right": 1.57,
+                "right": 1.57,
+                "bot_right": 1.57,
+                "bot": 1.57
+            },
+            "core": 5,  # ferrite
+            "winding": 400,  # copper
+            "air_gaps": 1.57,
+            "insulation": 1.57
+        }
+
+        case_gap_top = 0.002
+        case_gap_right = 0.0025
+        case_gap_bot = 0.002
+
+        boundary_temperatures = {
+            "value_boundary_top": 20,
+            "value_boundary_top_right": 20,
+            "value_boundary_right_top": 20,
+            "value_boundary_right": 20,
+            "value_boundary_right_bottom": 20,
+            "value_boundary_bottom_right": 20,
+            "value_boundary_bottom": 20
+        }
+
+        boundary_flags = {
+            "flag_boundary_top": 1,
+            "flag_boundary_top_right": 1,
+            "flag_boundary_right_top": 1,
+            "flag_boundary_right": 1,
+            "flag_boundary_right_bottom": 1,
+            "flag_boundary_bottom_right": 1,
+            "flag_boundary_bottom": 1
+        }
+
+        # color_scheme = fmt.colors_ba_jonas
+        # colors_geometry = fmt.colors_geometry_ba_jonas
+        color_scheme = fmt.colors_ba_jonas
+        colors_geometry = fmt.colors_geometry_draw_only_lines
+
+        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                               case_gap_right,
+                               case_gap_bot, show_thermal_simulation_results=False, pre_visualize_geometry=False,
+                               color_scheme=color_scheme, colors_geometry=colors_geometry)
+
+    except Exception as e:
+        print("An error occurred while creating the femmt mesh files:", e)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt..")
+
+    electromagnetoquasistatic_result = os.path.join(temp_folder_path, "results", "log_electro_magnetic.json")
+    thermal_result = os.path.join(temp_folder_path, "results", "results_thermal.json")
+    geometry_result = os.path.join(temp_folder_path, "results", "log_coordinates_description.json")
+    material_result = os.path.join(temp_folder_path, "results", "log_material.json")
+
+    return electromagnetoquasistatic_result, thermal_result, geometry_result, material_result
+
+@pytest.fixture
 def fixture_inductor_core_fixed_loss_angle_litz_wire(temp_folder):
     """Fixture for the integration test."""
     temp_folder_path, onelab_folder = temp_folder
@@ -1843,6 +1957,30 @@ def test_inductor_core_fixed_loss_angle(fixture_inductor_core_fixed_loss_angle):
                                       "thermal_inductor_core_fixed_loss_angle.json")
     compare_thermal_result_logs(thermal_result_log, fixture_result_log)
 
+def test_inductor_core_fixed_loss_angle_dc(fixture_inductor_core_fixed_loss_angle_dc):
+    """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
+    test_result_log, thermal_result_log, geometry_result_log, material_result_log = fixture_inductor_core_fixed_loss_angle_dc
+
+    assert os.path.exists(geometry_result_log), "Geometry creation did not work!"
+
+    fixture_geometry_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                        "geometry_inductor_core_fixed_loss_angle_dc.json")
+
+    compare_result_logs(geometry_result_log, fixture_geometry_log, significant_digits=10)
+
+    assert os.path.exists(test_result_log), "Electro magnetic simulation did not work!"
+
+    # e_m mesh
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "inductor_core_fixed_loss_angle_dc.json")
+    compare_result_logs(test_result_log, fixture_result_log)
+
+    # check thermal simulation results
+    assert os.path.exists(thermal_result_log), "Thermal simulation did not work!"
+    fixture_result_log = os.path.join(os.path.dirname(__file__), "fixtures",
+                                      "thermal_inductor_core_fixed_loss_angle_dc.json")
+    compare_thermal_result_logs(thermal_result_log, fixture_result_log)
+
 
 def test_inductor_core_fixed_loss_angle_litz_wire(fixture_inductor_core_fixed_loss_angle_litz_wire):
     """Integration test to validate the magnetoquasistatic simulation and the thermal simulation."""
@@ -2099,6 +2237,7 @@ def test_transformer_3_windings_time_domain(fixture_transformer_3_windings_time_
 
 def test_load_files(temp_folder, fixture_inductor_core_material_database,
                     fixture_inductor_core_fixed_loss_angle,
+                    fixture_inductor_core_fixed_loss_angle_dc,
                     fixture_inductor_core_fixed_loss_angle_litz_wire,
                     fixture_inductor_core_fixed_loss_angle_foil_horizontal,
                     fixture_inductor_core_fixed_loss_angle_foil_vertical,
@@ -2121,6 +2260,7 @@ def test_load_files(temp_folder, fixture_inductor_core_material_database,
 
         result_log_filepath_list = [fixture_inductor_core_material_database,
                                     fixture_inductor_core_fixed_loss_angle,
+                                    fixture_inductor_core_fixed_loss_angle_dc,
                                     fixture_inductor_core_fixed_loss_angle_litz_wire,
                                     fixture_inductor_core_fixed_loss_angle_foil_horizontal,
                                     fixture_inductor_core_fixed_loss_angle_foil_vertical,

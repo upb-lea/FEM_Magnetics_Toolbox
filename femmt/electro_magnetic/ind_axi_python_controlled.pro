@@ -549,6 +549,12 @@ PostProcessing {
            { Name j2H ; Value { Integral {
              [ CoefGeo*( Re[-{d a}*Conj[nuOm[]*{d a}]] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
              In DomainS ; Jacobian Vol ; Integration II ; } } }
+
+           { Name j2H_density ; Value { Integral {
+             [ CoefGeo/ElementVol[]*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ;
+             In DomainS ; Jacobian Vol ; Integration II ; } } }
+
+
       Else
            { Name j2H ; Value { Integral {
              [ 0.5*CoefGeo*( Norm[ Re[{d a}*Conj[nuOm[]*{d a}]] ] + sigma[]*SquNorm[-1/AreaCell[]*{ir}]) ] ; // 0.5 for frequency domain
