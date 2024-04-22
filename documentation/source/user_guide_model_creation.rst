@@ -503,16 +503,33 @@ Here's how the user can customize the mesh accuracies for different components o
 Viewing the Mesh in Gmsh
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To visualize the mesh in Gmsh after it has been generated:
+To visualize the mesh in Gmsh after it has been generated, Here are two ways to view the mesh:
+
+**Option 1: Direct Visualization in Gmsh**
 
 1. Open the generated model file (.msh) in Gmsh.
 2. Navigate to the ``Mesh`` tab in the top menu and select ``View mesh``.
-3. You can use the mouse wheel to zoom in and out for a better view of the mesh details.
+3. Use the mouse wheel to zoom in and out for a detailed view of the mesh.
 
-The options panel allows users to control the visibility and labeling of these different element types within the meshing software gmsh as shown in the figure.
+The options panel allows users to control the visibility and labeling of these different element types within the meshing
+software gmsh as shown in the figure.
 
 .. image:: ../images/msh_panel.png
     :width: 500
+
+**Option 2: From the Output Simulation File**
+
+For visualizing mesh details from the output simulation file:
+
+1. Double right-click to open the viewing options.
+2. Navigate to ``View`` -> ``Visibility`` -> ``Mesh Options``.
+3. Select ``2D Element Edges`` to view the edges of the 2D elements.
+
+Both options provide insights into how well the different model parts are meshed, which is crucial for ensuring the accuracy of simulation results. The figure
+below shows the mesh direct from the simulation output of an inductor.
+
+.. image:: ../images/msh_simulation.png
+    :width: 400
 
 [Optional] Create thermal simulation
 ---------------------------------------
