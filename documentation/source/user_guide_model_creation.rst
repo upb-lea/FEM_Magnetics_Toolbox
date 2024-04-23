@@ -145,7 +145,7 @@ Furthermore there are offset insulations between each turn in the same
 winding, a distance between 2 windings in one virtual winding window and
 a distance between each virtual winding window. The first two are set
 using the ``add_winding_insulations`` functions, the last one when
-creating such a :ref:`virtual-winding-windows-label` (vww).
+creating such a :ref:`virtual-winding-windows-label` (vww) .
 
 The ``add_winding_insulations`` contains the inner winding insulation, which is a nested lists representing
 the insulations between turns of the same winding. Importantly, these values are not arranged according to the
@@ -174,6 +174,8 @@ Add windings to the winding window
 
 In order to understand the way winding windows work in femmt, the
 concept of virtual winding windows must be explained:
+
+.. _virtual-winding-windows-label:
 
 Virtual Winding Windows
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -243,7 +245,7 @@ where the second column is further divided into two rows, can be achieved with t
     cells = winding_window.NHorizontalAndVerticalSplit(horizontal_split_factors=[0.48, 0.75],
                                                       vertical_split_factors=[None, [0.5, 0.85], None])
 
-.. _virtual-winding-windows-label:
+
 
 Winding types and winding schemes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -457,11 +459,88 @@ results during the time domain simulation.
                                 number_of_periods=2,
                                 plot_interpolation=False,
                                 show_fem_simulation_results=True,
-                                show_rolling_average=False,
-                                rolling_avg_window_size=50)
+                                show_rolling_average=False,                                rolling_avg_window_size=50)
 
 
 The results should look like this:
+
+.. image:: ../images/user_guide_example_simulation.png
+   :width: 350
+
+Mesh Customization
+--------------------------------------
+
+Understanding and modifying the mesh in FEMMT is crucial for optimizing simulation performance and accuracy.
+Below are some practical hints to manually adapt the mesh using the meshing factors for different parts of the model,
+such as the core, winding windows (ww), and air gaps.
+
+Conductor meshing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In general, there are two different approaches to mesh wires:
+
+- for solid conductors, the mesh is adapted according to the skin depth, depending on the frequency. In a frequency sweep, the mesh is generated for the highest frequency.
+- for litz conductors, there is a rough mesh only. There is a pre- and postprocessing according to the following papers:
+    - Niyomsatian, Korawich and Gyselinck, Johan. and Sabariego, Ruth V.: New closed-form proximity-effect complex permeability expression for characterizing litz-wire windings
+    - Niyomsatian, K and Van den Keybus, J. and Sabariego, R. V. and Gyselinck, J.: Frequency-domain homogenization for litz-wire bundles in finite element calculations
+
+
+
+Manually Adapting the Mesh
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To manually adapt the mesh, the user can adjust the mesh accuracy settings directly in FEMMT setup. These settings control the density of the mesh around
+different components of the model:
+
+- **Mesh Accuracy Core**: It affects the density of the mesh around the magnetic core. Decreasing this value increases the mesh density, which can enhance accuracy
+  at the cost of increased computational time.
+- **Mesh Accuracy Window**: It controls the mesh density around the winding window.
+- **Mesh Accuracy Conductor**: It controls the mesh density of the conductors in the winding window. Higher accuracy ensures better representation of conductor
+  shapes and edges.
+- **Mesh Accuracy Air Gaps**: It determines the mesh granularity in the air gaps, which can be important for capturing the magnetic field distribution accurately.
+
+Here's how the user can customize the mesh accuracies for different components of the magnetic model in Component.py file:
+
+.. code:: python
+
+        padding = 1.5  # mesh boundary around the model
+        mu_0 = 4e-7 * np.pi  # vacuum permeability
+        self.mesh_data = MeshData(mesh_accuracy_core=0.5,
+                                  mesh_accuracy_window=0.5,
+                                  mesh_accuracy_conductor=0.5,
+                                  mesh_accuracy_air_gaps=0.5,
+                                  padding=padding,
+                                  mu0=mu_0)
+
+Viewing the Mesh in Gmsh
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+To visualize the mesh in Gmsh after it has been generated, there are two ways to view the mesh:
+
+**Option 1: Direct Visualization in Gmsh**
+
+1. Open the generated model file (.msh) in Gmsh.
+2. Navigate to the ``Mesh`` tab in the top menu and select ``View mesh``.
+3. Use the mouse wheel to zoom in and out for a detailed view of the mesh.
+
+The options panel allows users to control the visibility and labeling of these different element types within the meshing
+software gmsh as shown in the figure.
+
+.. image:: ../images/msh_panel.png
+    :width: 500
+
+**Option 2: From the Output Simulation File**
+
+For visualizing mesh details from the output simulation file:
+
+1. Double right-click to open the viewing options.
+2. Navigate to ``View`` -> ``Visibility`` -> ``Mesh Options``.
+3. Select ``2D Element Edges`` to view the edges of the 2D elements.
+
+Both options provide insights into how well the different model parts are meshed, which is crucial for ensuring the accuracy of simulation results. The figure
+below shows the mesh direct from the simulation output of an inductor.
+
+.. image:: ../images/msh_simulation.png
+    :width: 400
 
 [Optional] Create thermal simulation
 ---------------------------------------
