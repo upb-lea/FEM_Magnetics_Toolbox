@@ -474,6 +474,17 @@ Understanding and modifying the mesh in FEMMT is crucial for optimizing simulati
 Below are some practical hints to manually adapt the mesh using the meshing factors for different parts of the model,
 such as the core, winding windows (ww), and air gaps.
 
+Conductor meshing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In general, there are two different approaches to mesh wires:
+
+- for solid conductors, the mesh is adapted according to the skin depth, depending on the frequency. In a frequency sweep, the mesh is generated for the highest frequency.
+- for litz conductors, there is a rough mesh only. There is a pre- and postprocessing according to the following papers:
+    - Niyomsatian, Korawich and Gyselinck, Johan. and Sabariego, Ruth V.: New closed-form proximity-effect complex permeability expression for characterizing litz-wire windings
+    - Niyomsatian, K and Van den Keybus, J. and Sabariego, R. V. and Gyselinck, J.: Frequency-domain homogenization for litz-wire bundles in finite element calculations
+
+
+
 Manually Adapting the Mesh
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -503,7 +514,7 @@ Here's how the user can customize the mesh accuracies for different components o
 Viewing the Mesh in Gmsh
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To visualize the mesh in Gmsh after it has been generated, Here are two ways to view the mesh:
+To visualize the mesh in Gmsh after it has been generated, there are two ways to view the mesh:
 
 **Option 1: Direct Visualization in Gmsh**
 
