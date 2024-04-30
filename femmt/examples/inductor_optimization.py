@@ -6,7 +6,7 @@ import re
 import os
 import shutil
 from itertools import product
-import logging
+# import logging
 import inspect
 import time
 
@@ -970,7 +970,7 @@ class AutomatedDesign:
             insulation = fmt.Insulation()
             insulation.add_core_insulations(self.top_core_insulation, self.bot_core_insulation,
                                             self.left_core_insulation, self.right_core_insulation)
-            #insulation.add_winding_insulations([self.inner_winding_insulation], 0.0001)
+            # insulation.add_winding_insulations([self.inner_winding_insulation], 0.0001)
             insulation.add_winding_insulations([[self.inner_winding_insulation]])
             geo.set_insulation(insulation)
 

@@ -522,11 +522,19 @@ class MainWindow(QMainWindow):
     #  **************************** Menu bar ************************************************************  #
     # ## Help actions ###
     def string_to_material_enum(self, material_name):
-        """Converting string to enum value."""
+        """
+        Convert a material name string to its corresponding enum value.
+
+        :param material_name: The name of the material to convert.
+        :type material_name: str
+        :returns: The enum value corresponding to the material name.
+        :rtype: enum
+        :raises ValueError: If the material name is not valid.
+        """
         try:
             return fmt.Material[material_name]
-        except KeyError:
-            raise ValueError(f"{material_name} is not a valid material name")
+        except KeyError as e:
+            raise ValueError(f"{material_name} is not a valid material name") from e
 
     def webbrowser_contribute(self):
         """Open the web browser to the GitHub FEMMT repository contribution page."""
@@ -654,9 +662,9 @@ class MainWindow(QMainWindow):
             annot.get_bbox_patch().set_alpha(0.4)
 
     def setup_aut_simulation_type_combobox(self):
+        """To prevent the transformer option temporarily."""
         # Clear existing items if any
         self.aut_simulation_type_comboBox.clear()
-
         # Add only 'inductor' to the ComboBox for automated design
         self.aut_simulation_type_comboBox.addItem(self.translation_dict['inductor'])
         self.aut_winding2_enable(False)
@@ -750,6 +758,9 @@ class MainWindow(QMainWindow):
         no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max, no_turns_step)))
         no_of_turns = [int(item) for item in no_of_turns_float]
         n_air_gaps = [no_airgaps_min, no_airgaps_max]  # Set No. of air-gaps (n)
+        # when the user chooses [i,j]; where i = j, the n_air_gaps will be just i or j
+        if no_airgaps_min == no_airgaps_max:
+            n_air_gaps = [no_airgaps_min]
         air_gap_height = list(np.linspace(airgap_h_min, airgap_h_max, airgap_h_step))  # Set air-gap length in metre (l)
         air_gap_position = list(np.linspace(airgap_pos_min, airgap_pos_max,
                                             airgap_pos_step))  # Set air-gap position in percent w.r.t. core window height
@@ -3279,7 +3290,6 @@ class MainWindow(QMainWindow):
         # No need for a loop as the user can choose only one material in manual design
         mu_rel_val = database.get_material_attribute(material_name=material_enum, attribute="initial_permeability")
         mu_rel = [int(mu_rel_val)]
-
 
         print(f"core_inner_diameter: {[self.core_w]}")
         print(f"window_h: {[self.window_h]}")
