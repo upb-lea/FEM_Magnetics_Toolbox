@@ -9,6 +9,9 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v4
+    - name: Install sphinx and build documentation with sphinx
+      run: |
+        pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
     - name: Upload artifacts
