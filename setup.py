@@ -65,7 +65,7 @@ setup(
         "Documentation": "https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html",
         "Source Code": "https://github.com/upb-lea/FEM_Magnetics_Toolbox",
     },
-    version='0.5.1',
+    version='0.5.2',
     zip_safe=False,
     data_files=[('', ['CHANGELOG.md'])]
 )
