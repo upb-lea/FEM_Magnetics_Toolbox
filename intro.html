@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1 FEM Magnetics Toolbox (FEMMT) &mdash; FEM Magnetics Toolbox 0.5.2 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to FEM Magnetics Toolbox’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            FEM Magnetics Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption"><span class="caption-text">Table of Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation"><span class="sectnum">1.1</span> Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#onelab-installation"><span class="sectnum">1.1.1</span> ONELAB installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-femmt"><span class="sectnum">1.1.2</span> Install FEMMT</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#femmt-release-version-recommended"><span class="sectnum">1.1.2.1</span> FEMMT release version (recommended)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#femmt-development-version-for-developers-only"><span class="sectnum">1.1.2.2</span> FEMMT development version (for developers only)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#examples"><span class="sectnum">1.2</span> Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basics"><span class="sectnum">1.2.1</span> Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#counting-arrow-system"><span class="sectnum">1.2.2</span> Counting arrow system</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#gui-experimental"><span class="sectnum">1.3</span> GUI (Experimental)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#femm-validation-for-developers-only"><span class="sectnum">1.4</span> FEMM Validation (for developers only)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#user-guide-how-to-create-a-femmt-model"><span class="sectnum">2</span> User Guide: How to create a FEMMT model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#working-directory"><span class="sectnum">2.1</span> Working directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-core"><span class="sectnum">2.2</span> Creating a core</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#material-database"><span class="sectnum">2.2.1</span> Material database</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-air-gaps-to-the-core"><span class="sectnum">2.3</span> Adding air gaps to the core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#set-insulation-distances"><span class="sectnum">2.4</span> Set insulation distances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#add-windings-to-the-winding-window"><span class="sectnum">2.5</span> Add windings to the winding window</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#virtual-winding-windows"><span class="sectnum">2.5.1</span> Virtual Winding Windows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#winding-types-and-winding-schemes"><span class="sectnum">2.5.2</span> Winding types and winding schemes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#conductorarrangement"><span class="sectnum">2.5.2.1</span> ConductorArrangement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wrapparatype"><span class="sectnum">2.5.2.2</span> WrapParaType</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#add-conductors"><span class="sectnum">2.6</span> Add conductors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#add-conductors-to-virtual-winding-windows"><span class="sectnum">2.6.1</span> Add conductors to virtual winding windows</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#alignment"><span class="sectnum">2.6.1.1</span> Alignment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#placement-strategies"><span class="sectnum">2.6.1.2</span> Placement Strategies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zigzag-condition"><span class="sectnum">2.6.1.3</span> Zigzag Condition</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#create-model-and-start-simulation"><span class="sectnum">2.7</span> Create model and start simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mesh-customization"><span class="sectnum">2.8</span> Mesh Customization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#conductor-meshing"><span class="sectnum">2.8.1</span> Conductor meshing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#manually-adapting-the-mesh"><span class="sectnum">2.8.2</span> Manually Adapting the Mesh</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#viewing-the-mesh-in-gmsh"><span class="sectnum">2.8.3</span> Viewing the Mesh in Gmsh</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#optional-create-thermal-simulation"><span class="sectnum">2.9</span> [Optional] Create thermal simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-read-the-result-log"><span class="sectnum">2.10</span> How to Read the Result Log</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-result-log"><span class="sectnum">2.10.1</span> Example Result Log</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#log-electro-magnetic-json-file-in-frequency-domain"><span class="sectnum">2.10.1.1</span> log_electro_magnetic.json File in Frequency Domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#log-electro-magnetic-json-file-in-time-domain"><span class="sectnum">2.10.1.2</span> log_electro_magnetic.json File in Time Domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#results-thermal-json-file"><span class="sectnum">2.10.1.3</span> results_thermal.json File</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#winding-types"><span class="sectnum">3</span> Winding types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#femmt-class-and-function-documentation"><span class="sectnum">4</span> FEMMT class and function documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-magneticcomponent-class"><span class="sectnum">4.1</span> The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-core-class"><span class="sectnum">4.2</span> The <code class="docutils literal notranslate"><span class="pre">Core</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-airgaps-class"><span class="sectnum">4.3</span> The <code class="docutils literal notranslate"><span class="pre">AirGaps</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-insulation-class"><span class="sectnum">4.4</span> The <code class="docutils literal notranslate"><span class="pre">Insulation</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-conductor-class"><span class="sectnum">4.5</span> The <code class="docutils literal notranslate"><span class="pre">Conductor</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-windingwindow-class"><span class="sectnum">4.6</span> The <code class="docutils literal notranslate"><span class="pre">WindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-virtualwindingwindow-class"><span class="sectnum">4.7</span> The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-logparser-class"><span class="sectnum">4.8</span> The <code class="docutils literal notranslate"><span class="pre">LogParser</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#enumerations"><span class="sectnum">4.9</span> <code class="docutils literal notranslate"><span class="pre">Enumerations</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper-functions"><span class="sectnum">4.10</span> Helper functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-helper-functions"><span class="sectnum">4.11</span> Model helper functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reluctance-model-helper-functions"><span class="sectnum">4.12</span> Reluctance model helper functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#topology-helper-functions"><span class="sectnum">4.13</span> Topology helper functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#constants"><span class="sectnum">4.14</span> Constants</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#developer-notes-for-femmt"><span class="sectnum">5</span> Developer Notes for FEMMT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#variable-naming"><span class="sectnum">5.1</span> Variable naming</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#geometry-variables"><span class="sectnum">5.1.1</span> Geometry variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#currents-temperature"><span class="sectnum">5.1.2</span> currents, temperature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#material-variables"><span class="sectnum">5.1.3</span> Material variables</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#winding-creation"><span class="sectnum">5.2</span> Winding creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#general-file-overview"><span class="sectnum">5.3</span> General file overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#recommended-pycharm-settings"><span class="sectnum">5.4</span> Recommended Pycharm settings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#exclude-simulation-directory-from-indexing"><span class="sectnum">5.4.1</span> Exclude simulation directory from indexing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#line-length"><span class="sectnum">5.4.2</span> Line length</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pycharm-code-highlightning-for-pro-files"><span class="sectnum">5.4.3</span> Pycharm code highlightning for pro-files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#lint-check"><span class="sectnum">5.5</span> Lint check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-documentation"><span class="sectnum">5.6</span> Build documentation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">FEM Magnetics Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/intro.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="fem-magnetics-toolbox-femmt">
+<h1><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)<a class="headerlink" href="#fem-magnetics-toolbox-femmt" title="Permalink to this headline">¶</a></h1>
+<p>Python toolbox to generate preconfigured figures for FEM simulation
+tools in power electronics.</p>
+<p>The toolbox contains two parts, a reluctance module and a FEM module.</p>
+<ul class="simple">
+<li><p>The reluctance module is for pre-calculations</p></li>
+<li><p>The FEM module is for detailed calculations</p></li>
+</ul>
+<div class="section" id="installation">
+<h2><span class="sectnum">1.1</span> Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>To run FEMMT, python (version 3.8 or above) and onelab is needed.</p>
+<div class="section" id="onelab-installation">
+<h3><span class="sectnum">1.1.1</span> ONELAB installation<a class="headerlink" href="#onelab-installation" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Go to <a class="reference external" href="https://onelab.info/">https://onelab.info/</a></p></li>
+<li><p>Download the Desktop Version for your OS (Windows, Linux or macOS)</p></li>
+<li><p>Unpack the software and remember the file path. This will be needed
+later when installing FEMMT.</p></li>
+</ul>
+</div>
+<div class="section" id="install-femmt">
+<h3><span class="sectnum">1.1.2</span> Install FEMMT<a class="headerlink" href="#install-femmt" title="Permalink to this headline">¶</a></h3>
+<p>FEMMT can be installed using the python pip package manager.
+Either a release version can be installed using pip or a development version by downloading this repository.</p>
+<div class="section" id="femmt-release-version-recommended">
+<h4><span class="sectnum">1.1.2.1</span> FEMMT release version (recommended)<a class="headerlink" href="#femmt-release-version-recommended" title="Permalink to this headline">¶</a></h4>
+<p>This installs the stable release version.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">femmt</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="femmt-development-version-for-developers-only">
+<h4><span class="sectnum">1.1.2.2</span> FEMMT development version (for developers only)<a class="headerlink" href="#femmt-development-version-for-developers-only" title="Permalink to this headline">¶</a></h4>
+<p>This is the latest development version with the latest features. Note:
+You may need to install <a class="reference external" href="https://git-scm.com/downloads">git</a>.
+Also have a look at the <a class="reference external" href="/developers_notes.md">developers notes</a>.</p>
+<p>FEMMT is using the material database. To use the latest version for developing, also install the material database in developer mode. It is important to first install the material database, second install FEMMT. Note the <code class="docutils literal notranslate"><span class="pre">dot</span> <span class="pre">.</span></code> in the following instructions.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Folder</span><span class="o">/</span><span class="n">of</span><span class="o">/</span><span class="n">Interest</span><span class="o">/</span><span class="n">materialdatabase</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">upb</span><span class="o">-</span><span class="n">lea</span><span class="o">/</span><span class="n">materialdatabase</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">materialdatabase</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
+</pre></div>
+</div>
+<p>After the material database has been installed, install FEMMT:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Folder</span><span class="o">/</span><span class="n">of</span><span class="o">/</span><span class="n">Interest</span><span class="o">/</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">upb</span><span class="o">-</span><span class="n">lea</span><span class="o">/</span><span class="n">FEM_Magnetics_Toolbox</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">FEM_Magnetics_Toolbox</span><span class="o">/</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2><span class="sectnum">1.2</span> Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>This toolbox is able to build a complete FEM simulation from simple
+Python code. The following figure shows the Python code on the left and
+the corresponding FEM simulation on the right. <img alt="image_femmt_screenshot" src="_images/FEMMT_Screenshot.png" /></p>
+<p>Code examples can be found in this <a class="reference external" href="/femmt/examples/basic_example.py">example file</a>. This file is updated
+regulary.</p>
+<div class="section" id="basics">
+<h3><span class="sectnum">1.2.1</span> Basics<a class="headerlink" href="#basics" title="Permalink to this headline">¶</a></h3>
+<p>The magnetic component can be an inductor, a transformer, or a
+transformer with integrated stray path. The parameterization process is
+divided into the following steps:</p>
+<ol class="arabic simple">
+<li><p>Choose the simulation type, whether it’s frequency domain or time domain simulation,</p></li>
+<li><p>set core parameters (geometry, material),</p></li>
+<li><p>set air gap parameters (position, height),</p></li>
+<li><p>set insulation distances</p></li>
+<li><p>set conductor parameters (litz/solid wire),</p></li>
+<li><p>start the frequency domain simulation by specifying the given frequencies, currents, and phases, and start the time domain simulation by specifying the given currents, and time parameters.</p></li>
+</ol>
+<p>Please have a look at the <a class="reference external" href="/femmt/examples/basic_inductor.py">basic_example</a> for frequency domain simulation, and
+at the <a class="reference external" href="/femmt/examples/basic_inductor_time_domain.py">basic_example</a> for time domain simulation.</p>
+<p>The examples contain among other things:</p>
+<ul class="simple">
+<li><p>Geometries: Coil, transformer, transformer with integrated stray path,</p></li>
+<li><p>wire and stranded wire definition,</p></li>
+<li><p>air gaps definition,</p></li>
+<li><p>excitation with different frequencies, amplitudes and phases for frequency domain simulation, and with amplitudes and time steps for time domain simulation.</p></li>
+</ul>
+<p>The simulation results can be found in <cite>working_directory/results/result_log_electro_magnetic.json</cite>. Working directory can either be set by the user otherwise it located at <cite>/python-side-packages-path/femmt</cite>.
+In it you can find</p>
+<ul class="simple">
+<li><p>power loss in the core: hysteresis losses and eddy current losses,</p></li>
+<li><p>losses per winding and for each individual winding,</p></li>
+<li><p>self- and mutual inductances.</p></li>
+</ul>
+<p>For a more detailed guide on how to create a model, please have a look <a class="reference internal" href="#user-guide-model-creation"><span class="std std-ref">here</span></a>.</p>
+</div>
+<div class="section" id="counting-arrow-system">
+<h3><span class="sectnum">1.2.2</span> Counting arrow system<a class="headerlink" href="#counting-arrow-system" title="Permalink to this headline">¶</a></h3>
+<p>Defined as depicted here:</p>
+<p><img alt="image_counting_arrow_system" src="_images/counting_arrow_system.png" /></p>
+</div>
+</div>
+<div class="section" id="gui-experimental">
+<h2><span class="sectnum">1.3</span> GUI (Experimental)<a class="headerlink" href="#gui-experimental" title="Permalink to this headline">¶</a></h2>
+<p>There is a first preview for a GUI. Installing this is a bit cumbersome
+at first, but will be simplified in the future:</p>
+<ul class="simple">
+<li><p>Download the complete repository via <code class="docutils literal notranslate"><span class="pre">Code</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Download</span> <span class="pre">ZIP</span></code> and unpack it.</p></li>
+<li><p>install the development version of femmt as described above</p></li>
+<li><p>run python <code class="docutils literal notranslate"><span class="pre">downloads/path-to_femmt/femmt/gui/femmt_gui.py</span></code></p></li>
+</ul>
+<p>Please note, the GUI is experimental.</p>
+<p><img alt="image_gui_definition" src="_images/femmt_gui_definition.png" /></p>
+</div>
+<div class="section" id="femm-validation-for-developers-only">
+<h2><span class="sectnum">1.4</span> FEMM Validation (for developers only)<a class="headerlink" href="#femm-validation-for-developers-only" title="Permalink to this headline">¶</a></h2>
+<p>For verification purposes a FEMM model can be created in FEMMT. To do this
+FEMM needs to be installed as well as the FEMM python package.
+The functionality is limited, e.g. the air gaps are limited to the ‘center’-type. Other types, like ‘percent’ are not implemented.</p>
+</div>
+</div>
+<div class="section" id="user-guide-how-to-create-a-femmt-model">
+<span id="user-guide-model-creation"></span><h1><span class="sectnum">2</span> User Guide: How to create a FEMMT model<a class="headerlink" href="#user-guide-how-to-create-a-femmt-model" title="Permalink to this headline">¶</a></h1>
+<p>This guide explains how a model can be created in femmt and provides all
+the necessary information to work with femmt. Many examples for femmt
+models can be found in the example folder.</p>
+<div class="section" id="working-directory">
+<h2><span class="sectnum">2.1</span> Working directory<a class="headerlink" href="#working-directory" title="Permalink to this headline">¶</a></h2>
+<p>Every femmt model has a working directory which can be set when creating
+an instance of the femmt base class called <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code>. When
+running the simulation many files will be created in the working
+directory including the model, mesh and multiple result files. It also
+contains the electro_magnetic_log.json which the most important
+simulation results (e.g. losses, inductance, …).</p>
+<p>Besides the working directory a <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> also needs a
+<code class="docutils literal notranslate"><span class="pre">ComponentType</span></code>. Currently this can be ‘<code class="docutils literal notranslate"><span class="pre">Inductor</span></code>’, ‘<code class="docutils literal notranslate"><span class="pre">Transformer</span></code>’ or
+‘<code class="docutils literal notranslate"><span class="pre">IntegratedTransformer</span></code>’.</p>
+<p>This results to the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">femmt</span> <span class="k">as</span> <span class="nn">fmt</span>
+
+<span class="n">geo</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">MagneticComponent</span><span class="p">(</span><span class="n">simulation_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">SimulationType</span><span class="o">.</span><span class="n">FreqDomain</span><span class="p">,</span>
+                             <span class="n">component_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">ComponentType</span><span class="o">.</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">working_directory</span><span class="o">=</span><span class="n">working_directory</span><span class="p">,</span>
+                             <span class="n">verbosity</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Verbosity</span><span class="o">.</span><span class="n">ToConsole</span><span class="p">,</span> <span class="n">is_gui</span><span class="o">=</span><span class="n">is_test</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">simulation_type</span></code> specifies the type of simulation to be performed.</p>
+<ul class="simple">
+<li><p>If set to <code class="docutils literal notranslate"><span class="pre">FreqDomain</span></code>, indicating a frequency domain simulation.</p></li>
+<li><p>If set to <code class="docutils literal notranslate"><span class="pre">TimeDomain</span></code>, indicating a time domain simulations.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">Verbosity</span></code> controls the level of detail in the output.</p>
+<ul class="simple">
+<li><p>If set to <code class="docutils literal notranslate"><span class="pre">ToConsole</span></code>, all output messages are shown in the commend line .</p></li>
+<li><p>If set to <code class="docutils literal notranslate"><span class="pre">ToFile</span></code>, all output messages are written to files.</p></li>
+<li><p>If set to <code class="docutils literal notranslate"><span class="pre">Silent</span></code>, no command line outputs are shown.</p></li>
+</ul>
+<p>This simple feature significantly speeds up simulation time, especially for many automated simulations.</p>
+</div>
+<div class="section" id="creating-a-core">
+<h2><span class="sectnum">2.2</span> Creating a core<a class="headerlink" href="#creating-a-core" title="Permalink to this headline">¶</a></h2>
+<p>In general, only 2D rotationally symmetric geometries are represented in
+FEMMT. Other core shapes must first be converted to a 2D rotationally
+symmetric shape. The corresponding values for this (diameter core,
+dimensions of the winding window) are taken from the data sheet.
+Afterwards, a corresponding geometry is generated automatically.</p>
+<p>The following graphics always show only a sectional view of the core
+geometry.</p>
+<a class="reference internal image-reference" href="_images/geometry_translated.png"><img alt="_images/geometry_translated.png" src="_images/geometry_translated.png" style="width: 800px;" /></a>
+<p>After creating a MagneticComponent, a core needs to be created. The core
+needs spatial parameters as well as material parameters. The neccessary
+spatial parameters are shown in the image below.</p>
+<a class="reference internal image-reference" href="_images/geometry_core.png"><img alt="_images/geometry_core.png" src="_images/geometry_core.png" style="width: 800px;" /></a>
+<p>Core spatial parameters can be entered manually but FEMMT provides a
+database of different practical cores. This database can be accessed
+using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">core_db</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">core_database</span><span class="p">()[</span><span class="s2">&quot;PQ 40/40&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Now the core object can be created and added to the model (geo object)</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">core_dimensions</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">dtos</span><span class="o">.</span><span class="n">SingleCoreDimensions</span><span class="p">(</span><span class="n">core_inner_diameter</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;core_inner_diameter&quot;</span><span class="p">],</span>
+                                                 <span class="n">window_w</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;window_w&quot;</span><span class="p">],</span>
+                                                 <span class="n">window_h</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;window_h&quot;</span><span class="p">],</span>
+                                                 <span class="n">core_h</span><span class="o">=</span><span class="n">core_db</span><span class="p">[</span><span class="s2">&quot;core_h&quot;</span><span class="p">])</span>
+
+<span class="n">core</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Core</span><span class="p">(</span><span class="n">core_type</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">CoreType</span><span class="o">.</span><span class="n">Single</span><span class="p">,</span>
+                 <span class="n">core_dimensions</span><span class="o">=</span><span class="n">core_dimensions</span><span class="p">,</span>
+                 <span class="n">detailed_core_model</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">material</span><span class="o">=</span><span class="n">mdb</span><span class="o">.</span><span class="n">Material</span><span class="o">.</span><span class="n">N49</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="n">inductor_frequency</span><span class="p">,</span>
+                 <span class="n">permeability_datasource</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">MaterialDataSource</span><span class="o">.</span><span class="n">Measurement</span><span class="p">,</span>
+                 <span class="n">permeability_datatype</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">MeasurementDataType</span><span class="o">.</span><span class="n">ComplexPermeability</span><span class="p">,</span>
+                 <span class="n">permeability_measurement_setup</span><span class="o">=</span><span class="n">mdb</span><span class="o">.</span><span class="n">MeasurementSetup</span><span class="o">.</span><span class="n">LEA_LK</span><span class="p">,</span>
+                 <span class="n">permittivity_datasource</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">MaterialDataSource</span><span class="o">.</span><span class="n">Measurement</span><span class="p">,</span>
+                 <span class="n">permittivity_datatype</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">MeasurementDataType</span><span class="o">.</span><span class="n">ComplexPermittivity</span><span class="p">,</span>
+                 <span class="n">permittivity_measurement_setup</span><span class="o">=</span><span class="n">mdb</span><span class="o">.</span><span class="n">MeasurementSetup</span><span class="o">.</span><span class="n">LEA_LK</span><span class="p">,</span> <span class="n">mdb_verbosity</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Verbosity</span><span class="o">.</span><span class="n">Silent</span><span class="p">)</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">set_core</span><span class="p">(</span><span class="n">core</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="material-database">
+<h3><span class="sectnum">2.2.1</span> Material database<a class="headerlink" href="#material-database" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://github.com/upb-lea/materialdatabase">material database</a> was already introduced in the upper code example with the <cite>material=</cite> parameter. The temperature as well as the frequency are necessary to pick the corresponding data from the datasheet.</p>
+</div>
+</div>
+<div class="section" id="adding-air-gaps-to-the-core">
+<h2><span class="sectnum">2.3</span> Adding air gaps to the core<a class="headerlink" href="#adding-air-gaps-to-the-core" title="Permalink to this headline">¶</a></h2>
+<p>In the next steps air gaps can be added. Currently it is only possible
+to add air gaps in the center leg, there for the ‘AirGapLegPosition’ is
+always ‘CenterLeg’. To set the vertical position for a air gap multiple
+methods are available:</p>
+<ul class="simple">
+<li><p><strong>Center</strong>: The air gap will always be positioned in the center</p></li>
+<li><p><strong>Percent</strong>: A value between 0 and 100 can be given. Where 0
+represents the bottom end and 100 the top end of the winding window.</p></li>
+<li><p><strong>Manually</strong>: The specific y-coordinate needs to be entered
+manually.</p></li>
+</ul>
+<a class="reference internal image-reference" href="_images/geometry_air_gap.png"><img alt="_images/geometry_air_gap.png" src="_images/geometry_air_gap.png" style="width: 800px;" /></a>
+<p>Have a look at the following example on how to create an air gap object
+and add it to the model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">air_gaps</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">AirGaps</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">AirGapMethod</span><span class="o">.</span><span class="n">Percent</span><span class="p">,</span> <span class="n">core</span><span class="o">=</span><span class="n">core</span><span class="p">)</span>
+<span class="n">air_gaps</span><span class="o">.</span><span class="n">add_air_gap</span><span class="p">(</span><span class="n">leg_position</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">AirGapLegPosition</span><span class="o">.</span><span class="n">CenterLeg</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.0005</span><span class="p">,</span> <span class="n">position_value</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">set_air_gaps</span><span class="p">(</span><span class="n">air_gaps</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Adding an air_gap object is not necessary. If no air gap is needed,
+don’t add the air gap object to the model.</p>
+</div>
+<div class="section" id="set-insulation-distances">
+<h2><span class="sectnum">2.4</span> Set insulation distances<a class="headerlink" href="#set-insulation-distances" title="Permalink to this headline">¶</a></h2>
+<p>There are multiple insulations implemented in femmt. Some of them are
+created as rectangles in the model, some are just adding an offset to
+the windings.</p>
+<p>Core insulations are the insulations which are created as rectangles in
+the model. 4 core insulations will be added: top, bottom, left, right.
+The distance of those values can be set with the <code class="docutils literal notranslate"><span class="pre">add_core_insulations</span></code>
+function. The order of <code class="docutils literal notranslate"><span class="pre">add_core_insulations</span></code> is as follow : top, bottom, left, and right.</p>
+<p>Furthermore there are offset insulations between each turn in the same
+winding, a distance between 2 windings in one virtual winding window and
+a distance between each virtual winding window. The first two are set
+using the <code class="docutils literal notranslate"><span class="pre">add_winding_insulations</span></code> functions, the last one when
+creating such a <a class="reference internal" href="user_guide_model_creation.html#virtual-winding-windows-label"><span class="std std-ref">Virtual Winding Windows</span></a> (vww) .</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">add_winding_insulations</span></code> contains the inner winding insulation, which is a nested lists representing
+the insulations between turns of the same winding. Importantly, these values are not arranged according to the
+sequence in which conductors are added to each winding. Instead, the organization is based on the winding number
+with conductors sorted in ascending order of these numbers. Thus, the first sublist (index 0) corresponds to
+the winding with the lowest number, the second sublist (index 1) to the winding with the next lowest number, and so on.</p>
+<a class="reference internal image-reference" href="_images/geometry_insulation.png"><img alt="_images/geometry_insulation.png" src="_images/geometry_insulation.png" style="width: 800px;" /></a>
+<p>This is how to create an insulation object and add certain insulations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">insulation</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Insulation</span><span class="p">(</span><span class="n">flag_insulation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">insulation</span><span class="o">.</span><span class="n">add_core_insulations</span><span class="p">(</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">)</span>
+<span class="n">insulation</span><span class="o">.</span><span class="n">add_winding_insulations</span><span class="p">([[</span><span class="mf">0.0002</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">],[</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.0002</span><span class="p">]])</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">set_insulation</span><span class="p">(</span><span class="n">insulation</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The spatial parameters for the insulation, as well as for every other
+function in FEMMT, are always in SI-Units, in this case metres.</p>
+</div>
+<div class="section" id="add-windings-to-the-winding-window">
+<h2><span class="sectnum">2.5</span> Add windings to the winding window<a class="headerlink" href="#add-windings-to-the-winding-window" title="Permalink to this headline">¶</a></h2>
+<p>In order to understand the way winding windows work in femmt, the
+concept of virtual winding windows must be explained:</p>
+<div class="section" id="virtual-winding-windows">
+<span id="virtual-winding-windows-label"></span><h3><span class="sectnum">2.5.1</span> Virtual Winding Windows<a class="headerlink" href="#virtual-winding-windows" title="Permalink to this headline">¶</a></h3>
+<p>For every femmt model there is always one winding window, which is a 2D
+representation of the 3D rotated winding window. This winding window can
+be split into multiple virtual winding windows which are used to draw
+the conductors. The <code class="docutils literal notranslate"><span class="pre">split_window</span></code> function has multiple ways to split a winding window into:</p>
+<ul class="simple">
+<li><p><strong>NoSplit</strong>: Only 1 virtual winding window will be returned and it
+has the same size as the real winding window.</p></li>
+<li><p><strong>HorizontalSplit</strong>: 2 virtual winding windows will be returned, one
+for the top and one for the bottom part. The height of the splitting
+line can be set using a horizontal_split_factor (value between 0 and
+1)</p></li>
+<li><p><strong>VerticalSplit</strong>: 2 virtual winding windows will be returned, one
+for the left and one for the right part. The radius (x-coordinate) of
+the splitting line can be set using a vertical_split_factor (value
+between 0 and 1)</p></li>
+<li><p><strong>HorizontalAndVerticalSplit</strong>: 4 virtual winding windows are
+returned. One for each corner (in the following order): top_left,
+top_right, bottom_left, bottom_right. In this case the horizontal and
+vertical split factors can be used to set the sizes of each grid
+cell.</p></li>
+</ul>
+<a class="reference internal image-reference" href="_images/geometry_winding_windows.png"><img alt="_images/geometry_winding_windows.png" src="_images/geometry_winding_windows.png" style="width: 800px;" /></a>
+<p>In addition to that 2 virtual winding windows can be combined to one
+(this is not possible for (top_left, bottom_right) or (top_right,
+bottom_left) combinations). This is done using the combine_vww()
+function of the WindingWindow class.</p>
+<p>Each virtual winding window can be filled with either one single winding
+or one interleaved winding.</p>
+<p>A winding window with only one virtual winding window can be craeted
+like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">winding_window</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">WindingWindow</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="n">insulation</span><span class="p">)</span>
+<span class="n">vww</span> <span class="o">=</span> <span class="n">winding_window</span><span class="o">.</span><span class="n">split_window</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">WindingWindowSplit</span><span class="o">.</span><span class="n">NoSplit</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Additionally, the <code class="docutils literal notranslate"><span class="pre">NCellsSplit</span></code> function provides even more flexibility, allowing
+the winding window to be split into N columns horizontally. The distance
+between the virtual winding windows, horizontal split factors, and the
+vertical split factor can be specified. A winding window with 12 columns horizontally can be created like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">winding_window</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">WindingWindow</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="n">insulation</span><span class="p">)</span>
+<span class="n">cells</span> <span class="o">=</span> <span class="n">winding_window</span><span class="o">.</span><span class="n">NCellsSplit</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">3</span> <span class="o">/</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">4</span> <span class="o">/</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">5</span> <span class="o">/</span> <span class="mi">6</span><span class="p">],</span> <span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Furthermore, the <code class="docutils literal notranslate"><span class="pre">NHorizontalAndVerticalSplit</span></code> function introduces more advanced splitting capabilities
+by allowing the winding window to be split into N columns horizontally,with each having M_N rows (vertically).
+Users can specify the positions of borders between columns and rows
+to customize the layout of the resulting virtual winding windows. Creating a winding window with three columns,
+where the second column is further divided into two rows, can be achieved with the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">winding_window</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">WindingWindow</span><span class="p">(</span><span class="n">core</span><span class="p">,</span> <span class="n">insulation</span><span class="p">)</span>
+<span class="n">cells</span> <span class="o">=</span> <span class="n">winding_window</span><span class="o">.</span><span class="n">NHorizontalAndVerticalSplit</span><span class="p">(</span><span class="n">horizontal_split_factors</span><span class="o">=</span><span class="p">[</span><span class="mf">0.48</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">],</span>
+                                                  <span class="n">vertical_split_factors</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="winding-types-and-winding-schemes">
+<h3><span class="sectnum">2.5.2</span> Winding types and winding schemes<a class="headerlink" href="#winding-types-and-winding-schemes" title="Permalink to this headline">¶</a></h3>
+<p>The following table gives an overview of the different winding types,
+winding schemes and conductor arrangements:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 11%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 9%" />
+<col style="width: 8%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>WindingType</strong></p></th>
+<th class="head"><p><strong>ConductorType</strong></p></th>
+<th class="head"><p><strong>WindingScheme</strong></p></th>
+<th class="head"><p><strong>ConductorArrangement</strong></p></th>
+<th class="head"><p><strong>WrapParaType</strong></p></th>
+<th class="head"><p><strong>status</strong></p></th>
+<th class="head"><p><strong>description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Interleaved</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p>Always needs 2 conductors</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>RoundSolid, RoundLitz</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>Bifilar</p></td>
+<td></td>
+<td></td>
+<td><p>not implemented</p></td>
+<td><p>TODO</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>VerticalAlternating</p></td>
+<td></td>
+<td></td>
+<td><p>not implemented</p></td>
+<td><p>primary and secondary winding are interleaved vertically (rows)</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>HorizontalAlternating</p></td>
+<td></td>
+<td></td>
+<td><p>implemented</p></td>
+<td><p>primary and secondary winding are interleaved horizontally (cols)</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>VerticalStacked</p></td>
+<td></td>
+<td></td>
+<td><p>implemented</p></td>
+<td><p>primary winding is drawn bottom to top, seoncdary winmding is drawn top to bottom</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p>Square</p></td>
+<td></td>
+<td><p>“</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p>Hexagonal</p></td>
+<td></td>
+<td><p>“</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>RectangularSolid</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p>not implemented</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Single</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p>Always needs 1 conductor</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p>RoundSolid, RoundLitz</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>None</p></td>
+<td></td>
+<td></td>
+<td><p>implemented</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p>Square</p></td>
+<td></td>
+<td><p>“</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p>Square full width</p></td>
+<td></td>
+<td><p>“</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p>Hexagonal</p></td>
+<td></td>
+<td><p>“</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p>RectangularSolid</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>Full</p></td>
+<td></td>
+<td></td>
+<td><p>implemented</p></td>
+<td><p>whole virtual winding window contains is filled with one turn</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>FoilHorizontal (stacked)</p></td>
+<td></td>
+<td></td>
+<td><p>implemented</p></td>
+<td><p>foils are very long (x-axis) and drawn along y-axis</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p>Square full width</p></td>
+<td></td>
+<td></td>
+<td><p>not implemented</p></td>
+<td><p>foils are drawn along x-axis first and then along y-axis</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p>FoilVertical</p></td>
+<td></td>
+<td></td>
+<td><p>implemented</p></td>
+<td><p>foils are very tall (y-axis) and drawn along x-axis</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p>Fixed Thickness</p></td>
+<td><p>“</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p>Interpolate</p></td>
+<td><p>“</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="conductorarrangement">
+<h4><span class="sectnum">2.5.2.1</span> ConductorArrangement<a class="headerlink" href="#conductorarrangement" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p><strong>Square</strong>: conductors are set in next to each other in a grid</p></li>
+<li><p><strong>Hexagonal</strong>: similar to square but in this case the conductors
+frpmo the next column slips in the free space between two conductors
+from the first column</p></li>
+<li><p><strong>Square full width</strong>: conducors are first drawn along x-axis and
+then y-axis</p></li>
+</ul>
+</div>
+<div class="section" id="wrapparatype">
+<h4><span class="sectnum">2.5.2.2</span> WrapParaType<a class="headerlink" href="#wrapparatype" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p><strong>Fixed thickness</strong>: TODO</p></li>
+<li><p><strong>Interpolate</strong>: TODO</p></li>
+</ul>
+<p>Images for the possible winding types can be found <a class="reference internal" href="#winding-types"><span class="std std-ref">here</span></a>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="add-conductors">
+<h2><span class="sectnum">2.6</span> Add conductors<a class="headerlink" href="#add-conductors" title="Permalink to this headline">¶</a></h2>
+<p>When creating an instance of the class Conductor a winding number and a
+conductivity needs to be given:</p>
+<p>The winding number represents the index of the winding (e.g. primary-&gt;1,
+secondary-&gt;2, tertiary-&gt;3). As an example: When starting a simulation on
+a transformer a current needs to be given, this is done in a list. The
+first index of the current’s list will be set to the winding with the
+lowest winding number, the second index of the list to the winding with
+the second lowest winding number and so on.</p>
+<p>The conductivity can be set using the Conductivity enum where one of two
+possible materials need to be selected:</p>
+<ul class="simple">
+<li><p><strong>Copper</strong></p></li>
+<li><p><strong>Aluminium</strong></p></li>
+</ul>
+<p>After creating an conductor object it is necessary to add a conductor to
+it. As already shown in the winding types table 3 different conducors
+can be set:</p>
+<ul class="simple">
+<li><p><strong>RoundSolid</strong></p></li>
+<li><p><strong>RoundLitz</strong></p></li>
+<li><p><strong>RectangularSolid</strong></p></li>
+</ul>
+<p>To create a conductor have a look at the following code example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">winding1</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Conductor</span><span class="p">(</span><span class="n">winding_number</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">Conductivity</span><span class="o">.</span><span class="n">Copper</span><span class="p">)</span>
+<span class="n">winding1</span><span class="o">.</span><span class="n">set_solid_round_conductor</span><span class="p">(</span><span class="n">conductor_radius</span><span class="o">=</span><span class="mf">0.0011</span><span class="p">,</span> <span class="n">conductor_arrangement</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">ConductorArrangement</span><span class="o">.</span><span class="n">Square</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="add-conductors-to-virtual-winding-windows">
+<h3><span class="sectnum">2.6.1</span> Add conductors to virtual winding windows<a class="headerlink" href="#add-conductors-to-virtual-winding-windows" title="Permalink to this headline">¶</a></h3>
+<p>Now the conductors need to be added to the virtual winding windows with
+the corresponding winding type and winding scheme. In this case the
+set_winding() or set_interleaved_winding() function needs to be called.
+In the set_interleaved_winding() function an insulation distance can
+also be set. This value represents the distance between conductors from
+the primary and secondary side.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">vww</span><span class="o">.</span><span class="n">set_winding</span><span class="p">(</span><span class="n">winding</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fmt</span><span class="o">.</span><span class="n">Align</span><span class="o">.</span><span class="n">ToEdges</span><span class="p">,</span> <span class="n">placing_strategy</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">ConductorDistribution</span><span class="o">.</span><span class="n">VerticalUpward_HorizontalRightward</span><span class="p">,</span> <span class="n">zigzag</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you have a look at the winding types and winding schemes table a
+winding scheme is not needed when creating a round solid conductor in
+single winding. Therefore the value is set to None.</p>
+<p>In the configuration of single windings using round solid or litz wire conductors,
+the focus is on two main aspects: alignment and how the conductors are placed.</p>
+<div class="section" id="alignment">
+<h4><span class="sectnum">2.6.1.1</span> Alignment<a class="headerlink" href="#alignment" title="Permalink to this headline">¶</a></h4>
+<p>Alignment pertains to how the set of conductors is positioned within the winding window:</p>
+<ul class="simple">
+<li><p><strong>Align.ToEdges</strong>: Ensures the outermost conductors are close to the winding window’s edges.</p></li>
+<li><p><strong>Align.CenterOnHorizontalAxis</strong>: Center the winding along the window’s horizontal axis, for balanced distribution.</p></li>
+<li><p><strong>Align.CenterOnVerticalAxis</strong>: Center the winding along the window’s vertical axis, for balanced distribution.</p></li>
+</ul>
+</div>
+<div class="section" id="placement-strategies">
+<h4><span class="sectnum">2.6.1.2</span> Placement Strategies<a class="headerlink" href="#placement-strategies" title="Permalink to this headline">¶</a></h4>
+<p>The strategy for placing conductors is named based on the initial direction and subsequent movement. Examples include:</p>
+<ul class="simple">
+<li><p><strong>VerticalUpward_HorizontalRightward</strong>: Placement starts at the bottom, moving upward vertically, then shifts rightward horizontally for the next column.</p></li>
+<li><p><strong>VerticalUpward_HorizontalLeftward</strong>: Placement starts at the bottom, moving upward vertically, then shifts leftward horizontally for the next column.</p></li>
+<li><p><strong>VerticalDownward_HorizontalRightward</strong>: Begins placement from the top, moving downward, with a rightward shift for each new column.</p></li>
+<li><p><strong>VerticalDownward_HorizontalLeftward</strong>: Begins placement from the top, moving downward, with a leftward shift for each new column.</p></li>
+<li><p><strong>HorizontalRightward_VerticalUpward</strong>: Starts on the left side, moving rightward, then upward for each new row.</p></li>
+<li><p><strong>HorizontalRightward_VerticalDownward</strong>: Starts on the left side, moving rightward, then downward for each new row.</p></li>
+<li><p><strong>HorizontalLeftward_VerticalUpward</strong>: Starts on the right side, moving leftward, then upward for each new row.</p></li>
+<li><p><strong>HorizontalLeftward_VerticalDownward</strong>: Starts on the right side, moving leftward, then downward for each new row.</p></li>
+</ul>
+</div>
+<div class="section" id="zigzag-condition">
+<h4><span class="sectnum">2.6.1.3</span> Zigzag Condition<a class="headerlink" href="#zigzag-condition" title="Permalink to this headline">¶</a></h4>
+<p>Zigzag placement introduces an alternating pattern in the layout:</p>
+<ul class="simple">
+<li><p>After completing a row or column, the direction alternates (e.g., if moving upward initially, the next is downward).</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">zigzag</span></code> parameter is optional and defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>. It can be omitted if a zigzag movement is not needed.</p></li>
+</ul>
+<p>Now before simulating the winding window needs to be added to the model
+as well:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">set_winding_windows</span><span class="p">([</span><span class="n">winding_window</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="create-model-and-start-simulation">
+<h2><span class="sectnum">2.7</span> Create model and start simulation<a class="headerlink" href="#create-model-and-start-simulation" title="Permalink to this headline">¶</a></h2>
+<p>After every needed component is added to the model the model can be
+created. This is done using the create_model() function. The frequency
+is needed there because of the mesh which is adapted according to the
+skin depth. In addition to that a boolean can be given to show the model
+after creation (in gmsh).</p>
+<p>The last step is to run a simulation using <code class="docutils literal notranslate"><span class="pre">single_simulation()</span></code> or <code class="docutils literal notranslate"><span class="pre">time_domain_simulation</span></code> depending on the
+simulation type, where every type needs the following parameters:</p>
+<p>For Frequency Domain Simulation: the frequency, currents (and phase if transformer is set) are needed as parameters.</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">create_model</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="n">inductor_frequency</span><span class="p">,</span> <span class="n">pre_visualize_geometry</span><span class="o">=</span><span class="n">show_visual_outputs</span><span class="p">,</span> <span class="n">save_png</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">single_simulation</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="n">inductor_frequency</span><span class="p">,</span> <span class="n">current</span><span class="o">=</span><span class="p">[</span><span class="mf">4.5</span><span class="p">],</span>
+                      <span class="n">plot_interpolation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">show_fem_simulation_results</span><span class="o">=</span><span class="n">show_visual_outputs</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>For Time Domain Simulation: the <code class="docutils literal notranslate"><span class="pre">current_period_vec</span></code> , <code class="docutils literal notranslate"><span class="pre">time_period_vec</span></code> ,and <code class="docutils literal notranslate"><span class="pre">number_of_periods</span></code> are needed as
+parameters. Users can generate the <code class="docutils literal notranslate"><span class="pre">current_period_vec</span></code> by creating nested lists, adjusting the structure based on
+the number of windings. The <code class="docutils literal notranslate"><span class="pre">time_period_vec</span> <span class="pre">parameter</span> <span class="pre">corresponds</span></code> to a list of time values associated with the
+simulation. Additionally, <code class="docutils literal notranslate"><span class="pre">number_of_periods</span></code> specifies the total number of periods to be simulated. The <code class="docutils literal notranslate"><span class="pre">current_period_vec</span></code> as The
+<code class="docutils literal notranslate"><span class="pre">show_rolling_average</span> <span class="pre">parameter</span></code> is a boolean flag that determines whether to display or hide the rolling average of simulation
+results during the time domain simulation.</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">create_model</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="n">inductor_frequency</span><span class="p">,</span> <span class="n">pre_visualize_geometry</span><span class="o">=</span><span class="n">show_visual_outputs</span><span class="p">,</span> <span class="n">save_png</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">geo</span><span class="o">.</span><span class="n">time_domain_simulation</span><span class="p">(</span><span class="n">current_period_vec</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span> <span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+                           <span class="n">time_period_vec</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">]</span>
+                           <span class="n">number_of_periods</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                           <span class="n">plot_interpolation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">show_fem_simulation_results</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                           <span class="n">show_rolling_average</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>                                <span class="n">rolling_avg_window_size</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The results should look like this:</p>
+<a class="reference internal image-reference" href="_images/user_guide_example_simulation.png"><img alt="_images/user_guide_example_simulation.png" src="_images/user_guide_example_simulation.png" style="width: 350px;" /></a>
+</div>
+<div class="section" id="mesh-customization">
+<h2><span class="sectnum">2.8</span> Mesh Customization<a class="headerlink" href="#mesh-customization" title="Permalink to this headline">¶</a></h2>
+<p>Understanding and modifying the mesh in FEMMT is crucial for optimizing simulation performance and accuracy.
+Below are some practical hints to manually adapt the mesh using the meshing factors for different parts of the model,
+such as the core, winding windows (ww), and air gaps.</p>
+<div class="section" id="conductor-meshing">
+<h3><span class="sectnum">2.8.1</span> Conductor meshing<a class="headerlink" href="#conductor-meshing" title="Permalink to this headline">¶</a></h3>
+<p>In general, there are two different approaches to mesh wires:</p>
+<ul class="simple">
+<li><p>for solid conductors, the mesh is adapted according to the skin depth, depending on the frequency. In a frequency sweep, the mesh is generated for the highest frequency.</p></li>
+<li><dl class="simple">
+<dt>for litz conductors, there is a rough mesh only. There is a pre- and postprocessing according to the following papers:</dt><dd><ul>
+<li><p>Niyomsatian, Korawich and Gyselinck, Johan. and Sabariego, Ruth V.: New closed-form proximity-effect complex permeability expression for characterizing litz-wire windings</p></li>
+<li><p>Niyomsatian, K and Van den Keybus, J. and Sabariego, R. V. and Gyselinck, J.: Frequency-domain homogenization for litz-wire bundles in finite element calculations</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="manually-adapting-the-mesh">
+<h3><span class="sectnum">2.8.2</span> Manually Adapting the Mesh<a class="headerlink" href="#manually-adapting-the-mesh" title="Permalink to this headline">¶</a></h3>
+<p>To manually adapt the mesh, the user can adjust the mesh accuracy settings directly in FEMMT setup. These settings control the density of the mesh around
+different components of the model:</p>
+<ul class="simple">
+<li><p><strong>Mesh Accuracy Core</strong>: It affects the density of the mesh around the magnetic core. Decreasing this value increases the mesh density, which can enhance accuracy
+at the cost of increased computational time.</p></li>
+<li><p><strong>Mesh Accuracy Window</strong>: It controls the mesh density around the winding window.</p></li>
+<li><p><strong>Mesh Accuracy Conductor</strong>: It controls the mesh density of the conductors in the winding window. Higher accuracy ensures better representation of conductor
+shapes and edges.</p></li>
+<li><p><strong>Mesh Accuracy Air Gaps</strong>: It determines the mesh granularity in the air gaps, which can be important for capturing the magnetic field distribution accurately.</p></li>
+</ul>
+<p>Here’s how the user can customize the mesh accuracies for different components of the magnetic model in Component.py file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">padding</span> <span class="o">=</span> <span class="mf">1.5</span>  <span class="c1"># mesh boundary around the model</span>
+<span class="n">mu_0</span> <span class="o">=</span> <span class="mf">4e-7</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>  <span class="c1"># vacuum permeability</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">mesh_data</span> <span class="o">=</span> <span class="n">MeshData</span><span class="p">(</span><span class="n">mesh_accuracy_core</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                          <span class="n">mesh_accuracy_window</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                          <span class="n">mesh_accuracy_conductor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                          <span class="n">mesh_accuracy_air_gaps</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                          <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">,</span>
+                          <span class="n">mu0</span><span class="o">=</span><span class="n">mu_0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="viewing-the-mesh-in-gmsh">
+<h3><span class="sectnum">2.8.3</span> Viewing the Mesh in Gmsh<a class="headerlink" href="#viewing-the-mesh-in-gmsh" title="Permalink to this headline">¶</a></h3>
+<p>To visualize the mesh in Gmsh after it has been generated, there are two ways to view the mesh:</p>
+<p><strong>Option 1: Direct Visualization in Gmsh</strong></p>
+<ol class="arabic simple">
+<li><p>Open the generated model file (.msh) in Gmsh.</p></li>
+<li><p>Navigate to the <code class="docutils literal notranslate"><span class="pre">Mesh</span></code> tab in the top menu and select <code class="docutils literal notranslate"><span class="pre">View</span> <span class="pre">mesh</span></code>.</p></li>
+<li><p>Use the mouse wheel to zoom in and out for a detailed view of the mesh.</p></li>
+</ol>
+<p>The options panel allows users to control the visibility and labeling of these different element types within the meshing
+software gmsh as shown in the figure.</p>
+<a class="reference internal image-reference" href="_images/msh_panel.png"><img alt="_images/msh_panel.png" src="_images/msh_panel.png" style="width: 500px;" /></a>
+<p><strong>Option 2: From the Output Simulation File</strong></p>
+<p>For visualizing mesh details from the output simulation file:</p>
+<ol class="arabic simple">
+<li><p>Double right-click to open the viewing options.</p></li>
+<li><p>Navigate to <code class="docutils literal notranslate"><span class="pre">View</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Visibility</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Mesh</span> <span class="pre">Options</span></code>.</p></li>
+<li><p>Select <code class="docutils literal notranslate"><span class="pre">2D</span> <span class="pre">Element</span> <span class="pre">Edges</span></code> to view the edges of the 2D elements.</p></li>
+</ol>
+<p>Both options provide insights into how well the different model parts are meshed, which is crucial for ensuring the accuracy of simulation results. The figure
+below shows the mesh direct from the simulation output of an inductor.</p>
+<a class="reference internal image-reference" href="_images/msh_simulation.png"><img alt="_images/msh_simulation.png" src="_images/msh_simulation.png" style="width: 400px;" /></a>
+</div>
+</div>
+<div class="section" id="optional-create-thermal-simulation">
+<h2><span class="sectnum">2.9</span> [Optional] Create thermal simulation<a class="headerlink" href="#optional-create-thermal-simulation" title="Permalink to this headline">¶</a></h2>
+<p>After running the electromagnetic simulation it is possible to use the
+simulation results and the created model and start a thermal simulation.
+The thermal simulation will add a case surrounding the previous created
+model. At the edge of this case the boundary condition is applied and
+the thermal conductivity as well as the dimensions of the case can be
+choosen freely. This case is split into 5 parts: top, top right, right,
+bot right, bot. For each region a different thermal conductivity and
+boundary condition can be set. In order to run thermal a thermal
+simulation different values are needed:</p>
+<ul class="simple">
+<li><p>thermal conductivity dict: A dictionary containing thermal
+conductivities for each region. The regions are: air, core, winding,
+air_gaps, insulation, case (which is split in top, top_right, right,
+bot_right, bot</p></li>
+<li><p>case gap values: Set the size of the surrounding case</p></li>
+<li><p>boundary temperatures dict: The temperatures which will be applied at
+the edge of the case (dirichlet boundary condition)</p></li>
+<li><p>boundary flags: By disabling a specific boundary its condition can be
+set to a neumann boundary condition ignoring the temperature
+parameter</p></li>
+</ul>
+<a class="reference internal image-reference" href="_images/geometry_thermal.png"><img alt="_images/geometry_thermal.png" src="_images/geometry_thermal.png" style="width: 800px;" /></a>
+<p>Have a look at this example on how to set the parameters since the
+dictionary keywords are important to write correctly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thermal_conductivity_dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;air&quot;</span><span class="p">:</span> <span class="mf">0.0263</span><span class="p">,</span>
+        <span class="s2">&quot;case&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;top&quot;</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
+            <span class="s2">&quot;top_right&quot;</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
+            <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
+            <span class="s2">&quot;bot_right&quot;</span><span class="p">:</span> <span class="mf">0.122</span><span class="p">,</span>
+            <span class="s2">&quot;bot&quot;</span><span class="p">:</span> <span class="mf">0.122</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;core&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="s2">&quot;winding&quot;</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span>
+        <span class="s2">&quot;air_gaps&quot;</span><span class="p">:</span> <span class="mi">180</span><span class="p">,</span>
+        <span class="s2">&quot;insulation&quot;</span><span class="p">:</span> <span class="mf">0.42</span> <span class="k">if</span> <span class="n">flag_insulation</span> <span class="k">else</span> <span class="kc">None</span>
+<span class="p">}</span>
+
+<span class="n">case_gap_top</span> <span class="o">=</span> <span class="mf">0.002</span>
+<span class="n">case_gap_right</span> <span class="o">=</span> <span class="mf">0.0025</span>
+<span class="n">case_gap_bot</span> <span class="o">=</span> <span class="mf">0.002</span>
+
+<span class="n">boundary_temperatures</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;value_boundary_top&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">&quot;value_boundary_top_right&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">&quot;value_boundary_right_top&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">&quot;value_boundary_right&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">&quot;value_boundary_right_bottom&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">&quot;value_boundary_bottom_right&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">&quot;value_boundary_bottom&quot;</span><span class="p">:</span> <span class="mi">20</span>
+<span class="p">}</span>
+
+<span class="n">boundary_flags</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;flag_boundary_top&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;flag_boundary_top_right&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;flag_boundary_right_top&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;flag_boundary_right&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;flag_boundary_right_bottom&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;flag_boundary_bottom_right&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;flag_boundary_bottom&quot;</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In the boundary_flags dictionary 2 flags are set to 0 which means there
+will be a neumann boundary applied. Please have a look at the picture
+above which shows the current selected boundaries.</p>
+<p>In the following table a possible set of thermal conductivities can be
+found:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 53%" />
+<col style="width: 47%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Material</strong></p></td>
+<td><p><strong>Thermal conductivity</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>air (background)</p></td>
+<td><p>0.0263</p></td>
+</tr>
+<tr class="row-odd"><td><p>epoxy resign (used in case)</p></td>
+<td><p>1.54</p></td>
+</tr>
+<tr class="row-even"><td><p>ferrite (core)</p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-odd"><td><p>copper (winding)</p></td>
+<td><p>400</p></td>
+</tr>
+<tr class="row-even"><td><p>aluminiumnitride (air gaps)</p></td>
+<td><p>180</p></td>
+</tr>
+<tr class="row-odd"><td><p>polyethylen (insulation)</p></td>
+<td><p>0.42</p></td>
+</tr>
+</tbody>
+</table>
+<p>The thermal simulation will solve the stationary heat equation and since
+no convection is considered every material is assumed to be solid. Now
+the simulation can be run:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">geo</span><span class="o">.</span><span class="n">thermal_simulation</span><span class="p">(</span><span class="n">thermal_conductivity_dict</span><span class="p">,</span> <span class="n">boundary_temperatures</span><span class="p">,</span> <span class="n">boundary_flags</span><span class="p">,</span> <span class="n">case_gap_top</span><span class="p">,</span>
+                            <span class="n">case_gap_right</span><span class="p">,</span> <span class="n">case_gap_bot</span><span class="p">,</span> <span class="n">show_thermal_visual_outputs</span><span class="p">,</span>
+                            <span class="n">color_scheme</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">colors_ba_jonas</span><span class="p">,</span> <span class="n">colors_geometry</span><span class="o">=</span><span class="n">fmt</span><span class="o">.</span><span class="n">colors_geometry_ba_jonas</span><span class="p">,</span>
+                            <span class="n">flag_insulation</span><span class="o">=</span><span class="n">flag_insulation</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The following image shows the simulation results:</p>
+<a class="reference internal image-reference" href="_images/user_guide_example_thermal_simulation.png"><img alt="_images/user_guide_example_thermal_simulation.png" src="_images/user_guide_example_thermal_simulation.png" style="width: 350px;" /></a>
+</div>
+<div class="section" id="how-to-read-the-result-log">
+<h2><span class="sectnum">2.10</span> How to Read the Result Log<a class="headerlink" href="#how-to-read-the-result-log" title="Permalink to this headline">¶</a></h2>
+<p>After completing a simulation, the simulation results folder can be found in  <cite>working_directory/results/</cite>. Inside this folder <code class="docutils literal notranslate"><span class="pre">results</span></code>,
+the user can find the <code class="docutils literal notranslate"><span class="pre">log_electro_magnetic.json</span></code> and <code class="docutils literal notranslate"><span class="pre">results_thermal.json</span></code> files.</p>
+<ul class="simple">
+<li><p><strong>results/log_electro_magnetic.json</strong>: This file provides comprehensive details on the
+electromagnetic aspects of the simulation. It includes information on magnetic flux,
+currents, voltages, losses, and other key electromagnetic parameters, facilitating a deep
+understanding of the electromagnetic performance of the simulated system.</p></li>
+<li><p><strong>results/results_thermal.json</strong>: This file encapsulates the outcomes of thermal analysis,
+presenting details on the temperatures observed across core components, windings, and insulation
+materials. It quantifies the minimum, maximum, and mean temperatures for each identified section, offering
+a comprehensive view of thermal results.</p></li>
+</ul>
+<div class="section" id="example-result-log">
+<h3><span class="sectnum">2.10.1</span> Example Result Log<a class="headerlink" href="#example-result-log" title="Permalink to this headline">¶</a></h3>
+<p>In this subsection, showcase examples of result logs generated from simulations are shown in two distinct domains:
+the frequency domain and the time domain. Each domain provides unique insights into the system’s behavior.</p>
+<p><strong>Note:</strong></p>
+<ul class="simple">
+<li><p>The values provided in result log are calculated using peak values, not RMS values.</p></li>
+</ul>
+<div class="section" id="log-electro-magnetic-json-file-in-frequency-domain">
+<h4><span class="sectnum">2.10.1.1</span> log_electro_magnetic.json File in Frequency Domain<a class="headerlink" href="#log-electro-magnetic-json-file-in-frequency-domain" title="Permalink to this headline">¶</a></h4>
+<p>Here is an example of how the outcomes of frequency domain simulation are structured.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;single_sweeps&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;f&quot;</span><span class="p">:</span> <span class="mi">200000</span><span class="p">,</span>
+      <span class="nt">&quot;winding1&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;turn_losses&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;...&quot;</span><span class="p">],</span>
+        <span class="nt">&quot;flux&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">6.34870443074174e-06</span><span class="p">,</span> <span class="mf">-6.969982393761393e-07</span><span class="p">],</span>
+        <span class="nt">&quot;flux_over_current&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">3.17434773053773e-06</span><span class="p">,</span> <span class="mf">-3.51948446513906e-07</span><span class="p">],</span>
+        <span class="nt">&quot;V&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.8845429232083418</span><span class="p">,</span> <span class="mf">7.978006008157411</span><span class="p">],</span>
+        <span class="nt">&quot;...&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;winding2&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;...&quot;</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;core_eddy_losses&quot;</span><span class="p">:</span> <span class="mf">0.00050908155779138</span><span class="p">,</span>
+      <span class="nt">&quot;core_hyst_losses&quot;</span><span class="p">:</span> <span class="mf">3.16018326710339</span><span class="p">,</span>
+      <span class="nt">&quot;core_parts&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;core_part_1&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;eddy_losses&quot;</span><span class="p">:</span> <span class="mf">0.09956183619015413</span><span class="p">,</span>
+          <span class="nt">&quot;hyst_losses&quot;</span><span class="p">:</span> <span class="mf">3.16018326710339</span><span class="p">,</span>
+          <span class="nt">&quot;total_core_part_1&quot;</span><span class="p">:</span> <span class="mf">3.259745103293544</span>
+        <span class="p">}</span>
+      <span class="s2">&quot;...&quot;</span>
+      <span class="s2">&quot;all_winding_losses&quot;</span><span class="p">:</span> <span class="mf">0.5355581006243983</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;total_losses&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;winding1&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;total&quot;</span><span class="p">:</span> <span class="mf">0.5355581006244025</span><span class="p">,</span>
+       <span class="nt">&quot;turns&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;...&quot;</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="s2">&quot;all_windings&quot;</span><span class="p">:</span> <span class="mf">0.5355581006243983</span><span class="p">,</span>
+    <span class="nt">&quot;eddy_core&quot;</span><span class="p">:</span> <span class="mf">0.09956183619015413</span><span class="p">,</span>
+    <span class="nt">&quot;hyst_core_fundamental_freq&quot;</span><span class="p">:</span> <span class="mf">3.16018326710339</span><span class="p">,</span>
+    <span class="nt">&quot;total_core_part_1&quot;</span><span class="p">:</span> <span class="mf">3.259745103293544</span><span class="p">,</span>
+    <span class="nt">&quot;total_eddy_core_part_1&quot;</span><span class="p">:</span> <span class="mf">0.09956183619015413</span><span class="p">,</span>
+    <span class="nt">&quot;total_hyst_core_part_1&quot;</span><span class="p">:</span> <span class="mf">3.16018326710339</span><span class="p">,</span>
+    <span class="nt">&quot;core&quot;</span><span class="p">:</span> <span class="mf">3.259745103293544</span><span class="p">,</span>
+    <span class="nt">&quot;total_losses&quot;</span><span class="p">:</span> <span class="mf">3.7953032039179426</span>
+ <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Key Components Explained:</strong></p>
+<ul>
+<li><p><strong>single_sweeps</strong>: This array contains data for each frequency sweep performed during the simulation.
+Each entry in the array represents a set of results for a specific frequency.</p>
+<ul class="simple">
+<li><p><strong>f</strong>: The frequency at which the sweep was conducted, measured in Hertz (Hz).</p></li>
+<li><p><strong>winding1</strong> and <strong>winding2</strong>: These sections provide detailed results for each winding, including:</p>
+<ul>
+<li><p><strong>turn_losses</strong>: The power losses in each turn of the winding.</p></li>
+<li><p><strong>flux</strong>: The magnetic flux linked with the winding. The array
+contains two values, representing the real and imaginary parts of the flux, respectively.</p></li>
+<li><p><strong>flux_over_current</strong>: This metric signifies the flux linkage per unit of current and is presented as a complex number,
+comprising both real and imaginary components.</p>
+<ul>
+<li><p>The <strong>real part</strong> of this value denotes the inductance, reflecting the system’s capacity to store energy within a
+magnetic field generated by the current through the winding.</p></li>
+<li><p>The <strong>imaginary part</strong>, initially referred to as “negative resistance”, more aptly relates to the reactive characteristics
+or the phase shift between the current and magnetic flux linkage.</p></li>
+</ul>
+</li>
+<li><p><strong>V</strong>: Voltage across the winding, with the first value indicating the real part and the second the imaginary part.</p></li>
+<li><p><strong>I</strong>: Current through the winding, with similar representation to voltage.</p></li>
+</ul>
+</li>
+<li><p><strong>core_eddy_losses</strong> and <strong>core_hyst_losses</strong>: These values represent the losses due to eddy currents and hysteresis in the core.</p></li>
+<li><p><strong>core_parts</strong>: It provides a detailed breakdown of losses within each segmented part of the core, as the core is divided sometimes
+into multiple parts. This segmentation is particularly useful for identifying how different sections of the core contribute
+to the overall eddy current and hysteresis losses, allowing for more targeted improvements in core design and material selection.</p>
+<ul>
+<li><p><strong>eddy_losses</strong>: Quantifies the losses due to eddy currents for the specific part.</p></li>
+<li><p><strong>hyst_losses</strong>: Quantifies the losses due to hysteresis for the specific part.</p></li>
+<li><p><strong>total_core_part_n</strong>: The sum of <strong>eddy_losses</strong> and <strong>hyst_losses</strong> for the part, providing a total loss figure for that segment.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>total_losses</strong>: This section summarizes the overall energy dissipation within the system, combining losses from
+various components. It is broken down into several key areas:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>all_windings</strong>: It aggregates the losses across all windings in the system.</p></li>
+<li><p><strong>core</strong>: This aggregates the losses from all individual segments within the core <code class="docutils literal notranslate"><span class="pre">total_core_part_1</span></code>, <code class="docutils literal notranslate"><span class="pre">total_core_part_2</span></code>,.. etc,
+providing a comprehensive view of the core’s total contribution to the system’s losses.</p></li>
+<li><p><strong>total_losses</strong>: it represents the sum of all losses within the system, including windings and core.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="log-electro-magnetic-json-file-in-time-domain">
+<h4><span class="sectnum">2.10.1.2</span> log_electro_magnetic.json File in Time Domain<a class="headerlink" href="#log-electro-magnetic-json-file-in-time-domain" title="Permalink to this headline">¶</a></h4>
+<p>Here is an example of how the outcomes of time domain simulation are structured.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span>{
+  &quot;time_domain_simulation&quot;: [
+    {
+      &quot;f&quot;: 100000,
+      &quot;T&quot;: 1e-05,
+      &quot;Timemax&quot;: 1.25e-05,
+      &quot;number_of_steps&quot;: 5,
+      &quot;dt&quot;: 2.5e-06
+    },
+    {
+      &quot;step_1&quot;: {
+        &quot;windings&quot;: {
+          &quot;winding1&quot;: {
+            &quot;number_turns&quot;: 10,
+            &quot;flux&quot;: [-7.209142581890734e-06],
+            &quot;V&quot;: [-2.892335944263035],
+            &quot;I&quot;: 2.0
+          },
+          &quot;winding2&quot;: {
+            &quot;...&quot; }}}
+    },
+    {
+     &quot;...&quot;: {}
+  ],
+  &quot;average_losses&quot;: {
+    &quot;core_eddy_losses&quot;: [0.00037330739608363716],
+    &quot;core_hyst_losses&quot;: [0],
+    &quot;winding1&quot;: {
+      &quot;winding_losses&quot;: 1.2578033060966147,
+      &quot;flux_over_current&quot;: [6.703043813058433e-06],
+      &quot;average_current&quot;: [0.4],
+      &quot;average_voltage&quot;: [1.8009901071754213],
+      &quot;P&quot;: 0.7203960428701686,
+      &quot;S&quot;: 4.5274565545301515,
+      &quot;Q&quot;: 4.469775429993662
+    },
+    &quot;winding2&quot;: {&quot;...&quot;}
+  },
+  &quot;total_losses&quot;: {
+    &quot;all_windings_losses&quot;: 2.511429275334878,
+    &quot;eddy_core&quot;: 0.00037330739608363716,
+    &quot;core&quot;: 0.00037330739608363716,
+    &quot;total_losses&quot;: 2.5118025827309616
+  }
+}
+</pre></div>
+</div>
+<p><strong>Key Components Explained:</strong></p>
+<ul class="simple">
+<li><p><strong>time_domain_simulation</strong>: An array capturing simulation steps over time, including initial setup and individual time steps.</p>
+<ul>
+<li><p>The initial setup specifies the simulation frequency (<strong>f</strong>), period (<strong>T</strong>), maximum time (<strong>Timemax</strong>), total number of steps
+(<strong>number_of_steps</strong>), and time increment (<strong>dt</strong>).</p></li>
+<li><p><strong>step_1</strong> and subsequent steps detail the state of windings at specific times. For example, in <strong>step_1</strong>, <strong>winding1</strong> shows:</p>
+<ul>
+<li><p><strong>number_turns</strong>: Number of turns in the winding.</p></li>
+<li><p><strong>flux</strong>: Magnetic flux through the winding observed in step_1.</p></li>
+<li><p><strong>V</strong>: Voltage across the winding observed in step_1.</p></li>
+<li><p><strong>I</strong>: Current through the winding observed in step_1.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>average_losses</strong>: It captures averaged losses over the simulation period, such as <strong>core_eddy_losses</strong>, <strong>core_hyst_losses</strong>,
+and detailed losses per winding (<strong>winding1</strong>, <strong>winding2</strong>). The average current, voltage, active power (P), apparent power (S),
+and reactive power(Q) are also calculated.</p></li>
+<li><p><strong>total_losses</strong>: It aggregates all losses within the system, including <strong>all_windings_losses</strong>, <strong>eddy_core</strong> losses, and total
+losses (<strong>total_losses</strong>), providing a total view of losses.</p></li>
+</ul>
+</div>
+<div class="section" id="results-thermal-json-file">
+<h4><span class="sectnum">2.10.1.3</span> results_thermal.json File<a class="headerlink" href="#results-thermal-json-file" title="Permalink to this headline">¶</a></h4>
+<p>This section provides an overview and analysis of thermal data, including temperature-related metrics obtained from the electromagnetic
+simulation. The outcomes of thermal simulation are structured as:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;core_parts&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;core_part_1&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;min&quot;</span><span class="p">:</span> <span class="mf">20.48340546242281</span><span class="p">,</span>
+      <span class="nt">&quot;max&quot;</span><span class="p">:</span> <span class="mf">30.82746116029882</span><span class="p">,</span>
+      <span class="nt">&quot;mean&quot;</span><span class="p">:</span> <span class="mf">26.775625696609733</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;total&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;min&quot;</span><span class="p">:</span> <span class="mf">20.48340546242281</span><span class="p">,</span>
+      <span class="nt">&quot;max&quot;</span><span class="p">:</span> <span class="mf">30.82746116029882</span><span class="p">,</span>
+      <span class="nt">&quot;mean&quot;</span><span class="p">:</span> <span class="mf">26.775625696609733</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;windings&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;winding_0_0&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;...&quot;</span><span class="p">},</span>
+    <span class="nt">&quot;winding_0_1&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;...&quot;</span><span class="p">},</span>
+    <span class="nt">&quot;winding_0_2&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;...&quot;</span><span class="p">},</span>
+    <span class="nt">&quot;winding_1_0&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;...&quot;</span><span class="p">},</span>
+    <span class="nt">&quot;winding_1_1&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;...&quot;</span><span class="p">},</span>
+    <span class="nt">&quot;winding_1_2&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;...&quot;</span><span class="p">},</span>
+    <span class="nt">&quot;total&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;...&quot;</span><span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;misc&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;case_volume&quot;</span><span class="p">:</span> <span class="mf">0.00017214993340642786</span><span class="p">,</span>
+    <span class="nt">&quot;case_weight&quot;</span><span class="p">:</span> <span class="mi">-1</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;insulations&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;min&quot;</span><span class="p">:</span> <span class="mf">20.57984040880558</span><span class="p">,</span>
+    <span class="nt">&quot;max&quot;</span><span class="p">:</span> <span class="mf">34.82921229676766</span><span class="p">,</span>
+    <span class="nt">&quot;mean&quot;</span><span class="p">:</span> <span class="mf">27.465726650615863</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Detailed Overview:</strong></p>
+<p>All temperature values mentioned are in degrees Celsius (°C).</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>core_parts</strong>: This section provides temperature data for different core parts. For instance, for <strong>core_part_1</strong>:</dt><dd><ul>
+<li><p><strong>min</strong>: Minimum temperature observed.</p></li>
+<li><p><strong>max</strong>: Maximum temperature observed.</p></li>
+<li><p><strong>mean</strong>: Mean temperature calculated over the simulation.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><strong>total</strong> under <strong>core_parts</strong> aggregates the temperature data for all core parts, providing an overview of the entire core’s thermal behavior.</p></li>
+<li><dl class="simple">
+<dt><strong>windings</strong>: The <strong>windings</strong> section presents temperature data for individual windings, where each winding is identified by a combination of winding number and turn number (e.g., <strong>winding_0_0</strong>, <strong>winding_0_1</strong>, etc.). Each winding entry includes:</dt><dd><ul>
+<li><p><strong>min</strong>: Minimum temperature observed.</p></li>
+<li><p><strong>max</strong>: Maximum temperature observed.</p></li>
+<li><p><strong>mean</strong>: Mean temperature calculated during the simulation.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><strong>total</strong> under <strong>windings</strong> summarizes temperature characteristics across all windings.</p></li>
+<li><p><strong>misc</strong>: The <strong>misc</strong> section includes additional thermal information, such as:
+- <strong>case_volume</strong>: Volume-related data.
+- <strong>case_weight</strong>: Weight-related data.</p></li>
+<li><dl class="simple">
+<dt><strong>insulations</strong>: The <strong>insulations</strong> section provides insights into insulation-related temperature metrics. It includes:</dt><dd><ul>
+<li><p><strong>min</strong>: Minimum insulation temperature observed.</p></li>
+<li><p><strong>max</strong>: Maximum insulation temperature observed.</p></li>
+<li><p><strong>mean</strong>: Mean insulation temperature calculated over the simulation.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="winding-types">
+<span id="id2"></span><h1><span class="sectnum">3</span> Winding types<a class="headerlink" href="#winding-types" title="Permalink to this headline">¶</a></h1>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35%" />
+<col style="width: 31%" />
+<col style="width: 34%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Single_Square</strong></p></td>
+<td><p><strong>Single Hexagonal</strong></p></td>
+<td><p><strong>Single Full</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_images/Single_Square.png"><img alt="image0" src="_images/Single_Square.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Single_Hexagonal.png"><img alt="image1" src="_images/Single_Hexagonal.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Single_Full.png"><img alt="image2" src="_images/Single_Full.png" style="width: 250px;" /></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Single_SquareFullWidth</strong></p></td>
+<td><p><strong>Single FoilHorizontal</strong></p></td>
+<td><p><strong>Single FoilVertical (fixed thickness)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_images/Single_SquareFullWidth.png"><img alt="image3" src="_images/Single_SquareFullWidth.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Single_FoilHorizontal.png"><img alt="image4" src="_images/Single_FoilHorizontal.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Single_FoilVertical_fixed_thickness.png"><img alt="image5" src="_images/Single_FoilVertical_fixed_thickness.png" style="width: 250px;" /></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Single FoilVertical (interpolate)</strong></p></td>
+<td><p><strong>Interleaved HorizontalAlternating</strong></p></td>
+<td><p><strong>Interleaved VerticalStacked (square)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_images/Single_FoilVertical_interpolate.png"><img alt="image6" src="_images/Single_FoilVertical_interpolate.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Interleaved_HorizontalAlternating.png"><img alt="image7" src="_images/Interleaved_HorizontalAlternating.png" style="width: 250px;" /></a></p></td>
+<td><p><a class="reference internal" href="_images/Interleaved_VerticalStacked_square.png"><img alt="image8" src="_images/Interleaved_VerticalStacked_square.png" style="width: 250px;" /></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Interleaved VerticalStacked (hexagonal)</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="_images/Interleaved_VerticalStacked_hexagonal.png"><img alt="image9" src="_images/Interleaved_VerticalStacked_hexagonal.png" style="width: 250px;" /></a></p></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="femmt-class-and-function-documentation">
+<h1><span class="sectnum">4</span> FEMMT class and function documentation<a class="headerlink" href="#femmt-class-and-function-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-magneticcomponent-class">
+<h2><span class="sectnum">4.1</span> The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class<a class="headerlink" href="#the-magneticcomponent-class" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="the-core-class">
+<h2><span class="sectnum">4.2</span> The <code class="docutils literal notranslate"><span class="pre">Core</span></code> class<a class="headerlink" href="#the-core-class" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="the-airgaps-class">
+<h2><span class="sectnum">4.3</span> The <code class="docutils literal notranslate"><span class="pre">AirGaps</span></code> class<a class="headerlink" href="#the-airgaps-class" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="the-insulation-class">
+<h2><span class="sectnum">4.4</span> The <code class="docutils literal notranslate"><span class="pre">Insulation</span></code> class<a class="headerlink" href="#the-insulation-class" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="the-conductor-class">
+<h2><span class="sectnum">4.5</span> The <code class="docutils literal notranslate"><span class="pre">Conductor</span></code> class<a class="headerlink" href="#the-conductor-class" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="the-windingwindow-class">
+<h2><span class="sectnum">4.6</span> The <code class="docutils literal notranslate"><span class="pre">WindingWindow</span></code> class<a class="headerlink" href="#the-windingwindow-class" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="the-virtualwindingwindow-class">
+<h2><span class="sectnum">4.7</span> The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class<a class="headerlink" href="#the-virtualwindingwindow-class" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="the-logparser-class">
+<h2><span class="sectnum">4.8</span> The <code class="docutils literal notranslate"><span class="pre">LogParser</span></code> class<a class="headerlink" href="#the-logparser-class" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="enumerations">
+<h2><span class="sectnum">4.9</span> <code class="docutils literal notranslate"><span class="pre">Enumerations</span></code><a class="headerlink" href="#enumerations" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="helper-functions">
+<h2><span class="sectnum">4.10</span> Helper functions<a class="headerlink" href="#helper-functions" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="model-helper-functions">
+<h2><span class="sectnum">4.11</span> Model helper functions<a class="headerlink" href="#model-helper-functions" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="reluctance-model-helper-functions">
+<h2><span class="sectnum">4.12</span> Reluctance model helper functions<a class="headerlink" href="#reluctance-model-helper-functions" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="topology-helper-functions">
+<h2><span class="sectnum">4.13</span> Topology helper functions<a class="headerlink" href="#topology-helper-functions" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="constants">
+<h2><span class="sectnum">4.14</span> Constants<a class="headerlink" href="#constants" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="section" id="developer-notes-for-femmt">
+<h1><span class="sectnum">5</span> Developer Notes for FEMMT<a class="headerlink" href="#developer-notes-for-femmt" title="Permalink to this headline">¶</a></h1>
+<p>This chapter contains some useful information when developing with femmt.</p>
+<div class="section" id="variable-naming">
+<h2><span class="sectnum">5.1</span> Variable naming<a class="headerlink" href="#variable-naming" title="Permalink to this headline">¶</a></h2>
+<p>The variable naming is defined as shown in this section. Note that the names should be as given here. <strong>No acronyms</strong>, like <code class="docutils literal notranslate"><span class="pre">f</span></code> or <code class="docutils literal notranslate"><span class="pre">freq</span></code> <strong>for</strong> <code class="docutils literal notranslate"><span class="pre">frequency</span></code>.</p>
+<p><img alt="geometry_core_developer_notes" src="_images/geometry_core_developer_notes.png" />
+<img alt="geometry_core_naming_convention" src="_images/geometry_core_naming_convention.png" /></p>
+<div class="section" id="geometry-variables">
+<h3><span class="sectnum">5.1.1</span> Geometry variables<a class="headerlink" href="#geometry-variables" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">core_inner_diameter</span></code>: core inner diameter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">window_w</span></code>: width of winding window</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">winding_h</span></code>: height of winding window</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">r_inner</span></code>: core_inner_diameter / 2 + winding_w</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">r_outer</span></code>: core outer radius, calculated by software for same cross-section as inner cylinder</p></li>
+</ul>
+<p>Additional variables for integrated transformer
+* <code class="docutils literal notranslate"><span class="pre">window_h_top</span></code>: height of top winding window
+* <code class="docutils literal notranslate"><span class="pre">window_h_bot</span></code>: height of bottom winding window</p>
+</div>
+<div class="section" id="currents-temperature">
+<h3><span class="sectnum">5.1.2</span> currents, temperature<a class="headerlink" href="#currents-temperature" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">temperature</span></code>: temperature (Do <strong>not</strong> use <code class="docutils literal notranslate"><span class="pre">T</span></code>, <code class="docutils literal notranslate"><span class="pre">temp</span></code>, …)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frequency</span></code>: frequency (Do <strong>not</strong> use <code class="docutils literal notranslate"><span class="pre">f</span></code>, <code class="docutils literal notranslate"><span class="pre">freq</span></code>, …)</p></li>
+</ul>
+</div>
+<div class="section" id="material-variables">
+<h3><span class="sectnum">5.1.3</span> Material variables<a class="headerlink" href="#material-variables" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mu_r_abs</span></code>: absolute value of mu_r</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mu_r_real</span></code>: real part of mu_r</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mu_r_imag</span></code>: imaginary part of mu_r</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="winding-creation">
+<h2><span class="sectnum">5.2</span> Winding creation<a class="headerlink" href="#winding-creation" title="Permalink to this headline">¶</a></h2>
+<p>Since there are multiple possible virtual winding windows containing currently up to 2 conductors it is necessary to have a global order for every conductor.
+This order is set by the winding_number which is given to the Conductor on creation.
+This results in multiple lists containg the same conductor objects (called windings) in different objects:</p>
+<ol class="arabic simple">
+<li><p>Every virtual winding window contains a list of conductors. This list either contains one conductor (single winding) or two conductors (interleaved winding). When setting the interleaved winding the order of conductors is given by the order of the parameters. First given winding -&gt; winding[0], second given winding -&gt; winding[1].</p></li>
+<li><p>The magnetic component contains a list of conductors too. This list contains every unique conductor from every virtual winding window. The order of the windings list in magnetic component is given by the winding_number (sorted in ascending order). This means that the conductor with the lowest winding_number is at position 0 of the winding list: windings[0].</p></li>
+</ol>
+<p>Example:</p>
+<p>2 conductors are created: Conductor0(winding_index=0) and Conductor1(winding_index=1). Additionaly 2 virtual winding windows are created.
+The first virtual winding window only contains Conductor0, the second virtual winding window contains both conductors.
+The following winding lists are created:</p>
+<ul class="simple">
+<li><p>VirtualWindingWindow0: windings = [Conductor0]</p></li>
+<li><p>VirtualWindingWindow1: windings = [Conductor0, Conductor1]</p></li>
+<li><p>MagneticComponent: windings = [Conductor0, Conductor1]</p></li>
+</ul>
+<p>If Conductor1 has a lower winding_index than Conductor0 only the list in magnetic component would change since it does not change
+the parameter order for setInterleavedWinding() in VirtualWindingWindow1:</p>
+<ul class="simple">
+<li><p>MagneticComponent: windings = [Conductor1, Conductor0]</p></li>
+</ul>
+<p>The order of the conductors in the magnetic component windings list is very important for the simulation.
+When creating the model and running the simulation the order of the conductors in MagneticComponent.windings is used to determine
+if the conductor is the primary, secondary (, tertiary, …) winding.</p>
+<p>In the TwoDaxiSymmetric class points for every conductor are created. Those points are stored in a list called p_conductor.
+p_conductor[0] is a list containing the points for every turn of the conductor with the lowest winding_index (primary winding).
+p_conductors[1] is a list containing the points for every turn of the conductor with the second lowest winding_index (secondary winding).</p>
+<p>Currently the magnetic solver only supports primary and secondary windings, therefore it is useless to create more conductors.
+However the implemented structure is capable of working with n windings.</p>
+</div>
+<div class="section" id="general-file-overview">
+<h2><span class="sectnum">5.3</span> General file overview<a class="headerlink" href="#general-file-overview" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">.pro</span></code>: solver files for communication between python and the solver</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.pos</span></code>: field results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.dat</span></code>: integrated field results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.msh</span></code>: mesh files</p></li>
+</ul>
+</div>
+<div class="section" id="recommended-pycharm-settings">
+<h2><span class="sectnum">5.4</span> Recommended Pycharm settings<a class="headerlink" href="#recommended-pycharm-settings" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exclude-simulation-directory-from-indexing">
+<h3><span class="sectnum">5.4.1</span> Exclude simulation directory from indexing<a class="headerlink" href="#exclude-simulation-directory-from-indexing" title="Permalink to this headline">¶</a></h3>
+<p>Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the <code class="docutils literal notranslate"><span class="pre">example_results</span></code> direcory from the project, as shown in the following steps:
+<code class="docutils literal notranslate"><span class="pre">File</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Settings</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">project</span> <span class="pre">structure</span></code>, select the folders you need (e.g. <code class="docutils literal notranslate"><span class="pre">femmt/examples/example_results</span></code>, <code class="docutils literal notranslate"><span class="pre">right</span> <span class="pre">click</span></code> and click <code class="docutils literal notranslate"><span class="pre">exlcuded</span></code>.</p>
+</div>
+<div class="section" id="line-length">
+<h3><span class="sectnum">5.4.2</span> Line length<a class="headerlink" href="#line-length" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">File</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Settings</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Editor</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Code</span> <span class="pre">Style</span></code>
+Set the max. lenth to <code class="docutils literal notranslate"><span class="pre">160</span></code>.</p>
+</div>
+<div class="section" id="pycharm-code-highlightning-for-pro-files">
+<h3><span class="sectnum">5.4.3</span> Pycharm code highlightning for pro-files<a class="headerlink" href="#pycharm-code-highlightning-for-pro-files" title="Permalink to this headline">¶</a></h3>
+<p><img alt="image_pycharm_configuration_pro_files" src="_images/pycharm_configuration_pro_files.png" /></p>
+</div>
+</div>
+<div class="section" id="lint-check">
+<h2><span class="sectnum">5.5</span> Lint check<a class="headerlink" href="#lint-check" title="Permalink to this headline">¶</a></h2>
+<p>run
+<code class="docutils literal notranslate"><span class="pre">pycodestyle</span> <span class="pre">$(git</span> <span class="pre">ls-files</span> <span class="pre">'*.py')</span></code>
+to check all your files for correct linting.</p>
+<p>also run
+<code class="docutils literal notranslate"><span class="pre">ruff</span> <span class="pre">check</span> <span class="pre">$(git</span> <span class="pre">ls-files</span> <span class="pre">'*.py')</span></code></p>
+<p>For windows users, use the pycharm integrated <code class="docutils literal notranslate"><span class="pre">Git</span> <span class="pre">Bash</span></code>.</p>
+</div>
+<div class="section" id="build-documentation">
+<h2><span class="sectnum">5.6</span> Build documentation<a class="headerlink" href="#build-documentation" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">sphinx-multiversion</span> <span class="pre">documentation/source</span> <span class="pre">documentation/build/html</span></code></p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to FEM Magnetics Toolbox’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, LEA, Paderborn University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

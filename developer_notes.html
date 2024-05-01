@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to FEM Magnetics Toolbox’s documentation! &mdash; FEM Magnetics Toolbox 0.5.2 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>Developer Notes for FEMMT &mdash; FEM Magnetics Toolbox 0.5.2 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
@@ -17,8 +17,7 @@
         <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="1 FEM Magnetics Toolbox (FEMMT)" href="intro.html" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -29,7 +28,7 @@
 
           
           
-          <a href="#" class="icon icon-home">
+          <a href="index.html" class="icon icon-home">
             FEM Magnetics Toolbox
           </a>
 <div role="search">
@@ -151,17 +150,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">FEM Magnetics Toolbox</a>
+          <a href="index.html">FEM Magnetics Toolbox</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Welcome to FEM Magnetics Toolbox’s documentation!</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Developer Notes for FEMMT</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/index.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/developer_notes.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -169,128 +168,120 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="welcome-to-fem-magnetics-toolbox-s-documentation">
-<h1>Welcome to FEM Magnetics Toolbox’s documentation!<a class="headerlink" href="#welcome-to-fem-magnetics-toolbox-s-documentation" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Table of Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="intro.html"><span class="sectnum">1</span> FEM Magnetics Toolbox (FEMMT)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#installation"><span class="sectnum">1.1</span> Installation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#onelab-installation"><span class="sectnum">1.1.1</span> ONELAB installation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#install-femmt"><span class="sectnum">1.1.2</span> Install FEMMT</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-release-version-recommended"><span class="sectnum">1.1.2.1</span> FEMMT release version (recommended)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#femmt-development-version-for-developers-only"><span class="sectnum">1.1.2.2</span> FEMMT development version (for developers only)</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#examples"><span class="sectnum">1.2</span> Examples</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#basics"><span class="sectnum">1.2.1</span> Basics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#counting-arrow-system"><span class="sectnum">1.2.2</span> Counting arrow system</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#gui-experimental"><span class="sectnum">1.3</span> GUI (Experimental)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#femm-validation-for-developers-only"><span class="sectnum">1.4</span> FEMM Validation (for developers only)</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="intro.html#user-guide-how-to-create-a-femmt-model"><span class="sectnum">2</span> User Guide: How to create a FEMMT model</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#working-directory"><span class="sectnum">2.1</span> Working directory</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#creating-a-core"><span class="sectnum">2.2</span> Creating a core</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#material-database"><span class="sectnum">2.2.1</span> Material database</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#adding-air-gaps-to-the-core"><span class="sectnum">2.3</span> Adding air gaps to the core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#set-insulation-distances"><span class="sectnum">2.4</span> Set insulation distances</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#add-windings-to-the-winding-window"><span class="sectnum">2.5</span> Add windings to the winding window</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#virtual-winding-windows"><span class="sectnum">2.5.1</span> Virtual Winding Windows</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#winding-types-and-winding-schemes"><span class="sectnum">2.5.2</span> Winding types and winding schemes</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#conductorarrangement"><span class="sectnum">2.5.2.1</span> ConductorArrangement</a></li>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#wrapparatype"><span class="sectnum">2.5.2.2</span> WrapParaType</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#add-conductors"><span class="sectnum">2.6</span> Add conductors</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#add-conductors-to-virtual-winding-windows"><span class="sectnum">2.6.1</span> Add conductors to virtual winding windows</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#alignment"><span class="sectnum">2.6.1.1</span> Alignment</a></li>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#placement-strategies"><span class="sectnum">2.6.1.2</span> Placement Strategies</a></li>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#zigzag-condition"><span class="sectnum">2.6.1.3</span> Zigzag Condition</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#create-model-and-start-simulation"><span class="sectnum">2.7</span> Create model and start simulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#mesh-customization"><span class="sectnum">2.8</span> Mesh Customization</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#conductor-meshing"><span class="sectnum">2.8.1</span> Conductor meshing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#manually-adapting-the-mesh"><span class="sectnum">2.8.2</span> Manually Adapting the Mesh</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#viewing-the-mesh-in-gmsh"><span class="sectnum">2.8.3</span> Viewing the Mesh in Gmsh</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#optional-create-thermal-simulation"><span class="sectnum">2.9</span> [Optional] Create thermal simulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#how-to-read-the-result-log"><span class="sectnum">2.10</span> How to Read the Result Log</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#example-result-log"><span class="sectnum">2.10.1</span> Example Result Log</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#log-electro-magnetic-json-file-in-frequency-domain"><span class="sectnum">2.10.1.1</span> log_electro_magnetic.json File in Frequency Domain</a></li>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#log-electro-magnetic-json-file-in-time-domain"><span class="sectnum">2.10.1.2</span> log_electro_magnetic.json File in Time Domain</a></li>
-<li class="toctree-l4"><a class="reference internal" href="intro.html#results-thermal-json-file"><span class="sectnum">2.10.1.3</span> results_thermal.json File</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="intro.html#winding-types"><span class="sectnum">3</span> Winding types</a></li>
-<li class="toctree-l1"><a class="reference internal" href="intro.html#femmt-class-and-function-documentation"><span class="sectnum">4</span> FEMMT class and function documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#the-magneticcomponent-class"><span class="sectnum">4.1</span> The <code class="docutils literal notranslate"><span class="pre">MagneticComponent</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#the-core-class"><span class="sectnum">4.2</span> The <code class="docutils literal notranslate"><span class="pre">Core</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#the-airgaps-class"><span class="sectnum">4.3</span> The <code class="docutils literal notranslate"><span class="pre">AirGaps</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#the-insulation-class"><span class="sectnum">4.4</span> The <code class="docutils literal notranslate"><span class="pre">Insulation</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#the-conductor-class"><span class="sectnum">4.5</span> The <code class="docutils literal notranslate"><span class="pre">Conductor</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#the-windingwindow-class"><span class="sectnum">4.6</span> The <code class="docutils literal notranslate"><span class="pre">WindingWindow</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#the-virtualwindingwindow-class"><span class="sectnum">4.7</span> The <code class="docutils literal notranslate"><span class="pre">VirtualWindingWindow</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#the-logparser-class"><span class="sectnum">4.8</span> The <code class="docutils literal notranslate"><span class="pre">LogParser</span></code> class</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#enumerations"><span class="sectnum">4.9</span> <code class="docutils literal notranslate"><span class="pre">Enumerations</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#helper-functions"><span class="sectnum">4.10</span> Helper functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#model-helper-functions"><span class="sectnum">4.11</span> Model helper functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#reluctance-model-helper-functions"><span class="sectnum">4.12</span> Reluctance model helper functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#topology-helper-functions"><span class="sectnum">4.13</span> Topology helper functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#constants"><span class="sectnum">4.14</span> Constants</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="intro.html#developer-notes-for-femmt"><span class="sectnum">5</span> Developer Notes for FEMMT</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#variable-naming"><span class="sectnum">5.1</span> Variable naming</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#geometry-variables"><span class="sectnum">5.1.1</span> Geometry variables</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#currents-temperature"><span class="sectnum">5.1.2</span> currents, temperature</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#material-variables"><span class="sectnum">5.1.3</span> Material variables</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#winding-creation"><span class="sectnum">5.2</span> Winding creation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#general-file-overview"><span class="sectnum">5.3</span> General file overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#recommended-pycharm-settings"><span class="sectnum">5.4</span> Recommended Pycharm settings</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#exclude-simulation-directory-from-indexing"><span class="sectnum">5.4.1</span> Exclude simulation directory from indexing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#line-length"><span class="sectnum">5.4.2</span> Line length</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#pycharm-code-highlightning-for-pro-files"><span class="sectnum">5.4.3</span> Pycharm code highlightning for pro-files</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#lint-check"><span class="sectnum">5.5</span> Lint check</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#build-documentation"><span class="sectnum">5.6</span> Build documentation</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</div>
-<div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="developer-notes-for-femmt">
+<h1>Developer Notes for FEMMT<a class="headerlink" href="#developer-notes-for-femmt" title="Permalink to this headline">¶</a></h1>
+<p>This chapter contains some useful information when developing with femmt.</p>
+<div class="section" id="variable-naming">
+<h2>Variable naming<a class="headerlink" href="#variable-naming" title="Permalink to this headline">¶</a></h2>
+<p>The variable naming is defined as shown in this section. Note that the names should be as given here. <strong>No acronyms</strong>, like <code class="docutils literal notranslate"><span class="pre">f</span></code> or <code class="docutils literal notranslate"><span class="pre">freq</span></code> <strong>for</strong> <code class="docutils literal notranslate"><span class="pre">frequency</span></code>.</p>
+<p><img alt="geometry_core_developer_notes" src="_images/geometry_core_developer_notes.png" />
+<img alt="geometry_core_naming_convention" src="_images/geometry_core_naming_convention.png" /></p>
+<div class="section" id="geometry-variables">
+<h3>Geometry variables<a class="headerlink" href="#geometry-variables" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">core_inner_diameter</span></code>: core inner diameter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">window_w</span></code>: width of winding window</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">winding_h</span></code>: height of winding window</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">r_inner</span></code>: core_inner_diameter / 2 + winding_w</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">r_outer</span></code>: core outer radius, calculated by software for same cross-section as inner cylinder</p></li>
 </ul>
+<p>Additional variables for integrated transformer
+* <code class="docutils literal notranslate"><span class="pre">window_h_top</span></code>: height of top winding window
+* <code class="docutils literal notranslate"><span class="pre">window_h_bot</span></code>: height of bottom winding window</p>
+</div>
+<div class="section" id="currents-temperature">
+<h3>currents, temperature<a class="headerlink" href="#currents-temperature" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">temperature</span></code>: temperature (Do <strong>not</strong> use <code class="docutils literal notranslate"><span class="pre">T</span></code>, <code class="docutils literal notranslate"><span class="pre">temp</span></code>, …)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frequency</span></code>: frequency (Do <strong>not</strong> use <code class="docutils literal notranslate"><span class="pre">f</span></code>, <code class="docutils literal notranslate"><span class="pre">freq</span></code>, …)</p></li>
+</ul>
+</div>
+<div class="section" id="material-variables">
+<h3>Material variables<a class="headerlink" href="#material-variables" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mu_r_abs</span></code>: absolute value of mu_r</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mu_r_real</span></code>: real part of mu_r</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mu_r_imag</span></code>: imaginary part of mu_r</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="winding-creation">
+<h2>Winding creation<a class="headerlink" href="#winding-creation" title="Permalink to this headline">¶</a></h2>
+<p>Since there are multiple possible virtual winding windows containing currently up to 2 conductors it is necessary to have a global order for every conductor.
+This order is set by the winding_number which is given to the Conductor on creation.
+This results in multiple lists containg the same conductor objects (called windings) in different objects:</p>
+<ol class="arabic simple">
+<li><p>Every virtual winding window contains a list of conductors. This list either contains one conductor (single winding) or two conductors (interleaved winding). When setting the interleaved winding the order of conductors is given by the order of the parameters. First given winding -&gt; winding[0], second given winding -&gt; winding[1].</p></li>
+<li><p>The magnetic component contains a list of conductors too. This list contains every unique conductor from every virtual winding window. The order of the windings list in magnetic component is given by the winding_number (sorted in ascending order). This means that the conductor with the lowest winding_number is at position 0 of the winding list: windings[0].</p></li>
+</ol>
+<p>Example:</p>
+<p>2 conductors are created: Conductor0(winding_index=0) and Conductor1(winding_index=1). Additionaly 2 virtual winding windows are created.
+The first virtual winding window only contains Conductor0, the second virtual winding window contains both conductors.
+The following winding lists are created:</p>
+<ul class="simple">
+<li><p>VirtualWindingWindow0: windings = [Conductor0]</p></li>
+<li><p>VirtualWindingWindow1: windings = [Conductor0, Conductor1]</p></li>
+<li><p>MagneticComponent: windings = [Conductor0, Conductor1]</p></li>
+</ul>
+<p>If Conductor1 has a lower winding_index than Conductor0 only the list in magnetic component would change since it does not change
+the parameter order for setInterleavedWinding() in VirtualWindingWindow1:</p>
+<ul class="simple">
+<li><p>MagneticComponent: windings = [Conductor1, Conductor0]</p></li>
+</ul>
+<p>The order of the conductors in the magnetic component windings list is very important for the simulation.
+When creating the model and running the simulation the order of the conductors in MagneticComponent.windings is used to determine
+if the conductor is the primary, secondary (, tertiary, …) winding.</p>
+<p>In the TwoDaxiSymmetric class points for every conductor are created. Those points are stored in a list called p_conductor.
+p_conductor[0] is a list containing the points for every turn of the conductor with the lowest winding_index (primary winding).
+p_conductors[1] is a list containing the points for every turn of the conductor with the second lowest winding_index (secondary winding).</p>
+<p>Currently the magnetic solver only supports primary and secondary windings, therefore it is useless to create more conductors.
+However the implemented structure is capable of working with n windings.</p>
+</div>
+<div class="section" id="general-file-overview">
+<h2>General file overview<a class="headerlink" href="#general-file-overview" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">.pro</span></code>: solver files for communication between python and the solver</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.pos</span></code>: field results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.dat</span></code>: integrated field results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.msh</span></code>: mesh files</p></li>
+</ul>
+</div>
+<div class="section" id="recommended-pycharm-settings">
+<h2>Recommended Pycharm settings<a class="headerlink" href="#recommended-pycharm-settings" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="exclude-simulation-directory-from-indexing">
+<h3>Exclude simulation directory from indexing<a class="headerlink" href="#exclude-simulation-directory-from-indexing" title="Permalink to this headline">¶</a></h3>
+<p>Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the <code class="docutils literal notranslate"><span class="pre">example_results</span></code> direcory from the project, as shown in the following steps:
+<code class="docutils literal notranslate"><span class="pre">File</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Settings</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">project</span> <span class="pre">structure</span></code>, select the folders you need (e.g. <code class="docutils literal notranslate"><span class="pre">femmt/examples/example_results</span></code>, <code class="docutils literal notranslate"><span class="pre">right</span> <span class="pre">click</span></code> and click <code class="docutils literal notranslate"><span class="pre">exlcuded</span></code>.</p>
+</div>
+<div class="section" id="line-length">
+<h3>Line length<a class="headerlink" href="#line-length" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">File</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Settings</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Editor</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Code</span> <span class="pre">Style</span></code>
+Set the max. lenth to <code class="docutils literal notranslate"><span class="pre">160</span></code>.</p>
+</div>
+<div class="section" id="pycharm-code-highlightning-for-pro-files">
+<h3>Pycharm code highlightning for pro-files<a class="headerlink" href="#pycharm-code-highlightning-for-pro-files" title="Permalink to this headline">¶</a></h3>
+<p><img alt="image_pycharm_configuration_pro_files" src="_images/pycharm_configuration_pro_files.png" /></p>
+</div>
+</div>
+<div class="section" id="lint-check">
+<h2>Lint check<a class="headerlink" href="#lint-check" title="Permalink to this headline">¶</a></h2>
+<p>run
+<code class="docutils literal notranslate"><span class="pre">pycodestyle</span> <span class="pre">$(git</span> <span class="pre">ls-files</span> <span class="pre">'*.py')</span></code>
+to check all your files for correct linting.</p>
+<p>also run
+<code class="docutils literal notranslate"><span class="pre">ruff</span> <span class="pre">check</span> <span class="pre">$(git</span> <span class="pre">ls-files</span> <span class="pre">'*.py')</span></code></p>
+<p>For windows users, use the pycharm integrated <code class="docutils literal notranslate"><span class="pre">Git</span> <span class="pre">Bash</span></code>.</p>
+</div>
+<div class="section" id="build-documentation">
+<h2>Build documentation<a class="headerlink" href="#build-documentation" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">sphinx-multiversion</span> <span class="pre">documentation/source</span> <span class="pre">documentation/build/html</span></code></p>
+</div>
 </div>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="intro.html" class="btn btn-neutral float-right" title="1 FEM Magnetics Toolbox (FEMMT)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 
