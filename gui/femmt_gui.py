@@ -347,9 +347,8 @@ class MainWindow(QMainWindow):
         self.aut_initialize_controls()
 
         "Signals in Definition Tab"
-        # if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-        #     self.aut_winding2_enable(False)
-        self.setup_aut_simulation_type_combobox()
+        if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+            self.aut_winding2_enable(False)
         self.aut_simulation_type_comboBox.currentTextChanged.connect(self.aut_change_simulation_type)
         self.aut_core_material_data_listWidget.addItem("N95")
         self.aut_core_material_data_listWidget.addItem("N87")
@@ -660,14 +659,6 @@ class MainWindow(QMainWindow):
                            l_label, " ".join([l_value_str[n] for n in ind["ind"]]))
             annot.set_text(text)
             annot.get_bbox_patch().set_alpha(0.4)
-
-    def setup_aut_simulation_type_combobox(self):
-        """To prevent the transformer option temporarily."""
-        # Clear existing items if any
-        self.aut_simulation_type_comboBox.clear()
-        # Add only 'inductor' to the ComboBox for automated design
-        self.aut_simulation_type_comboBox.addItem(self.translation_dict['inductor'])
-        self.aut_winding2_enable(False)
 
     def automated_design_func(self, matplotlib_widget):
         """Create to accept input parameters from the definitions tab, to create matrix with all input combinations.
@@ -1162,7 +1153,7 @@ class MainWindow(QMainWindow):
         :return: None
         :rtype: None
         """
-        aut_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
+        aut_simulation_type_options = [self.translation_dict['inductor']]
         aut_winding_material_options = [key for key in fmt.wire_material_database()]
         aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"],
