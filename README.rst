@@ -120,7 +120,7 @@ project should be completely rewritten, because many new complex levels
 have been added. To place the project in the open source world, the
 programming language python is used.
 
-.. |image0| image:: documentation/images/femmt.png
-.. |image1| image:: documentation/images/FEMMT_Screenshot.png
-.. |image2| image:: documentation/images/femmt_gui_definition.png
-.. |image3| image:: documentation/images/counting_arrow_system.png
+.. |image0| image:: docs/images/femmt.png
+.. |image1| image:: docs/images/FEMMT_Screenshot.png
+.. |image2| image:: docs/images/femmt_gui_definition.png
+.. |image3| image:: docs/images/counting_arrow_system.png
