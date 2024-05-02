@@ -8,11 +8,11 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v4
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+    - uses: actions/checkout@v4
     - name: Install sphinx and build documentation with sphinx
       run: |
         pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email
