@@ -3195,14 +3195,31 @@ class MainWindow(QMainWindow):
         self.md_loss_plot_label.setMask(pixmap.mask())
         self.md_loss_plot_label.show()
 
-        inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["flux_over_current"][0]
+        # inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["flux_over_current"][0]
         loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
         loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
-        loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
+        # loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
         self.md_loss_core_hysteresis_label.setText(f"Core Hysteresis loss: {loss_core_hysteresis} W")
         self.md_loss_core_eddy_current_label.setText(f"Core Eddy Current loss: {loss_core_eddy_current} W")
-        self.md_loss_winding1_label.setText(f"Winding 1 loss: {loss_winding_1} W")
-        self.md_inductance_label.setText(f"Primary Inductance: {inductance} H")
+        # self.md_loss_winding1_label.setText(f"Winding 1 loss: {loss_winding_1} W")
+        # self.md_inductance_label.setText(f"Primary Inductance: {inductance} H")
+        inductances = []
+        windings_loss = []
+        for i in range(1, 3):  # for 3 windings
+            winding_key = f"winding{i}"
+            if winding_key in loaded_results_dict["single_sweeps"][0]:
+                inductances.append(loaded_results_dict["single_sweeps"][0][winding_key]["flux_over_current"][0])
+                windings_loss.append(loaded_results_dict["total_losses"][winding_key]["total"])
+
+        # show them just for 2 windings in GUI
+        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+            self.md_loss_winding1_label.setText(f"Winding 1 loss: {windings_loss[0]} W")
+            self.md_inductance1_label.setText(f"Primary Inductance: {inductances[0]} H")
+        elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+            self.md_loss_winding1_label.setText(f"Winding 1 loss: {windings_loss[0]} W")
+            self.md_loss_winding2_label.setText(f"Winding 2 loss: {windings_loss[1]} W")
+            self.md_inductance1_label.setText(f"Primary Inductance: {inductances[0]} H")
+            self.md_inductance2_label.setText(f"Secondary Inductance: {inductances[1]} H")
 
         # log_path = geo.e_m_results_log_path
         # simulation_results = str(fmt.read_results_log(log_path))

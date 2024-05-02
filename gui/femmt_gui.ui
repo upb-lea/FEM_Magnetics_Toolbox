@@ -30,7 +30,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="md_QWidget_2">
        <attribute name="title">
@@ -46,7 +46,7 @@
            </size>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>2</number>
           </property>
           <widget class="QWidget" name="md_QWidget">
            <attribute name="title">
@@ -1822,15 +1822,15 @@
                  <string>Simulation Text Output</string>
                 </property>
                 <layout class="QGridLayout" name="gridLayout_22">
-                 <item row="0" column="1">
-                  <widget class="QLabel" name="md_loss_core_hysteresis_label">
+                 <item row="3" column="1">
+                  <widget class="QLabel" name="md_loss_winding2_label">
                    <property name="text">
                     <string/>
                    </property>
                   </widget>
                  </item>
-                 <item row="3" column="1">
-                  <widget class="QLabel" name="md_loss_winding2_label">
+                 <item row="0" column="1">
+                  <widget class="QLabel" name="md_loss_core_hysteresis_label">
                    <property name="text">
                     <string/>
                    </property>
@@ -1843,6 +1843,13 @@
                    </property>
                   </widget>
                  </item>
+                 <item row="4" column="1">
+                  <widget class="QLabel" name="md_inductance1_label">
+                   <property name="text">
+                    <string/>
+                   </property>
+                  </widget>
+                 </item>
                  <item row="2" column="1">
                   <widget class="QLabel" name="md_loss_winding1_label">
                    <property name="text">
@@ -1850,8 +1857,8 @@
                    </property>
                   </widget>
                  </item>
-                 <item row="4" column="1">
-                  <widget class="QLabel" name="md_inductance_label">
+                 <item row="5" column="1">
+                  <widget class="QLabel" name="md_inductance2_label">
                    <property name="text">
                     <string/>
                    </property>
@@ -9557,7 +9564,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>98</width>
+                  <width>1072</width>
                   <height>1024</height>
                  </rect>
                 </property>
