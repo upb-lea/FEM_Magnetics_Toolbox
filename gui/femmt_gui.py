@@ -1992,10 +1992,14 @@ class MainWindow(QMainWindow):
         """
         if simulation_type_from_combo_box == self.translation_dict['inductor']:
             self.md_winding2_enable(False)
+            # enable Inductance Value for an Inductor case
+            self.groupBox_7.setVisible(True)
 
         elif simulation_type_from_combo_box == self.translation_dict['transformer']:
             # set winding definitions of winding 2 to editable
             self.md_winding2_enable(True)
+            # disable Inductance Value for a transformer case
+            self.groupBox_7.setVisible(False)
 
         elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
             # set winding definitions of winding 2 to editable
