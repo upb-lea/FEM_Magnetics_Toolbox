@@ -31,7 +31,7 @@ Functionality examples
 
 Documentation
 -------------------
-Please have a look at the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__. You will find tutorials and a function description.
+Please have a look at the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html>`__. You will find tutorials and a function description.
 
 Installation
 ---------------
