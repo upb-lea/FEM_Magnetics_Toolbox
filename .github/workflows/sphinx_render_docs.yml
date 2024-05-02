@@ -15,7 +15,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install sphinx and build documentation with sphinx
       run: |
+        python --version
         pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email
+        pip install -e .
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
       with:
