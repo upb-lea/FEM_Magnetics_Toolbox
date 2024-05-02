@@ -1,10 +1,9 @@
 FEM Magnetics Toolbox (FEMMT)
 =============================
 
-This README only provides a short overview. For more information please have a look at the detailed documentation `here <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__.
+This README only provides a short overview. For more information please have a look at the detailed documentation `here <https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html>`__.
 
-Python toolbox to generate preconfigured figures for FEM simulation
-tools in power electronics.
+Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics.
 
 The toolbox contains two parts, a reluctance module and a FEM module. 
 
@@ -20,7 +19,7 @@ Functionality examples
 
 * work with pre-defined standard core structures
 * work with pre-defined litz wires 
-* use python to perform parametersweeps, e.g. perform several automated simulations of different air gap sizes 
+* use python to perform parameter sweeps, e.g.perform several automated simulations of different air gap sizes
 * read the results automated with python from the FEM simulation tool
 * run a thermal simulation to see the temperatures, once the magnetoquasistatic simulation has finished
 
@@ -31,12 +30,12 @@ Functionality examples
 
 Documentation
 -------------------
-Please have a look at the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__. You will find tutorials and a function description.
+Please have a look at the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html>`__. You will find tutorials and a function description.
 
 Installation
 ---------------
 
-To run FEMMT python (version 3.8 or above) and onelab is needed.
+To run FEMMT python (version 3.10 or above) and onelab is needed.
 
 ONELAB installation
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,7 +55,7 @@ This is the stable release version (recommended).
 
    pip install femmt
 
-For working with the latest version, refer to the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html>`__.
+For working with the latest version, refer to the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html>`__.
 
 Minimal example
 ------------------
@@ -65,7 +64,7 @@ This toolbox is able to build a complete FEM simulation from simple
 Python code. The following figure shows the Python code on the left and
 the corresponding FEM simulation on the right. |image1|
 
-To run a minimal example please have a look at the `basic_example.py </femmt/examples/basic_example.py>`__.
+To run a minimal example please have a look at the `examples </femmt/examples/>`__.
 
 GUI (Experimental)
 -------------------
@@ -80,14 +79,6 @@ at first, but will be simplified in the future:
 Please note, the GUI is experimental.
 
 |image2|
-
-Roadmap
-----------
-
-Planned features in 2022: 
-
-* Software stability and general improvements, 
-* add more Functionality to the GUI, 
 
 Bug Reports
 --------------
@@ -120,7 +111,7 @@ project should be completely rewritten, because many new complex levels
 have been added. To place the project in the open source world, the
 programming language python is used.
 
-.. |image0| image:: documentation/images/femmt.png
-.. |image1| image:: documentation/images/FEMMT_Screenshot.png
-.. |image2| image:: documentation/images/femmt_gui_definition.png
-.. |image3| image:: documentation/images/counting_arrow_system.png
+.. |image0| image:: docs/images/femmt.png
+.. |image1| image:: docs/images/FEMMT_Screenshot.png
+.. |image2| image:: docs/images/femmt_gui_definition.png
+.. |image3| image:: docs/images/counting_arrow_system.png
