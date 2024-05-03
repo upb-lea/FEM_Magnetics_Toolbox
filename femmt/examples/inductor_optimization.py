@@ -6,7 +6,7 @@ import re
 import os
 import shutil
 from itertools import product
-import logging
+# import logging
 import inspect
 import time
 
@@ -379,7 +379,7 @@ def load_fem_simulation_results(working_directory: str):
     total_volume = []
     total_cost = []
     for _, data in log_parser.data.items():
-        inductivities.append(data.sweeps[0].windings[0].self_inductance)
+        inductivities.append(data.sweeps[0].windings[0].flux_over_current)
         total_loss.append(data.total_core_losses + data.total_winding_losses)
         total_volume.append(data.core_2daxi_total_volume)
         total_cost.append(data.total_cost)
@@ -631,7 +631,8 @@ class AutomatedDesign:
         litz_fill_factor = db_litz_fill_factor + self.manual_litz_fill_factor
 
         # List of initial permeability extracted from core material database
-        mu_r_abs = [material_db.get_material_property(material_name=material_name, property="initial_permeability") for material_name in self.core_material]
+        mu_r_abs = [material_db.get_material_attribute(material_name=material_name, attribute="initial_permeability")
+                    for material_name in self.core_material]
 
         # Mapping mult_air_gap_type string to float value (To include it in numpy float array easily)
         mult_air_gap_type_list = []
@@ -668,9 +669,8 @@ class AutomatedDesign:
         # Dictionary to store {initial_permeability: 'Material_name'} to map material_name during FEM iteration
         b_sat_dict = {}
         for material_name in self.core_material:
-            b_sat_key = material_db.get_material_property(material_name=material_name, property="initial_permeability")
-            b_sat_dict[b_sat_key] = material_db.get_material_property(material_name=material_name,
-                                                                      property="max_flux_density")
+            b_sat_key = material_db.get_material_attribute(material_name=material_name, attribute="initial_permeability")
+            b_sat_dict[b_sat_key] = material_db.get_material_attribute(material_name=material_name, attribute="max_flux_density")
             self.core_material_dict[b_sat_key] = material_name
         # print(self.core_material_dict)
 
@@ -784,7 +784,7 @@ class AutomatedDesign:
         mu_r_imag_dict = {}
         counter = 0
         for material_name in self.core_material:
-            mu_r_imag_key = material_db.get_material_property(material_name=material_name, property="initial_permeability")
+            mu_r_imag_key = material_db.get_material_attribute(material_name=material_name, attribute="initial_permeability")
             mu_r_imag_dict[mu_r_imag_key] = counter
             counter = counter + 1
 
@@ -925,11 +925,12 @@ class AutomatedDesign:
 
             # MagneticComponent class object
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
-                                        working_directory=self.femmt_working_directory, silent=True)
+                                        working_directory=self.femmt_working_directory, verbosity=fmt.Verbosity.Silent)
 
             core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=self.data_matrix_fem[count, self.param["core_inner_diameter"]],
                                                             window_w=self.data_matrix_fem[count, self.param["window_w"]],
-                                                            window_h=self.data_matrix_fem[count, self.param["window_h"]])
+                                                            window_h=self.data_matrix_fem[count, self.param["window_h"]],
+                                                            core_h=self.data_matrix_fem[count, self.param["core_h"]])
 
             core = fmt.Core(core_type=fmt.CoreType.Single,
                             core_dimensions=core_dimensions,
@@ -969,7 +970,8 @@ class AutomatedDesign:
             insulation = fmt.Insulation()
             insulation.add_core_insulations(self.top_core_insulation, self.bot_core_insulation,
                                             self.left_core_insulation, self.right_core_insulation)
-            insulation.add_winding_insulations([self.inner_winding_insulation], 0.0001)
+            # insulation.add_winding_insulations([self.inner_winding_insulation], 0.0001)
+            insulation.add_winding_insulations([[self.inner_winding_insulation]])
             geo.set_insulation(insulation)
 
             # 5. create winding window and virtual winding windows (vww)
@@ -995,7 +997,7 @@ class AutomatedDesign:
 
             # 7. add conductor to vww and add winding window to MagneticComponent
             vww.set_winding(winding, int(self.data_matrix_fem[count, self.param["no_of_turns"]]), None)
-            geo.set_winding_window(winding_window)
+            geo.set_winding_windows([winding_window])
 
             try:
                 # 5. create the model
@@ -1025,7 +1027,7 @@ class AutomatedDesign:
 
             except Exception as e:
                 print("next iteration")
-                logging.exception(e)
+                # logging.exception(e)
         print(f"Successful FEM simulations: {successful_sim_counter} out of total cases: {len(self.data_matrix_fem)}")
 
     def add_column_to_data_matrix(self, data_matrix, column_value, column_name: str):
@@ -1146,7 +1148,7 @@ if __name__ == '__main__':
                              n_air_gaps=[1],
                              air_gap_height=list(np.linspace(0.0001, 0.0005, 20)),
                              air_gap_position=[50],
-                             core_material=['N95'],
+                             core_material=[fmt.Material.N95],
                              mult_air_gap_type=['center_distributed'],
                              top_core_insulation=0.002,
                              bot_core_insulation=0.002,

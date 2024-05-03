@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
         self.Inductance_value_pushButton.clicked.connect(self.inductancecalc)
 
         "checkbox for Insulation mode"
-        # change 6: needed for enabeling the insulation
+        # needed for enabeling the insulation
         self.enable_insulation_checkbox.stateChanged.connect(self.on_insulation_state_changed)
         # Initialize flag_insulation based on the checkbox's initial state
         self.flag_insulation = self.enable_insulation_checkbox.isChecked()
@@ -520,6 +520,21 @@ class MainWindow(QMainWindow):
 
     #  **************************** Menu bar ************************************************************  #
     # ## Help actions ###
+    def string_to_material_enum(self, material_name):
+        """
+        Convert a material name string to its corresponding enum value.
+
+        :param material_name: The name of the material to convert.
+        :type material_name: str
+        :returns: The enum value corresponding to the material name.
+        :rtype: enum
+        :raises ValueError: If the material name is not valid.
+        """
+        try:
+            return fmt.Material[material_name]
+        except KeyError as e:
+            raise ValueError(f"{material_name} is not a valid material name") from e
+
     def webbrowser_contribute(self):
         """Open the web browser to the GitHub FEMMT repository contribution page."""
         webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox')
@@ -734,17 +749,42 @@ class MainWindow(QMainWindow):
         no_of_turns_float = list((np.linspace(no_turns_min, no_turns_max, no_turns_step)))
         no_of_turns = [int(item) for item in no_of_turns_float]
         n_air_gaps = [no_airgaps_min, no_airgaps_max]  # Set No. of air-gaps (n)
+        # when the user chooses [i,j]; where i = j, the n_air_gaps will be just i or j
+        if no_airgaps_min == no_airgaps_max:
+            n_air_gaps = [no_airgaps_min]
         air_gap_height = list(np.linspace(airgap_h_min, airgap_h_max, airgap_h_step))  # Set air-gap length in metre (l)
         air_gap_position = list(np.linspace(airgap_pos_min, airgap_pos_max,
                                             airgap_pos_step))  # Set air-gap position in percent w.r.t. core window height
 
-        material_names = []
-        for i in range(self.aut_core_material_basket_listWidget.count()):
-            material_names.append(self.aut_core_material_basket_listWidget.item(i).text())
-        # material_names = ["N95"]
+        # material_names = []
+        # for i in range(self.aut_core_material_basket_listWidget.count()):
+        #     material_names.append(self.aut_core_material_basket_listWidget.item(i).text())
+        # # material_names = ["N95"]
+        # #material_enum = fmt.Material(material_names)
+        # mu_rel = [database.get_material_attribute(material_name=material_names, attribute="initial_permeability")
+        #           for material_name in material_names]
 
-        mu_rel = [database.get_material_property(material_name=material_name, property="initial_permeability")
-                  for material_name in material_names]
+        # selected materials as enums
+        selected_materials = []
+        # Iterate over the items in the material list widget
+        for i in range(self.aut_core_material_data_listWidget.count()):
+            item = self.aut_core_material_data_listWidget.item(i)
+            # Check if the item is selected by the user
+            if item.isSelected():
+                # Convert the string of the selected item to its corresponding enum value
+                material_enum = self.string_to_material_enum(item.text())
+                selected_materials.append(material_enum)
+        # empty list to hold the initial real permeability values
+        mu_rels = []
+        # Iterate over the selected materials as enums
+        for material_name in selected_materials:
+            try:
+                # initial permeability attribute from the database
+                mu_rel = database.get_material_attribute(material_name=material_name, attribute="initial_permeability")
+                mu_rels.append(mu_rel)
+            except KeyError as e:
+                print(f"Failed to retrieve data for {material_name}: {e}")
+
         component = self.aut_simulation_type_comboBox.currentText()
         # Set two types of equally distributed air-gaps (used only for air-gaps more than 1):
         # Type 1: Equally distributed air-gaps including corner air-gaps (eg: air-gaps-position = [0, 50, 100])
@@ -782,7 +822,7 @@ class MainWindow(QMainWindow):
                                       n_air_gaps=n_air_gaps,
                                       air_gap_height=air_gap_height,
                                       air_gap_position=air_gap_position,
-                                      core_material=material_names,
+                                      core_material=selected_materials,
                                       mult_air_gap_type=['center_distributed'],
                                       top_core_insulation=comma_str_to_point_float(
                                           self.aut_isolation_core2cond_top_lineEdit.text()),
@@ -831,8 +871,8 @@ class MainWindow(QMainWindow):
         # Save simulation settings in json file for later review
         self.ad.save_automated_design_settings()
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(
-            fem_simulation_results_directory=design_directory)
+        real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
+            working_directory=design_directory)
 
         matplotlib_widget = MatplotlibWidget()
         matplotlib_widget.axis.clear()
@@ -868,8 +908,8 @@ class MainWindow(QMainWindow):
             pass
 
         design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels = load_fem_simulation_results(
-            fem_simulation_results_directory=design_directory)
+        real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
+            working_directory=design_directory)
 
         plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
                                      total_cost=total_cost,
@@ -1113,7 +1153,7 @@ class MainWindow(QMainWindow):
         :return: None
         :rtype: None
         """
-        aut_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
+        aut_simulation_type_options = [self.translation_dict['inductor']]
         aut_winding_material_options = [key for key in fmt.wire_material_database()]
         aut_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         aut_implicit_litz_options = [self.translation_dict["implicit_litz_radius"],
@@ -1952,10 +1992,14 @@ class MainWindow(QMainWindow):
         """
         if simulation_type_from_combo_box == self.translation_dict['inductor']:
             self.md_winding2_enable(False)
+            # enable Inductance Value for an Inductor case
+            self.groupBox_7.setVisible(True)
 
         elif simulation_type_from_combo_box == self.translation_dict['transformer']:
             # set winding definitions of winding 2 to editable
             self.md_winding2_enable(True)
+            # disable Inductance Value for a transformer case
+            self.groupBox_7.setVisible(False)
 
         elif simulation_type_from_combo_box == self.translation_dict['integrated transformer']:
             # set winding definitions of winding 2 to editable
@@ -2000,7 +2044,7 @@ class MainWindow(QMainWindow):
         self.md_isolation_p2s_lineEdit.setEnabled(status)
         self.md_isolation_s2s_lineEdit.setVisible(status)
         self.md_isolation_p2s_lineEdit.setVisible(status)
-        # change 5: enable s2p only for winding 2
+        # enable s2p only for winding 2
         self.md_isolation_s2p_lineEdit.setVisible(status)
         self.md_isolation_s2s_label.setVisible(status)
         self.md_isolation_p2s_label.setVisible(status)
@@ -2842,7 +2886,6 @@ class MainWindow(QMainWindow):
             elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
-                    # change 2: The height should be before the position value
                     air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
                                          air_gap_position_array[i - 1])
                 """
@@ -3051,7 +3094,6 @@ class MainWindow(QMainWindow):
                                             comma_str_to_point_float(self.md_isolation_core2cond_bot_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_inner_lineEdit.text()),
                                             comma_str_to_point_float(self.md_isolation_core2cond_outer_lineEdit.text()))
-            # change 3: update add_winding_insulations
             insulation.add_winding_insulations([
                 [comma_str_to_point_float(self.md_isolation_p2p_lineEdit.text()),
                  comma_str_to_point_float(self.md_isolation_p2s_lineEdit.text())],
@@ -3077,7 +3119,6 @@ class MainWindow(QMainWindow):
                              fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
             right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None, fmt.Align.ToEdges,
                               fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
-            # Change 4 : editing set_winding
             geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'integrated transformer':
@@ -3158,15 +3199,31 @@ class MainWindow(QMainWindow):
         self.md_loss_plot_label.setMask(pixmap.mask())
         self.md_loss_plot_label.show()
 
-        inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductance"][0]
+        # inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["flux_over_current"][0]
         loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
         loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
-        loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
-
+        # loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
         self.md_loss_core_hysteresis_label.setText(f"Core Hysteresis loss: {loss_core_hysteresis} W")
         self.md_loss_core_eddy_current_label.setText(f"Core Eddy Current loss: {loss_core_eddy_current} W")
-        self.md_loss_winding1_label.setText(f"Winding 1 loss: {loss_winding_1} W")
-        self.md_inductance_label.setText(f"Inductance: {inductance} H")
+        # self.md_loss_winding1_label.setText(f"Winding 1 loss: {loss_winding_1} W")
+        # self.md_inductance_label.setText(f"Primary Inductance: {inductance} H")
+        inductances = []
+        windings_loss = []
+        for i in range(1, 3):  # for 3 windings
+            winding_key = f"winding{i}"
+            if winding_key in loaded_results_dict["single_sweeps"][0]:
+                inductances.append(loaded_results_dict["single_sweeps"][0][winding_key]["flux_over_current"][0])
+                windings_loss.append(loaded_results_dict["total_losses"][winding_key]["total"])
+
+        # show them just for 2 windings in GUI
+        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+            self.md_loss_winding1_label.setText(f"Winding 1 loss: {windings_loss[0]} W")
+            self.md_inductance1_label.setText(f"Primary Inductance: {inductances[0]} H")
+        elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+            self.md_loss_winding1_label.setText(f"Winding 1 loss: {windings_loss[0]} W")
+            self.md_loss_winding2_label.setText(f"Winding 2 loss: {windings_loss[1]} W")
+            self.md_inductance1_label.setText(f"Primary Inductance: {inductances[0]} H")
+            self.md_inductance2_label.setText(f"Secondary Inductance: {inductances[1]} H")
 
         # log_path = geo.e_m_results_log_path
         # simulation_results = str(fmt.read_results_log(log_path))
@@ -3230,11 +3287,21 @@ class MainWindow(QMainWindow):
         air_gap_h = self.md_air_gap_1_length_lineEdit.text()
         air_gap_position = self.md_air_gap_1_position_lineEdit.text()
 
-        material_names = []
-        material_names.append(self.md_core_material_comboBox.currentText())
-        mu_rel_val = [database.get_material_property(material_name=material_name, property="initial_permeability")
-                      for material_name in material_names]
-        mu_rel = [int(item) for item in mu_rel_val]
+        # material_names = []
+        # material_names.append(self.md_core_material_comboBox.currentText())
+        # mu_rel_val = [database.get_material_attribute(material_name=material_name, attribute="initial_permeability")
+        #               for material_name in material_names]
+        # mu_rel = [int(item) for item in mu_rel_val]
+
+        # Fetch the current material name from the combobox
+        material_name_str = self.md_core_material_comboBox.currentText()
+        # Convert the string to enum
+        material_enum = self.string_to_material_enum(material_name_str)
+
+        # initial permeability from the database using the enum material
+        # No need for a loop as the user can choose only one material in manual design
+        mu_rel_val = database.get_material_attribute(material_name=material_enum, attribute="initial_permeability")
+        mu_rel = [int(mu_rel_val)]
 
         print(f"core_inner_diameter: {[self.core_w]}")
         print(f"window_h: {[self.window_h]}")
@@ -3280,7 +3347,7 @@ class MainWindow(QMainWindow):
 
         # The case parameter sets the thermal conductivity for a case which will be set around the core.
         # This could model some case in which the transformer is placed in together with a set potting material.
-        flag_insulation = True
+        # flag_insulation = True
         thermal_conductivity_dict = {
             "air": 0.0263,
             "case": {  # (epoxy resign) | transformer oil
@@ -3375,7 +3442,6 @@ class MainWindow(QMainWindow):
                                      current_list_list=amplitude1_list,
                                      phi_deg_list_list=phase1_rad_list)
 
-        # Thermal simulation
         geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
                                case_gap_right, case_gap_bot, True,
                                color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=self.flag_insulation)

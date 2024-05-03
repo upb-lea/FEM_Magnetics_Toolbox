@@ -1064,32 +1064,48 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     """Visualize the simulation results by a figure."""
     with open(simulation_result_file_path, "r") as fd:
         loaded_results_dict = json.loads(fd.read())
-
-    inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["self_inductance"][0]
+    # core eddy and hysteresis losses
     loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
     loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
-    loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
+    # Inductances and winding losses
+    windings_inductance = []
+    windings_loss = []
+    windings_labels = []
+    # Dynamically for 3 windings
+    for i in range(1, 3):
+        winding_key = f"winding{i}"
+        if winding_key in loaded_results_dict["single_sweeps"][0]:
+            windings_inductance.append(loaded_results_dict["single_sweeps"][0][winding_key]["flux_over_current"][0])
+            windings_loss.append(loaded_results_dict["total_losses"][winding_key]["total"])
+            windings_labels.append(f"Winding {i}")
 
-    print(inductance)
-    print(loss_core_eddy_current)
-    print(loss_core_hysteresis)
-    print(loss_winding_1)
-
+    # Plotting results
+    fig, ax = plt.subplots()
     bar_width = 0.35
-    plt.bar(0, loss_core_hysteresis, width=bar_width)
-    plt.bar(0, loss_core_eddy_current, bottom=loss_core_hysteresis, width=bar_width)
-    plt.bar(1, loss_winding_1, width=bar_width)
-    plt.legend(['Hysteresis loss', 'Eddy current loss', 'Winding loss'])
-    plt.ylabel('Losses in W')
-    plt.xticks([0, 1, 2], ['Core', 'Winding 1', 'Winding 2'])
-    plt.grid()
+
+    # Plot core losses
+    ax.bar(0, loss_core_hysteresis, width=bar_width, label='Core Hysteresis Loss')
+    ax.bar(0, loss_core_eddy_current, bottom=loss_core_hysteresis, width=bar_width, label='Core Eddy Current Loss')
+
+    # Plot winding inductances and losses
+    for index, (inductance, loss) in enumerate(zip(windings_inductance, windings_loss), start=1):
+        ax.bar(index, loss, width=bar_width, label=f'{windings_labels[index - 1]} Loss')
+        print(f"{windings_labels[index - 1]} Inductance: {inductance} H")
+        print(f"{windings_labels[index - 1]} Loss: {loss} W")
+
+    ax.set_ylabel('Losses in W')
+    ax.set_title('Loss Distribution in Magnetic Components')
+    ax.set_xticks(list(range(len(windings_labels) + 1)))
+    ax.set_xticklabels(['Core'] + windings_labels)
+    ax.legend()
+
+    plt.grid(True)
     plt.savefig(store_figure_file_path, bbox_inches="tight")
 
     if show_plot:
         plt.show()
 
     return loaded_results_dict
-
 
 def point_is_in_rect(x, y, rect):
     """Check if a given x-y point is inside a rectangular field (e.g. inside a conductor)."""
