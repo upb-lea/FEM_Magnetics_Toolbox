@@ -18,10 +18,12 @@ jobs:
         python --version
         pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email
         pip install -e .
-    - name: Build HTML
-      uses: ammaraskar/sphinx-action@master
-      with:
-        docs-folder: "docs/"
+        cd docs/
+        make html
+#    - name: Build HTML
+#      uses: ammaraskar/sphinx-action@master
+#      with:
+#        docs-folder: "docs/"
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
