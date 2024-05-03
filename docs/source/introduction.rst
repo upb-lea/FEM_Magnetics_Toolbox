@@ -25,17 +25,6 @@ After the material database has been installed, install FEMMT:
    cd FEM_Magnetics_Toolbox/
    pip install -e .
 
-
-Examples
------------
-
-This toolbox is able to build a complete FEM simulation from simple
-Python code. The following figure shows the Python code on the left and
-the corresponding FEM simulation on the right. |image_femmt_screenshot|
-
-Code examples can be found in this `example folder </femmt/examples/>`__. These files are updated
-regularly.
-
 Basics
 ~~~~~~~~~~
 
