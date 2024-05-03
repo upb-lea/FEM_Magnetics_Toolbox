@@ -3,11 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search &mdash; FEM Magnetics Toolbox 0.5.2 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <title>FEM Magnetics Toolbox (FEMMT) &mdash; FEM Magnetics Toolbox 0.5.2 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
-    
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -17,10 +16,8 @@
         <script src="_static/doctools.js"></script>
         <script src="_static/language_data.js"></script>
     <script src="_static/js/theme.js"></script>
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -35,7 +32,7 @@
             FEM Magnetics Toolbox
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -172,8 +169,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Search</li>
+      <li class="breadcrumb-item active">FEM Magnetics Toolbox (FEMMT)</li>
       <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/readme.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -181,18 +179,240 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search functionality.
-    </p>
-  </div>
-  </noscript>
+  <div class="section" id="fem-magnetics-toolbox-femmt">
+<h1>FEM Magnetics Toolbox (FEMMT)<a class="headerlink" href="#fem-magnetics-toolbox-femmt" title="Permalink to this headline">¶</a></h1>
+<p>Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics.</p>
+<p>The toolbox is accessible via python code or a graphical user interface
+(GUI), which current development status is experimental.</p>
+<div class="section" id="overview-features">
+<h2>Overview features<a class="headerlink" href="#overview-features" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="stable-features">
+<h3>Stable features<a class="headerlink" href="#stable-features" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Component features:</dt><dd><ul>
+<li><p>2D axi-symmetric cylindrical simplification</p></li>
+<li><p><a class="reference external" href="/femmt/examples/basic_inductor.py">Inductor</a>, <a class="reference external" href="/femmt/examples/basic_transformer.py">2-winding transformer</a>, <a class="reference external" href="/femmt/examples/basic_transformer_6_windings.py">n-winding transformer</a></p></li>
+<li><p>Arbitrary (distributed) air gap positioning in center leg</p></li>
+<li><p>Variety of winding interleaving schemes</p></li>
+<li><dl class="simple">
+<dt>Special geometries:</dt><dd><ul>
+<li><p><a class="reference external" href="/femmt/examples/basic_transformer_center_tapped.py">Center tapped transformer</a></p></li>
+<li><p><a class="reference external" href="/femmt/examples/basic_transformer_integrated.py">Magnetic shunt</a> (transformer with integrated inductor)</p></li>
+<li><p><a class="reference external" href="/femmt/examples/basic_transformer_stacked.py">Stacked core</a> (transformer with integrated inductor)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Round litz wire</p></li>
+<li><p>Round and rectangular solid wires</p></li>
+<li><p>Different winding schemes (hexagonal, left/right, top/down, …)</p></li>
+<li><p>Parallel connection of solid wires</p></li>
+<li><p>Insulation distances (winding2core, winding2winding)</p></li>
+<li><p>Many <a class="reference external" href="/femmt/examples/">examples</a>. to learn and understand FEMMT</p></li>
+<li><dl class="simple">
+<dt>Databases</dt><dd><ul>
+<li><p>Litz wire database</p></li>
+<li><p>Core geometry database</p></li>
+<li><p>Conductor materials: temperature curves</p></li>
+<li><p>Ferrit materials: permeability / permittivity <a class="reference external" href="https://github.com/upb-lea/materialdatabase">material database</a> (datasheets and own measurements)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Solver features:</dt><dd><ul>
+<li><p>Implemented using <a class="reference external" href="https://onelab.info/">ONELAB</a></p></li>
+<li><p>Current excitation</p></li>
+<li><p>Frequency domain solver</p></li>
+<li><p>Litz wire loss model for proximity and skin effect (Niyomsatian et al.: Frequency-domain homogenization for impedance characterization of litz-wire transformers in 2-D finite element models)</p></li>
+<li><dl class="simple">
+<dt>Core loss calculation for real materials (data from material database)</dt><dd><ul>
+<li><p>Amplitude dependent loss angle (Local resolution of complex permeability)</p></li>
+<li><p>Equivalent permittivity data for eddy current calculations</p></li>
+<li><p>Effect of dimensional resonance is considered</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Thermal solver</dt><dd><ul>
+<li><p>Thermal conduction (Poisson equation)</p></li>
+<li><p>Fixed temperature and isolation boundary conditions</p></li>
+<li><p>Verified model for potted core</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Pre/Post processing:</dt><dd><ul>
+<li><p>Linear eddy current analysis via input current based FFT</p></li>
+<li><p>Pre-visualization of ferrite material (measurement) data interpolation</p></li>
+<li><p>Field visualization in gmsh GUI (magnetic flux density, eddy current losses, …)</p></li>
+<li><p>Inductance matrix for n-winding transformer</p></li>
+<li><p>Transformer equivalent diagrams for 2- and 3-winding transformer</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Optimization:</dt><dd><ul>
+<li><p>Parallel computing to speed up simulations (no cpu core limitation)</p></li>
+<li><p>Examples for Pareto optimization to adapt to your own optimization problem</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="experimental-features-under-development">
+<h3>Experimental features (under development)<a class="headerlink" href="#experimental-features-under-development" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Component features:</dt><dd><ul>
+<li><p>Reluctance module is currently working for a single optimization example and not fully implemented yet.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Solver features:</dt><dd><ul>
+<li><p>Time domain solver</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Optimization:</dt><dd><ul>
+<li><p>Advanced optimization algorithms by connecting to <a class="reference external" href="https://github.com/optuna/optuna">optuna</a></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>GUI:</dt><dd><ul>
+<li><p>Experimental in general</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="planned-features-roadmap-for-202x">
+<h3>Planned features (Roadmap for 202x)<a class="headerlink" href="#planned-features-roadmap-for-202x" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Solver features:</dt><dd><ul>
+<li><p>Core loss calculation from non-sinusoidal flux</p></li>
+<li><p>Local temperature dependency (currently only lumped temperature assignment, e.g. general temperature for all windings)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="not-supported-features">
+<h3>Not supported features<a class="headerlink" href="#not-supported-features" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Not supported component features:</dt><dd><ul>
+<li><p>Toroidal core</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Not supported solver features:</dt><dd><ul>
+<li><p>Voltage excitation</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>Please have a look at the <a class="reference external" href="https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html">documentation</a>. You will find tutorials and a function description.</p>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>To run FEMMT python (version 3.10 or above) and onelab is needed.</p>
+<div class="section" id="onelab-installation">
+<h3>ONELAB installation<a class="headerlink" href="#onelab-installation" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Go to <a class="reference external" href="https://onelab.info/">https://onelab.info/</a></p></li>
+<li><p>Download the Desktop Version for your OS (Windows, Linux or macOS)</p></li>
+<li><p>Unpack the software and remember the file path. This will be needed
+later when installing FEMMT.</p></li>
+</ul>
+</div>
+<div class="section" id="install-femmt">
+<h3>Install FEMMT<a class="headerlink" href="#install-femmt" title="Permalink to this headline">¶</a></h3>
+<p>FEMMT can be installed using the python pip package manager.
+This is the stable release version (recommended).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">femmt</span>
+</pre></div>
+</div>
+<p>For working with the latest version, refer to the <a class="reference external" href="https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html">documentation</a>.</p>
+</div>
+</div>
+<div class="section" id="minimal-example">
+<h2>Minimal example<a class="headerlink" href="#minimal-example" title="Permalink to this headline">¶</a></h2>
+<p>This toolbox is able to build a complete FEM simulation from simple
+Python code. The following figure shows the Python code on the left and
+the corresponding FEM simulation on the right. <img alt="FEMMT_Screenshot" src="_images/FEMMT_Screenshot.png" /></p>
+<p>To run a minimal example please have a look at the <a class="reference external" href="/femmt/examples/">examples</a>.</p>
+</div>
+<div class="section" id="gui-experimental">
+<h2>GUI (Experimental)<a class="headerlink" href="#gui-experimental" title="Permalink to this headline">¶</a></h2>
+<p>There is a first preview for a GUI. Installing this is a bit cumbersome
+at first, but will be simplified in the future:</p>
+<ul class="simple">
+<li><p>Download the complete repository via <code class="docutils literal notranslate"><span class="pre">Code</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Download</span> <span class="pre">ZIP</span></code> and unpack it.</p></li>
+<li><p>Or clone the repository</p></li>
+<li><p>Install the development version of femmt using <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code></p></li>
+<li><p>Run python <code class="docutils literal notranslate"><span class="pre">.../path-to_femmt/femmt/gui/femmt_gui.py</span></code></p></li>
+</ul>
+<p>Please note, the GUI is experimental.</p>
+<p><img alt="femmt_gui_definition" src="_images/femmt_gui_definition.png" /></p>
+</div>
+<div class="section" id="bug-reports">
+<h2>Bug Reports<a class="headerlink" href="#bug-reports" title="Permalink to this headline">¶</a></h2>
+<p>Please use the issues report button within github to report bugs.</p>
+</div>
+<div class="section" id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
+<p>Pull requests are welcome. For major changes, please open an issue first
+to discuss what you would like to change. For contributing, please refer
+to this <a class="reference external" href="Contributing.rst">section</a>.</p>
+</div>
+<div class="section" id="changelog">
+<h2>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<p>Find the changelog <a class="reference external" href="CHANGELOG.md">here</a>.</p>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://choosealicense.com/licenses/gpl-3.0/">GPLv3</a></p>
+</div>
+<div class="section" id="history-and-project-status">
+<h2>History and project status<a class="headerlink" href="#history-and-project-status" title="Permalink to this headline">¶</a></h2>
+<p>This project was initially written in matlab using FEMM simulation tool.
+It became clear that the project was no longer a small project. The
+project should be completely rewritten, because many new complex levels
+have been added. To place the project in the open source world, the
+programming language python is used.</p>
+</div>
+</div>
 
-  
-  <div id="search-results">
-  
-  </div>
 
            </div>
           </div>
@@ -218,14 +438,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-  <script>
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script id="searchindexloader"></script>
-   
-
+  </script> 
 
 </body>
 </html>
