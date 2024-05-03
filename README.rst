@@ -1,1 +1,2 @@
-.. include:: docs/source/introduction.rst
+
+.. include:: docs/source/readme.rst
