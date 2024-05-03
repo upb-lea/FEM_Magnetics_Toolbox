@@ -1,44 +1,7 @@
-FEM Magnetics Toolbox (FEMMT)
-=============================
 
-Python toolbox to generate preconfigured figures for FEM simulation
-tools in power electronics.
-
-The toolbox contains two parts, a reluctance module and a FEM module.
-
-* The reluctance module is for pre-calculations 
-* The FEM module is for detailed calculations
-
-Installation
----------------
-
-To run FEMMT, python (version 3.8 or above) and onelab is needed.
-
-ONELAB installation
-~~~~~~~~~~~~~~~~~~~~~~~
-
--  Go to https://onelab.info/
--  Download the Desktop Version for your OS (Windows, Linux or macOS)
--  Unpack the software and remember the file path. This will be needed
-   later when installing FEMMT.
-
-Install FEMMT
-~~~~~~~~~~~~~~~~~
-
-FEMMT can be installed using the python pip package manager.
-Either a release version can be installed using pip or a development version by downloading this repository.
-
-FEMMT release version (recommended)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This installs the stable release version.
-
-::
-
-   pip install femmt
 
 FEMMT development version (for developers only)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------------------------------
 
 This is the latest development version with the latest features. Note:
 You may need to install `git <https://git-scm.com/downloads>`__.
@@ -70,8 +33,8 @@ This toolbox is able to build a complete FEM simulation from simple
 Python code. The following figure shows the Python code on the left and
 the corresponding FEM simulation on the right. |image_femmt_screenshot|
 
-Code examples can be found in this `example file </femmt/examples/basic_example.py>`__. This file is updated
-regulary.
+Code examples can be found in this `example folder </femmt/examples/>`__. These files are updated
+regularly.
 
 Basics
 ~~~~~~~~~~
@@ -87,8 +50,8 @@ divided into the following steps:
 5. set conductor parameters (litz/solid wire),
 6. start the frequency domain simulation by specifying the given frequencies, currents, and phases, and start the time domain simulation by specifying the given currents, and time parameters.
 
-Please have a look at the `basic_example </femmt/examples/basic_inductor.py>`__ for frequency domain simulation, and
-at the `basic_example </femmt/examples/basic_inductor_time_domain.py>`__ for time domain simulation.
+Please have a look at the `basic_inductor example </femmt/examples/basic_inductor.py>`__ for frequency domain simulation, and
+at the `basic_inductor_time_domain example </femmt/examples/basic_inductor_time_domain.py>`__ for time domain simulation.
 
 The examples contain among other things: 
 
