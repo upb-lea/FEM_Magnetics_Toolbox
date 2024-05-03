@@ -8,6 +8,11 @@ Python toolbox to generate preconfigured figures for FEM simulation tools in pow
 The toolbox is accessible via python code or a graphical user interface
 (GUI), which current development status is experimental.
 
+All core shapes are simulated as 2D symmetric cores, as shown in the figure.
+
+|geometry_translated|
+
+
 
 Overview features
 -------------------
@@ -173,7 +178,7 @@ project should be completely rewritten, because many new complex levels
 have been added. To place the project in the open source world, the
 programming language python is used.
 
-.. |femmt| image:: docs/images/femmt.png
+.. |geometry_translated| image:: docs/images/geometry_translated.png
 .. |FEMMT_Screenshot| image:: docs/images/FEMMT_Screenshot.png
 .. |femmt_gui_definition| image:: docs/images/femmt_gui_definition.png
 .. |counting_arrow_system| image:: docs/images/counting_arrow_system.png
