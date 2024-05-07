@@ -100,6 +100,13 @@ class MainWindow(QMainWindow):
         # self.setWindowIcon(QIcon('Images\\logo.png'))
         self.setWindowTitle(_translate("MainWindow", "FEM Magnetics Toolbox"))
         pixmap = QPixmap('ferriteCore.png')
+        """ Flags needed for updating dat_core_material1_comboBox_2 in database"""
+        self.test_setup_name1_busy = False
+        self.test_setup_name2_busy = False
+        self.test_setup_name3_busy = False
+        self.test_setup_name4_busy = False
+        self.test_setup_name5_busy = False
+        #  ************************** Flags finished **************************  #
         # self.coreImageLabel.setPixmap(pixmap)
         # self.imageBoxImageLabel.setPixmap(pixmap)
         self.translation_dict = {
@@ -1705,69 +1712,75 @@ class MainWindow(QMainWindow):
 
     def test_setup_name1(self):
         """Get test setup names from database for particular material."""
+        self.test_setup_name1_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
         mat_text1 = self.dat_core_material1_comboBox_2.currentText()
-
-        names_list = []
+        self.test_name_1_comboBox.clear()  # Clear previous entries
 
         if mat_text1:
             names_list = database.find_measurement_names(material_name=mat_text1, datatype="complex_permeability")
-
-        for option in names_list:
-            self.test_name_1_comboBox.addItem(option)
+            for option in names_list:
+                self.test_name_1_comboBox.addItem(option)
+        self.test_setup_name1_busy = False  # Reset the flag after updating the combobox
 
     def test_setup_name2(self):
         """Get test setup names from database for particular material."""
+        self.test_setup_name2_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
         mat_text2 = self.dat_core_material2_comboBox_2.currentText()
-
-        names_list = []
+        self.test_name_2_comboBox.clear()  # Clear previous entries
 
         if mat_text2:
             names_list = database.find_measurement_names(material_name=mat_text2, datatype="complex_permeability")
+            for option in names_list:
+                self.test_name_2_comboBox.addItem(option)
 
-        for option in names_list:
-            self.test_name_2_comboBox.addItem(option)
+        self.test_setup_name2_busy = False  # Reset the flag after updating the combobox
 
     def test_setup_name3(self):
         """Get test setup names from database for particular material."""
+        self.test_setup_name3_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
         mat_text3 = self.dat_core_material3_comboBox_2.currentText()
-
-        names_list = []
+        self.test_name_3_comboBox.clear()  # Clear previous entries
 
         if mat_text3:
             names_list = database.find_measurement_names(material_name=mat_text3, datatype="complex_permeability")
+            for option in names_list:
+                self.test_name_3_comboBox.addItem(option)
 
-        for option in names_list:
-            self.test_name_3_comboBox.addItem(option)
+        self.test_setup_name3_busy = False  # Reset the flag after updating the combobox
 
     def test_setup_name4(self):
         """Get test setup names from database for particular material."""
+        self.test_setup_name4_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
         mat_text4 = self.dat_core_material4_comboBox_2.currentText()
-
-        names_list = []
+        self.test_name_4_comboBox.clear()  # Clear previous entries
 
         if mat_text4:
             names_list = database.find_measurement_names(material_name=mat_text4, datatype="complex_permeability")
+            for option in names_list:
+                self.test_name_4_comboBox.addItem(option)
 
-        for option in names_list:
-            self.test_name_4_comboBox.addItem(option)
+        self.test_setup_name4_busy = False  # Reset the flag after updating the combobox
 
     def test_setup_name5(self):
         """Get test setup names from database for particular material."""
+        self.test_setup_name5_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
         mat_text5 = self.dat_core_material5_comboBox_2.currentText()
-
-        names_list = []
+        self.test_name_5_comboBox.clear()  # Clear previous entries
 
         if mat_text5:
             names_list = database.find_measurement_names(material_name=mat_text5, datatype="complex_permeability")
+            for option in names_list:
+                self.test_name_5_comboBox.addItem(option)
 
-        for option in names_list:
-            self.test_name_5_comboBox.addItem(option)
+        self.test_setup_name5_busy = False  # Reset the flag after updating the combobox
 
-    def tempfreqinput1(self):
+    def tempfreqinput1(self, from_material_change=False):
         """Get the frequency and temperature of a particular material selected."""
+        if self.test_setup_name1_busy:
+            print("Test setup names are still updating.")
+            return
         mat_text1 = self.dat_core_material1_comboBox_2.currentText()
         test_setup_text1 = self.test_name_1_comboBox.currentText()
-
         get_temp1_list = []
         get_freq1_list = []
         if mat_text1:
@@ -1792,6 +1805,10 @@ class MainWindow(QMainWindow):
 
     def tempfreqinput2(self):
         """Get the frequency and temperature of a particular material selected."""
+        if self.test_setup_name2_busy:
+            print("Test setup names are still updating.")
+            return  # Exit the function to avoid data fetching
+
         mat_text2 = self.dat_core_material2_comboBox_2.currentText()
         test_setup_text2 = self.test_name_2_comboBox.currentText()
         get_temp2_list = []
@@ -1818,6 +1835,10 @@ class MainWindow(QMainWindow):
 
     def tempfreqinput3(self):
         """Get the frequency and temperature of a particular material selected."""
+        if self.test_setup_name3_busy:
+            print("Test setup names are still updating.")
+            return  # Exit the function to avoid  data fetching
+
         mat_text3 = self.dat_core_material3_comboBox_2.currentText()
         test_setup_text3 = self.test_name_3_comboBox.currentText()
         get_temp3_list = []
@@ -1844,6 +1865,11 @@ class MainWindow(QMainWindow):
 
     def tempfreqinput4(self):
         """Get the frequency and temperature of a particular material selected."""
+        if self.test_setup_name4_busy:
+            print("Test setup names are still updating.")
+            return  # Exit the function to avoid  data fetching
+
+        self.test_setup_name4()
         mat_text4 = self.dat_core_material4_comboBox_2.currentText()
         test_setup_text4 = self.test_name_4_comboBox.currentText()
         get_temp4_list = []
@@ -1870,6 +1896,10 @@ class MainWindow(QMainWindow):
 
     def tempfreqinput5(self):
         """Get the frequency and temperature of a particular material selected."""
+        if self.test_setup_name5_busy:
+            print("Test setup names are still updating.")
+            return  # Exit the function to avoid  data fetching
+
         mat_text5 = self.dat_core_material5_comboBox_2.currentText()
         test_setup_text5 = self.test_name_5_comboBox.currentText()
         get_temp5_list = []
