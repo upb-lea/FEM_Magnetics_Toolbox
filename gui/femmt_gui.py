@@ -1712,7 +1712,7 @@ class MainWindow(QMainWindow):
 
     def test_setup_name1(self):
         """Get test setup names from database for particular material."""
-        self.test_setup_name1_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
+        self.test_setup_name1_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_1 is in progress
         mat_text1 = self.dat_core_material1_comboBox_2.currentText()
         self.test_name_1_comboBox.clear()  # Clear previous entries
 
@@ -1737,7 +1737,7 @@ class MainWindow(QMainWindow):
 
     def test_setup_name3(self):
         """Get test setup names from database for particular material."""
-        self.test_setup_name3_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
+        self.test_setup_name3_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_3 is in progress
         mat_text3 = self.dat_core_material3_comboBox_2.currentText()
         self.test_name_3_comboBox.clear()  # Clear previous entries
 
@@ -1750,7 +1750,7 @@ class MainWindow(QMainWindow):
 
     def test_setup_name4(self):
         """Get test setup names from database for particular material."""
-        self.test_setup_name4_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
+        self.test_setup_name4_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_4 is in progress
         mat_text4 = self.dat_core_material4_comboBox_2.currentText()
         self.test_name_4_comboBox.clear()  # Clear previous entries
 
@@ -1763,7 +1763,7 @@ class MainWindow(QMainWindow):
 
     def test_setup_name5(self):
         """Get test setup names from database for particular material."""
-        self.test_setup_name5_busy = True  # Flag to indicate that the update of dat_core_material1_comboBox_2 is in progress
+        self.test_setup_name5_busy = True  # Flag to indicate that the update of dat_core_material2_comboBox_5 is in progress
         mat_text5 = self.dat_core_material5_comboBox_2.currentText()
         self.test_name_5_comboBox.clear()  # Clear previous entries
 
