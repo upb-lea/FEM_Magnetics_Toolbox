@@ -1,17 +1,10 @@
 FEM Magnetics Toolbox (FEMMT)
 =============================
 
-This README only provides a short overview. For more information please have a look at the detailed documentation `here <https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html>`__.
-
 Python toolbox to generate preconfigured figures for FEM simulation tools in power electronics.
 
 The toolbox is accessible via python code or a graphical user interface
 (GUI), which current development status is experimental.
-
-All core shapes are simulated as 2D symmetric cores, as shown in the figure.
-
-|geometry_translated|
-
 
 
 Overview features
@@ -178,7 +171,7 @@ project should be completely rewritten, because many new complex levels
 have been added. To place the project in the open source world, the
 programming language python is used.
 
-.. |geometry_translated| image:: docs/images/geometry_translated.png
-.. |FEMMT_Screenshot| image:: docs/images/FEMMT_Screenshot.png
-.. |femmt_gui_definition| image:: docs/images/femmt_gui_definition.png
-.. |counting_arrow_system| image:: docs/images/counting_arrow_system.png
+.. |femmt| image:: ../images/femmt.png
+.. |FEMMT_Screenshot| image:: ../images/FEMMT_Screenshot.png
+.. |femmt_gui_definition| image:: ../images/femmt_gui_definition.png
+.. |counting_arrow_system| image:: ../images/counting_arrow_system.png

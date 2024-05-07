@@ -1,5 +1,6 @@
 .. sectnum::
 
+.. include:: readme.rst
 
 .. include:: introduction.rst
 
