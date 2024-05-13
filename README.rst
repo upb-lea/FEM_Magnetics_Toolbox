@@ -34,7 +34,7 @@ Stable features
     * Different winding schemes (hexagonal, left/right, top/down, ...)
     * Parallel connection of solid wires
     * Insulation distances (winding2core, winding2winding)
-    * Many `examples </femmt/examples/>`__. to learn and understand FEMMT
+    * Many `examples </femmt/examples/>`__ to learn and understand FEMMT
     * Databases
          * Litz wire database
          * Core geometry database
