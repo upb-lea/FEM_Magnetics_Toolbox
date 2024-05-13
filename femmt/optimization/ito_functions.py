@@ -152,9 +152,14 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
                                                     window_h=window_h,
                                                     core_h=window_h + dto.core_inner_diameter / 2)
 
+    if isinstance(dto.core_material, str):
+        material = fmt.Material(dto.core_material)
+    else:
+        material = dto.core_material
+
     core = fmt.Core(core_type=fmt.CoreType.Single,
                     core_dimensions=core_dimensions,
-                    material=dto.core_material,
+                    material=material,
                     temperature=config_dto.temperature,
                     frequency=fundamental_frequency,
                     permeability_datasource=fmt.MaterialDataSource.ManufacturerDatasheet,
@@ -182,7 +187,8 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
     # 4. set insulations
     insulation = fmt.Insulation()
     insulation.add_core_insulations(0.001, 0.001, 0.001, 0.001)
-    insulation.add_winding_insulations([0.0002, 0.0002], 0.0001)
+    insulation.add_winding_insulations([[0.0002, 0.001],
+                                        [0.001, 0.0002]])
     geo.set_insulation(insulation)
 
     # 5. create winding window and virtual winding windows (vww)
@@ -205,12 +211,10 @@ def integrated_transformer_fem_simulation_from_result_dto(config_dto: ItoSingleI
 
     # 7. add conductor to vww and add winding window to MagneticComponent
     top.set_interleaved_winding(winding1, dto.n_p_top, winding2, dto.n_s_top,
-                                fmt.InterleavedWindingScheme.HorizontalAlternating,
-                                0.0005)
+                                fmt.InterleavedWindingScheme.HorizontalAlternating)
     bot.set_interleaved_winding(winding1, dto.n_p_bot, winding2, dto.n_s_bot,
-                                fmt.InterleavedWindingScheme.HorizontalAlternating,
-                                0.0005)
-    geo.set_winding_window(winding_window)
+                                fmt.InterleavedWindingScheme.HorizontalAlternating)
+    geo.set_winding_windows([winding_window])
 
     # 8. start simulation with given frequency, currents and phases
     geo.create_model(freq=fundamental_frequency, pre_visualize_geometry=visualize)

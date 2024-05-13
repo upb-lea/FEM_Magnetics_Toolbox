@@ -292,10 +292,20 @@ class Core:
         # General
         # Initialize database
         self.material_database = mdb.MaterialDatabase(self.mdb_verbosity == Verbosity.Silent)
-        self.material = material
+        if material != 'custom' and isinstance(material, str):
+            self.material = Material(material)
+        else:
+            self.material = material
         self.file_path_to_solver_folder = None
         self.temperature = temperature
         # Permeability
+        if permeability_datasource != 'custom' and isinstance(permeability_datasource, str):
+            permeability_datasource = MaterialDataSource(permeability_datasource)
+        if permeability_measurement_setup != 'custom' and permeability_measurement_setup is not None and isinstance(permeability_datasource, str):
+            permeability_measurement_setup = MeasurementSetup(permeability_measurement_setup)
+        if permeability_datatype != 'custom' and permeability_datatype is not None and isinstance(permeability_datatype, str):
+            permeability_datatype = MeasurementDataType(permeability_datatype)
+
         self.permeability = {"datasource": permeability_datasource,
                              "measurement_setup": permeability_measurement_setup,
                              "datatype": permeability_datatype}
@@ -305,6 +315,13 @@ class Core:
         self.loss_approach = loss_approach
         # Permittivity
         self.complex_permittivity = None
+        if permittivity_datasource != 'custom' and isinstance(permittivity_datasource, str):
+            permittivity_datasource = MaterialDataSource(permittivity_datasource)
+        if permittivity_measurement_setup != 'custom' and permittivity_measurement_setup is not None and isinstance(permittivity_datasource, str):
+            permittivity_measurement_setup = MeasurementSetup(permittivity_measurement_setup)
+        if permittivity_datatype != 'custom' and permittivity_datatype is not None and isinstance(permittivity_datatype, str):
+            permittivity_datatype = MeasurementDataType(permittivity_datatype)
+
         self.permittivity = {"datasource": permittivity_datasource,
                              "measurement_setup": permittivity_measurement_setup,
                              "datatype": permittivity_datatype}
