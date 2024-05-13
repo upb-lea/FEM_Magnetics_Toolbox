@@ -1706,6 +1706,10 @@ class MainWindow(QMainWindow):
     def test_setup_name1(self):
         """Get test setup names from database for particular material."""
         mat_text1 = self.dat_core_material1_comboBox_2.currentText()
+        # Temporarily disconnect the signal to prevent triggering changes
+        self.test_name_1_comboBox.currentTextChanged.disconnect(self.tempfreqinput1)
+        # Clear existing data in the comboBox
+        self.test_name_1_comboBox.clear()
 
         names_list = []
 
@@ -1714,10 +1718,16 @@ class MainWindow(QMainWindow):
 
         for option in names_list:
             self.test_name_1_comboBox.addItem(option)
+        # Reconnect the signal after the updates
+        self.test_name_1_comboBox.currentTextChanged.connect(self.tempfreqinput1)
 
     def test_setup_name2(self):
         """Get test setup names from database for particular material."""
         mat_text2 = self.dat_core_material2_comboBox_2.currentText()
+        # Temporarily disconnect the signal to prevent triggering changes
+        self.test_name_2_comboBox.currentTextChanged.disconnect(self.tempfreqinput2)
+        # Clear existing data in the comboBox
+        self.test_name_2_comboBox.clear()
 
         names_list = []
 
@@ -1726,10 +1736,16 @@ class MainWindow(QMainWindow):
 
         for option in names_list:
             self.test_name_2_comboBox.addItem(option)
+        # Reconnect the signal after the updates
+        self.test_name_2_comboBox.currentTextChanged.connect(self.tempfreqinput2)
 
     def test_setup_name3(self):
         """Get test setup names from database for particular material."""
         mat_text3 = self.dat_core_material3_comboBox_2.currentText()
+        # Temporarily disconnect the signal to prevent triggering changes
+        self.test_name_3_comboBox.currentTextChanged.disconnect(self.tempfreqinput3)
+        # Clear existing data in the comboBox
+        self.test_name_3_comboBox.clear()
 
         names_list = []
 
@@ -1738,10 +1754,16 @@ class MainWindow(QMainWindow):
 
         for option in names_list:
             self.test_name_3_comboBox.addItem(option)
+        # Reconnect the signal after the updates
+        self.test_name_3_comboBox.currentTextChanged.connect(self.tempfreqinput3)
 
     def test_setup_name4(self):
         """Get test setup names from database for particular material."""
         mat_text4 = self.dat_core_material4_comboBox_2.currentText()
+        # Temporarily disconnect the signal to prevent triggering changes
+        self.test_name_4_comboBox.currentTextChanged.disconnect(self.tempfreqinput4)
+        # Clear existing data in the comboBox
+        self.test_name_4_comboBox.clear()
 
         names_list = []
 
@@ -1750,10 +1772,16 @@ class MainWindow(QMainWindow):
 
         for option in names_list:
             self.test_name_4_comboBox.addItem(option)
+        # Reconnect the signal after the updates
+        self.test_name_4_comboBox.currentTextChanged.connect(self.tempfreqinput4)
 
     def test_setup_name5(self):
         """Get test setup names from database for particular material."""
         mat_text5 = self.dat_core_material5_comboBox_2.currentText()
+        # Temporarily disconnect the signal to prevent triggering changes
+        self.test_name_5_comboBox.currentTextChanged.disconnect(self.tempfreqinput5)
+        # Clear existing data in the comboBox
+        self.test_name_5_comboBox.clear()
 
         names_list = []
 
@@ -1762,6 +1790,8 @@ class MainWindow(QMainWindow):
 
         for option in names_list:
             self.test_name_5_comboBox.addItem(option)
+        # Reconnect the signal after the updates
+        self.test_name_5_comboBox.currentTextChanged.connect(self.tempfreqinput5)
 
     def tempfreqinput1(self):
         """Get the frequency and temperature of a particular material selected."""
