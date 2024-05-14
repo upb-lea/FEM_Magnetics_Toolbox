@@ -30,7 +30,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="md_QWidget_2">
        <attribute name="title">
@@ -3638,8 +3638,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>98</width>
-                 <height>28</height>
+                 <width>63</width>
+                 <height>16</height>
                 </rect>
                </property>
                <widget class="QGroupBox" name="groupBox_26">
@@ -4045,7 +4045,7 @@
                    <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>98</width>
+                    <width>1072</width>
                     <height>518</height>
                    </rect>
                   </property>
@@ -4084,8 +4084,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>98</width>
-                 <height>28</height>
+                 <width>63</width>
+                 <height>16</height>
                 </rect>
                </property>
                <widget class="QGroupBox" name="groupBox_27">
@@ -4230,7 +4230,7 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>98</width>
+                     <width>1072</width>
                      <height>518</height>
                     </rect>
                    </property>
@@ -4410,7 +4410,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>98</width>
+                  <width>1072</width>
                   <height>518</height>
                  </rect>
                 </property>
@@ -4444,7 +4444,7 @@
         <item row="0" column="0">
          <widget class="QTabWidget" name="tabWidget_2">
           <property name="currentIndex">
-           <number>1</number>
+           <number>2</number>
           </property>
           <widget class="QWidget" name="tab_6">
            <attribute name="title">
@@ -6948,7 +6948,7 @@
                    <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>98</width>
+                    <width>1072</width>
                     <height>2036</height>
                    </rect>
                   </property>
@@ -9601,6 +9601,61 @@
             <string>Datasheet-Measurement</string>
            </attribute>
            <layout class="QGridLayout" name="gridLayout_40">
+            <item row="1" column="0">
+             <widget class="QGroupBox" name="groupBox_63">
+              <property name="title">
+               <string>Preview</string>
+              </property>
+              <widget class="QPushButton" name="dat_update_preview_pushbutton3">
+               <property name="geometry">
+                <rect>
+                 <x>10</x>
+                 <y>30</y>
+                 <width>231</width>
+                 <height>31</height>
+                </rect>
+               </property>
+               <property name="text">
+                <string>Update preview</string>
+               </property>
+              </widget>
+              <widget class="QScrollArea" name="scrollArea_9">
+               <property name="geometry">
+                <rect>
+                 <x>20</x>
+                 <y>70</y>
+                 <width>1091</width>
+                 <height>461</height>
+                </rect>
+               </property>
+               <property name="widgetResizable">
+                <bool>true</bool>
+               </property>
+               <widget class="QWidget" name="scrollAreaWidgetContents_9">
+                <property name="geometry">
+                 <rect>
+                  <x>0</x>
+                  <y>0</y>
+                  <width>1072</width>
+                  <height>518</height>
+                 </rect>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_14">
+                 <item>
+                  <widget class="QWidget" name="plotwidget_15" native="true">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>500</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </widget>
+             </widget>
+            </item>
             <item row="0" column="0">
              <widget class="QGroupBox" name="groupBox_39">
               <property name="title">
@@ -9610,7 +9665,7 @@
                <property name="geometry">
                 <rect>
                  <x>40</x>
-                 <y>110</y>
+                 <y>150</y>
                  <width>181</width>
                  <height>28</height>
                 </rect>
@@ -9637,7 +9692,7 @@
                 <rect>
                  <x>250</x>
                  <y>70</y>
-                 <width>93</width>
+                 <width>91</width>
                  <height>28</height>
                 </rect>
                </property>
@@ -10064,7 +10119,7 @@
                <property name="geometry">
                 <rect>
                  <x>350</x>
-                 <y>110</y>
+                 <y>150</y>
                  <width>31</width>
                  <height>28</height>
                 </rect>
@@ -10077,7 +10132,7 @@
                <property name="geometry">
                 <rect>
                  <x>250</x>
-                 <y>110</y>
+                 <y>150</y>
                  <width>91</width>
                  <height>28</height>
                 </rect>
@@ -10087,7 +10142,7 @@
                <property name="geometry">
                 <rect>
                  <x>250</x>
-                 <y>150</y>
+                 <y>190</y>
                  <width>91</width>
                  <height>28</height>
                 </rect>
@@ -10097,7 +10152,7 @@
                <property name="geometry">
                 <rect>
                  <x>350</x>
-                 <y>150</y>
+                 <y>190</y>
                  <width>31</width>
                  <height>28</height>
                 </rect>
@@ -10110,7 +10165,7 @@
                <property name="geometry">
                 <rect>
                  <x>40</x>
-                 <y>150</y>
+                 <y>190</y>
                  <width>191</width>
                  <height>28</height>
                 </rect>
@@ -10119,60 +10174,28 @@
                 <string>Temperature (Measurement)</string>
                </property>
               </widget>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QGroupBox" name="groupBox_63">
-              <property name="title">
-               <string>Preview</string>
-              </property>
-              <widget class="QPushButton" name="dat_update_preview_pushbutton3">
+              <widget class="QLabel" name="label_111">
                <property name="geometry">
                 <rect>
-                 <x>10</x>
-                 <y>30</y>
-                 <width>231</width>
+                 <x>40</x>
+                 <y>105</y>
+                 <width>181</width>
                  <height>31</height>
                 </rect>
                </property>
                <property name="text">
-                <string>Update preview</string>
+                <string>Test setup name</string>
                </property>
               </widget>
-              <widget class="QScrollArea" name="scrollArea_9">
+              <widget class="QComboBox" name="test_name_comboBox">
                <property name="geometry">
                 <rect>
-                 <x>20</x>
-                 <y>70</y>
-                 <width>1091</width>
-                 <height>461</height>
+                 <x>250</x>
+                 <y>110</y>
+                 <width>91</width>
+                 <height>31</height>
                 </rect>
                </property>
-               <property name="widgetResizable">
-                <bool>true</bool>
-               </property>
-               <widget class="QWidget" name="scrollAreaWidgetContents_9">
-                <property name="geometry">
-                 <rect>
-                  <x>0</x>
-                  <y>0</y>
-                  <width>98</width>
-                  <height>518</height>
-                 </rect>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_14">
-                 <item>
-                  <widget class="QWidget" name="plotwidget_15" native="true">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>500</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
               </widget>
              </widget>
             </item>
