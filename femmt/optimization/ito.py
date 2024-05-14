@@ -249,8 +249,8 @@ class IntegratedTransformerOptimization:
                      * material vectors for mu_r_real and mu_r_imag depending on flux_density
     
                     """
-                    mu_r_abs = material_db.get_material_property(material_name=material_name,
-                                                                 property="initial_permeability")
+                    mu_r_abs = material_db.get_material_attribute(material_name=material_name,
+                                                                  attribute="initial_permeability")
 
                     saturation_flux_density = material_db.get_saturation_flux_density(material_name=material_name)
                     dimensioning_max_flux_density = saturation_flux_density * sweep_dto.factor_max_flux_density
