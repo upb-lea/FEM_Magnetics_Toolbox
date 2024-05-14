@@ -153,7 +153,7 @@ If the working directory is within OneDrive, there are problems writing .dat fil
 
 ::
 
-    FileNotFoundError: [Errno 2] No such file or directory: your_directory/femmt/electro_magnetic/Strands_Coefficients/coeff/pB_RS_la0.6_4layer.dat
+    The system cannot find the file specified: your_directory/femmt/electro_magnetic/Strands_Coefficients/coeff/pB_RS_la0.6_4layer.dat
     FileNotFoundError: [Errno 2] No such file or directory: your_directory/results/values/j2F_1.dat
 
 
