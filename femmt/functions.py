@@ -1634,66 +1634,66 @@ def visualize_inductance_matrix(inductance_matrix, silent: bool):
               "Inductance Matrix: ")
         print(string_to_print)
 
-def calculate_quadrature_integral(timesteps: List[float], data: List[float]) -> float:
+def calculate_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
     """
-    Calculate the integral of given data over specific timesteps using the quadrature method.
+    Calculate the integral of given data over specific time steps using the quadrature method.
 
-    :param timesteps: List of timesteps.
-    :type timesteps: List[float]
+    :param time_steps: List of time steps.
+    :type time_steps: List[float]
     :param data: List of data corresponding to each timestep.
     :type data: List[float]
     :return: The calculated integral.
     :rtype: float
     """
-    func = lambda x: np.interp(x, timesteps, data)
-    return quadrature(func, timesteps[0], timesteps[-1])[0]
+    func = lambda x: np.interp(x, time_steps, data)
+    return quadrature(func, time_steps[0], time_steps[-1])[0]
 
-def calculate_squared_quadrature_integral(timesteps: List[float], data: List[float]) -> float:
+def calculate_squared_quadrature_integral(time_steps: List[float], data: List[float]) -> float:
     """
-    Calculate the integral of squared given data over specific timesteps using the quadrature method..
+    Calculate the integral of squared given data over specific time steps using the quadrature method..
 
-    :param timesteps: List of timesteps.
-    :type timesteps: List[float]
+    :param time_steps: List of time steps.
+    :type time_steps: List[float]
     :param data: List of data corresponding to each timestep.
     :type data: List[float]
     :return: The calculated integral.
     :rtype: float
     """
-    func = lambda x: np.interp(x, timesteps, data)**2
-    return quadrature(func, timesteps[0], timesteps[-1])[0]
+    func = lambda x: np.interp(x, time_steps, data) ** 2
+    return quadrature(func, time_steps[0], time_steps[-1])[0]
 
-def calculate_average(integral: float, timesteps: List[float]) -> float:
+def calculate_average(integral: float, time_steps: List[float]) -> float:
     """
     Compute the average in general.
 
     :param integral: The integral value.
     :type integral: float
-    :param timesteps: List of timesteps.
-    :type timesteps: List[float]
+    :param time_steps: List of time steps.
+    :type time_steps: List[float]
 
     Returns:
     :return: The calculated average.
     :rtype: float.
     """
-    total_time = timesteps[-1] - timesteps[0]
+    total_time = time_steps[-1] - time_steps[0]
     if total_time == 0:
         raise ValueError("Total time cannot be zero.")
     return integral / total_time
 
-def calculate_rms(squared_integral: float, timesteps: List[float]) -> float:
+def calculate_rms(squared_integral: float, time_steps: List[float]) -> float:
     """
     Compute the RMS.
 
     :param squared_integral: The integral value.
     :type squared_integral: float
-    :param timesteps: List of timesteps.
-    :type timesteps: List[float]
+    :param time_steps: List of time steps.
+    :type time_steps: List[float]
 
     Returns:
     :return: The calculated average.
     :rtype: float.
     """
-    total_time = timesteps[-1] - timesteps[0]
+    total_time = time_steps[-1] - time_steps[0]
     if total_time == 0:
         raise ValueError("Total time cannot be zero.")
     mean_square = squared_integral / total_time  # Calculate the mean of the square of the data

@@ -852,13 +852,13 @@ class TwoDaxiSymmetric:
                                 # 16 cases will be handled here, 8 cases with consistent direction, and 8 cases with Zigzag movement.
                                 vertical_first = placing_strategy in [
                                     ConductorDistribution.VerticalUpward_HorizontalRightward,
-                                    ConductorDistribution.VerticalUpward_HorizontalLefttward,
+                                    ConductorDistribution.VerticalUpward_HorizontalLeftward,
                                     ConductorDistribution.VerticalDownward_HorizontalRightward,
                                     ConductorDistribution.VerticalDownward_HorizontalLeftward]
 
                                 upward_movement = placing_strategy in [
                                     ConductorDistribution.VerticalUpward_HorizontalRightward,
-                                    ConductorDistribution.VerticalUpward_HorizontalLefttward,
+                                    ConductorDistribution.VerticalUpward_HorizontalLeftward,
                                     ConductorDistribution.HorizontalRightward_VerticalUpward,
                                     ConductorDistribution.HorizontalLeftward_VerticalUpward]
 

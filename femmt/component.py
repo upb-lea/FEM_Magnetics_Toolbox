@@ -115,7 +115,7 @@ class MagneticComponent:
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Component Geometry
         self.component_type = component_type  # "inductor", "transformer", "integrated_transformer" (or "three-phase-transformer")
-        self.simulation_type = simulation_type  # frequencd domain # time domain
+        self.simulation_type = simulation_type  # frequency domain # time domain
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # Components
@@ -150,7 +150,7 @@ class MagneticComponent:
         self.time_period = None
         self.initial_time = None  # Default 0
         self.max_time = None  # Simulation's duration
-        self.nb_steps_per_periode = None  # Number of time steps
+        self.nb_steps_per_period = None  # Number of time steps
         self.nb_steps = None
         self.frequency = None
         self.phase_deg = None  # Default is zero, Defined for every conductor
@@ -724,7 +724,7 @@ class MagneticComponent:
 
             # For single core and more than one core_part, volume for every core part is calculated
 
-            # core_part_1 is divided into subparts cores
+            # core_part_1 is divided into parts cores
             # # subpart1: bottom left subpart
             subpart1_1_height = bottommost_airgap_position + self.core.window_h / 2 - bottommost_airgap_height / 2
             subpart1_1_width = self.core.core_inner_diameter / 2
@@ -775,7 +775,7 @@ class MagneticComponent:
         elif self.core.core_type == CoreType.Stacked:
 
             # For stacked core types, the volume is divided into different core  * parts, each of which is further
-            # divided into subparts to calculate the total volume of each core part.
+            # divided into parts to calculate the total volume of each core part.
 
             # core_part_2 : core part between the bottom air gap and subpart_1 of core_part_1
             core_part_1_height = self.core.window_h_bot / 2 - heights[0] / 2
@@ -784,7 +784,7 @@ class MagneticComponent:
             core_parts_volumes.append(core_part_1_volume)
 
             # Core Part 1 Calculation
-            # Core part 1 is calculated as the sum of three different subparts
+            # Core part 1 is calculated as the sum of three different parts
             # subpart_1: bottom left subpart
             subpart2_1_height = self.core.window_h_bot / 2 - heights[0] / 2
             subpart2_1_width = self.core.core_inner_diameter / 2
@@ -801,7 +801,7 @@ class MagneticComponent:
             subpart2_3_volume = np.pi * (subpart2_3_width ** 2 * subpart2_3_height) - \
                 np.pi * ((self.core.window_w + self.core.core_inner_diameter/2) ** 2 * self.core.window_h_bot)
 
-            # Summing up the volumes of the subparts to get the total volume of core part 1
+            # Summing up the volumes of the parts to get the total volume of core part 1
             core_part_2_volume = subpart2_1_volume + subpart2_2_volume + subpart2_3_volume
             core_parts_volumes.append(core_part_2_volume)
 
@@ -835,7 +835,7 @@ class MagneticComponent:
             subpart5_3_volume = np.pi * (subpart5_3_width ** 2 * subpart5_3_height) - \
                 np.pi * ((self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h_top)
 
-            # Summing up the volumes of the subparts to get the total volume of core_part_5
+            # Summing up the volumes of the parts to get the total volume of core_part_5
             core_part_5_volume = subpart5_1_volume + subpart5_2_volume + subpart5_3_volume
             core_parts_volumes.append(core_part_5_volume)
 
@@ -851,7 +851,7 @@ class MagneticComponent:
 
         # Check if the volumes are equal within the margin of error
         if not (abs(whole_core_volume - total_parts_volume) <= margin_of_error):
-            error_message = (f"Sum of core parts ({total_parts_volume}) does not equalthe whole core  "
+            error_message = (f"Sum of core parts ({total_parts_volume}) does not equal the whole core  "
                              f"volume ({whole_core_volume}) within the margin of error ({margin_of_error}).")
             raise ValueError(error_message)
 
@@ -965,7 +965,7 @@ class MagneticComponent:
         return wire_volumes
 
     def calculate_wire_weight(self) -> List[float]:
-        """Calcualte the weight of all wires used inside the magnetic component."""
+        """Calculate the weight of all wires used inside the magnetic component."""
         wire_material = ff.wire_material_database()
 
         wire_weight = []
@@ -1122,7 +1122,7 @@ class MagneticComponent:
         self.time_period = time_list[-1]
         print(f"{1/self.frequency = }")
         print(f"{time_list[-1] = }")
-        self.nb_steps_per_periode = len(time_list)
+        self.nb_steps_per_period = len(time_list)
         self.max_time = number_of_periods * (self.time_period + self.step_time)
         # current excitation
         for num in range(len(self.windings)):
@@ -1538,7 +1538,7 @@ class MagneticComponent:
         Full study for the component: inductance values and losses.
 
         :param time_current_vectors: ....
-        :type time_current_vectors: List[List[List[float]]
+        :type time_current_vectors: List[List[List[float]]]
         :param fft_filter_value_factor: Factor to filter frequencies from the fft. E.g. 0.01 [default] removes all
             amplitudes below 1 % of the maximum amplitude from the result-frequency list
         :type fft_filter_value_factor: float
@@ -2241,7 +2241,7 @@ class MagneticComponent:
             text_file.write(f"T = {self.time_period};\n")
             text_file.write(f"time0 = {self.initial_time};\n")
             text_file.write(f"timemax = {self.max_time};\n")
-            text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_periode};\n")
+            text_file.write(f"NbStepsPerPeriod = {self.nb_steps_per_period};\n")
             text_file.write(f"NbSteps = {self.nb_steps};\n")
             text_file.write(f"delta_t = {self.step_time};\n")
             time_values_str = ', '.join(map(str, self.time))
@@ -2541,7 +2541,7 @@ class MagneticComponent:
                 # Power
                 # using 'winding_dict["V"][0]' to get first element (real part) of V.
                 # Use winding_dict["I"][0] to avoid typeerror
-                # As FEMMT uses peak pointers, and the power needs to be halfed.
+                # As FEMMT uses peak pointers, and the power needs to be halved.
                 # i_rms * u_rms = i_peak / sqrt(2) * u_peak / sqrt(2) = i_peak * u_peak / 2
                 # Note: For DC-values (frequency = 0), RMS value is same as peak value and so, halve is not allowed.
                 if sweep_dict["f"] == 0.0:
@@ -2759,7 +2759,7 @@ class MagneticComponent:
             log_dict["average_losses"]["core_eddy_losses"] = \
                 self.load_result(res_name="CoreEddyCurrentLosses", average=True)
             log_dict["average_losses"]["core_hyst_losses"] = [
-                0]  # until the hystersis losses are correctly defined in time_domain
+                0]  # until the hysteresis losses are correctly defined in time_domain
 
             # Core Part losses
             if len(self.mesh.plane_surface_core) > 1:
@@ -2787,7 +2787,7 @@ class MagneticComponent:
                 total_loss = log_dict["average_losses"]["core_eddy_losses"] + log_dict["average_losses"]["core_hyst_losses"]
                 log_dict["average_losses"]["core_parts"]["core_part_1"]["total_core_part_1"] = total_loss[0]
 
-            # average winding losses, turns_losses, current, volatge, power losses, ..etc
+            # average winding losses, turns_losses, current, voltage, power losses, etc.
             for winding_num in range(len(self.windings)):
                 losses_dict = {
                     "turn_losses": [],
@@ -2826,7 +2826,7 @@ class MagneticComponent:
 
                 # compute average power for every winding
                 losses_dict["P"] = losses_dict["average_current"][0] * losses_dict["average_voltage"][0]
-                # comput apparent power for every winding
+                # compute apparent power for every winding
                 losses_dict["S"] = losses_dict["rms_current"][0] * losses_dict["rms_voltage"][0]
                 # Compute reactive power for every winding using the square roots of S and P
                 losses_dict["Q"] = np.sqrt(abs(losses_dict["S"] ** 2 - losses_dict["P"] ** 2))
@@ -2886,7 +2886,7 @@ class MagneticComponent:
                 log_dict["total_losses"]["eddy_core"] = log_dict["average_losses"]["core_eddy_losses"][0] + \
                     log_dict["average_losses"]["core_hyst_losses"][0]
                 log_dict["total_losses"][
-                    "hyst_core_fundamental_freq"] = 0  # it is here 0 until the hystersis losses can be defined correctly in the solver
+                    "hyst_core_fundamental_freq"] = 0  # it is here 0 until the hysteresis losses can be defined correctly in the solver
                 log_dict["total_losses"]["core"] = log_dict["total_losses"]["hyst_core_fundamental_freq"] + \
                     log_dict["total_losses"]["eddy_core"]
                 # core part losses
@@ -3286,16 +3286,16 @@ class MagneticComponent:
         """
 
         def rolling_calculation(res_name: str, res_path: str):
-            timesteps = []
+            time_steps = []
             data = []
             # Reading data from the file
             with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
                 lines = fd.readlines()
-            # Extracting timesteps and data values from the file
+            # Extracting time steps and data values from the file
             for line in lines:
                 line_values = line.split()
                 if len(line_values) == 2:
-                    timesteps.append(float(line_values[0]))
+                    time_steps.append(float(line_values[0]))
                     data.append(float(line_values[1]))
             # Error handling: Raising error if window size is greater than the number of data points
             if window_size > len(data):
@@ -3307,8 +3307,8 @@ class MagneticComponent:
 
             # Plotting data with rolling average
             plt.figure(figsize=(10, 5))
-            plt.plot(timesteps, data, label='Original Data')
-            plt.plot(timesteps, rolling_averages, label=f'Rolling Average (Window Size: {window_size})')
+            plt.plot(time_steps, data, label='Original Data')
+            plt.plot(time_steps, rolling_averages, label=f'Rolling Average (Window Size: {window_size})')
             plt.xlabel('Time')
             plt.ylabel(res_name)
             plt.title(f'{res_name} with Rolling Average')
@@ -3320,7 +3320,7 @@ class MagneticComponent:
         # Looping through each result type to process the files
         for res_type in result_types:
             res_path = self.file_data.e_m_values_folder_path if res_type == "value" else self.file_data.e_m_circuit_folder_path
-            # some files are not needed for calculation /for ex. average files), so they are excluded
+            # some files are not needed for calculation /for ex. average files, so they are excluded
             all_files = os.listdir(res_path)
             dat_files = [file for file in all_files if
                          file.endswith('.dat') and not file.endswith('_average.dat') and not file.endswith('_rms.dat')]
@@ -3331,7 +3331,7 @@ class MagneticComponent:
             # Processing files in the winding-specific subdirectories, if they exist
             for index, _ in enumerate(self.windings, start=1):
                 winding_folder_path = os.path.join(res_path, f"Winding_{index}")
-                # some files are not needed for calculation /for ex. average files) in sub winding files, so they are excluded
+                # some files are not needed for calculation /for ex. average files in sub winding files, so they are excluded
                 if os.path.isdir(winding_folder_path):
                     winding_files = os.listdir(winding_folder_path)
                     winding_dat_files = [file for file in winding_files if
@@ -3362,30 +3362,30 @@ class MagneticComponent:
             # finding the average of every .dat files inside the 'value' directory
             for dat_file in dat_files:
                 res_name = dat_file.replace('.dat', '')
-                timesteps = []
+                time_steps = []
                 data = []
                 # Reading data from the file
                 with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
                     lines = fd.readlines()
-                # Extracting timesteps and data values from the file
+                # Extracting time steps and data values from the file
                 for line in lines:
                     line_values = line.split()
                     if len(line_values) == 2:
-                        timesteps.append(float(line_values[0]))
+                        time_steps.append(float(line_values[0]))
                         data.append(float(line_values[1]))
                 # finding the integral, and then calculating the average (integral(data)/T)
-                integral = ff.calculate_quadrature_integral(timesteps, data)
-                average = ff.calculate_average(integral, timesteps)
+                integral = ff.calculate_quadrature_integral(time_steps, data)
+                average = ff.calculate_average(integral, time_steps)
                 # write average files
                 output_filename = os.path.join(res_path, f"{res_name}_average.dat")
 
                 # writing files for average values
                 with open(output_filename, 'w') as file:
                     file.write(str(average))
-                # finding the rms only for volate_\d+.dat file, like (voltage_1, voltage_2 and so on)
+                # finding the rms only for voltage_\d+.dat file, like (voltage_1, voltage_2 and so on)
                 if re.match(r'Voltage_\d+', res_name):
-                    integral_squared = ff.calculate_squared_quadrature_integral(timesteps, data)
-                    rms = ff.calculate_rms(integral_squared, timesteps)
+                    integral_squared = ff.calculate_squared_quadrature_integral(time_steps, data)
+                    rms = ff.calculate_rms(integral_squared, time_steps)
                     rms_output_filename = os.path.join(res_path, f"{res_name}_rms.dat")
                     with open(rms_output_filename, 'w') as file:
                         file.write(str(rms))
@@ -3400,20 +3400,20 @@ class MagneticComponent:
                     # finding the average of every .dat files inside 'Winding_n' subdirectory
                     for winding_dat_file in winding_dat_files:
                         res_name = winding_dat_file.replace('.dat', '')
-                        timesteps = []
+                        time_steps = []
                         data = []
                         # Reading data from the file
                         with open(os.path.join(winding_folder_path, f"{res_name}.dat")) as fd:
                             lines = fd.readlines()
-                        # Extracting timesteps and data values from the file
+                        # Extracting time steps and data values from the file
                         for line in lines:
                             line_values = line.split()
                             if len(line_values) == 2:
-                                timesteps.append(float(line_values[0]))
+                                time_steps.append(float(line_values[0]))
                                 data.append(float(line_values[1]))
                         # finding the integral, and then calculating the average (integral(data)/T)
-                        integral = ff.calculate_quadrature_integral(timesteps, data)
-                        average = ff.calculate_average(integral, timesteps)
+                        integral = ff.calculate_quadrature_integral(time_steps, data)
+                        average = ff.calculate_average(integral, time_steps)
                         # write average files
                         output_filename = os.path.join(winding_folder_path, f"{res_name}_average.dat")
                         # writing files for average values
@@ -3482,7 +3482,7 @@ class MagneticComponent:
                     line = fd.readline().strip()
                     result = [float(line)]
             else:
-                # timesteps = []
+                # time steps = []
                 # Initializing
                 data = []
                 with open(os.path.join(res_path, f"{res_name}.dat")) as fd:

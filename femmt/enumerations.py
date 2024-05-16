@@ -203,7 +203,7 @@ class ConductorDistribution(IntEnum):
     VerticalUpward_HorizontalRightward = 1
     """Places conductors vertically upwards first, then moves horizontally rightward for the next set with consistent direction."""
 
-    VerticalUpward_HorizontalLefttward = 2
+    VerticalUpward_HorizontalLeftward = 2
     """Places conductors vertically upwards first, then moves horizontally leftward for the next set with consistent direction."""
 
     VerticalDownward_HorizontalRightward = 3
