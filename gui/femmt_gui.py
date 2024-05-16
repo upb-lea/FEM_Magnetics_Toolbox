@@ -515,6 +515,8 @@ class MainWindow(QMainWindow):
         self.test_name_4_comboBox.currentTextChanged.connect(self.tempfreqinput4)
         self.test_name_5_comboBox.currentTextChanged.connect(self.tempfreqinput5)
 
+        self.dat_core_material_comboBox.currentTextChanged.connect(self.test_setup_name)
+        self.test_name_comboBox.currentTextChanged.connect(self.temp_meas_input)
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_dat_input)
         self.dat_core_material_comboBox.currentTextChanged.connect(self.temp_meas_input)
 
@@ -1565,9 +1567,10 @@ class MainWindow(QMainWindow):
         mat_dat_temp = comma_str_to_point_float(self.aut_temp_dat_comboBox.currentText())
         mat_meas_temp = comma_str_to_point_float(self.aut_temp_meas_comboBox.currentText())
         mat_name = self.dat_core_material_comboBox.currentText()
+        test_name = self.test_name_comboBox.currentText()
 
         database.compare_core_loss_flux_datasheet_measurement(matplotlib_widget, material=mat_name,
-                                                              temperature_list=[mat_dat_temp, mat_meas_temp], measurement_name=fmt.MeasurementSetup.LEA_LK)
+                                                              temperature_list=[mat_dat_temp, mat_meas_temp], measurement_name=test_name)
 
         matplotlib_widget.axis.grid()
         matplotlib_widget.figure.canvas.draw_idle()
@@ -1926,6 +1929,24 @@ class MainWindow(QMainWindow):
 
         ########################################################################
 
+    def test_setup_name(self):
+        """Get test setup names from database for particular material."""
+        mat_text1 = self.dat_core_material_comboBox.currentText()
+        # Temporarily disconnect the signal to prevent triggering changes
+        self.test_name_comboBox.currentTextChanged.disconnect(self.temp_meas_input)
+        # Clear existing data in the comboBox
+        self.test_name_comboBox.clear()
+
+        names_list = []
+
+        if mat_text1:
+            names_list = database.find_measurement_names(material_name=mat_text1, datatype="complex_permeability")
+
+        for option in names_list:
+            self.test_name_comboBox.addItem(option)
+        # Reconnect the signal after the updates
+        self.test_name_comboBox.currentTextChanged.connect(self.temp_meas_input)
+
     def temp_dat_input(self):
         """Get the database temperature of a particular material selected."""
         mat_text1 = self.dat_core_material_comboBox.currentText()
@@ -1944,11 +1965,12 @@ class MainWindow(QMainWindow):
     def temp_meas_input(self):
         """Get the measurement temperature of a particular material selected."""
         mat_text1 = self.dat_core_material_comboBox.currentText()
+        test_name_text = self.test_name_comboBox.currentText()
 
         get_temp1_list = []
         if mat_text1:
             get_temp1_list = database.drop_down_list(material_name=mat_text1, comparison_type="mvm", temperature=True,
-                                                     datatype=fmt.MeasurementDataType.ComplexPermeability, measurement_name=fmt.MeasurementSetup.LEA_LK)
+                                                     datatype=fmt.MeasurementDataType.ComplexPermeability, measurement_name=test_name_text)
         aut_temp_options1 = get_temp1_list
 
         temp_str = [f'{item:.2f}' for item in aut_temp_options1]

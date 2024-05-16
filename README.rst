@@ -111,6 +111,17 @@ ONELAB installation
 -  Unpack the software and remember the file path. This will be needed
    later when installing FEMMT.
 
+Further steps for macOS(ARM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  Go to https://onelab.info/
+-  Download the Desktop Version for Windows
+-  Copy the "conveks.py" and "Onelab.py" files and paste them into the "onelab" folder
+-  Go to http://getdp.info/
+-  Download the macOS(ARM) Version
+-  Open the downloaded folder, navigate to "bin" and copy the "getdp" application file
+-  Paste the copied file into your "onelab" folder
+
 Install FEMMT
 ~~~~~~~~~~~~~~~~~
 
