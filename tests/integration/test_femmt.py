@@ -21,6 +21,8 @@ import femmt.examples.basic_inductor_time_domain
 import femmt.examples.basic_transformer_time_domain
 import femmt.examples.advanced_inductor_air_gap_sweep
 import femmt.examples.component_study.transformer_component_study
+import femmt.examples.basic_transformer_excitation_sweep
+import femmt.examples.basic_inductor_excitation_sweep
 import materialdatabase as mdb
 
 
@@ -2302,7 +2304,7 @@ def test_load_files(temp_folder, fixture_inductor_core_material_database,
 
 
 def test_basic_examples(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_inductor.basic_example_inductor(onelab_folder=onelab_folder,
                                                          show_visual_outputs=False,
@@ -2310,7 +2312,7 @@ def test_basic_examples(temp_folder):
 
 
 def test_basic_example_transformer_interleaved(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_interleaved.basic_example_transformer_interleaved(onelab_folder=onelab_folder,
                                                                                        show_visual_outputs=False,
@@ -2318,14 +2320,14 @@ def test_basic_example_transformer_interleaved(temp_folder):
 
 
 def test_basic_example_transformer(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer.basic_example_transformer(onelab_folder=onelab_folder, show_visual_outputs=False,
                                                                is_test=True)
 
 
 def test_basic_example_transformer_three_winding(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
@@ -2333,7 +2335,7 @@ def test_basic_example_transformer_three_winding(temp_folder):
 
 
 def test_basic_example_transformer_integrated(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_integrated.basic_example_transformer_integrated(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
@@ -2341,7 +2343,7 @@ def test_basic_example_transformer_integrated(temp_folder):
 
 
 def test_basic_example_transformer_center_tapped(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_center_tapped.basic_example_transformer_center_tapped(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
@@ -2349,7 +2351,7 @@ def test_basic_example_transformer_center_tapped(temp_folder):
 
 
 def test_basic_example_transformer_stacked(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_stacked.basic_example_transformer_stacked(onelab_folder=onelab_folder,
                                                                                show_visual_outputs=False,
@@ -2357,14 +2359,14 @@ def test_basic_example_transformer_stacked(temp_folder):
 
 
 def test_basic_example_transformer_stacked_center_tapped(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_stacked_center_tapped.basic_example_transformer_stacked_center_tapped(
         onelab_folder=onelab_folder, show_visual_outputs=False, is_test=True)
 
 
 def test_basic_example_inductor_foil_vertical(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_inductor_foil_vertical.basic_example_inductor_foil_vertical(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
@@ -2372,7 +2374,7 @@ def test_basic_example_inductor_foil_vertical(temp_folder):
 
 
 def test_basic_example_transformer_n_winding(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_n_winding.basic_example_transformer_n_winding(onelab_folder=onelab_folder,
                                                                                    show_visual_outputs=False,
@@ -2380,34 +2382,34 @@ def test_basic_example_transformer_n_winding(temp_folder):
 
 
 def test_basic_example_transformer_5_windings(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_5_windings.basic_example_transformer_5_windings(onelab_folder=onelab_folder,
                                                                                      show_visual_outputs=False,
                                                                                      is_test=True)
 
 def test_basic_inductor_time_domain(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_inductor_time_domain.basic_example_inductor_time_domain(onelab_folder=onelab_folder,
                                                                                  show_visual_outputs=False,
                                                                                  is_test=True)
 
 def test_basic_transformer_time_domain(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_time_domain.basic_example_transformer_time_domain(onelab_folder=onelab_folder,
                                                                                        show_visual_outputs=False,
                                                                                        is_test=True)
 
 def test_basic_transformer_3_windings_time_domain(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.basic_transformer_three_winding.basic_example_transformer_three_winding(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
                                                                                            is_test=True)
 def test_advanced_example_inductor_sweep(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.advanced_inductor_sweep.advanced_example_inductor_sweep(onelab_folder=onelab_folder,
                                                                            show_visual_outputs=False,
@@ -2415,15 +2417,28 @@ def test_advanced_example_inductor_sweep(temp_folder):
 
 
 def test_advanced_example_inductor_air_gap_sweep(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.advanced_inductor_air_gap_sweep.basic_example_sweep(onelab_folder=onelab_folder,
                                                                        show_visual_outputs=False,
                                                                        is_test=True)
 
 def test_transformer_component_study(temp_folder):
-    """Integrationtest to test the basic example file."""
+    """Integration test to test the basic example file."""
     temp_folder_path, onelab_folder = temp_folder
     femmt.examples.component_study.transformer_component_study.transformer_component_study(onelab_folder=onelab_folder,
                                                                                            show_visual_outputs=False,
                                                                                            is_test=True)
+
+def test_inductor_excitation_sweep(temp_folder):
+    """Integration test to the basic example file."""
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_inductor_excitation_sweep.basic_example_inductor_excitation_sweep(onelab_folder=onelab_folder,
+                                                                                           show_visual_outputs=False,
+                                                                                           is_test=True)
+def test_transformer_excitation_sweep(temp_folder):
+    """Integration test to the basic example file."""
+    temp_folder_path, onelab_folder = temp_folder
+    femmt.examples.basic_transformer_excitation_sweep.basic_example_transformer_excitation_sweep(onelab_folder=onelab_folder,
+                                                                                                 show_visual_outputs=False,
+                                                                                                 is_test=True)

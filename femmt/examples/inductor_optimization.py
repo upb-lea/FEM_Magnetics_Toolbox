@@ -1026,7 +1026,7 @@ class AutomatedDesign:
                 print(f"{time_difference_hours = }")
 
             except Exception as e:
-                print("next iteration")
+                print(f"next iteration due to {e}")
                 # logging.exception(e)
         print(f"Successful FEM simulations: {successful_sim_counter} out of total cases: {len(self.data_matrix_fem)}")
 
