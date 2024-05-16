@@ -165,7 +165,7 @@ def get_height_of_group(group: CenterTappedGroup):
 
 
 def add_tertiary_winding_to_stack(stack_order_without_tertiary, tertiary_row_to_be_added):
-    """Add tertiary widing to stack."""
+    """Add tertiary winding to stack."""
     secondary_tags = []
     number_of_added_tertiaries = 0
     for i, obj in enumerate(stack_order_without_tertiary):
@@ -183,7 +183,7 @@ def insert_insulations_to_stack(stack_order, isolations: ThreeWindingIsolation):
     # Which insulation is needed depends on the bot and top row neighbours
     # TODO: insert insulations into the stack depending on isolation matrix
 
-    # TODO: remove following fix insertation
+    # TODO: remove following fix insert
     insulation_positions = []
     insulation_tags = []
     insulation_stack = []
@@ -423,7 +423,7 @@ def stack_center_tapped_transformer(primary_row: ConductorRow, secondary_row: Co
                                              primary_row, secondary_row, tertiary_row,
                                              isolations)
 
-        # Add insulations afterwards
+        # Add insulations afterward
         insert_insulations_to_stack(stack_order, isolations)
 
         # Create the complete ConductorStack from the stack_order
@@ -481,7 +481,7 @@ def is_even(x: int):
 
 
 def center(l_list: List):
-    """Return the center indes of a list. Rounds off."""
+    """Return the center index of a list. Rounds off."""
     return int(len(l_list) / 2)
 
 
@@ -489,7 +489,7 @@ def mix_x_and_i(input_x, input_i):
     """General usage to interleave windings. One winding could be input_x and the other input_i. Experimental.
 
     Example: 16 primary windings (input_x), 3 secondary windings (input_i).
-    Trys to fit these widings symmetric into the winding window.
+    Tries to fit these windings symmetric into the winding window.
     """
     len_x = len(input_x)
     len_i = len(input_i)

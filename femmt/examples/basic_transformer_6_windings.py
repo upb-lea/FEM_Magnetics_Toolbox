@@ -150,7 +150,7 @@ def basic_example_transformer_6_windings(onelab_folder: str = None, show_visual_
                          zigzag=True)
     cells[3].set_winding(winding4, 7, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.HorizontalLeftward_VerticalUpward)
     cells[4].set_winding(winding5, 5, fmt.WindingType.Single, fmt.Align.CenterOnHorizontalAxis, fmt.ConductorDistribution.HorizontalLeftward_VerticalDownward)
-    cells[5].set_winding(winding6, 6, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalLefttward)
+    cells[5].set_winding(winding6, 6, fmt.WindingType.Single, fmt.Align.ToEdges, fmt.ConductorDistribution.VerticalUpward_HorizontalLeftward)
     geo.set_winding_windows([winding_window])
 
     # 8. perform an FEM simulation
