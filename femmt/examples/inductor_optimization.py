@@ -806,7 +806,7 @@ class AutomatedDesign:
             mu_r_imag[index] = mu_r_imag_interpol_func[mu_r_imag_dict[data_matrix[index, self.param["mu_r_abs"]]]](
                 data_matrix[index, self.param["b_max_center"]])
 
-        # Volume chosen as per "Masterthesis_Till_Piepenbrock" pg-45
+        # Volume chosen as per "Master thesis Till Piepenbrock" pg-45
         volume_center = (np.pi * (data_matrix[:, self.param["core_inner_diameter"]] / 2) ** 2) * \
                         (data_matrix[:, self.param["window_h"]] + data_matrix[:, self.param["core_h_middle"]] - \
                          (data_matrix[:, self.param["n_air_gaps"]] * data_matrix[:, self.param["air_gap_h"]]))

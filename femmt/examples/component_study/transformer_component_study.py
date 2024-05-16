@@ -31,7 +31,7 @@ def transformer_component_study(onelab_folder: Optional[str] = None, show_visual
     geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
                                 verbosity=fmt.Verbosity.Silent, is_gui=is_test)
 
-    # This line is for automated pytest running on github only. Please ignore this line!
+    # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 

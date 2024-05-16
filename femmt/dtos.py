@@ -16,7 +16,7 @@ class SingleCoreDimensions:
 
 @dataclass
 class StackedCoreDimensions:
-    """Defines the dimensions of a stacked core. A stacked core is made of a transformer section an an inductor."""
+    """Defines the dimensions of a stacked core. A stacked core is made of a transformer section and an inductor."""
 
     core_inner_diameter: float
     window_w: float

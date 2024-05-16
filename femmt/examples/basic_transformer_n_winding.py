@@ -1,4 +1,4 @@
-"""Basic example to show how to simulate a n-winding transformer."""
+"""Basic example to show how to simulate an n-winding transformer."""
 import femmt as fmt
 import os
 

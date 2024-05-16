@@ -981,7 +981,7 @@ class MagneticComponent:
     def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current',
                    plot_interpolation: bool = False):
         """
-        Run a electromagnetic simulation.
+        Run the electromagnetic simulation.
 
         - excitation of the electromagnetic problem
         - current, voltage or current density
@@ -1176,7 +1176,7 @@ class MagneticComponent:
                 self.red_freq[num] = 0
 
     def simulate(self):
-        """Initialize a onelab client. Provides the GetDP based solver with the created mesh file."""
+        """Initialize the onelab client. Provides the GetDP based solver with the created mesh file."""
         self.femmt_print("\n---\n"
                          "Initialize ONELAB API\n"
                          "Run Simulation\n")
@@ -1673,13 +1673,14 @@ class MagneticComponent:
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
         def split_time_current_vectors_center_tapped(time_current_vectors: List[List[List[float]]]):
-            # print(f"{time_current_vectors = }")
+            """
+
+            """
+
             positive_secondary_current = np.copy(time_current_vectors[1][1])
             positive_secondary_current[positive_secondary_current < 0] = 0
-            # print(f"{positive_secondary_current = }")
             negative_secondary_current = np.copy(time_current_vectors[1][1])
             negative_secondary_current[negative_secondary_current > 0] = 0
-            # print(f"{negative_secondary_current = }")
 
             center_tapped_time_current_vectors = [time_current_vectors[0],
                                                   [time_current_vectors[1][0], positive_secondary_current],
@@ -2717,7 +2718,7 @@ class MagneticComponent:
         log_dict["time_domain_simulation"].append(Time_domain_data_dict)
 
         # time_step_n log
-        # indide every time_step_n, there are windings log such that I, V, Flux are shown in every winding (winding1, winding2, .. )
+        # in every time_step_n, there are windings log such that I, V, Flux are shown in every winding (winding1, winding2, .. )
         for t in range(0, self.nb_steps):
             time_step_dict = {
                 "windings": {}
@@ -3482,7 +3483,7 @@ class MagneticComponent:
                     line = fd.readline().strip()
                     result = [float(line)]
             else:
-                # time steps = []
+                # time_steps = []
                 # Initializing
                 data = []
                 with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
@@ -3490,7 +3491,7 @@ class MagneticComponent:
                     for line in lines:
                         line_values = line.split()
                         if len(line_values) == 2:
-                            # timesteps.append(float(line_values[0]))
+                            # time_steps.append(float(line_values[0]))
                             data.append(float(line_values[1]))
 
                 result = list(zip(data))  # Returns list of (time, data) pairs

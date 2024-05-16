@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
         self.Inductance_value_pushButton.clicked.connect(self.inductancecalc)
 
         "checkbox for Insulation mode"
-        # needed for enabeling the insulation
+        # needed to enable the insulation
         self.enable_insulation_checkbox.stateChanged.connect(self.on_insulation_state_changed)
         # Initialize flag_insulation based on the checkbox's initial state
         self.flag_insulation = self.enable_insulation_checkbox.isChecked()
@@ -291,7 +291,7 @@ class MainWindow(QMainWindow):
         self.md_winding2_litz_material_comboBox.setToolTip(
             "Chose a litz from the database. Chose 'Manual' to insert any parameters")
 
-        "Set Tool Tips in exitation tab"
+        "Set Tool Tips in excitation tab"
         self.md_winding1_idc_lineEdit.setToolTip("DC Current")
         self.md_winding1_ik1_lineEdit.setToolTip("Amplitude base frequency")
         self.md_winding1_ik2_lineEdit.setToolTip("Amplitude 2 * base frequency")
@@ -544,7 +544,7 @@ class MainWindow(QMainWindow):
         webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox/issues')
 
     def webbrowser_documentation(self):
-        """Open the web brower to the FEMMT documentation."""
+        """Open the web browser to the FEMMT documentation."""
         webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html')
 
     #  **************************** Automated design tab ************************************************************  #
@@ -669,7 +669,7 @@ class MainWindow(QMainWindow):
         """
         # ########################################   {DESIGN PARAMETERS}   #################################################
         goal_inductance = comma_str_to_point_float(
-            self.aut_goal_inductance_val_lineEdit.text())  # Automated design-Reluctacne model-Goal Inductance
+            self.aut_goal_inductance_val_lineEdit.text())  # Automated-design reluctance-model target inductance
         self.trans_dict = {
             # key: Used in FEMMT code
             # value: Used in GUI
@@ -1148,7 +1148,7 @@ class MainWindow(QMainWindow):
 
     def aut_initialize_controls(self) -> None:
         """
-        Initialize the comboboxes with pre-defined values.
+        Initialize the combo boxes with pre-defined values.
 
         :return: None
         :rtype: None
@@ -1960,7 +1960,7 @@ class MainWindow(QMainWindow):
 
     def md_initialize_controls(self) -> None:
         """
-        Initialize the comboboxes with pre-defined values.
+        Initialize the combo boxes with pre-defined values.
 
         :return: None
         :rtype: None
@@ -2591,7 +2591,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2602,7 +2602,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2613,7 +2613,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2624,7 +2624,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2635,7 +2635,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2646,7 +2646,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2657,7 +2657,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2668,7 +2668,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2679,7 +2679,7 @@ class MainWindow(QMainWindow):
         """
         Change the frequency field in case of checking/unchecking the frequency-checkboxes.
 
-        :param status: 0 for disabling, anything else for enabling freqency boxes
+        :param status: 0 for disabling, anything else for enabling frequency boxes
         :type status: int
         :return: None
         :rtype: None
@@ -2690,7 +2690,7 @@ class MainWindow(QMainWindow):
         """
         Generate visual graphics for the input signals.
 
-        Generates a graphic. This graphic is read and insertet to the gui.
+        Generates a graphic. This graphic is read and inserted to the gui.
 
         :return: None
         :rtype: None
@@ -2817,7 +2817,7 @@ class MainWindow(QMainWindow):
         # self.check_onelab_config(geo)
 
         if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-            self.md_simulation_QLabel.setText('simulation startet...')
+            self.md_simulation_QLabel.setText('simulation starts...')
 
             # -----------------------------------------------
             # Core
@@ -2858,7 +2858,7 @@ class MainWindow(QMainWindow):
             # -----------------------------------------------
 
             air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
-            air_gap_heigth_array = []
+            air_gap_height_array = []
             air_gap_position_array = []
             air_gap_position_tag_array = []
 
@@ -2866,7 +2866,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
                 md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_1_height)
+                air_gap_height_array.append(md_air_gap_1_height)
                 air_gap_position_array.append(md_air_gap_1_position)
                 air_gap_position_tag_array.append(0)
 
@@ -2874,7 +2874,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
                 md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_2_height)
+                air_gap_height_array.append(md_air_gap_2_height)
                 air_gap_position_array.append(md_air_gap_2_position)
                 air_gap_position_tag_array.append(0)
 
@@ -2882,7 +2882,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
                 md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_3_height)
+                air_gap_height_array.append(md_air_gap_3_height)
                 air_gap_position_array.append(md_air_gap_3_position)
                 air_gap_position_tag_array.append(0)
 
@@ -2890,7 +2890,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
                 md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_4_height)
+                air_gap_height_array.append(md_air_gap_4_height)
                 air_gap_position_array.append(md_air_gap_4_position)
                 air_gap_position_tag_array.append(0)
 
@@ -2898,7 +2898,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
                 md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_5_height)
+                air_gap_height_array.append(md_air_gap_5_height)
                 air_gap_position_array.append(md_air_gap_5_position)
                 air_gap_position_tag_array.append(0)
 
@@ -2916,7 +2916,7 @@ class MainWindow(QMainWindow):
             elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict["percent"] and air_gap_count >= 1:
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_height_array[i - 1],
                                          air_gap_position_array[i - 1])
                 """
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -2925,7 +2925,7 @@ class MainWindow(QMainWindow):
                 """
                 geo.air_gaps.update(method="percent",
                                     n_air_gaps=air_gap_count,
-                                    air_gap_h=air_gap_heigth_array,
+                                    air_gap_h=air_gap_height_array,
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
 
@@ -2933,7 +2933,7 @@ class MainWindow(QMainWindow):
 
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 for i in range(1, air_gap_count + 1):
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_height_array[i - 1],
                                          air_gap_position_array[i - 1])
                 """
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
@@ -2942,7 +2942,7 @@ class MainWindow(QMainWindow):
                 """
                 geo.air_gaps.update(method="manually",
                                     n_air_gaps=air_gap_count,
-                                    air_gap_h=air_gap_heigth_array,
+                                    air_gap_h=air_gap_height_array,
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
 
@@ -2997,7 +2997,7 @@ class MainWindow(QMainWindow):
             geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
-            self.md_simulation_QLabel.setText('simulation startet...')
+            self.md_simulation_QLabel.setText('simulation starts...')
 
             # 1. chose simulation type
             geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer,
@@ -3026,7 +3026,7 @@ class MainWindow(QMainWindow):
             # -----------------------------------------------
 
             air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
-            air_gap_heigth_array = []
+            air_gap_height_array = []
             air_gap_position_array = []
             air_gap_position_tag_array = []
 
@@ -3034,7 +3034,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
                 md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_1_height)
+                air_gap_height_array.append(md_air_gap_1_height)
                 air_gap_position_array.append(md_air_gap_1_position)
                 air_gap_position_tag_array.append(0)
 
@@ -3042,7 +3042,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
                 md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_2_height)
+                air_gap_height_array.append(md_air_gap_2_height)
                 air_gap_position_array.append(md_air_gap_2_position)
                 air_gap_position_tag_array.append(0)
 
@@ -3050,7 +3050,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
                 md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_3_height)
+                air_gap_height_array.append(md_air_gap_3_height)
                 air_gap_position_array.append(md_air_gap_3_position)
                 air_gap_position_tag_array.append(0)
 
@@ -3058,7 +3058,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
                 md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_4_height)
+                air_gap_height_array.append(md_air_gap_4_height)
                 air_gap_position_array.append(md_air_gap_4_position)
                 air_gap_position_tag_array.append(0)
 
@@ -3066,7 +3066,7 @@ class MainWindow(QMainWindow):
                 md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
                 md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
 
-                air_gap_heigth_array.append(md_air_gap_5_height)
+                air_gap_height_array.append(md_air_gap_5_height)
                 air_gap_position_array.append(md_air_gap_5_position)
                 air_gap_position_tag_array.append(0)
 
@@ -3087,7 +3087,7 @@ class MainWindow(QMainWindow):
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
                 for i in range(1, air_gap_count + 1):
                     # change 2
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_height_array[i - 1],
                                          air_gap_position_array[i - 1])
                 """
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Percent, core)
@@ -3096,7 +3096,7 @@ class MainWindow(QMainWindow):
                 """
                 geo.air_gaps.update(method="percent",
                                     n_air_gaps=air_gap_count,
-                                    air_gap_h=air_gap_heigth_array,
+                                    air_gap_h=air_gap_height_array,
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
 
@@ -3105,7 +3105,7 @@ class MainWindow(QMainWindow):
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
                 for i in range(1, air_gap_count + 1):
                     # change 2
-                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_heigth_array[i - 1],
+                    air_gaps.add_air_gap(fmt.AirGapLegPosition.CenterLeg, air_gap_height_array[i - 1],
                                          air_gap_position_array[i - 1])
                 """
                 air_gaps = fmt.AirGaps(fmt.AirGapMethod.Manually, core)
@@ -3114,7 +3114,7 @@ class MainWindow(QMainWindow):
                 """
                 geo.air_gaps.update(method="manually",
                                     n_air_gaps=air_gap_count,
-                                    air_gap_h=air_gap_heigth_array,
+                                    air_gap_h=air_gap_height_array,
                                     position_tag=air_gap_position_tag_array,
                                     air_gap_position=air_gap_position_array)"""
 
@@ -3263,7 +3263,7 @@ class MainWindow(QMainWindow):
     def inductancecalc(self):
         """Calculate inductance from given geometries."""
         air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
-        air_gap_heigth_array = []
+        air_gap_height_array = []
         air_gap_position_array = []
         air_gap_position_tag_array = []
 
@@ -3271,7 +3271,7 @@ class MainWindow(QMainWindow):
             md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
             md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
 
-            air_gap_heigth_array.append(md_air_gap_1_height)
+            air_gap_height_array.append(md_air_gap_1_height)
             air_gap_position_array.append(md_air_gap_1_position)
             air_gap_position_tag_array.append(0)
 
@@ -3279,7 +3279,7 @@ class MainWindow(QMainWindow):
             md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
             md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
 
-            air_gap_heigth_array.append(md_air_gap_2_height)
+            air_gap_height_array.append(md_air_gap_2_height)
             air_gap_position_array.append(md_air_gap_2_position)
             air_gap_position_tag_array.append(0)
 
@@ -3287,7 +3287,7 @@ class MainWindow(QMainWindow):
             md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
             md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
 
-            air_gap_heigth_array.append(md_air_gap_3_height)
+            air_gap_height_array.append(md_air_gap_3_height)
             air_gap_position_array.append(md_air_gap_3_position)
             air_gap_position_tag_array.append(0)
 
@@ -3295,7 +3295,7 @@ class MainWindow(QMainWindow):
             md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
             md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
 
-            air_gap_heigth_array.append(md_air_gap_4_height)
+            air_gap_height_array.append(md_air_gap_4_height)
             air_gap_position_array.append(md_air_gap_4_position)
             air_gap_position_tag_array.append(0)
 
@@ -3303,7 +3303,7 @@ class MainWindow(QMainWindow):
             md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
             md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
 
-            air_gap_heigth_array.append(md_air_gap_5_height)
+            air_gap_height_array.append(md_air_gap_5_height)
             air_gap_position_array.append(md_air_gap_5_position)
             air_gap_position_tag_array.append(0)
 
@@ -3338,7 +3338,7 @@ class MainWindow(QMainWindow):
         print(f"window_w: {[self.window_w]}")
         print(f"no_of_turns: {[n_turns]}")
         print(f"n_air_gaps: {[air_gap_count]}")
-        print(f"air_gap_h: {air_gap_heigth_array}")
+        print(f"air_gap_h: {air_gap_height_array}")
         print(f"air_gap_position: {air_gap_position_array}")
         print(f"mu_rel: {mu_rel}")
         print(f"component_type: {self.md_simulation_type_comboBox.currentText()}")
@@ -3349,7 +3349,7 @@ class MainWindow(QMainWindow):
         if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
             mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
                                       window_w=[self.window_w], no_of_turns=[n_turns],
-                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_heigth_array,
+                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
                                       air_gap_position=air_gap_position_array,
                                       mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='Percent',
                                       component_type=self.md_simulation_type_comboBox.currentText(),
@@ -3358,7 +3358,7 @@ class MainWindow(QMainWindow):
             mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
                                       window_w=[self.window_w],
                                       no_of_turns=[n_turns],
-                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_heigth_array,
+                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
                                       air_gap_position=air_gap_position_array,
                                       mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='manually',
                                       component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')
@@ -3389,8 +3389,8 @@ class MainWindow(QMainWindow):
             },
             "core": 5,  # ferrite
             "winding": 400,  # copper
-            "air_gaps": 180,  # aluminiumnitride
-            "insulation": 0.42 if self.flag_insulation else None  # polyethylen
+            "air_gaps": 180,  # aluminium nitride
+            "insulation": 0.42 if self.flag_insulation else None  # polyethylene
         }
         # Here the case size can be determined
         case_gap_top = 0.002
@@ -3476,7 +3476,7 @@ class MainWindow(QMainWindow):
                                case_gap_right, case_gap_bot, True,
                                color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=self.flag_insulation)
 
-        # Because the isolations inside of the winding window are not implemented in femm simulation.
+        # Because the isolations inside the winding window are not implemented in femm simulation.
         # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
         # geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
 

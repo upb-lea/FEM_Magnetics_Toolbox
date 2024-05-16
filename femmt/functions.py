@@ -457,7 +457,7 @@ def cost_material_database() -> Dict:
     Source: R. Burkart and J. Kolar 'Component Cost Models for Multi-Objective Optimizations of #
     Switched-Mode Power Converter' 2013.
 
-    These are outdated prices (year 2013). Update needed in future.
+    These are outdated prices (year 2013). Update needed in the future.
     """
     cost_database = {}
     cost_database["core_euro_per_kilogram"] = {"ferrite": 5.5,
