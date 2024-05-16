@@ -1166,6 +1166,84 @@ class WindingWindow:
         # we return the combined list of all virtual winding windows.
         return self.virtual_winding_windows
 
+    def flexible_split(self, split_distance: float = 0,
+                       horizontal_split_factors: Optional[List[float]] = None,
+                       vertical_split_factors: Optional[List[List[float]]] = None) -> List[VirtualWindingWindow]:
+        """
+        Flexible split function to divide a window into sections based on provided horizontal
+        and vertical split factors.
+
+        :param split_distance: Distance between split sections.
+        :param horizontal_split_factors: Relative positions for horizontal splits (0-1 range).
+        :param vertical_split_factors: Nested list of relative positions for vertical splits (0-1 range).
+                                       Each sublist corresponds to the vertical splits for each horizontal section.
+        :return: List of VirtualWindingWindow instances.
+        """
+        if horizontal_split_factors is None:
+            horizontal_split_factors = []
+
+        if vertical_split_factors is None:
+            vertical_split_factors = [[]]
+
+        if self.stray_path is not None and self.air_gaps is not None and self.air_gaps.number > self.stray_path.start_index:
+            air_gap_1_position = self.air_gaps.midpoints[self.stray_path.start_index][1]
+            air_gap_2_position = self.air_gaps.midpoints[self.stray_path.start_index + 1][1]
+            max_pos = max(air_gap_2_position, air_gap_1_position)
+            min_pos = min(air_gap_2_position, air_gap_1_position)
+            distance = max_pos - min_pos  # TODO: this is set in accordance to the midpoint of the air gap:
+            # TODO: should be changed to the core-cond isolation
+            horizontal_splits = min_pos + distance / 2
+            vertical_splits = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_split_factors
+            split_distance = distance  # here, the distance between the two vwws is set automatically
+        else:
+
+            horizontal_splits = np.array(horizontal_split_factors)
+            horizontal_splits = np.sort(np.clip(horizontal_splits, 0, 1))
+            horizontal_splits = self.max_bot_bound + (self.max_top_bound - self.max_bot_bound) * horizontal_splits
+            horizontal_splits = np.concatenate(([self.max_bot_bound], horizontal_splits, [self.max_top_bound]))
+
+        cells = []
+
+        if len(horizontal_split_factors) == 0 and any(vertical_split_factors):  # Only vertical splits
+            for i in range(len(vertical_split_factors)):
+                vertical_splits = np.array(vertical_split_factors[i]) if vertical_split_factors[i] else []
+                vertical_splits = np.sort(np.clip(vertical_splits, 0, 1))
+                vertical_splits = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_splits
+                vertical_splits = np.concatenate(([self.max_left_bound], vertical_splits, [self.max_right_bound]))
+
+                for j in range(len(vertical_splits) - 1):
+                    cells.append(VirtualWindingWindow(
+                        bot_bound=self.max_bot_bound,
+                        top_bound=self.max_top_bound,
+                        left_bound=vertical_splits[j],
+                        right_bound=vertical_splits[j + 1]
+                    ))
+        elif len(vertical_split_factors) == 0 and len(horizontal_split_factors) > 0:  # Only horizontal splits
+            for i in range(len(horizontal_splits) - 1):
+                cells.append(VirtualWindingWindow(
+                    bot_bound=horizontal_splits[i],
+                    top_bound=horizontal_splits[i + 1],
+                    left_bound=self.max_left_bound,
+                    right_bound=self.max_right_bound
+                ))
+        else:  # Both horizontal and vertical splits or no splits
+            for i in range(len(horizontal_splits) - 1):
+                vertical_splits = np.array(vertical_split_factors[i]) if vertical_split_factors[i] else []
+                vertical_splits = np.sort(np.clip(vertical_splits, 0, 1))
+                vertical_splits = self.max_left_bound + (self.max_right_bound - self.max_left_bound) * vertical_splits
+                vertical_splits = np.concatenate(([self.max_left_bound], vertical_splits, [self.max_right_bound]))
+
+                for j in range(len(vertical_splits) - 1):
+                    cells.append(VirtualWindingWindow(
+                        bot_bound=horizontal_splits[i],
+                        top_bound=horizontal_splits[i + 1],
+                        left_bound=vertical_splits[j],
+                        right_bound=vertical_splits[j + 1]
+                    ))
+
+        self.virtual_winding_windows = cells
+        return self.virtual_winding_windows
+
     def split_with_stack(self, stack: ConductorStack):
         """
         Split the winding window according to a ConductorStack dataclass.
