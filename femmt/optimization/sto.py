@@ -168,9 +168,9 @@ class StackedTransformerOptimization:
                 window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
                 window_h_bot_min = config.window_h_bot_min_max_list[0]
                 if window_h_bot_min > window_h_bot_max:
-                    print(f"{number_rows_coil_winding = }")
-                    print(f"{window_h_top = }")
-                    raise ValueError(f"{window_h_bot_min = } > {window_h_bot_max = }")
+                    print(f"{number_rows_coil_winding=}")
+                    print(f"{window_h_top=}")
+                    raise ValueError(f"{window_h_bot_min=} > {window_h_bot_max=}")
 
                 window_h_bot = trial.suggest_float("window_h_bot", window_h_bot_min, window_h_bot_max)
 
@@ -515,12 +515,12 @@ class StackedTransformerOptimization:
 
         # Order: total_volume, total_loss, difference_l_h, difference_l_s
         l_h_absolute_error = percent_error_difference_l_h / 100 * config.l_h_target
-        print(f"{config.l_h_target = }")
-        print(f"{l_h_absolute_error = }")
+        print(f"{config.l_h_target=}")
+        print(f"{l_h_absolute_error=}")
 
         l_s_absolute_error = percent_error_difference_l_s12 / 100 * config.l_s12_target
-        print(f"{config.l_s12_target = }")
-        print(f"{l_s_absolute_error = }")
+        print(f"{config.l_s12_target=}")
+        print(f"{l_s_absolute_error=}")
 
         fig = optuna.visualization.plot_pareto_front(study, targets=lambda t: (
             t.values[0] if -l_h_absolute_error < t.values[2] < l_h_absolute_error else None,
@@ -561,7 +561,7 @@ class StackedTransformerOptimization:
         time_stop = datetime.datetime.now()
         print(f"Finished loading study {study_name} from database in time: {time_stop - time_start}")
 
-        print(f"{error_difference_inductance_sum_percent = }")
+        print(f"{error_difference_inductance_sum_percent=}")
 
         time_start = datetime.datetime.now()
         print("start generating Pareto front....")
@@ -660,9 +660,9 @@ class StackedTransformerOptimization:
             window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
             window_h_bot_min = config.window_h_bot_min_max_list[0]
             if window_h_bot_min > window_h_bot_max:
-                print(f"{number_rows_coil_winding = }")
-                print(f"{window_h_top = }")
-                raise ValueError(f"{window_h_bot_min = } > {window_h_bot_max = }")
+                print(f"{number_rows_coil_winding=}")
+                print(f"{window_h_top=}")
+                raise ValueError(f"{window_h_bot_min=} > {window_h_bot_max=}")
 
             window_h_bot = loaded_trial_params["window_h_bot"]
 
@@ -816,9 +816,9 @@ class StackedTransformerOptimization:
             window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
             window_h_bot_min = config.window_h_bot_min_max_list[0]
             if window_h_bot_min > window_h_bot_max:
-                print(f"{number_rows_coil_winding = }")
-                print(f"{window_h_top = }")
-                raise ValueError(f"{window_h_bot_min = } > {window_h_bot_max = }")
+                print(f"{number_rows_coil_winding=}")
+                print(f"{window_h_top=}")
+                raise ValueError(f"{window_h_bot_min=} > {window_h_bot_max=}")
 
             window_h_bot = loaded_trial_params["params_window_h_bot"]
 
@@ -973,9 +973,9 @@ class StackedTransformerOptimization:
             window_h_bot_max = config.max_transformer_total_height - 3 * core_inner_diameter / 4 - window_h_top
             window_h_bot_min = config.window_h_bot_min_max_list[0]
             if window_h_bot_min > window_h_bot_max:
-                print(f"{number_rows_coil_winding = }")
-                print(f"{window_h_top = }")
-                raise ValueError(f"{window_h_bot_min = } > {window_h_bot_max = }")
+                print(f"{number_rows_coil_winding=}")
+                print(f"{window_h_top=}")
+                raise ValueError(f"{window_h_bot_min=} > {window_h_bot_max=}")
 
             window_h_bot = loaded_trial_params["params_window_h_bot"]
 

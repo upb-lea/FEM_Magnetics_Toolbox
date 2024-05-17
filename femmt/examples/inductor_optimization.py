@@ -355,7 +355,7 @@ def load_fem_simulation_results(working_directory: str):
     labels = []
     fem_simulation_results_directory = os.path.join(working_directory, 'fem_simulation_results')
     print("##########################")
-    print(f"{fem_simulation_results_directory =}")
+    print(f"{fem_simulation_results_directory=}")
     print("##########################")
     file_names = [f for f in os.listdir(fem_simulation_results_directory) if os.path.isfile(os.path.join(fem_simulation_results_directory, f))]
 
@@ -882,7 +882,7 @@ class AutomatedDesign:
                 x_pareto_vec.append(core_2daxi_total_volume_vec[count_mask])
                 y_pareto_vec.append(total_loss_vec[count_mask])
 
-        print(f"{len(x_pareto_vec) = }")
+        print(f"{len(x_pareto_vec)=}")
 
         vector_to_sort = np.array([x_pareto_vec, y_pareto_vec])
 
@@ -900,11 +900,11 @@ class AutomatedDesign:
         total_volume_vec = data_matrix[:, self.param["total_volume"]]
 
         min_total_loss = np.min(total_loss_vec)
-        print(f"{min_total_loss = }")
+        print(f"{min_total_loss=}")
 
         pareto_x_vec, pareto_y_vec = self.pareto_front_from_data_matrix(data_matrix)
-        print(f"{pareto_x_vec = }")
-        print(f"{pareto_y_vec = }")
+        print(f"{pareto_x_vec=}")
+        print(f"{pareto_y_vec=}")
 
         loss_offset = factor_min_dc_losses * min_total_loss
 
@@ -1021,9 +1021,9 @@ class AutomatedDesign:
                 time_difference_seconds = end_time - start_time
                 time_difference_minutes = time_difference_seconds / 60
                 time_difference_hours = time_difference_minutes / 60
-                print(f"{time_difference_seconds = }")
-                print(f"{time_difference_minutes = }")
-                print(f"{time_difference_hours = }")
+                print(f"{time_difference_seconds=}")
+                print(f"{time_difference_minutes=}")
+                print(f"{time_difference_hours=}")
 
             except Exception as e:
                 print(f"next iteration due to {e}")

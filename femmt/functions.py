@@ -755,11 +755,11 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
             f"filter_type '{filter_value_harmonic}' not available: Must be 'factor','harmonic' or 'disabled ")
 
     if plot != 'no' and plot is not False:
-        print(f"{title = }")
-        print(f"{t[-1] = }")
-        print(f"{f0 = }")
-        print(f"{Fs = }")
-        print(f"{sample_factor = }")
+        print(f"{title=}")
+        print(f"{t[-1]=}")
+        print(f"{f0=}")
+        print(f"{Fs=}")
+        print(f"{sample_factor=}")
         print(f"f_out = {np.around(f_out, decimals=0)}")
         print(f"x_out = {np.around(x_out, decimals=3)}")
         print(f"phi_rad_out = {np.around(phi_rad_out, decimals=3)}")
@@ -977,9 +977,9 @@ def find_common_frequencies(frequency_list_1: List, amplitude_list_1: List, phas
     common_phases_list_2 = []
 
     common_frequency_list = list(set(frequency_list_1).intersection(frequency_list_2))
-    print(f"{common_frequency_list = }")
+    print(f"{common_frequency_list=}")
     common_frequency_list.sort()
-    print(f"{common_frequency_list = }")
+    print(f"{common_frequency_list=}")
 
     # Delete the corresponding phases and amplitudes
     if isinstance(amplitude_list_1, List):

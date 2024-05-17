@@ -212,7 +212,7 @@ class IntegratedTransformerOptimization:
                 time_extracted, current_extracted_2_vec = fr.time_vec_current_vec_from_time_current_vec(
                     sweep_dto.time_current_2_vec)
                 fundamental_frequency = np.around(1 / time_extracted[-1], decimals=0)
-                print(f"{fundamental_frequency = }")
+                print(f"{fundamental_frequency=}")
 
                 i_rms_1 = fr.i_rms(sweep_dto.time_current_1_vec)
                 i_rms_2 = fr.i_rms(sweep_dto.time_current_2_vec)
@@ -271,7 +271,7 @@ class IntegratedTransformerOptimization:
                         #     print(f"{simulation_progress_percent} simulation_progress_percent")
                         # geometry_simulation_counter += 1
                         simulation_progress_percent = count_geometry / number_of_geometry_simulations * 100
-                        print(f"{simulation_progress_percent = } %")
+                        print(f"{simulation_progress_percent=} %")
 
                         # print(geometry_simulation_counter)
 

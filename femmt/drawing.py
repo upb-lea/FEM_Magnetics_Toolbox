@@ -1236,8 +1236,8 @@ class TwoDaxiSymmetric:
                 drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 5)  # rectangular conductors
 
         if drawn_number_of_turns != needed_number_of_turns:
-            self.femmt_print(f"{drawn_number_of_turns = }")
-            self.femmt_print(f"{needed_number_of_turns = }")
+            self.femmt_print(f"{drawn_number_of_turns=}")
+            self.femmt_print(f"{needed_number_of_turns=}")
             raise Exception("Winding mismatch. Probably too many turns that do not fit in the winding window")
 
     def draw_region_single(self):
