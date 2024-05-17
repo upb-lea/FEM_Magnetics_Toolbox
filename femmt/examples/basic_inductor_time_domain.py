@@ -21,7 +21,7 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
                                 component_type=fmt.ComponentType.Inductor, working_directory=working_directory,
                                 verbosity=fmt.Verbosity.ToConsole, is_gui=is_test)
 
-    # This line is for automated pytest running on github only. Please ignore this line!
+    # This line is for automated pytest running on GitHub only. Please ignore this line!
     if onelab_folder is not None:
         geo.file_data.onelab_folder_path = onelab_folder
 
@@ -107,8 +107,8 @@ def basic_example_inductor_time_domain(onelab_folder: str = None, show_visual_ou
     #     plt.show()
 
     # Electromagnetic time-domain simulation
-    #  The 'current_periode_vec' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
-    #  The 'time_periode_vec' parameter accepts a single list representing the time steps for the simulation; this is common for all windings.
+    #  The 'current_period_vec' parameter accepts a list of lists, where each sublist represents the current values for a particular winding.
+    #  The 'time_period_vec' parameter accepts a single list representing the time steps for the simulation; this is common for all windings.
     #  The 'number_of_periods' parameter defines the number of periods or the simulation duration time internally.
     # The 'show_rolling_average' parameter is a boolean that determines whether to plot the rolling average of the simulation results.
     # The 'rolling_avg_window_size' parameter is an integer that specifies the window size for calculating the rolling average.

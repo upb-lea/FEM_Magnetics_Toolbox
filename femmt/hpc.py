@@ -78,7 +78,7 @@ def run_hpc(n_processes: int, models: List[MagneticComponent], simulation_parame
     :type working_directory: str
     :param custom_hpc: If set to None the default hpc will be used (create_model() and single_simulation()
         are executed). If a custom_hpc is set this function
-        will be called for the parallel execution and the funtion parameters is the simulation_parameter dict taken
+        will be called for the parallel execution and the function parameters is the simulation_parameter dict taken
         from the simulation_parameters list., defaults to None
     :type custom_hpc: Callable, optional
     """

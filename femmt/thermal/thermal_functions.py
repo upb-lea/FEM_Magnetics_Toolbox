@@ -1,4 +1,4 @@
-"""Functions for the termal simulations."""
+"""Functions for the thermal simulations."""
 # Python standard libraries
 import json
 import os

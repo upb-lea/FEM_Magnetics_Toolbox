@@ -563,7 +563,7 @@ class MagneticCircuit:
         It is called when input variable sim_type == 'sweep'.
         Its calculation for multiple air-gap is based on superposition.
         That is, multiple air-gap's reluctance is calculated by taking one at a time and then adding them together
-        (like in superpostion theorem)
+        (like in superposition theorem)
         """
         # Single air-gap reluctance calculations
         # Convert percent position to absolute position
@@ -733,7 +733,7 @@ class MagneticCircuit:
         It is called when input variable sim_type == 'single'.
         Its calculation for multiple air-gap is based on superposition.
         That is, multiple air-gap's reluctance is calculated by taking one at a time and then adding them together
-        (like in superpostion theorem)
+        (like in superposition theorem)
         """
         # Conversion of different air_gap_method to manual method
         if self.air_gap_method == "Percent":

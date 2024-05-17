@@ -1,11 +1,11 @@
-"""Basic example to show how to buld up the geometry for a stacked center tapped transformer."""
+"""Basic example to show how to build up the geometry for a stacked center tapped transformer."""
 import femmt as fmt
 import os
 
 
 def basic_example_transformer_stacked_center_tapped(onelab_folder: str = None, show_visual_outputs: bool = True,
                                                     is_test: bool = False):
-    """Show how to buld up the geometry for a stacked center tapped transformer."""
+    """Show how to build up the geometry for a stacked center tapped transformer."""
     def example_thermal_simulation(show_thermal_visual_outputs: bool = True, flag_insulation: bool = True):
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the

@@ -2298,7 +2298,7 @@ def test_load_files(temp_folder, fixture_inductor_core_material_database,
 
 ##############################
 # Basic example tests
-# These tests just run the basic examples an see if the run without error
+# These tests just run the basic examples and see if the run without error
 # There is no result comparison
 ##############################
 

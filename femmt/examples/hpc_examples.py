@@ -12,7 +12,7 @@ import statistics
 import femmt as fmt
 import materialdatabase as mdb
 
-"""This file contains examples for the use of the hpc function. Internally the multprocessing package is used.
+"""This file contains examples for the use of the hpc function. Internally the multiprocessing package is used.
 
 IMPORTANT:
 The __name__ == __main__ is necessary for the hpc function to work properly. So if a custom file is created from which the run_hpc function is
@@ -54,7 +54,7 @@ def create_parallel_example_inductor(inductor_frequency: int, air_gap_height: fl
     :param inductor_frequency: Frequency for the inductor.
     :type inductor_frequency: int
     """ 
-    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,  # Can be set to None since it will be overwritten anyways
+    geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Inductor, working_directory=None,  # Can be set to None since it will be overwritten anyway
                                 clean_previous_results=False, verbosity=fmt.Verbosity.ToFile)
     core_db = fmt.core_database()["PQ 40/40"]
     core_dimensions = fmt.dtos.SingleCoreDimensions(core_inner_diameter=core_db["core_inner_diameter"],

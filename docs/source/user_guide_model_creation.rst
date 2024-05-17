@@ -237,7 +237,7 @@ Furthermore, the ``NHorizontalAndVerticalSplit`` function introduces more advanc
 by allowing the winding window to be split into N columns horizontally,with each having M_N rows (vertically).
 Users can specify the positions of borders between columns and rows
 to customize the layout of the resulting virtual winding windows. Creating a winding window with three columns,
-where the second column is further divided into two rows, can be achieved with the following code:
+where the second column is further divided into three rows, can be achieved with the following code:
 
 .. code:: python
 

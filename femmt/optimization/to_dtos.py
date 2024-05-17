@@ -1,4 +1,4 @@
-"""Includes the DTOs to perform a transfomer optimization."""
+"""Includes the DTOs to perform a transformer optimization."""
 # python libraries
 from dataclasses import dataclass
 from typing import List, Union

@@ -136,7 +136,7 @@ def create_windings(winding_tags, k_windings, winding_losses, conductor_radii, w
 
                 print(q_vol[name])
                 k[name] = k_windings
-                if tag not in tag_counters:  # The counter is needed here to create a single region for for every turn in case of parallel windings
+                if tag not in tag_counters:  # The counter is needed here to create a single region for every turn in case of parallel windings
                     tag_counters[tag] = 0
                 else:
                     tag_counters[tag] += 1
