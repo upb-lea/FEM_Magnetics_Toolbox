@@ -146,7 +146,7 @@
 <li class="toctree-l2"><a class="reference internal" href="intro.html#recommended-pycharm-settings"><span class="sectnum">5.4</span> Recommended Pycharm settings</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="intro.html#exclude-simulation-directory-from-indexing"><span class="sectnum">5.4.1</span> Exclude simulation directory from indexing</a></li>
 <li class="toctree-l3"><a class="reference internal" href="intro.html#line-length"><span class="sectnum">5.4.2</span> Line length</a></li>
-<li class="toctree-l3"><a class="reference internal" href="intro.html#pycharm-code-highlightning-for-pro-files"><span class="sectnum">5.4.3</span> Pycharm code highlightning for pro-files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#pycharm-code-highlighting-for-pro-files"><span class="sectnum">5.4.3</span> Pycharm code highlighting for pro-files</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="intro.html#lint-check"><span class="sectnum">5.5</span> Lint check</a></li>
@@ -220,13 +220,13 @@
 <h2>Winding creation<a class="headerlink" href="#winding-creation" title="Permalink to this headline">¶</a></h2>
 <p>Since there are multiple possible virtual winding windows containing currently up to 2 conductors it is necessary to have a global order for every conductor.
 This order is set by the winding_number which is given to the Conductor on creation.
-This results in multiple lists containg the same conductor objects (called windings) in different objects:</p>
+This results in multiple lists containing the same conductor objects (called windings) in different objects:</p>
 <ol class="arabic simple">
 <li><p>Every virtual winding window contains a list of conductors. This list either contains one conductor (single winding) or two conductors (interleaved winding). When setting the interleaved winding the order of conductors is given by the order of the parameters. First given winding -&gt; winding[0], second given winding -&gt; winding[1].</p></li>
 <li><p>The magnetic component contains a list of conductors too. This list contains every unique conductor from every virtual winding window. The order of the windings list in magnetic component is given by the winding_number (sorted in ascending order). This means that the conductor with the lowest winding_number is at position 0 of the winding list: windings[0].</p></li>
 </ol>
 <p>Example:</p>
-<p>2 conductors are created: Conductor0(winding_index=0) and Conductor1(winding_index=1). Additionaly 2 virtual winding windows are created.
+<p>2 conductors are created: Conductor0(winding_index=0) and Conductor1(winding_index=1). Additionally 2 virtual winding windows are created.
 The first virtual winding window only contains Conductor0, the second virtual winding window contains both conductors.
 The following winding lists are created:</p>
 <ul class="simple">
@@ -261,16 +261,16 @@ However the implemented structure is capable of working with n windings.</p>
 <h2>Recommended Pycharm settings<a class="headerlink" href="#recommended-pycharm-settings" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="exclude-simulation-directory-from-indexing">
 <h3>Exclude simulation directory from indexing<a class="headerlink" href="#exclude-simulation-directory-from-indexing" title="Permalink to this headline">¶</a></h3>
-<p>Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the <code class="docutils literal notranslate"><span class="pre">example_results</span></code> direcory from the project, as shown in the following steps:
-<code class="docutils literal notranslate"><span class="pre">File</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Settings</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">project</span> <span class="pre">structure</span></code>, select the folders you need (e.g. <code class="docutils literal notranslate"><span class="pre">femmt/examples/example_results</span></code>, <code class="docutils literal notranslate"><span class="pre">right</span> <span class="pre">click</span></code> and click <code class="docutils literal notranslate"><span class="pre">exlcuded</span></code>.</p>
+<p>Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the <code class="docutils literal notranslate"><span class="pre">example_results</span></code> directory from the project, as shown in the following steps:
+<code class="docutils literal notranslate"><span class="pre">File</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Settings</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">project</span> <span class="pre">structure</span></code>, select the folders you need (e.g. <code class="docutils literal notranslate"><span class="pre">femmt/examples/example_results</span></code>, <code class="docutils literal notranslate"><span class="pre">right</span> <span class="pre">click</span></code> and click <code class="docutils literal notranslate"><span class="pre">excluded</span></code>.</p>
 </div>
 <div class="section" id="line-length">
 <h3>Line length<a class="headerlink" href="#line-length" title="Permalink to this headline">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">File</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Settings</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Editor</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Code</span> <span class="pre">Style</span></code>
-Set the max. lenth to <code class="docutils literal notranslate"><span class="pre">160</span></code>.</p>
+Set the max. length to <code class="docutils literal notranslate"><span class="pre">160</span></code>.</p>
 </div>
-<div class="section" id="pycharm-code-highlightning-for-pro-files">
-<h3>Pycharm code highlightning for pro-files<a class="headerlink" href="#pycharm-code-highlightning-for-pro-files" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="pycharm-code-highlighting-for-pro-files">
+<h3>Pycharm code highlighting for pro-files<a class="headerlink" href="#pycharm-code-highlighting-for-pro-files" title="Permalink to this headline">¶</a></h3>
 <p><img alt="image_pycharm_configuration_pro_files" src="_images/pycharm_configuration_pro_files.png" /></p>
 </div>
 </div>
@@ -285,7 +285,9 @@ to check all your files for correct linting.</p>
 </div>
 <div class="section" id="build-documentation">
 <h2>Build documentation<a class="headerlink" href="#build-documentation" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">sphinx-multiversion</span> <span class="pre">documentation/source</span> <span class="pre">documentation/build/html</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphinx</span><span class="o">-</span><span class="n">multiversion</span> <span class="n">documentation</span><span class="o">/</span><span class="n">source</span> <span class="n">documentation</span><span class="o">/</span><span class="n">build</span><span class="o">/</span><span class="n">html</span>
+</pre></div>
+</div>
 </div>
 </div>
 

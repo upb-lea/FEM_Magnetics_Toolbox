@@ -41,14 +41,14 @@ Winding creation
 
 Since there are multiple possible virtual winding windows containing currently up to 2 conductors it is necessary to have a global order for every conductor.
 This order is set by the winding_number which is given to the Conductor on creation.
-This results in multiple lists containg the same conductor objects (called windings) in different objects:
+This results in multiple lists containing the same conductor objects (called windings) in different objects:
 
 1. Every virtual winding window contains a list of conductors. This list either contains one conductor (single winding) or two conductors (interleaved winding). When setting the interleaved winding the order of conductors is given by the order of the parameters. First given winding -> winding[0], second given winding -> winding[1].
 2. The magnetic component contains a list of conductors too. This list contains every unique conductor from every virtual winding window. The order of the windings list in magnetic component is given by the winding_number (sorted in ascending order). This means that the conductor with the lowest winding_number is at position 0 of the winding list: windings[0].
 
 Example:
 
-2 conductors are created: Conductor0(winding_index=0) and Conductor1(winding_index=1). Additionaly 2 virtual winding windows are created.
+2 conductors are created: Conductor0(winding_index=0) and Conductor1(winding_index=1). Additionally 2 virtual winding windows are created.
 The first virtual winding window only contains Conductor0, the second virtual winding window contains both conductors.
 The following winding lists are created:
 
@@ -87,16 +87,16 @@ Recommended Pycharm settings
 Exclude simulation directory from indexing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the ``example_results`` direcory from the project, as shown in the following steps:
-``File`` -> ``Settings`` -> ``project structure``, select the folders you need (e.g. ``femmt/examples/example_results``, ``right click`` and click ``exlcuded``.
+Especially when performing Pareto optimizations in the example directory, Pycharm gets slow during indexing. To avoid this, you can use another directory or exclude the ``example_results`` directory from the project, as shown in the following steps:
+``File`` -> ``Settings`` -> ``project structure``, select the folders you need (e.g. ``femmt/examples/example_results``, ``right click`` and click ``excluded``.
 
 Line length
 ~~~~~~~~~~~
 
 ``File`` -> ``Settings`` -> ``Editor`` -> ``Code Style``
-Set the max. lenth to ``160``.
+Set the max. length to ``160``.
 
-Pycharm code highlightning for pro-files
+Pycharm code highlighting for pro-files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 |image_pycharm_configuration_pro_files|
@@ -120,4 +120,7 @@ For windows users, use the pycharm integrated ``Git Bash``.
 
 Build documentation
 ---------------------------------------------------------------
-``sphinx-multiversion documentation/source documentation/build/html``
+
+::
+
+    sphinx-multiversion documentation/source documentation/build/html
