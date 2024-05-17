@@ -1696,7 +1696,6 @@ class MagneticComponent:
             :param time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
             :type time_current_vectors: List[List[List[float]]]
             """
-
             positive_secondary_current = np.copy(time_current_vectors[1][1])
             positive_secondary_current[positive_secondary_current < 0] = 0
             negative_secondary_current = np.copy(time_current_vectors[1][1])
