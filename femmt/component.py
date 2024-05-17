@@ -1652,7 +1652,16 @@ class MagneticComponent:
         }
         """
 
-        def hysteresis_loss_excitation(input_time_current_vectors):
+        def hysteresis_loss_excitation(input_time_current_vectors: List[List[List[float]]]):
+            """
+            Collect the peak current and the corresponding phase shift for the fundamental frequency for all windings.
+
+            Results are used for calculating the hysteresis losses by another function.
+            In case of a center-tapped transformer, halfing the amplitues will be done by split_hysteresis_loss_excitation_center_tapped.
+
+            :param input_time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
+            :type input_time_current_vectors: List[List[List[float]]]
+            """
             # collect simulation input parameters from time_current_vectors
             hyst_loss_amplitudes = []
             hyst_loss_phases_deg = []
@@ -1664,17 +1673,28 @@ class MagneticComponent:
                     fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
-        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg):
-            # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
+        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: List, hyst_loss_amplitudes: List, hyst_loss_phases_deg: List):
+            """
+            Split the last winding (2nd) peak current into half and add a 3rd winding with the same value.
+
+            :param hyst_frequency: list with the fundamental frequency of core losses
+            :type hyst_frequency: List
+            :param hyst_loss_amplitudes: amplitudes for all windings in a list
+            :type hyst_loss_amplitudes: List
+            :param hyst_loss_phases_deg: phases in degree for all windings in a list
+            :type hyst_loss_phases_deg: List
+            """
             hyst_loss_amplitudes[-1] = hyst_loss_amplitudes[-1] / 2
             hyst_loss_amplitudes.append(hyst_loss_amplitudes[-1])
             hyst_loss_phases_deg.append(hyst_loss_phases_deg[-1])
-            # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
         def split_time_current_vectors_center_tapped(time_current_vectors: List[List[List[float]]]):
             """
+            Split the given time-current vectors (primary and a common secondary) into primary, secondary and tertiary current.
 
+            :param time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
+            :type time_current_vectors: List[List[List[float]]]
             """
 
             positive_secondary_current = np.copy(time_current_vectors[1][1])
