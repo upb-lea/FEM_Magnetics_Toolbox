@@ -56,15 +56,15 @@ if task == 'simulation_reluctance':
 elif task == 'load_reluctance_and_filter':
     # load all calculated and valid reluctance model calculations
     valid_reluctance_model_designs = fmt.IntegratedTransformerOptimization.ReluctanceModel.load_unfiltered_results(dab_transformer_config.working_directory)
-    print(f"{len(valid_reluctance_model_designs) = }")
+    print(f"{len(valid_reluctance_model_designs)=}")
 
     # filter air gaps
     filtered_air_gaps_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.filter_min_air_gap_length(valid_reluctance_model_designs)
-    print(f"{len(filtered_air_gaps_dto_list) = }")
+    print(f"{len(filtered_air_gaps_dto_list)=}")
 
     # filter for Pareto front
     pareto_reluctance_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.filter_loss_list(filtered_air_gaps_dto_list, factor_min_dc_losses=0.5)
-    print(f"{len(pareto_reluctance_dto_list) = }")
+    print(f"{len(pareto_reluctance_dto_list)=}")
 
     # save results
     fmt.IntegratedTransformerOptimization.ReluctanceModel.save_dto_list(pareto_reluctance_dto_list, os.path.join(dab_transformer_config.working_directory,
@@ -79,7 +79,7 @@ elif task == 'load_reluctance_filter_and_simulate_fem':
 
     # load filtered reluctance models
     pareto_reluctance_dto_list = fmt.IntegratedTransformerOptimization.ReluctanceModel.load_filtered_results(dab_transformer_config.working_directory)
-    print(f"{len(pareto_reluctance_dto_list) = }")
+    print(f"{len(pareto_reluctance_dto_list)=}")
 
     # start FEM simulation
     fmt.IntegratedTransformerOptimization.FemSimulation.simulate(config_dto=dab_transformer_config,
@@ -89,14 +89,14 @@ elif task == 'plot_and_filter_fem_simulations_results':
 
     # load unfiltered results
     unfiltered_fem_results = fmt.IntegratedTransformerOptimization.FemSimulation.load_unfiltered_results(dab_transformer_config.working_directory)
-    print(f"{len(unfiltered_fem_results) = }")
+    print(f"{len(unfiltered_fem_results)=}")
 
     # plot unfiltered results
     fmt.IntegratedTransformerOptimization.FemSimulation.plot(unfiltered_fem_results)
 
     # filter results
     filtered_fem_results = fmt.IntegratedTransformerOptimization.FemSimulation.filter_loss_list(unfiltered_fem_results, factor_min_dc_losses=0.1)
-    print(f"{len(filtered_fem_results) = }")
+    print(f"{len(filtered_fem_results)=}")
 
     # save filtered results
     # fmt.IntegratedTransformerOptimization.FemSimulation.save_filtered_results(filtered_fem_results, dab_transformer_config.working_directory)
@@ -116,11 +116,11 @@ elif task == 'plot_thermal_fem_simulation_results':
     # load thermal simulation results
     unfiltered_thermal_fem_results = fmt.IntegratedTransformerOptimization.ThermalSimulation.load_unfiltered_simulations(
         dab_transformer_config.working_directory)
-    print(f"{len(unfiltered_thermal_fem_results) = }")
+    print(f"{len(unfiltered_thermal_fem_results)=}")
 
     # filter thermal FEM simulations
     filtered_thermal_fem_results = fmt.IntegratedTransformerOptimization.ThermalSimulation.filter_max_temperature(unfiltered_thermal_fem_results, 125, 125)
-    print(f"{len(filtered_thermal_fem_results) = }")
+    print(f"{len(filtered_thermal_fem_results)=}")
 
     # load filtered FEM simulation results
     unfiltered_fem_simulation_results = fmt.IntegratedTransformerOptimization.FemSimulation.load_unfiltered_results(
@@ -131,7 +131,7 @@ elif task == 'plot_thermal_fem_simulation_results':
     # to be removed in loss vs. volume plane.
     valid_thermal_simulations = fmt.IntegratedTransformerOptimization.ThermalSimulation.find_common_cases(
         unfiltered_fem_simulation_results, filtered_thermal_fem_results)
-    print(f"{len(valid_thermal_simulations) = }")
+    print(f"{len(valid_thermal_simulations)=}")
 
     # plot all thermal simulation results, and plot
     fmt.IntegratedTransformerOptimization.FemSimulation.plot(unfiltered_thermal_fem_results)

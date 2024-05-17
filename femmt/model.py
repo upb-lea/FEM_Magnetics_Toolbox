@@ -431,7 +431,7 @@ class Core:
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         """Update the pro file for the solver depending on the frequency of the upcoming simulation."""
         if self.mdb_verbosity == Verbosity.ToConsole:
-            print(f"{self.permeability['datasource'] = }")
+            print(f"{self.permeability['datasource']=}")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
                                                              datasource=self.permeability["datasource"],

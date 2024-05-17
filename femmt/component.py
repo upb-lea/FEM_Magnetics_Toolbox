@@ -582,7 +582,7 @@ class MagneticComponent:
             complex_permeability = mu_0 * mdb.MaterialDatabase(
                 self.verbosity == Verbosity.Silent).get_material_attribute(material_name=self.core.material,
                                                                            attribute="initial_permeability")
-            self.femmt_print(f"{complex_permeability = }")
+            self.femmt_print(f"{complex_permeability=}")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)),
                                                                        np.sin(np.deg2rad(self.core.phi_mu_deg)))
@@ -613,9 +613,9 @@ class MagneticComponent:
 
                 complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),
                                                                        np.sin(np.deg2rad(epsilon_phi_deg)))
-                self.femmt_print(f"{complex_permittivity = }\n"
-                                 f"{epsilon_r = }\n"
-                                 f"{epsilon_phi_deg = }")
+                self.femmt_print(f"{complex_permittivity=}\n"
+                                 f"{epsilon_r=}\n"
+                                 f"{epsilon_phi_deg=}")
 
                 ff.check_mqs_condition(radius=self.core.core_inner_diameter / 2, frequency=self.frequency,
                                        complex_permeability=self.get_single_complex_permeability(),
@@ -1120,8 +1120,8 @@ class MagneticComponent:
         self.initial_time = 0  # defined 0
         self.step_time = time_list[1]  # convention!!! for fixed time steps
         self.time_period = time_list[-1]
-        print(f"{1/self.frequency = }")
-        print(f"{time_list[-1] = }")
+        print(f"{1/self.frequency=}")
+        print(f"{time_list[-1]=}")
         self.nb_steps_per_period = len(time_list)
         self.max_time = number_of_periods * (self.time_period + self.step_time)
         # current excitation

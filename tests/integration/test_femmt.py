@@ -49,7 +49,7 @@ def compare_result_logs(first_log_filepath, second_log_filepath, significant_dig
 
     difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=ignore_order,
                                    significant_digits=significant_digits)
-    print(f"{difference = }")
+    print(f"{difference=}")
 
     assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=ignore_order,
                                  significant_digits=significant_digits)
@@ -69,7 +69,7 @@ def compare_thermal_result_logs(first_log_filepath, second_log_filepath, signifi
 
     difference = deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
                                    significant_digits=significant_digits)
-    print(f"{difference = }")
+    print(f"{difference=}")
 
     assert not deepdiff.DeepDiff(first_content, second_content, ignore_order=True,
                                  significant_digits=significant_digits)

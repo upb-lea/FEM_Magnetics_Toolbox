@@ -3211,7 +3211,7 @@ class MainWindow(QMainWindow):
 
             if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
                 amplitude_list = []
-                print(f"{winding1_amplitude_list = }")
+                print(f"{winding1_amplitude_list=}")
                 for amplitude_value in winding1_amplitude_list:
                     amplitude_list.append([amplitude_value])
 
@@ -3471,7 +3471,7 @@ class MainWindow(QMainWindow):
 
             if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
                 amplitude_list = []
-                print(f"{winding1_amplitude_list = }")
+                print(f"{winding1_amplitude_list=}")
                 for amplitude_value in winding1_amplitude_list:
                     amplitude_list.append([amplitude_value])
 
