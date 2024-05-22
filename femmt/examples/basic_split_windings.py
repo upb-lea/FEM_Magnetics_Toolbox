@@ -1,15 +1,20 @@
-"""Basic example to show how to simulate transformers with different numbers of windings."""
+"""Example how to use the split winding method. Run this file, to see the different winding orders."""
 import femmt as fmt
 import os
 
-def run_transformer_simulation(num_windings, show_visual_outputs=True):
+def run_transformer_vvw_split_examples(num_windings, onelab_folder: str = None, show_visual_outputs: bool = True, is_test: bool = False):
+    """Run the example code for the transformer."""
     example_results_folder = os.path.join(os.path.dirname(__file__), "example_results")
     if not os.path.exists(example_results_folder):
         os.mkdir(example_results_folder)
 
     def setup_simulation(working_directory, horizontal_split_factors, vertical_split_factors):
         geo = fmt.MagneticComponent(component_type=fmt.ComponentType.Transformer, working_directory=working_directory,
-                                    verbosity=fmt.Verbosity.Silent, is_gui=show_visual_outputs)
+                                    verbosity=fmt.Verbosity.Silent, is_gui=is_test)
+
+        # This line is for automated pytest running on GitHub only. Please ignore this line!
+        if onelab_folder is not None:
+            geo.file_data.onelab_folder_path = onelab_folder
 
         core_dimensions = fmt.dtos.SingleCoreDimensions(window_h=16.1e-3, window_w=(22.5 - 12) / 2 * 1e-3,
                                                         core_inner_diameter=12e-3, core_h=22e-3)
@@ -87,15 +92,12 @@ def run_transformer_simulation(num_windings, show_visual_outputs=True):
         working_directory = os.path.join(example_results_folder, "6-windings")
         setup_simulation(working_directory, horizontal_split_factors=[0.48, 0.75], vertical_split_factors=[[0.5], [0.5], [0.5]])
 
-
     else:
         raise ValueError("Unsupported number of windings")
 
-def main():
+
+if __name__ == "__main__":
     # Run simulations for different numbers of windings
     for num_windings in [2, 3, 5, 6]:
         print(f"Running simulation for {num_windings} windings")
-        run_transformer_simulation(num_windings, show_visual_outputs=True)
-
-if __name__ == "__main__":
-    main()
+        run_transformer_vvw_split_examples(num_windings, show_visual_outputs=True)

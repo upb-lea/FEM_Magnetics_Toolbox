@@ -1170,8 +1170,7 @@ class WindingWindow:
                        horizontal_split_factors: Optional[List[float]] = None,
                        vertical_split_factors: Optional[List[List[float]]] = None) -> List[VirtualWindingWindow]:
         """
-        Flexible split function to divide a window into sections based on provided horizontal
-        and vertical split factors.
+        Flexible split function to divide a window into sections based on provided horizontal and vertical split factors.
 
         :param split_distance: Distance between split sections.
         :param horizontal_split_factors: Relative positions for horizontal splits (0-1 range).
