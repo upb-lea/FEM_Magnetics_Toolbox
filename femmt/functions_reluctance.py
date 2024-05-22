@@ -542,12 +542,12 @@ def r_air_gap_round_round(air_gap_total_height, core_inner_diameter, core_height
     sigma = sigma_round(r_equivalent_round_round, air_gap_radius, air_gap_total_height)
     if np.any(sigma > 1):
         raise Exception(f"Failure in calculating reluctance. Sigma was calculated to >1. Check input parameters!\n"
-                        f"\t{air_gap_total_height = }\n"
-                        f"\t{core_inner_diameter = }\n"
-                        f"\t{core_height_upper = }\n"
-                        f"\t{core_height_lower = }\n"
-                        f"\t{r_equivalent_round_round = }\n"
-                        f"\t{air_gap_radius = }")
+                        f"\t{air_gap_total_height=}\n"
+                        f"\t{core_inner_diameter=}\n"
+                        f"\t{core_height_upper=}\n"
+                        f"\t{core_height_lower=}\n"
+                        f"\t{r_equivalent_round_round=}\n"
+                        f"\t{air_gap_radius=}")
 
     r_air_gap_ideal = air_gap_total_height / mu_0 / np.pi / (air_gap_radius ** 2)
     r_air_gap = sigma ** 2 * r_air_gap_ideal
@@ -612,7 +612,7 @@ def r_basic_tablet_cyl(tablet_height, air_gap_basic_height, tablet_radius):
     :return: basic reluctance for tablet - cylinder structure
     """
     if air_gap_basic_height == 0:
-        raise ZeroDivisionError(f"Division by zero: {air_gap_basic_height = }")
+        raise ZeroDivisionError(f"Division by zero: {air_gap_basic_height=}")
 
     conductance_basic = mu_0 * (tablet_height / 2 / air_gap_basic_height + 2 / \
                                 np.pi * (1 + np.log(np.pi * tablet_radius / 4 / air_gap_basic_height)))

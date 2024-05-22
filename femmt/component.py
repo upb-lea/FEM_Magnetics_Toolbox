@@ -582,7 +582,7 @@ class MagneticComponent:
             complex_permeability = mu_0 * mdb.MaterialDatabase(
                 self.verbosity == Verbosity.Silent).get_material_attribute(material_name=self.core.material,
                                                                            attribute="initial_permeability")
-            self.femmt_print(f"{complex_permeability = }")
+            self.femmt_print(f"{complex_permeability=}")
         if self.core.permeability_type == PermeabilityType.FixedLossAngle:
             complex_permeability = mu_0 * self.core.mu_r_abs * complex(np.cos(np.deg2rad(self.core.phi_mu_deg)),
                                                                        np.sin(np.deg2rad(self.core.phi_mu_deg)))
@@ -613,9 +613,9 @@ class MagneticComponent:
 
                 complex_permittivity = epsilon_0 * epsilon_r * complex(np.cos(np.deg2rad(epsilon_phi_deg)),
                                                                        np.sin(np.deg2rad(epsilon_phi_deg)))
-                self.femmt_print(f"{complex_permittivity = }\n"
-                                 f"{epsilon_r = }\n"
-                                 f"{epsilon_phi_deg = }")
+                self.femmt_print(f"{complex_permittivity=}\n"
+                                 f"{epsilon_r=}\n"
+                                 f"{epsilon_phi_deg=}")
 
                 ff.check_mqs_condition(radius=self.core.core_inner_diameter / 2, frequency=self.frequency,
                                        complex_permeability=self.get_single_complex_permeability(),
@@ -981,7 +981,7 @@ class MagneticComponent:
     def excitation(self, frequency: float, amplitude_list: List, phase_deg_list: List = None, ex_type: str = 'current',
                    plot_interpolation: bool = False):
         """
-        Run a electromagnetic simulation.
+        Run the electromagnetic simulation.
 
         - excitation of the electromagnetic problem
         - current, voltage or current density
@@ -1120,8 +1120,8 @@ class MagneticComponent:
         self.initial_time = 0  # defined 0
         self.step_time = time_list[1]  # convention!!! for fixed time steps
         self.time_period = time_list[-1]
-        print(f"{1/self.frequency = }")
-        print(f"{time_list[-1] = }")
+        print(f"{1/self.frequency=}")
+        print(f"{time_list[-1]=}")
         self.nb_steps_per_period = len(time_list)
         self.max_time = number_of_periods * (self.time_period + self.step_time)
         # current excitation
@@ -1176,7 +1176,7 @@ class MagneticComponent:
                 self.red_freq[num] = 0
 
     def simulate(self):
-        """Initialize a onelab client. Provides the GetDP based solver with the created mesh file."""
+        """Initialize the onelab client. Provides the GetDP based solver with the created mesh file."""
         self.femmt_print("\n---\n"
                          "Initialize ONELAB API\n"
                          "Run Simulation\n")
@@ -1652,7 +1652,16 @@ class MagneticComponent:
         }
         """
 
-        def hysteresis_loss_excitation(input_time_current_vectors):
+        def hysteresis_loss_excitation(input_time_current_vectors: List[List[List[float]]]):
+            """
+            Collect the peak current and the corresponding phase shift for the fundamental frequency for all windings.
+
+            Results are used for calculating the hysteresis losses by another function.
+            In case of a center-tapped transformer, halfing the amplitues will be done by split_hysteresis_loss_excitation_center_tapped.
+
+            :param input_time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
+            :type input_time_current_vectors: List[List[List[float]]]
+            """
             # collect simulation input parameters from time_current_vectors
             hyst_loss_amplitudes = []
             hyst_loss_phases_deg = []
@@ -1664,22 +1673,33 @@ class MagneticComponent:
                     fr.phases_deg_from_time_current(time_current_vector[0], time_current_vector[1])[0])
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
-        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg):
-            # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
+        def split_hysteresis_loss_excitation_center_tapped(hyst_frequency: List, hyst_loss_amplitudes: List, hyst_loss_phases_deg: List):
+            """
+            Split the last winding (2nd) peak current into half and add a 3rd winding with the same value.
+
+            :param hyst_frequency: list with the fundamental frequency of core losses
+            :type hyst_frequency: List
+            :param hyst_loss_amplitudes: amplitudes for all windings in a list
+            :type hyst_loss_amplitudes: List
+            :param hyst_loss_phases_deg: phases in degree for all windings in a list
+            :type hyst_loss_phases_deg: List
+            """
             hyst_loss_amplitudes[-1] = hyst_loss_amplitudes[-1] / 2
             hyst_loss_amplitudes.append(hyst_loss_amplitudes[-1])
             hyst_loss_phases_deg.append(hyst_loss_phases_deg[-1])
-            # print(f"{hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg = }")
             return hyst_frequency, hyst_loss_amplitudes, hyst_loss_phases_deg
 
         def split_time_current_vectors_center_tapped(time_current_vectors: List[List[List[float]]]):
-            # print(f"{time_current_vectors = }")
+            """
+            Split the given time-current vectors (primary and a common secondary) into primary, secondary and tertiary current.
+
+            :param time_current_vectors: e.g. [[time_vec, i_primary_vec], [time_vec, i_secondary_vec]]
+            :type time_current_vectors: List[List[List[float]]]
+            """
             positive_secondary_current = np.copy(time_current_vectors[1][1])
             positive_secondary_current[positive_secondary_current < 0] = 0
-            # print(f"{positive_secondary_current = }")
             negative_secondary_current = np.copy(time_current_vectors[1][1])
             negative_secondary_current[negative_secondary_current > 0] = 0
-            # print(f"{negative_secondary_current = }")
 
             center_tapped_time_current_vectors = [time_current_vectors[0],
                                                   [time_current_vectors[1][0], positive_secondary_current],
@@ -2717,7 +2737,7 @@ class MagneticComponent:
         log_dict["time_domain_simulation"].append(Time_domain_data_dict)
 
         # time_step_n log
-        # indide every time_step_n, there are windings log such that I, V, Flux are shown in every winding (winding1, winding2, .. )
+        # in every time_step_n, there are windings log such that I, V, Flux are shown in every winding (winding1, winding2, .. )
         for t in range(0, self.nb_steps):
             time_step_dict = {
                 "windings": {}
@@ -3482,7 +3502,7 @@ class MagneticComponent:
                     line = fd.readline().strip()
                     result = [float(line)]
             else:
-                # time steps = []
+                # time_steps = []
                 # Initializing
                 data = []
                 with open(os.path.join(res_path, f"{res_name}.dat")) as fd:
@@ -3490,7 +3510,7 @@ class MagneticComponent:
                     for line in lines:
                         line_values = line.split()
                         if len(line_values) == 2:
-                            # timesteps.append(float(line_values[0]))
+                            # time_steps.append(float(line_values[0]))
                             data.append(float(line_values[1]))
 
                 result = list(zip(data))  # Returns list of (time, data) pairs

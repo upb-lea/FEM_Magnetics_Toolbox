@@ -185,7 +185,7 @@ def pareto_front_from_dtos(dto_list: List[ItoSingleResultFile]) -> tuple:
             x_pareto_vec.append(x_vec[count_mask])
             y_pareto_vec.append(y_vec[count_mask])
 
-    print(f"{len(x_pareto_vec) = }")
+    print(f"{len(x_pareto_vec)=}")
 
     return np.array(x_pareto_vec), np.array(y_pareto_vec)
 
@@ -220,6 +220,6 @@ def pareto_front_from_result_dicts(result_dict_list: List[Dict]) -> tuple:
             x_pareto_vec.append(x_vec[count_mask])
             y_pareto_vec.append(y_vec[count_mask])
 
-    print(f"{len(x_pareto_vec) = }")
+    print(f"{len(x_pareto_vec)=}")
 
     return np.array(x_pareto_vec), np.array(y_pareto_vec)

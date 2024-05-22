@@ -1236,8 +1236,8 @@ class TwoDaxiSymmetric:
                 drawn_number_of_turns += int(self.p_conductor[winding.winding_number].shape[0] / 5)  # rectangular conductors
 
         if drawn_number_of_turns != needed_number_of_turns:
-            self.femmt_print(f"{drawn_number_of_turns = }")
-            self.femmt_print(f"{needed_number_of_turns = }")
+            self.femmt_print(f"{drawn_number_of_turns=}")
+            self.femmt_print(f"{needed_number_of_turns=}")
             raise Exception("Winding mismatch. Probably too many turns that do not fit in the winding window")
 
     def draw_region_single(self):
@@ -1292,12 +1292,12 @@ class TwoDaxiSymmetric:
             mesh_density_to_core = mesh_data.c_window
 
             # Using the delta the lines and points from the insulation and the core/windings are not overlapping
-            # which makes creating the mesh more simpler
+            # which makes creating the mesh simpler
             # Insulation between winding and core
             # Since an aspect ratio is given the insulation delta is calculated using the length of the longest side of the triangle,
             # which is always smaller than c_window.
             if self.insulation.max_aspect_ratio == 0:
-                # If no aspect ratio is set insulations wont be drawn
+                # If no aspect ratio is set insulations will not be drawn
                 return
             else:
                 insulation_delta = self.mesh_data.c_window / self.insulation.max_aspect_ratio

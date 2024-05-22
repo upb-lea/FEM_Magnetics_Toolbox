@@ -176,7 +176,7 @@ class Core:
     mu_r_abs: float  # Relative Permeability [if complex: mu_complex = re_mu_rel + j*im_mu_rel with mu_rel=|mu_complex|]
     phi_mu_deg: float  # mu_complex = mu_r_abs * exp(j*phi_mu_deg)
 
-    # Permitivity - [Conductivity in a magneto-quasistatic sense]
+    # Permittivity - [Conductivity in a magneto-quasistatic sense]
     sigma: complex  # complex equivalent permittivity [frequency-dependent], real and imaginary part
 
     steinmetz_loss: int = 0
@@ -431,7 +431,7 @@ class Core:
     def update_core_material_pro_file(self, frequency, electro_magnetic_folder, plot_interpolation: bool = False):
         """Update the pro file for the solver depending on the frequency of the upcoming simulation."""
         if self.mdb_verbosity == Verbosity.ToConsole:
-            print(f"{self.permeability['datasource'] = }")
+            print(f"{self.permeability['datasource']=}")
         self.material_database.permeability_data_to_pro_file(temperature=self.temperature, frequency=frequency,
                                                              material_name=self.material,
                                                              datasource=self.permeability["datasource"],
@@ -766,15 +766,15 @@ class VirtualWindingWindow:
         :param winding_scheme: Winding scheme defines the way the conductor is wrapped. Can be set to None.
         :type winding_scheme: WindingScheme
         :param placing_strategy: Placing strategy defines the way the conductors are placing in vww
-        :type placing_strategy: ConductorPlacingStragety, optional
+        :type placing_strategy: ConductorPlacingStrategy, optional
         :param wrap_para_type: Additional wrap parameter. Not always needed, defaults to None
         :type wrap_para_type: WrapParaType, optional
         """
         self.winding_type = WindingType.Single
         self.winding_scheme = winding_scheme
         self.windings = [conductor]
-        self.turns = [0] * (conductor.winding_number + 1)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
-        # self.turns = [0] * (3)  # TODO: find another soultion for this (is needed in mesh.py for air_stacked)
+        self.turns = [0] * (conductor.winding_number + 1)  # TODO: find another solution for this (is needed in mesh.py for air_stacked)
+        # self.turns = [0] * (3)  # TODO: find another solution for this (is needed in mesh.py for air_stacked)
         self.placing_strategy = placing_strategy
         self.alignment = alignment
         self.zigzag = zigzag
@@ -821,17 +821,17 @@ class VirtualWindingWindow:
                                   isolation_secondary_to_secondary: float,
                                   isolation_primary_to_secondary: float):
         """Set a center tapped winding scheme."""
-        # TODO: centertapped is following line allowed to set winding insulation this way?
+        # TODO: center tapped is following line allowed to set winding insulation this way?
         # self.winding_insulation = define_center_tapped_insulation(primary_to_primary=2e-4,
         #                                                           secondary_to_secondary=2e-4,
         #                                                           primary_to_secondary=5e-4)
         self.winding_insulation = [isolation_primary_to_primary, isolation_secondary_to_secondary,
                                    isolation_primary_to_secondary]
         self.winding_type = WindingType.CenterTappedGroup
-        self.winding_scheme = None  # TODO: centertapped maybe add vertical or sth. like this
+        self.winding_scheme = None  # TODO: center tapped maybe add vertical or sth. like this
         self.windings = [conductor1, conductor2, conductor3]
         self.turns = [turns1, turns2, turns3]
-        # TODO: centertapped is also a deepcopy needed somewhere: tertiary...?
+        # TODO: center tapped is also a deepcopy needed somewhere: tertiary...?
         self.winding_is_set = True
         self.wrap_para = None
 
@@ -1089,10 +1089,10 @@ class WindingWindow:
         """
         Split a winding window into N columns (horizontal).
 
-        Optionally the N columns can be splitted into two rows each.
+        Optionally the N columns can be split into two rows each.
         :param split_distance: sets the distance between the vwws
         :param horizontal_split_factors: sets the borders between the columns
-        :param vertical_split_factor: sets the height of where the rows are splitted
+        :param vertical_split_factor: sets the height of where the rows are split
         :return:
         """
         self.vertical_split_factor = vertical_split_factor

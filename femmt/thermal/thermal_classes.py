@@ -19,7 +19,7 @@ class ConstraintPro:
         return f"\t\tIf({flag}==1)\n\t\t\t{{ Region {region} ; Type Assign; Value {value} ; }}\n\t\tEndIf\n"
 
     def add_boundary_constraint(self, more_constraints):
-        """Add boundary contraint."""
+        """Add boundary constraint."""
         for constraint in more_constraints:
             self.boundary_constraints.append(constraint)
 
