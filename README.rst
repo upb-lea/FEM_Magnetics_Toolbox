@@ -29,7 +29,7 @@ Stable features
         * `Center tapped transformer </femmt/examples/basic_transformer_center_tapped.py>`__
         * `Magnetic shunt </femmt/examples/basic_transformer_integrated.py>`__ (transformer with integrated inductor)
         * `Stacked core </femmt/examples/basic_transformer_stacked.py>`__ (transformer with integrated inductor)
-    * Round litz wire
+    * Round litz wire, implemented according to `Niyomsatian et al.: Frequency-domain homogenization for litz-wire bundles in finite element calculations <https://ieeexplore.ieee.org/document/9007233>`__
     * Round and rectangular solid wires
     * Different winding schemes (hexagonal, left/right, top/down, ...)
     * Parallel connection of solid wires
@@ -45,7 +45,7 @@ Stable features
     * Implemented using `ONELAB <https://onelab.info/>`__
     * Current excitation
     * Frequency domain solver
-    * Litz wire loss model for proximity and skin effect (Niyomsatian et al.: Frequency-domain homogenization for impedance characterization of litz-wire transformers in 2-D finite element models)
+    * Litz wire loss model for proximity and skin effect (`Niyomsatian et al.: Frequency-domain homogenization for impedance characterization of litz-wire transformers in 2-D finite element models <https://ieeexplore.ieee.org/document/7695378>`__)
     * Core loss calculation for real materials (data from material database)
         * Amplitude dependent loss angle (Local resolution of complex permeability)
         * Equivalent permittivity data for eddy current calculations
@@ -97,6 +97,13 @@ Not supported features
 Documentation
 -------------------
 Please have a look at the `documentation <https://upb-lea.github.io/FEM_Magnetics_Toolbox/intro.html>`__. You will find tutorials and a function description.
+
+Literature
+-------------------
+
+* `An Open-Source FEM Magnetics Toolbox for Power Electronic Magnetic Components <https://ieeexplore.ieee.org/document/9862128>`__
+
+* `An Open-Source FEM Magnetic Toolbox for Calculating Electric and Thermal Behavior of Power Electronic Magnetic Components <https://ieeexplore.ieee.org/document/9907554>`__
 
 Installation
 ---------------
