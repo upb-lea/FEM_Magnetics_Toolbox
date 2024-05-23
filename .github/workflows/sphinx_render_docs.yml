@@ -20,11 +20,21 @@ jobs:
       with:
         python-version: '3.10'
     - uses: actions/checkout@v4
+    - name: install femmt package
+      run: |
+        sudo apt-get update
+        # Problem with OSError: libGLU.so.1: cannot open shared object file
+        # Answer here: https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo
+        sudo apt install libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libglu1
+        # Unzip used for onelab
+        sudo apt install unzip
+        pip install --upgrade pip
+        pip install opencv-python
+        pip install -e .
     - name: Install sphinx and build documentation with sphinx
       run: |
         python --version
         pip install sphinx sphinx_rtd_theme sphinxcontrib-email
-        pip install -e .
         cd docs
         make html
 #    - name: Build HTML
