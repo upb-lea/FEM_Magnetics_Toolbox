@@ -1,6 +1,13 @@
 name: "Sphinx: Render docs"
 
-on: push
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main]
+  pull_request:
+    branches: [ main ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,12 +23,15 @@ jobs:
     - name: Install sphinx and build documentation with sphinx
       run: |
         python --version
-        pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email
+        pip install sphinx sphinx_rtd_theme sphinxcontrib-email
         pip install -e .
-    - name: Build HTML
-      uses: ammaraskar/sphinx-action@master
-      with:
-        docs-folder: "docs/"
+        cd docs
+        make html
+#    - name: Build HTML
+#      uses: ammaraskar/sphinx-action@master
+#      with:
+#        docs-folder: "docs/"
+#        pre-build-command: "pip install sphinx_rtd_theme sphinxcontrib-email"
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
