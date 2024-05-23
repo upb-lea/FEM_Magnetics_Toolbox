@@ -1,6 +1,13 @@
 name: "Sphinx: Render docs"
 
-on: push
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main]
+  pull_request:
+    branches: [ main ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,15 +20,28 @@ jobs:
       with:
         python-version: '3.10'
     - uses: actions/checkout@v4
+    - name: install femmt package
+      run: |
+        sudo apt-get update
+        # Problem with OSError: libGLU.so.1: cannot open shared object file
+        # Answer here: https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo
+        sudo apt install libsm6 libxext6 ffmpeg libfontconfig1 libxrender1 libglu1
+        # Unzip used for onelab
+        sudo apt install unzip
+        pip install --upgrade pip
+        pip install opencv-python
+        pip install -e .
     - name: Install sphinx and build documentation with sphinx
       run: |
         python --version
-        pip install sphinx sphinx-multiversion sphinx_rtd_theme sphinxcontrib-email
-        pip install -e .
-    - name: Build HTML
-      uses: ammaraskar/sphinx-action@master
-      with:
-        docs-folder: "docs/"
+        pip install sphinx sphinx_rtd_theme sphinxcontrib-email
+        cd docs
+        make html
+#    - name: Build HTML
+#      uses: ammaraskar/sphinx-action@master
+#      with:
+#        docs-folder: "docs/"
+#        pre-build-command: "pip install sphinx_rtd_theme sphinxcontrib-email"
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:

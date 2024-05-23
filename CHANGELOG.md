@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
-
+## [0.5.3] - 2024-05-23
+### Added 
+- Conductor placing strategies
 
 ## [0.5.2] - 2024-04-30
 ### Added 
@@ -138,7 +140,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/SolidComp.py
 - add femmt/CompRes.py
 
-[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.5.1...HEAD
+[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.5.3...HEAD
+[0.5.3]: https://github.com/upb-lea/transistordatabase/compare/0.5.3...0.5.2
+[0.5.2]: https://github.com/upb-lea/transistordatabase/compare/0.5.2...0.5.1
 [0.5.1]: https://github.com/upb-lea/transistordatabase/compare/0.5.1...0.5.0
 [0.5.0]: https://github.com/upb-lea/transistordatabase/compare/0.5.0...0.4.0
 [0.4.0]: https://github.com/upb-lea/transistordatabase/compare/0.4.0...0.3.0

@@ -23,6 +23,7 @@ import femmt.examples.advanced_inductor_air_gap_sweep
 import femmt.examples.component_study.transformer_component_study
 import femmt.examples.basic_transformer_excitation_sweep
 import femmt.examples.basic_inductor_excitation_sweep
+import femmt.examples.basic_split_windings
 import materialdatabase as mdb
 
 
@@ -2442,3 +2443,11 @@ def test_transformer_excitation_sweep(temp_folder):
     femmt.examples.basic_transformer_excitation_sweep.basic_example_transformer_excitation_sweep(onelab_folder=onelab_folder,
                                                                                                  show_visual_outputs=False,
                                                                                                  is_test=True)
+
+def test_split_windings(temp_folder):
+    """Integration test to the basic example file."""
+    temp_folder_path, onelab_folder = temp_folder
+    for num_windings in [2, 3, 5, 6]:
+        print(f"Running simulation for {num_windings} windings")
+        femmt.examples.basic_split_windings.run_transformer_vvw_split_examples(num_windings, onelab_folder=onelab_folder,
+                                                                               show_visual_outputs=False, is_test=True)

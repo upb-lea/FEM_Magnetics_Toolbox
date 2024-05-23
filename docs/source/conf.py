@@ -23,7 +23,7 @@ copyright = '{}, {}'.format(time.strftime('%Y'), 'LEA, Paderborn University')
 author = 'LEA-UPB'
 
 # The full version, including alpha/beta/rc tags
-release = '0.5.2'
+release = '0.5.3'
 
 # -- General configuration ---------------------------------------------------
 
