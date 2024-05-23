@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FEMMT development version (for developers only) &mdash; FEM Magnetics Toolbox 0.5.3 documentation</title>
+  <title>Python Module Index &mdash; FEM Magnetics Toolbox 0.5.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -20,7 +19,10 @@
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+ 
+
+
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -361,9 +363,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">FEMMT development version (for developers only)</li>
+      <li class="breadcrumb-item active">Python Module Index</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/sphinx/source/introduction.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -371,80 +372,49 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="femmt-development-version-for-developers-only">
-<h1>FEMMT development version (for developers only)<a class="headerlink" href="#femmt-development-version-for-developers-only" title="Link to this heading"></a></h1>
-<p>This is the latest development version with the latest features. Note:
-You may need to install <a class="reference external" href="https://git-scm.com/downloads">git</a>.
-Also have a look at the <a class="reference external" href="/developers_notes.md">developers notes</a>.</p>
-<p>FEMMT is using the material database. To use the latest version for developing, also install the material database in developer mode. It is important to first install the material database, second install FEMMT. Note the <code class="docutils literal notranslate"><span class="pre">dot</span> <span class="pre">.</span></code> in the following instructions.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Folder</span><span class="o">/</span><span class="n">of</span><span class="o">/</span><span class="n">Interest</span><span class="o">/</span><span class="n">materialdatabase</span>
-<span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">upb</span><span class="o">-</span><span class="n">lea</span><span class="o">/</span><span class="n">materialdatabase</span><span class="o">.</span><span class="n">git</span>
-<span class="n">cd</span> <span class="n">materialdatabase</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
-</pre></div>
-</div>
-<p>After the material database has been installed, install FEMMT:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">Folder</span><span class="o">/</span><span class="n">of</span><span class="o">/</span><span class="n">Interest</span><span class="o">/</span>
-<span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">upb</span><span class="o">-</span><span class="n">lea</span><span class="o">/</span><span class="n">FEM_Magnetics_Toolbox</span><span class="o">.</span><span class="n">git</span>
-<span class="n">cd</span> <span class="n">FEM_Magnetics_Toolbox</span><span class="o">/</span>
-<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
-</pre></div>
-</div>
-<section id="basics">
-<h2>Basics<a class="headerlink" href="#basics" title="Link to this heading"></a></h2>
-<p>The magnetic component can be an inductor, a transformer, or a
-transformer with integrated stray path. The parameterization process is
-divided into the following steps:</p>
-<ol class="arabic simple">
-<li><p>Choose the simulation type, whether it’s frequency domain or time domain simulation,</p></li>
-<li><p>set core parameters (geometry, material),</p></li>
-<li><p>set air gap parameters (position, height),</p></li>
-<li><p>set insulation distances</p></li>
-<li><p>set conductor parameters (litz/solid wire),</p></li>
-<li><p>start the frequency domain simulation by specifying the given frequencies, currents, and phases, and start the time domain simulation by specifying the given currents, and time parameters.</p></li>
-</ol>
-<p>Please have a look at the <a class="reference external" href="/femmt/examples/basic_inductor.py">basic_inductor example</a> for frequency domain simulation, and
-at the <a class="reference external" href="/femmt/examples/basic_inductor_time_domain.py">basic_inductor_time_domain example</a> for time domain simulation.</p>
-<p>The examples contain among other things:</p>
-<ul class="simple">
-<li><p>Geometries: Coil, transformer, transformer with integrated stray path,</p></li>
-<li><p>wire and stranded wire definition,</p></li>
-<li><p>air gaps definition,</p></li>
-<li><p>excitation with different frequencies, amplitudes and phases for frequency domain simulation, and with amplitudes and time steps for time domain simulation.</p></li>
-</ul>
-<p>The simulation results can be found in <cite>working_directory/results/result_log_electro_magnetic.json</cite>. Working directory can either be set by the user otherwise it located at <cite>/python-side-packages-path/femmt</cite>.
-In it you can find</p>
-<ul class="simple">
-<li><p>power loss in the core: hysteresis losses and eddy current losses,</p></li>
-<li><p>losses per winding and for each individual winding,</p></li>
-<li><p>self- and mutual inductances.</p></li>
-</ul>
-<p>For a more detailed guide on how to create a model, please have a look <a class="reference internal" href="intro.html#user-guide-model-creation"><span class="std std-ref">here</span></a>.</p>
-</section>
-<section id="counting-arrow-system">
-<h2>Counting arrow system<a class="headerlink" href="#counting-arrow-system" title="Link to this heading"></a></h2>
-<p>Defined as depicted here:</p>
-<p><img alt="image_counting_arrow_system" src="_images/counting_arrow_system.png" /></p>
-</section>
-</section>
-<section id="gui-experimental">
-<h1>GUI (Experimental)<a class="headerlink" href="#gui-experimental" title="Link to this heading"></a></h1>
-<p>There is a first preview for a GUI. Installing this is a bit cumbersome
-at first, but will be simplified in the future:</p>
-<ul class="simple">
-<li><p>Download the complete repository via <code class="docutils literal notranslate"><span class="pre">Code</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">Download</span> <span class="pre">ZIP</span></code> and unpack it.</p></li>
-<li><p>install the development version of femmt as described above</p></li>
-<li><p>run python <code class="docutils literal notranslate"><span class="pre">downloads/path-to_femmt/femmt/gui/femmt_gui.py</span></code></p></li>
-</ul>
-<p>Please note, the GUI is experimental.</p>
-<p><img alt="image_gui_definition" src="_images/femmt_gui_definition.png" /></p>
-</section>
-<section id="femm-validation-for-developers-only">
-<h1>FEMM Validation (for developers only)<a class="headerlink" href="#femm-validation-for-developers-only" title="Link to this heading"></a></h1>
-<p>For verification purposes a FEMM model can be created in FEMMT. To do this
-FEMM needs to be installed as well as the FEMM python package.
-The functionality is limited, e.g. the air gaps are limited to the ‘center’-type. Other types, like ‘percent’ are not implemented.</p>
-</section>
+
+   <h1>Python Module Index</h1>
+
+   <div class="modindex-jumpbox">
+   <a href="#cap-f"><strong>f</strong></a>
+   </div>
+
+   <table class="indextable modindextable">
+     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
+     <tr class="cap" id="cap-f"><td></td><td>
+       <strong>f</strong></td><td></td></tr>
+     <tr>
+       <td><img src="_static/minus.png" class="toggler"
+              id="toggle-1" style="display: none" alt="-" /></td>
+       <td>
+       <code class="xref">femmt</code></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="intro.html#module-femmt.constants"><code class="xref">femmt.constants</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="intro.html#module-femmt.functions"><code class="xref">femmt.functions</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="intro.html#module-femmt.functions_model"><code class="xref">femmt.functions_model</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="intro.html#module-femmt.functions_topologies"><code class="xref">femmt.functions_topologies</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="intro.html#module-femmt.reluctance"><code class="xref">femmt.reluctance</code></a></td><td>
+       <em></em></td></tr>
+   </table>
 
 
            </div>
