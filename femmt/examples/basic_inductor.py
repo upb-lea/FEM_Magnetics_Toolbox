@@ -127,7 +127,7 @@ def basic_example_inductor(onelab_folder: str = None, show_visual_outputs: bool 
 
     # 5. create winding window and virtual winding windows (vww)
     winding_window = fmt.WindingWindow(core, insulation)
-    vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
+    top_left, top_right, bot_left, bot_right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalAndVerticalSplit)
 
     # 6. create conductor and set parameters: use solid wires
     winding = fmt.Conductor(0, fmt.Conductivity.Copper, winding_material_temperature=45)
