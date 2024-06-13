@@ -3240,7 +3240,7 @@ class MainWindow(QMainWindow):
         # Read back results
         # -----------------------------------------------
 
-        self.md_simulation_QLabel.setText('simulation fertig.')
+        self.md_simulation_QLabel.setText('simulation complete.')
 
         # loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.femm_results_log_path, './results.png', show_plot=False)
         loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path,
