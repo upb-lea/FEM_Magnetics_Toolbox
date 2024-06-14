@@ -2753,7 +2753,16 @@ class MainWindow(QMainWindow):
         winding2_frequency_list = []
         winding2_amplitude_list = []
         winding2_phi_rad_list = []
+        # case to handle dc in exitation sweeb
+        if self.md_dc_checkBox.isChecked():
+            winding1_frequency_list.append(0)  # DC frequency is 0 Hz
+            winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_idc_lineEdit.text()))
+            winding1_phi_rad_list.append(0)  # DC phase is typically 0
 
+            if self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']:
+                winding2_frequency_list.append(0)  # DC frequency is 0 Hz
+                winding2_amplitude_list.append(comma_str_to_point_float(self.md_winding2_idc_lineEdit.text()))
+                winding2_phi_rad_list.append(0)  # DC phase is typically 0
         if self.md_fk1_checkBox.isChecked():
             winding1_frequency_list.append(1 * comma_str_to_point_float(self.md_base_frequency_lineEdit.text()))
             winding1_amplitude_list.append(comma_str_to_point_float(self.md_winding1_ik1_lineEdit.text()))
@@ -3241,46 +3250,45 @@ class MainWindow(QMainWindow):
         # -----------------------------------------------
 
         self.md_simulation_QLabel.setText('simulation complete.')
+        loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation, show_plot=False)
 
-        # loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.femm_results_log_path, './results.png', show_plot=False)
-        loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path,
-                                                               geo.file_data.results_em_simulation, show_plot=False)
-        # pixmap = QPixmap("./results.png")
-        pixmap = QPixmap(geo.file_data.results_em_simulation)
-        self.md_loss_plot_label.setPixmap(pixmap)
-        self.md_loss_plot_label.setMask(pixmap.mask())
-        self.md_loss_plot_label.show()
+        for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
+            # Frequency-specific losses
+            freq_label = getattr(self, f'md_freq{index + 1}')
+            # loss_plot_label = getattr(self, f'md_loss_plot_label1')
+            hysteresis_label = getattr(self, f'md_loss_core_hysteresis_label{index + 1}')
+            eddy_current_label = getattr(self, f'md_loss_core_eddy_current_label{index + 1}')
+            winding1_loss_label = getattr(self, f'md_loss_winding1_label{index + 1}')
+            inductance1_label = getattr(self, f'md_inductance1_label{index + 1}')
 
-        # inductance = loaded_results_dict["single_sweeps"][0]["winding1"]["flux_over_current"][0]
-        loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
-        loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
-        # loss_winding_1 = loaded_results_dict["total_losses"]["winding1"]["total"]
-        self.md_loss_core_hysteresis_label.setText(f"Core Hysteresis loss: {loss_core_hysteresis} W")
-        self.md_loss_core_eddy_current_label.setText(f"Core Eddy Current loss: {loss_core_eddy_current} W")
-        # self.md_loss_winding1_label.setText(f"Winding 1 loss: {loss_winding_1} W")
-        # self.md_inductance_label.setText(f"Primary Inductance: {inductance} H")
-        inductances = []
-        windings_loss = []
-        for i in range(1, 3):  # for 3 windings
-            winding_key = f"winding{i}"
-            if winding_key in loaded_results_dict["single_sweeps"][0]:
-                inductances.append(loaded_results_dict["single_sweeps"][0][winding_key]["flux_over_current"][0])
-                windings_loss.append(loaded_results_dict["total_losses"][winding_key]["total"])
+            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                winding2_loss_label = getattr(self, f'md_loss_winding2_label{index + 1}')
+                inductance2_label = getattr(self, f'md_inductance2_label{index + 1}')
 
-        # show them just for 2 windings in GUI
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-            self.md_loss_winding1_label.setText(f"Winding 1 loss: {windings_loss[0]} W")
-            self.md_inductance1_label.setText(f"Primary Inductance: {inductances[0]} H")
-        elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-            self.md_loss_winding1_label.setText(f"Winding 1 loss: {windings_loss[0]} W")
-            self.md_loss_winding2_label.setText(f"Winding 2 loss: {windings_loss[1]} W")
-            self.md_inductance1_label.setText(f"Primary Inductance: {inductances[0]} H")
-            self.md_inductance2_label.setText(f"Secondary Inductance: {inductances[1]} H")
+            # Update frequency label
+            freq_label.setText(f"Frequency: {sweep['f']} Hz")
 
-        # log_path = geo.e_m_results_log_path
-        # simulation_results = str(fmt.read_results_log(log_path))
-        # print(simulation_results)
-        # self.md_simulation_output_textBrowser.setText(simulation_results)
+            # image for loss plot
+            base_path, ext = os.path.splitext(geo.file_data.results_em_simulation)
+            cumulative_filename = f"{base_path}_total_freq{ext}"
+            pixmap = QPixmap(cumulative_filename)
+            if not pixmap.isNull():
+                # to show more than one figure in the future:
+                # loss_plot_label.setPixmap(pixmap)
+                # loss_plot_label.show()
+                # just for shown one figure:
+                self.md_loss_plot_label1.setPixmap(pixmap)
+                self.md_loss_plot_label1.show()
+
+            # loss labels
+            hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
+            eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
+            winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
+            inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
+            # transformer case
+            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
+                inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
 
     def inductancecalc(self):
         """Calculate inductance from given geometries."""
