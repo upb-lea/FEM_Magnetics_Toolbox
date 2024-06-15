@@ -800,7 +800,13 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
 def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000,
                               figure_directory: str = None):
     """Plot fourier coefficients in a visual figure."""
-    time_period = 1 / min(frequency_list)
+    # dc and ac handling
+    nonzero_frequencies = [f for f in frequency_list if f != 0]
+    if nonzero_frequencies:
+        time_period = 1 / min(nonzero_frequencies)
+    else:
+        time_period = 1
+    # time_period = 1 / min(frequency_list)
 
     t_interp = np.linspace(0, time_period, sample_factor)
     reconstructed_signal = 0
@@ -830,6 +836,7 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
     plt.tight_layout()
     if figure_directory is not None:
         plt.savefig(figure_directory, bbox_inches="tight")
+    plt.close('all')  # close the figures to remove the warning when you run many figures
 
     # plt.show()
 
