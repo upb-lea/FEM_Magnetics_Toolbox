@@ -580,7 +580,6 @@ class AirGaps:
             elif position - height / 2 < -self.core.window_h / 2:
                 position += -self.core.window_h / 2 - (position - height / 2)
 
-
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
 
