@@ -562,13 +562,24 @@ class AirGaps:
         elif self.method == AirGapMethod.Percent:
             if position_value > 100 or position_value < 0:
                 raise Exception("AirGap position values for the percent method need to be between 0 and 100.")
+            # Calculate the maximum and minimum position in percent considering the winding window height and air gap length
+            max_position = 100 - (height / self.core.window_h) * 51
+            min_position = (height / self.core.window_h) * 51
+
+            # Adjust the position value if it exceeds the bounds of 0 to 100 percent
+            if position_value > max_position:
+                position_value = max_position
+            elif position_value < min_position:
+                position_value = min_position
+
             position = position_value / 100 * self.core.window_h - self.core.window_h / 2
 
-            # When the position is above the winding window it needs to be adjusted
+            # # When the position is above the winding window it needs to be adjusted
             if position + height / 2 > self.core.window_h / 2:
                 position -= (position + height / 2) - self.core.window_h / 2
             elif position - height / 2 < -self.core.window_h / 2:
                 position += -self.core.window_h / 2 - (position - height / 2)
+
 
             self.midpoints.append([leg_position.value, position, height])
             self.number += 1
