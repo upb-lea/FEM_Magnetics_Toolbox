@@ -45,7 +45,7 @@
         <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>0</number>
+           <number>2</number>
           </property>
           <widget class="QWidget" name="md_QWidget_2">
            <attribute name="title">
@@ -4749,8 +4749,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>1440</width>
-                     <height>1172</height>
+                     <width>268</width>
+                     <height>253</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_46">
@@ -4880,8 +4880,8 @@
                             <rect>
                              <x>0</x>
                              <y>0</y>
-                             <width>1400</width>
-                             <height>807</height>
+                             <width>98</width>
+                             <height>518</height>
                             </rect>
                            </property>
                            <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -4921,7 +4921,7 @@
             <item row="0" column="0">
              <widget class="QTabWidget" name="tabWidget_2">
               <property name="currentIndex">
-               <number>2</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="tab_6">
                <attribute name="title">
@@ -4951,7 +4951,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>98</width>
+                        <width>1403</width>
                         <height>2036</height>
                        </rect>
                       </property>
@@ -9444,7 +9444,7 @@
                    <item row="4" column="2">
                     <widget class="QLabel" name="label_219">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -9454,7 +9454,7 @@
                    <item row="4" column="4">
                     <widget class="QLabel" name="label_220">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -9464,7 +9464,7 @@
                    <item row="4" column="6">
                     <widget class="QLabel" name="label_242">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -9474,7 +9474,7 @@
                    <item row="4" column="8">
                     <widget class="QLabel" name="label_224">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -9484,7 +9484,7 @@
                    <item row="4" column="10">
                     <widget class="QLabel" name="label_243">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -9492,6 +9492,9 @@
                     <spacer name="horizontalSpacer_41">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeType">
+                      <enum>QSizePolicy::Expanding</enum>
                      </property>
                      <property name="sizeHint" stdset="0">
                       <size>
@@ -9540,7 +9543,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>98</width>
+                        <width>1403</width>
                         <height>1024</height>
                        </rect>
                       </property>
