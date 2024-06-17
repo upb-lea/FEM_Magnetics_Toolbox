@@ -800,7 +800,13 @@ def fft(period_vector_t_i: npt.ArrayLike, sample_factor: int = 1000, plot: str =
 def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, sample_factor: int = 1000,
                               figure_directory: str = None):
     """Plot fourier coefficients in a visual figure."""
-    time_period = 1 / min(frequency_list)
+    # dc and ac handling
+    nonzero_frequencies = [f for f in frequency_list if f != 0]
+    if nonzero_frequencies:
+        time_period = 1 / min(nonzero_frequencies)
+    else:
+        time_period = 1
+    # time_period = 1 / min(frequency_list)
 
     t_interp = np.linspace(0, time_period, sample_factor)
     reconstructed_signal = 0
@@ -830,6 +836,7 @@ def plot_fourier_coefficients(frequency_list, amplitude_list, phi_rad_list, samp
     plt.tight_layout()
     if figure_directory is not None:
         plt.savefig(figure_directory, bbox_inches="tight")
+    plt.close('all')  # close the figures to remove the warning when you run many figures
 
     # plt.show()
 
@@ -1064,43 +1071,73 @@ def visualize_simulation_results(simulation_result_file_path: str, store_figure_
     """Visualize the simulation results by a figure."""
     with open(simulation_result_file_path, "r") as fd:
         loaded_results_dict = json.loads(fd.read())
-    # core eddy and hysteresis losses
-    loss_core_eddy_current = loaded_results_dict["total_losses"]["eddy_core"]
-    loss_core_hysteresis = loaded_results_dict["total_losses"]["hyst_core_fundamental_freq"]
-    # Inductances and winding losses
-    windings_inductance = []
-    windings_loss = []
+
+    # Initialize accumulators for cumulative losses and inductances
+    cumulative_core_hysteresis = 0
+    cumulative_core_eddy = 0
+    cumulative_losses = []
+    cumulative_inductances = []
     windings_labels = []
-    # Dynamically for 3 windings
-    for i in range(1, 3):
-        winding_key = f"winding{i}"
-        if winding_key in loaded_results_dict["single_sweeps"][0]:
-            windings_inductance.append(loaded_results_dict["single_sweeps"][0][winding_key]["flux_over_current"][0])
-            windings_loss.append(loaded_results_dict["total_losses"][winding_key]["total"])
-            windings_labels.append(f"Winding {i}")
 
-    # Plotting results
+    for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
+        freq = sweep['f']
+        loss_core_eddy_current = sweep.get("core_eddy_losses", 0)
+        loss_core_hysteresis = sweep.get("core_hyst_losses", 0)
+
+        # Accumulate core losses
+        cumulative_core_hysteresis += loss_core_hysteresis
+        cumulative_core_eddy += loss_core_eddy_current
+
+        # Plotting for each frequency
+        fig, ax = plt.subplots()
+        ax.bar(0, loss_core_hysteresis, width=0.35, label='Core Hysteresis Loss')
+        ax.bar(0, loss_core_eddy_current, bottom=loss_core_hysteresis, width=0.35, label='Core Eddy Current Loss')
+
+        for i in range(1, 4):
+            winding_key = f"winding{i}"
+            if winding_key in sweep:
+                inductance = sweep[winding_key].get("flux_over_current", [0])[0]
+                loss = sweep[winding_key].get("winding_losses", 0)
+
+                if len(cumulative_losses) < i:
+                    cumulative_losses.append(loss)
+                    cumulative_inductances.append(inductance)
+                    windings_labels.append(f"Winding {i}")
+                else:
+                    cumulative_losses[i - 1] += loss
+                    cumulative_inductances[i - 1] += inductance
+
+                # Plot for current frequency
+                ax.bar(i, loss, width=0.35, label=f'{windings_labels[i - 1]} Loss at {freq} Hz')
+
+        ax.set_ylabel('Losses in W')
+        ax.set_title(f'Loss Distribution at {freq} Hz')
+        ax.legend()
+        plt.grid(True)
+
+        # Save plot for the current frequency
+        base_path, ext = os.path.splitext(store_figure_file_path)
+        filename = f"{base_path}_{index}{ext}"
+        plt.savefig(filename, bbox_inches="tight")
+        plt.close(fig)
+
+    # Plot cumulative results for core and windings
     fig, ax = plt.subplots()
-    bar_width = 0.35
+    ax.bar(0, cumulative_core_hysteresis, width=0.35, label='Cumulative Core Hysteresis Loss')
+    ax.bar(0, cumulative_core_eddy, bottom=cumulative_core_hysteresis, width=0.35, label='Cumulative Core Eddy Current Loss')
 
-    # Plot core losses
-    ax.bar(0, loss_core_hysteresis, width=bar_width, label='Core Hysteresis Loss')
-    ax.bar(0, loss_core_eddy_current, bottom=loss_core_hysteresis, width=bar_width, label='Core Eddy Current Loss')
+    for index, loss in enumerate(cumulative_losses):
+        ax.bar(index + 1, loss, width=0.35, label=f'{windings_labels[index]} Cumulative Loss')
 
-    # Plot winding inductances and losses
-    for index, (inductance, loss) in enumerate(zip(windings_inductance, windings_loss), start=1):
-        ax.bar(index, loss, width=bar_width, label=f'{windings_labels[index - 1]} Loss')
-        print(f"{windings_labels[index - 1]} Inductance: {inductance} H")
-        print(f"{windings_labels[index - 1]} Loss: {loss} W")
-
-    ax.set_ylabel('Losses in W')
-    ax.set_title('Loss Distribution in Magnetic Components')
-    ax.set_xticks(list(range(len(windings_labels) + 1)))
+    ax.set_ylabel('total Losses in W')
+    ax.set_title('Loss Distribution in Magnetic Components for all frequencies')
+    ax.set_xticks(range(len(windings_labels) + 1))
     ax.set_xticklabels(['Core'] + windings_labels)
     ax.legend()
-
     plt.grid(True)
-    plt.savefig(store_figure_file_path, bbox_inches="tight")
+    base_path, ext = os.path.splitext(store_figure_file_path)
+    cumulative_filename = f"{base_path}_total_freq{ext}"
+    plt.savefig(cumulative_filename, bbox_inches="tight")
 
     if show_plot:
         plt.show()

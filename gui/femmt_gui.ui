@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1656</width>
-    <height>1076</height>
+    <width>1545</width>
+    <height>1177</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -37,7 +37,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1619</width>
+         <width>1508</width>
          <height>1280</height>
         </rect>
        </property>
@@ -45,7 +45,7 @@
         <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>1</number>
+           <number>2</number>
           </property>
           <widget class="QWidget" name="md_QWidget_2">
            <attribute name="title">
@@ -61,7 +61,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>3</number>
+               <number>2</number>
               </property>
               <widget class="QWidget" name="md_QWidget">
                <attribute name="title">
@@ -1836,47 +1836,690 @@
                     <property name="title">
                      <string>Simulation Text Output</string>
                     </property>
-                    <layout class="QGridLayout" name="gridLayout_22">
-                     <item row="3" column="1">
-                      <widget class="QLabel" name="md_loss_winding2_label">
-                       <property name="text">
-                        <string/>
+                    <layout class="QVBoxLayout" name="verticalLayout_17">
+                     <item>
+                      <widget class="QScrollArea" name="scrollArea_11">
+                       <property name="widgetResizable">
+                        <bool>false</bool>
                        </property>
-                      </widget>
-                     </item>
-                     <item row="0" column="1">
-                      <widget class="QLabel" name="md_loss_core_hysteresis_label">
-                       <property name="text">
-                        <string/>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="1">
-                      <widget class="QLabel" name="md_loss_core_eddy_current_label">
-                       <property name="text">
-                        <string/>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="4" column="1">
-                      <widget class="QLabel" name="md_inductance1_label">
-                       <property name="text">
-                        <string/>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="1">
-                      <widget class="QLabel" name="md_loss_winding1_label">
-                       <property name="text">
-                        <string/>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="5" column="1">
-                      <widget class="QLabel" name="md_inductance2_label">
-                       <property name="text">
-                        <string/>
-                       </property>
+                       <widget class="QWidget" name="scrollAreaWidgetContents_11">
+                        <property name="geometry">
+                         <rect>
+                          <x>0</x>
+                          <y>0</y>
+                          <width>641</width>
+                          <height>1137</height>
+                         </rect>
+                        </property>
+                        <layout class="QVBoxLayout" name="verticalLayout_31">
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_41">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_35">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_34">
+                              <item>
+                               <widget class="QLabel" name="md_freq1">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_11">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_32">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label1">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label1">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label1">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_33">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label1">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label1">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label1">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_42">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_39">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_36">
+                              <item>
+                               <widget class="QLabel" name="md_freq2">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_14">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_37">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label2">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label2">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label2">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_38">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label2">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label2">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label2">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_43">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_43">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_40">
+                              <item>
+                               <widget class="QLabel" name="md_freq3">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_15">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_41">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label3">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label3">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label3">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_42">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label3">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label3">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label3">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_44">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_47">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_44">
+                              <item>
+                               <widget class="QLabel" name="md_freq4">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_16">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_45">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label4">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label4">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label4">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_46">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label4">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label4">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label4">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_45">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_51">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_48">
+                              <item>
+                               <widget class="QLabel" name="md_freq5">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_17">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_49">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label5">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label5">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label5">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_50">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label5">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label5">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label5">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_46">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_55">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_52">
+                              <item>
+                               <widget class="QLabel" name="md_freq6">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_18">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_53">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label6">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label6">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label6">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_54">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label6">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label6">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label6">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_47">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_59">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_56">
+                              <item>
+                               <widget class="QLabel" name="md_freq7">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_19">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_57">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label7">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label7">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label7">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_58">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label7">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label7">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label7">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_48">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_63">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_60">
+                              <item>
+                               <widget class="QLabel" name="md_freq8">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_20">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_61">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label8">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label8">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label8">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_62">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label8">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label8">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label8">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QGroupBox" name="groupBox_49">
+                           <property name="title">
+                            <string/>
+                           </property>
+                           <layout class="QVBoxLayout" name="verticalLayout_67">
+                            <item>
+                             <layout class="QVBoxLayout" name="verticalLayout_64">
+                              <item>
+                               <widget class="QLabel" name="md_freq9">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <layout class="QHBoxLayout" name="horizontalLayout_21">
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_65">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_hysteresis_label9">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_core_eddy_current_label9">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding1_label9">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                                <item>
+                                 <layout class="QVBoxLayout" name="verticalLayout_66">
+                                  <item>
+                                   <widget class="QLabel" name="md_loss_winding2_label9">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance1_label9">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                  <item>
+                                   <widget class="QLabel" name="md_inductance2_label9">
+                                    <property name="text">
+                                     <string/>
+                                    </property>
+                                   </widget>
+                                  </item>
+                                 </layout>
+                                </item>
+                               </layout>
+                              </item>
+                             </layout>
+                            </item>
+                           </layout>
+                          </widget>
+                         </item>
+                        </layout>
+                       </widget>
                       </widget>
                      </item>
                     </layout>
@@ -1887,12 +2530,37 @@
                     <property name="title">
                      <string>Simulation Visual Output</string>
                     </property>
-                    <layout class="QGridLayout" name="gridLayout_24">
-                     <item row="0" column="0">
-                      <widget class="QLabel" name="md_loss_plot_label">
-                       <property name="text">
-                        <string/>
+                    <layout class="QVBoxLayout" name="verticalLayout_19">
+                     <item>
+                      <widget class="QScrollArea" name="scrollArea_12">
+                       <property name="widgetResizable">
+                        <bool>false</bool>
                        </property>
+                       <widget class="QWidget" name="scrollAreaWidgetContents_12">
+                        <property name="geometry">
+                         <rect>
+                          <x>0</x>
+                          <y>0</y>
+                          <width>619</width>
+                          <height>1137</height>
+                         </rect>
+                        </property>
+                        <layout class="QVBoxLayout" name="verticalLayout_68">
+                         <item>
+                          <widget class="QLabel" name="md_loss_plot_label1">
+                           <property name="sizePolicy">
+                            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                             <horstretch>0</horstretch>
+                             <verstretch>0</verstretch>
+                            </sizepolicy>
+                           </property>
+                           <property name="text">
+                            <string/>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </widget>
                       </widget>
                      </item>
                     </layout>
@@ -3854,7 +4522,7 @@
                               <rect>
                                <x>0</x>
                                <y>0</y>
-                               <width>635</width>
+                               <width>98</width>
                                <height>518</height>
                               </rect>
                              </property>
@@ -4026,7 +4694,7 @@
                                 <rect>
                                  <x>0</x>
                                  <y>0</y>
-                                 <width>468</width>
+                                 <width>98</width>
                                  <height>518</height>
                                 </rect>
                                </property>
@@ -4081,8 +4749,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>1551</width>
-                     <height>1172</height>
+                     <width>268</width>
+                     <height>253</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_46">
@@ -4212,8 +4880,8 @@
                             <rect>
                              <x>0</x>
                              <y>0</y>
-                             <width>1511</width>
-                             <height>807</height>
+                             <width>98</width>
+                             <height>518</height>
                             </rect>
                            </property>
                            <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -4283,7 +4951,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>1514</width>
+                        <width>1403</width>
                         <height>2036</height>
                        </rect>
                       </property>
@@ -8776,7 +9444,7 @@
                    <item row="4" column="2">
                     <widget class="QLabel" name="label_219">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -8786,7 +9454,7 @@
                    <item row="4" column="4">
                     <widget class="QLabel" name="label_220">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -8796,7 +9464,7 @@
                    <item row="4" column="6">
                     <widget class="QLabel" name="label_242">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -8806,7 +9474,7 @@
                    <item row="4" column="8">
                     <widget class="QLabel" name="label_224">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -8816,7 +9484,7 @@
                    <item row="4" column="10">
                     <widget class="QLabel" name="label_243">
                      <property name="text">
-                      <string>T</string>
+                      <string>Hz</string>
                      </property>
                     </widget>
                    </item>
@@ -8824,6 +9492,9 @@
                     <spacer name="horizontalSpacer_41">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeType">
+                      <enum>QSizePolicy::Expanding</enum>
                      </property>
                      <property name="sizeHint" stdset="0">
                       <size>
@@ -8872,7 +9543,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>1514</width>
+                        <width>1403</width>
                         <height>1024</height>
                        </rect>
                       </property>
@@ -8926,15 +9597,18 @@
                    </item>
                    <item row="1" column="0">
                     <widget class="QScrollArea" name="scrollArea_10">
+                     <property name="autoFillBackground">
+                      <bool>false</bool>
+                     </property>
                      <property name="widgetResizable">
-                      <bool>true</bool>
+                      <bool>false</bool>
                      </property>
                      <widget class="QWidget" name="scrollAreaWidgetContents_10">
                       <property name="geometry">
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>1531</width>
+                        <width>1329</width>
                         <height>967</height>
                        </rect>
                       </property>
@@ -9483,7 +10157,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1656</width>
+     <width>1545</width>
      <height>21</height>
     </rect>
    </property>
