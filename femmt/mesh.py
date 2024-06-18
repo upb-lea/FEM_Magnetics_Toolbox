@@ -1265,8 +1265,8 @@ class Mesh:
             core_point_tags = []
             core_line_tags = []
             if self.model.air_gaps.number == 0:  # TODO...
-                core_point_tags = [4, 3, 2, 1]
-                core_line_tags = [4, 3, 2]
+                core_point_tags = [6, 5, 4, 3, 2, 1]
+                core_line_tags = [6, 5, 4, 3, 2]
             else:
                 core_point_tags = [7, 6, 5, 4, 3, 2]
                 core_line_tags = [7, 6, 5, 4, 3]
