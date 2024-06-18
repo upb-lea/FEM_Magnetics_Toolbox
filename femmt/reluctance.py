@@ -120,8 +120,8 @@ def plot_r_basic():
     w_l = width / length
     fig, ax = plt.subplots(figsize=(3.54, 3.54), dpi=150)  # Create a figure containing a single axes.
     # fmt.plt.title("$R_{basic}$ vs $\dfrac{h}{l}$", fontsize=20)
-    plt.xlabel("$\dfrac{h}{l}$", fontsize=24)
-    plt.ylabel("$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
+    plt.xlabel(r"$\dfrac{h}{l}$", fontsize=24)
+    plt.ylabel(r"$R_{\mathrm{basic}}^{\prime}$ / AT/Wb", fontsize=24)
 
     for i, wid in enumerate(width):
         r_m = 1 / (mu_0 * (wid / 2 / length + 2 / np.pi * (1 + np.log(np.pi * height / 4 / length))))
