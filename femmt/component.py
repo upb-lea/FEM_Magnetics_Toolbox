@@ -711,7 +711,6 @@ class MagneticComponent:
                 return self.stray_path.length
             return self.core.core_inner_diameter / 2
 
-
         if self.air_gaps.midpoints:
             # # Sorting air gaps from lower to upper
             sorted_midpoints = sorted(self.air_gaps.midpoints, key=lambda x: x[1])
@@ -787,7 +786,7 @@ class MagneticComponent:
                 subpart1_3_height = self.core.window_h
                 subpart1_3_width = self.core.r_outer
                 subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height - \
-                                    (np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
+                    (np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
 
                 # subpart4: top mid-subpart
                 subpart1_4_height = self.core.core_inner_diameter / 4
