@@ -2335,7 +2335,7 @@ class MagneticComponent:
             if self.red_freq[winding_number] > 1.25 and self.windings[winding_number].conductor_type == ConductorType.RoundLitz:
                 # TODO: Allow higher reduced frequencies
                 self.femmt_print("Litz Coefficients only implemented for X<=1.25")
-                raise Warning
+                raise Warning("Reduced frequency exceeds limit for Litz Coefficients.")
             # Reduced Frequency
             text_file.write(f"Rr_{winding_number + 1} = {self.red_freq[winding_number]};\n")
 

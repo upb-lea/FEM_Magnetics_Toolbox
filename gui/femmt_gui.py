@@ -24,11 +24,46 @@ from femmt.examples.inductor_optimization import AutomatedDesign
 from femmt.examples.inductor_optimization import load_fem_simulation_results, filter_after_fem
 
 import mplcursors
+# new imports
+import tkinter as tk
+from tkinter import messagebox
+import functools
+import traceback
 
 database = mdb.MaterialDatabase()
 
 float_validator = QDoubleValidator()
 int_validator = QIntValidator()
+
+def show_error(message):
+    """
+    Display an error message in a Tkinter message box.
+
+    :param message: The error message to display.
+    :type message: str
+    """
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    messagebox.showerror("Error", message)
+    root.destroy()
+
+def handle_errors(func):
+    """
+    Handle errors in a function by displaying them in a message box.
+
+    :param func: The function to wrap with error handling.
+    :type func: callable
+    :return: The wrapped function.
+    :rtype: callable
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"Called function {func.__name__} with args: {args} and kwargs: {kwargs}")
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            show_error(str(e))
+    return wrapper
 
 
 def comma_str_to_point_float(input_str: str) -> float:
@@ -3187,13 +3222,15 @@ class MainWindow(QMainWindow):
 
         return geo
 
-    def md_action_run_simulation(self) -> None:
+    @handle_errors
+    def md_action_run_simulation(self, *args, **kwargs) -> None:
         """
         Read all input parameters from the fields. Run the simulation in dependence of input fields.
 
         :return: None
         :rtype: None
         """
+        # print(f"flag: {flag}")  # Debug print to check the flag value
         geo = self.md_setup_geometry()
         # -----------------------------------------------
         # Simulation
@@ -3206,44 +3243,52 @@ class MainWindow(QMainWindow):
             winding2_phi_rad_list = self.md_get_frequency_lists()
         print(winding1_frequency_list)
         print(winding1_amplitude_list)
-        if len(winding1_frequency_list) == 1:
-            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-                geo.single_simulation(freq=winding1_frequency_list[0],
-                                      current=[winding1_amplitude_list[0]],
-                                      show_fem_simulation_results=True)
-            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                geo.single_simulation(freq=winding1_frequency_list[0],
-                                      current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
-                                      phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+        try:
+            if len(winding1_frequency_list) == 1:
+                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                    geo.single_simulation(freq=winding1_frequency_list[0],
+                                          current=[winding1_amplitude_list[0]],
+                                          show_fem_simulation_results=True)
+                elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                    geo.single_simulation(freq=winding1_frequency_list[0],
+                                          current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
+                                          phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
 
-        else:
+            else:
 
-            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-                amplitude_list = []
-                print(f"{winding1_amplitude_list=}")
-                for amplitude_value in winding1_amplitude_list:
-                    amplitude_list.append([amplitude_value])
+                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                    amplitude_list = []
+                    print(f"{winding1_amplitude_list=}")
+                    for amplitude_value in winding1_amplitude_list:
+                        amplitude_list.append([amplitude_value])
 
-                phase_rad_list = []
-                for phase_value in winding1_phi_rad_list:
-                    phase_rad_list.append([phase_value])
-                geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list,
-                                     phi_deg_list_list=phase_rad_list)
+                    phase_rad_list = []
+                    for phase_value in winding1_phi_rad_list:
+                        phase_rad_list.append([phase_value])
+                    geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list,
+                                         phi_deg_list_list=phase_rad_list)
 
-            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                amplitude1_list = []
-                for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
-                    amplitude1_list.append([amplitude1_value, amplitude2_value])
+                elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                    amplitude1_list = []
+                    for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
+                        amplitude1_list.append([amplitude1_value, amplitude2_value])
 
-                phase1_rad_list = []
-                for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
-                    phase1_rad_list.append([phase1_value, phase2_value])
+                    phase1_rad_list = []
+                    for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
+                        phase1_rad_list.append([phase1_value, phase2_value])
 
-                geo.excitation_sweep(frequency_list=winding1_frequency_list,
-                                     current_list_list=amplitude1_list,
-                                     phi_deg_list_list=phase1_rad_list)
+                    geo.excitation_sweep(frequency_list=winding1_frequency_list,
+                                         current_list_list=amplitude1_list,
+                                         phi_deg_list_list=phase1_rad_list)
 
-            # geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
+                # geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
+        except Exception as e:
+            raise RuntimeError(f"Error during simulation: {str(e)}") from e
+        # except Exception as e:
+        #     show_error(f"An unexpected error occurred:\n\n{str(e)}\n\n{traceback.format_exc()}")
+        # except Warning as e:
+        #     show_error(f"Warning: {str(e)}")
+
 
         # -----------------------------------------------
         # Read back results
@@ -3530,3 +3575,5 @@ if __name__ == "__main__":
         sys.exit(app.exec_())
     except SystemExit:
         print('Closing Window....')
+    except Exception as e:
+        show_error(f"An unexpected error occurred:\n\n{str(e)}\n\n{traceback.format_exc()}")
