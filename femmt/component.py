@@ -773,7 +773,7 @@ class MagneticComponent:
 
             else:
                 # # subpart1: bottom left subpart
-                subpart1_1_height = self.core.window_h / 2
+                subpart1_1_height = self.core.window_h
                 subpart1_1_width = self.core.core_inner_diameter / 2
                 subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
