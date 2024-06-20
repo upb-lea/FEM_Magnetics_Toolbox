@@ -42,6 +42,9 @@ def show_error(message):
     :param message: The error message to display.
     :type message: str
     """
+    # Print the error message and traceback to the terminal
+    print(f"Error: {message}")
+    print(traceback.format_exc())
     root = tk.Tk()
     root.withdraw()  # Hide the main window
     messagebox.showerror("Error", message)
@@ -571,6 +574,53 @@ class MainWindow(QMainWindow):
             return fmt.Material[material_name]
         except KeyError as e:
             raise ValueError(f"{material_name} is not a valid material name") from e
+
+    def validate_fields(self):
+        """
+        Validate that all required fields in the main window are filled out.
+
+        :raises ValueError: If any required field is empty.
+        """
+        if self.md_action_run_simulation:
+            common_fields = [
+                (self.md_core_width_lineEdit, "The core inner diameter field must be filled out."),
+                (self.md_window_height_lineEdit, "The window height must be filled out."),
+                (self.md_window_width_lineEdit, "The window width  must be filled out."),
+                (self.md_winding1_radius_lineEdit, "The wire Radius must be filled out."),
+                (self.md_winding1_strands_lineEdit, "Number Strands in winding 1 must be filled out."),
+                (self.md_winding1_fill_factor_lineEdit, "The Fill Factor in winding 1 must be filled out."),
+                (self.md_winding1_strand_radius_lineEdit, "The Strand Radius in winding 1 must be filled out."),
+                (self.md_winding1_turns_lineEdit, "The Number of Turns(winding1) must be filled out."),
+                (self.md_isolation_p2p_lineEdit, "The P2P in Winding Insulation must be filled out."),
+            ]
+
+            transformer_fields = [
+                (self.md_winding2_radius_lineEdit, "The wire Radius in winding 2 must be filled out."),
+                (self.md_winding2_strands_lineEdit, "Number Strands in winding 2 must be filled out."),
+                (self.md_winding2_fill_factor_lineEdit, "The Fill Factor in winding 2 must be filled out."),
+                (self.md_winding2_strand_radius_lineEdit, "The Strand Radius in winding 2 must be filled out."),
+                (self.md_winding2_turns_lineEdit, "The Number of Turns(winding2) must be filled out."),
+                (self.md_isolation_p2s_lineEdit, "The P2S in Winding Insulation must be filled out."),
+                (self.md_isolation_s2p_lineEdit, "The S2P in Winding Insulation must be filled out."),
+                (self.md_isolation_s2s_lineEdit, "The S2P in Winding insulation must be filled out."),
+            ]
+
+            if self.flag_insulation:
+                common_fields += [
+                    (self.md_isolation_core2cond_top_lineEdit, "The Core2Cond top in Core Insulation must be filled out."),
+                    (self.md_isolation_core2cond_inner_lineEdit, "The Core2Cond inner in Core Insulation must be filled out."),
+                    (self.md_isolation_core2cond_bot_lineEdit, "The Core2Cond bottom in Core Insulation must be filled out."),
+                    (self.md_isolation_core2cond_outer_lineEdit, "The Core2Cond outer in Core Insulation must be filled out."),
+                ]
+
+            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                fields_to_check = common_fields
+            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                fields_to_check = common_fields + transformer_fields
+
+            for field, error_message in fields_to_check:
+                if not field.text():
+                    raise ValueError(error_message)
 
     def webbrowser_contribute(self):
         """Open the web browser to the GitHub FEMMT repository contribution page."""
@@ -3031,7 +3081,7 @@ class MainWindow(QMainWindow):
             vww = winding_window.split_window(fmt.WindingWindowSplit.NoSplit)
 
             # ----------------------------------------------------------
-            # Create conductor and set parameters: use solid wires
+            # Create conductor and set parameters: use solid wires and litz wires
             # -----------------------------------------------------------
 
             winding_material_name = self.md_winding1_material_comboBox.currentText()
@@ -3201,14 +3251,44 @@ class MainWindow(QMainWindow):
             winding_window = fmt.WindingWindow(core, insulation)
             left, right = winding_window.split_window(fmt.WindingWindowSplit.HorizontalSplit)
 
-            # 6. create conductors and set parameters
-            winding1 = fmt.Conductor(0, fmt.Conductivity.Copper)
-            winding1.set_solid_round_conductor(comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()),
-                                               fmt.ConductorArrangement.Square)
+            # Winding 1
+            winding1_material_name = self.md_winding1_material_comboBox.currentText()
+            if winding1_material_name == 'Copper':
+                winding1_material_enum = fmt.Conductivity.Copper
+            elif winding1_material_name == 'Aluminium':
+                winding1_material_enum = fmt.Conductivity.Aluminium
 
-            winding2 = fmt.Conductor(1, fmt.Conductivity.Copper)
-            winding2.set_solid_round_conductor(comma_str_to_point_float(self.md_winding2_radius_lineEdit.text()),
-                                               fmt.ConductorArrangement.Square)
+            winding1 = fmt.Conductor(0, winding1_material_enum)
+            if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
+                winding1.set_solid_round_conductor(
+                    conductor_radius=comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()),
+                    conductor_arrangement=fmt.ConductorArrangement.Square)
+            elif self.md_winding1_type_comboBox.currentText() == self.translation_dict['litz']:
+                winding1.set_litz_round_conductor(
+                    conductor_radius=comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()),
+                    number_strands=int(self.md_winding1_strands_lineEdit.text()),
+                    strand_radius=comma_str_to_point_float(self.md_winding1_strand_radius_lineEdit.text()),
+                    fill_factor=None,
+                    conductor_arrangement=fmt.ConductorArrangement.Square)
+            # Winding 2
+            winding2_material_name = self.md_winding2_material_comboBox.currentText()
+            if winding2_material_name == 'Copper':
+                winding2_material_enum = fmt.Conductivity.Copper
+            elif winding2_material_name == 'Aluminium':
+                winding2_material_enum = fmt.Conductivity.Aluminium
+
+            winding2 = fmt.Conductor(1, winding2_material_enum)
+            if self.md_winding2_type_comboBox.currentText() == self.translation_dict['solid']:
+                winding2.set_solid_round_conductor(
+                    conductor_radius=comma_str_to_point_float(self.md_winding2_radius_lineEdit.text()),
+                    conductor_arrangement=fmt.ConductorArrangement.Square)
+            elif self.md_winding2_type_comboBox.currentText() == self.translation_dict['litz']:
+                winding2.set_litz_round_conductor(
+                    conductor_radius=comma_str_to_point_float(self.md_winding2_radius_lineEdit.text()),
+                    number_strands=int(self.md_winding2_strands_lineEdit.text()),
+                    strand_radius=comma_str_to_point_float(self.md_winding2_strand_radius_lineEdit.text()),
+                    fill_factor=None,
+                    conductor_arrangement=fmt.ConductorArrangement.Square)
 
             # 7. add conductor to vww and add winding window to MagneticComponent
             left.set_winding(winding1, int(self.md_winding1_turns_lineEdit.text()), None, fmt.Align.ToEdges,
@@ -3230,7 +3310,9 @@ class MainWindow(QMainWindow):
         :return: None
         :rtype: None
         """
-        # print(f"flag: {flag}")  # Debug print to check the flag value
+        # check if the necessary fields are not empty
+        self.validate_fields()
+        # call geometry
         geo = self.md_setup_geometry()
         # -----------------------------------------------
         # Simulation
@@ -3284,16 +3366,9 @@ class MainWindow(QMainWindow):
                 # geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
         except Exception as e:
             raise RuntimeError(f"Error during simulation: {str(e)}") from e
-        # except Exception as e:
-        #     show_error(f"An unexpected error occurred:\n\n{str(e)}\n\n{traceback.format_exc()}")
-        # except Warning as e:
-        #     show_error(f"Warning: {str(e)}")
-
-
         # -----------------------------------------------
         # Read back results
         # -----------------------------------------------
-
         self.md_simulation_QLabel.setText('simulation complete.')
         loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation, show_plot=False)
 
