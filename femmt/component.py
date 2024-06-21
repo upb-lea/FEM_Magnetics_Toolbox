@@ -772,12 +772,12 @@ class MagneticComponent:
                     core_parts_volumes.append(core_part_volume)
 
             else:
-                # # subpart1: bottom left subpart
+                # subpart1: left subpart
                 subpart1_1_height = self.core.window_h
                 subpart1_1_width = self.core.core_inner_diameter / 2
                 subpart1_1_volume = np.pi * subpart1_1_width ** 2 * subpart1_1_height
 
-                # # subpart2: bottom mid subpart
+                # subpart2: top subpart
                 subpart1_2_height = self.core.core_inner_diameter / 4
                 subpart1_2_width = self.core.r_outer
                 subpart1_2_volume = np.pi * subpart1_2_width ** 2 * subpart1_2_height
@@ -788,7 +788,7 @@ class MagneticComponent:
                 subpart1_3_volume = np.pi * subpart1_3_width ** 2 * subpart1_3_height - \
                     (np.pi * (self.core.window_w + self.core.core_inner_diameter / 2) ** 2 * self.core.window_h)
 
-                # subpart4: top mid-subpart
+                # subpart4: bottom part
                 subpart1_4_height = self.core.core_inner_diameter / 4
                 subpart1_4_width = self.core.r_outer
                 subpart1_4_volume = np.pi * subpart1_4_width ** 2 * subpart1_4_height
