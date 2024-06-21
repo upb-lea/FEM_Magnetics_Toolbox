@@ -5,7 +5,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import cm
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QMessageBox
 from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtGui import QPixmap, QDoubleValidator, QIntValidator
 import femmt as fmt
@@ -25,13 +25,10 @@ from femmt.examples.inductor_optimization import load_fem_simulation_results, fi
 
 import mplcursors
 # new imports
-import tkinter as tk
-from tkinter import messagebox
 import functools
 import traceback
 
 database = mdb.MaterialDatabase()
-
 float_validator = QDoubleValidator()
 int_validator = QIntValidator()
 
@@ -45,10 +42,12 @@ def show_error(message):
     # Print the error message and traceback to the terminal
     print(f"Error: {message}")
     print(traceback.format_exc())
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
-    messagebox.showerror("Error", message)
-    root.destroy()
+    # PyQt5 message box
+    msg_box = QMessageBox()
+    msg_box.setIcon(QMessageBox.Critical)
+    msg_box.setText(message)
+    msg_box.setWindowTitle("Error")
+    msg_box.exec_()
 
 def handle_errors(func):
     """
