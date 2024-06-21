@@ -43,11 +43,11 @@ def show_error(message):
     print(f"Error: {message}")
     print(traceback.format_exc())
     # PyQt5 message box
-    msg_box = QMessageBox()
-    msg_box.setIcon(QMessageBox.Critical)
-    msg_box.setText(message)
-    msg_box.setWindowTitle("Error")
-    msg_box.exec_()
+    msg_box = QMessageBox()  # This creates a new QMessageBox
+    msg_box.setIcon(QMessageBox.Critical)  # This sets the icon of the message box to red cross icon
+    msg_box.setText(message)  # This sets the main text of the message box to the error message
+    msg_box.setWindowTitle("Error")  # this sets the title of the message box window to "Error"
+    msg_box.exec_()   # This executes the message box, displaying it to the user
 
 def handle_errors(func):
     """
