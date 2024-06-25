@@ -413,6 +413,9 @@ class MainWindow(QMainWindow):
         self.aut_core_geo_basket_clear_all_pushbutton.clicked.connect(self.oncgeoClearallClicked)
         self.aut_core_geo_basket_clear_pushbutton.clicked.connect(self.oncgeoClearClicked)
 
+        self.aut_core_geo_manual_basket_clear_pushbutton.clicked.connect(self.oncgeomanualClearClicked)
+        self.aut_core_geo_manual_basket_clear_all_pushbutton.clicked.connect(self.oncgeomanualClearallClicked)
+
         self.aut_core_material_add_pushButton.clicked.connect(self.oncmatMultipleClicked)
         self.aut_select_all_core_mat_pushButton.clicked.connect(self.cmatselectall)
         self.aut_core_material_data_listWidget.itemDoubleClicked.connect(self.oncmatClicked)
@@ -1097,6 +1100,16 @@ class MainWindow(QMainWindow):
             self.aut_core_geometry_basket_listWidget.addItem(self.aut_core_geometry_listWidget.currentItem().text())
         else:
             pass
+
+    def oncgeomanualClearClicked(self):
+        """Clear the selected entry."""
+        List_item = self.aut_core_geometry_manual_basket_listWidget.selectedItems()
+        for item in List_item:
+            self.aut_core_geometry_manual_basket_listWidget.takeItem(self.aut_core_geometry_manual_basket_listWidget.row(item))
+
+    def oncgeomanualClearallClicked(self):
+        """Clear all entries."""
+        self.aut_core_geometry_manual_basket_listWidget.clear()
 
     def onairgaptypeClearallClicked(self):
         """Clear all the entries."""
