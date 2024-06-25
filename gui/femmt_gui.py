@@ -642,12 +642,18 @@ class MainWindow(QMainWindow):
         :param data_matrix: Matrix containing the design parameters
         :type data_matrix: array
         """
+        # Clear the previous plot
+        matplotlib_widget.axis.clear()
+
         matplotlib_widget.axis.set(xlabel="Volume / m\u00b3", ylabel="Loss / W", title=" Volume vs Loss")
         lines = matplotlib_widget.axis.plot(data_matrix[:, 30],
                                             data_matrix[:, 28], 'o')
         mplcursors.cursor(lines)
         matplotlib_widget.figure.tight_layout()
         matplotlib_widget.axis.grid()
+
+        # Refresh the canvas
+        matplotlib_widget.canvas.draw()
 
     def plot_2d(self, matplotlib_widget, x_value: list, y_value: list, x_label: str, y_label: str, title: str,
                 plot_color: str,
