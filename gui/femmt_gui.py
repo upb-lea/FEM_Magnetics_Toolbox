@@ -766,6 +766,7 @@ class MainWindow(QMainWindow):
             # key: Used in FEMMT code
             # value: Used in GUI
             "+/- 10%": "10",
+            "+/- 20%": "20",
             "Edge distributed": "1",
             "Centre distributed": "2"
         }
