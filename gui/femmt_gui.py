@@ -14,6 +14,8 @@ import os
 from typing import List
 import PIL
 import webbrowser
+# new import for threads
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
 
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
@@ -106,6 +108,42 @@ class MatplotlibWidget(QWidget):
         self.axis_cm = self.divider.append_axes("right", size="3%", pad=0.03)
         self.sm = plt.cm.ScalarMappable(cmap=cm.inferno)
         self.figure.colorbar(mappable=self.sm, cax=self.axis_cm)
+
+class FEMSimulationWorker(QObject):
+    """
+    FEMSimulationWorker is a class designed to handle the automated design
+    in a separate thread. This prevents the GUI from hanging during long-running simulations.
+    """
+    progressChanged = pyqtSignal(int)  # Signal to update the progress bar
+    statusChanged = pyqtSignal(str)  # Signal to update the status bar message
+    simulationFinished = pyqtSignal()  # Signal to indicate that the simulation has finished
+
+    def __init__(self, ad, total_cases):
+        super().__init__()
+        self.ad = ad  # Reference to the AutomatedDesign instance
+        self.total_cases = total_cases   # Total number of cases to simulate
+
+    @pyqtSlot()
+    def run(self):
+        """
+        This method runs the FEM simulations in a loop.
+        It emits signals to update the progress and status in the main GUI thread.
+        """
+        successful_sim_counter = 0
+        # Loop through each case to run the FEM simulation
+        for count in range(self.total_cases):
+            try:
+                # Emit a signal to update the status bar
+                self.statusChanged.emit(f'Running FEM simulation for case {count + 1} of {self.total_cases}...')
+                self.ad.fem_simulation(count)
+                successful_sim_counter += 1
+                # Emit a signal to update the progress bar
+                self.progressChanged.emit(count + 1)
+            except Exception as e:
+                print(f"Error in case {count}: {e}")
+                continue
+        self.statusChanged.emit('FEM simulations completed')
+        self.simulationFinished.emit()
 
 class MainWindow(QMainWindow):
     """Global variable declaration."""
@@ -979,49 +1017,58 @@ class MainWindow(QMainWindow):
             self.progressBar.setMaximum(total_cases)
             # Initialize the progress bar to 0, indicating that no cases have been processed yet.
             self.progressBar.setValue(0)
-            # Loop through each case to run the FEM simulation.
-            for count in range(total_cases):
-                try:
-                    # Update the status bar message to show the current case.
-                    self.statusBar().showMessage(f'Running FEM simulation for case {count + 1} of {total_cases}...')
-                    # Run the FEM simulation for the current case.
-                    self.ad.fem_simulation(count)
-                    # Increment the progress bar by 1
-                    self.progressBar.setValue(count + 1)
-                except Exception as e:
-                    print(f"Error in case {count}: {e}")
-                    continue
-            # Once all cases are completed
-            self.statusBar().showMessage('FEM simulations completed')
 
-            # Save simulation settings in json file for later review
-            self.ad.save_automated_design_settings()
-            design_directory = self.aut_load_design_directoryname_lineEdit.text()
-            real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
-                working_directory=design_directory)
+            # Create a QThread and a FEMSimulationWorker
+            self.thread = QThread()
+            self.worker = FEMSimulationWorker(self.ad, total_cases)
 
-            matplotlib_widget = MatplotlibWidget()
-            matplotlib_widget.axis.clear()
-            self.layout = QVBoxLayout(self.plotwidget_5)
-            self.layout.addWidget(matplotlib_widget)
-            try:
-                matplotlib_widget.axis_cm.remove()
-            except:
-                pass
-            self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
-            percent_tolerance = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])
+            # Move the worker to the thread
+            self.worker.moveToThread(self.thread)
 
-            plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
-                                         total_cost=total_cost,
-                                         annotation_list=labels, goal_inductance=self.ad.goal_inductance,
-                                         percent_tolerance=percent_tolerance)
+            # Connect signals and slots
+            self.worker.progressChanged.connect(self.progressBar.setValue)
+            self.worker.statusChanged.connect(self.statusBar().showMessage)
+            self.worker.simulationFinished.connect(self.on_simulation_finished)
 
-            self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-                         x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
-                         annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+            # Start the worker when the thread starts
+            self.thread.started.connect(self.worker.run)
+
+            # Start the thread
+            self.thread.start()
         except Exception as e:
             raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
+    def on_simulation_finished(self):
+        """
+        This method is called when the FEM simulation process is finished.
+        It plots the volume vs loss in the FEM simulations tab.
+        """
+        self.ad.save_automated_design_settings()  # Save the automated design settings
+        design_directory = self.aut_load_design_directoryname_lineEdit.text()  # Get the directory path where the FEM simulation results are stored
+        # Load the FEM simulation results from the specified directory
+        real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
+            working_directory=design_directory)
+        # Create a new MatplotlibWidget instance for plotting
+        matplotlib_widget = MatplotlibWidget()
+        matplotlib_widget.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_5)
+        self.layout.addWidget(matplotlib_widget)
+        # Try to remove the existing colorbar axis if it exists
+        try:
+            matplotlib_widget.axis_cm.remove()
+        except:
+            pass
+        self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
+        percent_tolerance = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])
+
+        plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
+                                     total_cost=total_cost,
+                                     annotation_list=labels, goal_inductance=self.ad.goal_inductance,
+                                     percent_tolerance=percent_tolerance)
+
+        self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
+                     x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                     annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
     @handle_errors
     def load_designs(self, matplotlib_widget):
         """
