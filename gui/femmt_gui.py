@@ -755,6 +755,7 @@ class MainWindow(QMainWindow):
             annot.set_text(text)
             annot.get_bbox_patch().set_alpha(0.4)
 
+    @handle_errors
     def automated_design_func(self, matplotlib_widget):
         """Create to accept input parameters from the definitions tab, to create matrix with all input combinations.
 
@@ -897,62 +898,65 @@ class MainWindow(QMainWindow):
             pass
 
         fem_directory = self.FEM_sim_working_dir_LineEdit.text()
+        try:
+            if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                self.ad = AutomatedDesign(working_directory=fem_directory,
+                                          magnetic_component='inductor',
+                                          target_inductance=goal_inductance,
+                                          frequency=self.freq,
+                                          target_inductance_percent_tolerance=L_tolerance_percent,
+                                          winding_scheme=winding_scheme,
+                                          peak_current=self.i_max,
+                                          percent_of_flux_density_saturation=percent_of_B_sat,
+                                          percent_of_total_loss=percent_of_total_loss,
+                                          database_core_names=db_core_names,
+                                          database_litz_names=litz_names,
+                                          solid_conductor_r=solid_conductor_r,
+                                          manual_core_inner_diameter=manual_core_w,
+                                          manual_window_h=manual_window_h,
+                                          manual_window_w=manual_window_w,
+                                          no_of_turns=no_of_turns,
+                                          n_air_gaps=n_air_gaps,
+                                          air_gap_height=air_gap_height,
+                                          air_gap_position=air_gap_position,
+                                          core_material=selected_materials,
+                                          mult_air_gap_type=['center_distributed'],
+                                          top_core_insulation=comma_str_to_point_float(
+                                              self.aut_isolation_core2cond_top_lineEdit.text()),
+                                          bot_core_insulation=comma_str_to_point_float(
+                                              self.aut_isolation_core2cond_bot_lineEdit.text()),
+                                          left_core_insulation=comma_str_to_point_float(
+                                              self.aut_isolation_core2cond_inner_lineEdit.text()),
+                                          right_core_insulation=comma_str_to_point_float(
+                                              self.aut_isolation_core2cond_outer_lineEdit.text()),
+                                          inner_winding_insulation=comma_str_to_point_float(
+                                              self.aut_isolation_p2p_lineEdit.text()),
+                                          temperature=comma_str_to_point_float(self.aut_temp_lineEdit.text()),
+                                          manual_litz_conductor_r=[],
+                                          manual_litz_strand_r=[],
+                                          manual_litz_strand_n=[],
+                                          manual_litz_fill_factor=[])
 
-        if self.aut_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-            self.ad = AutomatedDesign(working_directory=fem_directory,
-                                      magnetic_component='inductor',
-                                      target_inductance=goal_inductance,
-                                      frequency=self.freq,
-                                      target_inductance_percent_tolerance=L_tolerance_percent,
-                                      winding_scheme=winding_scheme,
-                                      peak_current=self.i_max,
-                                      percent_of_flux_density_saturation=percent_of_B_sat,
-                                      percent_of_total_loss=percent_of_total_loss,
-                                      database_core_names=db_core_names,
-                                      database_litz_names=litz_names,
-                                      solid_conductor_r=solid_conductor_r,
-                                      manual_core_inner_diameter=manual_core_w,
-                                      manual_window_h=manual_window_h,
-                                      manual_window_w=manual_window_w,
-                                      no_of_turns=no_of_turns,
-                                      n_air_gaps=n_air_gaps,
-                                      air_gap_height=air_gap_height,
-                                      air_gap_position=air_gap_position,
-                                      core_material=selected_materials,
-                                      mult_air_gap_type=['center_distributed'],
-                                      top_core_insulation=comma_str_to_point_float(
-                                          self.aut_isolation_core2cond_top_lineEdit.text()),
-                                      bot_core_insulation=comma_str_to_point_float(
-                                          self.aut_isolation_core2cond_bot_lineEdit.text()),
-                                      left_core_insulation=comma_str_to_point_float(
-                                          self.aut_isolation_core2cond_inner_lineEdit.text()),
-                                      right_core_insulation=comma_str_to_point_float(
-                                          self.aut_isolation_core2cond_outer_lineEdit.text()),
-                                      inner_winding_insulation=comma_str_to_point_float(
-                                          self.aut_isolation_p2p_lineEdit.text()),
-                                      temperature=comma_str_to_point_float(self.aut_temp_lineEdit.text()),
-                                      manual_litz_conductor_r=[],
-                                      manual_litz_strand_r=[],
-                                      manual_litz_strand_n=[],
-                                      manual_litz_fill_factor=[])
+            # Create csv file of data_matrix_fem which consist of all the fem simulation cases details
+            self.ad.write_data_matrix_fem_to_csv()
 
-        # Create csv file of data_matrix_fem which consist of all the fem simulation cases details
-        self.ad.write_data_matrix_fem_to_csv()
+            self.plot_volume_loss(self.ad.data_matrix_4, matplotlib_widget)
 
-        self.plot_volume_loss(self.ad.data_matrix_4, matplotlib_widget)
+            n_cases_0 = len(self.ad.data_matrix_0)
+            self.ncases0_label.setText(f"{n_cases_0}")
 
-        n_cases_0 = len(self.ad.data_matrix_0)
-        self.ncases0_label.setText(f"{n_cases_0}")
+            n_cases_2 = len(self.ad.data_matrix_2)
+            self.ncases2_label.setText(f"{n_cases_2}")
 
-        n_cases_2 = len(self.ad.data_matrix_2)
-        self.ncases2_label.setText(f"{n_cases_2}")
+            n_cases_3 = len(self.ad.data_matrix_3)
+            self.ncases3_label.setText(f"{n_cases_3}")
 
-        n_cases_3 = len(self.ad.data_matrix_3)
-        self.ncases3_label.setText(f"{n_cases_3}")
+            n_cases_FEM = len(self.ad.data_matrix_fem)
+            self.fem_cases_label.setText(f"{n_cases_FEM}")
+        except Exception as e:
+            raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
-        n_cases_FEM = len(self.ad.data_matrix_fem)
-        self.fem_cases_label.setText(f"{n_cases_FEM}")
-
+    @handle_errors
     def automated_design_fem_sim(self, matplotlib_widget):
         """
         Run the fem simulations of the filtered cases from reluctance models tab. Plot the volume vs loss in FEM simulations tab.
@@ -960,66 +964,88 @@ class MainWindow(QMainWindow):
         :param matplotlib_widget: To plot volume vs loss in FEM simulations tab
         """
         # ##########################################   {FEM_SIMULATION}   ##################################################
-
-        # Run FEM simulation of "self.data_matrix_fem"
-        self.ad.fem_simulation()
-
-        # Save simulation settings in json file for later review
-        self.ad.save_automated_design_settings()
-        design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
-            working_directory=design_directory)
-
-        matplotlib_widget = MatplotlibWidget()
-        matplotlib_widget.axis.clear()
-        self.layout = QVBoxLayout(self.plotwidget_5)
-        self.layout.addWidget(matplotlib_widget)
         try:
-            matplotlib_widget.axis_cm.remove()
-        except:
-            pass
-        self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
-        percent_tolerance = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])
+            if not hasattr(self.ad, 'fem_simulation'):
+                raise ValueError("The reluctance models should be run first")
 
-        plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
-                                     total_cost=total_cost,
-                                     annotation_list=labels, goal_inductance=self.ad.goal_inductance,
-                                     percent_tolerance=percent_tolerance)
+            # Run FEM simulation of "self.data_matrix_fem"
+            self.ad.fem_simulation()
 
-        self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-                     x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
-                     annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+            # Save simulation settings in json file for later review
+            self.ad.save_automated_design_settings()
+            design_directory = self.aut_load_design_directoryname_lineEdit.text()
+            real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
+                working_directory=design_directory)
 
+            matplotlib_widget = MatplotlibWidget()
+            matplotlib_widget.axis.clear()
+            self.layout = QVBoxLayout(self.plotwidget_5)
+            self.layout.addWidget(matplotlib_widget)
+            try:
+                matplotlib_widget.axis_cm.remove()
+            except:
+                pass
+            self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
+            percent_tolerance = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])
+
+            plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
+                                         total_cost=total_cost,
+                                         annotation_list=labels, goal_inductance=self.ad.goal_inductance,
+                                         percent_tolerance=percent_tolerance)
+
+            self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
+                         x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                         annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+        except Exception as e:
+            raise RuntimeError(f"Error during simulation: {str(e)}") from e
+
+    @handle_errors
     def load_designs(self, matplotlib_widget):
         """
          Plot the volume vs loss from the already run files of FEM simulations from the directory path, in the Load(results) tab.
 
         :param matplotlib_widget: To plot volume vs loss in the Load(results) tab
         """
-        matplotlib_widget = MatplotlibWidget()
-        matplotlib_widget.axis.clear()
-        self.layout = QVBoxLayout(self.plotwidget_9)
-        self.layout.addWidget(matplotlib_widget)
         try:
-            matplotlib_widget.axis_cm.remove()
-        except:
-            pass
+            matplotlib_widget = MatplotlibWidget()
+            matplotlib_widget.axis.clear()
+            self.layout = QVBoxLayout(self.plotwidget_9)
+            self.layout.addWidget(matplotlib_widget)
+            try:
+                matplotlib_widget.axis_cm.remove()
+            except:
+                pass
 
-        design_directory = self.aut_load_design_directoryname_lineEdit.text()
-        real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
-            working_directory=design_directory)
+            design_directory = self.aut_load_design_directoryname_lineEdit.text()
+            if not design_directory:
+                raise ValueError("The directory path is empty. Please specify a valid directory path.")
+            # Construct the path to the fem_simulation_results directory
+            results_directory_path = os.path.join(design_directory, 'fem_simulation_results')
 
-        self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
-        percent_tolerance = int(self.trans_dict[self.aut_load_tolerance_val_comboBox.currentText()])
+            # Check if the fem_simulation_results directory exists
+            if not os.path.exists(results_directory_path):
+                raise FileNotFoundError("The fem_simulation_results directory does not exist. Please run the simulations first.")
 
-        plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
-                                     total_cost=total_cost,
-                                     annotation_list=labels, goal_inductance=0.00012,
-                                     percent_tolerance=percent_tolerance)
+            # Check if the fem_simulation_results directory is empty
+            if not os.listdir(results_directory_path):
+                raise FileNotFoundError("The fem_simulation_results directory is empty. Please run the simulations first.")
 
-        self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-                     x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
-                     annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+            real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
+                working_directory=design_directory)
+
+            self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
+            percent_tolerance = int(self.trans_dict[self.aut_load_tolerance_val_comboBox.currentText()])
+
+            plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
+                                         total_cost=total_cost,
+                                         annotation_list=labels, goal_inductance=0.00012,
+                                         percent_tolerance=percent_tolerance)
+
+            self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
+                         x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                         annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+        except Exception as e:
+            raise RuntimeError(f"Error during loading: {str(e)}") from e
 
     def check_onelab_config(self, geo: fmt.MagneticComponent):
         """Check the onlab configuration to enter or read the onelab filepath."""
