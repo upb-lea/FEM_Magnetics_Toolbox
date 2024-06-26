@@ -978,11 +978,13 @@ class MainWindow(QMainWindow):
             matplotlib_widget.axis_cm.remove()
         except:
             pass
+        self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
+        percent_tolerance = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])
 
         plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
                                      total_cost=total_cost,
                                      annotation_list=labels, goal_inductance=self.ad.goal_inductance,
-                                     percent_tolerance=20)
+                                     percent_tolerance=percent_tolerance)
 
         self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
                      x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
@@ -1007,10 +1009,13 @@ class MainWindow(QMainWindow):
         real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
             working_directory=design_directory)
 
+        self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
+        percent_tolerance = int(self.trans_dict[self.aut_load_tolerance_val_comboBox.currentText()])
+
         plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
                                      total_cost=total_cost,
                                      annotation_list=labels, goal_inductance=0.00012,
-                                     percent_tolerance=20)
+                                     percent_tolerance=percent_tolerance)
 
         self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
                      x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
