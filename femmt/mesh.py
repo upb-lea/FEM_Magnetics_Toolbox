@@ -1264,12 +1264,12 @@ class Mesh:
             # Core point and line tags
             core_point_tags = []
             core_line_tags = []
-            if self.model.air_gaps.number == 0:  # TODO...
-                core_point_tags = [4, 3, 2, 1]
-                core_line_tags = [4, 3, 2]
-            else:
-                core_point_tags = [7, 6, 5, 4, 3, 2]
-                core_line_tags = [7, 6, 5, 4, 3]
+            if self.model.air_gaps.number == 0:  # If no airgaps are present
+                core_point_tags = [6, 5, 4, 3, 2, 1]  # Point tags for the core
+                core_line_tags = [6, 5, 4, 3, 2]  # Line tags for the core
+            else:  # If airgaps are present
+                core_point_tags = [7, 6, 5, 4, 3, 2]  # Point tags for the core with airgaps
+                core_line_tags = [7, 6, 5, 4, 3]  # Line tags for the core with airgaps
 
             tl_point = core_point_tags[0]  # Top left - default 5
             tr_point = core_point_tags[2]  # Top right - default 4
