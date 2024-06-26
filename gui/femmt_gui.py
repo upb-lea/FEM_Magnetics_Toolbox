@@ -137,6 +137,12 @@ class MainWindow(QMainWindow):
         # self.setWindowIcon(QIcon('Images\\logo.png'))
         self.setWindowTitle(_translate("MainWindow", "FEM Magnetics Toolbox"))
         pixmap = QPixmap('ferriteCore.png')
+        # Initialize the status bar and progress bar
+        self.statusBar().showMessage('Ready')
+        self.progressBar = QtWidgets.QProgressBar()
+        self.statusBar().addPermanentWidget(self.progressBar)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setValue(0)
         # self.coreImageLabel.setPixmap(pixmap)
         # self.imageBoxImageLabel.setPixmap(pixmap)
         self.translation_dict = {
@@ -968,8 +974,25 @@ class MainWindow(QMainWindow):
             if not hasattr(self.ad, 'fem_simulation'):
                 raise ValueError("The reluctance models should be run first")
 
-            # Run FEM simulation of "self.data_matrix_fem"
-            self.ad.fem_simulation()
+            # Set the maximum value of the progress bar to the total number of cases to simulate.
+            total_cases = len(self.ad.data_matrix_fem)
+            self.progressBar.setMaximum(total_cases)
+            # Initialize the progress bar to 0, indicating that no cases have been processed yet.
+            self.progressBar.setValue(0)
+            # Loop through each case to run the FEM simulation.
+            for count in range(total_cases):
+                try:
+                    # Update the status bar message to show the current case.
+                    self.statusBar().showMessage(f'Running FEM simulation for case {count + 1} of {total_cases}...')
+                    # Run the FEM simulation for the current case.
+                    self.ad.fem_simulation(count)
+                    # Increment the progress bar by 1
+                    self.progressBar.setValue(count + 1)
+                except Exception as e:
+                    print(f"Error in case {count}: {e}")
+                    continue
+            # Once all cases are completed
+            self.statusBar().showMessage('FEM simulations completed')
 
             # Save simulation settings in json file for later review
             self.ad.save_automated_design_settings()
