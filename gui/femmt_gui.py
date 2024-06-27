@@ -2357,7 +2357,8 @@ class MainWindow(QMainWindow):
         self.md_isolation_p2s_label.setVisible(status)
         self.md_isolation_s2p_label.setVisible(status)
 
-    def md_gmsh_pre_visualisation(self):
+    @handle_errors
+    def md_gmsh_pre_visualisation(self, *args, **kwargs):
         """Pre-visualize when update preview button is pressed in the definitions tab."""
         try:
             # Hide the progressBar if it exists.
