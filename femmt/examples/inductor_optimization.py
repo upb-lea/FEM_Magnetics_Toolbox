@@ -923,7 +923,7 @@ class AutomatedDesign:
         successful_sim_counter = 0
         # If count is provided, run only the specific case; otherwise, run all cases.
         cases = range(len(self.data_matrix_fem)) if count is None else [count]
-        #for count, _ in enumerate(self.data_matrix_fem):
+        # for count, _ in enumerate(self.data_matrix_fem):
         for count in cases:
             # MagneticComponent class object
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
