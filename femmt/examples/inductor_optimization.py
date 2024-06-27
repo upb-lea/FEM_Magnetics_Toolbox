@@ -914,15 +914,17 @@ class AutomatedDesign:
 
         return return_data_matrix
 
-    def fem_simulation(self):
+    def fem_simulation(self, count=None):
         """Perform FEM simulation of the design cases. Save the result in the given working directory for later analysis."""
         start_time = time.time()
 
         data_files = []
         file_names = []
         successful_sim_counter = 0
-        for count, _ in enumerate(self.data_matrix_fem):
-
+        # If count is provided, run only the specific case; otherwise, run all cases.
+        cases = range(len(self.data_matrix_fem)) if count is None else [count]
+        # for count, _ in enumerate(self.data_matrix_fem):
+        for count in cases:
             # MagneticComponent class object
             geo = fmt.MagneticComponent(component_type=self.component_type_dict[self.magnetic_component],
                                         working_directory=self.femmt_working_directory, verbosity=fmt.Verbosity.Silent)

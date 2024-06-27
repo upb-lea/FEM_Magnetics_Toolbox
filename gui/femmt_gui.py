@@ -14,6 +14,8 @@ import os
 from typing import List
 import PIL
 import webbrowser
+# new import for threads
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QCoreApplication
 
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
@@ -107,6 +109,37 @@ class MatplotlibWidget(QWidget):
         self.sm = plt.cm.ScalarMappable(cmap=cm.inferno)
         self.figure.colorbar(mappable=self.sm, cax=self.axis_cm)
 
+class FEMSimulationWorker(QObject):
+    """FEMSimulationWorker is designed to handle the automated design in a separate thread. This prevents the GUI from hanging during running simulations."""
+
+    progressChanged = pyqtSignal(int)  # Signal to update the progress bar
+    statusChanged = pyqtSignal(str)  # Signal to update the status bar message
+    simulationFinished = pyqtSignal()  # Signal to indicate that the simulation has finished
+
+    def __init__(self, ad, total_cases):
+        super().__init__()
+        self.ad = ad  # Reference to the AutomatedDesign instance
+        self.total_cases = total_cases   # Total number of cases to simulate
+
+    @pyqtSlot()
+    def run(self):
+        """Update the progress and status in the main GUI thread."""
+        successful_sim_counter = 0
+        # Loop through each case to run the FEM simulation
+        for count in range(self.total_cases):
+            try:
+                # Emit a signal to update the status bar
+                self.statusChanged.emit(f'Running FEM simulation for case {count + 1} of {self.total_cases}...')
+                self.ad.fem_simulation(count)
+                successful_sim_counter += 1
+                # Emit a signal to update the progress bar
+                self.progressChanged.emit(count + 1)
+            except Exception as e:
+                print(f"Error in case {count}: {e}")
+                continue
+        self.statusChanged.emit('FEM simulations completed')
+        self.simulationFinished.emit()
+
 class MainWindow(QMainWindow):
     """Global variable declaration."""
 
@@ -137,6 +170,12 @@ class MainWindow(QMainWindow):
         # self.setWindowIcon(QIcon('Images\\logo.png'))
         self.setWindowTitle(_translate("MainWindow", "FEM Magnetics Toolbox"))
         pixmap = QPixmap('ferriteCore.png')
+        # Initialize the status bar and progress bar
+        self.statusBar().showMessage('Ready')
+        self.progressBar = QtWidgets.QProgressBar()
+        self.statusBar().addPermanentWidget(self.progressBar)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setValue(0)
         # self.coreImageLabel.setPixmap(pixmap)
         # self.imageBoxImageLabel.setPixmap(pixmap)
         self.translation_dict = {
@@ -583,7 +622,7 @@ class MainWindow(QMainWindow):
 
         :raises ValueError: If any required field is empty.
         """
-        if self.md_action_run_simulation:
+        if self.md_action_run_simulation and self.therm_simulation:
             common_fields = [
                 (self.md_core_width_lineEdit, "The core inner diameter field must be filled out."),
                 (self.md_window_height_lineEdit, "The window height must be filled out."),
@@ -764,6 +803,15 @@ class MainWindow(QMainWindow):
         :param matplotlib_widget: To plot volume vs loss in reluctance models tab
         """
         # ########################################   {DESIGN PARAMETERS}   #################################################
+        # Hide the progressBar if it exists.
+        try:
+            self.progressBar.hide()
+        except:
+            pass
+        # show status bar
+        self.statusBar().showMessage('Reluctance Models running...')
+        QCoreApplication.processEvents()
+        # Reluctance model
         goal_inductance = comma_str_to_point_float(
             self.aut_goal_inductance_val_lineEdit.text())  # Automated-design reluctance-model target inductance
         self.trans_dict = {
@@ -953,6 +1001,8 @@ class MainWindow(QMainWindow):
 
             n_cases_FEM = len(self.ad.data_matrix_fem)
             self.fem_cases_label.setText(f"{n_cases_FEM}")
+            # show completed
+            self.statusBar().showMessage('Reluctance Models completed')
         except Exception as e:
             raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
@@ -965,39 +1015,73 @@ class MainWindow(QMainWindow):
         """
         # ##########################################   {FEM_SIMULATION}   ##################################################
         try:
+            # Ensure the progress bar is visible at the start
+            self.progressBar.show()
+            # if
             if not hasattr(self.ad, 'fem_simulation'):
                 raise ValueError("The reluctance models should be run first")
 
-            # Run FEM simulation of "self.data_matrix_fem"
-            self.ad.fem_simulation()
+            # Set the maximum value of the progress bar to the total number of cases to simulate.
+            total_cases = len(self.ad.data_matrix_fem)
+            self.progressBar.setMaximum(total_cases)
+            # Initialize the progress bar to 0, indicating that no cases have been processed yet.
+            self.progressBar.setValue(0)
 
-            # Save simulation settings in json file for later review
-            self.ad.save_automated_design_settings()
-            design_directory = self.aut_load_design_directoryname_lineEdit.text()
-            real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
-                working_directory=design_directory)
+            # Create a QThread and a FEMSimulationWorker
+            self.thread = QThread()
+            self.worker = FEMSimulationWorker(self.ad, total_cases)
 
-            matplotlib_widget = MatplotlibWidget()
-            matplotlib_widget.axis.clear()
-            self.layout = QVBoxLayout(self.plotwidget_5)
-            self.layout.addWidget(matplotlib_widget)
-            try:
-                matplotlib_widget.axis_cm.remove()
-            except:
-                pass
-            self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
-            percent_tolerance = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])
+            # Move the worker to the thread
+            self.worker.moveToThread(self.thread)
 
-            plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
-                                         total_cost=total_cost,
-                                         annotation_list=labels, goal_inductance=self.ad.goal_inductance,
-                                         percent_tolerance=percent_tolerance)
+            # Connect signals and slots
+            self.worker.progressChanged.connect(self.progressBar.setValue)
+            self.worker.statusChanged.connect(self.statusBar().showMessage)
+            self.worker.simulationFinished.connect(self.on_simulation_finished)
 
-            self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
-                         x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
-                         annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+            # Start the worker when the thread starts
+            self.thread.started.connect(self.worker.run)
+
+            # Start the thread
+            self.thread.start()
         except Exception as e:
             raise RuntimeError(f"Error during simulation: {str(e)}") from e
+
+    def on_simulation_finished(self):
+        """
+        FEM simulation process is finished.
+
+        Plots the volume vs loss in the FEM simulations tab.
+        """
+        self.ad.save_automated_design_settings()  # Save the automated design settings
+        design_directory = self.aut_load_design_directoryname_lineEdit.text()  # Get the directory path where the FEM simulation results are stored
+        # Load the FEM simulation results from the specified directory
+        real_inductance, total_loss, total_volume, total_cost, labels, automated_design_settings = load_fem_simulation_results(
+            working_directory=design_directory)
+        # Create a new MatplotlibWidget instance for plotting
+        matplotlib_widget = MatplotlibWidget()
+        matplotlib_widget.axis.clear()
+        self.layout = QVBoxLayout(self.plotwidget_5)
+        self.layout.addWidget(matplotlib_widget)
+        # Try to remove the existing colorbar axis if it exists
+        try:
+            matplotlib_widget.axis_cm.remove()
+        except:
+            pass
+        self.trans_dict = {"+/- 10%": "10", "+/- 20%": "20"}
+        percent_tolerance = int(self.trans_dict[self.aut_rel_tolerance_val_comboBox.currentText()])
+
+        plot_data = filter_after_fem(inductance=real_inductance, total_loss=total_loss, total_volume=total_volume,
+                                     total_cost=total_cost,
+                                     annotation_list=labels, goal_inductance=self.ad.goal_inductance,
+                                     percent_tolerance=percent_tolerance)
+
+        self.plot_2d(matplotlib_widget, x_value=plot_data[:, 1], y_value=plot_data[:, 2], z_value=plot_data[:, 3],
+                     x_label='Volume / m\u00b3', y_label='Loss / W', z_label='Cost / \u20ac', title='Volume vs Loss',
+                     annotations=plot_data[:, 4], plot_color='RdYlGn_r', inductance_value=plot_data[:, 0])
+
+        # self.progressBar.setValue(0)
+        # self.progressBar.hide()
 
     @handle_errors
     def load_designs(self, matplotlib_widget):
@@ -1007,6 +1091,10 @@ class MainWindow(QMainWindow):
         :param matplotlib_widget: To plot volume vs loss in the Load(results) tab
         """
         try:
+            # hide the progressBar.
+            self.progressBar.hide()
+            # Indicate that the design loading process has started
+            self.statusBar().showMessage('Loading design...')
             matplotlib_widget = MatplotlibWidget()
             matplotlib_widget.axis.clear()
             self.layout = QVBoxLayout(self.plotwidget_9)
@@ -1502,6 +1590,14 @@ class MainWindow(QMainWindow):
         :param matplotlib_widget3: for the third plot of relative power loss vs frequency
         :param matplotlib_widget4: for the fourth plot of B vs H
         """
+        # Hide the progressBar if it exists.
+        try:
+            self.progressBar.hide()
+        except:
+            pass
+        # show a statusbar while Datasheet-Datasheet is running
+        self.statusBar().showMessage('Datasheet-Datasheet running...')
+        QCoreApplication.processEvents()
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget)
         self.layout.addWidget(matplotlib_widget1)
@@ -1601,6 +1697,8 @@ class MainWindow(QMainWindow):
         matplotlib_widget4.axis.grid()
         matplotlib_widget4.figure.canvas.draw_idle()
         matplotlib_widget4.figure.tight_layout()
+        # Datasheet-Datasheet is finished
+        self.statusBar().showMessage('Datasheet-Datasheet completed')
 
     def datupdateraph2(self, matplotlib_widget1, matplotlib_widget2):
         """
@@ -1609,6 +1707,14 @@ class MainWindow(QMainWindow):
         :param matplotlib_widget1: Fot the first plot of uR/u0 vs B
         :param matplotlib_widget2: for the second plot of uR/u0 vs B
         """
+        # Hide the progressBar if it exists.
+        try:
+            self.progressBar.hide()
+        except:
+            pass
+        # show a statusbar while Measurement-Measurement is running
+        self.statusBar().showMessage('Measurement-Measurement running...')
+        QCoreApplication.processEvents()
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_13)
         self.layout.addWidget(matplotlib_widget1)
@@ -1686,11 +1792,22 @@ class MainWindow(QMainWindow):
         matplotlib_widget2.figure.canvas.draw_idle()
         matplotlib_widget2.figure.tight_layout()
 
+        # Measurement-Measurement is finished
+        self.statusBar().showMessage('Measurement-Measurement completed')
+
     def datupdateraph3(self, matplotlib_widget):
         """Datasheet-Measurement plot.
 
         :param matplotlib_widget: To plot relative power loss vs B
         """
+        # Hide the progressBar if it exists.
+        try:
+            self.progressBar.hide()
+        except:
+            pass
+        # show a statusbar while Datasheet-Measurement is running
+        self.statusBar().showMessage('Datasheet-Measurement running...')
+        QCoreApplication.processEvents()
         matplotlib_widget.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_15)
         self.layout.addWidget(matplotlib_widget)
@@ -1710,6 +1827,9 @@ class MainWindow(QMainWindow):
         matplotlib_widget.axis.grid()
         matplotlib_widget.figure.canvas.draw_idle()
         matplotlib_widget.figure.tight_layout()
+
+        # Datasheet-Measurement is finished
+        self.statusBar().showMessage('Datasheet-Measurement completed')
 
     def datupdateraph1_config(self):
         """Call datupdateraph1, when Update preview button is pressed in Datasheet-Datasheet tab."""
@@ -2237,45 +2357,61 @@ class MainWindow(QMainWindow):
         self.md_isolation_p2s_label.setVisible(status)
         self.md_isolation_s2p_label.setVisible(status)
 
-    def md_gmsh_pre_visualisation(self):
+    @handle_errors
+    def md_gmsh_pre_visualisation(self, *args, **kwargs):
         """Pre-visualize when update preview button is pressed in the definitions tab."""
-        geo = self.md_setup_geometry()
-        print(f"geo:{geo}")
+        try:
+            # Hide the progressBar if it exists.
+            try:
+                self.progressBar.hide()
+            except:
+                pass
+            # show a statusbar while Pre-visualize running
+            self.statusBar().showMessage('Pre-visualize running...')
+            QCoreApplication.processEvents()
 
-        # geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
-        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
-                         save_png=True)
-        print(f"geo.file_data.hybrid_color_visualize_file: {geo.file_data.hybrid_color_visualize_file}")
-        image_pre_visualisation = PIL.Image.open(geo.file_data.hybrid_color_visualize_file)
+            geo = self.md_setup_geometry()
+            print(f"geo:{geo}")
 
-        px = image_pre_visualisation.load()
-        image_width, image_height = image_pre_visualisation.size
+            # geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
+            geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
+                             save_png=True)
+            print(f"geo.file_data.hybrid_color_visualize_file: {geo.file_data.hybrid_color_visualize_file}")
+            image_pre_visualisation = PIL.Image.open(geo.file_data.hybrid_color_visualize_file)
 
-        for cut_x_left in range(0, image_width):
-            if px[cut_x_left, image_height / 2] != (255, 255, 255):
-                cut_x_left -= 1
-                break
-        for cut_x_right in reversed(range(0, image_width)):
-            if px[cut_x_right, image_height / 2] != (255, 255, 255):
-                cut_x_right += 1
-                break
+            px = image_pre_visualisation.load()
+            image_width, image_height = image_pre_visualisation.size
 
-        for cut_y_bot in reversed(range(0, image_height)):
-            if px[image_width / 2, cut_y_bot] != (255, 255, 255):
-                cut_y_bot += 1
-                break
-        for cut_y_top in range(0, image_height):
-            if px[image_width / 2, cut_y_top] != (255, 255, 255):
-                cut_y_top -= 1
-                break
+            for cut_x_left in range(0, image_width):
+                if px[cut_x_left, image_height / 2] != (255, 255, 255):
+                    cut_x_left -= 1
+                    break
+            for cut_x_right in reversed(range(0, image_width)):
+                if px[cut_x_right, image_height / 2] != (255, 255, 255):
+                    cut_x_right += 1
+                    break
 
-        im_crop = image_pre_visualisation.crop((cut_x_left, cut_y_top, cut_x_right, cut_y_bot))
-        im_crop.save(geo.file_data.hybrid_color_visualize_file, quality=95)
+            for cut_y_bot in reversed(range(0, image_height)):
+                if px[image_width / 2, cut_y_bot] != (255, 255, 255):
+                    cut_y_bot += 1
+                    break
+            for cut_y_top in range(0, image_height):
+                if px[image_width / 2, cut_y_top] != (255, 255, 255):
+                    cut_y_top -= 1
+                    break
 
-        pixmap = QPixmap(geo.file_data.hybrid_color_visualize_file)
-        self.md_gmsh_visualisation_QLabel.setPixmap(pixmap)
-        self.md_gmsh_visualisation_QLabel.setMask(pixmap.mask())
-        self.md_gmsh_visualisation_QLabel.show()
+            im_crop = image_pre_visualisation.crop((cut_x_left, cut_y_top, cut_x_right, cut_y_bot))
+            im_crop.save(geo.file_data.hybrid_color_visualize_file, quality=95)
+
+            pixmap = QPixmap(geo.file_data.hybrid_color_visualize_file)
+            self.md_gmsh_visualisation_QLabel.setPixmap(pixmap)
+            self.md_gmsh_visualisation_QLabel.setMask(pixmap.mask())
+            self.md_gmsh_visualisation_QLabel.show()
+
+            # complete Pre-visualize
+            self.statusBar().showMessage('Pre-visualize completed')
+        except Exception as e:
+            raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
     def md_set_core_geometry_from_database(self):
         """Set a core geometry for the material database."""
@@ -3376,6 +3512,13 @@ class MainWindow(QMainWindow):
         print(winding1_frequency_list)
         print(winding1_amplitude_list)
         try:
+            # Hide the progressBar if it exists
+            try:
+                self.progressBar.hide()
+            except:
+                pass
+            self.statusBar().showMessage('Simulation running...')
+            QCoreApplication.processEvents()
             if len(winding1_frequency_list) == 1:
                 if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
                     geo.single_simulation(freq=winding1_frequency_list[0],
@@ -3420,6 +3563,7 @@ class MainWindow(QMainWindow):
         # Read back results
         # -----------------------------------------------
         self.md_simulation_QLabel.setText('simulation complete.')
+        self.statusBar().showMessage('Simulation completed')
         loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation, show_plot=False)
 
         for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
@@ -3460,115 +3604,133 @@ class MainWindow(QMainWindow):
                 winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
                 inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
 
-    def inductancecalc(self):
+    @handle_errors
+    def inductancecalc(self, *args, **kwargs):
         """Calculate inductance from given geometries."""
-        air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
-        air_gap_height_array = []
-        air_gap_position_array = []
-        air_gap_position_tag_array = []
+        # check if the necessary fields are not empty
+        self.validate_fields()
+        try:
+            # Hide progressBar if it exists.
+            try:
+                self.progressBar.hide()
+            except:
+                pass
+            # show a statusbar while Inductance Value is running
+            self.statusBar().showMessage('Inductance Value running...')
+            QCoreApplication.processEvents()
+            air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
+            air_gap_height_array = []
+            air_gap_position_array = []
+            air_gap_position_tag_array = []
 
-        if air_gap_count >= 1:
-            md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
-            md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
+            if air_gap_count >= 1:
+                md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
+                md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_1_height)
-            air_gap_position_array.append(md_air_gap_1_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_1_height)
+                air_gap_position_array.append(md_air_gap_1_position)
+                air_gap_position_tag_array.append(0)
 
-        if air_gap_count >= 2:
-            md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
-            md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
+            if air_gap_count >= 2:
+                md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
+                md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_2_height)
-            air_gap_position_array.append(md_air_gap_2_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_2_height)
+                air_gap_position_array.append(md_air_gap_2_position)
+                air_gap_position_tag_array.append(0)
 
-        if air_gap_count >= 3:
-            md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
-            md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
+            if air_gap_count >= 3:
+                md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
+                md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_3_height)
-            air_gap_position_array.append(md_air_gap_3_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_3_height)
+                air_gap_position_array.append(md_air_gap_3_position)
+                air_gap_position_tag_array.append(0)
 
-        if air_gap_count >= 4:
-            md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
-            md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
+            if air_gap_count >= 4:
+                md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
+                md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_4_height)
-            air_gap_position_array.append(md_air_gap_4_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_4_height)
+                air_gap_position_array.append(md_air_gap_4_position)
+                air_gap_position_tag_array.append(0)
 
-        if air_gap_count >= 5:
-            md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
-            md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
+            if air_gap_count >= 5:
+                md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
+                md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_5_height)
-            air_gap_position_array.append(md_air_gap_5_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_5_height)
+                air_gap_position_array.append(md_air_gap_5_position)
+                air_gap_position_tag_array.append(0)
 
-        self.core_w = comma_str_to_point_float(self.md_core_width_lineEdit.text())
-        self.window_w = comma_str_to_point_float(self.md_window_width_lineEdit.text())
-        self.window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text())
-        n_turns = int(self.md_winding1_turns_lineEdit.text())
-        method = (self.md_air_gap_placement_method_comboBox.currentText())
-        # murel = database.get_initial_permeability(self.md_core_material_comboBox.currentText())
-        # murel = database.get_initial_permeability("N95")
-        air_gap_h = self.md_air_gap_1_length_lineEdit.text()
-        air_gap_position = self.md_air_gap_1_position_lineEdit.text()
+            self.core_w = comma_str_to_point_float(self.md_core_width_lineEdit.text())
+            self.window_w = comma_str_to_point_float(self.md_window_width_lineEdit.text())
+            self.window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text())
+            n_turns = int(self.md_winding1_turns_lineEdit.text())
+            method = (self.md_air_gap_placement_method_comboBox.currentText())
+            # murel = database.get_initial_permeability(self.md_core_material_comboBox.currentText())
+            # murel = database.get_initial_permeability("N95")
+            air_gap_h = self.md_air_gap_1_length_lineEdit.text()
+            air_gap_position = self.md_air_gap_1_position_lineEdit.text()
 
-        # material_names = []
-        # material_names.append(self.md_core_material_comboBox.currentText())
-        # mu_rel_val = [database.get_material_attribute(material_name=material_name, attribute="initial_permeability")
-        #               for material_name in material_names]
-        # mu_rel = [int(item) for item in mu_rel_val]
+            # material_names = []
+            # material_names.append(self.md_core_material_comboBox.currentText())
+            # mu_rel_val = [database.get_material_attribute(material_name=material_name, attribute="initial_permeability")
+            #               for material_name in material_names]
+            # mu_rel = [int(item) for item in mu_rel_val]
 
-        # Fetch the current material name from the combobox
-        material_name_str = self.md_core_material_comboBox.currentText()
-        # Convert the string to enum
-        material_enum = self.string_to_material_enum(material_name_str)
+            # Fetch the current material name from the combobox
+            material_name_str = self.md_core_material_comboBox.currentText()
+            # Convert the string to enum
+            material_enum = self.string_to_material_enum(material_name_str)
 
-        # initial permeability from the database using the enum material
-        # No need for a loop as the user can choose only one material in manual design
-        mu_rel_val = database.get_material_attribute(material_name=material_enum, attribute="initial_permeability")
-        mu_rel = [int(mu_rel_val)]
+            # initial permeability from the database using the enum material
+            # No need for a loop as the user can choose only one material in manual design
+            mu_rel_val = database.get_material_attribute(material_name=material_enum, attribute="initial_permeability")
+            mu_rel = [int(mu_rel_val)]
 
-        print(f"core_inner_diameter: {[self.core_w]}")
-        print(f"window_h: {[self.window_h]}")
-        print(f"window_w: {[self.window_w]}")
-        print(f"no_of_turns: {[n_turns]}")
-        print(f"n_air_gaps: {[air_gap_count]}")
-        print(f"air_gap_h: {air_gap_height_array}")
-        print(f"air_gap_position: {air_gap_position_array}")
-        print(f"mu_rel: {mu_rel}")
-        print(f"component_type: {self.md_simulation_type_comboBox.currentText()}")
+            print(f"core_inner_diameter: {[self.core_w]}")
+            print(f"window_h: {[self.window_h]}")
+            print(f"window_w: {[self.window_w]}")
+            print(f"no_of_turns: {[n_turns]}")
+            print(f"n_air_gaps: {[air_gap_count]}")
+            print(f"air_gap_h: {air_gap_height_array}")
+            print(f"air_gap_position: {air_gap_position_array}")
+            print(f"mu_rel: {mu_rel}")
+            print(f"component_type: {self.md_simulation_type_comboBox.currentText()}")
 
-        # mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
-        # [air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
+            # mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
+            # [air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
 
-        if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
-            mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
-                                      window_w=[self.window_w], no_of_turns=[n_turns],
-                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
-                                      air_gap_position=air_gap_position_array,
-                                      mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='Percent',
-                                      component_type=self.md_simulation_type_comboBox.currentText(),
-                                      sim_type='single')  # 0.0149
-        elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['manually']:
-            mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
-                                      window_w=[self.window_w],
-                                      no_of_turns=[n_turns],
-                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
-                                      air_gap_position=air_gap_position_array,
-                                      mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='manually',
-                                      component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')
+            if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
+                mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
+                                          window_w=[self.window_w], no_of_turns=[n_turns],
+                                          n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
+                                          air_gap_position=air_gap_position_array,
+                                          mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='Percent',
+                                          component_type=self.md_simulation_type_comboBox.currentText(),
+                                          sim_type='single')  # 0.0149
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['manually']:
+                mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
+                                          window_w=[self.window_w],
+                                          no_of_turns=[n_turns],
+                                          n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
+                                          air_gap_position=air_gap_position_array,
+                                          mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='manually',
+                                          component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')
 
-        mc1.calculate_inductance()
-        inductance = mc1.data_matrix[:, 9]
+            mc1.calculate_inductance()
+            inductance = mc1.data_matrix[:, 9]
 
-        self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
+            self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
 
-    def therm_simulation(self):
+            # Completed
+            self.statusBar().showMessage('Inductance Value completed')
+        except Exception as e:
+            raise RuntimeError(f"Error during simulation: {str(e)}") from e
+
+    @handle_errors
+    def therm_simulation(self, *args, **kwargs):
         """Implement the thermal simulation."""
         # Thermal simulation:
         # The losses calculated by the magnetics simulation can be used to calculate the heat distribution of the given magnetic component
@@ -3578,6 +3740,7 @@ class MainWindow(QMainWindow):
         # The case parameter sets the thermal conductivity for a case which will be set around the core.
         # This could model some case in which the transformer is placed in together with a set potting material.
         # flag_insulation = True
+
         thermal_conductivity_dict = {
             "air": 0.0263,
             "case": {  # (epoxy resign) | transformer oil
@@ -3629,57 +3792,77 @@ class MainWindow(QMainWindow):
         # When the losses file is already created and contains the losses for the current model, it is enough to run geo.create_model in
         # order for the thermal simulation to work (geo.single_simulation is not needed).
         # Obviously when the model is modified and the losses can be out of date and therefore the geo.single_simulation needs to run again.
-        geo = self.md_setup_geometry()
-        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
-                         save_png=False)
-        # electromagnetic simulation is needed for thermal simulation
-        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
-            winding2_phi_rad_list = self.md_get_frequency_lists()
-        if len(winding1_frequency_list) == 1:
-            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-                geo.single_simulation(freq=winding1_frequency_list[0],
-                                      current=[winding1_amplitude_list[0]],
-                                      show_fem_simulation_results=True)
-            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                geo.single_simulation(freq=winding1_frequency_list[0],
-                                      current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
-                                      phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+        try:
+            # check if the necessary fields are not empty
+            self.validate_fields()
+            # Hide progressBar if it exists.
+            try:
+                self.progressBar.hide()
+            except:
+                pass
+            # show a statusbar while electromagnetic simulation is running
+            self.statusBar().showMessage('Electromagnetic simulation running...')
+            QCoreApplication.processEvents()
+            # electromagnetic simulation.
+            geo = self.md_setup_geometry()
+            geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
+                             save_png=False)
+            # electromagnetic simulation is needed for thermal simulation
+            winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
+                winding2_phi_rad_list = self.md_get_frequency_lists()
+            if len(winding1_frequency_list) == 1:
+                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                    geo.single_simulation(freq=winding1_frequency_list[0],
+                                          current=[winding1_amplitude_list[0]],
+                                          show_fem_simulation_results=True)
+                elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                    geo.single_simulation(freq=winding1_frequency_list[0],
+                                          current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
+                                          phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
 
-        else:
+            else:
 
-            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-                amplitude_list = []
-                print(f"{winding1_amplitude_list=}")
-                for amplitude_value in winding1_amplitude_list:
-                    amplitude_list.append([amplitude_value])
+                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                    amplitude_list = []
+                    print(f"{winding1_amplitude_list=}")
+                    for amplitude_value in winding1_amplitude_list:
+                        amplitude_list.append([amplitude_value])
 
-                phase_rad_list = []
-                for phase_value in winding1_phi_rad_list:
-                    phase_rad_list.append([phase_value])
-                geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list,
-                                     phi_deg_list_list=phase_rad_list)
+                    phase_rad_list = []
+                    for phase_value in winding1_phi_rad_list:
+                        phase_rad_list.append([phase_value])
+                    geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list,
+                                         phi_deg_list_list=phase_rad_list)
 
-            elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                amplitude1_list = []
-                for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
-                    amplitude1_list.append([amplitude1_value, amplitude2_value])
+                elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                    amplitude1_list = []
+                    for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
+                        amplitude1_list.append([amplitude1_value, amplitude2_value])
 
-                phase1_rad_list = []
-                for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
-                    phase1_rad_list.append([phase1_value, phase2_value])
+                    phase1_rad_list = []
+                    for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
+                        phase1_rad_list.append([phase1_value, phase2_value])
 
-                geo.excitation_sweep(frequency_list=winding1_frequency_list,
-                                     current_list_list=amplitude1_list,
-                                     phi_deg_list_list=phase1_rad_list)
+                    geo.excitation_sweep(frequency_list=winding1_frequency_list,
+                                         current_list_list=amplitude1_list,
+                                         phi_deg_list_list=phase1_rad_list)
+            # complete electromagnetic simulation
+            self.statusBar().showMessage('Simulation completed')
+            # Start thermal simulation
+            self.statusBar().showMessage('Thermal simulation running...')
+            QCoreApplication.processEvents()
+            geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
+                                   case_gap_right, case_gap_bot, True,
+                                   color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=self.flag_insulation)
+            # complete thermal simulation
+            self.statusBar().showMessage('Thermal Simulation completed')
 
-        geo.thermal_simulation(thermal_conductivity_dict, boundary_temperatures, boundary_flags, case_gap_top,
-                               case_gap_right, case_gap_bot, True,
-                               color_scheme=fmt.colors_ba_jonas, colors_geometry=fmt.colors_geometry_ba_jonas, flag_insulation=self.flag_insulation)
+        except Exception as e:
+            raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
         # Because the isolations inside the winding window are not implemented in femm simulation.
         # The validation only works when the isolations for the FEMMT thermal simulation are turned off.
         # geo.femm_thermal_validation(thermal_conductivity_dict, femm_boundary_temperature, case_gap_top, case_gap_right, case_gap_bot)
-
 
 def clear_layout(layout):
     """Clear the layout."""
