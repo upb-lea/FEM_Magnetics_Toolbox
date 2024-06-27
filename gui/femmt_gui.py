@@ -3604,113 +3604,130 @@ class MainWindow(QMainWindow):
                 winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
                 inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
 
-    def inductancecalc(self):
+    @handle_errors
+    def inductancecalc(self, *args, **kwargs):
         """Calculate inductance from given geometries."""
-        air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
-        air_gap_height_array = []
-        air_gap_position_array = []
-        air_gap_position_tag_array = []
+        # check if the necessary fields are not empty
+        self.validate_fields()
+        try:
+            # Hide progressBar if it exists.
+            try:
+                self.progressBar.hide()
+            except:
+                pass
+            # show a statusbar while Inductance Value is running
+            self.statusBar().showMessage('Inductance Value running...')
+            QCoreApplication.processEvents()
+            air_gap_count = int(self.md_air_gap_count_comboBox.currentText())
+            air_gap_height_array = []
+            air_gap_position_array = []
+            air_gap_position_tag_array = []
 
-        if air_gap_count >= 1:
-            md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
-            md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
+            if air_gap_count >= 1:
+                md_air_gap_1_height = comma_str_to_point_float(self.md_air_gap_1_length_lineEdit.text())
+                md_air_gap_1_position = comma_str_to_point_float(self.md_air_gap_1_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_1_height)
-            air_gap_position_array.append(md_air_gap_1_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_1_height)
+                air_gap_position_array.append(md_air_gap_1_position)
+                air_gap_position_tag_array.append(0)
 
-        if air_gap_count >= 2:
-            md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
-            md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
+            if air_gap_count >= 2:
+                md_air_gap_2_height = comma_str_to_point_float(self.md_air_gap_2_length_lineEdit.text())
+                md_air_gap_2_position = comma_str_to_point_float(self.md_air_gap_2_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_2_height)
-            air_gap_position_array.append(md_air_gap_2_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_2_height)
+                air_gap_position_array.append(md_air_gap_2_position)
+                air_gap_position_tag_array.append(0)
 
-        if air_gap_count >= 3:
-            md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
-            md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
+            if air_gap_count >= 3:
+                md_air_gap_3_height = comma_str_to_point_float(self.md_air_gap_3_length_lineEdit.text())
+                md_air_gap_3_position = comma_str_to_point_float(self.md_air_gap_3_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_3_height)
-            air_gap_position_array.append(md_air_gap_3_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_3_height)
+                air_gap_position_array.append(md_air_gap_3_position)
+                air_gap_position_tag_array.append(0)
 
-        if air_gap_count >= 4:
-            md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
-            md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
+            if air_gap_count >= 4:
+                md_air_gap_4_height = comma_str_to_point_float(self.md_air_gap_4_length_lineEdit.text())
+                md_air_gap_4_position = comma_str_to_point_float(self.md_air_gap_4_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_4_height)
-            air_gap_position_array.append(md_air_gap_4_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_4_height)
+                air_gap_position_array.append(md_air_gap_4_position)
+                air_gap_position_tag_array.append(0)
 
-        if air_gap_count >= 5:
-            md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
-            md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
+            if air_gap_count >= 5:
+                md_air_gap_5_height = comma_str_to_point_float(self.md_air_gap_5_length_lineEdit.text())
+                md_air_gap_5_position = comma_str_to_point_float(self.md_air_gap_5_position_lineEdit.text())
 
-            air_gap_height_array.append(md_air_gap_5_height)
-            air_gap_position_array.append(md_air_gap_5_position)
-            air_gap_position_tag_array.append(0)
+                air_gap_height_array.append(md_air_gap_5_height)
+                air_gap_position_array.append(md_air_gap_5_position)
+                air_gap_position_tag_array.append(0)
 
-        self.core_w = comma_str_to_point_float(self.md_core_width_lineEdit.text())
-        self.window_w = comma_str_to_point_float(self.md_window_width_lineEdit.text())
-        self.window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text())
-        n_turns = int(self.md_winding1_turns_lineEdit.text())
-        method = (self.md_air_gap_placement_method_comboBox.currentText())
-        # murel = database.get_initial_permeability(self.md_core_material_comboBox.currentText())
-        # murel = database.get_initial_permeability("N95")
-        air_gap_h = self.md_air_gap_1_length_lineEdit.text()
-        air_gap_position = self.md_air_gap_1_position_lineEdit.text()
+            self.core_w = comma_str_to_point_float(self.md_core_width_lineEdit.text())
+            self.window_w = comma_str_to_point_float(self.md_window_width_lineEdit.text())
+            self.window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text())
+            n_turns = int(self.md_winding1_turns_lineEdit.text())
+            method = (self.md_air_gap_placement_method_comboBox.currentText())
+            # murel = database.get_initial_permeability(self.md_core_material_comboBox.currentText())
+            # murel = database.get_initial_permeability("N95")
+            air_gap_h = self.md_air_gap_1_length_lineEdit.text()
+            air_gap_position = self.md_air_gap_1_position_lineEdit.text()
 
-        # material_names = []
-        # material_names.append(self.md_core_material_comboBox.currentText())
-        # mu_rel_val = [database.get_material_attribute(material_name=material_name, attribute="initial_permeability")
-        #               for material_name in material_names]
-        # mu_rel = [int(item) for item in mu_rel_val]
+            # material_names = []
+            # material_names.append(self.md_core_material_comboBox.currentText())
+            # mu_rel_val = [database.get_material_attribute(material_name=material_name, attribute="initial_permeability")
+            #               for material_name in material_names]
+            # mu_rel = [int(item) for item in mu_rel_val]
 
-        # Fetch the current material name from the combobox
-        material_name_str = self.md_core_material_comboBox.currentText()
-        # Convert the string to enum
-        material_enum = self.string_to_material_enum(material_name_str)
+            # Fetch the current material name from the combobox
+            material_name_str = self.md_core_material_comboBox.currentText()
+            # Convert the string to enum
+            material_enum = self.string_to_material_enum(material_name_str)
 
-        # initial permeability from the database using the enum material
-        # No need for a loop as the user can choose only one material in manual design
-        mu_rel_val = database.get_material_attribute(material_name=material_enum, attribute="initial_permeability")
-        mu_rel = [int(mu_rel_val)]
+            # initial permeability from the database using the enum material
+            # No need for a loop as the user can choose only one material in manual design
+            mu_rel_val = database.get_material_attribute(material_name=material_enum, attribute="initial_permeability")
+            mu_rel = [int(mu_rel_val)]
 
-        print(f"core_inner_diameter: {[self.core_w]}")
-        print(f"window_h: {[self.window_h]}")
-        print(f"window_w: {[self.window_w]}")
-        print(f"no_of_turns: {[n_turns]}")
-        print(f"n_air_gaps: {[air_gap_count]}")
-        print(f"air_gap_h: {air_gap_height_array}")
-        print(f"air_gap_position: {air_gap_position_array}")
-        print(f"mu_rel: {mu_rel}")
-        print(f"component_type: {self.md_simulation_type_comboBox.currentText()}")
+            print(f"core_inner_diameter: {[self.core_w]}")
+            print(f"window_h: {[self.window_h]}")
+            print(f"window_w: {[self.window_w]}")
+            print(f"no_of_turns: {[n_turns]}")
+            print(f"n_air_gaps: {[air_gap_count]}")
+            print(f"air_gap_h: {air_gap_height_array}")
+            print(f"air_gap_position: {air_gap_position_array}")
+            print(f"mu_rel: {mu_rel}")
+            print(f"component_type: {self.md_simulation_type_comboBox.currentText()}")
 
-        # mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
-        # [air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
+            # mc1 = fmt.MagneticCircuit([self.core_w], [self.window_h], [self.window_w], [n_turns], [n_air_gaps],
+            # [air_gap_h], [air_gap_position], [3000], [1]) #3000 - relative permeability of selected material
 
-        if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
-            mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
-                                      window_w=[self.window_w], no_of_turns=[n_turns],
-                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
-                                      air_gap_position=air_gap_position_array,
-                                      mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='Percent',
-                                      component_type=self.md_simulation_type_comboBox.currentText(),
-                                      sim_type='single')  # 0.0149
-        elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['manually']:
-            mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
-                                      window_w=[self.window_w],
-                                      no_of_turns=[n_turns],
-                                      n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
-                                      air_gap_position=air_gap_position_array,
-                                      mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='manually',
-                                      component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')
+            if self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['percent']:
+                mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
+                                          window_w=[self.window_w], no_of_turns=[n_turns],
+                                          n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
+                                          air_gap_position=air_gap_position_array,
+                                          mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='Percent',
+                                          component_type=self.md_simulation_type_comboBox.currentText(),
+                                          sim_type='single')  # 0.0149
+            elif self.md_air_gap_placement_method_comboBox.currentText() == self.translation_dict['manually']:
+                mc1 = fmt.MagneticCircuit(core_inner_diameter=[self.core_w], window_h=[self.window_h],
+                                          window_w=[self.window_w],
+                                          no_of_turns=[n_turns],
+                                          n_air_gaps=[air_gap_count], air_gap_h=air_gap_height_array,
+                                          air_gap_position=air_gap_position_array,
+                                          mu_r_abs=mu_rel, mult_air_gap_type=[1, 2], air_gap_method='manually',
+                                          component_type=self.md_simulation_type_comboBox.currentText(), sim_type='single')
 
-        mc1.calculate_inductance()
-        inductance = mc1.data_matrix[:, 9]
+            mc1.calculate_inductance()
+            inductance = mc1.data_matrix[:, 9]
 
-        self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
+            self.Inductanceval_label.setText(f"{round(inductance[0], 10)} H")
+
+            # Completed
+            self.statusBar().showMessage('Inductance Value completed')
+        except Exception as e:
+            raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
     @handle_errors
     def therm_simulation(self, *args, **kwargs):
