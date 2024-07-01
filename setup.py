@@ -39,7 +39,7 @@ setup(
     install_requires=['pandas~=2.2.1',
                       'numpy~=1.26.0',
                       'matplotlib~=3.8.0',
-                      'gmsh>=4.9.5',
+                      'gmsh>=4.13.1',
                       'onelab>=1.0',
                       'scipy~=1.12.0',
                       'pytest',
