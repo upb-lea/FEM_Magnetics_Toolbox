@@ -193,7 +193,7 @@ class MainWindow(QMainWindow):
             "random": "Random Placement",
             "percent": "Percent",
             "manually": "Manual Placement",
-            "hexa": "Hexadimensional",
+            "hexa": "Hexagonal",
             "square": "Square",
             "+-10": "+/- 10%",
             "+-20": "+/- 20%",
