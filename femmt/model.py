@@ -659,7 +659,7 @@ class Insulation:
         The lowest winding number therefore is combined with index 0. The second lowest with index 1 and so on.
         :type inner_winding_insulation: List[List[float]]
         """
-        if inner_winding_insulation is [[]]:
+        if inner_winding_insulation == [[]]:
             raise Exception("Inner winding insulations list cannot be empty.")
 
         self.cond_cond = inner_winding_insulation
