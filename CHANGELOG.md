@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+## [0.5.4] - 2024-07-01
+### Fixed
+- Require materialdatabase 0.3.0 for full materials compatibility 
+
 ## [0.5.3] - 2024-05-23
 ### Added 
 - Conductor placing strategies
@@ -103,7 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - updated strand approximation
 ### Added
 - add option for dedicated stray path
-- add complex permeability and permitivity for core materials for Core Loss estimation
+- add complex permeability and permittivity for core materials for Core Loss estimation
 - add iGSE and GSE for Core Loss estimation
 
 ## [0.1.1] - 2021-08-11
@@ -113,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - fix #2: config.json was not read correct
-- fix #3: Install pyfemm on windows machines in case of not installed pyfemm
+- fix #3: Install pyfemm on Windows machines in case of not installed pyfemm
 
 ## [0.1.0] - 2021-07-28
 ### Added
@@ -140,7 +144,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add femmt/SolidComp.py
 - add femmt/CompRes.py
 
-[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.5.3...HEAD
+[Unreleased]: https://github.com/upb-lea/transistordatabase/compare/0.5.4...HEAD
+[0.5.4]: https://github.com/upb-lea/transistordatabase/compare/0.5.4...0.5.3
 [0.5.3]: https://github.com/upb-lea/transistordatabase/compare/0.5.3...0.5.2
 [0.5.2]: https://github.com/upb-lea/transistordatabase/compare/0.5.2...0.5.1
 [0.5.1]: https://github.com/upb-lea/transistordatabase/compare/0.5.1...0.5.0
