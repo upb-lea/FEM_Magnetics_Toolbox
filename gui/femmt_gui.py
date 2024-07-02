@@ -197,7 +197,18 @@ class MainWindow(QMainWindow):
             "square": "Square",
             "+-10": "+/- 10%",
             "+-20": "+/- 20%",
-            "excel": "MS Excel"
+            "excel": "MS Excel",
+            "ToEdges": "To Edges",
+            "CenterOnHorizontalAxis": "Center On Horizontal Axis",
+            "CenterOnVerticalAxis": "Center On Vertical Axis",
+            "VerticalUpward_HorizontalRightward": "Vertical Upward, Horizontal Rightward",
+            "VerticalUpward_HorizontalLeftward": "Vertical Upward, Horizontal Leftward",
+            "VerticalDownward_HorizontalRightward": "Vertical Downward, Horizontal Rightward",
+            "VerticalDownward_HorizontalLeftward": "Vertical Downward, Horizontal Leftward",
+            "HorizontalRightward_VerticalUpward": "Horizontal Rightward, Vertical Upward",
+            "HorizontalRightward_VerticalDownward": "Horizontal Rightward, Vertical Downward",
+            "HorizontalLeftward_VerticalUpward": "Horizontal Leftward, Vertical Upward",
+            "HorizontalLeftward_VerticalDownward": "Horizontal Leftward, Vertical Downward"
         }
         "******** menu bar *********"
 
@@ -2257,6 +2268,22 @@ class MainWindow(QMainWindow):
         md_winding_litz_material_options = [key for key in fmt.litz_database()]
         md_winding_litz_material_options.insert(0, 'Manual')
 
+        alignment_options = [
+            self.translation_dict["ToEdges"],
+            self.translation_dict["CenterOnHorizontalAxis"],
+            self.translation_dict["CenterOnVerticalAxis"]
+        ]
+        placement_strategy_options = [
+            self.translation_dict["VerticalUpward_HorizontalRightward"],
+            self.translation_dict["VerticalUpward_HorizontalLeftward"],
+            self.translation_dict["VerticalDownward_HorizontalRightward"],
+            self.translation_dict["VerticalDownward_HorizontalLeftward"],
+            self.translation_dict["HorizontalRightward_VerticalUpward"],
+            self.translation_dict["HorizontalRightward_VerticalDownward"],
+            self.translation_dict["HorizontalLeftward_VerticalUpward"],
+            self.translation_dict["HorizontalLeftward_VerticalDownward"]
+        ]
+
         for option in md_simulation_type_options:
             self.md_simulation_type_comboBox.addItem(option)
         for option in md_core_material_options:
@@ -2282,7 +2309,14 @@ class MainWindow(QMainWindow):
             self.md_winding2_litz_material_comboBox.addItem(option)
         for option in md_core_geometry_options:
             self.md_core_geometry_comboBox.addItem(option)
-
+        for option in alignment_options:
+            self.md_alignment1_comboBox.addItem(option)
+        for option in alignment_options:
+            self.md_alignment2_comboBox.addItem(option)
+        for option in placement_strategy_options:
+            self.md_placement_strategy1_comboBox.addItem(option)
+        for option in placement_strategy_options:
+            self.md_placement_strategy2_comboBox.addItem(option)
     # ----------------------------------------------------------
     # Definition tab
     # ----------------------------------------------------------
@@ -2342,6 +2376,13 @@ class MainWindow(QMainWindow):
         self.md_winding2_scheme_comboBox.setVisible(status)
         self.md_winding2_turns_label.setVisible(status)
         self.md_winding2_scheme_label.setVisible(status)
+        self.md_zigzag2_checkBox.setVisible(status)
+
+        # set alignment, placing strategy, and zigzag for winding 2
+        self.md_alignment2_comboBox.setVisible(status)
+        self.md_placement_strategy2_comboBox.setVisible(status)
+        self.md_alignment2_label.setVisible(status)
+        self.md_placement_strategy2_label.setVisible(status)
 
         # set current shapes of winding 2 (enable and visible)
         self.md_winding2_current_groupBox.setVisible(status)
@@ -3294,8 +3335,12 @@ class MainWindow(QMainWindow):
             # ----------------------------------------------------------------------
             # vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
             # change 1: Number of turns should be an integer, not as a float
+            # Retrieve user selections for alignment, placing strategy, and zigzag
+            alignment1 = getattr(fmt.Align, self.md_alignment1_comboBox.currentText().replace(' ', ''))
+            placing_strategy1 = getattr(fmt.ConductorDistribution, self.md_placement_strategy1_comboBox.currentText().replace(", ", "_").replace(" ", ""))
+            zigzag1 = self.md_zigzag1_checkBox.isChecked()
             vww.set_winding(winding, int(self.md_winding1_turns_lineEdit.text()), None,
-                            fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=True)
+                            alignment1, placing_strategy=placing_strategy1, zigzag=zigzag1)
             geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
@@ -3477,10 +3522,16 @@ class MainWindow(QMainWindow):
                     conductor_arrangement=fmt.ConductorArrangement.Square)
 
             # 7. add conductor to vww and add winding window to MagneticComponent
-            left.set_winding(winding1, int(self.md_winding1_turns_lineEdit.text()), None, fmt.Align.ToEdges,
-                             fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
-            right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None, fmt.Align.ToEdges,
-                              fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+            alignment1 = getattr(fmt.Align, self.md_alignment1_comboBox.currentText().replace(' ', ''))
+            placing_strategy1 = getattr(fmt.ConductorDistribution, self.md_placement_strategy1_comboBox.currentText().replace(", ", "_").replace(" ", ""))
+            zigzag1 = self.md_zigzag1_checkBox.isChecked()
+            alignment2 = getattr(fmt.Align, self.md_alignment2_comboBox.currentText().replace(' ', ''))
+            placing_strategy2 = getattr(fmt.ConductorDistribution, self.md_placement_strategy2_comboBox.currentText().replace(", ", "_").replace(" ", ""))
+            zigzag2 = self.md_zigzag2_checkBox.isChecked()
+            left.set_winding(winding1, int(self.md_winding1_turns_lineEdit.text()), None, alignment1,
+                             placing_strategy=placing_strategy1, zigzag=zigzag1)
+            right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None, alignment2,
+                              placing_strategy=placing_strategy2, zigzag=zigzag2)
             geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'integrated transformer':

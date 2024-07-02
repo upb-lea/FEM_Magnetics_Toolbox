@@ -45,7 +45,7 @@
         <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>2</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="md_QWidget_2">
            <attribute name="title">
@@ -61,7 +61,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>2</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="md_QWidget">
                <attribute name="title">
@@ -510,15 +510,52 @@
                        <string>Winding Scheme</string>
                       </property>
                       <layout class="QGridLayout" name="gridLayout_10">
-                       <item row="4" column="0">
+                       <item row="8" column="0">
+                        <widget class="QLabel" name="md_alignment2_label">
+                         <property name="text">
+                          <string>Alignment (Winding2)</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="1">
+                        <widget class="QComboBox" name="md_alignment1_comboBox"/>
+                       </item>
+                       <item row="9" column="1">
+                        <widget class="QComboBox" name="md_placement_strategy2_comboBox"/>
+                       </item>
+                       <item row="9" column="0">
+                        <widget class="QLabel" name="md_placement_strategy2_label">
+                         <property name="text">
+                          <string>Placement Strategy (Winding2)</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="8" column="1">
+                        <widget class="QComboBox" name="md_alignment2_comboBox"/>
+                       </item>
+                       <item row="3" column="1">
+                        <widget class="QComboBox" name="md_placement_strategy1_comboBox"/>
+                       </item>
+                       <item row="2" column="0">
+                        <widget class="QLabel" name="md_alignment1_label">
+                         <property name="text">
+                          <string>Alignment (Winding1)</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="3" column="0">
+                        <widget class="QLabel" name="md_placement_strategy1_label">
+                         <property name="text">
+                          <string>Placement Strategy (Winding1)</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="7" column="0">
                         <widget class="QLabel" name="md_winding2_scheme_label">
                          <property name="text">
                           <string>Winding Scheme (Winding 2)</string>
                          </property>
                         </widget>
-                       </item>
-                       <item row="1" column="1">
-                        <widget class="QComboBox" name="md_winding1_scheme_comboBox"/>
                        </item>
                        <item row="1" column="0">
                         <widget class="QLabel" name="md_winding1_scheme_label">
@@ -527,13 +564,23 @@
                          </property>
                         </widget>
                        </item>
-                       <item row="4" column="1">
+                       <item row="1" column="1">
+                        <widget class="QComboBox" name="md_winding1_scheme_comboBox"/>
+                       </item>
+                       <item row="7" column="1">
                         <widget class="QComboBox" name="md_winding2_scheme_comboBox"/>
                        </item>
-                       <item row="0" column="1">
-                        <widget class="QLineEdit" name="md_winding1_turns_lineEdit">
+                       <item row="6" column="1">
+                        <widget class="QLineEdit" name="md_winding2_turns_lineEdit">
                          <property name="text">
                           <string>5</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="6" column="0">
+                        <widget class="QLabel" name="md_winding2_turns_label">
+                         <property name="text">
+                          <string>Number of Turns (Winding 2)</string>
                          </property>
                         </widget>
                        </item>
@@ -544,17 +591,24 @@
                          </property>
                         </widget>
                        </item>
-                       <item row="3" column="0">
-                        <widget class="QLabel" name="md_winding2_turns_label">
+                       <item row="0" column="1">
+                        <widget class="QLineEdit" name="md_winding1_turns_lineEdit">
                          <property name="text">
-                          <string>Number of Turns (Winding 2)</string>
+                          <string>5</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="3" column="1">
-                        <widget class="QLineEdit" name="md_winding2_turns_lineEdit">
+                       <item row="4" column="0">
+                        <widget class="QCheckBox" name="md_zigzag1_checkBox">
                          <property name="text">
-                          <string>5</string>
+                          <string>Zigzag (Winding1)</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="10" column="0">
+                        <widget class="QCheckBox" name="md_zigzag2_checkBox">
+                         <property name="text">
+                          <string>Zigzag (Winding2)</string>
                          </property>
                         </widget>
                        </item>
@@ -4749,8 +4803,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>268</width>
-                     <height>253</height>
+                     <width>1440</width>
+                     <height>1172</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_46">
@@ -4880,8 +4934,8 @@
                             <rect>
                              <x>0</x>
                              <y>0</y>
-                             <width>98</width>
-                             <height>518</height>
+                             <width>1400</width>
+                             <height>807</height>
                             </rect>
                            </property>
                            <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -9543,7 +9597,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>1403</width>
+                        <width>98</width>
                         <height>1024</height>
                        </rect>
                       </property>
