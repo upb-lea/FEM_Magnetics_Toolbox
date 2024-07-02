@@ -193,11 +193,23 @@ class MainWindow(QMainWindow):
             "random": "Random Placement",
             "percent": "Percent",
             "manually": "Manual Placement",
-            "hexa": "Hexadimensional",
+            "hexa": "Hexagonal",
             "square": "Square",
+            "SquareFullWidth": "SquareFullWidth",
             "+-10": "+/- 10%",
             "+-20": "+/- 20%",
-            "excel": "MS Excel"
+            "excel": "MS Excel",
+            "ToEdges": "To Edges",
+            "CenterOnHorizontalAxis": "Center On Horizontal Axis",
+            "CenterOnVerticalAxis": "Center On Vertical Axis",
+            "VerticalUpward_HorizontalRightward": "Vertical Upward, Horizontal Rightward",
+            "VerticalUpward_HorizontalLeftward": "Vertical Upward, Horizontal Leftward",
+            "VerticalDownward_HorizontalRightward": "Vertical Downward, Horizontal Rightward",
+            "VerticalDownward_HorizontalLeftward": "Vertical Downward, Horizontal Leftward",
+            "HorizontalRightward_VerticalUpward": "Horizontal Rightward, Vertical Upward",
+            "HorizontalRightward_VerticalDownward": "Horizontal Rightward, Vertical Downward",
+            "HorizontalLeftward_VerticalUpward": "Horizontal Leftward, Vertical Upward",
+            "HorizontalLeftward_VerticalDownward": "Horizontal Leftward, Vertical Downward"
         }
         "******** menu bar *********"
 
@@ -227,6 +239,8 @@ class MainWindow(QMainWindow):
             self.md_winding2_set_litz_parameters_from_litz_database)
         self.md_winding1_implicit_litz_comboBox.currentTextChanged.connect(self.md_winding1_change_litz_implicit)
         self.md_winding2_implicit_litz_comboBox.currentTextChanged.connect(self.md_winding2_change_litz_implicit)
+        self.md_winding1_scheme_comboBox.currentTextChanged.connect(self.md_change_winding_scheme)
+        self.md_winding2_scheme_comboBox.currentTextChanged.connect(self.md_change_winding_scheme)
 
         # air gaps
         self.md_air_gap_count_comboBox.currentTextChanged.connect(self.md_change_air_gap_count)
@@ -2250,12 +2264,28 @@ class MainWindow(QMainWindow):
                                     self.translation_dict['implicit_strands_number']]
         md_air_gap_method_options = [self.translation_dict["percent"], self.translation_dict['manually']]
         md_air_gap_counts_options = ['0', '1', '2', '3', '4', '5']
-        md_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"]]
+        md_winding_scheme_options = [self.translation_dict["square"], self.translation_dict["hexa"], self.translation_dict["SquareFullWidth"]]
         md_core_geometry_options = [core_geometry for core_geometry in fmt.core_database()]
         md_core_geometry_options.insert(0, 'Manual')
 
         md_winding_litz_material_options = [key for key in fmt.litz_database()]
         md_winding_litz_material_options.insert(0, 'Manual')
+
+        alignment_options = [
+            self.translation_dict["ToEdges"],
+            self.translation_dict["CenterOnHorizontalAxis"],
+            self.translation_dict["CenterOnVerticalAxis"]
+        ]
+        placement_strategy_options = [
+            self.translation_dict["VerticalUpward_HorizontalRightward"],
+            self.translation_dict["VerticalUpward_HorizontalLeftward"],
+            self.translation_dict["VerticalDownward_HorizontalRightward"],
+            self.translation_dict["VerticalDownward_HorizontalLeftward"],
+            self.translation_dict["HorizontalRightward_VerticalUpward"],
+            self.translation_dict["HorizontalRightward_VerticalDownward"],
+            self.translation_dict["HorizontalLeftward_VerticalUpward"],
+            self.translation_dict["HorizontalLeftward_VerticalDownward"]
+        ]
 
         for option in md_simulation_type_options:
             self.md_simulation_type_comboBox.addItem(option)
@@ -2282,10 +2312,18 @@ class MainWindow(QMainWindow):
             self.md_winding2_litz_material_comboBox.addItem(option)
         for option in md_core_geometry_options:
             self.md_core_geometry_comboBox.addItem(option)
-
+        for option in alignment_options:
+            self.md_alignment1_comboBox.addItem(option)
+        for option in alignment_options:
+            self.md_alignment2_comboBox.addItem(option)
+        for option in placement_strategy_options:
+            self.md_placement_strategy1_comboBox.addItem(option)
+        for option in placement_strategy_options:
+            self.md_placement_strategy2_comboBox.addItem(option)
     # ----------------------------------------------------------
     # Definition tab
     # ----------------------------------------------------------
+
     def md_change_simulation_type(self, simulation_type_from_combo_box: str) -> None:
         """
         Change simulation type when signal of md_simulation_type_comboBox text has changed.
@@ -2343,6 +2381,13 @@ class MainWindow(QMainWindow):
         self.md_winding2_turns_label.setVisible(status)
         self.md_winding2_scheme_label.setVisible(status)
 
+        # set alignment, placing strategy, and zigzag for winding 2
+        self.md_alignment2_comboBox.setVisible(status)
+        self.md_placement_strategy2_comboBox.setVisible(status)
+        self.md_alignment2_label.setVisible(status)
+        self.md_placement_strategy2_label.setVisible(status)
+        self.md_zigzag2_checkBox.setVisible(status)
+
         # set current shapes of winding 2 (enable and visible)
         self.md_winding2_current_groupBox.setVisible(status)
 
@@ -2356,6 +2401,54 @@ class MainWindow(QMainWindow):
         self.md_isolation_s2s_label.setVisible(status)
         self.md_isolation_p2s_label.setVisible(status)
         self.md_isolation_s2p_label.setVisible(status)
+
+    def md_change_winding_scheme(self) -> None:
+        """
+        Update the visibility of winding scheme-related controls based on the selected winding scheme and simulation type.
+
+        :return: None
+        :rtype: None
+        """
+        # Handle Winding 1
+        if self.md_winding1_scheme_comboBox.currentText() in [self.translation_dict["hexa"], self.translation_dict["SquareFullWidth"]]:
+            self.md_scheme_enable(False, 1)
+        else:
+            self.md_scheme_enable(True, 1)
+
+        # Handle Winding 2
+        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+            self.md_scheme_enable(False, 2)
+        else:
+            if self.md_winding2_scheme_comboBox.currentText() in [self.translation_dict["hexa"], self.translation_dict["SquareFullWidth"]]:
+                self.md_scheme_enable(False, 2)
+            else:
+                self.md_scheme_enable(True, 2)
+
+    def md_scheme_enable(self, status: bool, winding_number: int) -> None:
+        """
+        Enable or disable the visibility of winding scheme-related controls.
+
+        :param status: True / False
+        :param winding_number: 1 and 2
+        :type status: bool
+        :type winding_number: int
+        :return: None
+        :rtype: None
+        """
+        if winding_number == 1:
+            # Set visibility for schemes in winding 1 controls
+            self.md_alignment1_comboBox.setVisible(status)
+            self.md_alignment1_label.setVisible(status)
+            self.md_placement_strategy1_comboBox.setVisible(status)
+            self.md_placement_strategy1_label.setVisible(status)
+            self.md_zigzag1_checkBox.setVisible(status)
+        elif winding_number == 2:
+            # Set visibility for schemes in winding 2 controls
+            self.md_alignment2_comboBox.setVisible(status)
+            self.md_alignment2_label.setVisible(status)
+            self.md_placement_strategy2_comboBox.setVisible(status)
+            self.md_placement_strategy2_label.setVisible(status)
+            self.md_zigzag2_checkBox.setVisible(status)
 
     @handle_errors
     def md_gmsh_pre_visualisation(self, *args, **kwargs):
@@ -3277,25 +3370,31 @@ class MainWindow(QMainWindow):
                 winding_material_enum = fmt.Conductivity.Aluminium
 
             winding = fmt.Conductor(0, winding_material_enum)
+            scheme1 = getattr(fmt.ConductorArrangement, self.md_winding1_scheme_comboBox.currentText())
             if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding.set_solid_round_conductor(
                     conductor_radius=comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()),
-                    conductor_arrangement=fmt.ConductorArrangement.Square)
+                    conductor_arrangement=scheme1)
             elif self.md_winding1_type_comboBox.currentText() == self.translation_dict['litz']:
                 winding.set_litz_round_conductor(
                     conductor_radius=comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()),
                     number_strands=int(self.md_winding1_strands_lineEdit.text()),
                     strand_radius=comma_str_to_point_float(self.md_winding1_strand_radius_lineEdit.text()),
                     fill_factor=None,
-                    conductor_arrangement=fmt.ConductorArrangement.Square)
+                    conductor_arrangement=scheme1)
 
             # ----------------------------------------------------------------------
             # 7. add conductor to vww and add winding window to MagneticComponent
             # ----------------------------------------------------------------------
             # vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
             # change 1: Number of turns should be an integer, not as a float
+            # Selections for alignment, placing strategy, and zigzag
+            alignment1 = getattr(fmt.Align, self.md_alignment1_comboBox.currentText().replace(' ', ''))
+            placing_strategy1 = getattr(fmt.ConductorDistribution, self.md_placement_strategy1_comboBox.currentText().replace(", ", "_").replace(" ", ""))
+            zigzag1 = self.md_zigzag1_checkBox.isChecked()
+            # Winding window
             vww.set_winding(winding, int(self.md_winding1_turns_lineEdit.text()), None,
-                            fmt.Align.ToEdges, placing_strategy=fmt.ConductorDistribution.HorizontalRightward_VerticalUpward, zigzag=True)
+                            alignment1, placing_strategy=placing_strategy1, zigzag=zigzag1)
             geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'transformer':
@@ -3445,17 +3544,18 @@ class MainWindow(QMainWindow):
                 winding1_material_enum = fmt.Conductivity.Aluminium
 
             winding1 = fmt.Conductor(0, winding1_material_enum)
+            scheme1 = getattr(fmt.ConductorArrangement, self.md_winding1_scheme_comboBox.currentText())
             if self.md_winding1_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding1.set_solid_round_conductor(
                     conductor_radius=comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()),
-                    conductor_arrangement=fmt.ConductorArrangement.Square)
+                    conductor_arrangement=scheme1)
             elif self.md_winding1_type_comboBox.currentText() == self.translation_dict['litz']:
                 winding1.set_litz_round_conductor(
                     conductor_radius=comma_str_to_point_float(self.md_winding1_radius_lineEdit.text()),
                     number_strands=int(self.md_winding1_strands_lineEdit.text()),
                     strand_radius=comma_str_to_point_float(self.md_winding1_strand_radius_lineEdit.text()),
                     fill_factor=None,
-                    conductor_arrangement=fmt.ConductorArrangement.Square)
+                    conductor_arrangement=scheme1)
             # Winding 2
             winding2_material_name = self.md_winding2_material_comboBox.currentText()
             if winding2_material_name == 'Copper':
@@ -3464,23 +3564,33 @@ class MainWindow(QMainWindow):
                 winding2_material_enum = fmt.Conductivity.Aluminium
 
             winding2 = fmt.Conductor(1, winding2_material_enum)
+            scheme2 = getattr(fmt.ConductorArrangement, self.md_winding2_scheme_comboBox.currentText())
             if self.md_winding2_type_comboBox.currentText() == self.translation_dict['solid']:
                 winding2.set_solid_round_conductor(
                     conductor_radius=comma_str_to_point_float(self.md_winding2_radius_lineEdit.text()),
-                    conductor_arrangement=fmt.ConductorArrangement.Square)
+                    conductor_arrangement=scheme2)
             elif self.md_winding2_type_comboBox.currentText() == self.translation_dict['litz']:
                 winding2.set_litz_round_conductor(
                     conductor_radius=comma_str_to_point_float(self.md_winding2_radius_lineEdit.text()),
                     number_strands=int(self.md_winding2_strands_lineEdit.text()),
                     strand_radius=comma_str_to_point_float(self.md_winding2_strand_radius_lineEdit.text()),
                     fill_factor=None,
-                    conductor_arrangement=fmt.ConductorArrangement.Square)
+                    conductor_arrangement=scheme2)
 
             # 7. add conductor to vww and add winding window to MagneticComponent
-            left.set_winding(winding1, int(self.md_winding1_turns_lineEdit.text()), None, fmt.Align.ToEdges,
-                             fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
-            right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None, fmt.Align.ToEdges,
-                              fmt.ConductorDistribution.VerticalUpward_HorizontalRightward, zigzag=False)
+            # Selections for alignment, placing strategy, and zigzag for winding 1
+            alignment1 = getattr(fmt.Align, self.md_alignment1_comboBox.currentText().replace(' ', ''))
+            placing_strategy1 = getattr(fmt.ConductorDistribution, self.md_placement_strategy1_comboBox.currentText().replace(", ", "_").replace(" ", ""))
+            zigzag1 = self.md_zigzag1_checkBox.isChecked()
+            # Selections for alignment, placing strategy, and zigzag for winding 2
+            alignment2 = getattr(fmt.Align, self.md_alignment2_comboBox.currentText().replace(' ', ''))
+            placing_strategy2 = getattr(fmt.ConductorDistribution, self.md_placement_strategy2_comboBox.currentText().replace(", ", "_").replace(" ", ""))
+            zigzag2 = self.md_zigzag2_checkBox.isChecked()
+            # Winding window
+            left.set_winding(winding1, int(self.md_winding1_turns_lineEdit.text()), None, alignment1,
+                             placing_strategy=placing_strategy1, zigzag=zigzag1)
+            right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None, alignment2,
+                              placing_strategy=placing_strategy2, zigzag=zigzag2)
             geo.set_winding_windows([winding_window])
 
         elif self.md_simulation_type_comboBox.currentText() == 'integrated transformer':
@@ -3594,15 +3704,30 @@ class MainWindow(QMainWindow):
                 self.md_loss_plot_label1.setPixmap(pixmap)
                 self.md_loss_plot_label1.show()
 
-            # loss labels
-            hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
-            eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
-            winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
-            inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
-            # transformer case
+            # # loss labels
+            # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
+            # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
+            # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
+            # inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
+            # # transformer case
+            # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+            #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
+            #     inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
+
+            # loss labels with approximations.
+            hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
+            eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
+            winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
+
+            # Convert inductance to nanohenries.
+            primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
+            inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
+
+            # transformer case.
             if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
-                inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
+                secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
+                winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
+                inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
 
     @handle_errors
     def inductancecalc(self, *args, **kwargs):
