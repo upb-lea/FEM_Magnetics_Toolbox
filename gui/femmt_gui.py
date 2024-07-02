@@ -3335,10 +3335,11 @@ class MainWindow(QMainWindow):
             # ----------------------------------------------------------------------
             # vww.set_winding(winding, comma_str_to_point_float(self.md_winding1_turns_lineEdit.text()), None)
             # change 1: Number of turns should be an integer, not as a float
-            # Retrieve user selections for alignment, placing strategy, and zigzag
+            # Selections for alignment, placing strategy, and zigzag
             alignment1 = getattr(fmt.Align, self.md_alignment1_comboBox.currentText().replace(' ', ''))
             placing_strategy1 = getattr(fmt.ConductorDistribution, self.md_placement_strategy1_comboBox.currentText().replace(", ", "_").replace(" ", ""))
             zigzag1 = self.md_zigzag1_checkBox.isChecked()
+            # Winding window
             vww.set_winding(winding, int(self.md_winding1_turns_lineEdit.text()), None,
                             alignment1, placing_strategy=placing_strategy1, zigzag=zigzag1)
             geo.set_winding_windows([winding_window])
@@ -3522,12 +3523,15 @@ class MainWindow(QMainWindow):
                     conductor_arrangement=fmt.ConductorArrangement.Square)
 
             # 7. add conductor to vww and add winding window to MagneticComponent
+            # Selections for alignment, placing strategy, and zigzag for winding 1
             alignment1 = getattr(fmt.Align, self.md_alignment1_comboBox.currentText().replace(' ', ''))
             placing_strategy1 = getattr(fmt.ConductorDistribution, self.md_placement_strategy1_comboBox.currentText().replace(", ", "_").replace(" ", ""))
             zigzag1 = self.md_zigzag1_checkBox.isChecked()
+            # Selections for alignment, placing strategy, and zigzag for winding2
             alignment2 = getattr(fmt.Align, self.md_alignment2_comboBox.currentText().replace(' ', ''))
             placing_strategy2 = getattr(fmt.ConductorDistribution, self.md_placement_strategy2_comboBox.currentText().replace(", ", "_").replace(" ", ""))
             zigzag2 = self.md_zigzag2_checkBox.isChecked()
+            # Winding window
             left.set_winding(winding1, int(self.md_winding1_turns_lineEdit.text()), None, alignment1,
                              placing_strategy=placing_strategy1, zigzag=zigzag1)
             right.set_winding(winding2, int(self.md_winding2_turns_lineEdit.text()), None, alignment2,
@@ -3645,15 +3649,30 @@ class MainWindow(QMainWindow):
                 self.md_loss_plot_label1.setPixmap(pixmap)
                 self.md_loss_plot_label1.show()
 
-            # loss labels
-            hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
-            eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
-            winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
-            inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
-            # transformer case
+            # # loss labels
+            # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
+            # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
+            # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
+            # inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
+            # # transformer case
+            # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+            #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
+            #     inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
+
+            # loss labels with approximations.
+            hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
+            eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
+            winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
+
+            # Convert inductance to nanohenries.
+            primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
+            inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
+
+            # transformer case.
             if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
-                inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
+                secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
+                winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
+                inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
 
     @handle_errors
     def inductancecalc(self, *args, **kwargs):
