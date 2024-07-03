@@ -1624,7 +1624,7 @@ class Mesh:
             return point_is_in_rect(x, y, x_min, y_max, x_max, y_min)
 
         def point_is_in_rect(x, y, left, top, right, bottom):
-            return x > left and x < right and y > bottom and y < top
+            return x >= left and x <= right and y >= bottom and y <= top
 
         def rasterize_winding_window(left_bound, right_bound, bot_bound, top_bound):
             # Winding window rasterization:
