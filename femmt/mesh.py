@@ -1063,6 +1063,8 @@ class Mesh:
         :return:
         """
         self.femmt_print("Hybrid Mesh Generation in Gmsh")
+        # Clear gmsh
+        gmsh.clear()
         # Initialization
         self.set_empty_plane_lists()
         p_core, p_island, p_cond, p_region, p_iso_core = self.set_empty_point_lists()
