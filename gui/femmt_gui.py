@@ -69,6 +69,17 @@ def handle_errors(func):
             show_error(str(e))
     return wrapper
 
+def format_number(value, decimals=4):
+    """
+    Round a number to a specified number of decimal places.
+
+    value (float): The number to format.
+    decimals (int): Number of decimal places. Default is 4.
+
+    Returns:
+    float: The formatted number.
+    """
+    return round(value, decimals)
 
 def comma_str_to_point_float(input_str: str) -> float:
     """
@@ -2538,9 +2549,9 @@ class MainWindow(QMainWindow):
         if core_type != 'Manual':
             core = core_dict[core_type]
 
-            self.md_core_width_lineEdit.setText(str(core["core_inner_diameter"]))
-            self.md_window_height_lineEdit.setText(str(core["window_h"]))
-            self.md_window_width_lineEdit.setText(str(core["window_w"]))
+            self.md_core_width_lineEdit.setText(str(format_number(core["core_inner_diameter"])))
+            self.md_window_height_lineEdit.setText(str(format_number(core["window_h"])))
+            self.md_window_width_lineEdit.setText(str(format_number(core["window_w"])))
             self.md_core_width_lineEdit.setEnabled(False)
             self.md_window_height_lineEdit.setEnabled(False)
             self.md_window_width_lineEdit.setEnabled(False)
