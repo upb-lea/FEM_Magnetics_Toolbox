@@ -3221,7 +3221,7 @@ class MainWindow(QMainWindow):
             core = fmt.Core(core_dimensions=core_dimensions, mu_r_abs=3100, phi_mu_deg=12, sigma=1.2,
                             permeability_datasource=fmt.MaterialDataSource.Custom,
                             permittivity_datasource=fmt.MaterialDataSource.Custom,
-                            detailed_core_model=True)
+                            detailed_core_model=False)
             geo.set_core(core)
             """
             geo.core.update(window_h = comma_str_to_point_float(self.md_window_height_lineEdit.text()),
