@@ -230,6 +230,9 @@ class MainWindow(QMainWindow):
 
         # simulation
         self.md_simulation_type_comboBox.currentTextChanged.connect(self.md_change_simulation_type)
+        # update dc and frequencies boxes based on the simulation type.
+        self.md_simulation_type_comboBox.currentTextChanged.connect(self.update_dc_and_frequencies_checkboxes)
+
         # core
         self.md_core_geometry_comboBox.currentTextChanged.connect(self.md_set_core_geometry_from_database)
         # windings
@@ -261,15 +264,15 @@ class MainWindow(QMainWindow):
         self.flag_insulation = self.enable_insulation_checkbox.isChecked()
 
         "Signals in Excitation Tab"
-        self.md_dc_checkBox.stateChanged.connect(self.md_dc_enable)
-        self.md_fk1_checkBox.stateChanged.connect(self.md_change_frequencies_1)
-        self.md_fk2_checkBox.stateChanged.connect(self.md_change_frequencies_2)
-        self.md_fk3_checkBox.stateChanged.connect(self.md_change_frequencies_3)
-        self.md_fk4_checkBox.stateChanged.connect(self.md_change_frequencies_4)
-        self.md_fk5_checkBox.stateChanged.connect(self.md_change_frequencies_5)
-        self.md_fk6_checkBox.stateChanged.connect(self.md_change_frequencies_6)
-        self.md_fk7_checkBox.stateChanged.connect(self.md_change_frequencies_7)
-        self.md_fk8_checkBox.stateChanged.connect(self.md_change_frequencies_8)
+        self.md_dc_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk1_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk2_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk3_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk4_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk5_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk6_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk7_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
+        self.md_fk8_checkBox.stateChanged.connect(self.update_dc_and_frequencies_checkboxes)
         self.md_excitation_update_graph_Button.clicked.connect(self.md_redraw_input_signals)
 
         "Signals in Simulation Tab"
@@ -2832,266 +2835,38 @@ class MainWindow(QMainWindow):
     # Excitation tab
     # ----------------------------------------------------------
 
-    def md_dc_enable(self, status: bool) -> None:
+    def update_dc_and_frequencies_checkboxes(self) -> None:
         """
-        Enable / Disable the input fields for dc current.
+        Update the frequency checkboxes and input fields based on the simulation type.
+        """
+        # Determine if winding2 fields should be enabled based on simulation type combobox.
+        enable_winding2 = self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']
 
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_idc_lineEdit.setEnabled(status)
-        self.md_winding2_idc_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_idc_lineEdit.setEnabled(False)
-            self.md_winding2_idc_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_idc_lineEdit.setEnabled(status)
-            self.md_winding2_idc_lineEdit.setEnabled(status)
+        # List of checkbox and corresponding input field pairs.
+        checkboxes = [
+            (self.md_dc_checkBox, self.md_winding1_idc_lineEdit, self.md_winding2_idc_lineEdit),
+            (self.md_fk1_checkBox, self.md_winding1_ik1_lineEdit, self.md_winding1_pk1_lineEdit, self.md_winding2_ik1_lineEdit, self.md_winding2_pk1_lineEdit),
+            (self.md_fk2_checkBox, self.md_winding1_ik2_lineEdit, self.md_winding1_pk2_lineEdit, self.md_winding2_ik2_lineEdit, self.md_winding2_pk2_lineEdit),
+            (self.md_fk3_checkBox, self.md_winding1_ik3_lineEdit, self.md_winding1_pk3_lineEdit, self.md_winding2_ik3_lineEdit, self.md_winding2_pk3_lineEdit),
+            (self.md_fk4_checkBox, self.md_winding1_ik4_lineEdit, self.md_winding1_pk4_lineEdit, self.md_winding2_ik4_lineEdit, self.md_winding2_pk4_lineEdit),
+            (self.md_fk5_checkBox, self.md_winding1_ik5_lineEdit, self.md_winding1_pk5_lineEdit, self.md_winding2_ik5_lineEdit, self.md_winding2_pk5_lineEdit),
+            (self.md_fk6_checkBox, self.md_winding1_ik6_lineEdit, self.md_winding1_pk6_lineEdit, self.md_winding2_ik6_lineEdit, self.md_winding2_pk6_lineEdit),
+            (self.md_fk7_checkBox, self.md_winding1_ik7_lineEdit, self.md_winding1_pk7_lineEdit, self.md_winding2_ik7_lineEdit, self.md_winding2_pk7_lineEdit),
+            (self.md_fk8_checkBox, self.md_winding1_ik8_lineEdit, self.md_winding1_pk8_lineEdit, self.md_winding2_ik8_lineEdit, self.md_winding2_pk8_lineEdit)
+        ]
 
-    def md_f1_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 1.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik1_lineEdit.setEnabled(status)
-        self.md_winding1_pk1_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik1_lineEdit.setEnabled(False)
-            self.md_winding2_pk1_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik1_lineEdit.setEnabled(status)
-            self.md_winding2_pk1_lineEdit.setEnabled(status)
-
-    def md_f2_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 2.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik2_lineEdit.setEnabled(status)
-        self.md_winding1_pk2_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik2_lineEdit.setEnabled(False)
-            self.md_winding2_pk2_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik2_lineEdit.setEnabled(status)
-            self.md_winding2_pk2_lineEdit.setEnabled(status)
-
-    def md_f3_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 3.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik3_lineEdit.setEnabled(status)
-        self.md_winding1_pk3_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik3_lineEdit.setEnabled(False)
-            self.md_winding2_pk3_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik3_lineEdit.setEnabled(status)
-            self.md_winding2_pk3_lineEdit.setEnabled(status)
-
-    def md_f4_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 4.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik4_lineEdit.setEnabled(status)
-        self.md_winding1_pk4_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik4_lineEdit.setEnabled(False)
-            self.md_winding2_pk4_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik4_lineEdit.setEnabled(status)
-            self.md_winding2_pk4_lineEdit.setEnabled(status)
-
-    def md_f5_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 5.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik5_lineEdit.setEnabled(status)
-        self.md_winding1_pk5_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik5_lineEdit.setEnabled(False)
-            self.md_winding2_pk5_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik5_lineEdit.setEnabled(status)
-            self.md_winding2_pk5_lineEdit.setEnabled(status)
-
-    def md_f6_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 6.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik6_lineEdit.setEnabled(status)
-        self.md_winding1_pk6_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik6_lineEdit.setEnabled(False)
-            self.md_winding2_pk6_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik6_lineEdit.setEnabled(status)
-            self.md_winding2_pk6_lineEdit.setEnabled(status)
-
-    def md_f7_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 7.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik7_lineEdit.setEnabled(status)
-        self.md_winding1_pk7_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik7_lineEdit.setEnabled(False)
-            self.md_winding2_pk7_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik7_lineEdit.setEnabled(status)
-            self.md_winding2_pk7_lineEdit.setEnabled(status)
-
-    def md_f8_enable(self, status: bool) -> None:
-        """
-        Enable / Disable the input fields for frequency/phase No. 8.
-
-        :param status: True for enable fields, False for disable fields
-        :type status: bool
-        :return: None
-        :rtype: None
-        """
-        self.md_winding1_ik8_lineEdit.setEnabled(status)
-        self.md_winding1_pk8_lineEdit.setEnabled(status)
-        if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor'] and status:
-            self.md_winding2_ik8_lineEdit.setEnabled(False)
-            self.md_winding2_pk8_lineEdit.setEnabled(False)
-        else:
-            self.md_winding2_ik8_lineEdit.setEnabled(status)
-            self.md_winding2_pk8_lineEdit.setEnabled(status)
-
-    def md_change_frequencies_dc(self, status: int) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_dc_enable(False) if status == 0 else self.md_dc_enable(True)
-
-    def md_change_frequencies_1(self, status: int) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f1_enable(False) if status == 0 else self.md_f1_enable(True)
-
-    def md_change_frequencies_2(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f2_enable(False) if status == 0 else self.md_f2_enable(True)
-
-    def md_change_frequencies_3(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f3_enable(False) if status == 0 else self.md_f3_enable(True)
-
-    def md_change_frequencies_4(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f4_enable(False) if status == 0 else self.md_f4_enable(True)
-
-    def md_change_frequencies_5(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f5_enable(False) if status == 0 else self.md_f5_enable(True)
-
-    def md_change_frequencies_6(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f6_enable(False) if status == 0 else self.md_f6_enable(True)
-
-    def md_change_frequencies_7(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f7_enable(False) if status == 0 else self.md_f7_enable(True)
-
-    def md_change_frequencies_8(self, status) -> None:
-        """
-        Change the frequency field in case of checking/unchecking the frequency-checkboxes.
-
-        :param status: 0 for disabling, anything else for enabling frequency boxes
-        :type status: int
-        :return: None
-        :rtype: None
-        """
-        self.md_f8_enable(False) if status == 0 else self.md_f8_enable(True)
+        for checkbox, *line_edits in checkboxes:
+            status = checkbox.isChecked()
+            # Enable/disable winding 1 input fields.
+            for line_edit in line_edits[:2]:
+                line_edit.setEnabled(status)
+            # Enable/disable winding 2 input fields.
+            if enable_winding2:
+                for line_edit in line_edits[2:]:
+                    line_edit.setEnabled(status)
+            else:
+                for line_edit in line_edits[2:]:
+                    line_edit.setEnabled(False)
 
     def md_redraw_input_signals(self) -> None:
         """
