@@ -2259,7 +2259,11 @@ class MainWindow(QMainWindow):
         :rtype: None
         """
         md_simulation_type_options = [self.translation_dict['inductor'], self.translation_dict['transformer']]
-        md_core_material_options = ['N95', 'N49', 'N87']
+        # md_core_material_options = ['N95', 'N49', 'N87']
+        # List all materials from database
+        get_material_list = database.material_list_in_database()
+        md_core_material_options = get_material_list
+
         md_winding_material_options = [key for key in fmt.wire_material_database()]
         md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
         md_implicit_litz_options = [self.translation_dict["implicit_litz_radius"], self.translation_dict["implicit_ff"],
