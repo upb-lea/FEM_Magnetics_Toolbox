@@ -695,7 +695,7 @@ class MainWindow(QMainWindow):
 
     def webbrowser_contribute(self):
         """Open the web browser to the GitHub FEMMT repository contribution page."""
-        webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox')
+        webbrowser.open('https://github.com/upb-lea/FEM_Magnetics_Toolbox/blob/main/Contributing.rst')
 
     def webbrowser_bugreport(self):
         """Open the web browser to the GitHub FEMMT repository issue page."""
@@ -703,7 +703,7 @@ class MainWindow(QMainWindow):
 
     def webbrowser_documentation(self):
         """Open the web browser to the FEMMT documentation."""
-        webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/main/intro.html')
+        webbrowser.open('https://upb-lea.github.io/FEM_Magnetics_Toolbox/')
 
     #  **************************** Automated design tab ************************************************************  #
 
