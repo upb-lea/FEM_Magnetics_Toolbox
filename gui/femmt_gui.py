@@ -2636,9 +2636,9 @@ class MainWindow(QMainWindow):
             self.md_winding2_radius_lineEdit.setText(str(litz["conductor_radii"]))
             self.md_winding2_fill_factor_lineEdit.setText(str(litz["ff"]))
 
-            for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
-                if value == litz["implicit"]:
-                    self.md_winding2_implicit_litz_comboBox.setCurrentIndex(key)
+            # for key, value in enumerate(["implicit_litz_radius", "implicit_ff", 'implicit_strands_number']):
+            #     if value == litz["implicit"]:
+            #         self.md_winding2_implicit_litz_comboBox.setCurrentIndex(key)
 
             self.md_winding2_radius_lineEdit.setEnabled(False)
             self.md_winding2_implicit_litz_comboBox.setEnabled(False)
