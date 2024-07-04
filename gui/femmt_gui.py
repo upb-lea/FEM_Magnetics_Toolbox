@@ -15,7 +15,7 @@ from typing import List
 import PIL
 import webbrowser
 # new import for threads
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QCoreApplication
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QCoreApplication, QMutex
 
 import materialdatabase as mdb
 import matplotlib.pyplot as plt
@@ -176,6 +176,8 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self.progressBar)
         self.progressBar.setMinimum(0)
         self.progressBar.setValue(0)
+        # QMutex is used to protect shared resources from concurrent access by multiple runs
+        self.mutex = QMutex()
         # self.coreImageLabel.setPixmap(pixmap)
         # self.imageBoxImageLabel.setPixmap(pixmap)
         self.translation_dict = {
@@ -2453,58 +2455,73 @@ class MainWindow(QMainWindow):
     @handle_errors
     def md_gmsh_pre_visualisation(self, *args, **kwargs):
         """Pre-visualize when update preview button is pressed in the definitions tab."""
+        if not self.mutex.tryLock(): # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
+            # raise RuntimeWarning("Another operation is in progress. Please close gmsh.")
+            QMessageBox.warning(self, "Warning", "Another operation is in progress. Please close gmsh Window.")
+            return
+
         try:
             # Hide the progressBar if it exists.
             try:
                 self.progressBar.hide()
             except:
                 pass
-            # show a statusbar while Pre-visualize running
+
+            # Show a statusbar message while Pre-visualize is running.
             self.statusBar().showMessage('Pre-visualize running...')
             QCoreApplication.processEvents()
 
+            # Call geometry setup.
             geo = self.md_setup_geometry()
             print(f"geo:{geo}")
 
-            # geo.create_model(freq=100000, visualize_before=False, do_meshing=False, save_png=True)
-            geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
-                             save_png=True)
-            print(f"geo.file_data.hybrid_color_visualize_file: {geo.file_data.hybrid_color_visualize_file}")
-            image_pre_visualisation = PIL.Image.open(geo.file_data.hybrid_color_visualize_file)
+            # Clear previous mesh files to ensure clean visualization.
+            geo.file_data.clean_folder_structure(geo.file_data.mesh_folder_path)
 
+            # Create the model for pre-visualization without saving PNG files.
+            geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()),
+                             pre_visualize_geometry=False, save_png=True)
+            print(f"geo.file_data.hybrid_color_visualize_file: {geo.file_data.hybrid_color_visualize_file}")
+
+            # Load the generated PNG file for visualization.
+            image_pre_visualisation = PIL.Image.open(geo.file_data.hybrid_color_visualize_file)
             px = image_pre_visualisation.load()
             image_width, image_height = image_pre_visualisation.size
 
+            # Determine the cropping boundaries by finding non-white pixels.
             for cut_x_left in range(0, image_width):
-                if px[cut_x_left, image_height / 2] != (255, 255, 255):
+                if px[cut_x_left, image_height // 2] != (255, 255, 255):
                     cut_x_left -= 1
                     break
             for cut_x_right in reversed(range(0, image_width)):
-                if px[cut_x_right, image_height / 2] != (255, 255, 255):
+                if px[cut_x_right, image_height // 2] != (255, 255, 255):
                     cut_x_right += 1
                     break
-
             for cut_y_bot in reversed(range(0, image_height)):
-                if px[image_width / 2, cut_y_bot] != (255, 255, 255):
+                if px[image_width // 2, cut_y_bot] != (255, 255, 255):
                     cut_y_bot += 1
                     break
             for cut_y_top in range(0, image_height):
-                if px[image_width / 2, cut_y_top] != (255, 255, 255):
+                if px[image_width // 2, cut_y_top] != (255, 255, 255):
                     cut_y_top -= 1
                     break
 
+            # Crop the image to the determined boundaries and save it.
             im_crop = image_pre_visualisation.crop((cut_x_left, cut_y_top, cut_x_right, cut_y_bot))
             im_crop.save(geo.file_data.hybrid_color_visualize_file, quality=95)
 
+            # Load the cropped image into a QPixmap for display in QLabel.
             pixmap = QPixmap(geo.file_data.hybrid_color_visualize_file)
             self.md_gmsh_visualisation_QLabel.setPixmap(pixmap)
             self.md_gmsh_visualisation_QLabel.setMask(pixmap.mask())
             self.md_gmsh_visualisation_QLabel.show()
 
-            # complete Pre-visualize
+            # Update status bar message.
             self.statusBar().showMessage('Pre-visualize completed')
         except Exception as e:
             raise RuntimeError(f"Error during simulation: {str(e)}") from e
+        finally:
+            self.mutex.unlock()
 
     def md_set_core_geometry_from_database(self):
         """Set a core geometry for the material database."""
@@ -3606,128 +3623,129 @@ class MainWindow(QMainWindow):
         :return: None
         :rtype: None
         """
-        # check if the necessary fields are not empty
-        self.validate_fields()
-        # call geometry
-        geo = self.md_setup_geometry()
-        # -----------------------------------------------
-        # Simulation
-        # -----------------------------------------------
-        geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False,
-                         save_png=False)
-        # geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), visualize_before=False, do_meshing=True, save_png=False)
+        # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
+        if not self.mutex.tryLock():
+            # self.statusBar().showMessage('Another operation is in progress. Please wait...')
+            # raise RuntimeWarning("Another operation is in progress. Please close gmsh.")
+            QMessageBox.warning(self, "Warning", "Another operation is in progress. Please close gmsh Window.")
+            return
 
-        winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
-            winding2_phi_rad_list = self.md_get_frequency_lists()
-        print(winding1_frequency_list)
-        print(winding1_amplitude_list)
         try:
-            # Hide the progressBar if it exists
+            # check if the necessary fields are not empty.
+            self.validate_fields()
+
+            # call geometry
+            geo = self.md_setup_geometry()
+
+            # Clear previous simulation results in the mesh folder.
+            geo.file_data.clean_folder_structure(geo.file_data.mesh_folder_path)
+
+            # Create a model with the given frequency, without pre-visualizing geometry, and without saving PNG files.
+            geo.create_model(freq=comma_str_to_point_float(self.md_base_frequency_lineEdit.text()), pre_visualize_geometry=False, save_png=False)
+
+            # Get frequency, amplitude, and phase lists for winding simulations.
+            winding1_frequency_list, winding1_amplitude_list, winding1_phi_rad_list, winding2_frequency_list, winding2_amplitude_list, \
+                winding2_phi_rad_list = self.md_get_frequency_lists()
+            print(winding1_frequency_list)
+            print(winding1_amplitude_list)
+
             try:
-                self.progressBar.hide()
-            except:
-                pass
-            self.statusBar().showMessage('Simulation running...')
-            QCoreApplication.processEvents()
-            if len(winding1_frequency_list) == 1:
-                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-                    geo.single_simulation(freq=winding1_frequency_list[0],
-                                          current=[winding1_amplitude_list[0]],
-                                          show_fem_simulation_results=True)
-                elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                    geo.single_simulation(freq=winding1_frequency_list[0],
-                                          current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
-                                          phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+                # Hide the progress bar if it exists.
+                try:
+                    self.progressBar.hide()
+                except:
+                    pass
 
-            else:
+                # Show a status message indicating that the simulation is running.
+                self.statusBar().showMessage('Simulation running...')
+                QCoreApplication.processEvents()
 
-                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
-                    amplitude_list = []
-                    print(f"{winding1_amplitude_list=}")
-                    for amplitude_value in winding1_amplitude_list:
-                        amplitude_list.append([amplitude_value])
+                # Run a single or excitation sweep simulation based on the input frequencies and amplitudes.
+                if len(winding1_frequency_list) == 1:
+                    if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                        geo.single_simulation(freq=winding1_frequency_list[0], current=[winding1_amplitude_list[0]], show_fem_simulation_results=True)
+                    elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                        geo.single_simulation(freq=winding1_frequency_list[0], current=[winding1_amplitude_list[0], winding2_amplitude_list[0]],
+                                              phi_deg=[winding1_phi_rad_list[0], winding2_phi_rad_list[0]])
+                else:
+                    if self.md_simulation_type_comboBox.currentText() == self.translation_dict['inductor']:
+                        amplitude_list = []
+                        print(f"{winding1_amplitude_list=}")
+                        for amplitude_value in winding1_amplitude_list:
+                            amplitude_list.append([amplitude_value])
+                        phase_rad_list = []
+                        for phase_value in winding1_phi_rad_list:
+                            phase_rad_list.append([phase_value])
+                        geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list, phi_deg_list_list=phase_rad_list)
+                    elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                        amplitude1_list = []
+                        for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
+                            amplitude1_list.append([amplitude1_value, amplitude2_value])
+                        phase1_rad_list = []
+                        for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
+                            phase1_rad_list.append([phase1_value, phase2_value])
+                        geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude1_list, phi_deg_list_list=phase1_rad_list)
+            except Exception as e:
+                raise RuntimeError(f"Error during simulation: {str(e)}") from e
 
-                    phase_rad_list = []
-                    for phase_value in winding1_phi_rad_list:
-                        phase_rad_list.append([phase_value])
-                    geo.excitation_sweep(frequency_list=winding1_frequency_list, current_list_list=amplitude_list,
-                                         phi_deg_list_list=phase_rad_list)
+            # -----------------------------------------------
+            # Read back results
+            # -----------------------------------------------
+            self.md_simulation_QLabel.setText('simulation complete.')
+            self.statusBar().showMessage('Simulation completed')
+            loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation, show_plot=False)
 
-                elif self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                    amplitude1_list = []
-                    for amplitude1_value, amplitude2_value in zip(winding1_amplitude_list, winding2_amplitude_list):
-                        amplitude1_list.append([amplitude1_value, amplitude2_value])
+            for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
+                # Frequency-specific losses
+                freq_label = getattr(self, f'md_freq{index + 1}')
+                # loss_plot_label = getattr(self, f'md_loss_plot_label1')
+                hysteresis_label = getattr(self, f'md_loss_core_hysteresis_label{index + 1}')
+                eddy_current_label = getattr(self, f'md_loss_core_eddy_current_label{index + 1}')
+                winding1_loss_label = getattr(self, f'md_loss_winding1_label{index + 1}')
+                inductance1_label = getattr(self, f'md_inductance1_label{index + 1}')
 
-                    phase1_rad_list = []
-                    for phase1_value, phase2_value in zip(winding1_phi_rad_list, winding2_phi_rad_list):
-                        phase1_rad_list.append([phase1_value, phase2_value])
+                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                    winding2_loss_label = getattr(self, f'md_loss_winding2_label{index + 1}')
+                    inductance2_label = getattr(self, f'md_inductance2_label{index + 1}')
+                # Update frequency label
+                freq_label.setText(f"Frequency: {sweep['f']} Hz")
 
-                    geo.excitation_sweep(frequency_list=winding1_frequency_list,
-                                         current_list_list=amplitude1_list,
-                                         phi_deg_list_list=phase1_rad_list)
+                # Show the image for the loss plot.
+                base_path, ext = os.path.splitext(geo.file_data.results_em_simulation)
+                cumulative_filename = f"{base_path}_total_freq{ext}"
+                pixmap = QPixmap(cumulative_filename)
+                if not pixmap.isNull():
+                    # to show more than one figure in the future:
+                    # loss_plot_label.setPixmap(pixmap)
+                    # loss_plot_label.show()
+                    # just for shown one figure:
+                    self.md_loss_plot_label1.setPixmap(pixmap)
+                    self.md_loss_plot_label1.show()
+                # # loss labels
+                # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
+                # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
+                # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
+                # inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
+                # # transformer case
+                # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
+                #     inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
+                # Show the losses with round and approximation.
+                hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
+                eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
+                winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
 
-                # geo.excitation_sweep(winding1_frequency_list, amplitude_list, phase_rad_list)
-        except Exception as e:
-            raise RuntimeError(f"Error during simulation: {str(e)}") from e
-        # -----------------------------------------------
-        # Read back results
-        # -----------------------------------------------
-        self.md_simulation_QLabel.setText('simulation complete.')
-        self.statusBar().showMessage('Simulation completed')
-        loaded_results_dict = fmt.visualize_simulation_results(geo.file_data.e_m_results_log_path, geo.file_data.results_em_simulation, show_plot=False)
+                primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
+                inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
+                # Transformer case.
+                if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
+                    secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
+                    winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
+                    inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
+        finally:
+            # Unlock the mutex to allow other operations to proceed.
+            self.mutex.unlock()
 
-        for index, sweep in enumerate(loaded_results_dict["single_sweeps"]):
-            # Frequency-specific losses
-            freq_label = getattr(self, f'md_freq{index + 1}')
-            # loss_plot_label = getattr(self, f'md_loss_plot_label1')
-            hysteresis_label = getattr(self, f'md_loss_core_hysteresis_label{index + 1}')
-            eddy_current_label = getattr(self, f'md_loss_core_eddy_current_label{index + 1}')
-            winding1_loss_label = getattr(self, f'md_loss_winding1_label{index + 1}')
-            inductance1_label = getattr(self, f'md_inductance1_label{index + 1}')
-
-            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                winding2_loss_label = getattr(self, f'md_loss_winding2_label{index + 1}')
-                inductance2_label = getattr(self, f'md_inductance2_label{index + 1}')
-
-            # Update frequency label
-            freq_label.setText(f"Frequency: {sweep['f']} Hz")
-
-            # image for loss plot
-            base_path, ext = os.path.splitext(geo.file_data.results_em_simulation)
-            cumulative_filename = f"{base_path}_total_freq{ext}"
-            pixmap = QPixmap(cumulative_filename)
-            if not pixmap.isNull():
-                # to show more than one figure in the future:
-                # loss_plot_label.setPixmap(pixmap)
-                # loss_plot_label.show()
-                # just for shown one figure:
-                self.md_loss_plot_label1.setPixmap(pixmap)
-                self.md_loss_plot_label1.show()
-
-            # # loss labels
-            # hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0)} W")
-            # eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0)} W")
-            # winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0)} W")
-            # inductance1_label.setText(f"Primary Inductance: {sweep['winding1'].get('flux_over_current', [0])[0]} H")
-            # # transformer case
-            # if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-            #     winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0)} W")
-            #     inductance2_label.setText(f"Secondary Inductance: {sweep['winding2'].get('flux_over_current', [0])[0]} H")
-
-            # loss labels with approximations.
-            hysteresis_label.setText(f"Core Hysteresis loss: {sweep.get('core_hyst_losses', 0):.5f} W")
-            eddy_current_label.setText(f"Core Eddy Current loss: {sweep.get('core_eddy_losses', 0):.5f} W")
-            winding1_loss_label.setText(f"Winding 1 loss: {sweep['winding1'].get('winding_losses', 0):.5f} W")
-
-            # Convert inductance to nanohenries.
-            primary_inductance_nh = sweep['winding1'].get('flux_over_current', [0])[0] * 1e9
-            inductance1_label.setText(f"Primary Inductance: {primary_inductance_nh:.0f} nH")
-
-            # transformer case.
-            if self.md_simulation_type_comboBox.currentText() == self.translation_dict['transformer']:
-                secondary_inductance_nh = sweep['winding2'].get('flux_over_current', [0])[0] * 1e9
-                winding2_loss_label.setText(f"Winding 2 loss: {sweep['winding2'].get('winding_losses', 0):.0f} W")
-                inductance2_label.setText(f"Secondary Inductance: {secondary_inductance_nh:.5f} nH")
 
     @handle_errors
     def inductancecalc(self, *args, **kwargs):
