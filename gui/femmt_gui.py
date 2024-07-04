@@ -2455,7 +2455,7 @@ class MainWindow(QMainWindow):
     @handle_errors
     def md_gmsh_pre_visualisation(self, *args, **kwargs):
         """Pre-visualize when update preview button is pressed in the definitions tab."""
-        if not self.mutex.tryLock(): # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
+        if not self.mutex.tryLock():  # Try to acquire the mutex. If it's already locked by another operation, show a message and return.
             # raise RuntimeWarning("Another operation is in progress. Please close gmsh.")
             QMessageBox.warning(self, "Warning", "Another operation is in progress. Please close gmsh Window.")
             return
@@ -3745,7 +3745,6 @@ class MainWindow(QMainWindow):
         finally:
             # Unlock the mutex to allow other operations to proceed.
             self.mutex.unlock()
-
 
     @handle_errors
     def inductancecalc(self, *args, **kwargs):
