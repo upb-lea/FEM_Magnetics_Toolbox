@@ -2847,10 +2847,7 @@ class MainWindow(QMainWindow):
     # ----------------------------------------------------------
 
     def update_dc_and_frequencies_checkboxes(self) -> None:
-        """
-        Update the frequency checkboxes and input fields based on the simulation type.
-        """
-        # Determine if winding2 fields should be enabled based on simulation type combobox.
+        """Update the frequency checkboxes and input fields based on the simulation type."""
         enable_winding2 = self.md_simulation_type_comboBox.currentText() != self.translation_dict['inductor']
 
         # List of checkbox and corresponding input field pairs.
