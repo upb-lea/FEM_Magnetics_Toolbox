@@ -46,9 +46,11 @@ femmt/electro_magnetic/Strands_Coefficients/PreParameter.pro
 femmt/electro_magnetic/core_materials_temp.pro
 
 # FEMMT: GUI generated files
-femmt/md_winding_1.png
-femmt/md_winding_2.png
-femmt/results.png
+gui/md_winding_1.png
+gui/md_winding_2.png
+gui/plot.png
+gui/plot2.png
+gui/results.png
 
 # Thermal: generated files
 femmt/thermal/solver/Constraint.pro
