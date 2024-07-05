@@ -45,7 +45,7 @@
         <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>0</number>
+           <number>2</number>
           </property>
           <widget class="QWidget" name="md_QWidget_2">
            <attribute name="title">
@@ -61,7 +61,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>0</number>
+               <number>1</number>
               </property>
               <widget class="QWidget" name="md_QWidget">
                <attribute name="title">
@@ -2695,7 +2695,7 @@
           </widget>
           <widget class="QWidget" name="automated_design_QWidget">
            <attribute name="title">
-            <string>Automated Design</string>
+            <string>Automated Design (experimental)</string>
            </attribute>
            <layout class="QGridLayout" name="gridLayout_41">
             <item row="0" column="0">
@@ -4582,7 +4582,7 @@
                               <rect>
                                <x>0</x>
                                <y>0</y>
-                               <width>635</width>
+                               <width>98</width>
                                <height>518</height>
                               </rect>
                              </property>
@@ -4754,7 +4754,7 @@
                                 <rect>
                                  <x>0</x>
                                  <y>0</y>
-                                 <width>468</width>
+                                 <width>98</width>
                                  <height>518</height>
                                 </rect>
                                </property>
@@ -4809,8 +4809,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>268</width>
-                     <height>253</height>
+                     <width>1440</width>
+                     <height>1172</height>
                     </rect>
                    </property>
                    <layout class="QGridLayout" name="gridLayout_46">
@@ -4940,8 +4940,8 @@
                             <rect>
                              <x>0</x>
                              <y>0</y>
-                             <width>211</width>
-                             <height>518</height>
+                             <width>1400</width>
+                             <height>807</height>
                             </rect>
                            </property>
                            <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -4975,7 +4975,7 @@
           </widget>
           <widget class="QWidget" name="tab_5">
            <attribute name="title">
-            <string>Database</string>
+            <string>Database (experimental)</string>
            </attribute>
            <layout class="QGridLayout" name="gridLayout_36">
             <item row="0" column="0">
@@ -5011,7 +5011,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>43</width>
+                        <width>1403</width>
                         <height>2036</height>
                        </rect>
                       </property>
@@ -9603,7 +9603,7 @@
                        <rect>
                         <x>0</x>
                         <y>0</y>
-                        <width>43</width>
+                        <width>98</width>
                         <height>1024</height>
                        </rect>
                       </property>
