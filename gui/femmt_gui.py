@@ -73,8 +73,10 @@ def format_number(value, decimals=4):
     """
     Round a number to a specified number of decimal places.
 
-    value (float): The number to format.
-    decimals (int): Number of decimal places. Default is 4.
+    :param value: value to format.
+    :type value: float
+    :param decimals: number of decimal places
+    :type decimals: int
 
     Returns:
     float: The formatted number.
