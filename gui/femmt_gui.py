@@ -1630,105 +1630,69 @@ class MainWindow(QMainWindow):
         # show a statusbar while Datasheet-Datasheet is running
         self.statusBar().showMessage('Datasheet-Datasheet running...')
         QCoreApplication.processEvents()
+        try:
+             matplotlib_widget1.axis_cm.remove()
+        except:
+             pass
+
+        material_list = [self.dat_core_material1_comboBox.currentText(),
+                         self.dat_core_material2_comboBox.currentText(),
+                         self.dat_core_material3_comboBox.currentText(),
+                         self.dat_core_material4_comboBox.currentText(),
+                         self.dat_core_material5_comboBox.currentText()]
+        temp_list = [comma_str_to_point_float(self.aut_temp_m1_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m2_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m3_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m4_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m5_comboBox.currentText())]
+        flux_list = [comma_str_to_point_float(self.aut_flux_m1_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_flux_m2_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_flux_m3_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_flux_m4_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_flux_m5_comboBox.currentText())]
+
+
+        materials_used_list = [item for item in material_list if item]
+        # First plot: Relative power loss vs B
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget)
         self.layout.addWidget(matplotlib_widget1)
-        try:
-            matplotlib_widget1.axis_cm.remove()
-        except:
-            pass
-
-        mat1_name = self.dat_core_material1_comboBox.currentText()
-        mat2_name = self.dat_core_material2_comboBox.currentText()
-        mat3_name = self.dat_core_material3_comboBox.currentText()
-        mat4_name = self.dat_core_material4_comboBox.currentText()
-        mat5_name = self.dat_core_material5_comboBox.currentText()
-
-        mat1_temp = comma_str_to_point_float(self.aut_temp_m1_comboBox.currentText())
-        mat2_temp = comma_str_to_point_float(self.aut_temp_m2_comboBox.currentText())
-        mat3_temp = comma_str_to_point_float(self.aut_temp_m3_comboBox.currentText())
-        mat4_temp = comma_str_to_point_float(self.aut_temp_m4_comboBox.currentText())
-        mat5_temp = comma_str_to_point_float(self.aut_temp_m5_comboBox.currentText())
-
-        mat1_flux = comma_str_to_point_float(self.aut_flux_m1_comboBox.currentText())
-        mat2_flux = comma_str_to_point_float(self.aut_flux_m2_comboBox.currentText())
-        mat3_flux = comma_str_to_point_float(self.aut_flux_m3_comboBox.currentText())
-        mat4_flux = comma_str_to_point_float(self.aut_flux_m4_comboBox.currentText())
-        mat5_flux = comma_str_to_point_float(self.aut_flux_m5_comboBox.currentText())
-
-        # print(f"mat1_name: {mat1_name},{mat2_name},{mat3_name},{mat4_name},{mat5_name}")
-        # print(f"mat1_temp: {mat1_temp},{mat2_temp},{mat3_temp},{mat4_temp},{mat5_temp}")
-        # print(f"mat1_flux: {mat1_flux},{mat2_flux},{mat3_flux},{mat4_flux},{mat5_flux}")
-
-        materials_used_list = []
-        material_list = [mat1_name, mat2_name, mat3_name, mat4_name, mat5_name]
-        for items in material_list:
-            if items:
-                materials_used_list.append(items)
-        # print(materials_used_list)
-
-        database.compare_core_loss_flux_density_data(matplotlib_widget1, material_list=materials_used_list,
-                                                     temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp,
-                                                                       mat5_temp])
-        # self.matplotlib_widget1.axis.legend(fontsize=13)
+        database.compare_core_loss_flux_density_data(matplotlib_widget1, material_list=materials_used_list, temperature_list=temp_list)
+        matplotlib_widget1.axis.legend([f'{mat}, {temp}°C' for mat, temp in zip(materials_used_list, temp_list)], fontsize=10)
         matplotlib_widget1.axis.grid()
         matplotlib_widget1.figure.canvas.draw_idle()
         matplotlib_widget1.figure.tight_layout()
 
-        ################################################################################################################
-
+        # Second plot: Relative power loss vs Temperature
         matplotlib_widget2.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_2)
         self.layout.addWidget(matplotlib_widget2)
-        try:
-            matplotlib_widget2.axis_cm.remove()
-        except:
-            pass
-
-        flux_list = [mat1_flux, mat2_flux, mat3_flux, mat4_flux, mat5_flux]
-        # print(f"flux_list: {flux_list}")
-        database.compare_core_loss_temperature(matplotlib_widget2, material_list=materials_used_list,
-                                               flux_density_list=[mat1_flux, mat2_flux, mat3_flux, mat4_flux,
-                                                                  mat5_flux])
-        # self.matplotlib_widget2.axis.legend(fontsize=13)
+        database.compare_core_loss_temperature(matplotlib_widget2, material_list=materials_used_list, flux_density_list=flux_list)
+        matplotlib_widget2.axis.legend([f'{mat}, {flux} T' for mat, flux in zip(materials_used_list, flux_list)], fontsize=10)
         matplotlib_widget2.axis.grid()
         matplotlib_widget2.figure.canvas.draw_idle()
         matplotlib_widget2.figure.tight_layout()
 
-        ################################################################################################################
-
+        # Third plot: Relative power loss vs Frequency
         matplotlib_widget3.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_3)
         self.layout.addWidget(matplotlib_widget3)
-        try:
-            matplotlib_widget3.axis_cm.remove()
-        except:
-            pass
-
-        database.compare_core_loss_frequency(matplotlib_widget3, material_list=materials_used_list,
-                                             temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp],
-                                             flux_density_list=[mat1_flux, mat2_flux, mat3_flux, mat4_flux, mat5_flux])
-        # self.matplotlib_widget3.axis.legend(fontsize=13)
+        database.compare_core_loss_frequency(matplotlib_widget3, material_list=materials_used_list, temperature_list=temp_list, flux_density_list=flux_list)
+        matplotlib_widget3.axis.legend([f'{mat}, {temp}°C, {flux} T' for mat, temp, flux in zip(materials_used_list, temp_list, flux_list)], fontsize=10)
         matplotlib_widget3.axis.grid()
         matplotlib_widget3.figure.canvas.draw_idle()
         matplotlib_widget3.figure.tight_layout()
 
-        ################################################################################################################
-
+        # Fourth plot: B vs H
         matplotlib_widget4.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_4)
         self.layout.addWidget(matplotlib_widget4)
-        try:
-            matplotlib_widget4.axis_cm.remove()
-        except:
-            pass
-
-        database.compare_b_h_curve(matplotlib_widget4, material_list=materials_used_list,
-                                   temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp, mat5_temp])
-        # self.matplotlib_widget4.axis.legend(fontsize=13)
+        database.compare_b_h_curve(matplotlib_widget4, material_list=materials_used_list, temperature_list=temp_list)
+        matplotlib_widget4.axis.legend([f'{mat}, {temp}°C' for mat, temp in zip(materials_used_list, temp_list)], fontsize=10)
         matplotlib_widget4.axis.grid()
         matplotlib_widget4.figure.canvas.draw_idle()
         matplotlib_widget4.figure.tight_layout()
+
         # Datasheet-Datasheet is finished
         self.statusBar().showMessage('Datasheet-Datasheet completed')
 
@@ -1747,79 +1711,63 @@ class MainWindow(QMainWindow):
         # show a statusbar while Measurement-Measurement is running
         self.statusBar().showMessage('Measurement-Measurement running...')
         QCoreApplication.processEvents()
+        # Show a statusbar while Measurement-Measurement is running
+        self.statusBar().showMessage('Measurement-Measurement running...')
+        QCoreApplication.processEvents()
+
+        material_list = [self.dat_core_material1_comboBox_2.currentText(),
+                         self.dat_core_material2_comboBox_2.currentText(),
+                         self.dat_core_material3_comboBox_2.currentText(),
+                         self.dat_core_material4_comboBox_2.currentText(),
+                         self.dat_core_material5_comboBox_2.currentText()]
+        test_name_list = [self.test_name_1_comboBox.currentText(),
+                          self.test_name_2_comboBox.currentText(),
+                          self.test_name_3_comboBox.currentText(),
+                          self.test_name_4_comboBox.currentText(),
+                          self.test_name_5_comboBox.currentText()]
+        temp_list = [comma_str_to_point_float(self.aut_temp_m1_comboBox_2.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m2_comboBox_2.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m3_comboBox_2.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m4_comboBox_2.currentText()),
+                     comma_str_to_point_float(self.aut_temp_m5_comboBox_2.currentText())]
+        freq_list = [comma_str_to_point_float(self.aut_freq_m1_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_freq_m2_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_freq_m3_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_freq_m4_comboBox.currentText()),
+                     comma_str_to_point_float(self.aut_freq_m5_comboBox.currentText())]
+
+        materials_used_list = [item for item in material_list if item]
+
+        # First plot: uR/u0 vs B (Real Part)
         matplotlib_widget1.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_13)
         self.layout.addWidget(matplotlib_widget1)
-        try:
-            matplotlib_widget1.axis_cm.remove()
-        except:
-            pass
-
-        mat1_name = self.dat_core_material1_comboBox_2.currentText()
-        mat2_name = self.dat_core_material2_comboBox_2.currentText()
-        mat3_name = self.dat_core_material3_comboBox_2.currentText()
-        mat4_name = self.dat_core_material4_comboBox_2.currentText()
-        mat5_name = self.dat_core_material5_comboBox_2.currentText()
-
-        mat1_test_name = self.test_name_1_comboBox.currentText()
-        mat2_test_name = self.test_name_2_comboBox.currentText()
-        mat3_test_name = self.test_name_3_comboBox.currentText()
-        mat4_test_name = self.test_name_4_comboBox.currentText()
-        mat5_test_name = self.test_name_5_comboBox.currentText()
-
-        mat1_temp = comma_str_to_point_float(self.aut_temp_m1_comboBox_2.currentText())
-        mat2_temp = comma_str_to_point_float(self.aut_temp_m2_comboBox_2.currentText())
-        mat3_temp = comma_str_to_point_float(self.aut_temp_m3_comboBox_2.currentText())
-        mat4_temp = comma_str_to_point_float(self.aut_temp_m4_comboBox_2.currentText())
-        mat5_temp = comma_str_to_point_float(self.aut_temp_m5_comboBox_2.currentText())
-
-        mat1_freq = comma_str_to_point_float(self.aut_freq_m1_comboBox.currentText())
-        mat2_freq = comma_str_to_point_float(self.aut_freq_m2_comboBox.currentText())
-        mat3_freq = comma_str_to_point_float(self.aut_freq_m3_comboBox.currentText())
-        mat4_freq = comma_str_to_point_float(self.aut_freq_m4_comboBox.currentText())
-        mat5_freq = comma_str_to_point_float(self.aut_freq_m5_comboBox.currentText())
-
-        # print(f"mat1_name: {mat1_name},{mat2_name},{mat3_name},{mat4_name},{mat5_name}")
-        # print(f"mat1_temp: {mat1_temp},{mat2_temp},{mat3_temp},{mat4_temp},{mat5_temp}")
-        # print(f"mat1_freq: {mat1_freq},{mat2_freq},{mat3_freq},{mat4_freq},{mat5_freq}")
-
-        materials_used_list = []
-        material_list = [mat1_name, mat2_name, mat3_name, mat4_name, mat5_name]
-        for items in material_list:
-            if items:
-                materials_used_list.append(items)
-        # print(materials_used_list)
-
         database.compare_permeability_measurement_data(matplotlib_widget1, material_list=materials_used_list,
-                                                       measurement_name=[mat1_test_name, mat2_test_name, mat3_test_name,
-                                                                         mat4_test_name, mat5_test_name],
-                                                       frequency_list=[mat1_freq, mat2_freq, mat3_freq, mat4_freq,
-                                                                       mat5_freq],
-                                                       temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp,
-                                                                         mat5_temp],
+                                                       measurement_name=test_name_list,
+                                                       frequency_list=freq_list,
+                                                       temperature_list=temp_list,
                                                        plot_real_part=True)
-
+        legend_labels1 = [f'{mat}, {test}, {freq} Hz, {temp}°C' for mat, test, freq, temp in zip(materials_used_list, test_name_list, freq_list, temp_list)]
+        matplotlib_widget1.axis.legend(legend_labels1, fontsize=8)
+        # legend_labels1 = [f'{mat}, {test}, {freq} Hz, {temp}°C' for mat, test, freq, temp in zip(materials_used_list, test_name_list, freq_list, temp_list)]
+        # matplotlib_widget1.axis.legend(legend_labels1, fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5))
         matplotlib_widget1.axis.grid()
         matplotlib_widget1.figure.canvas.draw_idle()
         matplotlib_widget1.figure.tight_layout()
 
-        ################################################################################################################
-
+        # Second plot: uR/u0 vs B (Imaginary Part)
         matplotlib_widget2.axis.clear()
         self.layout = QVBoxLayout(self.plotwidget_14)
         self.layout.addWidget(matplotlib_widget2)
-        try:
-            matplotlib_widget2.axis_cm.remove()
-        except:
-            pass
         database.compare_permeability_measurement_data(matplotlib_widget2, material_list=materials_used_list,
-                                                       measurement_name=[mat1_test_name, mat2_test_name, mat3_test_name,
-                                                                         mat4_test_name, mat5_test_name],
-                                                       frequency_list=[mat1_freq, mat2_freq, mat3_freq, mat4_freq,
-                                                                       mat5_freq],
-                                                       temperature_list=[mat1_temp, mat2_temp, mat3_temp, mat4_temp,
-                                                                         mat5_temp],
+                                                       measurement_name=test_name_list,
+                                                       frequency_list=freq_list,
+                                                       temperature_list=temp_list,
                                                        plot_real_part=False)
+        legend_labels2 = [f'{mat}, {test}, {freq} Hz, {temp}°C' for mat, test, freq, temp in zip(materials_used_list, test_name_list, freq_list, temp_list)]
+        matplotlib_widget2.axis.legend(legend_labels2, fontsize=8)
+        # legend_labels2 = [f'{mat}, {test}, {freq} Hz, {temp}°C' for mat, test, freq, temp in zip(materials_used_list, test_name_list, freq_list, temp_list)]
+        # matplotlib_widget2.axis.legend(legend_labels2, fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5))
         matplotlib_widget2.axis.grid()
         matplotlib_widget2.figure.canvas.draw_idle()
         matplotlib_widget2.figure.tight_layout()
@@ -1855,7 +1803,11 @@ class MainWindow(QMainWindow):
 
         database.compare_core_loss_flux_datasheet_measurement(matplotlib_widget, material=mat_name,
                                                               temperature_list=[mat_dat_temp, mat_meas_temp], measurement_name=test_name)
-
+        # TODO Review legend for some materials (PC200, DMR96A, and DMR96A2.
+        legend_labels = [f'{mat_name}, Datasheet, {mat_dat_temp}°C', f'{mat_name}, {test_name}, Measurement, {mat_meas_temp}°C']
+        matplotlib_widget.axis.legend(legend_labels, fontsize=8)
+        # legend_labels = [f'{mat_name}, Datasheet {mat_dat_temp}°C', f'{mat_name}, Measurement {test_name}, {mat_meas_temp}°C']
+        # matplotlib_widget.axis.legend(legend_labels, fontsize=8, loc='center left', bbox_to_anchor=(1, 0.5))
         matplotlib_widget.axis.grid()
         matplotlib_widget.figure.canvas.draw_idle()
         matplotlib_widget.figure.tight_layout()
