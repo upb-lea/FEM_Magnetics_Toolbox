@@ -2232,7 +2232,7 @@ class MainWindow(QMainWindow):
         get_material_list = database.material_list_in_database()
         md_core_material_options = get_material_list
         # Material data Source for permeability and permittivity
-        data_source_options = [source for source in fmt.MaterialDataSource]
+        data_source_options = [source for source in fmt.MaterialDataSource if source != fmt.MaterialDataSource.Custom]
 
         md_winding_material_options = [key for key in fmt.wire_material_database()]
         md_winding_type_options = [self.translation_dict['litz'], self.translation_dict['solid']]
